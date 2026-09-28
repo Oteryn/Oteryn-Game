@@ -74,10 +74,11 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
   generation only, tracks no timer identity. `movement.rs` `MovementOwnerTurn` — bounded precedent.
 - `GAME-INTERACTION-01_..._CANDIDATE.md` §4.1/§4.4/§5.1/§5.8, `interaction/identity.rs`
   `ChildOccurrenceRef` (~69-157) — nested-cascade identity; ordinal is fence evidence, not identity.
-- `foundation/mod.rs` `CommandIngress`/`RetainedTerminalRecord`/`CommandId` (~53-55/202/498-742) —
-  round 12, PROVEN: only terminal-retention mechanism in the repo; `CommandId`-keyed (not
-  `InteractionChildOccurrenceRef`), single-slot (`MAX_RETAINED_TERMINAL_RECORDS = 1`), reachable only
-  via session-gated `apply`/`resume_pending`; grep confirms no other retention path exists.
+  Round 13, read in full: §7 (265-280) — "duplicate delivery ... MUST converge to one lifecycle/
+  outcome," "loss of a retained result payload MUST NOT re-enable execution"; §5.9/§25 (214-225/
+  780-798) — retention window/count explicitly unfrozen, no numeric bound named.
+- `foundation/mod.rs` `CommandIngress` (~53-742) — round 12: only terminal-retention mechanism in
+  the repo; `CommandId`-keyed, single-slot, session-gated — rules out reuse, not retention itself.
 - PR #1055/#1046 (merged) generalized `LocalObjectRuntime`, shipped 1a/1b/1c. `git diff ac8395b8
   origin/main` — only `world_runtime.rs`/encounter doc line numbers shifted.
 
@@ -115,32 +116,28 @@ Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Rounds 1-6: numb
 option recommended; rebound to FND-03 §10 authoritative timer with staged capacity atomicity,
 equal-deadline tie-break, one clock per scope; merged origin/main (PR #1055/#1046); `revert_after_ms`
 admissible only with exactly one bound inverse; pre-`prepare` discard restricted to
-`scope_generation`/`content_generation`. Round 7 (Codex 4119354894): timer-origin execution never
-re-arms (mutually timed pair fix). Round 8 (Codex 4119401513): restated as an origin test so
-`DepthWarzoneBossDeath`'s revert isn't starved. Round 9 (Codex 4119452692): pending entry gained
-exact target identity (`PlacementKey`/`incarnation`/`content_generation`); changed `incarnation`
-joins the pre-`prepare` discard fences. Round 10 (Codex 4119516262, main→`74bb3fd3`, unrelated):
-fixed a stale summary sentence still contradicting round 9.
+`scope_generation`/`content_generation`. Round 7: timer-origin execution never re-arms. Round 8:
+restated as an origin test so `DepthWarzoneBossDeath`'s revert isn't starved. Round 9: pending entry
+gained exact target identity; changed `incarnation` joins the pre-`prepare` discard fences. Round 10:
+fixed a stale summary contradicting round 9. Round 11 (`87b974b1`): pending entry never stored its
+derived `InteractionChildOccurrenceRef`; fixed with one canonical field-list table. Round 12
+(`8e12f6bf`): round 11's replay test contradicted the driver's no-op rule; checked `CommandIngress`
+(`CommandId`-keyed, single-slot, session-gated); specified redelivery as a no-op with nothing retained.
 
-Round 11 (Codex 4119565077, head `87b974b1`): pending entry never stored the revert's own derived
-`InteractionChildOccurrenceRef` (GAME-INTERACTION-01 §5.1 nested-cascade; never the scheduling
-ordinal per §4.4/§5.8). Fixed structurally: one canonical "Pending entry: complete field list" table
-atop "Exact delta" that every other place in §7 now references; firing terminalizes every
-disposition under that stored identity.
-
-Round 12 (Codex 4119679783, head `8e12f6bf`): round 11's own text contradicted itself — the driver's
-pending-removal-before-`accept_input` rule says a re-presentation is a no-op with nothing left, but
-round 11's replay test said redelivery "finds that identity already terminal and replays it." Checked
-`foundation/mod.rs` `CommandIngress`/`RetainedTerminalRecord` directly: the only terminal-retention
-mechanism in the codebase is `CommandId`-keyed, single-slot (`MAX_RETAINED_TERMINAL_RECORDS = 1`),
-reachable only through session-gated `apply`/`resume_pending` this timer already doesn't use — cannot
-key by `InteractionChildOccurrenceRef`. Per coordinator decision (minimum-sufficient, no new ledger):
-exactly-once *execution*, not outcome *replay*, already guaranteed by atomic pending-removal. Fixed:
-rewrote the replay test obligation, firing/occupancy bullets, field list's closing paragraph and
-round-11 narrative — redelivery is now a plain no-op, the single emitted outcome carries the stored
-identity but is not retained; grepped the whole doc, fixed every timer-origin instance (client-command
-replay via `CommandIngress` unaffected). Merged `origin/main` (`79b85ec6`, unrelated); `git diff
-8e12f6bf HEAD` confirms every cited file is byte-identical to round 11's head, no citation drifted.
+Round 13 (Codex 4119805483, head `f7e9c7f2`): **round 12 is superseded — it was wrong.** It violates
+the owning contract itself: `GAME-INTERACTION-01_..._CANDIDATE.md` §7 requires duplicate delivery of
+the same child to converge to one lifecycle/outcome, and "loss of a retained result payload MUST NOT
+re-enable execution" (presupposes retention exists). Read GAME-INTERACTION-01 in full: §7 mandates
+retention *semantics*; §5.9/§25 explicitly leave the numeric bound unfrozen — the same decided-
+semantics/undecided-number split already used for FND-03 §15.4 timer capacity, so no number invented.
+Fixed: the revert's terminal outcome (`InteractionChildOccurrenceRef` → `TerminalSemanticOutcome`) is
+now retained scope-owned state, its capacity folded into the same staged FND-03 §15.4 reservation as
+timer capacity; never evicted mid-generation, dropped only on scope restart with the rest of the
+overlay (so "loss" and the object's own overlay reset always coincide). Duplicate presentation now
+returns the retained outcome (zero new ordinals/mutations); the original atomic pending-removal guard
+is kept as a narrower second layer (same-window races only). Rewrote every affected bullet/obligation
+and grepped the whole doc for "not retained"/"no-op"/"replay"/"retain," fixing every instance. Merged
+`origin/main` (`452c3e2c`, unrelated); `git diff f7e9c7f2 HEAD` confirms no cited file drifted.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -150,13 +147,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-12; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-13; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 12, main unmoved since round 10; unchanged)
+  validation passed (23 files, 47 workflows)." (round 13, main unmoved since round 12; unchanged)
 
 ### E2E
 
@@ -181,7 +178,7 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ## Independent review
 
-- required: YES — same independent-review path as the proposal; not self-accepted.
+- required: YES — same review path as the proposal; not self-accepted.
 - exact head: pending
 - method/auditor: pending
 - material findings: pending
@@ -200,13 +197,14 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 12 (Codex 4119679783 on frozen head 8e12f6bf): round 11's replay test
-  contradicted the driver's pending-removal no-op rule. Checked foundation/mod.rs CommandIngress
-  directly: CommandId-keyed, single-slot (MAX_RETAINED_TERMINAL_RECORDS=1), session-gated -- cannot
-  key by InteractionChildOccurrenceRef. Per coordinator decision (no new ledger): timer-origin firing
-  needs exactly-once execution (atomic pending-removal), not outcome replay. Rewrote the replay test
-  obligation, firing/occupancy bullets, field-list closing paragraph; redelivery is now a plain
-  no-op, outcome carries stored identity but is not retained. Grepped whole doc; validators pass.
+  PR #1045 pre-freeze round 13 (Codex 4119805483 on frozen head f7e9c7f2): round 12 was WRONG --
+  superseded. Violated owning GAME-INTERACTION-01 SS7: duplicate delivery MUST converge to one
+  outcome; loss of a retained result payload MUST NOT re-enable execution. Read SS7 in full: mandates
+  retention semantics; SS5.9/SS25 leave the numeric bound unfrozen -- same pattern as FND-03
+  timer-capacity, no number invented. Fixed: terminal outcome is now retained scope-owned state
+  (InteractionChildOccurrenceRef -> TerminalSemanticOutcome), capacity folded into the existing
+  staged FND-03 SS15.4 reservation, dropped only on scope restart. Duplicate presentation now returns
+  the retained outcome. Rewrote every affected bullet/obligation; grepped whole doc; validators pass.
 status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
