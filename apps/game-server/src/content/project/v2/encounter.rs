@@ -1260,6 +1260,11 @@ fn condition(
             role, conditions, ..
         } => {
             names.role(role)?;
+            limits.check(
+                "v2 encounter creature conditions",
+                conditions.len(),
+                limits.max_reference_records,
+            )?;
             if conditions.is_empty() || conditions.windows(2).any(|pair| pair[0] >= pair[1]) {
                 return invalid("v2 has_condition conditions are empty, unsorted or duplicated");
             }
