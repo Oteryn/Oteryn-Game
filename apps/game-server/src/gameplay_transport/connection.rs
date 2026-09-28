@@ -79,16 +79,24 @@ pub(crate) struct SessionContinuity {
     pub(crate) next_command_id: u64,
     pub(crate) server_sequence: u64,
     pub(crate) spatial_revision: u64,
+    /// The last `WORLD_OBJECT_OVERLAY` (domain 2) revision emitted to this connection, from
+    /// either the join/resync snapshot or a committed-use delta (USE-WIRE-V1, #162 5868482467).
+    /// Unlike `spatial_revision` (this actor's own per-actor counter), the door overlay is
+    /// Channel-global, so this field is written from the live value actually sent, not trusted
+    /// to already match it — see `serve_admitted`.
+    pub(crate) overlay_revision: u64,
 }
 
 impl SessionContinuity {
-    /// A fresh admission: generation 1, first CommandId 1, no sequenced output yet, and
-    /// the baseline spatial revision 1.
+    /// A fresh admission: generation 1, first CommandId 1, no sequenced output yet, the
+    /// baseline spatial revision 1, and no overlay observed yet (0, the door's own initial
+    /// revision).
     pub(crate) const FRESH: Self = Self {
         connection_generation: ADMITTED_GENERATION,
         next_command_id: 1,
         server_sequence: 0,
         spatial_revision: 1,
+        overlay_revision: 0,
     };
 }
 
@@ -561,6 +569,10 @@ where
             snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
             payload: &overlay_payload,
         });
+        // The overlay is Channel-global (unlike `spatial_revision`, this actor's own counter),
+        // so the reconnect fence (`resume.rs`, r4122215795) must record what was actually just
+        // sent here, not trust a value carried over from before this snapshot.
+        admitted.continuity.overlay_revision = entry.revision;
     }
     let snapshot =
         encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
@@ -798,6 +810,7 @@ where
                     };
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
+                    admitted.continuity.overlay_revision = entry.revision;
                     if write_frame(stream, &delta).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
@@ -1463,6 +1476,7 @@ mod tests {
                     next_command_id: 4,
                     server_sequence: 4,
                     spatial_revision: 2,
+                    overlay_revision: 0,
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.
@@ -1736,9 +1750,41 @@ mod tests {
                     expected_revision: 0,
                 }
             );
-            let ConnectionEnd::AdmittedThenDisconnected(_) = end else {
+            // r4122215795: the ended session's continuity records the last
+            // WORLD_OBJECT_OVERLAY revision emitted (here, the committed delta's own
+            // revision 1) — the same field a reconnect's FND-02 fence must carry next to
+            // `spatial_revision` (`resume.rs`, out of this seam's owned paths).
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
                 return Err(format!("unexpected end {end:?}").into());
             };
+            assert_eq!(ended.continuity.overlay_revision, 1);
+            Ok(())
+        })
+    }
+
+    /// r4122215795: the join snapshot alone (before any `USE_INTENT`) already sets the ended
+    /// session's continuity to the current overlay revision it was actually sent, not left at
+    /// its prior/default value.
+    #[test]
+    fn admitted_join_snapshot_alone_records_the_overlay_revision_it_sent()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let overlay = WorldObjectOverlayEntry {
+                content_generation: [0x22; 32],
+                placement: b"oteryn:cell/entry-door".to_vec(),
+                state: b"oteryn:reference.state.closed".to_vec(),
+                revision: 5,
+            };
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                overlay: Some(overlay),
+                outcome: UseOutcome::rejected(),
+            };
+            let (end, _frames) = drive_admitted(&authority, &[]).await?;
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.overlay_revision, 5);
             Ok(())
         })
     }

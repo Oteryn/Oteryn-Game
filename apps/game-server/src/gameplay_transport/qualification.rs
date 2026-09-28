@@ -1972,43 +1972,23 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
     }
-    // The Channel removes the exact actor only after the TERMINAL fact, so a fresh entry
-    // is refused until then; retry with a fresh grant for a bounded time.
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-    loop {
-        let generation = platform_generation(descriptor, &accounts[0]).await?;
-        let again = next_grant(&accounts[0], characters[0], generation);
-        let token = sign_grant(&again.borrowed(), now_seconds()?);
-        let reply = exchange(
-            address,
-            &exact,
-            &framed(&bootstrap(1, 1, &characters[0], &token)),
-        )
-        .await?;
-        if accepted_session(&reply).is_some() {
-            break;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("released character was not admitted again: {reply:?}").into());
-        }
-        tokio::time::sleep(Duration::from_millis(500)).await;
-    }
-    if committed_admissions(url).await? != 3 {
-        return Err("readmission after release did not commit exactly one GameSession".into());
-    }
-    evidence(
-        "grace_expiry closed=terminal silent=terminal readmitted_after_release=1 admissions=3",
-    );
+    evidence("grace_expiry closed=terminal silent=terminal admissions=2");
 
     evidence("stage=use_wire");
-    // USE-WIRE-V1 (#162 5868482467, M2b): the released character[1] is admitted fresh (a 4th
-    // durable admission — the receipt count never decreases, see `committed_admissions`), then
-    // drives the full door interaction in one batch (see `use_wire_frames` for the exact
-    // expected disposition of each command). The connection ends the same way the "admission"
-    // stage's own `session` does (a command replay closes it): the resulting durable GameSession
-    // becomes RECONNECTABLE and is then released after its own grace, exactly like `session`/
-    // `concurrent[0]` above, so this stage leaves the Channel runtime with no extra committed
-    // player before `seam_flow`'s final invariant check.
+    // USE-WIRE-V1 (#162 5868482467, M2b): the released character[1] (now TERMINAL, above) is
+    // admitted fresh (a 3rd durable admission — the receipt count never decreases, see
+    // `committed_admissions`), then drives the full door interaction in one batch (see
+    // `use_wire_frames` for the exact expected disposition of each command). The connection ends
+    // the same way the "admission" stage's own `session` does (a command replay closes it): the
+    // resulting durable GameSession becomes RECONNECTABLE and is then released after its own
+    // grace, exactly like `session`/`concurrent[0]` above. This whole stage — admission through
+    // full release — runs *before* character[0]'s own final re-admission below, and not
+    // concurrently with it: character[0]'s plain-disconnect connection (below) survives only
+    // because `seam_clients` returns, and `shutdown` cancels the listener, before its own missed-
+    // liveness control-loss timer fires; letting this stage's ~160s release wait run afterward
+    // (delaying that return) would give that timer time to fire too and terminally release
+    // character[0] as well, breaking `seam_flow`'s final invariant (exactly the P1 this ordering
+    // fixes: r4122215795's companion CI finding).
     let use_session = {
         use crate::gameplay_transport::world_object::{
             COMMAND_TYPE_USE_INTENT, WorldObjectTarget, encode_use_intent,
@@ -2065,16 +2045,17 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
     };
-    if committed_admissions(url).await? != 4 {
+    if committed_admissions(url).await? != 3 {
         return Err("use-wire admission did not commit exactly one GameSession".into());
     }
     evidence(
-        "use_wire door_open=committed step_through=moved use_in_doorway=occupied step_out=moved door_close=committed step_blocked=blocked stale_revision=stale_state unknown_placement=nothing_to_use replayed_command_id=expired admissions=4",
+        "use_wire door_open=committed step_through=moved use_in_doorway=occupied step_out=moved door_close=committed step_blocked=blocked stale_revision=stale_state unknown_placement=nothing_to_use replayed_command_id=expired admissions=3",
     );
 
     // Release the use-wire actor the same way the "closed" transport above is released:
     // control loss (RECONNECTABLE, epoch 1) after the missed-liveness window, then terminal
-    // release after its own grace. No resume is attempted for it.
+    // release after its own grace. No resume is attempted for it. This completes in full, here,
+    // before character[0]'s own final re-admission below is even attempted.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     loop {
         if let Some((1, epoch, grace)) = session_loss_row(url, use_session).await? {
@@ -2095,7 +2076,39 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         }
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
-    evidence("use_wire released=terminal admissions=4");
+    evidence("use_wire released=terminal admissions=3");
+
+    // character[0]'s own final re-admission (#822): the Channel removes the exact actor only
+    // after the TERMINAL fact (already proven above), so a fresh entry is refused until then;
+    // retry with a fresh grant for a bounded time. This is deliberately the *last* action before
+    // this function returns: the connection below is a plain disconnect (never a command-gap
+    // close), so its own control-loss timer is racing the `shutdown` this function's caller
+    // fires immediately once every client case is done, and it must win that race — exactly as
+    // it did before this stage existed — to remain the one committed actor `seam_flow`'s final
+    // invariant expects.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        let generation = platform_generation(descriptor, &accounts[0]).await?;
+        let again = next_grant(&accounts[0], characters[0], generation);
+        let token = sign_grant(&again.borrowed(), now_seconds()?);
+        let reply = exchange(
+            address,
+            &exact,
+            &framed(&bootstrap(1, 1, &characters[0], &token)),
+        )
+        .await?;
+        if accepted_session(&reply).is_some() {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("released character was not admitted again: {reply:?}").into());
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    if committed_admissions(url).await? != 4 {
+        return Err("readmission after release did not commit exactly one GameSession".into());
+    }
+    evidence("grace_expiry readmitted_after_release=1 admissions=4");
     Ok(())
 }
 

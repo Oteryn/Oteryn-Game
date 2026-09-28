@@ -12,12 +12,12 @@ base_branch: main
 branch: claude/use-wire-m2b
 pr: 1104
 base_sha: 69284a571a3b58249546e17f992dff59883be42f
-head_sha: 55009bd0be44966fd20b8bde8d3fd9615f7b7875
+head_sha: d220ec3789e257b12d7a33b69733cac22a9fecad
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: impl server seam" (Claude Code)
 created_at: 2026-09-28T11:30:00Z
-updated_at: 2026-09-28T13:05:00Z
+updated_at: 2026-09-28T13:30:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/gameplay_transport/connection.rs
@@ -29,7 +29,7 @@ owned_paths:
   - apps/game-server/src/content/project/native_entry.rs
   - apps/game-server/src/node/serve.rs
   - docs/agents/tasks/active/OTV2-20260928-use-wire-m2b.md
-  - apps/game-server/src/foundation/runtime_actor_carrier.rs  # shared-lease (P1 r4121956127)
+  - apps/game-server/src/foundation/runtime_actor_carrier.rs  # shared-lease, committed_player_positions only (r4121956127)
 public_contracts: []
 depends_on:
   - OTV2-20260928-use-wire-m1 (#1066, merged)
@@ -45,95 +45,98 @@ external_repositories: []
 
 ## Outcome
 
-M2b of USE-WIRE-V1 (#162 5868482467): Server Seam composes the door end to end. `world_runtime.rs`
-adds `ScopeContentGenerationFence::for_activation`, `bind_native_entry_door`, and the
-selection-kernel/`attempt_use` pair. `native_entry.rs`/`activation.rs` put the door cell in active
-movement and carry its qualified content through to activation, pinning `client_projection ==
-ClientSafe` (r4121206658). `node/serve.rs` binds the door runtime at activation.
-`gameplay_transport/mod.rs`'s `ComposedFreshAdmission.door` (locked after `runtime`, fixed order)
-makes `step` respect the door's blocking cells and `use_object` implement USE-WIRE-V1 (placement
-match, reach, occupancy, dispatch). `connection.rs` dispatches `USE_INTENT` under the same FND-02
-CommandId gate as STEP and carries `WORLD_OBJECT_OVERLAY` in the join/resync snapshot and on a
-committed use. `qualification.rs` adds full E2E USE-WIRE-V1 scenario coverage.
+M2b of USE-WIRE-V1 (#162 5868482467): Server Seam composes the door end to end (fence, door
+runtime binding, movement blocking, USE_INTENT dispatch, overlay in the join/resync snapshot and
+committed-use deltas, full E2E scenario coverage). See PR #1104's diff for the implementation; this
+record's Repair sections track the review/CI rounds since the first freeze.
 
-## Repair round (return to AUTHORING; frozen head `e6f753f` thawed)
+## Repair round 1 (`e6f753f` -> `d220ec3`)
 
-Three findings addressed on the same push, all from PR #1104 review/CI:
+1. P1 r4121956127 (Codex): `use_object`'s occupancy set held only the issuing actor's own cell.
+   Fixed with `ChannelRuntimeV1::committed_player_positions()` — a shared-lease, production,
+   non-test read added to the excluded `foundation/runtime_actor_carrier.rs` (no existing
+   production enumeration existed anywhere in the crate; verified exhaustively before touching
+   it). Reuses the existing per-slot position store, read under the same runtime lock/work item
+   as `attempt_use` (TOCTOU-free), no parallel registry. New test
+   `use_object_occupancy_includes_every_committed_actor_not_only_the_issuer`.
+2. Codex summary 5869579920: `attempt_use` now checks `expected_revision` before selecting a
+   transition, always (a stale caller never gets NOTHING_TO_USE/REJECTED/OCCUPIED computed from
+   newer state). New tests `stale_revision_wins_over_an_ambiguous_current_state` /
+   `..._a_terminal_current_state`.
+3. CI final-invariant break on `e6f753f`: the use-wire stage's 4th admission was never released.
+   Fixed by releasing it (control loss -> grace expiry -> terminal) and updating the expected
+   admissions count.
 
-1. **P1, r4121956127 (Codex)**: `use_object`'s occupancy set held only the issuing actor's own
-   cell, so actor B (adjacent) could close the door on actor A (standing in the doorway) instead
-   of getting OCCUPIED. Fixed: `ChannelRuntimeV1::committed_player_positions()` (new, production,
-   non-test — a shared-lease addition to the excluded `foundation/runtime_actor_carrier.rs`,
-   analogous to the M1 `world_spatial.rs` extension) reuses the existing per-slot position store
-   `read()` already reads from, returning every committed actor's position under the pinned
-   Movement context in one pass — including one retained during disconnect grace (only its
-   `control_loss` mark changes, never `committed`/`position`). No parallel registry: it is a read
-   over the existing `slots` store, mirroring the file's own existing test-only census methods.
-   `use_object` now builds its occupied-cells set from this, under the same `runtime` lock and the
-   same work item as `attempt_use`, so it is TOCTOU-free. New test
-   `use_object_occupancy_includes_every_committed_actor_not_only_the_issuer`
-   (`gameplay_transport/mod.rs`): two real actors in one real `ChannelRuntimeV1`, actor A in the
-   door cell, actor B adjacent; B's close attempt reports OCCUPIED with no transition/revision
-   change. E2E: not extended for a second admitted session — infeasible without materially
-   restructuring the already-long WP5 seam scenario's account/character pairing (only two
-   Platform accounts are provisioned); the integration-level unit test above exercises the real
-   `ChannelRuntimeV1`/`LocalObjectRuntime` production code instead.
-2. **Codex summary 5869579920 (ordering)**: `attempt_use` selected a transition before checking
-   `expected_revision`, so a stale caller against an ambiguous or terminal current state got
-   NOTHING_TO_USE/REJECTED instead of STALE_STATE. Fixed: `expected_revision` is now checked first,
-   always. New tests `stale_revision_wins_over_an_ambiguous_current_state` and
-   `stale_revision_wins_over_a_terminal_current_state` (`world_runtime.rs`).
-3. **CI, "Server Seam over TCP+TLS" on `e6f753f`**: every USE_WIRE `SEAM_EVIDENCE` assertion
-   passed, but the stage's fresh 4th admission (character[1], re-admitted after its own earlier
-   release) was never released, breaking `seam_flow`'s final invariant (`committed_players == 1`,
-   `committed_admissions == 3`). `committed_admissions` is a durable receipt count that never
-   decreases, so the 4th admission permanently changes it; fixed by releasing the use-wire actor
-   (control loss -> grace expiry -> TERMINAL, mirroring the existing `session`/`concurrent[0]`
-   pattern exactly) and updating the final check's expected admissions from 3 to 4.
+## Repair round 2 (`d220ec3` -> this push)
 
-Replied once on the r4121956127 thread covering all three before this push.
+1. **P1 r4122215795 (Codex, reconnect fence)**: the FND-02 reconnect fence only covered domain 1
+   (`STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY`). Fixed within owned paths: `SessionContinuity` gains
+   `overlay_revision: u64` (`connection.rs`), written from the live `WorldObjectOverlayEntry.revision`
+   whenever the join/resync snapshot or a committed-use delta actually sends the overlay (Channel-
+   global, unlike `spatial_revision`, so it is written, never just trusted to already match).
+   **`resume_lost`'s fence construction (`gameplay_transport/resume.rs:237-248`, specifically the
+   `vec![StateDomainRevisionV1::new(STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+   lost.continuity.spatial_revision), ...]` literal) is outside every owned/leased path — reporting
+   `SHARED_LEASE_REQUIRED` for that exact file/lines rather than editing it.** New tests (within
+   owned paths): `admitted_use_commits_and_the_join_snapshot_carries_the_door_overlay` now also
+   asserts `ended.continuity.overlay_revision == 1`; new
+   `admitted_join_snapshot_alone_records_the_overlay_revision_it_sent` proves the join path alone
+   sets it from what was actually sent. E2E: not extended — the fence's domain-2 entry cannot be
+   exercised without the resume.rs change above.
+2. **CI companion finding (same coordinator round)**: after round 1's release fix, CI showed
+   `committed=0` (expected `1`) — round 1's own ~160s release-wait, run *before* character[0]'s
+   final plain-disconnect re-admission, delayed that re-admission's connection close long enough
+   for *its own* missed-liveness control-loss timer to also fire and complete during the same
+   window (previously it never had time to before `shutdown` cut it short). Fixed by reordering:
+   the use-wire stage (admission through full release) now runs entirely *before*
+   character[0]'s final re-admission, which stays the literal last action so its own loss-timer
+   race against `shutdown` is unaffected — restoring the exact pre-M2b timing. Per-stage
+   `committed_admissions` checks renumbered (use-wire's own admission is now the 3rd, character[0]'s
+   final one the 4th); the outer `seam_flow` final invariant's asserted values are unchanged
+   (`committed_players == 1`, `pending == 0`, `committed_admissions == 4`).
+
+Replied once on the r4122215795 thread covering both findings.
 
 ## Architecture and source of truth
 
 - `PROVEN`: #162 5868482467 is this task's exact allocation.
-- `PROVEN`: no production, non-test enumeration of actor positions existed anywhere in the crate
-  before this repair (checked `foundation/runtime_actor_carrier.rs` exhaustively); the new
-  `committed_player_positions()` is the minimal addition that made one available without a
-  parallel registry.
-- `DERIVED`: `accepted::CELLS`/`accepted::DOOR_CELL` are all within Chebyshev distance 1 of each
-  other, so no in-room movement can produce a real TOO_FAR case (checked by inspection).
+- `PROVEN`: `resume.rs` is excluded/unleased; `resume_lost`'s `Fnd02ReconciliationFenceV1`
+  construction at lines 237-248 is the exact site a domain-2 entry belongs next to the existing
+  domain-1 one.
+- `DERIVED`: the qualification E2E's character[0] final re-admission relies on a timing race
+  against `shutdown`; any stage that delays the overall scenario's completion risks flipping that
+  race, as round 2 finding 2 showed.
 
 ## High-risk authority/recovery qualification
 
 ```yaml
 applicable: NOT_APPLICABLE
 reason: >
-  No new session/lease/generation/authority-consuming mutation boundary. The new foundation read
-  (committed_player_positions) is read-only census over existing slot state, gated by the same
-  runtime lock every other read already requires; it grants no new authority and mutates nothing.
-  The door runtime remains scope-ephemeral in-memory state bound once at activation. USE_INTENT
-  reuses the existing FND-02 CommandId gate and existing GameSession/actor authentication.
+  No new session/lease/generation/authority-consuming mutation boundary in any repair round.
+  committed_player_positions and overlay_revision are both read/record-only additions over
+  existing state, gated by the same locks/paths every other read or continuity field already is.
 ```
 
 ## Acceptance criteria
 
-- [x] Fence/door-binding/selection-kernel/movement-blocking/USE-semantics criteria from the
-      original allocation (see PR #1104 diff and prior revision of this record).
-- [x] P1 r4121956127 (occupancy) fixed and unit-tested.
-- [x] Stale-revision-before-selection ordering fixed and unit-tested (ambiguous + terminal state).
-- [x] CI final-invariant break fixed (use-wire actor released; expected admissions updated).
+- [x] Original M2b acceptance criteria (see PR #1104 diff / repair round 1 entry above).
+- [x] P1 r4121956127 (occupancy) and its regression test.
+- [x] Stale-revision-before-selection ordering and its regression tests.
+- [x] CI admissions-count invariant (round 1).
+- [x] `SessionContinuity.overlay_revision` tracked from both snapshot and delta; regression tests.
+- [x] CI committed-actor-count invariant restored by stage reordering (round 2).
+- [ ] Reconnect fence's domain-2 entry in `resume_lost` — `SHARED_LEASE_REQUIRED`,
+      `gameplay_transport/resume.rs:237-248`, not made by this task.
 - [x] Full required-validation suite green on the repaired head.
 
 ## Deviations from the literal allocation text
 
-- **TOO_FAR** is not exercised through real E2E movement (every accepted room cell is within
-  Chebyshev 1 of the door); covered by a direct unit test of the extracted pure reach function.
-- **Replayed-CommandId** demonstrates "expires and closes" (STEP's own existing, tested pattern),
-  not a same-result replay of prior response bytes (the separate durable `CommandIngress` lifecycle
-  `step` itself does not use either).
-- **Second-admitted-session E2E extension** for the P1 repair: not attempted (see repair item 1);
-  covered by an integration-level unit test against the real `ChannelRuntimeV1`/`LocalObjectRuntime`
-  instead.
+- **TOO_FAR** not exercised through real E2E movement (room geometry); unit-tested instead.
+- **Replayed-CommandId** demonstrates "expires and closes" (STEP's own pattern), not a
+  same-result replay of prior bytes.
+- **Reconnect fence domain-2 entry**: `SHARED_LEASE_REQUIRED` — needs `resume.rs`, excluded.
+- **Second-admitted-session E2E** for the P1 occupancy repair: not attempted; covered by an
+  integration-level unit test against the real `ChannelRuntimeV1`/`LocalObjectRuntime` instead.
 
 ## Validation
 
@@ -142,22 +145,23 @@ reason: >
 - command/run: `cargo fmt --check -p oteryn-game-server`; `cargo clippy -p oteryn-game-server
   --all-targets -- -D warnings`; `cargo test -p oteryn-game-server`; `python3
   tools/agents/validate_governance.py`; `python3 tools/repository/validate_repository_policy.py`
-- result (post-repair): fmt PASS; clippy PASS (no warnings); full `cargo test -p oteryn-game-server`
-  PASS across every test binary (0 failed, only pre-existing topology-gated `#[ignore]`s);
-  governance PASS; repository-policy PASS.
+- result (round 2 head): fmt PASS; clippy PASS (no warnings); full `cargo test -p
+  oteryn-game-server` PASS across every test binary (0 failed, only pre-existing topology-gated
+  `#[ignore]`s); governance PASS; repository-policy PASS.
 
 ### Component/integration
 
-- `gameplay_transport::connection::tests` (dispatch loop, unchanged by this repair) PASS.
-- `gameplay_transport::tests::use_object_occupancy_includes_every_committed_actor_not_only_the_issuer`
-  (new, this repair): two-actor real-runtime OCCUPIED proof. PASS.
+- `gameplay_transport::connection::tests` (dispatch loop + the two new overlay-continuity tests)
+  PASS. `gameplay_transport::tests::use_object_occupancy_includes_every_committed_actor_not_only_the_issuer`
+  PASS.
 
 ### E2E
 
 - `qualification::server_seam_real_owners_over_tcp_tls`: requires the disposable WP5 S3-B
-  topology, `#[ignore]`d, **not runnable here**; CI runs it. The prior push's CI run confirmed
-  every USE_WIRE disposition assertion passed; this repair addresses only the final-invariant
-  admissions-count break that same run reported.
+  topology, `#[ignore]`d, **not runnable here**; CI runs it. Round 1's CI run confirmed every
+  USE_WIRE disposition assertion and (per the coordinator) the reordered stage's own
+  `admissions=3`/`released=terminal` evidence; the final-invariant fix is reasoned from the code
+  (see round 2 finding 2) since it cannot be executed locally.
 
 ### Exact-head CI
 
@@ -167,16 +171,16 @@ reason: >
 ## Self-review
 
 - exact head: pending (this repair not yet pushed at record-write time).
-- method/reviewer: implementing agent (this session), addressing Codex's P1 r4121956127, Codex's
-  ordering summary 5869579920, and the CI final-invariant break, per coordinator direction.
-- material findings: all three above, all fixed and unit-tested; no fabricated evidence, no
-  skipped validation.
-- verdict: ready to re-freeze.
+- method/reviewer: implementing agent (this session), addressing Codex's P1 r4122215795 and the
+  CI committed-actor-count finding, per coordinator direction.
+- material findings: both above; the domain-2 fence entry is explicitly out of lease and reported
+  as `SHARED_LEASE_REQUIRED` rather than worked around.
+- verdict: ready to re-freeze for the owned-path portion; the fence entry needs a separate grant.
 
 ## Independent review
 
-- required: YES — Server Seam composition, a content-admission change, and now a
-  `foundation/**` shared-lease read addition, per root governance norm.
+- required: YES — Server Seam composition, a content-admission change, and a `foundation/**`
+  shared-lease read addition, per root governance norm.
 - exact head: pending.
 - method/auditor: Codex, automated PR review (not triggered by this worker).
 - verdict: awaiting Codex's review of the repaired head.
@@ -191,12 +195,13 @@ reason: >
 ## Context checkpoint
 
 ```yaml
-last_progress: Repair round complete (P1 occupancy via foundation shared-lease, stale-revision
-  ordering, CI admissions-count invariant); fmt/clippy/full tests/both validators green; replying
-  on the r4121956127 thread and pushing.
+last_progress: Repair round 2 complete (SessionContinuity.overlay_revision tracked in owned
+  paths; resume.rs's fence entry reported SHARED_LEASE_REQUIRED; qualification.rs stage reordered
+  to restore the committed-actor-count invariant); fmt/clippy/full tests/both validators green;
+  replying on the r4122215795 thread and pushing.
 status: validating
 branch: claude/use-wire-m2b
-head_sha: 55009bd0be44966fd20b8bde8d3fd9615f7b7875
+head_sha: d220ec3789e257b12d7a33b69733cac22a9fecad
 pr: 1104
 final_head_sha: null
 final_head_frozen_at: null
@@ -204,7 +209,9 @@ ci_trigger_source: push to claude/use-wire-m2b
 ci_checks_for_current_head: 0
 runner_assignment_state: unknown
 stall_warnings: 0
-owner_action_required: null
-blocker: null
-next_action: await CI/exact-head readback and independent review on the repaired head
+owner_action_required: grant a shared-lease extension for gameplay_transport/resume.rs:237-248
+  (or make that change itself) to complete the reconnect fence's domain-2 entry
+blocker: SHARED_LEASE_REQUIRED gameplay_transport/resume.rs:237-248
+next_action: await CI/exact-head readback and independent review on the repaired head; separately,
+  resolve the resume.rs shared-lease request
 ```
