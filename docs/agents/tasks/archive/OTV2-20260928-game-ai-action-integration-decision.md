@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-game-ai-action-integration-decision
 title: "GAME-AI-01 AI Action Integration, first creature slice (D53-D57)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1110
 base_sha: 356673fed04758e92fc0dae430238c0e41078b0b
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 8704274502253dcfb536c2c9c6af7eec180e1604
+final_head_sha: 8704274502253dcfb536c2c9c6af7eec180e1604
+final_head_frozen_at: 2026-09-28T13:42Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -132,9 +132,9 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review (one Codex review, one repair generation; owner decision to merge after green CI).
+- [x] Protected Merge Queue integration (`ae252cec`).
 
 ## Excluded scope
 
@@ -146,14 +146,25 @@ finding_dispositions:
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1110 merged through the Merge Queue on 2026-09-28 as `ae252cec`.
+- Review: one Codex review of `4cd49cf` (three P1s and one P2), all repaired in the single repair
+  generation `8704274`; the owner decided to merge after green CI (#162 comment 5871110745).
+- Protected-main readback: the decision, this record and the archived #1102 record on `ae252cec`
+  are byte-identical to the frozen head `8704274`.
+- Next allocation: AI-1 (Channel owner timer lane), serialized with Combat D on `foundation/**`.
+- Archived under `OTV2-20260928-character-appearance-decision`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1110 open
-status: validating
+last_progress: protected-integrated as ae252cec; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 8704274502253dcfb536c2c9c6af7eec180e1604
 pr: 1110
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1110
+next_action: null
 ```
