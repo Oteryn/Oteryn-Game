@@ -5530,6 +5530,95 @@
         "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: stores game_item_audit_outbox.expires_at = occurred_at + 7,776,000,000 ms; no audit purge path yet)"
       ],
       "notes": "P90D, decision \u00a73.1 and OTERYN_DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_DECISION_2026-09-27.md. Registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "COMBAT01-LOOT-PLAN-ENTRIES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "Loot-table entries planned for one creature death",
+      "unit": "loot plan entries per death",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before allocating any plan storage; a source loot table over the ceiling is rejected whole, never truncated to fit.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=16: a 16-entry loot table is planned",
+        "max+1=17: a 17-entry loot table is rejected before planning"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot: rejects a loot table with more than 16 entries before planning)"
+      ],
+      "notes": "D77, decision \u00a74.1: \"16 pozycji\". Registered by OTV2-20260928-combat-d2a-loot-plan."
+    },
+    {
+      "id": "COMBAT01-LOOT-PLAN-ITEMS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "ItemInstances a creature death's loot plan may mint",
+      "unit": "ItemInstances per death",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One MINT per accepted plan entry; a stack is one ItemInstance with a quantity, never multiple instances. Checked before the plan is returned; never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=16: a plan with 16 accepted entries (16 chance draws all succeeding) is returned",
+        "max+1=17: a plan that would accept a 17th entry is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot: rejects before returning a plan with more than 16 accepted entries)"
+      ],
+      "notes": "D77, decision \u00a74.1: one MINT per plan entry, a stack is one instance with quantity. Registered by OTV2-20260928-combat-d2a-loot-plan."
+    },
+    {
+      "id": "COMBAT01-LOOT-PLAN-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "Typed-identity footprint of one creature death's loot plan (death key, loot table ref and every accepted entry's item ref and purpose key)",
+      "unit": "bytes",
+      "hard_maximum": 30720,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 30720
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Charged incrementally as each entry is accepted (header once, then one charge per accepted entry); rejected before the running total, or a single addition, would exceed the ceiling. Never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=30,720 B: the running footprint accepts an addition that lands exactly on the ceiling",
+        "max+1=30,721 B: an addition that would land one byte over the ceiling is rejected",
+        "16 maximum-content-key-width entries (512 B keys/revisions) plus header fit exactly at 30,720 B"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot / charge_plan_bytes: header once, then per accepted entry)"
+      ],
+      "notes": "D77, decision \u00a74.1/\u00a74.1.1: 16 * 1,792 B + 2,048 B = 30,720 B, the exact worst case of `durability/item_mint.rs`'s own TypedDefinitionRef/content-key encoding at DUR03-RL-07 field maxima. Registered by OTV2-20260928-combat-d2a-loot-plan."
+    },
+    {
+      "id": "COMBAT01-LOOT-RNG-DRAWS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "Deterministic RNG draws (one chance draw and one quantity draw per loot-table entry) to plan one creature death",
+      "unit": "draws per death",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any draw is made (before planning): a table needing more than 32 draws is rejected whole.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=32: a 16-entry table needs exactly 32 draws and is planned",
+        "max+1 would need 17 entries, already rejected by COMBAT01-LOOT-PLAN-ENTRIES before its 34th draw"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot: entries.len() * 2 checked against 32 before any deterministic_draw call)"
+      ],
+      "notes": "D77, decision \u00a74.1; evidence packet Q2 COMBAT01-LOOT-RNG-DRAWS = 2 * 16 entries. Not the same value as DUR03-RL-08 (retry/reconciliation work units, unrelated). Registered by OTV2-20260928-combat-d2a-loot-plan."
     }
   ]
 }
