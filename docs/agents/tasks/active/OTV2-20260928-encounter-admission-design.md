@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-encounter-admission-design
 title: Encounter admission into WorldProject/v2 (decision E1-E5) and anchor locations
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1136
 jira: KAN-16
 base_sha: 1a2d1bd0da0ce87ea7d172fdaef97a0a651bfb7a
 head_sha: null
