@@ -1113,6 +1113,33 @@ fn bootstrap_character_initializes_once_under_the_xp_fence() -> TestResult {
             ));
             assert_eq!(stored_progression(&harness.pool).await?, initialized);
 
+            // A stored row whose context no longer matches the live root is
+            // never reported as ready, even when the caller echoes it.
+            sqlx::query("ALTER TABLE game_character_progression_state DISABLE TRIGGER USER")
+                .execute(&harness.pool)
+                .await?;
+            sqlx::query(
+                "UPDATE game_character_progression_state SET profile_revision = 'profile-x'",
+            )
+            .execute(&harness.pool)
+            .await?;
+            let mut foreign_root = initialization("policy-1")?;
+            foreign_root.context.profile = "profile-x".to_owned();
+            foreign_root.policy.context.profile = "profile-x".to_owned();
+            assert!(matches!(
+                root.initialize_character_progression(&authority, node, fence(1)?, foreign_root)
+                    .await,
+                Err(CharacterProgressionError::ProgressionContextMismatch)
+            ));
+            sqlx::query(
+                "UPDATE game_character_progression_state SET profile_revision = 'profile-1'",
+            )
+            .execute(&harness.pool)
+            .await?;
+            sqlx::query("ALTER TABLE game_character_progression_state ENABLE TRIGGER USER")
+                .execute(&harness.pool)
+                .await?;
+
             // The existing XP writer now awards on the initialized state.
             let awarded = root
                 .commit_character_experience(

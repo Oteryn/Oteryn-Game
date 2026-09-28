@@ -425,7 +425,8 @@ impl DurabilityRoot {
                             &request.context,
                             &request.policy_revision,
                             &request.reward_revision,
-                        ) {
+                        ) || !state_matches_root(&row, &root)
+                        {
                             return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                         }
                         let state = decode_state(&row, fence.character_id)?;
