@@ -36,7 +36,7 @@ protected Item identity map for Item references.
 | Trade services | 289, with 10,723 offer rows (507 with a count, 66 with a sub type) |
 | Travel services | 53, with 189 ungated routes |
 | Placements admitted | 0 (§5) |
-| Dialogue records admitted | 0 in the first wave; 610 later (§7 slice 4b) |
+| Dialogue records admitted | 0 in the first wave; 617 later (§7 slice 4b) |
 
 Held back and reported in the candidates: 145 NPCs (91 unplaced in both sources, 32 single-source
 NPCs the wiki does not know, 7 outfit/movement conflicts, 6 placement conflicts the wiki cannot
