@@ -45,8 +45,9 @@ Keyword `kind` is closed: `say`, `travel`, `learn_spell`, `bless`, `kick`, `prom
 `dialogue_path`, so a service is always reached through dialogue, as in
 `NPC -> Dialogue -> Service -> Item/currency/Interaction` of the tree contract.
 
-Text is never stored in a committed bundle. Every description, message, keyword answer and voice line is
-a text reference `{sha256, length, placeholders, links}` (§6).
+Committed bundles store no text: every description, message, keyword answer and voice line is a text
+reference `{sha256, length, placeholders, links}` (§6). Admitted dialogue text (greet, farewell,
+walk-away, send-trade, `say` keyword replies and voices) is stored in full in WorldProject/v2 as reference data (D9).
 
 ## 3. Owner decisions
 
@@ -61,6 +62,7 @@ a text reference `{sha256, length, placeholders, links}` (§6).
 | D6 | TibiaWiki (Fandom) is the tie-breaker between Canary and Crystal (resolves O3 and O7): the source the wiki agrees with wins; without wiki agreement the fact stays open. The wiki never supplies a value itself. |
 | D7 | WorldProject/v2 is extended with typed travel routes and offer quantities before NPCs are admitted, as for monsters ("druga droga"); see `OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1.md`. |
 | D8 | The wiki completes held NPCs (owner request 2026-09-27). An NPC that neither source places is promoted when its TibiaWiki page has a position; that position becomes its candidate placement (`origin: wiki`, direction and spawn interval unknown). A single-source NPC whose name is a Day/Night or stage variant (` (Day)`, ` (Night)`, ` Init`, ` Vampires Lair`, ` Back`) is confirmed by its base name's page. Names match the page title, its `name` or its `actualname` (the in-game name). A name that still has no page is matched only by a single edit (insertion, deletion, substitution or adjacent transposition), only when it is at least 10 characters and exactly one wiki NPC is that close (`WIKI_SPELLING`). An unplaced NPC whose wiki page has no position (a seasonal NPC such as Santa Claus) is promoted without a placement (`WIKI_CONFIRMED`). When the two sources place an NPC differently and the wiki position matches neither, the wiki position wins (D6); without a wiki position the NPC is promoted without a placement. The server-only NPCs Canary and Loot Buyer are rejected (`OWNER_REJECTED`). |
+| D9 | Supersedes D5 (`LICENSE-ASSETS.md` after #1050; owner request 2026-09-28). Tibia Global NPC text is admitted 1:1 as reference data, with Canary/Crystal provenance. A dialogue is admitted when both sources agree, or when only one source has the NPC. Only static `say` keyword nodes become Dialogue keywords; action keywords (`travel`, `learn_spell`, `bless`, `promote`, `kick`, `rookgaard_hints`) belong to their Service or ability owners. Conditional or scripted nodes and conflicting dialogues stay held. |
 
 Decisions were taken in the owning session on 2026-09-27.
 
@@ -108,10 +110,13 @@ Crystal's `data-crystal/` datapack (32 NPCs of Crystal's own map) is out of scop
 
 ## 6. Text
 
-Dialogue, voice and description text is Tibia narrative content, reserved by `LICENSE-ASSETS.md`.
+Dialogue, voice and description text is Tibia narrative content. `LICENSE-ASSETS.md` allows it to be
+recorded as reference data for faithful reconstruction.
 Committed bundles carry text references only; `convert.py --include-text` adds text for local review and
-`validate_npc.py` rejects such bundles unless `--allow-text` is given. Promoted NPC text is authored by
-Oteryn (D5); the text references keep the structure (placeholders, links) an author needs.
+`validate_npc.py` rejects such bundles unless `--allow-text` is given. Promoted NPC text is taken 1:1
+from the sources (D9). The later dialogue admission slice stages it from bundles converted with
+`--include-text` and keeps each `say` node's conversation flags (`only_focus`, `only_unfocus`, `reset`,
+`ungreet`, `move_up`).
 
 ## 7. Import readiness and open decisions
 
@@ -153,7 +158,7 @@ evidence only; they do not override either source.
 Open decisions before promotion:
 
 - **O1 identity:** resolved by D4; placement identity is still open.
-- **O2 text:** resolved by D5 (Oteryn-authored text); the authoring work itself is open.
+- **O2 text:** resolved by D9 (Tibia Global text as reference data, superseding D5).
 - **O3 conflicts:** resolved by D6; facts the wiki cannot decide stay held (§8).
 - **O4 scripted behaviour:** owner for Lua predicates/actions/handlers (quest state, storage gates),
   i.e. Interaction/Quest vs. NPC service.
@@ -191,7 +196,7 @@ equals the wiki price, with one destination. A definition conflict holds the NPC
 outfit or movement facts. Offers follow the route rule, with the wiki's buy and sell price as
 tie-breaker; their Items resolve through the protected Item identity map (`--item-map`, the output of
 `export_reference_item_identity_map`, SHA-256 `83ba3c26…`), which resolves O5. Source `buy` becomes
-`SellToPlayer`, source `sell` becomes `BuyFromPlayer`. Description, voices, dialogue (D5), spells,
+`SellToPlayer`, source `sell` becomes `BuyFromPlayer`. Description, voices, dialogue (staged separately, D9), spells,
 blessings and promotion are not part of a candidate.
 
 Result at this revision (deterministic; snapshot SHA-256 recorded):

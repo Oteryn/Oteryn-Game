@@ -16,9 +16,18 @@ import jsonschema
 
 ROOT = Path(__file__).resolve().parent
 MANIFEST_STATUS = ('mapped', 'conflict', 'approved_omission', 'unresolved_semantics')
-# D36: children whose owner has no accepted contract stay in the definition, blocked with this reason
-BLOCKED = {'Movement': 'no accepted movement owner contract (GAME-INTERACTION-01 §19.3)',
-           'WorldObject': 'no accepted world-object state owner contract'}
+# D36: children whose owner has no accepted contract stay in the definition, blocked with this reason.
+# D37 (relocation) and D38 (world-object overlay) now name the owner (the scope runtime); what stays
+# blocked under these two reasons is narrower: a Movement child whose target is computed rather than a
+# named anchor (out of scope per proposal §3, until a DUR-04 component or anchor can name it), and a
+# WorldObject child whose source call the converter has not yet classified into a D38 operation kind.
+BLOCKED = {'Movement': 'computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)',
+           'WorldObject': 'world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)'}
+# a scheduled revert (addEvent(Position.revertItem, delay, ...)) whose delay is not itself a literal
+# fails closed: it never merges silently into the operation it would revert without a recorded
+# revert_after_ms, so it stays its own blocked WorldObject child with this distinct reason.
+BLOCKED_SCHEDULED_REVERT_DELAY = 'scheduled revert (addEvent) has a non-literal delay; revert_after_ms cannot be recorded without one'
+BLOCKED_REASONS = {'Movement': {BLOCKED['Movement']}, 'WorldObject': {BLOCKED['WorldObject'], BLOCKED_SCHEDULED_REVERT_DELAY}}
 
 
 def refs(value):
@@ -261,13 +270,17 @@ def validate_interactions(interactions_doc, manifest, quests_doc, progress_doc):
         if len(anchors) != len(set(anchors)) or len(positions) != len(set(positions)):
             errors.append(f'{key}: anchor keys and positions must be unique')
         children, conditions = rule_leaves(interaction['rules'])
-        used = {c.get('anchor') or c.get('to_anchor') for c in children} - {None}
+        used = {c.get('anchor') for c in children}
+        used |= {c['target'].get('anchor') for c in children
+                if c.get('owner') == 'Movement' and c.get('request') == 'relocate' and c['target']['kind'] == 'anchor'}
+        used -= {None}
         for anchor in sorted(used - set(anchors)):
             errors.append(f'{key}: unknown anchor {anchor}')
-        for anchor in sorted(set(anchors) - used):
-            errors.append(f'{key}: anchor {anchor} is not used')
+        # an anchor with no current consumer is not an error: anchors are transcription evidence (a
+        # source position kept for the re-run that binds it), and a child that once referenced one can
+        # be reclassified as blocked under a stricter typing rule without that evidence being deleted.
         for child in children:
-            if child['owner'] in BLOCKED and child['reason'] != BLOCKED[child['owner']]:
+            if child.get('status') == 'blocked' and child['owner'] in BLOCKED_REASONS and child['reason'] not in BLOCKED_REASONS[child['owner']]:
                 errors.append(f'{key}: {child["owner"]} child is blocked for an unknown reason')
             if child['owner'] == 'Quest' and child['request'] == 'set_progress':
                 if child['progress'] not in tracks:

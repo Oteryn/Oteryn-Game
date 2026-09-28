@@ -14,20 +14,31 @@
       "Ability": 208,
       "Achievement": 36,
       "Experience": 9,
-      "Item": 343,
+      "Item": 345,
       "Mount": 5,
       "Movement": 800,
       "Outfit": 14,
       "Presentation": 2679,
       "Quest": 947,
-      "WorldObject": 891
+      "WorldObject": 865
     },
     "blocked_children": {
-      "Movement": 800,
-      "WorldObject": 891
+      "Movement": 380,
+      "WorldObject": 117
     },
+    "relocation_children": {
+      "anchor": 217,
+      "previous_position": 203
+    },
+    "overlay_operations": {
+      "CREATE": 42,
+      "REMOVE": 174,
+      "RETAG": 39,
+      "TRANSFORM": 493
+    },
+    "overlay_operations_with_revert_after": 0,
     "quest_children_naming_a_transition": 215,
-    "unresolved_lines": 1908,
+    "unresolved_lines": 1913,
     "unresolved_conditions": 1786,
     "by_status": {
       "mapped": 268,

@@ -963,19 +963,7 @@ pub(super) fn validate_behavior(
     schedules(&behavior.attacks, require_ref, limits)?;
     schedules(&behavior.defenses, require_ref, limits)?;
     if let Some(voices) = &behavior.voices {
-        positive(voices.interval_ms, "v2 voice interval must be positive")?;
-        ppm(voices.chance_ppm, "v2 voice chance exceeds 100%")?;
-        limits.check(
-            "v2 voices",
-            voices.entries.len(),
-            limits.max_reference_records,
-        )?;
-        if voices.entries.is_empty() {
-            return Err(ProjectError::InvalidProject("v2 voices require an entry"));
-        }
-        for voice in &voices.entries {
-            validate_v2_source_text("v2 voice text", &voice.text, limits)?;
-        }
+        validate_v2_voices(voices, limits)?;
     }
     if let Some(summons) = &behavior.summons {
         if summons.max_summons == 0 || summons.entries.is_empty() {
@@ -1522,6 +1510,27 @@ pub(super) fn validate_loot(loot: &ProjectV2LootAuthoring) -> Result<(), Project
 }
 
 // ---------------------------------------------------------------------------------------------
+/// Shared by creature Behavior and NPC Dialogue voices.
+pub(super) fn validate_v2_voices(
+    voices: &ProjectV2Voices,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    positive(voices.interval_ms, "v2 voice interval must be positive")?;
+    ppm(voices.chance_ppm, "v2 voice chance exceeds 100%")?;
+    limits.check(
+        "v2 voices",
+        voices.entries.len(),
+        limits.max_reference_records,
+    )?;
+    if voices.entries.is_empty() {
+        return Err(ProjectError::InvalidProject("v2 voices require an entry"));
+    }
+    for voice in &voices.entries {
+        validate_v2_source_text("v2 voice text", &voice.text, limits)?;
+    }
+    Ok(())
+}
+
 // Canonical order of unordered sets; authored sequences (schedules, effects, voices, removed
 // items, loot entries) keep their order.
 

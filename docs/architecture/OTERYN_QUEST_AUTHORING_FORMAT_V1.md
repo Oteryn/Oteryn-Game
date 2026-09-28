@@ -154,8 +154,8 @@ point at these definitions.
 | `addOutfit`, `addOutfitAddon`, `addMount`, `addExperience` | Outfit, Mount and Experience children: grants requested from the owning Character domain. |
 | `kv:set`, `addCondition`, `setBossCooldown`, creature removal | Unresolved with a reason that names the missing owner, so the readiness map (§6.7) counts it as a needed feature. |
 | `sendMagicEffect`, `sendTextMessage`, `say`, `sendCancelMessage`, `addMapMark` | Presentation child, never authoritative; a message keeps its source line, never its text (LICENSE-ASSETS.md). |
-| `teleportTo` | Movement child, blocked: no movement owner contract yet (GAME-INTERACTION-01 §19.3). |
-| `transform`, `createItem`, `remove`, `revertItem`, `decay`, `setActionId` on map objects (walls, levers, flames) | WorldObject child, blocked: no world-object state owner contract yet. |
+| `teleportTo` | D37 relocation child (`request: relocate`, `scope: in_scope`) naming an anchor or the previous tile, owned by the current scope's `ChannelRuntime`/`InstanceRuntime` (`OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md` §3); a computed target that cannot yet name an anchor stays blocked (GAME-INTERACTION-01 §19.3), as does relocation to another Channel or Instance until `SCOPE_HANDOFF` has a contract. |
+| `transform`, `createItem`, `remove`, `revertItem`, `decay`, `setActionId` on map objects (walls, levers, flames) | D38 world-object overlay operation (`TRANSFORM`, `CREATE`, `REMOVE`, `RETAG`) at the same scope runtime's overlay (proposal §4), optionally carrying `revert_after_ms` for a `decay`/`revertItem`/`addEvent` revert; a call the converter cannot yet classify by kind stays blocked. |
 | Encounter scripts | Stay encounters; they emit outcomes only (D27). |
 
 Source positions become anchors (`p1`, `p2`, …) with the coordinates kept as evidence until world
@@ -380,10 +380,11 @@ joined by that key; `interaction.schema.json` and
 |---|---:|
 | Interactions | 1,221 |
 | Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 400 / 202 / 14 / 6 |
-| Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Outfit / Mount / Experience / Presentation | 947 / 208 / 343 (160, 183) / 36 / 14 / 5 / 9 / 2,679 |
-| Children blocked: Movement / WorldObject | 800 / 891 |
+| Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Outfit / Mount / Experience / Presentation / Movement / WorldObject | 947 / 208 / 345 (160, 185) / 36 / 14 / 5 / 9 / 2,679 / 800 / 865 |
+| D37 relocation children: to a named anchor / to the previous tile / blocked (a computed target) | 217 / 203 / 380 |
+| D38 overlay operations: `TRANSFORM` / `CREATE` / `REMOVE` / `RETAG` / blocked (no provable anchor or id) | 493 / 42 / 174 / 39 / 117 |
 | Quest children naming a mission transition | 215 |
-| Unresolved statements / conditions | 1,908 / 1,786 |
+| Unresolved statements / conditions | 1,913 / 1,786 |
 | Of the statements, naming a missing owner: delayed callback / key-value write / creature removal / condition / boss cooldown | 304 / 56 / 43 / 26 / 25 |
 | Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 268 / 953 / 37 |
 
@@ -404,6 +405,41 @@ battle); the 9 tracks it writes outside missions (the seal doors and two helper 
 declared as auxiliary tracks (§6.5). Its two conflicts keep
 Canary: the first seal lever's item ids (the wiki is silent) and the first seal's magic walls, which
 CrystalServer triggers elsewhere and closes late, against the wiki.
+
+The Queen of the Banshees is also the worked example for D37 and D38 (`ots_interactions.py`,
+`interaction.schema.json`). Its 20 interactions carry 19 Movement and 27 WorldObject children, and all
+46 currently stay blocked. `teleportTo`'s own target argument (split from the rest with the same
+bracket-aware splitter D38 uses) must fully match a literal `Position(x,y,z)` to name an anchor, or be
+exactly the bare `fromPosition` variable to relocate to the previous tile; an offset, a lookup, or a
+literal buried in a larger expression such as `toPosition or Position(1,2,7)` is not a fully-delimited
+match of that one argument. Its nine seal-flame anchor teleports and seven step-back-to-previous-tile
+relocations were typed under an earlier, looser rule that matched a literal position or the name
+`fromPosition` anywhere on the line; neither is recorded with enough evidence (the committed
+transcription never kept the raw argument text, only the resolved anchor position or the bare fact) to
+prove under the current rule that the argument itself, not a larger expression around it, was the
+literal, so all 19 now stay blocked rather than risk a false positive. The anchor positions themselves
+stay in `anchors[]` as retained transcription evidence for the re-run to bind, even where no current
+child references one. Its 27 WorldObject children — the seal
+levers and the magic walls the two conflicts (§6.4) are about — were never typed at all: the committed
+transcription never recorded which source call (`transform`, `createItem`, `remove`, `setActionId`,
+`decay`, `revertItem`) produced each one, only its source line. The run of `ots_interactions.py` against the pinned Canary/CrystalServer checkouts (§5) types them.
+It classifies each call by its own argument structure, parsed with a bracket-aware splitter and matched
+argument by argument (never by searching the whole statement, an identifier's name or its position in a
+list):
+- **D37:** teleportTo's own target argument.
+- **D38:**
+  - a literal `Position(x,y,z)` argument names a pre-authored anchor;
+  - a `createItem` id is literal only when its own first argument is a complete integer;
+  - a receiver may be a call chain such as `Tile(pos):getItemById(id)`;
+  - a revert attaches only when its own receiver or position provably names the one candidate
+    operation it can match unambiguously.
+
+For The Queen of the Banshees this gives:
+- **Movement:** 9 relocations to an anchor, 9 to the previous tile, 1 blocked.
+- **WorldObject:** 12 `TRANSFORM`, 6 `REMOVE`, 3 `CREATE`, 5 blocked.
+
+Across the corpus, 380 Movement and 117 WorldObject children stay blocked, because their target or
+object is computed.
 
 ### 6.4 Conflict decisions (D25)
 

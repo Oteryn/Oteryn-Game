@@ -216,6 +216,19 @@ pub enum ProjectV2Declaration {
     },
     Dialogue {
         identity: ProjectV2Identity,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        greet: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        farewell: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        walkaway: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        send_trade: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        keywords: Vec<ProjectV2DialogueKeyword>,
+        /// Ambient lines, in authored order, with the source cadence.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        voices: Option<ProjectV2Voices>,
         fields: Vec<ProjectV2CandidateField>,
     },
     Service {
@@ -371,6 +384,7 @@ impl ProjectV2Declaration {
                         .sort_by(|left, right| left.field_path.cmp(&right.field_path));
                 }
             }
+            Self::Dialogue { keywords, .. } => canonicalize_v2_dialogue_keywords(keywords),
             _ => {}
         }
     }
@@ -492,6 +506,15 @@ impl ProjectV2Declaration {
             _ => {}
         }
         references
+    }
+}
+
+/// Sibling order is authored matching precedence (the first matching sibling answers), so only
+/// each node's all-of trigger set is sorted.
+fn canonicalize_v2_dialogue_keywords(keywords: &mut [ProjectV2DialogueKeyword]) {
+    for keyword in keywords.iter_mut() {
+        keyword.triggers.sort();
+        canonicalize_v2_dialogue_keywords(&mut keyword.children);
     }
 }
 
@@ -1152,6 +1175,43 @@ pub struct ProjectV2TravelDestination {
     pub floor: i16,
 }
 
+/// A declarative NPC dialogue keyword node: the words that trigger it, the reply and the
+/// follow-up keywords. No runtime reader executes it. A dialogue message (a reply, greet,
+/// farewell, walk-away or send-trade message) is one or more parts sent in order.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2DialogueKeyword {
+    /// Lowercase slug, unique among sibling keywords.
+    pub key: String,
+    /// Literal words that must all occur in the player's message, as in the source keyword
+    /// handlers (whose Lua patterns are staged as literal words).
+    /// Empty exactly when `fallback` is set.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub triggers: Vec<String>,
+    /// Answers any words that no sibling keyword matches.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub fallback: bool,
+    pub reply: Vec<String>,
+    /// Answers only while the player is in conversation with the NPC.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub only_focus: bool,
+    /// Answers only while the player is not in conversation with the NPC.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub only_unfocus: bool,
+    /// Returns the conversation to the top-level keywords after replying.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub reset: bool,
+    /// Ends the conversation after replying.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub ungreet: bool,
+    /// Moves the conversation this many keyword levels up after replying; at most the node's
+    /// depth (1 for a top-level keyword).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub move_up: Option<u8>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub children: Vec<ProjectV2DialogueKeyword>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2Bounds {
@@ -1752,15 +1812,7 @@ fn validate_v2_travel_routes(
         ));
     }
     for route in routes {
-        let key_ok = !route.key.is_empty()
-            && route.key.len() <= 64
-            && route.key.split('_').all(|part| {
-                !part.is_empty()
-                    && part
-                        .bytes()
-                        .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
-            });
-        if !key_ok {
+        if !is_v2_lowercase_slug(&route.key) {
             return Err(ProjectError::InvalidProject(
                 "v2 Service route key is not a lowercase slug",
             ));
@@ -1775,6 +1827,146 @@ fn validate_v2_travel_routes(
                 "v2 Service route destination is out of range",
             ));
         }
+    }
+    Ok(())
+}
+
+/// Shared slug rule for `_`-joined lowercase-alphanumeric keys: Service travel route keys and
+/// Dialogue keyword keys.
+fn is_v2_lowercase_slug(key: &str) -> bool {
+    !key.is_empty()
+        && key.len() <= 64
+        && key.split('_').all(|part| {
+            !part.is_empty()
+                && part
+                    .bytes()
+                    .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
+        })
+}
+
+/// Dialogue text allows an embedded `\n` (unlike other v2 source text) but still forbids other
+/// ASCII control characters. `|PLAYERNAME|`-style placeholders and `{link}` braces are ordinary
+/// text bytes here.
+fn validate_v2_dialogue_text(
+    field: &'static str,
+    value: &str,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(field, value.len(), limits.max_string_bytes)?;
+    if value.trim() != value
+        || value.is_empty()
+        || value
+            .chars()
+            .any(|character| character.is_control() && character != '\n')
+    {
+        return Err(ProjectError::InvalidProject("invalid v2 dialogue text"));
+    }
+    Ok(())
+}
+
+const V2_DIALOGUE_MAX_DEPTH: usize = 8;
+
+fn validate_v2_dialogue_message(
+    field: &'static str,
+    parts: &[String],
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(field, parts.len(), limits.max_reference_records)?;
+    parts
+        .iter()
+        .try_for_each(|part| validate_v2_dialogue_text(field, part, limits))
+}
+
+fn validate_v2_dialogue_keywords(
+    keywords: &[ProjectV2DialogueKeyword],
+    depth: usize,
+    node_count: &mut usize,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    if !keywords.is_empty() && depth > V2_DIALOGUE_MAX_DEPTH {
+        return Err(ProjectError::InvalidProject(
+            "v2 Dialogue keyword nesting exceeds the maximum depth",
+        ));
+    }
+    limits.check(
+        "v2 Dialogue keywords",
+        keywords.len(),
+        limits.max_reference_records,
+    )?;
+    if keywords.iter().filter(|keyword| keyword.fallback).count() > 1 {
+        return Err(ProjectError::InvalidProject(
+            "v2 Dialogue keywords have more than one fallback",
+        ));
+    }
+    let mut keys = BTreeSet::new();
+    if !keywords
+        .iter()
+        .all(|keyword| keys.insert(keyword.key.as_str()))
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 Dialogue keyword keys are not unique",
+        ));
+    }
+    for keyword in keywords {
+        *node_count += 1;
+        limits.check("v2 Dialogue nodes", *node_count, limits.max_decoded_fields)?;
+        if !is_v2_lowercase_slug(&keyword.key) {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword key is not a lowercase slug",
+            ));
+        }
+        limits.check(
+            "v2 Dialogue keyword triggers",
+            keyword.triggers.len(),
+            limits.max_reference_records,
+        )?;
+        if keyword.fallback && !keyword.triggers.is_empty() {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue fallback keyword has triggers",
+            ));
+        }
+        if !keyword.fallback && keyword.triggers.is_empty() {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword triggers are empty",
+            ));
+        }
+        if keyword.triggers.windows(2).any(|pair| pair[0] >= pair[1]) {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword triggers are not sorted and unique",
+            ));
+        }
+        for trigger in &keyword.triggers {
+            let trigger_ok = !trigger.is_empty()
+                && trigger.len() <= 64
+                && trigger.trim() == trigger.as_str()
+                && !trigger.chars().any(|character| character.is_control())
+                && trigger.to_lowercase() == trigger.as_str();
+            if !trigger_ok {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Dialogue keyword trigger is not a trimmed lowercase word",
+                ));
+            }
+        }
+        if keyword.reply.is_empty() {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword reply is empty",
+            ));
+        }
+        validate_v2_dialogue_message("v2 Dialogue keyword reply", &keyword.reply, limits)?;
+        if keyword.only_focus && keyword.only_unfocus {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword is both focus-only and unfocus-only",
+            ));
+        }
+        if keyword
+            .move_up
+            .is_some_and(|levels| levels == 0 || usize::from(levels) > depth)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword move_up is out of range",
+            ));
+        }
+        validate_v2_dialogue_keywords(&keyword.children, depth + 1, node_count, limits)?;
     }
     Ok(())
 }
@@ -1923,6 +2115,25 @@ fn validate_v2_declaration(
                     require_ref(currency)?;
                 }
             }
+        }
+        ProjectV2Declaration::Dialogue {
+            greet,
+            farewell,
+            walkaway,
+            send_trade,
+            keywords,
+            voices,
+            ..
+        } => {
+            validate_v2_dialogue_message("v2 Dialogue greet", greet, limits)?;
+            validate_v2_dialogue_message("v2 Dialogue farewell", farewell, limits)?;
+            validate_v2_dialogue_message("v2 Dialogue walkaway", walkaway, limits)?;
+            validate_v2_dialogue_message("v2 Dialogue send_trade", send_trade, limits)?;
+            if let Some(voices) = voices {
+                validate_v2_voices(voices, limits)?;
+            }
+            let mut node_count = 0_usize;
+            validate_v2_dialogue_keywords(keywords, 1, &mut node_count, limits)?;
         }
         _ => {}
     }
