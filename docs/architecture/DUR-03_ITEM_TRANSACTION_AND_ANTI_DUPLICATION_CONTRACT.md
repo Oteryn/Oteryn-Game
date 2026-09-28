@@ -895,9 +895,14 @@ reconciliation and process restart must resolve the same committed death and
 output cause to the same terminal mint result. The same one-shot output cannot
 mint again after restart or after audit expiry. Event and item IDs remain owned
 by their existing authorities and are not substitutes for the semantic cause.
-This contract does not choose a new source identifier grammar, receipt schema,
-physical non-reuse mechanism, or retention duration; those remain owner and
-registry gates.
+`CREATURE-DEATH-OCCURRENCE-IDENTITY-V1` (owner decision D52,
+`reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md`)
+fixes the death key and output cause and defines the terminal result across a
+restart: a MINT committed before the death's runtime-scope ownership generation
+ended keeps that committed result, and a MINT not committed by then is
+terminally not minted. No later generation or process attempts it again, and
+the structurally non-reused key means none can. Receipt schema and retention
+duration remain owner and registry gates.
 
 **Actual native Ground context.** MINT establishes the item in the actual typed
 Ground for the same `WorldId` and `ChannelId` that own the native runtime
