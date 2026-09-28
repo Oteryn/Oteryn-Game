@@ -63,9 +63,9 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "817009225b59c4983e74920a2a2b8a97ab788e18efc5cf55a5dad228191ca45a";
+    "aa3816fe27079844182390c2ae527afbeeca0b516d083401c9575eac0d6de8ea";
 const CREATURE_STAGE_TOOL_SHA256: &str =
-    "f784abf15353a22372fa293bb96b47195e0cc7b1efbed882a4f2186818be9605";
+    "0699a70f508d60fb673c4cd25fe716e7455dd8c65d98d5259bc71dbb0bfc9ce5";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 /// D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki (`wiki_authored.py`).
 const CREATURE_WIKI_SAMPLE_SHA256: &str =
@@ -108,6 +108,8 @@ const NPC_BINDINGS: usize = 2282;
 const CREATURE_COUNT: usize = 1319;
 const CREATURE_RECORDS: usize = 18348;
 const CREATURE_PROFILES: usize = 17381;
+/// Encounter admission E1-E5: encounters admitted with the creatures they cover.
+const ENCOUNTER_COUNT: usize = 58;
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -1148,6 +1150,7 @@ struct CreaturePopulation {
     wiki_import: ImportBatch,
     wiki_source: ProjectV2Source,
     records: Vec<ProjectReferenceRecord>,
+    declarations: Vec<ProjectV2Declaration>,
     profiles: Vec<ProjectV2AuthoringProfile>,
     bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
@@ -1167,6 +1170,7 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         || counts["creatures"] != CREATURE_COUNT
         || counts["records"] != CREATURE_RECORDS
         || counts["profiles"] != CREATURE_PROFILES
+        || counts["encounters"] != ENCOUNTER_COUNT
         || packet["source"]["wiki_authored"]["revision"] != CREATURE_WIKI_REVISION
         || packet["source"]["wiki_authored"]["sample_sha256"] != CREATURE_WIKI_SAMPLE_SHA256
     {
@@ -1177,6 +1181,15 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         serde_json::from_value(packet["authoring_profiles"].clone())?;
     let bindings: Vec<ProjectV2SourceIdentityBinding> =
         serde_json::from_value(packet["source_identity_bindings"].clone())?;
+    let declarations: Vec<ProjectV2Declaration> =
+        serde_json::from_value(packet["declarations"].clone())?;
+    if declarations.len() != ENCOUNTER_COUNT
+        || declarations
+            .iter()
+            .any(|declaration| !matches!(declaration, ProjectV2Declaration::Encounter { .. }))
+    {
+        return Err("staged encounter declarations drifted".into());
+    }
     let creatures = records
         .iter()
         .filter(|record| matches!(record, ProjectReferenceRecord::Creature { .. }))
@@ -1184,30 +1197,37 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
     if records.len() != CREATURE_RECORDS
         || profiles.len() != CREATURE_PROFILES
         || creatures != CREATURE_COUNT
-        || bindings.len() != CREATURE_COUNT
+        || bindings.len() != CREATURE_COUNT + ENCOUNTER_COUNT
         || bindings
             .iter()
             .filter(|binding| binding.source_key == "oteryn:source.tibiawiki")
             .count()
             != CREATURE_WIKI_COUNT
         || bindings.iter().any(|binding| {
-            binding.target.family != ProjectV2Family::Creature
-                || !matches!(
-                    (
-                        binding.source_key.as_str(),
-                        binding.source_revision.as_str(),
-                        binding.identity_namespace.as_str()
-                    ),
-                    (
-                        "oteryn:source.canary",
-                        CANARY_REVISION,
-                        "canary/monster-file"
-                    ) | (
-                        "oteryn:source.tibiawiki",
-                        CREATURE_WIKI_REVISION,
-                        "mediawiki/page_id"
-                    )
+            !matches!(
+                (
+                    binding.target.family,
+                    binding.source_key.as_str(),
+                    binding.source_revision.as_str(),
+                    binding.identity_namespace.as_str()
+                ),
+                (
+                    ProjectV2Family::Creature,
+                    "oteryn:source.canary",
+                    CANARY_REVISION,
+                    "canary/monster-file"
+                ) | (
+                    ProjectV2Family::Encounter,
+                    "oteryn:source.canary",
+                    CANARY_REVISION,
+                    "canary/encounter"
+                ) | (
+                    ProjectV2Family::Creature,
+                    "oteryn:source.tibiawiki",
+                    CREATURE_WIKI_REVISION,
+                    "mediawiki/page_id"
                 )
+            )
         })
     {
         return Err("staged creature admission counts drifted".into());
@@ -1272,6 +1292,7 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         wiki_import,
         wiki_source,
         records,
+        declarations,
         profiles,
         bindings,
     })
@@ -1526,10 +1547,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         wiki_import: creature_wiki_import,
         wiki_source: creature_wiki_source,
         records: creature_records,
+        declarations: encounter_declarations,
         profiles: mut authoring_profiles,
         bindings: creature_bindings,
     } = populate_creatures()?;
     records.extend(creature_records);
+    declarations.extend(encounter_declarations);
     bindings.extend(creature_bindings);
     let NpcPopulation {
         import: npc_import,
@@ -1593,7 +1616,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
         promoted.promoted_items, promoted.promoted_fields
     );
     Ok(())

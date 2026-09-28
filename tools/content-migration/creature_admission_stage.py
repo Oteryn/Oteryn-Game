@@ -91,10 +91,10 @@ class Mapper:
                 raise StageError(f'Item {path} is not in the Oteryn Item registry')
             return native
         prefix = {'Creature': 'creature', 'Presentation': 'presentation', 'Behavior': 'behavior', 'Loot': 'loot',
-                  'Ability': 'ability', 'Effect': 'effect', 'Formula': 'formula'}[family]
+                  'Ability': 'ability', 'Effect': 'effect', 'Formula': 'formula', 'Encounter': 'encounter'}[family]
         dotted = path.replace('/', '.')
-        if family == 'Creature':
-            native = f'oteryn:creature.{dotted}'
+        if family in ('Creature', 'Encounter'):
+            native = f'oteryn:{prefix}.{dotted}'
         elif dotted.startswith('spell.'):
             native = f'oteryn:{prefix}.{dotted}'
         else:
@@ -281,6 +281,8 @@ class Stage:
                 details['effects'] = ordered
             if 'variants' in ability:
                 details['variants'] = [m.ref(variant) for variant in ability['variants']]
+            if 'encounter' in ability:
+                details['encounter'] = m.ref(ability['encounter'])
             if 'path_requirement' in ability:
                 details['path_requirement'] = ability['path_requirement']
             if 'chain' in ability:
@@ -502,12 +504,180 @@ def definition_refs(value: Any):
             yield from definition_refs(child)
 
 
-def encounter_covered() -> set[str]:
-    covered: set[str] = set()
-    for manifest in sorted(ENCOUNTERS.glob('*/manifest.json')):
-        for creatures in json.loads(manifest.read_text(encoding='utf-8'))['covers'].values():
-            covered.update(creatures)
-    return covered
+# Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5): the authoring format v1
+# in the typed v2 Encounter profile shape. Percentages become exact ppm; unions become tagged values.
+CONDITION_ORDER = ('poison', 'fire', 'energy', 'bleeding', 'drown', 'freezing', 'dazzled', 'cursed')
+
+
+def encounter_amount(value: Any) -> dict:
+    return {'min': value, 'max': value} if isinstance(value, int) else {'min': value['min'], 'max': value['max']}
+
+
+def encounter_health(value: Any) -> dict:
+    return {'kind': value} if isinstance(value, str) else {'kind': 'percent', 'percent': value['percent']}
+
+
+def encounter_position(value: Any) -> dict:
+    if isinstance(value, str):
+        return {'kind': value}
+    if 'anchor' in value:
+        return {'kind': 'anchor', 'anchor': value['anchor']}
+    if 'random_in' in value:
+        return {'kind': 'random_in', 'anchor': value['random_in']}
+    if 'role_position' in value:
+        position = {'kind': 'role_position', 'role': value['role_position']}
+        if value.get('otherwise') == 'death_position':
+            position['otherwise_death_position'] = True
+        return position
+    if 'offset_tiles' in value:
+        return {'kind': 'offset_tiles', 'tiles': value['offset_tiles']}
+    return {'kind': 'relative', 'x': value['relative']['x'], 'y': value['relative']['y']}
+
+
+def encounter_subject(value: dict) -> dict:
+    return {'kind': 'role', 'role': value['role']} if 'role' in value else {'kind': 'killer' if 'killer' in value else 'spawned'}
+
+
+def sorted_refs(values, m: Mapper) -> list:
+    return sorted((m.ref(value) for value in values), key=lambda r: (r['family'], r['key'], r['revision']))
+
+
+def encounter_trigger(value: dict, m: Mapper) -> dict:
+    out = {key: item for key, item in value.items() if key not in ('ability', 'item', 'percent')}
+    for field in ('ability', 'item'):
+        if field in value:
+            out[field] = m.ref(value[field])
+    if 'percent' in value:
+        out['percent_ppm'] = ppm(value['percent'])
+    return out
+
+
+def encounter_condition(value: dict, m: Mapper) -> dict:
+    kind = value['kind']
+    out = dict(value)
+    if kind in ('chance_percent', 'health_percent'):
+        out['value_ppm'] = ppm(out.pop('value'))
+    elif kind == 'has_condition':
+        out['conditions'] = sorted(value['conditions'], key=CONDITION_ORDER.index)
+    elif kind == 'in_anchor':
+        out['subject'] = encounter_subject(value['subject'])
+    elif kind == 'attacker_wears':
+        out['item'] = m.ref(value['item'])
+    return out
+
+
+def encounter_action(value: dict, m: Mapper) -> dict:
+    kind = value['kind']
+    out = dict(value)
+    if 'creature' in value:
+        out['creature'] = m.ref(value['creature'])
+    if 'item' in value:
+        out['item'] = m.ref(value['item'])
+    if 'at' in value and not (kind == 'map_item'):
+        out['at'] = encounter_position(value['at'])
+    if 'health' in value:
+        out['health'] = encounter_health(value['health'])
+    if 'subject' in value:
+        out['subject'] = encounter_subject(value['subject'])
+    if 'damage_types' in value:
+        out['damage_types'] = sorted(value['damage_types'])
+    if kind == 'spawn':
+        out['count'] = encounter_amount(value['count'])
+    elif kind == 'spawn_per_player':
+        out['by_base_vocation'] = {vocation: m.ref(ref) for vocation, ref in value['by_base_vocation'].items()}
+    elif kind == 'transform':
+        into = value['into']
+        if 'family' in into:
+            out['into'] = {'kind': 'creature', 'creature': m.ref(into)}
+        elif 'next_stage' in into:
+            out['into'] = {'kind': 'next_stage'}
+        else:
+            out['into'] = {'kind': 'random_of', 'creatures': sorted_refs(into['random_of'], m)}
+    elif kind == 'heal':
+        amount = value['amount']
+        out['amount'] = {'kind': 'full'} if amount == 'full' else {'kind': 'range', **encounter_amount(amount)}
+    elif kind == 'damage':
+        out['amount'] = encounter_amount(value['amount'])
+    elif kind == 'damage_modifier':
+        multiplier = out.pop('multiplier_percent')
+        out['multiplier'] = ({'kind': 'fixed', 'percent': multiplier} if isinstance(multiplier, int) else
+                             {'kind': 'timer_remaining', 'timer': multiplier['timer_remaining'],
+                              'floor_percent': multiplier['floor']})
+    elif kind == 'teleport':
+        who = value['who']
+        out['who'] = {'kind': 'role', 'role': who['role']} if 'role' in who else {'kind': 'players_in', 'anchor': who['players_in']}
+    elif kind == 'map_item':
+        if 'into' in value:
+            out['into'] = m.ref(value['into'])
+        if out.pop('at', None) == 'death_position':
+            out['at_death_position'] = True
+    elif kind == 'attribute' and 'value' in value:
+        attribute = value['value']
+        out['value'] = {'kind': 'fixed', 'value': attribute} if isinstance(attribute, int) else {'kind': 'counter', 'counter': attribute['counter']}
+    elif kind == 'cast' and 'ability' in value:
+        out['ability'] = m.ref(value['ability'])
+    elif kind == 'message':
+        out['players_in'] = out.pop('to')['players_in']
+    elif kind == 'one_of':
+        out['branches'] = [{'weight': branch['weight'], 'actions': [encounter_action(a, m) for a in branch['actions']]}
+                           for branch in value['branches']]
+    return out
+
+
+def encounter_location(anchor: dict) -> dict:
+    location = anchor['location']
+    if 'boxes' in location:
+        return {'kind': 'area', 'boxes': location['boxes']}
+    return {'kind': 'point', 'x': location['x'], 'y': location['y'], 'floor': location['floor']}
+
+
+def encounter_details(encounter: dict, m: Mapper) -> dict:
+    details: dict[str, Any] = {
+        'display_name': encounter['display_name'],
+        'participants': [{'role': p['role'], 'creatures': sorted_refs(p['creatures'], m)} for p in encounter['participants']],
+        'phases': encounter['phases'],
+        'anchors': [{'key': a['key'], 'description': a['description'], 'location': encounter_location(a)}
+                    for a in encounter['anchors']],
+        'state': {'counters': encounter['state']['counters'], 'flags': encounter['state']['flags'],
+                  'timers': [{'name': t['name'], 'duration_ms': encounter_amount(t['duration_ms']), 'repeat': t['repeat']}
+                             for t in encounter['state']['timers']]},
+        'rules': [], 'outcomes': encounter['outcomes']}
+    for rule in encounter['rules']:
+        staged: dict[str, Any] = {'key': rule['key'], 'trigger': encounter_trigger(rule['trigger'], m)}
+        if 'delay_ms' in rule:
+            staged['delay_ms'] = encounter_amount(rule['delay_ms'])
+        staged['conditions'] = [encounter_condition(c, m) for c in rule['conditions']]
+        staged['actions'] = [encounter_action(a, m) for a in rule['actions']]
+        details['rules'].append(staged)
+    if encounter.get('abilities'):
+        details['abilities'] = [{**ability, 'affects': {'players': ability['affects']['players'],
+                                                        'creatures': sorted_refs(ability['affects']['creatures'], m)}}
+                                for ability in encounter['abilities']]
+    if 'reset_after_ms' in encounter:
+        details['reset_after_ms'] = encounter['reset_after_ms']
+    return details
+
+
+def load_encounters(item_map: dict[int, str]) -> tuple[dict[str, dict], dict[str, str]]:
+    """Each encounter sample with the creatures it covers and references, or the reason it waits (E4)."""
+    encounters, waiting = {}, {}
+    for directory in sorted(path.parent for path in ENCOUNTERS.glob('*/encounter.json')):
+        encounter = json.loads((directory / 'encounter.json').read_text(encoding='utf-8'))
+        manifest = json.loads((directory / 'manifest.json').read_text(encoding='utf-8'))
+        text = json.dumps(encounter)
+        covers = sorted({creature for creatures in manifest['covers'].values() for creature in creatures})
+        encounters[directory.name] = {
+            'encounter': encounter, 'covers': covers,
+            'manifest_sha256': hashlib.sha256((directory / 'manifest.json').read_bytes()).hexdigest(),
+            'creatures': sorted(set(re.findall(r'"key": "(canary:creature/[^"]+)"', text))),
+            'abilities': sorted(set(re.findall(r'"key": "(canary:ability/[^"]+)"', text)))}
+        if any(entry['status'] == 'unresolved_semantics' for entry in manifest['entries']):
+            waiting[directory.name] = 'unresolved_semantics'
+        elif any('location' not in anchor for anchor in encounter['anchors']):
+            waiting[directory.name] = 'anchor_unlocated'
+        elif {int(item) for item in re.findall(r'canary:item/(\d+)', text)} - set(item_map):
+            waiting[directory.name] = 'unregistered_items'
+    return encounters, waiting
 
 
 def main() -> None:
@@ -537,10 +707,17 @@ def main() -> None:
         raise StageError('Item identity map names keys absent from content/world')
     mapper = Mapper(item_map)
     index = json.loads(INDEX.read_text(encoding='utf-8'))
-    covered = encounter_covered()
+    encounters, waiting = load_encounters(mapper.item_map)
+    if args.pilot:
+        waiting = {name: 'pilot' for name in encounters}
+    covered_by: dict[str, set[str]] = {}
+    for name, item in encounters.items():
+        for creature in item['covers']:
+            covered_by.setdefault(creature, set()).add(name)
     candidates: dict[str, tuple[dict, dict, dict, set, set]] = {}
+    spells_need: dict[str, set[str]] = {}
     deferred: dict[str, list] = {'encounter': [], 'unregistered_items': [], 'reference_loot_contract': [],
-                                 'unresolved_reference': []}
+                                 'unresolved_reference': [], 'encounters': []}
     for row in index['monsters']:
         if args.pilot and row['monster'] not in PILOT:
             continue
@@ -550,9 +727,6 @@ def main() -> None:
         monster = json.loads((directory / 'monster.json').read_text(encoding='utf-8'))
         dependencies = json.loads((directory / 'dependencies.json').read_text(encoding='utf-8'))
         key = monster['creature']['identity']['key']
-        if key in covered:
-            deferred['encounter'].append(row['monster'])
-            continue
         missing = sorted({int(item) for item in re.findall(r'canary:item/(\d+)', json.dumps([monster, dependencies]))}
                          - set(mapper.item_map))
         if missing:
@@ -566,20 +740,49 @@ def main() -> None:
         probe.stage_monster(monster, row['file'], row.get('binding'))
         produced = {(value['identity']['family'], value['identity']['key']) for value in probe.records.values()}
         referenced = set(definition_refs([probe.records, probe.profiles])) - produced
+        # D45: an encounter-backed spell needs its encounter admitted, which the closure below checks.
+        spells_need[row['monster']] = {ref for family, ref in referenced if family == 'Encounter'}
+        referenced = {ref for ref in referenced if ref[0] != 'Encounter'}
         candidates[row['monster']] = (row, monster, dependencies, produced, referenced)
 
-    # Admit only a closed set: every non-Item reference must resolve to a record of an admitted monster.
+    # Admit only a closed set (E4): every non-Item reference must resolve to a record of an admitted monster,
+    # a monster covered by encounters needs all of them, and an encounter needs every creature and Ability it names.
     admitted_set = set(candidates)
+    admitted_encounters = set(encounters) - set(waiting)
+    creature_key = {name: candidates[name][1]['creature']['identity']['key'] for name in candidates}
     while True:
         available = set().union(*(candidates[name][3] for name in admitted_set)) if admitted_set else set()
+        admitted_keys = {creature_key[name] for name in admitted_set}
         dropped = {name: sorted(candidates[name][4] - available) for name in admitted_set
                    if not candidates[name][4] <= available}
-        if not dropped:
+        admitted_native = {mapper.key('Encounter', encounters[name]['encounter']['identity']['key'])
+                           for name in admitted_encounters}
+        unbound = {name for name in admitted_set - set(dropped)
+                   if not covered_by.get(creature_key[name], set()) <= admitted_encounters
+                   or not spells_need[name] <= admitted_native}
+        closed = {name for name in admitted_encounters
+                  if not set(encounters[name]['creatures']) <= admitted_keys
+                  or any(('Ability', mapper.key('Ability', key)) not in available for key in encounters[name]['abilities'])}
+        if not dropped and not unbound and not closed:
             break
         for name, keys in dropped.items():
             admitted_set.discard(name)
             deferred['unresolved_reference'].append({'monster': name, 'references': [key for _, key in keys]})
+        admitted_set -= unbound
+        admitted_encounters -= closed
     deferred['unresolved_reference'].sort(key=lambda value: value['monster'])
+    admitted_keys = {creature_key[name] for name in admitted_set}
+    deferred['encounter'] = sorted(name for name in candidates if name not in admitted_set
+                                   and covered_by.get(creature_key[name])
+                                   and name not in {row['monster'] for row in deferred['unresolved_reference']})
+    for name in sorted(set(encounters) - admitted_encounters):
+        missing = sorted(key for key in encounters[name]['creatures'] if key not in admitted_keys)
+        row = {'encounter': name, 'reason': waiting.get(name, 'unadmitted_reference')}
+        if name not in waiting:
+            row['references'] = missing + [key for key in encounters[name]['abilities']
+                                           if ('Ability', mapper.key('Ability', key)) not in set().union(
+                                               *(candidates[n][3] for n in admitted_set))]
+        deferred['encounters'].append(row)
 
     stage = Stage(mapper)
     admitted = []
@@ -596,6 +799,30 @@ def main() -> None:
     if args.pilot and len(admitted) != len(PILOT):
         raise StageError(f'pilot admitted {len(admitted)} of {len(PILOT)}')
 
+    declarations = []
+    bound: dict[str, list] = {}
+    for name in sorted(admitted_encounters):
+        item = encounters[name]
+        encounter = item['encounter']
+        identity = mapper.identity('Encounter', encounter['identity'])
+        participants = {key for p in encounter['participants'] for key in (c['key'] for c in p['creatures'])}
+        boss = any(candidates[n][1]['creature'].get('bosstiary') or
+                   candidates[n][1]['creature']['system_eligibility']['reward_boss']
+                   for n in admitted_set if creature_key[n] in participants)
+        declarations.append({'kind': 'Encounter', 'identity': {'key': identity['key'], 'revision': REVISION}, 'fields': []})
+        stage.add(stage.profiles, 'Encounter', identity['key'], profile(identity, 'Encounter', {
+            'encounter_type': 'Boss' if boss else 'Generic',
+            'scope': {'instance_per_party': 'Instance', 'channel_shared': 'Channel'}[encounter['scope']],
+            'details': encounter_details(encounter, mapper)}), name)
+        stage.bindings.append({'source_key': 'oteryn:source.canary', 'source_revision': CANARY_REVISION,
+                               'identity_namespace': 'canary/encounter', 'external_id': name,
+                               'target': identity, 'disposition': 'EXACT'})
+        for creature in item['covers']:
+            bound.setdefault(mapper.key('Creature', creature), []).append(identity)
+    for key, identities in bound.items():
+        data = stage.profiles[('Creature', key)]['data']['profile']
+        data['encounters'] = sorted(identities, key=lambda r: r['key'])
+
     order = lambda item: (item[0][0], item[0][1])  # noqa: E731
     staged = {
         'schema': SCHEMA,
@@ -609,7 +836,10 @@ def main() -> None:
                    'deferred_encounter': len(deferred['encounter']),
                    'deferred_unregistered_items': len(deferred['unregistered_items']),
                    'deferred_reference_loot_contract': len(deferred['reference_loot_contract']),
-                   'deferred_unresolved_reference': len(deferred['unresolved_reference'])},
+                   'deferred_unresolved_reference': len(deferred['unresolved_reference']),
+                   'encounters': len(declarations), 'deferred_encounters': len(deferred['encounters'])},
+        'encounter_manifests': {name: encounters[name]['manifest_sha256'] for name in sorted(admitted_encounters)},
+        'declarations': declarations,
         'records': [value for _, value in sorted(stage.records.items(), key=order)],
         'authoring_profiles': [value for _, value in sorted(stage.profiles.items(), key=order)],
         'source_identity_bindings': sorted(stage.bindings, key=lambda b: b['external_id']),
