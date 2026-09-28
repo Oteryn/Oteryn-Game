@@ -15,6 +15,8 @@ pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub mod item_mint;
 pub mod item_mint_audit;
+pub mod item_transfer;
+pub mod item_transfer_audit;
 pub mod native_admission_source;
 pub mod recovery_evidence_composition;
 pub mod runtime_scope_assignment;
@@ -66,6 +68,24 @@ mod item_mint_linkage {
         let _ = DurabilityRoot::commit_item_mint;
         let _ = DurabilityRoot::reconcile_item_mint;
         let _ = DurabilityRoot::read_item_instance;
+    }
+}
+
+#[cfg(test)]
+mod item_transfer_linkage {
+    use super::DurabilityRoot;
+    use super::item_transfer::ItemTransferCandidate;
+
+    #[test]
+    fn item_transfer_api_is_linked() {
+        let _ = ItemTransferCandidate::transaction_id;
+        let _ = ItemTransferCandidate::event_id;
+        let _ = ItemTransferCandidate::occurred_at_unix_ms;
+        let _ = ItemTransferCandidate::work_units_used;
+        let _ = DurabilityRoot::freeze_item_transfer;
+        let _ = DurabilityRoot::commit_item_transfer;
+        let _ = DurabilityRoot::reconcile_item_transfer;
+        let _ = DurabilityRoot::read_character_backpack;
     }
 }
 
