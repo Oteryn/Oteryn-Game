@@ -9,6 +9,7 @@
 - Admission baseline: `main@57a0fc7`
 - Runtime, migration, registry and production authority: **NONE**. This decision gives the values;
   the B4 and D allocations register and implement them.
+- Contract text amended: DUR-03 §39.3 (restart clause) and VSL-COMBAT-01 (recovery property), for D52.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
 ## 1. Questions
@@ -55,24 +56,27 @@
 | Field | Bound |
 |---|---|
 | Content keys and revisions: `production_key`, `revision_ref`, map, ground content, loot, provenance content, ruleset and SIM revisions | ≤ 512 B each (`DUR04-FIRST-PROD-KEY-BYTES`, `-STRING-BYTES`) |
-| Technical: `family` (closed enum), `spatial_position`, source-occurrence refs (output, death, corpse), native room/placement context, `typed_cause` | ≤ 128 B each |
+| Technical: `family` (closed enum), `spatial_position`, corpse ref, native room/placement context, `typed_cause` | ≤ 128 B each |
+| Loot output cause (§4.2): death key (two UUIDs, u64, u32, u64), `LootTableDefinitionRef` (family ≤ 128 B, key and revision ≤ 512 B each), purpose key ≤ 512 B, draw ordinal u32 | as listed |
 | `retention_profile_input` | ≤ 128 B (`ANL01-ENVELOPE-STRING-BYTES`) |
 | UUID fields (item, world, channel, character, session, event, transaction) | 16 B |
 | `payload_sha256` | 32 B |
 | Item free text (writable text, descriptions) | excluded from the audit event |
 | Inventory `typed_position` | excluded fail-closed until its owner defines it; TRANSFER stays closed |
 
-- **Derivation.** This is the exact protobuf worst case, with every bounded field at its maximum and varints
-  at their widest:
+- **Derivation.** This is the exact protobuf worst case of the final schema: the candidate fields, with the
+  separate output and death ids and the single loot revision replaced by the full §4.2 loot output
+  cause. Every bounded field is at its maximum, and varints are at their widest:
 
 | Case | Payload | Envelope |
 |---|---|---|
-| MINT | 5,155 B | 5,389 B |
-| TRANSFER, `typed_position` excluded | 6,459 B | 6,693 B |
-| TRANSFER, `typed_position` at 128 B (future) | 6,591 B | 6,825 B |
+| MINT | 6,129 B | 6,363 B |
+| TRANSFER, `typed_position` excluded | 7,433 B | 7,667 B |
+| TRANSFER, `typed_position` at 128 B (future) | 7,565 B | 7,799 B |
 
-  The 8,192 B cap covers every case with about 1.4 KB of headroom, so opening TRANSFER does not
-  force re-registration.
+  The 8,192 B envelope and 7,936 B payload caps cover every case; about 390 B of headroom remains.
+  Opening TRANSFER with a `typed_position` of up to 128 B needs no re-registration. Anything larger
+  needs a new decision.
 - Failure: `CAPACITY_EXCEEDED` or `INVALID_INPUT`, checked before allocation, never truncated,
   not visible to the client.
 
@@ -130,8 +134,10 @@
 - When the generation ends (restart, crash, scope move), uncommitted descendants are dropped. No
   later generation retries them, and none can produce the same key.
 - Retry and reconciliation inside the generation resolve to the same result. After the generation
-  ends, whatever committed stays committed, and nothing else happens. This satisfies DUR-03
-  :885-894 and VSL :135 without a durable death row.
+  ends, whatever committed stays committed; an uncommitted descendant is terminally not minted or
+  not awarded. This PR writes that terminal rule into DUR-03 §39.3 (the restart clause) and
+  VSL-COMBAT-01 (the recovery property), so stage D does not receive conflicting recovery rules.
+  No durable death row is needed.
 - The owner lane never waits on the database (VSL :151, :518). Descendants run off the lane.
 - A despawn or scope retirement creates no death key (VSL :138).
 
@@ -171,7 +177,7 @@ implementation_may_resume: true   # B4 and D may be allocated now on this owner 
 required_fresh_allocation: true
 required_independent_review: "exact-head independent review (DUR/ANL resource values, death identity)"
 required_revalidation:
-  - "B4: max and max+1 per row; the worst-case MINT audit event (5,389 B envelope) is accepted; a 513 B content key or a 129 B technical field is rejected, not truncated"
+  - "B4: max and max+1 per row; the worst-case MINT audit event of the final schema (6,363 B envelope) is accepted; a 513 B content key or a 129 B technical field is rejected, not truncated"
   - "C: re-decide RL-08 from real PostgreSQL reconciliation; prove max/max+1 across restart"
   - "D: a replayed lethal effect makes no second death; a retry in the same generation returns the same MINT and XP result; after a generation change a pending descendant is refused and nothing is minted or awarded; the same key with a different binding conflicts; a stale actor handle cannot kill a recycled actor; a despawn creates no death key"
 remaining_unknowns:

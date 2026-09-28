@@ -21,9 +21,13 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md
   - docs/agents/tasks/active/OTV2-20260928-dur03-maxima-death-identity-decision.md
+  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md   # §39.3 restart clause (Codex P1 on 5c0f994)
+  - docs/architecture/VSL-COMBAT-01_MINIMAL_COMBAT_DEATH_LOOT_CONTRACT_CANDIDATE.md   # recovery property (same)
   - docs/agents/tasks/active/OTV2-20260928-character-composition-closeout.md   # archive move after #1072
   - docs/agents/tasks/archive/OTV2-20260928-character-composition-closeout.md
-public_contracts: []
+public_contracts:
+  - DUR-03
+  - VSL-COMBAT-01
 depends_on: []
 blocks: []
 cross_repository_coordination_id: null
@@ -40,7 +44,8 @@ This task records the durable text for the owner decisions D50-D52, posted on #1
   occurrence, and the live-generation rule. Uncommitted descendants are dropped on a generation
   change and never duplicated.
 
-No registry row, migration or code changes here. B4 (#513) registers the values, and stage D
+No registry row, migration or code changes here. DUR-03 §39.3 and VSL-COMBAT-01 gain the D52
+terminal rule for restart. B4 (#513) registers the values, and stage D
 implements A4.
 
 ## Architecture and source of truth
@@ -50,8 +55,8 @@ implements A4.
   (fixed retry loop); VSL-COMBAT-01 :120-151 and :505; DUR-03 :885-897; `runtime_actor_carrier.rs`
   :132-138, :373-382 and :1310-1317; `0003_runtime_scope_assignment.sql` :398-403;
   `character_progression.rs` :31-39; DUR-01 :109 and :361.
-- `DERIVED`: the worst-case protobuf arithmetic (§3.2 of the decision): MINT envelope 5,389 B,
-  TRANSFER 6,693 B, and 6,825 B once `typed_position` is defined.
+- `DERIVED`: the worst-case protobuf arithmetic for the final schema (§3.2 of the decision): MINT
+  envelope 6,363 B, TRANSFER 7,667 B, and 7,799 B once `typed_position` is defined.
 - `UNKNOWN`: stage C PostgreSQL isolation and deadlock behaviour; loot tables; XP values.
 
 ## High-risk authority/recovery qualification
@@ -110,9 +115,12 @@ finding_family_sweep:
     - apps/game-server/src/foundation/runtime_actor_carrier.rs
     - apps/game-server/src/durability/character_progression.rs
 finding_dispositions:
-  p0_p1_accepted_and_repaired: []
+  p0_p1_accepted_and_repaired:
+    - "Codex 4120451420 on 5c0f994 (crash-loss rule conflicted with the DUR-03 restart clause): DUR-03 §39.3 and VSL-COMBAT-01 amended"
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred:
+    - "Codex 4120451429 on 5c0f994 (maxima measured on the candidate shape, not the full loot cause): recomputed; still within the accepted caps"
+
 ```
 
 ## Acceptance criteria
