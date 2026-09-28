@@ -239,9 +239,10 @@ earlier draft of this section discarded a due timer on an overlay-revision misma
 `prepare`, which meant the `DISPOSITION_STALE_STATE` outcome the test obligations promised for that
 same case could never actually occur — two paths claiming to handle one case. Fixed by making it one
 path: pre-`prepare` discard is now reserved for fences that invalidate the timer itself
-(`scope_generation`/`content_generation` changing), and every due revert reaches `prepare` with its
-stored inverse key and expected revision, so a changed anchor is rejected there, by the same
-mechanism any other command already uses.
+(`scope_generation`/`content_generation` changing at the time of round 6; round 9 below adds a third,
+`incarnation`), and a due revert whose target identity still matches reaches `prepare` with its
+stored inverse key and expected revision, so a same-incarnation changed anchor is rejected there, by
+the same mechanism any other command already uses.
 
 Round 7 correction (owner-authorized): if both a transition and its bound inverse each carry
 `revert_after_ms` (a mutually timed pair — e.g. a wall that decays and a re-creation that also
@@ -433,10 +434,11 @@ today.
    second ordinal. The revert's state/footprint delta reuses `prepare`'s pure transition logic;
    committing it does **not** go through `apply`/`resume_pending`/`CommandIngress`, because there is
    no live client command or session to replay (P1, evidence above). Pre-`prepare` discard is
-   reserved for fences that invalidate the timer itself — `scope_generation`/`content_generation`
-   changing — never for a changed object: a due revert always reaches `prepare` with its stored
-   inverse key and expected revision, one path, and `prepare`'s own stale-state check is what accepts
-   or rejects a changed anchor (below). The driver and the ordinal-issuer promotion are
+   reserved for fences that invalidate the timer itself — `scope_generation`, `content_generation` or
+   the target's `incarnation` changing (Round 9) — never for a changed object: a due revert whose
+   stored target identity still matches always reaches `prepare` with its stored inverse key and
+   expected revision, one path, and `prepare`'s own stale-state check is what accepts or rejects a
+   same-incarnation changed anchor (below). The driver and the ordinal-issuer promotion are
    still one real new mechanism each, but the unit it stores, the tie-break it uses and the
    ordinal/cancellation contract it follows are not invented: they are the authored `revert_after_ms`
    field, the already-implemented `Deadline` primitive, and the already-accepted FND-03 §7/§10/§14

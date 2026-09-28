@@ -118,30 +118,29 @@ reason: >
 ## Implementation / findings
 
 Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Round 1: §-numbering/CW3 attribution
-fixed; §7 option 2 made honest. Round 2 (Codex, bbb3b4cd): `Deadline` option recommended. Round 3
-(Codex, 350dca59): rebound §7 to an FND-03 §10 authoritative timer; staged capacity atomicity;
-equal-deadline tie-break; one clock per scope. Round 4 (c76bf9b9): merged `origin/main` (PR #1055
-CW4, #1046 CW3), §4/§8 cite the merged state. Round 5 (cf3dd8e6): `revert_after_ms` admissible only
-on a transition with a bound inverse; staged commit stores the inverse key plus expected
-state/revision. Round 6 (f3d05f1f): inverse rule tightened to exactly one match; pre-`prepare`
-discard restricted to `scope_generation`/`content_generation` changing. Round 7 (53c46f0d, Codex
-4119354894): a mutually timed pair would ping-pong; fixed — timer-origin execution never re-arms;
-wording said "only player/command," too narrow. Round 8 (9ec951d3, Codex 4119401513): the
-encounter-originated `DepthWarzoneBossDeath` teleporter transform would have been starved by round
-7's wording; restated as an origin test (suppress only for the firing of a pending revert timer).
+fixed. Round 2 (Codex, bbb3b4cd): `Deadline` option recommended. Round 3 (Codex, 350dca59): rebound
+§7 to an FND-03 §10 authoritative timer; staged capacity atomicity; equal-deadline tie-break; one
+clock per scope. Round 4 (c76bf9b9): merged `origin/main` (PR #1055 CW4, #1046 CW3), §4/§8 cite the
+merged state. Round 5 (cf3dd8e6): `revert_after_ms` admissible only on a transition with a bound
+inverse; staged commit stores the inverse key plus expected state/revision. Round 6 (f3d05f1f):
+inverse rule tightened to exactly one match; pre-`prepare` discard restricted to
+`scope_generation`/`content_generation` changing. Round 7 (53c46f0d, Codex 4119354894): a mutually
+timed pair would ping-pong; fixed — timer-origin execution never re-arms; wording said "only
+player/command," too narrow. Round 8 (9ec951d3, Codex 4119401513): the encounter-originated
+`DepthWarzoneBossDeath` teleporter transform would have been starved by round 7's wording; restated
+as an origin test. Round 9 (ec9ffe74, Codex 4119452692): pending entry lacked the target's
+`PlacementKey`/`incarnation`/`content_generation` (`LocalObjectCommand` requires all three, `prepare`
+rejects a mismatch with `DISPOSITION_BINDING_MISMATCH`); fixed — entry retains exact target identity,
+captured at scheduling; a changed `incarnation` joins `scope_generation`/`content_generation` as a
+pre-`prepare` discard fence.
 
-Round 9 (ec9ffe74, Codex 4119452692, no new upstream commits): verified — the pending entry stored
-fences and a `Deadline` but never the target's `PlacementKey`/`incarnation`/`content_generation`;
-`LocalObjectCommand` requires all three, and `prepare`'s first check rejects a mismatch with
-`DISPOSITION_BINDING_MISMATCH` (~412-419/~978-987); overlay revision alone cannot select an object
-(a per-anchor local counter), so an old timer could hit a different anchor or a replacement
-incarnation with a coincidentally matching revision. Fixed: the entry now retains the exact
-`PlacementKey`/`incarnation`/`content_generation`, captured at scheduling; firing addresses exactly
-those stored values, never a lookup. A changed `incarnation` joins `scope_generation`/
-`content_generation` as a pre-`prepare` discard fence; a same-incarnation state/revision change
-still resolves via `DISPOSITION_STALE_STATE`. Fixed the scheduling-key list everywhere it appeared.
-Added two obligations: two anchors with an equal overlay revision fire independently; a replacement
-incarnation discards the old timer without mutating the new object.
+Round 10 (5cb1efa8, Codex 4119516262, main moved to `74bb3fd3` — merged, no relevant file changed):
+verified — Option 2's summary sentence (recommended-option text) still said only
+`scope_generation`/`content_generation` invalidate the timer and every due revert "always reaches
+`prepare`," contradicting round 9's `incarnation` discard elsewhere in §7. Fixed: added `incarnation`
+to that sentence's discard list, qualified "always reaches `prepare`" to same-incarnation objects.
+Grepped the *whole* document for every such statement — found and fixed one more in the round-6
+historical narrative; confirmed no other section mentions `prepare` in this context.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -151,13 +150,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-9; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-10; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 9, unchanged — no new upstream commits)
+  validation passed (23 files, 47 workflows)." (round 10, after merging origin/main; unchanged)
 
 ### E2E
 
@@ -202,11 +201,11 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 9 (Codex 4119452692): the pending entry stored fences and a Deadline but
-  never the target's PlacementKey/incarnation/content_generation, so overlay revision alone could not
-  address the object. Fixed: entry now retains the exact target identity, captured at scheduling;
-  firing addresses exactly those values; a changed incarnation joins scope/content-generation as a
-  pre-prepare discard fence; validators pass.
+  PR #1045 pre-freeze round 10 (Codex 4119516262): merged origin/main (74bb3fd3, unrelated). Option
+  2's summary sentence contradicted round 9's incarnation discard, still saying only scope/content
+  generation invalidate the timer and every due revert always reaches prepare. Fixed that sentence
+  plus one more instance in the round-6 narrative; grepped the whole doc, confirmed no others;
+  validators pass.
 status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
