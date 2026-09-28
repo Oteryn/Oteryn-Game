@@ -542,6 +542,13 @@
         "cooldown_ms": {
           "$ref": "#/$defs/ms"
         },
+        "harmony_role": {
+          "enum": [
+            "builder",
+            "spender"
+          ],
+          "description": "S26: the monk Harmony role (Canary monkSpellType): a builder adds Harmony, a spender consumes it; not castable until a Harmony owner exists (fails closed)."
+        },
         "groups": {
           "type": "array",
           "items": {
