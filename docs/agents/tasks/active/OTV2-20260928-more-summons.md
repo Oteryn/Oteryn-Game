@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-more-summons
 title: Remaining summon spells through encounters (owner decision D45)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1121
 jira: KAN-16
 base_sha: a1d0e4796210c38cd185790b44f8a3a6fb59d1e8
 head_sha: null
