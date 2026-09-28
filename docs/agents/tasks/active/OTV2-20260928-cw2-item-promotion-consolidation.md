@@ -11,12 +11,12 @@ branch: claude/cw2-item-promotion-consolidation
 issue: 162
 pr: 1064
 base_sha: 45b6cc73d8dbd2988ec0153cfa5ad03318367d51
-head_sha: e5e9e5fe2a0c9dbaf09079e677222e399ee2cd5b
+head_sha: 2278dd3fb6193553a34ce94fb541ff03821d8dd8
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: content world build (Claude Code worker)
 created_at: 2026-09-28T06:45:00Z
-updated_at: 2026-09-28T09:10:00Z
+updated_at: 2026-09-28T09:25:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/cw2_b1_import.rs
@@ -108,33 +108,34 @@ follow-up task, coordinator-confirmed after this PR merges.
   changed; `definitions/reference.json` 13,861,568→20,839,054 bytes (69/23→
   13,292/10,674 fields/items, +12 wiki-only).
 - **Repair round 1** (Codex P2, comment 4119508551, head `dbb1fe8b`): a docstring
-  edit had changed `lower_promotion_packet.py`'s own self-hash
-  (`compiler_sha256` hashes `Path(__file__)`); reverted to byte-identical with
-  `origin/main`, kept the unhashed README change.
+  edit had changed `lower_promotion_packet.py`'s own self-hash; reverted to
+  byte-identical with `origin/main`, kept the unhashed README change.
 - **Repair round 2** (coordinator-flagged CI, head `9bdaa729`):
   `ITEM_DEFINITION_ROUNDTRIP` — the derived tree was stale. Ran
   `world_project_v2_to_tree.py` (no args); 85 files changed:
   `content/items/**` (78) + `content.lock.json` + 6 family `index.json` files, each
   with only its `legacy_source`/`legacy_blobs` git-blob-SHA pointer moved (zero
   record/count/shard drift, verified per-file); coordinator approved committing all
-  85. Full workflow sweep of every `content/**` reader: all PASS or NOT_APPLICABLE
-  (network/infra unavailable, unrelated to changed files) except
+  85. Workflow sweep of every `content/**` reader: all PASS/NOT_APPLICABLE except
   `item-content-promotion.yml`'s hardcoded retired test names, fixed next.
 - **Repair rounds 3/3b** (coordinator-approved, heads `bed28218`/`f95244c9`):
   `item-content-promotion.yml`'s Rust test step only — updated the 2 exact test
   names to their round-1 replacements and piped each `cargo test` through
-  `tee /dev/stderr | grep '...' >/dev/null` (under the step's `pipefail`, no `-q` —
-  it can SIGPIPE `tee` mid-write) so a 0-test run fails closed. Verified each round:
-  both new names run exactly 1 test and pass; the retired name exits 1.
-- **Merge with `origin/main` (round 4, head `e5e9e5fe`):** `#1063`/`#1065`/`#1033`
-  landed; merge commit only (no rebase/force). One conflict,
-  `tools/content-schema/item-authoring/README.md` — kept main's grown sample stats
-  (14,173 rows/11,555 Items) and its note that #1048 pins an earlier, smaller
-  snapshot, plus this task's "already wired" framing; dropped only main's now-stale
-  "wiring it in is left to..." sentence (superseded here). Did **not** re-pin the
-  wired evidence file to the grown sample (deferred, see Excluded scope). No other
-  conflict; none of main's incoming changes touch `content/world/**`,
-  `content/items/**` or this task's owned Rust files (confirmed via `git status`).
+  `grep '...' >/dev/null` (no `-q`, which can SIGPIPE `tee` mid-write) under the
+  step's `pipefail` so a 0-test run fails closed; verified both new names run
+  exactly 1 test and the retired name exits 1.
+- **Merges with `origin/main`** (rounds 4/5, heads `e5e9e5fe`/`2278dd3f`): merge
+  commits only, no rebase/force. Both times the sole conflict was
+  `tools/content-schema/item-authoring/README.md` (a hot spot for the item-content
+  workstream — round 4 combined both sides' additions; round 5 took main's version
+  verbatim, `git checkout --theirs`, dropping this PR's docs-only README edit
+  entirely — `git diff origin/main -- ...README.md` empty). Neither round touched
+  `content/world/**`/`content/items/**`; round 5's `git diff 79b85ec6 origin/main
+  --stat` showed nothing under `apps/game-server/**`, so per the coordinator's rule
+  the Rust suite was skipped that round (content-tree scripts + materializer-twice
+  G4 compare still re-ran green each time, `tree_sha256` unchanged). Did **not**
+  re-pin the wired evidence file to main's grown sample (deferred, see Excluded
+  scope).
 
 ## Validation
 
@@ -144,24 +145,23 @@ follow-up task, coordinator-confirmed after this PR merges.
   auto-format pass)
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: PASS, zero
   errors/warnings
-- `cargo test` on the 4 content test files + `--lib`: PASS 3x (rounds 2, post-merge
-  round 4) — lib 661/661 (2 pre-existing ignored), 9/9, 16/16, 3/3, 3/3; counts
-  cross-checked against `grep -c '#\[test\]'` per file
+- `cargo test` on the 4 content test files + `--lib`: PASS 3x (rounds 2, 4; skipped
+  round 5, no `apps/game-server` change) — lib 661/661, 9/9, 16/16, 3/3, 3/3
 - `git grep` for the retired symbols: no remaining Rust/test consumer outside one
   historical docstring line
-- Both new `item-content-promotion.yml` exact names run 1 test each and pass; retired
-  old name fails the guard (rounds 3/3b, verified)
+- Both new `item-content-promotion.yml` names run 1 test each, pass; retired name
+  fails the guard (rounds 3/3b, verified)
 
 ### Component/integration
 
-- Materializer twice: identical `tree_sha256`, empty diff, 11 files, no symlinks (G4
-  "Materialize twice"); tracked `content/world/**` diff-identical to fresh output (G4
-  "Compare tracked package") — re-confirmed after the round-4 merge, unchanged
+- Materializer twice: identical `tree_sha256` (`a496f3519e...`), empty diff, 11
+  files, no symlinks (G4 "Materialize twice"); tracked `content/world/**`
+  diff-identical to fresh output (G4 "Compare tracked package") — re-confirmed after
+  both round-4 and round-5 merges, unchanged
 - `world_project_v2_to_tree.py` run to completion; both its test/validate scripts
-  PASS (rounds 2 and 4)
-- Full workflow sweep for every `content/**` reader (round 2) — see round 3 for the
-  `item-content-promotion.yml` fix
-- Both governance validators + `validate_repository_policy.py`: PASS, all 4 rounds;
+  PASS (rounds 2, 4, 5)
+- Full workflow sweep for every `content/**` reader (round 2), fix in round 3
+- Both governance validators + `validate_repository_policy.py`: PASS, all 5 rounds;
   no actionlint/other workflow linter present in this repo
 
 ### E2E
@@ -180,30 +180,30 @@ follow-up task, coordinator-confirmed after this PR merges.
 
 ## Self-review
 
-- exact head: current, see Context checkpoint (post-merge round 4)
+- exact head: current, see Context checkpoint (post-merge round 5)
 - method/reviewer: implementing session
 - material findings: SHARED_LEASE_REQUIRED, `populate_items` conflict,
   stale-derived-tree CI failure, stale `item-content-promotion.yml` test names, and
-  the round-4 `origin/main` merge conflict — all surfaced to/resolved with the
-  coordinator; see Implementation/findings
+  2 routine `origin/main` merge conflicts (rounds 4/5) — all surfaced to/resolved
+  with the coordinator; see Implementation/findings
 - verdict: PASS
 
 ## Independent review
 
 - required: YES; changes the single Item semantic-promotion source feeding a
   population-scale committed content package, plus one CI workflow step.
-- exact head reviewed: `dbb1fe8b` (Codex); rounds 2-4 not yet independently reviewed
+- exact head reviewed: `dbb1fe8b` (Codex); rounds 2-5 not yet independently reviewed
 - method/auditor: Codex review, PR #1064 comment 4119508551
 - material findings: P0/P1 none. P2 (accepted, repaired round 1). Rounds 2-3 were
-  coordinator-caught CI findings, repaired. Round 4 is a routine merge with
-  `origin/main`, not a finding.
-- verdict: pending re-review of the round-4 head
+  coordinator-caught CI findings, repaired. Rounds 4-5 are routine merges with
+  `origin/main`, not findings.
+- verdict: pending re-review of the round-5 head
 
 ## PR and closeout
 
 - changed-file review: complete locally (matches owned_paths, all rounds)
 - unresolved review threads: 1 (Codex P2, repaired round 1, awaiting re-review); all
-  CI-caught findings repaired, merge conflict resolved, awaiting green re-run
+  CI-caught findings repaired, both merge conflicts resolved, awaiting green re-run
 - related/superseded PRs: supersedes the old 69-field pass wired historically
 - protected auto-merge: pending (Merge Queue)
 - merge commit/result: pending
@@ -212,10 +212,10 @@ follow-up task, coordinator-confirmed after this PR merges.
 ## Context checkpoint
 
 ```yaml
-last_progress: merged origin/main (round 4, #1063/#1065/#1033) via merge commit; resolved the one README.md conflict keeping both sides; re-ran content-tree scripts, materializer-twice G4 compare (content/world unchanged), all 4 targeted cargo test files + lib (661/9/16/3/3, all PASS), and both governance validators — all green post-merge
+last_progress: merged origin/main (round 5, main at 452c3e2c, #1068/#1069) via merge commit; same README.md hot-spot conflict, this time took main's version verbatim and dropped this PR's README edit entirely (diff against origin/main empty); apps/game-server untouched past 79b85ec6 so Rust tests skipped per coordinator's rule; content-tree scripts + materializer-twice G4 compare re-ran green, content/world unchanged; both governance validators PASS
 status: validating
 branch: claude/cw2-item-promotion-consolidation
-head_sha: e5e9e5fe2a0c9dbaf09079e677222e399ee2cd5b
+head_sha: 2278dd3fb6193553a34ce94fb541ff03821d8dd8
 pr: 1064
 final_head_sha: null
 final_head_frozen_at: null
@@ -229,7 +229,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 4
+repair_cycles_for_current_gate: 5
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
