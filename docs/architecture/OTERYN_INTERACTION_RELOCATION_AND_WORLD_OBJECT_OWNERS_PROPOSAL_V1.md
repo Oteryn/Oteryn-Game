@@ -2321,6 +2321,8 @@ The template is ordinary immutable content (DUR-04). It carries no position.
   - a missing `revert_after_ms` (an untimed runtime object would live until the scope restarts);
   - `revert_destination`;
   - both `destination` and `interaction`;
+  - an `interaction` key that does not resolve to exactly one compatible interaction-domain
+    definition in the same compiled content (D5; DUR-04);
   - any other field;
   - a created item whose declared state is not `collision: Absent` (C3; see D4);
   - `at: death_position` on a trigger that is not a death or lethal-damage trigger (the existing
@@ -2335,8 +2337,9 @@ The template is ordinary immutable content (DUR-04). It carries no position.
 1. **Resolve the position.** `death_position` is the dying creature's committed position, read
    from the scope's own position owner (VSL-MOVE-01) at the death commit. A `delay_ms` rule uses
    the position captured at the death (encounter format line 200).
-2. **Check capacity.** If `WOBJ-RL-08` (D6) is already at its limit, the creation fails
-   `CAPACITY_EXCEEDED`. Nothing is minted, bound or committed.
+2. **Check capacity.** The creation fails `CAPACITY_EXCEEDED` in either of two cases (D6):
+   `WOBJ-RL-08` is already at its limit, or the scope's bound local objects (pre-authored plus
+   live runtime) already number 486 (`WOBJ-RL-03`). Nothing is minted, bound or committed.
 3. **Mint the key.** `PlacementKey = oteryn-runtime:<action id>/<n>`. `n` is a scope-owned `u64`
    creation sequence that starts at 1 and is never reset or reused within one scope generation;
    overflow fails closed as `CAPACITY_EXCEEDED`. The CW3 linker refuses the reserved namespace
@@ -2444,8 +2447,33 @@ position) stay excluded by C3, unchanged. That would be a new decision.
 - `LocalObjectStateAttributes` gains one optional field, `interaction: Option<ProductionKey>`. It
   holds the key of interaction-domain content (D29) and is set only on the present state. This is
   what `mazzinor`, `gaz_haragoth` and `cult_soul_remains` need.
-  - Lowering validates it only as a well-formed key.
-  - Resolving the key and executing it on step-in (outfit, teleport, quest storage, consumption)
+  - **Resolved before activation, fail-closed (Round 2, Codex P1 4127432502; DUR-04: an
+    unresolved reference fails compilation).** Lowering, or the CW3 link that consumes its
+    output, resolves every `interaction` key against the interaction-domain definitions of the
+    same content set being compiled. This happens before that content can activate a scope. The
+    authored key names an action-id registration: `canary:interaction/<aid>` resolves to the
+    interaction definition whose `source.target_registrations` contains `aid(<aid>)`. That is
+    the shape of the transcribed corpus
+    (`tools/content-schema/quest-authoring/samples/interactions/interactions.json`; for example
+    `canary:interaction/the_secret_library_quest/library_area/movements_mazzinor`, which carries
+    `aid(4951)`). The resolved key is what the template stores.
+  - **Compatibility.** Exactly one definition must resolve, and it must meet three conditions:
+    - its `source.edge` is `ON_ENTER`, since each covered object is used by stepping onto it;
+    - every `WorldObject` child it carries is a `REMOVE` of the triggering object itself, which
+      lowers onto this template's own untimed remove edge;
+    - it names no other world-object target.
+
+    Resolution also fails when no definition, or more than one, carries the registration, and
+    when the definition is unresolved or incompatible. Each such failure is named, and the
+    content does not compile or activate. No runtime fallback exists and no key is left
+    unresolved.
+  - **Current state.** `content/interactions/` is `READY_UNPOPULATED`, so today every
+    `interaction`-carrying template fails resolution. `mazzinor`, `gaz_haragoth` and
+    `cult_soul_remains` stay rejected until their interaction definitions are part of the
+    compiled content. The corpus has definitions for `aid(4951)` and `aid(5580)`. It has none for
+    `aid(33542)`, whose Canary handler is `movements/roshamuul/strange_vortex_tp.lua`, outside
+    the quest transcription. `azerus` (`destination`) is unaffected.
+  - Executing the resolved interaction on step-in (outfit, teleport, quest storage, consumption)
     is the interaction lane's consumer, which reads it through the existing `attributes()`
     accessor. That consumer is out of scope here, as the §9 teleport consumer is.
 - `destination` (`azerus`) is the §9 attribute, reused as is.
@@ -2469,11 +2497,26 @@ is not edited by this section.
 - **Unit and value:** objects per scope; proposed hard maximum 64, configurable 1-64.
 - **Failure:** `CAPACITY_EXCEEDED`. It is checked before the key is minted or anything is bound,
   so the creation commits nothing: no object, no record, no ordinal.
-- **Allocation impact:** a runtime entry counts against `WOBJ-RL-03` (486 overlay entries per
-  snapshot), so 64 leaves at least 422 entries for pre-authored placements. Memory per object is
-  one `LocalObjectRuntime` (bounded keys) plus one `WOBJ-RL-04` record.
-- **Boundary tests:** at 64 the create commits; at 65 it fails before bind, with the object
-  count, overlay and records unchanged; a retire frees a slot.
+- **Combined overlay check (Round 2, Codex P1 4127432516).** A runtime object is one more entry
+  in the scope's `WORLD_OBJECT_OVERLAY` snapshot, which carries one entry per bound local object
+  and is bounded by `WOBJ-RL-03` (486). Pre-authored placements alone may use all 486, so no
+  fixed share is left over for runtime objects.
+  - The creation step (D2 step 2) therefore also refuses, with `CAPACITY_EXCEEDED`, unless the
+    scope's bound local objects (pre-authored plus live runtime, the size of the `runtimes` map
+    the scope owner already holds) number fewer than 486. Materialization can therefore never
+    push a snapshot past `WOBJ-RL-03`.
+  - This is the smaller of the two options: one comparison at materialization, instead of
+    reserving 64 slots at content validation. It changes no content validation, and it leaves a
+    pre-authored-only scope's existing bound unchanged.
+- **Allocation impact:** memory per object is one `LocalObjectRuntime` (bounded keys) plus one
+  `WOBJ-RL-04` record.
+- **Boundary tests:**
+  - At 64 live runtime objects the create commits; at 65 it fails before bind, with the object
+    count, overlay and records unchanged. A retire frees a slot.
+  - **Nearly full pre-authored scope:** with 485 pre-authored objects bound, one creation commits
+    (486 in total) and the next fails `CAPACITY_EXCEEDED` before bind, although only 1 of the 64
+    runtime slots is used. With 486 pre-authored objects bound, the first creation fails. After a
+    retire, a creation commits again, and every snapshot encodes within `WOBJ-RL-03`.
 
 The value is lane policy, not a measurement. The owning lane files the `#139` packet with it. The
 same packet amends the `WOBJ-RL-04` allocation note for D3's record release.
@@ -2545,7 +2588,8 @@ Each of these belongs to its existing owner.
 OD8:
 
 - **Lowering.** Each of `mazzinor`, `gaz_haragoth`, `cult_soul_remains` (two templates, one per
-  branch) and `azerus` lowers to the template in D1:
+  branch) and `azerus` lowers to the template in D1, given compiled content that resolves its
+  `interaction` (D5):
   - an absent state with `collision: Absent`, `absent: true` and no attributes;
   - a create/remove pair with the `CREATE`/`REMOVE` families;
   - the present-state `interaction` or `destination`;
@@ -2554,6 +2598,18 @@ OD8:
   Each D1 rejection (a missing `revert_after_ms`, `revert_destination`, both attributes, an
   unknown field, a `collision: Present` item, the reserved namespace on an authored placement, an
   over-long key) fails with a named error.
+- **Interaction resolution (Round 2, Codex P1 4127432502).**
+  - With interaction-domain content that registers `aid(4951)` on an `ON_ENTER` definition whose
+    only `WorldObject` child is a `REMOVE` of the triggering object, `mazzinor` lowers, and its
+    template stores that definition's resolved key.
+  - Each of the following fails compilation with a named error, and no content activates:
+    - no definition for the aid (today's `READY_UNPOPULATED` state, and `aid(33542)` for
+      `gaz_haragoth`);
+    - two definitions for the aid;
+    - a `USE`-edge definition;
+    - a definition whose `WorldObject` child targets another object or is not a `REMOVE`;
+    - an unresolved definition.
+  - A test asserting that an `interaction` key passes on syntax alone must fail.
 - **Bind parity.** A runtime placement binds through exactly `bind`'s validations. A synthesized
   `PlacementRef` that fails any of them (foreign definition, undeclared initial state, an
   inverse-less timed edge, a key present in `content.placements`, a `Present` state) is rejected
@@ -2577,6 +2633,12 @@ OD8:
 - **Capacity (`WOBJ-RL-08`).** At the configured maximum N (tested at N=1), the next creation fails
   `CAPACITY_EXCEEDED` with no key minted, no bind, no record, no ordinal and no overlay change.
   After a retire, a creation succeeds.
+- **Nearly full pre-authored scope (`WOBJ-RL-03`, Round 2, Codex P1 4127432516).**
+  - With 485 pre-authored objects bound, one creation commits and the next fails
+    `CAPACITY_EXCEEDED` before bind, although `WOBJ-RL-08` has room.
+  - With 486 pre-authored objects bound, the first creation fails.
+  - After a retire, a creation commits again.
+  - The overlay snapshot encodes within 486 entries in every case.
 - **Failed create is unobservable.** If `apply_forward` fails (for example `WOBJ-RL-04` is full),
   the bound runtime is dropped, and no overlay entry or record exists for its key.
 - **Scope restart.** Dropping the scope drops all runtime objects, the sequence and the records.
@@ -2621,11 +2683,28 @@ OD9:
   second kill in the same instance within the window would need a second boss spawn there, so the
   difference is not reachable in normal play. Does the owner confirm that decision 3 also covers
   these `CREATE` teleporters? The recommendation is yes.
+- **Q3 (OD8, same-cell replacement; Round 2, Codex P2 4127432535).**
+  - **Case:** object A (item X) at cell P is consumed on step-in, and object B with the same
+    item id X is then created on P, all before A's timer fires.
+  - **In Canary:** A's timer removes "item X found on tile P", which is now B, so B disappears
+    early, at A's deadline instead of its own. See the lookup-by-id removals in
+    `creaturescripts_mazzinor.lua:12-17`, `minion_gaz_haragoth_vortex.lua:1-6` and
+    `creaturescripts_carlin_vortex_spawn.lua:6-11`.
+  - **In this design:** each object is removed only through its own record. A's record fences
+    (`Incarnation`), and B lives its full `revert_after_ms`.
+  - **Question:** does the owner accept this deviation? The recommendation is to accept it. The
+    early removal is an artefact of Canary removing by item id, not an authored rule, and every
+    object then gets exactly its authored lifetime. Reproducing it would mean a lookup-by-id
+    removal that reaches across objects, which is the kind of cross-object mutation this owner
+    model excludes.
 
 ### 10.8 Open items for the owning lane
 
 - The exact CW3 lowering code and linker checks for D1, 10.2 and 10.4, including the reserved
   namespace, and the representation of `RuntimePlacementTemplate`.
+- The compile-time resolution of `interaction` keys against the interaction-domain content (D5).
+  It needs that content to be part of the compiled set; until then, `interaction` templates stay
+  rejected.
 - Whether `bind` is factored to take a `PlacementRef` (D2 step 4). The validations stay identical.
 - The scope owner's creation step and retire-on-absent hook, and the `PendingRevert` release flag
   (D3), in the live Channel/Instance owner. This is not yet wired, as for §7.

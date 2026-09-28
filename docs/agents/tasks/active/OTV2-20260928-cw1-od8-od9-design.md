@@ -17,7 +17,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: content world architecture
 created_at: 2026-09-28T22:00:00Z
-updated_at: 2026-09-28T22:00:00Z
+updated_at: 2026-09-28T23:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md (new §10; §7 open decisions 8/9 status; §8 item 7 and §9 pointers; owner decision 3 in §9)
@@ -64,6 +64,14 @@ This task adds a docs-only design as §10 of
 - **Owner questions** on deviations only (§10.7): Q1 is the OD8 cap-and-skip at `WOBJ-RL-08`. Q2
   asks whether decision 3 also covers the `CREATE` teleporters, whose Canary scripts would stack a
   second teleporter.
+  Q3 (Round 2) is the same-cell replacement case: Canary's lookup-by-id timer can remove a newer
+  object early; this design removes each object only through its own record.
+- **Round 2** (Codex on `2a929c9d`, two P1s and one P2, all accepted):
+  - `interaction` keys resolve at compile time against the interaction-domain content, and fail
+    closed when unresolved or incompatible (DUR-04).
+  - A combined `WOBJ-RL-03` check (pre-authored plus live runtime < 486) applies at
+    materialization, with a boundary test for a nearly full pre-authored scope.
+  - Q3 is recorded as an owner question.
 - **Closeout** of `OTV2-20260928-cw1-teleporter-rearm`: archived as completed, merged `195ef53a`.
 
 ## Excluded scope
@@ -80,5 +88,5 @@ This task adds a docs-only design as §10 of
 
 ## Context checkpoint
 
-last_progress: §10 drafted, pointers updated, #1164 record archived; PR #1182 opened for CI and independent review
+last_progress: Round 2 repairs (Codex P1 4127432502, P1 4127432516, P2 4127432535) on PR #1182; new candidate head pending freeze
 jira: pending (no mapped Story resolved in this worker session)
