@@ -135,13 +135,12 @@ reason: >
 
 ### Exact-head CI
 
-- final head: `e7370bc783f9888e45c50089f29585f3d0090cdb`; see PR #1131 for current checks
-- trigger source: push to `claude/protocol-oteryn-c1a`; workflow/runner/classification/result:
-  pending (checks not yet observed by this worker)
+- candidate: the frozen final head of PR #1131 (a record commit cannot contain its own SHA); `e7370bc` and `07b763f` are superseded and their evidence is not reused
+- result: live exact-head checks on PR #1131 govern
 
 ## Self-review
 
-- exact head: `e7370bc783f9888e45c50089f29585f3d0090cdb`
+- exact head: the frozen final head of PR #1131
 - method/reviewer: implementing agent (this session)
 - material findings: none found; the one architectural blocker (mod.rs FoundationProtocolError
   ownership) was resolved via the shared-lease grant above before authoring the rest of the move
@@ -151,8 +150,8 @@ reason: >
 
 - required: YES - this touches a shared-lease file (`foundation/mod.rs`) and adds a new crate to
   the workspace, per root governance.
-- exact head: `e7370bc783f9888e45c50089f29585f3d0090cdb`
-- method/auditor: pending (no `@codex` trigger from this task per its instructions)
+- exact head: the frozen final head of PR #1131 (control-plane `@codex review` on that exact SHA)
+- method/auditor: Codex via coordinator trigger
 - material findings: pending
 - verdict: pending
 
@@ -165,12 +164,12 @@ names. No `@codex review` trigger, no comment on #162.
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #1131 opened on head e7370bc; awaiting checks and independent review
+last_progress: coordinator repair of workspace boundary guards; awaiting exact-head checks and review on the frozen PR #1131 head
 status: ready
 branch: claude/protocol-oteryn-c1a
 head_sha: e7370bc783f9888e45c50089f29585f3d0090cdb
 pr: 1131
-final_head_sha: e7370bc783f9888e45c50089f29585f3d0090cdb
+final_head_sha: frozen final head of PR #1131 (see live PR state)
 final_head_frozen_at: 2026-09-28T16:20:00Z
 ci_trigger_source: null
 ci_check_generation: null
