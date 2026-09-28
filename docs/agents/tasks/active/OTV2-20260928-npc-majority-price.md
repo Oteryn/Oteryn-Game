@@ -60,7 +60,7 @@ external_repositories: []
 Tibiopedia (tibiopedia.pl) becomes the third wiki for NPC offer prices, next to TibiaWiki Fandom and
 TibiaWiki BR (D13). `tibiopedia.py fetch` reads the NPC list from the site's sitemap. For each page it
 keeps only trade facts: the trade flag, and the item and price of each row. No place, profession or other
-page text is kept (D3). The facts are committed under `imports/tibiawiki/npc-tibiopedia/@DATE@/`.
+page text is kept (D3). The facts are committed under `imports/tibiawiki/npc-tibiopedia/2026-09-28/`.
 
 A wiki states a price for an offer when it lists that NPC, item and direction with one explicit price in
 every row. When D12 does not apply and two of the three wikis state the same price, that price replaces a
@@ -68,13 +68,13 @@ differing source price (`WIKI_MAJORITY_PRICE`, with the agreeing wikis recorded)
 under its registered Item name, so a source's own item name never decides it. An offer with a count or sub
 type (a fluid, charges) is not changed.
 
-- @CHANGED@ offers of @NPCS@ NPCs change: @SPLIT@. Most are the part-by-part bed prices of 15 furniture
+- 236 offers of 51 NPCs change: 234 where Fandom and Tibiopedia agree, 2 where BR and Tibiopedia agree. Most are the part-by-part bed prices of 15 furniture
   sellers (Canary/Crystal price every part at 40), lesser gems and onyx chips at the jewellers, and
   machetes.
 - Where only Tibiopedia disagrees with the source, and Fandom (and often BR) confirm the source price, the
   source price stays. Example: Christine's food prices, which Tibiopedia lists lower.
 - The BR cross-check's explicit price differences drop from 7 to 5 (Sessek's roll, Sundara's blank rune).
-- Wave A stays 1,088 NPCs, with 307 trade and 55 travel Services. Bindings go from 2,282 to @BINDINGS@,
+- Wave A stays 1,088 NPCs, with 307 trade and 55 travel Services. Bindings go from 2,282 to 2,296,
   because the wiki now decides a fact for more NPCs and their Fandom page bindings are added. The World
   project records the Tibiopedia facts as their own import `g4-npc-prices-tibiopedia-r1` (`tibiopedia.pl`,
   facts SHA-256).

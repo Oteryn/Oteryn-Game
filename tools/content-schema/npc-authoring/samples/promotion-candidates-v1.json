@@ -213316,7 +213316,7 @@
  "item_map_sha256": "83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a",
  "schema": "OTERYN_NPC_PROMOTION_CANDIDATES/v1",
  "snapshot_sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42",
- "tibiopedia_facts_sha256": "44d11b4516f114b69c49841e6b92426c1c2ca0e5c50a7b92766ed57fd7d66bcb",
+ "tibiopedia_facts_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
  "totals": {
   "arbitrated_facts": 539,
   "candidates": 1089,

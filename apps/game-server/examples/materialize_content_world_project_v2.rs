@@ -80,11 +80,11 @@ const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "a57d390ddef64f32e360cc849baf5217ec377b3606d11182476b146adb92182a";
+const NPC_STAGED_SHA256: &str = "67a50aa9bf33b26b48ed618bd11fc1f867ea66be727d44983d98618303877aee";
 const NPC_STAGE_TOOL_SHA256: &str =
     "304978541a377ee42765fd2bdd84c39ff966e0ad5c0f69412160229e0e64f089";
 const NPC_CANDIDATES_SHA256: &str =
-    "cc08b7ef28dae87248fe828e34430d0f5773d7271937958cb782079b070f2a62";
+    "5cc03b2dc4bc1004b212b286512ffa693890ba4467d0701604c36b7a14ef2a7f";
 const NPC_WIKI_SNAPSHOT_SHA256: &str =
     "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42";
 const NPC_ITEM_MAP_SHA256: &str =
@@ -96,8 +96,8 @@ const NPC_BR_FACTS_SHA256: &str =
 const NPC_BR_REVISION: &str = "tibiawiki-br-npc-0773232ddd356be2";
 /// D13: offer prices two of Fandom, TibiaWiki BR and Tibiopedia agree on also come from the committed Tibiopedia facts.
 const NPC_TIBIOPEDIA_FACTS_SHA256: &str =
-    "44d11b4516f114b69c49841e6b92426c1c2ca0e5c50a7b92766ed57fd7d66bcb";
-const NPC_TIBIOPEDIA_REVISION: &str = "tibiopedia-npc-44d11b4516f114b6";
+    "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651";
+const NPC_TIBIOPEDIA_REVISION: &str = "tibiopedia-npc-43bfc91ec7721df1";
 const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
 const NPC_COUNT: usize = 1088;
 const NPC_RECORDS: usize = 2176;
@@ -105,7 +105,7 @@ const NPC_DECLARATIONS: usize = 2151;
 const NPC_DIALOGUE_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260928-npc-dialogue-wave-a-staged.json");
 const NPC_DIALOGUE_STAGED_SHA256: &str =
-    "e4b0e162d2190fcd59e5971f9b31fd0204d3277e0ece60d7cc4760dc72b5ce04";
+    "a3f9e997d29c80379a0b912f7905e868cb438f1b7e1b2d062e6695e7c5e390ce";
 const NPC_DIALOGUES: usize = 701;
 const NPC_DIALOGUE_NODES: usize = 6313;
 const NPC_BINDINGS: usize = 2296;

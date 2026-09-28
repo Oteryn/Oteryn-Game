@@ -2,9 +2,9 @@
  "close_tiles": 10,
  "evidence": "REFERENCE_CROSSCHECK_ONLY",
  "inputs": {
-  "admission_sha256": "a57d390ddef64f32e360cc849baf5217ec377b3606d11182476b146adb92182a",
-  "candidates_sha256": "cc08b7ef28dae87248fe828e34430d0f5773d7271937958cb782079b070f2a62",
-  "dialogues_sha256": "e4b0e162d2190fcd59e5971f9b31fd0204d3277e0ece60d7cc4760dc72b5ce04",
+  "admission_sha256": "67a50aa9bf33b26b48ed618bd11fc1f867ea66be727d44983d98618303877aee",
+  "candidates_sha256": "5cc03b2dc4bc1004b212b286512ffa693890ba4467d0701604c36b7a14ef2a7f",
+  "dialogues_sha256": "a3f9e997d29c80379a0b912f7905e868cb438f1b7e1b2d062e6695e7c5e390ce",
   "facts_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
