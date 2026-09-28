@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-cw2-item-promotion-repin
 title: Re-pin the #1048 Item semantic-promotion lowering v1 packet to the grown sample
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/cw2-item-promotion-repin
 issue: 162
-pr: null
-base_sha: 8d320703ec39b39c44c0b38268a07e4b0579e060
-head_sha: null
+pr: 1084
+base_sha: 13dadcaa30f803e8a3676390cee51a84179890f6
+head_sha: ec7e212642002f0bbc2a3e8cf34b3a51a286b75b
 final_head_sha: null
 final_head_frozen_at: null
 owner: worker E (Oteryn: content world build)
 created_at: 2026-09-28T08:29:00Z
-updated_at: 2026-09-28T09:10:00Z
+updated_at: 2026-09-28T09:30:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/cw2_b1_import.rs
@@ -112,7 +112,7 @@ deterministic content re-pin plus test/constant update.
 - [x] Full targeted cargo test suite + lib, fmt, clippy pass on the rebased head.
 - [x] Content-tree scripts and materializer G4 sweep pass.
 - [x] Both governance validators pass.
-- [ ] PR opened; READY_FOR_INTEGRATION reported with PR/head SHA.
+- [x] PR opened; READY_FOR_INTEGRATION reported with PR/head SHA (#1084, `ec7e2126`).
 
 ## Excluded scope
 
@@ -225,11 +225,11 @@ deterministic content re-pin plus test/constant update.
 ## Context checkpoint
 
 ```yaml
-last_progress: rebased onto origin/main after it moved during authoring, re-derived every pinned value from the sample as of the new head, and re-ran the full validation suite/workflow sweep/governance validators — all pass
-status: implementing
+last_progress: pushed ec7e2126 and opened PR #1084; reported READY_FOR_INTEGRATION
+status: validating
 branch: claude/cw2-item-promotion-repin
-head_sha: null
-pr: null
+head_sha: ec7e212642002f0bbc2a3e8cf34b3a51a286b75b
+pr: 1084
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -247,5 +247,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: fresh-read origin/main once more immediately before commit, commit, push claude/cw2-item-promotion-repin, open the PR, report READY_FOR_INTEGRATION
+next_action: await required checks and review on PR #1084
 ```
