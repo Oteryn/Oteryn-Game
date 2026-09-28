@@ -4,23 +4,23 @@
 task_id: OTV2-20260927-cw4-world-object-overlay
 title: Generalize CW4 LocalObjectRuntime from Open/Close to typed D38 world-object operations
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/cw4-world-object-overlay
 issue: 162
-pr: null
+pr: 1055
 base_sha: 3426839ddc00e18f14968c60f7eeb6a523e2884f
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: bd68f493252d2b2888382c698d6b06d5172259ce
+final_head_sha: bd68f493252d2b2888382c698d6b06d5172259ce
+final_head_frozen_at: 2026-09-28T01:12:00Z
 owner: Oteryn: content world runtime (session_01PwTJFS62J35S88Srpqnrgx)
 created_at: 2026-09-28T01:05:47Z
-updated_at: 2026-09-28T01:05:47Z
+updated_at: 2026-09-28T01:45:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/world_runtime.rs
-  - docs/agents/tasks/active/OTV2-20260927-cw4-world-object-overlay.md
+  - docs/agents/tasks/archive/OTV2-20260927-cw4-world-object-overlay.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -180,40 +180,29 @@ content layer, 1 unbound-operation negative, 1 scope-restart restore). Both vali
 
 ## Independent review
 
-- required: high-risk under `apps/game-server/AGENTS.md`? No (no protocol/session/admission/
-  persistence/public-identifier/fencing/multichannel-authority change); ordinary PR review via
-  repository gates/Merge Queue is sufficient.
-- exact head / method / findings / verdict: NOT_APPLICABLE
+- Required by the #162 allocation (comments 5860129276 and 5861341063). One `@codex review` was requested by the control plane on the exact frozen head `bd68f49` (PR comment 5861594751).
+- Verdict: "Didn't find any major issues" (PR comment 5861618806). No review thread was opened.
 
 ## PR and closeout
 
-- changed-file review / unresolved threads / related PRs / auto-merge / merge result / ownership
-  release: pending
+- PR #1055, one commit, exactly the owned paths. The freeze is recorded in #162 comment 5861595726.
+- Exact-head PR CI: aggregate `game-gate` SUCCESS (job 108751938928), including Rust Linux workspace, Server Seam over TCP+TLS and Node boot against the real Platform.
+- Merge Queue: `merge_group` run 36365974694 SUCCESS, base `ac6d820b`, head `070d119dda60c25159bee8670e069867993ebad0`.
+- Protected `main@070d119` read back: `world_runtime.rs` and this record are byte-identical to the frozen head.
+- Ownership of `apps/game-server/src/world_runtime.rs` is released with this archive.
+- Not done by this task: `revert_after` (#1045 parked); wire/egress for world-object commands (A2 decision packet, #162 comment 5860722313).
 
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation + tests complete, local validation clean, PR not yet opened
-status: implementing
+last_progress: merged through the Merge Queue as 070d119; protected-main readback identical
+status: completed
 branch: claude/cw4-world-object-overlay
-head_sha: null
-pr: null
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
-terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
-unchanged_state_checks: 0
-identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-ci_recovery_actions_for_current_head: 0
-stall_warnings: 0
+head_sha: bd68f493252d2b2888382c698d6b06d5172259ce
+pr: 1055
+final_head_sha: bd68f493252d2b2888382c698d6b06d5172259ce
+final_head_frozen_at: 2026-09-28T01:12:00Z
 owner_action_required: null
 blocker: null
-next_action: freeze head, open PR to main
+next_action: none; the successor wire/egress work waits on the A2 owner decision
 ```
