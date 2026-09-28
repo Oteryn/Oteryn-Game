@@ -4,8 +4,9 @@ Evidence tooling only: every bundle is a candidate built from OtsHypothesisOnly 
 observations, never Game truth. Keys use the provisional `candidate:` namespace (no native key minting).
 
 Field rules (docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md section 5):
-- S3/S11: a value TibiaWiki BR or Fandom states decides; on a BR/Fandom conflict the official change in
-  official-changes.json decides, otherwise the wiki page with the newer revision.
+- S3/S11/S13: a value TibiaWiki BR or Fandom states decides; on a BR/Fandom conflict the official change in
+  official-changes.json decides, then tibiopedia.pl when it agrees with one wiki (two of three), otherwise the
+  wiki page with the newer revision.
 - S4: Canary and Crystal are equal sources; a value only one of them has is taken from it, a value they
   disagree on (with the engine default for an absent call) and that no wiki states stays unresolved.
 - S5: player damage/heal formulas are the source expression trees; `level / 5` and Canary's
@@ -41,8 +42,9 @@ SAMPLES = ROOT / 'samples'
 CENSUS = SAMPLES / 'spell-census-canary-47dfd51f-crystal-ff7ede5.json'
 FANDOM_FACTS = SAMPLES / 'wiki-spell-facts-fandom-2026-09-27.json'
 BR_FACTS = SAMPLES / 'wiki-spell-facts-br-2026-09-27.json'
+TIBIOPEDIA_FACTS = SAMPLES / 'tibiopedia-spell-facts-2026-09-28.json'
 OFFICIAL = ROOT / 'official-changes.json'
-REVISION = 'spell-p2-r1'
+REVISION = 'spell-p2-r2'  # r2: S13 (two-of-three references before the newer revision)
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'revision': '47dfd51f45280a59a1d3e50ba7edd573d7234446',
                       'tag': 'canary-47dfd51f'},
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -87,12 +89,13 @@ def git_blob(data):
 
 
 # ------------------------------------------------------------------------------------------------
-# Wiki resolution (S3, S11)
+# Wiki resolution (S3, S11, S13)
 # ------------------------------------------------------------------------------------------------
 
 class Wikis:
-    def __init__(self, fandom, br, official):
-        self.docs = {'fandom': fandom, 'br': br}
+    def __init__(self, fandom, br, official, tibiopedia=None):
+        # tibiopedia.pl only breaks a BR/Fandom tie (S13); it never states a value the wikis do not.
+        self.docs = {'fandom': fandom, 'br': br, **({'tibiopedia': tibiopedia} if tibiopedia else {})}
         self.spells, self.spell_names, self.runes = {}, {}, {}
         for wiki, doc in self.docs.items():
             by_words, by_name, runes = {}, {}, {}
@@ -129,7 +132,10 @@ class Wikis:
     def resolve(self, pages, field, spell_name):
         """(value, wiki provenance, note) for one wiki field; value None when no wiki states it."""
         values = {}
+        tie_breaker = pages.get('tibiopedia')
         for wiki, page in pages.items():
+            if wiki == 'tibiopedia':
+                continue
             if page is not None and page['fields'].get(field) not in (None, ''):
                 value = ws.crosswalk_value(field, page['fields'][field])
                 if value is not None:
@@ -146,10 +152,19 @@ class Wikis:
                     f'{official["date"]} decides ({official["fact"]}; {official["source"]}).')
             chosen = [(w, p) for w, (v, p) in values.items() if v == value]
             return value, chosen or list((w, p) for w, (_, p) in values.items()), note
+        third = tie_breaker['fields'].get(field) if tie_breaker is not None else None
+        third = ws.crosswalk_value(field, third) if third not in (None, '') else None
+        agreeing = [w for w, (v, _) in values.items() if third is not None and v == third]
+        if len(agreeing) == 1:
+            other = 'fandom' if agreeing[0] == 'br' else 'br'
+            note = (f'S13: BR {values["br"][0]!r} and Fandom {values["fandom"][0]!r} disagree and no official change is '
+                    f'recorded; tibiopedia.pl states {third!r} ({tie_breaker["url"]}), two of three references agree '
+                    f'with {agreeing[0]} over {other}.')
+            return third, [(agreeing[0], values[agreeing[0]][1])], note
         newer = max(values, key=lambda w: values[w][1].get('timestamp', ''))
         other = 'fandom' if newer == 'br' else 'br'
-        note = (f'S11: BR {values["br"][0]!r} and Fandom {values["fandom"][0]!r} disagree and no official change is '
-                f'recorded; the newer revision ({newer}, {values[newer][1].get("timestamp")}) decides over {other} '
+        note = (f'S11/S13: BR {values["br"][0]!r} and Fandom {values["fandom"][0]!r} disagree, no official change is '
+                f'recorded and tibiopedia.pl does not side with either; the newer revision ({newer}, {values[newer][1].get("timestamp")}) decides over {other} '
                 f'({values[other][1].get("timestamp")}).')
         return values[newer][0], [(newer, values[newer][1])], note
 
@@ -354,7 +369,7 @@ class Bundle:
 
     def field(self, destination, wiki_field, method, pages, transform=lambda v: v, wiki_transform=lambda v: v,
               required=True):
-        """Resolve one Spell field under S3/S4/S11; returns the value (None when nothing states it)."""
+        """Resolve one Spell field under S3/S4/S11/S13; returns the value (None when nothing states it)."""
         value, provenance, note = (None, [], None)
         if wiki_field:
             value, provenance, note = self.wikis.resolve(pages, wiki_field, self.name)
@@ -391,10 +406,10 @@ class Bundle:
         primary = self.records.get('crystal') or self.records['canary']
         carrier = primary['spell_type']
         pages = {w: (self.wikis.rune_page(w, primary) if carrier == 'rune' else self.wikis.spell_page(w, primary))
-                 for w in ('fandom', 'br')}
+                 for w in self.wikis.docs}
         spell_pages = pages
         if carrier == 'rune':
-            spell_pages = {w: self.wikis.spell_page(w, primary) for w in ('fandom', 'br')}
+            spell_pages = {w: self.wikis.spell_page(w, primary) for w in self.wikis.docs}
         # A rune and its conjuring spell share a name ("sudden death rune"), so the carrier is part of the key.
         key = f'candidate:spell/{"rune/" if carrier == "rune" else ""}{slug(self.name)}'
         spell = {'identity': ident(key), 'name': primary['name'], 'carrier': carrier}
@@ -644,7 +659,8 @@ class Bundle:
 def run(args):
     census = json.loads(CENSUS.read_text(encoding='utf-8'))
     wikis = Wikis(json.loads(FANDOM_FACTS.read_text(encoding='utf-8')), json.loads(BR_FACTS.read_text(encoding='utf-8')),
-                  json.loads(OFFICIAL.read_text(encoding='utf-8')))
+                  json.loads(OFFICIAL.read_text(encoding='utf-8')),
+                  json.loads(TIBIOPEDIA_FACTS.read_text(encoding='utf-8')))
     roots = {'canary': args.canary, 'crystal': args.crystal}
     executions = {s: Execution(s, r) for s, r in roots.items()}
     groups = {}
@@ -714,7 +730,7 @@ def main(argv=None):
     if args.readiness:
         document = {'schema': 'OTERYN_SPELL_READINESS/v1', 'revision': REVISION,
                     'sources': {s: {k: v for k, v in c.items() if k != 'tag'} for s, c in SOURCES.items()},
-                    'wiki_facts': [FANDOM_FACTS.name, BR_FACTS.name], 'official_changes': OFFICIAL.name,
+                    'wiki_facts': [FANDOM_FACTS.name, BR_FACTS.name, TIBIOPEDIA_FACTS.name], 'official_changes': OFFICIAL.name,
                     'summary': summary, 'spells': results}
         ws.write_lines(args.readiness, document, None)
     print(json.dumps(summary, indent=1, ensure_ascii=False))
