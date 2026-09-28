@@ -80,6 +80,11 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
   owning lifecycle contract for round 14's single record.
 - `foundation/mod.rs` `CommandIngress` (~53-742) — round 12: `CommandId`-keyed, single-slot,
   session-gated — rules out reuse, not retention itself.
+- `world_runtime.rs` `prepare`/`PreparedTerminal::unchanged`/`PreparedMutation` (~973-1159) — round
+  15: every `unchanged(...)` disposition builds `PreparedMutation::None`; only `COMMITTED` builds
+  `Publish` — the complete, exhaustive set. `gameplay_transport/mod.rs` `ComposedFreshAdmission::step`
+  (~546-585) — one lock `.await`, then synchronous; no panic/abort/task-supervision code found for
+  scope-owner work.
 - PR #1055/#1046 (merged) generalized `LocalObjectRuntime`, shipped 1a/1b/1c.
 
 ## High-risk authority/recovery qualification
@@ -114,34 +119,27 @@ reason: >
 
 Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Rounds 1-6: numbering; `Deadline`
 option recommended; rebound to FND-03 §10 authoritative timer with staged capacity atomicity,
-equal-deadline tie-break, one clock per scope; merged origin/main (PR #1055/#1046); `revert_after_ms`
-admissible only with exactly one bound inverse; pre-`prepare` discard restricted to
-`scope_generation`/`content_generation`. Round 7: timer-origin execution never re-arms. Round 8:
-restated as an origin test. Round 9: pending entry gained exact target identity. Round 10: fixed a
-stale summary. Round 11 (`87b974b1`): pending entry never stored its derived
-`InteractionChildOccurrenceRef`; fixed with one field-list table. Round 12 (`8e12f6bf`): specified
-redelivery as a no-op with nothing retained. Round 13 (`f7e9c7f2`): round 12 superseded — violated
-GAME-INTERACTION-01 §7's retention requirement; terminal outcome became retained scope-owned state,
-capacity folded into the existing FND-03 §15.4 timer-capacity reservation, dropped only on scope
-restart.
+equal-deadline tie-break, one clock per scope; merged origin/main; `revert_after_ms` admissible only
+with exactly one bound inverse; pre-`prepare` discard restricted to `scope_generation`/
+`content_generation`. Round 7: never re-arms. Round 8: origin test. Round 9: exact target identity.
+Round 10: fixed stale summary. Round 11: pending entry gained derived `InteractionChildOccurrenceRef`.
+Round 12: redelivery as no-op, nothing retained. Round 13: round 12 superseded (violated
+GAME-INTERACTION-01 §7); terminal outcome retained. Round 14 (`a0519257`): round 13 superseded — two
+P1 seam bugs from two separate structures; replaced with one scope-owned lifecycle record per
+identity, `PENDING(entry fields) | IN_FLIGHT | TERMINAL(outcome)`, matching GAME-INTERACTION-01 §7's
+lifecycle, fixed presentation order (lookup → `TERMINAL` returns first outcome → `IN_FLIGHT`
+converges → only `PENDING` reaches fences).
 
-Round 14 (Codex 4119913770/4119913778, head `a0519257`): **round 13 is superseded — two P1 seam
-bugs.** (1) The pending entry was removed before any terminal record existed; a lost race or an
-interruption left the identity briefly unrepresented. (2) A duplicate of an already-terminal child
-hit the incarnation/content fences *before* the retained-outcome lookup, discarding it instead of
-returning its first outcome. Root cause: two separate structures with a gap at the seam. Per
-coordinator decision: replaced both with **one scope-owned lifecycle record per
-`InteractionChildOccurrenceRef`**, state `PENDING(entry fields) | IN_FLIGHT | TERMINAL(outcome)`,
-matching GAME-INTERACTION-01 §7's own lifecycle directly, one capacity reservation for its whole
-life. Fixed presentation order: look up → `TERMINAL` returns the first outcome (no fences) →
-`IN_FLIGHT` converges (no execute, no mint) → only `PENDING` reaches the fences, failure atomically
-transitions straight to `TERMINAL(REJECTED, named reason)`, never a bare discard. No bare removal
-ever; dropped only on scope restart. Interruption mid-flight leaves `IN_FLIGHT`, scope-ephemeral.
-Rewrote the field list, Option 2, Must-decide-now, every "Exact delta" bullet and the test
-obligations (added: duplicate-during-`IN_FLIGHT` converges; duplicate-after-`TERMINAL` returns the
-first outcome even after the target is replaced; interruption leaves the identity represented until
-restart); grepped the whole doc for stale two-structure wording. Merged `origin/main` (`61c6b35c`,
-unrelated); `git diff a0519257 HEAD` confirms no cited file drifted.
+Round 15 (Codex 4120028037/4120028027/4120028033, head `a2aab063`): **convergence round.** (1)
+`prepare`'s `TERMINAL` mapping was missing `NO_CHANGE`/`REVISION_EXHAUSTED`; fixed by deriving the
+mapping from `prepare`'s own structure (`unchanged`→`REJECTED`, `Publish`→`COMMITTED`) — genuinely
+exhaustive. (2) Round 14's "interruption never leaves the scope live with `IN_FLIGHT`" was unproven —
+checked `ComposedFreshAdmission::step` (synchronous once locked) but found no panic/abort handling
+anywhere; removed the claim, added it as an open decision (two resolutions named). (3) Removed "never
+evicted/only on scope restart" as a hard rule; added retention/compaction policy as an open decision,
+MUST preserve no-reexecution (e.g. tombstone). Added "Open decisions for the owning lane" subsection;
+Must-decide-now references it. Rewrote affected test obligations; grepped whole doc. Merged
+`origin/main` (`00691b5b`, unrelated); `git diff a2aab063 HEAD` confirms no cited file drifted.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -151,13 +149,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-14; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-15; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 14; unchanged)
+  validation passed (23 files, 47 workflows)." (round 15; unchanged)
 
 ### E2E
 
@@ -182,7 +180,7 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ## Independent review
 
-- required: YES — same review path as the proposal.
+- required: YES.
 - exact head: pending
 - method/auditor: pending
 - material findings: pending
@@ -201,15 +199,16 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 14 (Codex 4119913770/4119913778 on frozen head a0519257): round 13's
-  two-structure design had two P1 seam bugs -- an unrepresented window between removal and
-  terminal-write, and fences running before the terminal lookup. Replaced both with ONE scope-owned
-  lifecycle record per InteractionChildOccurrenceRef: PENDING(entry fields) | IN_FLIGHT |
-  TERMINAL(outcome), matching GAME-INTERACTION-01 SS7. One capacity reservation for the whole
-  lifecycle. Presentation order: lookup -> TERMINAL returns first outcome -> IN_FLIGHT converges ->
-  only PENDING reaches fences, failure atomically transitions to TERMINAL(REJECTED, named reason).
-  Interruption leaves IN_FLIGHT, scope-ephemeral. Rewrote field list, all Exact-delta bullets, test
-  obligations; grepped whole doc; validators pass.
+  PR #1045 pre-freeze round 15 (Codex 4120028037/4120028027/4120028033 on frozen head a2aab063,
+  convergence round): (1) prepare's TERMINAL mapping was missing NO_CHANGE/REVISION_EXHAUSTED; fixed
+  by deriving the mapping from prepare's own code structure (unchanged-> REJECTED, Publish->
+  COMMITTED), genuinely exhaustive. (2) Round 14's "interruption never leaves the scope live with a
+  stranded IN_FLIGHT record" was unproven -- checked ComposedFreshAdmission::step (synchronous once
+  locked) but found no panic/abort handling anywhere; removed the claim, added it as an open decision
+  for the owning lane (two resolutions named). (3) Removed "never evicted / only dropped on scope
+  restart" as a hard rule; added retention/compaction policy as an open decision, MUST preserve
+  no-reexecution (e.g. tombstone). Added "Open decisions for the owning lane" subsection; Must-
+  decide-now references it. Rewrote affected test obligations; grepped whole doc; validators pass.
 status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null

@@ -362,11 +362,50 @@ atomically transitions the record to its own `TERMINAL(REJECTED, reason)`, never
 the *next* duplicate finds a terminal record too, not a fence check repeated on stale data. Passing
 the fences atomically transitions `PENDING`→`IN_FLIGHT`, mints the ordinal and runs `prepare`/commit,
 then atomically transitions `IN_FLIGHT`→`TERMINAL(outcome)`. There is never a bare removal at any
-step; the record is dropped only on scope restart, exactly as round 13 already established for the
-whole overlay. An interruption between `IN_FLIGHT` and writing `TERMINAL` leaves the record
-`IN_FLIGHT` — scope-ephemeral like everything else here, so it is dropped only with the rest of the
-overlay on scope restart, never left to be silently re-executed or silently forgotten while the scope
-generation is still live.
+step; a scope restart drops every record regardless of state, the same as the rest of the overlay. An
+interruption between `IN_FLIGHT` and writing `TERMINAL` leaves the record `IN_FLIGHT`; round 15 below
+corrects what this document can actually prove about that case while the scope generation stays live.
+
+Round 15 correction (owner-authorized, convergence round — Codex findings 4120028037/4120028027/
+4120028033 on frozen head `a2aab063`): three findings, fixed where concrete, handed to the owning
+lane where genuinely open, per PLAYABLE_FIRST and this section's own CANDIDATE status.
+
+First, `prepare`'s `TERMINAL` mapping was incomplete: it named `COMMITTED`/`STALE_STATE`/`OCCUPIED`
+but never `DISPOSITION_NO_CHANGE` or `DISPOSITION_REVISION_EXHAUSTED`, both real returns of `prepare`
+(evidence below). Fixed by re-deriving the mapping from `prepare`'s own structure rather than
+enumerating dispositions by hand again: every disposition `prepare` builds via `PreparedTerminal::
+unchanged` (`PreparedMutation::None` — no mutation) maps to `TERMINAL(REJECTED, <disposition>)`;
+`DISPOSITION_COMMITTED` alone pairs with `PreparedMutation::Publish` and maps to `TERMINAL(COMMITTED)`
+— a rule tied to `prepare`'s own code shape, not a list this document must keep re-synchronizing by
+hand.
+
+Second, this document previously asserted an interrupted `IN_FLIGHT` record is never "left to be
+silently re-executed or silently forgotten while the scope generation is still live" (round 14's
+text, now corrected) — but nothing in the read code proves that. Checked directly (evidence below):
+`LocalObjectRuntime`'s own methods (`bind`/`prepare`/`apply`/`terminalize_current`) are plain
+synchronous `fn`, never `async fn`; the one existing precedent for "one owner work item" —
+`ComposedFreshAdmission::step` (`gameplay_transport/mod.rs` ~546-585) — acquires its `tokio::sync::
+Mutex` with a single `.await`, then runs the entire read-check-commit sequence synchronously with no
+further `.await` inside, per its own doc comment "One Channel-owner work item for one actor... Nothing
+moves unless the step commits." That is consistent with — but does not itself prove — the same shape
+for a not-yet-built revert-timer driver. Separately, and independently of that: no code anywhere in
+`runtime_actor_carrier.rs`, `movement.rs` or elsewhere defines what happens to a scope owner's task on
+panic or abort — no `catch_unwind`, no `JoinHandle`/abort handling, no task-supervision policy exists
+to check against. Without that, "an interruption cannot leave the scope live with a stranded
+`IN_FLIGHT` record" cannot be asserted as a proven fact; it can only be named as the implementation
+choice the owning lane should make. Fixed: removed the unproven claim; added it to "Open decisions for
+the owning lane" below, with the concrete evidence and the two possible resolutions named, per
+coordinator instruction rather than designing phase/commit reconciliation machinery here.
+
+Third, this document previously said retained records are "never evicted mid-generation" and dropped
+"only on scope restart" as a hard rule (rounds 13/14) — an over-claim: nothing requires the owning
+lane's eventual store to hold every terminal record forever within one generation, and
+GAME-INTERACTION-01 itself leaves retention window/count open (§5.9/§25, evidence above). Fixed:
+removed "never evicted"/"only on scope restart" as a hard rule everywhere it appeared; added the
+eviction/compaction policy to "Open decisions for the owning lane" below, decided together with the
+retention window/count, with one fixed requirement carried forward from GAME-INTERACTION-01 §7 itself:
+whatever policy the owning lane picks MUST preserve no-reexecution — for example, a compact tombstone
+of identity → outcome code survives even where a full `TerminalSemanticOutcome` does not.
 
 ### Problem
 
@@ -520,6 +559,25 @@ today.
   `DECISIONS_NOT_TAKEN` — it mandates the retention *semantics* above without naming a numeric bound,
   the identical decided-semantics/undecided-number split this section already uses for FND-03 §15.4's
   timer-capacity bound (deferred to `RESOURCE_LIMITS_REGISTRY.json`, "not decided here").
+- PROVEN, round 15 (`apps/game-server/src/world_runtime.rs` `prepare` ~973-1050, `PreparedTerminal::
+  unchanged` ~1136-1147, `PreparedMutation` ~1149-1159): every `unchanged(...)` call site —
+  `DISPOSITION_BINDING_MISMATCH` (~983), `DISPOSITION_STALE_STATE` (~990, expected-revision mismatch;
+  ~1008, source-state mismatch — same disposition string, two trigger sites), `DISPOSITION_NO_CHANGE`
+  (~998), `DISPOSITION_OCCUPIED` (~1026) and `DISPOSITION_REVISION_EXHAUSTED` (~1031) — constructs
+  `PreparedMutation::None`; only the `DISPOSITION_COMMITTED` path (~1040-1053) constructs
+  `PreparedMutation::Publish`. This is the complete, exhaustive set of strings `prepare` can return —
+  a bounded grep of `apps/game-server/src/world_runtime.rs` for `DISPOSITION_` finds no others declared
+  (~21-26) or used outside this function and its own tests.
+- PROVEN, round 15 (`apps/game-server/src/gameplay_transport/mod.rs` `ComposedFreshAdmission::step`
+  ~546-585): the one existing "one owner work item" precedent acquires its `tokio::sync::Mutex` with a
+  single `.await` (~552), then runs its entire read/check/commit sequence with no further `.await`
+  inside, per its own doc comment (~542-545) "One Channel-owner work item for one actor... Nothing
+  moves unless the step commits." UNKNOWN/NOT PROVEN beyond this: a bounded grep of
+  `apps/game-server/src/foundation/runtime_actor_carrier.rs` and `movement.rs` for `async fn`,
+  `.await`, `tokio::spawn`, `catch_unwind`, `JoinHandle` and `panic` finds none — no owner-turn task
+  supervision, panic or abort handling exists anywhere in the read code for scope-owner work, movement
+  included. The revert-timer driver itself is proposed, not built (evidence above: no scope-wide
+  cadence/scheduler exists yet).
 
 ### Options (minimum real set)
 
@@ -632,12 +690,13 @@ today.
    `InteractionChildOccurrenceRef` (GAME-INTERACTION-01 §5.1's nested-cascade rule, computed once at
    scheduling time, never re-derived from the scheduling ordinal per §4.4/§5.8) as the record's own
    lookup key, present in every state — and that the record's terminal outcome is retained as
-   scope-owned state for the life of the scope generation, with capacity reserved once for the whole
-   lifecycle in the same staged commit as everything else (Round 14, folding round 13's separate
-   timer/retention reservations into one), per GAME-INTERACTION-01 §7 (the retention *semantic* is
-   decided now; its numeric bound, like the timer-capacity bound, is not — §5.9/§25) — all nine are
-   bound to existing FND-03 sections, GAME-INTERACTION-01's already-implemented identity model, or the
-   merged CW4 bind-time model, not open design questions. `NO` for the driver's exact wake
+   scope-owned state, with creation capacity reserved once for the whole lifecycle in the same staged
+   commit as everything else (Round 14, folding round 13's separate timer/retention reservations into
+   one), per GAME-INTERACTION-01 §7 (the retention/convergence *semantic* is decided now; how long a
+   `TERMINAL` record is kept within one live generation, like the timer-capacity bound, is not —
+   §5.9/§25, "Open decisions for the owning lane" below) — all nine are bound to existing FND-03
+   sections, GAME-INTERACTION-01's already-implemented identity model, or the merged CW4 bind-time
+   model, not open design questions. `NO` for the driver's exact wake
    mechanism, whether `ScopeRuntimeFence` is
    promoted to a scope-wide instance or a new scope-owned ordinal issuer is introduced, the exact
    lifecycle-record storage representation, the exact field/encoding of `revert_after_ms` on
@@ -661,9 +720,12 @@ today.
 5. **What is deliberately not decided?** The exact wake mechanism inside the scope's step driver, the
    exact way `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` is made scope-wide, the exact storage
    representation of the lifecycle-record store, the exact field/encoding of `revert_after_ms` on
-   `TransitionBinding` or its content-authoring source, and the concrete timer-capacity and
-   per-cycle due-batch numeric bounds in `RESOURCE_LIMITS_REGISTRY.json`. Those belong to the owning
-   lane's implementation, not this architecture delta.
+   `TransitionBinding` or its content-authoring source, the concrete timer-capacity and per-cycle
+   due-batch numeric bounds in `RESOURCE_LIMITS_REGISTRY.json`, and — see "Open decisions for the
+   owning lane" (Round 15, "Exact delta" below) — the `TERMINAL`-record retention window/count and
+   eviction/compaction policy, and whether the `PENDING`→`IN_FLIGHT`→`TERMINAL` transition is one
+   atomic owner-turn step or needs explicit reconciliation for an interrupted `IN_FLIGHT` record. Those
+   belong to the owning lane's implementation, not this architecture delta.
 
 ### Exact delta the owning lane must provide
 
@@ -705,12 +767,15 @@ presentation, whichever of `prepare`'s dispositions or the `PENDING`-step fences
 is reserved *once*, for the whole record's lifecycle, in the same staged commit that creates it
 `PENDING` (below) — not once for a "timer entry" and again for a "retained outcome" (round 13's split,
 now removed): the scope's own capacity counter is live scope state, not part of the record. Lifecycle
-(Round 14, replaces round 13's two-structure split): the record is never bare-removed at any
-transition; it is dropped only on scope restart, together with the rest of the scope-ephemeral
-overlay (§7's numeric retention bound is explicitly not decided by GAME-INTERACTION-01 itself —
-§5.9/§25, evidence above — so this document does not invent one either). Nothing the firing path
-consumes is missing from this list or derivable only from something outside it plus the scope's own
-live state (its clock, its ordinal issuer, and — as one thing, not two — its lifecycle-record store).
+(Round 14, replaces round 13's two-structure split; retention bound corrected by round 15): the
+record is never bare-removed at any transition — a scope restart drops every record regardless of
+state, together with the rest of the scope-ephemeral overlay. Whether and how a `TERMINAL` record may
+also be evicted or compacted *within* one live scope generation is explicitly not decided by this
+document (Round 15 — GAME-INTERACTION-01 itself leaves retention window/count open, §5.9/§25,
+evidence above); see "Open decisions for the owning lane" below for the one fixed requirement any such
+policy must satisfy. Nothing the firing path consumes is missing from this list or derivable only from
+something outside it plus the scope's own live state (its clock, its ordinal issuer, and — as one
+thing, not two — its lifecycle-record store).
 
 - Add `revert_after_ms` as an optional field on the authored transition (`TransitionBinding` or its
   content-authoring source, evidence above), and validate it fail-closed inside `bind`
@@ -802,14 +867,19 @@ live state (its clock, its ordinal issuer, and — as one thing, not two — its
   stale-precondition checks (`DISPOSITION_STALE_STATE`, `apps/game-server/src/world_runtime.rs`
   ~988-1013) exactly as they already work for any command, so an object the record's own fences did
   not already catch (changed again after this revert was scheduled, but still the same incarnation)
-  is rejected there, never guessed at. Every disposition `prepare` reaches —
-  `DISPOSITION_COMMITTED`, `DISPOSITION_STALE_STATE`, `DISPOSITION_OCCUPIED` — atomically transitions
-  the record `IN_FLIGHT`→`TERMINAL(outcome)` (GAME-INTERACTION-01 §7: "`COMMITTED`: semantic commit
-  proven exactly once; replay/retry never reapplies it"; "`REJECTED`: logical child terminal; replay
-  does not reevaluate it as fresh work" — `STALE_STATE`/`OCCUPIED` are this child's `REJECTED`,
-  `COMMITTED` is `COMMITTED`); a distinct occurrence (a new `revert_after` registration, even at the
-  same anchor) carries its own distinct nested-child identity and its own distinct record, so one
-  occurrence's outcome never stands for another's. Commit through the
+  is rejected there, never guessed at. Every disposition `prepare` can return atomically transitions
+  the record `IN_FLIGHT`→`TERMINAL(outcome)`, and the mapping is exhaustive by construction, not by
+  enumeration (Round 15, evidence above): `prepare` builds its outcome via exactly two constructors,
+  `PreparedTerminal::unchanged` (`PreparedMutation::None`) or the inline `PreparedMutation::Publish`
+  arm, and nothing else — so `TERMINAL(COMMITTED)` is the `DISPOSITION_COMMITTED`/`Publish` path alone,
+  and `TERMINAL(REJECTED, <disposition>)` is every `unchanged` disposition: `BINDING_MISMATCH`,
+  `STALE_STATE` (either trigger), `NO_CHANGE`, `OCCUPIED` and `REVISION_EXHAUSTED` (Round 15 —
+  `self.revision.checked_add(1)` overflow, `apps/game-server/src/world_runtime.rs` ~1029-1034). Per
+  GAME-INTERACTION-01 §7: "`COMMITTED`: semantic commit proven exactly once; replay/retry never
+  reapplies it"; "`REJECTED`: logical child terminal; replay does not reevaluate it as fresh work." A
+  distinct occurrence (a new `revert_after` registration, even at the same anchor) carries its own
+  distinct nested-child identity and its own distinct record, so one occurrence's outcome never stands
+  for another's. Commit through the
   same scope-authority path (`PreparedMutation::Publish`/`TerminalSemanticOutcome`, ~1040-1054) —
   never `apply`/`resume_pending`/`CommandIngress`, which require a live `GameSessionAuthoritySnapshot`
   this timer does not have (P1, evidence above). This commit is a timer-origin execution: it reuses
@@ -840,6 +910,37 @@ live state (its clock, its ordinal issuer, and — as one thing, not two — its
   atomically transitions the record to `TERMINAL(REJECTED)` under its own `InteractionChildOccurrenceRef`
   and stops; do not retry it on a later wake (decided below, not left open) — a later duplicate
   presentation is answered by step 2 of the presentation order above, never a fresh occupancy check.
+
+### Open decisions for the owning lane (Round 15)
+
+These are genuinely open — this document deliberately does not resolve them, per PLAYABLE_FIRST and
+this section's own `CANDIDATE` status. The owning lane resolves them alongside the exact delta above,
+not this architecture decision.
+
+1. **`TERMINAL`-record retention window/count and its eviction/compaction policy.**
+   GAME-INTERACTION-01 §5.9/§25 leaves this unfrozen for every `InteractionChildOccurrenceRef`, not
+   just this one (evidence above); this document does not invent a number or a policy shape for the
+   revert case either. Whatever the owning lane picks — an unbounded per-generation store, an LRU, a
+   time-window, a compact tombstone keyed by identity → outcome code once a record ages out of full
+   detail, or something else — it MUST preserve GAME-INTERACTION-01 §7's "loss of a retained result
+   payload MUST NOT re-enable execution": no policy may let a duplicate presentation fall through to
+   the `PENDING` fences or `prepare` once its identity has ever reached `TERMINAL`. Decide this
+   together with the matching `RESOURCE_LIMITS_REGISTRY.json` bound (FND-03 §14.1) — the same registry
+   entry as the lifecycle-record creation capacity above, or a related one, is the owning lane's call.
+2. **`IN_FLIGHT` reconciliation for an owner-turn interruption while the scope stays live.** Checked
+   directly (evidence above): the one existing "one owner work item" precedent
+   (`ComposedFreshAdmission::step`) runs synchronously once its lock is acquired, with no internal
+   `.await` — consistent with a synchronous, unyielding `PENDING`→`IN_FLIGHT`→`TERMINAL` transition —
+   but no code anywhere defines what happens to a scope owner's task on panic or abort, so this cannot
+   be asserted as already proven. The owning lane resolves this one of two ways: (a) implement the
+   transition as one atomic, unyielding owner-turn step, following the existing precedent, and treat
+   any panic/abort during that step as fatal to the whole scope generation (forcing a restart, which
+   already clears every record regardless of state) — if chosen, "interrupted with the scope still
+   live" becomes impossible by construction, and only the "transition happens within one owner turn"
+   test obligation below is needed; or (b) allow an owner-turn interruption to leave the scope
+   generation live with a record stranded `IN_FLIGHT` — if chosen, the owning lane must design explicit
+   `IN_FLIGHT` reconciliation (how a stranded record eventually reaches `TERMINAL`, or is recognized as
+   needing owner intervention), which this document does not design and does not choose between.
 
 ### Exact test obligations
 
@@ -892,23 +993,26 @@ live state (its clock, its ordinal issuer, and — as one thing, not two — its
   triggering operation's identity, never the scheduling ordinal — §4.4/§5.8) and therefore its own
   distinct lifecycle record, so a test that lets one registration's record answer for the other's must
   fail.
-- **Retention bound follows the contract's rule (P1, Round 14, GAME-INTERACTION-01 §5.9/§25).**
+- **Retention bound follows the contract's rule (P1, Round 14/15, GAME-INTERACTION-01 §5.9/§25).**
   GAME-INTERACTION-01 requires the convergence/retention behavior above but explicitly does not name a
   numeric retention window/count (§5.9, §25) — a test MUST NOT assert any specific record count or
-  retention duration as architecturally required here; it MAY assert that lifecycle-record capacity is
-  reserved once, atomically, at scheduling (previous section), that exhaustion fails the whole original
-  operation before commit, and that a record survives for the full life of its scope generation
-  (next obligation).
-- **An interruption leaves the identity represented until scope restart (P1, Round 14,
-  GAME-INTERACTION-01 §7).** Drive a record from `PENDING` to `IN_FLIGHT` (ordinal minted, `prepare`
-  about to run or already run) and then simulate an interruption before `TERMINAL` is ever written —
-  a crash, a dropped task, any failure that stops execution mid-flight. The record must be observed as
-  `IN_FLIGHT`, not absent and not silently reset to `PENDING`: a test asserting the identity becomes
-  unrepresented, or that a later presentation re-executes it from scratch, must fail. The record stays
-  `IN_FLIGHT` — scope-ephemeral like the rest of the overlay — until the scope restarts, at which point
-  it is dropped together with everything else the scope owns; there is no separate recovery/cleanup
-  path for an interrupted record within a live generation, and none is needed, because nothing reaches
-  `IN_FLIGHT` without first having passed the `PENDING` fences exactly once.
+  retention duration as architecturally required here, and MUST NOT assert that a record survives for
+  the full life of its scope generation unconditionally (round 13/14's over-claim, corrected by round
+  15 — see "Open decisions for the owning lane" above); it MAY assert that lifecycle-record capacity is
+  reserved once, atomically, at scheduling (previous section) and that exhaustion fails the whole
+  original operation before commit.
+- **The `PENDING`→`IN_FLIGHT`→`TERMINAL` transition happens within one owner turn — conditional on the
+  owning lane's choice (P1, Round 15, GAME-INTERACTION-01 §7).** This document does not assert as
+  proven that an owner-turn interruption cannot leave the scope live with a record stranded
+  `IN_FLIGHT` (evidence above; see "Open decisions for the owning lane" above). If the owning lane
+  resolves that open decision by making the transition one atomic, unyielding owner-turn step (option
+  (a) above): a test MUST show the whole `PENDING`→`IN_FLIGHT`→`TERMINAL` sequence completes within a
+  single owner-turn invocation with no yield point in between, matching the existing
+  `ComposedFreshAdmission::step` precedent (evidence above) — under that choice, a test asserting the
+  identity becomes unrepresented, or that a later presentation re-executes an `IN_FLIGHT` record from
+  scratch, must fail, because the record stays `IN_FLIGHT` until the scope restarts, at which point it
+  is dropped with everything else the scope owns. If the owning lane instead resolves it via option
+  (b), the test obligations for that reconciliation belong to that design, not to this document.
 - **Cleared on scope restart (Round 14).** The lifecycle-record store (keyed by
   `InteractionChildOccurrenceRef`) is `scope_generation`-scoped state owned by the same
   `ChannelRuntimeV1`/`InstanceRuntime` instance as the rest of the overlay; a scope restart is a new
@@ -916,11 +1020,19 @@ live state (its clock, its ordinal issuer, and — as one thing, not two — its
   no separate cleanup path — the same lifetime §4 already states ("Lifetime: Scope-ephemeral") and the
   same trigger FND-03 §10.3 already names ("scope ownership generation changed"). Because it never
   crosses a process lifetime, FND-03 §9's durable-encoding requirement does not apply here (evidence
-  above) — this is a positive test, not merely an absence. A test MUST also assert a record is *not*
-  dropped for any other reason within one live scope generation — no eviction, no expiry — since
-  GAME-INTERACTION-01 §7 forbids "loss of a retained result payload" re-enabling execution, and this
-  design avoids that loss entirely within a generation by reserving capacity up front (previous
-  section) rather than evicting under pressure.
+  above) — this is a positive test, not merely an absence.
+- **No re-execution after compaction, whatever the eviction/compaction policy turns out to be (P1,
+  Round 15, GAME-INTERACTION-01 §7).** This document does not decide whether or how a `TERMINAL`
+  record may be evicted or compacted within one live scope generation (Round 15 — corrects rounds
+  13/14's "never evicted" over-claim; see "Open decisions for the owning lane" below). What it does
+  require, because GAME-INTERACTION-01 §7 requires it regardless of representation ("loss of a
+  retained result payload MUST NOT re-enable execution"): whatever the owning lane picks, a test MUST
+  show that once an identity's presence is compacted down to a minimal tombstone (at minimum, identity
+  → outcome code — evidence above), a later presentation of that identity still converges to that
+  outcome and never falls through to step 4 (`PENDING` fences) or re-executes `prepare`. A test MUST
+  NOT assert a specific eviction trigger, window or count as required by this architecture — those are
+  the owning lane's decision (below) — but it MUST assert the no-reexecution property survives
+  whichever policy is chosen.
 - **No partial footprint.** A revert applies its full target state in the same single commit as any
   other overlay operation (the existing `PreparedMutation::Publish` path); this is exactly the C3
   fixed-footprint boundary in §4 — only the anchor's pre-authored, bind-time-reserved footprint is
