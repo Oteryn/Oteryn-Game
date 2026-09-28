@@ -12,12 +12,12 @@ base_branch: main
 branch: claude/native-entry-door-m2a
 pr: 1075
 base_sha: 13576c4463f51184c8a96f1bde6d536fe2f16c12
-head_sha: null
+head_sha: 37aac24ee4c1da778468f6abf3378ce772bcc3ca
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: content world runtime" (Claude Code)
 created_at: 2026-09-28T08:00:00Z
-updated_at: 2026-09-28T10:00:00Z
+updated_at: 2026-09-28T10:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/project/native_entry.rs
@@ -196,10 +196,10 @@ reason: >
 ```yaml
 last_progress: control-plane blocker addressed - world_runtime.rs reverted to origin/main
   entirely, World-envelope widening reverted, PR/task record updated; full focused-validation
-  suite green post-fix.
+  suite green post-fix; pushed 37aac24 (no force).
 status: validating
 branch: claude/native-entry-door-m2a
-head_sha: null
+head_sha: 37aac24ee4c1da778468f6abf3378ce772bcc3ca
 pr: 1075
 final_head_sha: null
 final_head_frozen_at: null
