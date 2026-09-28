@@ -496,3 +496,18 @@ fn a_wheel_spell_is_not_admitted() {
     spell["spell"]["requirements"]["wheel_unlock"] = Value::Bool(false);
     assert!(spell_from_bundle(&spell, &dependencies).is_ok());
 }
+
+#[test]
+fn a_positional_spell_is_not_admitted() {
+    let (spell, dependencies) = STARTER[0];
+    let mut spell: Value = serde_json::from_str(spell).expect("spell");
+    let dependencies: Value = serde_json::from_str(dependencies).expect("dependencies");
+    spell["spell"]["targeting"]["cast_at_position"] = Value::Bool(true);
+    assert!(spell_from_bundle(&spell, &dependencies).is_err());
+    spell["spell"]["targeting"]["cast_at_position"] = Value::Null;
+    assert!(spell_from_bundle(&spell, &dependencies).is_err());
+    spell["spell"]["targeting"]["cast_at_position"] = Value::Bool(false);
+    assert!(spell_from_bundle(&spell, &dependencies).is_ok());
+    spell["spell"]["targeting"]["aim_at_target"] = Value::Bool(true);
+    assert!(spell_from_bundle(&spell, &dependencies).is_ok());
+}
