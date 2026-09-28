@@ -220,8 +220,8 @@ next_action: "#162 validates this exact head, routes the required independent re
   `74bb3fd38698ba0f76cb36f449d2fa023f12f4f4` on 2026-09-28.
 - Protected-main readback: this file and the task record matched the frozen head blobs
   (`53234d3a`, `c8106ee3`).
-- DUR-03 §39.3 and reward-chest decisions §5 cite this decision (§6 `required_revalidation`,
-  first item).
+- DUR-02 rule 2 (the Character contract), DUR-03 §39.3 and reward-chest decisions §5 cite this
+  decision (§6 `required_revalidation`, first item).
 
 ```yaml
 result: ACCEPTED

@@ -20,6 +20,7 @@ updated_at: 2026-09-28
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
+  - docs/architecture/DUR-02_PROFILE_NEUTRAL_CHARACTER_PERSISTENCE_OWNER_BASELINE.md  # rule 2 citation (Codex P2 on e6bf603)
   - docs/architecture/OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md
   - docs/architecture/reviews/OTERYN_GAME_CHARACTER_REVISION_ITEM_TRANSACTION_COMPOSITION_DECISION_2026-09-27.md
   - docs/agents/tasks/active/OTV2-20260927-character-revision-item-composition.md
@@ -27,6 +28,7 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260928-character-composition-closeout.md
 public_contracts:
   - DUR-03
+  - DUR-02
 depends_on: []
 blocks: []
 cross_repository_coordination_id: null
@@ -38,6 +40,8 @@ external_repositories: []
 The #162 Combat follow-up (comment 5865395886) routed one bounded citation edit plus the #1033
 closeout to the Sol Supervising Architect. Stage C (MINT/TRANSFER) is gated on this edit.
 
+- DUR-02 rule 2 (the Character contract) records that such an item transaction is not a Character
+  semantic transaction and cites the decision.
 - DUR-03 §39.3 no longer records a `CONFLICT` for the CharacterRevision composition. It cites
   `CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1` and restates its rule.
 - TRANSFER stays closed: destination position, capacity and admission are still open.
@@ -82,6 +86,9 @@ authority, fence or recovery semantics.
 
 - `f40c489`: Codex P2 4120106386 (the TRANSFER reopening condition omitted TRANSFER admission).
   Accepted and fixed in `2af6463`.
+- `e6bf603`: Codex P2 4120156332 (the Character contract did not cite the decision, so the
+  `implementation_may_resume: true` flag was premature). Accepted: DUR-02 rule 2 now cites the
+  decision.
 - The successor head needs a fresh exact-head review.
 
 ## Context checkpoint
