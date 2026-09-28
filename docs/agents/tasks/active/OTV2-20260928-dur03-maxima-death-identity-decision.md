@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-dur03-maxima-death-identity-decision
 title: DUR-03 resource maxima (A5) and creature-death identity (A4) decision
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1079
 base_sha: 57a0fc76f9f4812c1e66a18560ff14d05ef36579
 head_sha: null
 final_head_sha: null
@@ -135,11 +135,11 @@ finding_dispositions:
 ## Context checkpoint
 
 ```yaml
-last_progress: decision text authored from owner decisions D50-D52
-status: implementing
+last_progress: authored; PR #1079 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1079
 owner_action_required: null
 blocker: null
-next_action: validate, commit, open PR, request exact-head review
+next_action: exact-head review and Merge Queue integration of #1079
 ```
