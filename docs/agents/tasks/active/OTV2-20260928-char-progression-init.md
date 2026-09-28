@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/oteryn-work-coordinator-jv59l0
 issue: 162
-pr: null
+pr: 1143
 allocation: "#162 comment 5875188437 (Character progression readiness, owner decision D84)"
 base_sha: e5cbcfa
 head_sha: null
@@ -127,7 +127,7 @@ the first XP award, with the same policy binding it passes to the XP writer.
 ```yaml
 last_progress: local commit on wip/char-progression-init; not pushed
 status: implementing
-pr: null
+pr: 1143
 blocker: null
 next_action: control plane freezes, publishes and routes exact-head CI and independent review
 ```
