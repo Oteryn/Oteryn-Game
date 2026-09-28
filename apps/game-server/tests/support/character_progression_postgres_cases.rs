@@ -985,7 +985,7 @@ fn initialization(policy: &str) -> TestResult<ProgressionInitializationRequest<2
     })
 }
 
-// A policy whose first threshold is the D84 start (level 1 at 0 experience).
+// A policy whose first threshold is the D88 start (level 1 at 0 experience).
 fn level_one_request(tag: u8, amount: i64) -> TestResult<ExperienceAwardRequest<2>> {
     let mut award = request(tag, amount)?;
     award.policy.thresholds = [

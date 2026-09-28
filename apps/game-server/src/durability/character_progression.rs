@@ -98,7 +98,7 @@ pub enum ExperienceCommitOutcome {
     AlreadyCommitted(CommittedExperienceAward),
 }
 
-/// D84 initial typed progression of a bootstrap-only Character.
+/// D88 initial typed progression of a bootstrap-only Character.
 pub const INITIAL_CHARACTER_LEVEL: u32 = 1;
 pub const INITIAL_TOTAL_EXPERIENCE: i64 = 0;
 
@@ -369,7 +369,7 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// D84: give a bootstrap-only Character (CharacterRevision one without
+    /// D88: give a bootstrap-only Character (CharacterRevision one without
     /// typed state) its initial progression, level 1 and total experience 0,
     /// exactly once.  Fenced exactly like `commit_character_experience`
     /// (recovery fence, admission relation locks, FND-04 session/lease/scope,
@@ -379,7 +379,7 @@ impl DurabilityRoot {
     /// CharacterRevision does not advance.  An existing row is never
     /// overwritten or regressed: the same binding (context, policy and reward
     /// revisions) is an idempotent no-op that returns the stored state, any
-    /// other binding fails closed.  The stored state is the constant D84
+    /// other binding fails closed.  The stored state is the constant D88
     /// value, so it depends on no policy content beyond these revisions.
     pub async fn initialize_character_progression<const N: usize>(
         &self,

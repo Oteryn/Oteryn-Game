@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260928-char-progression-init
-title: Character progression readiness, fenced D84 initializer (level 1, total experience 0)
+title: Character progression readiness, fenced D88 initializer (level 1, total experience 0)
 mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/oteryn-work-coordinator-jv59l0
 issue: 162
 pr: 1143
-allocation: "#162 comment 5875188437 (Character progression readiness, owner decision D84)"
+allocation: "#162 comment 5875188437 (Character progression readiness, owner decision D88)"
 base_sha: e5cbcfa
 head_sha: null
 final_head_sha: null
@@ -39,7 +39,7 @@ external_repositories: []
 ## Outcome
 
 `DurabilityRoot::initialize_character_progression` gives a bootstrap-only Character
-(CharacterRevision one, no `game_character_progression_state` row) its D84 typed progression,
+(CharacterRevision one, no `game_character_progression_state` row) its D88 typed progression,
 level 1 and total experience 0, exactly once. The initializer runs under the same fence as the
 R7 P03 XP writer, inside the one transaction that writes the row. It is idempotent, never
 overwrites or regresses an existing row, and the XP writer still fails closed on absence.
@@ -47,7 +47,7 @@ Skip-tutorial level-2 starts are out of scope.
 
 ## Architecture and source of truth
 
-- PROVEN: owner decision D84 (allocation comment 5875188437).
+- PROVEN: owner decision D88 (allocation comment 5875188437).
 - PROVEN: VSL-COMBAT-01 §24.1 and DUR-03 require a Character-owned initialization/readiness
   proof before Combat D and XP settlement.
 - PROVEN: migration 0009 permits a progression row at root revision one with zero receipts
