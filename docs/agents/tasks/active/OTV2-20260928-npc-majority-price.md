@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 1159
 jira: KAN-16
 base_sha: 7d1134f090ac249f964fede017efabba91e22b90
 head_sha: null
