@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-br-health-experience
 title: TibiaWiki BR health and experience where Fandom is uncertain (D43)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1051
 jira: KAN-16
 base_sha: a911e667e012005b0c41a3b0974280c4535db69c
 head_sha: null
@@ -27,6 +27,12 @@ owned_paths:
   - docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json
   - tools/content-schema/monster-authoring/**
   - tools/content-migration/creature_admission_stage.py
+  - tools/content-migration/validate_world_project_v2_to_tree.py
+  - tools/content-migration/test_world_project_v2_to_tree.py
+  - content/items/index.json
+  - content/cosmetics/mounts/index.json
+  - content/npcs/**
+  - content/services/**
   - apps/game-server/**
   - content/world/**
   - content/project.json

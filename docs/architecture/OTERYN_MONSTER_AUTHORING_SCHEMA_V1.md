@@ -414,8 +414,10 @@ Bestiary class and summon/convince costs are not adopted. Every adopted value ke
 Canary row as an `approved_omission` and adds a MediaWiki-sourced row. Wiki loot missing in Canary
 is added only when its name resolves to one item: by name, by the item page `itemid`, or by
 dropping the equipped state of an `items.xml` `transformEquipTo` pair. Over all converted
-monsters 748 mitigations and 12,722 loot rows (probabilities, counts and added items) are adopted; 1,120 of
-the fully resolved monsters carry at least one adopted value.
+monsters 748 mitigations and 12,722 loot rows (probabilities, counts and added items) are adopted; 1,175 of
+the fully resolved monsters carry at least one adopted value. Under D43, TibiaWiki BR gives the health of 65
+and the experience of 37 fully resolved monsters whose Fandom value is missing or uncertain; 124 monsters have a BR
+fill in `wiki-br-fill-2026-09-27.json`; the other fills equal Canary or belong to monsters that are not fully resolved.
 Under D32, 971 loot count bounds (a minimum or a maximum) of 334 fully resolved monsters take the
 observed wiki range, and Duke Krule's twelve `minCount` 0 entries become count 1..max.
 
