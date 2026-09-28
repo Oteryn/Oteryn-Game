@@ -7512,16 +7512,6 @@
      32558,
      32780,
      7
-    ],
-    [
-     32632,
-     32769,
-     7
-    ],
-    [
-     32679,
-     32776,
-     7
     ]
    ],
    "removed": "",
@@ -7566,18 +7556,8 @@
    "pageid": 10933,
    "positions": [
     [
-     32558,
-     32780,
-     7
-    ],
-    [
      32632,
      32769,
-     7
-    ],
-    [
-     32679,
-     32776,
      7
     ]
    ],
@@ -15847,11 +15827,6 @@
      33028,
      32416,
      4
-    ],
-    [
-     33092,
-     32450,
-     7
     ]
    ],
    "removed": "",
@@ -17913,6 +17888,7 @@
     "Our climate is quite rough, so we can only grow wheat here, but no fruits.",
     "The Thaian protectorate serves our beloved Venore well.",
     "I have apples, cherries, grapes, and pears. What would you like?",
+    "Good bye, Player.",
     "Greetings, Player. Can I help you?",
     "Good bye, Player."
    ],
@@ -19595,19 +19571,9 @@
    "pageid": 11729,
    "positions": [
     [
-     32797,
-     32249,
-     9
-    ],
-    [
      32829,
      32246,
      10
-    ],
-    [
-     32835,
-     32275,
-     9
     ]
    ],
    "removed": "",
@@ -26971,6 +26937,7 @@
     "If people would mind their own business, the city could be a better place.",
     "Just another lousy pirate, although a quite daring and successful one.",
     "He is just some old man about which the townspeople are talking now and then. Who cares.",
+    "Although he's dead, they say that he is the father of all klabautermen.",
     "A klabauterman is some sort of imp that lives on ships and plays quite evil and sometimes lethal pranks on those who annoy him or don't buy his sympathy with little gifts.",
     "The quara are one of the most murderous threats that the sea gave birth too. I would rather face a giant sea serpent than a horde of quara ...",
     "In the case of a sea serpent you know at least that you'll end up devoured, but who knows what the quara will do to you.",
@@ -39267,11 +39234,6 @@
      33635,
      32344,
      6
-    ],
-    [
-     33670,
-     32220,
-     15
     ]
    ],
    "removed": "",
@@ -43823,16 +43785,6 @@
    "trades": {
     "BuyFromPlayer": {},
     "SellToPlayer": {
-     "100 Great Health Potions": null,
-     "100 Great Mana Potions": null,
-     "100 Great Spirit Potions": null,
-     "100 Health Potions": null,
-     "100 Mana Potions": null,
-     "100 Strong Health Potions": null,
-     "100 Strong Mana Potions": null,
-     "100 Supreme Health Potions": null,
-     "100 Ultimate Health Potions": null,
-     "100 Ultimate Mana Potions": null,
      "Arena Badge (Réplica)": null,
      "Black Pit Demon": null,
      "Blue Pit Demon": null,
@@ -44125,16 +44077,6 @@
    "trades": {
     "BuyFromPlayer": {},
     "SellToPlayer": {
-     "100 Great Health Potions": null,
-     "100 Great Mana Potions": null,
-     "100 Great Spirit Potions": null,
-     "100 Health Potions": null,
-     "100 Mana Potions": null,
-     "100 Strong Health Potions": null,
-     "100 Strong Mana Potions": null,
-     "100 Supreme Health Potions": null,
-     "100 Ultimate Health Potions": null,
-     "100 Ultimate Mana Potions": null,
      "Arena Badge (Réplica)": null,
      "Black Pit Demon": null,
      "Blue Pit Demon": null,
@@ -44234,16 +44176,6 @@
    "trades": {
     "BuyFromPlayer": {},
     "SellToPlayer": {
-     "100 Great Health Potions": null,
-     "100 Great Mana Potions": null,
-     "100 Great Spirit Potions": null,
-     "100 Health Potions": null,
-     "100 Mana Potions": null,
-     "100 Strong Health Potions": null,
-     "100 Strong Mana Potions": null,
-     "100 Supreme Health Potions": null,
-     "100 Ultimate Health Potions": null,
-     "100 Ultimate Mana Potions": null,
      "Arena Badge (Réplica)": null,
      "Black Pit Demon": null,
      "Blue Pit Demon": null,
@@ -44342,16 +44274,6 @@
    "trades": {
     "BuyFromPlayer": {},
     "SellToPlayer": {
-     "100 Great Health Potions": null,
-     "100 Great Mana Potions": null,
-     "100 Great Spirit Potions": null,
-     "100 Health Potions": null,
-     "100 Mana Potions": null,
-     "100 Strong Health Potions": null,
-     "100 Strong Mana Potions": null,
-     "100 Supreme Health Potions": null,
-     "100 Ultimate Health Potions": null,
-     "100 Ultimate Mana Potions": null,
      "Arena Badge (Réplica)": null,
      "Black Pit Demon": null,
      "Blue Pit Demon": null,
@@ -44451,16 +44373,6 @@
    "trades": {
     "BuyFromPlayer": {},
     "SellToPlayer": {
-     "100 Great Health Potions": null,
-     "100 Great Mana Potions": null,
-     "100 Great Spirit Potions": null,
-     "100 Health Potions": null,
-     "100 Mana Potions": null,
-     "100 Strong Health Potions": null,
-     "100 Strong Mana Potions": null,
-     "100 Supreme Health Potions": null,
-     "100 Ultimate Health Potions": null,
-     "100 Ultimate Mana Potions": null,
      "Arena Badge (Réplica)": null,
      "Black Pit Demon": null,
      "Blue Pit Demon": null,
@@ -53140,11 +53052,6 @@
    ],
    "pageid": 58213,
    "positions": [
-    [
-     33318,
-     32007,
-     7
-    ],
     [
      33394,
      31919,

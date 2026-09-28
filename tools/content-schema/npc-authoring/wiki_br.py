@@ -180,6 +180,11 @@ LINK = re.compile(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]')
 # after links and bold/italic markup are removed, a transcript line is `Speaker: text`; the speaker may be
 # written plain, bold, italic or as a link, before or around the colon, and may contain an apostrophe
 SPEAKER = re.compile(r"\s*([^:<>{}|]{1,60}?)\s*:\s*(.*)$")
+TIMESTAMP = re.compile(r'^\s*\d{1,2}:\d{2}(?::\d{2})?\s+')  # `03:07 Marcus: ...` is a chat log line
+# a trade table introduced as historical (`Antes do Update 12.70`) is not a current offer list
+HISTORICAL = re.compile(r'(?i)\bantes d[oa]\b')
+# the infobox `location` field, up to the next field; map links elsewhere (notes, travel) are not NPC positions
+LOCATION = re.compile(r'^\|\s*location\s*=(.*?)(?=^\|\s*[a-z0-9_]+\s*=|\Z)', re.M | re.S)
 ORDERED = re.compile(r'^\s*\d+[.)]?\s+')  # `1 Edgar-Ellen: ...` numbers a turn
 # an editor's note in parentheses (Portuguese, or English conditions such as `(if you ...)`), not NPC speech
 ANNOTATION = re.compile(r'\s*\((?=[^()]*\b(?:se|você|voce|jogador|caso|para|ao|turnos?|abre|termina|perde|já|não|nao'
@@ -222,7 +227,7 @@ def unmarked_prefix(raw_segment):
 def read_turn(raw_segment, speakers):
     """(folded speaker, text) when a raw segment opens a transcript turn, else None. A bold label without a
     colon (`'''Ceiron''' text`) opens a turn only for one of this page's own speakers."""
-    raw_segment = ORDERED.sub('', unmarked_prefix(raw_segment))
+    raw_segment = ORDERED.sub('', unmarked_prefix(TIMESTAMP.sub('', raw_segment)))
     bold = BOLD_LABEL.match(raw_segment)
     if bold and fold(LINK.sub(r'\1', bold.group(1))) in speakers:
         text = re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(bold.group(2)))).strip()
@@ -249,7 +254,15 @@ def page_facts(page):
     wikitext = COMMENT.sub('', page['wikitext'])  # hidden HTML comments are not page content
     name = infobox_field(wikitext, 'name') or page['title']
     trades = {'BuyFromPlayer': {}, 'SellToPlayer': {}}
-    for kind, body in TRADES.findall(wikitext):
+    previous_end = 0
+    for table in TRADES.finditer(wikitext):
+        kind, body = table.groups()
+        lead = wikitext[previous_end:table.start()]
+        lead = lead[lead.rfind('\n|') + 1:]  # only this field's own text: a `notes` sentence above does not count
+        historical = HISTORICAL.search(lead)
+        previous_end = table.end()
+        if historical:
+            continue
         direction = 'SellToPlayer' if kind == 'Sell' else 'BuyFromPlayer'
         for part in LINK.sub(r'\1', body).split('|')[1:]:  # links first, so a piped link is not a separator
             fields = [field.strip() for field in part.split(',')]
@@ -296,7 +309,8 @@ def page_facts(page):
     return {'pageid': page['pageid'], 'revid': page['revid'], 'timestamp': page['timestamp'],
             'sha256': page['sha256'], 'title': page['title'], 'role': page['role'], 'name': name,
             'implemented': infobox_field(wikitext, 'implemented'), 'removed': infobox_field(wikitext, 'removed'),
-            'positions': sorted({(int(x), int(y), int(z)) for x, y, z in MAPA.findall(wikitext)}),
+            'positions': sorted({(int(x), int(y), int(z)) for block in LOCATION.findall(wikitext)
+                                 for x, y, z in MAPA.findall(block)}),
             'trades': trades, 'npc_lines': lines}
 
 
@@ -355,14 +369,15 @@ def cmd_self_test(_args):
     assert again == snapshot
     text = ("{{Infobox_NPC\n| name = Goldro\n| implemented = 15.30\n| removed = \n"
             "| location = [[Salgadora]] ({{Mapa|34055,32503,7:2|aqui}}).\n| notes = Long wiki prose.\n"
-            "| sells = {{Trades/Sell\n| Bread,4\n| [[Cheese]]\n| Cot, 200 [[Gold Coins|gp]]\n| Fire Sword, '''1 000'''\n| Blood;Vial of Blood\n| Beer; Mug of Beer, 3}}\n"
+            "| notes = Ferry to {{Mapa|1,2,3:1|there}}. Antes do update 12.70 it sold potions.\n"
+            "| sells = <small>''Antes do Update 12.70''</small>\n{{Trades/Sell\n| Old Potion,50}}\n{{Trades/Sell\n| Bread,4\n| [[Cheese]]\n| Cot, 200 [[Gold Coins|gp]]\n| Fire Sword, '''1 000'''\n| Blood;Vial of Blood\n| Beer; Mug of Beer, 3}}\n"
             "| falas = \n''Jogador:'' '''Hi'''</br>\n"
             "'''Goldro:''' Hello, ''Jogador''. Ask about [[Salgadora|the town]].</br>\n"
             "'''Goldro''': Bold name, colon outside.</br>\n'''[[Goldro]]:''' Linked name.</br>\n"
             "[[Goldro]]: Link form.</br>\nGoldro: Plain form.</br>\n''Goldro:'' Italic form.</br>\n"
             "<!--\nGoldro: Hidden comment.\n-->\n'''Goldro''' No colon.\n'''Other''' not a label.\n"
             "1 Goldro: Numbered.\n'''Goldro:''' Take this! (burning effect, 5 turnos de 10 hitpoints)\n"
-            "'''Goldro:''' Shh. (whispers)\n"
+            "'''Goldro:''' Shh. (whispers)\n03:07 Goldro: Timestamped.\n"
             "[[Other]]: Not mine.\n'''Goldro:''' One.<br>Jogador: Accident<br>'''Goldro:''' Two.<br>still two.\n"
             "'''Goldro:''' Goldro: Repeated label.\nGoldrp: Typo label.<br\nGoldro: Bye, and\nsee you soon.\n"
             ":''Jogador:'' Trade?\n:'''Goldro:''' Indented.\n:Respostas:\nNot Goldro any more.\n\n"
@@ -375,7 +390,7 @@ def cmd_self_test(_args):
     assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
                                   'Linked name.', 'Link form.', 'Plain form.', 'Italic form.',
                                   # a bold label of another name opens no turn, so it continues Goldro's
-                                  'No colon. Other not a label.', 'Numbered.', 'Take this!', 'Shh. (whispers)',
+                                  'No colon. Other not a label.', 'Numbered.', 'Take this!', 'Shh. (whispers)', 'Timestamped.',
                                   'One.', 'Two. still two.',
                                   'Repeated label.', 'Typo label.', 'Bye, and see you soon.', 'Indented.'], facts
     apostrophe = page_facts({**page_record({'pageid': 8, 'title': "Lee'Delle", 'revisions': [
