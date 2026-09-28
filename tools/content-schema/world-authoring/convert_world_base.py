@@ -20,11 +20,10 @@ from collections import Counter
 from itertools import pairwise
 from pathlib import Path
 
-import zstandard
-
 import convert_world_metadata as metadata
 import otbm_reader
 import world_region_codec as codec
+import zstandard
 from convert_world_metadata import ConvertError, canonical
 
 ROOT = metadata.ROOT
