@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/ice_strike",
-      "revision": "spell-p2-r5"
+      "revision": "spell-p2-r6"
     },
     "name": "Ice Strike",
     "carrier": "instant",
@@ -53,7 +53,7 @@
       "ability": {
         "family": "Ability",
         "key": "candidate:ability/spell/ice_strike",
-        "revision": "spell-p2-r5"
+        "revision": "spell-p2-r6"
       }
     }
   }

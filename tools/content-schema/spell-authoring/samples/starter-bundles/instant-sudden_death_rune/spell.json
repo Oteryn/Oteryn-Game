@@ -2,11 +2,12 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/sudden_death_rune",
-      "revision": "spell-p2-r5"
+      "revision": "spell-p2-r6"
     },
     "name": "Sudden Death Rune",
     "carrier": "instant",
     "words": "adori gran mort",
+    "reference_spell_id": 21,
     "requirements": {
       "vocations": [
         "master_sorcerer",
@@ -45,14 +46,14 @@
         "result": {
           "family": "Item",
           "key": "candidate:item/3155",
-          "revision": "spell-p2-r5"
+          "revision": "spell-p2-r6"
         },
         "count": 3,
         "effect_asset_binding": "canary.appearance:effect/magic_red",
         "reagent": {
           "family": "Item",
           "key": "candidate:item/3147",
-          "revision": "spell-p2-r5"
+          "revision": "spell-p2-r6"
         }
       }
     }

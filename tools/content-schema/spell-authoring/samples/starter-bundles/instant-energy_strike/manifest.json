@@ -8,14 +8,6 @@
       "content_sha256": "c4800d7d0fac37238a9101afbc2060a3afcf8ddc76b9e71286fd5feb628b70f2"
     },
     {
-      "repository": "opentibiabr/canary",
-      "revision": "99902524e052f37574194466c2949c576e4ab269"
-    },
-    {
-      "repository": "zimbadev/crystalserver",
-      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
-    },
-    {
       "kind": "mediawiki",
       "api": "https://tibia.fandom.com/api.php",
       "title": "Energy Strike",
@@ -30,6 +22,14 @@
       "page_id": 10030,
       "revision_id": 436028,
       "content_sha256": "aca16dd00d497eb84ed8dd45218e0ca1babd1529ec033e2ad6c761e6ec2d33d5"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
     }
   ],
   "entries": [
@@ -45,26 +45,16 @@
     },
     {
       "source_index": 1,
-      "source_file": "data/scripts/spells/attack/energy_strike.lua",
-      "source_line": 21,
-      "source_field": "id",
+      "source_file": "Energy Strike",
+      "source_line": 1,
+      "source_field": "spellid",
       "kind": "field",
       "status": "mapped",
       "destination": "/spell/spell/reference_spell_id",
-      "resolution": "S4: source value (both sources agree)."
+      "resolution": "S3: the wiki states this value."
     },
     {
-      "source_index": 2,
-      "source_file": "data/scripts/spells/attack/energy_strike.lua",
-      "source_line": 20,
-      "source_field": "id",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/reference_spell_id",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
-      "source_index": 3,
+      "source_index": 1,
       "source_file": "Energy Strike",
       "source_line": 1,
       "source_field": "voc",
@@ -74,7 +64,7 @@
       "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
     },
     {
-      "source_index": 4,
+      "source_index": 2,
       "source_file": "Energy Strike",
       "source_line": 1,
       "source_field": "voc",
@@ -104,7 +94,7 @@
       "resolution": "S15: the official tibia.com spell library states this value."
     },
     {
-      "source_index": 1,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 30,
       "source_field": "isPremium",
@@ -113,7 +103,7 @@
       "resolution": "S15: superseded by the official tibia.com value False (source True)."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 29,
       "source_field": "isPremium",
@@ -132,27 +122,27 @@
       "resolution": "S15: the official tibia.com spell library states this value."
     },
     {
-      "source_index": 1,
-      "source_file": "data/scripts/spells/attack/energy_strike.lua",
-      "source_line": 1,
-      "source_field": "soul",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/costs/soul",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
-      "source_index": 2,
-      "source_file": "data/scripts/spells/attack/energy_strike.lua",
-      "source_line": 1,
-      "source_field": "soul",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/costs/soul",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
       "source_index": 3,
+      "source_file": "data/scripts/spells/attack/energy_strike.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/energy_strike.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
       "source_file": "Energy Strike",
       "source_line": 1,
       "source_field": "cooldown",
@@ -162,7 +152,7 @@
       "resolution": "S3: the wiki states this value."
     },
     {
-      "source_index": 4,
+      "source_index": 2,
       "source_file": "Energy Strike",
       "source_line": 1,
       "source_field": "cooldown",
@@ -182,7 +172,7 @@
       "resolution": "S15: the official tibia.com spell library states this value."
     },
     {
-      "source_index": 3,
+      "source_index": 1,
       "source_file": "Energy Strike",
       "source_line": 1,
       "source_field": "cooldowngroup",
@@ -190,19 +180,29 @@
       "status": "mapped",
       "destination": "/spell/spell/groups/0/cooldown_ms",
       "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Energy Strike",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/energy_strike.lua",
+      "source_line": 1,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
     },
     {
       "source_index": 4,
-      "source_file": "Energy Strike",
-      "source_line": 1,
-      "source_field": "cooldowngroup",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/groups/0/cooldown_ms",
-      "resolution": "S3: the wiki states this value."
-    },
-    {
-      "source_index": 1,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "isAggressive",
@@ -212,17 +212,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 2,
-      "source_file": "data/scripts/spells/attack/energy_strike.lua",
-      "source_line": 1,
-      "source_field": "isAggressive",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/targeting/aggressive",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
-      "source_index": 1,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "isSelfTarget",
@@ -232,7 +222,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "isSelfTarget",
@@ -242,7 +232,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 1,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "needTarget",
@@ -252,7 +242,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "needTarget",
@@ -262,7 +252,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 1,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "needDirection",
@@ -272,7 +262,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "needDirection",
@@ -282,7 +272,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 1,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 31,
       "source_field": "needCasterTargetOrDirection",
@@ -292,7 +282,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 30,
       "source_field": "needCasterTargetOrDirection",
@@ -302,7 +292,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 1,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 32,
       "source_field": "blockWalls",
@@ -312,7 +302,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 31,
       "source_field": "blockWalls",
@@ -322,7 +312,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 1,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "allowOnSelf",
@@ -332,7 +322,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "allowOnSelf",
@@ -342,17 +332,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 1,
-      "source_file": "data/scripts/spells/attack/energy_strike.lua",
-      "source_line": 1,
-      "source_field": "checkFloor",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/targeting/check_floor",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
-      "source_index": 2,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "checkFloor",
@@ -363,6 +343,16 @@
     },
     {
       "source_index": 4,
+      "source_file": "data/scripts/spells/attack/energy_strike.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
       "source_file": "Energy Strike",
       "source_line": 1,
       "source_field": "spellrange",
@@ -372,7 +362,7 @@
       "resolution": "S3: the wiki states this value."
     },
     {
-      "source_index": 1,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "setPzLocked",
@@ -382,7 +372,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "setPzLocked",
@@ -392,7 +382,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 1,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "needWeapon",
@@ -402,7 +392,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 1,
       "source_field": "needWeapon",
@@ -412,7 +402,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 1,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 25,
       "source_field": "castSound",
@@ -422,7 +412,7 @@
       "resolution": "S18: sound cue named by its SoundEffect_t member."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 23,
       "source_field": "castSound",
@@ -432,7 +422,7 @@
       "resolution": "S18: sound cue named by its SoundEffect_t member."
     },
     {
-      "source_index": 1,
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 26,
       "source_field": "impactSound",
@@ -442,7 +432,7 @@
       "resolution": "S18: sound cue named by its SoundEffect_t member."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 24,
       "source_field": "impactSound",
@@ -452,27 +442,27 @@
       "resolution": "S18: sound cue named by its SoundEffect_t member."
     },
     {
-      "source_index": 3,
-      "source_file": "Energy Strike",
-      "source_line": 1,
-      "source_field": "basepower",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/base_power",
-      "resolution": "S3: the wiki states this value."
-    },
-    {
-      "source_index": 4,
-      "source_file": "Energy Strike",
-      "source_line": 1,
-      "source_field": "basepower",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/base_power",
-      "resolution": "S3: the wiki states this value."
-    },
-    {
       "source_index": 1,
+      "source_file": "Energy Strike",
+      "source_line": 1,
+      "source_field": "basepower",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/base_power",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Energy Strike",
+      "source_line": 1,
+      "source_field": "basepower",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/base_power",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 12,
       "source_field": "onGetFormulaValues",
@@ -481,7 +471,7 @@
       "resolution": "S5: the crystal formula consumes the wiki base power; the canary formula is superseded."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 11,
       "source_field": "onCastSpell",

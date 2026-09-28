@@ -280,6 +280,23 @@ which records the copy's SHA-256. The converter applies it as S15 (`spell-p2-r5`
 - **Still to capture.** The detail pages (cooldowns, soul, magic level, vocations) are not captured yet;
   until they are, the rules above decide those fields.
 
+**Client spell id (`spell-p2-r6`).** `reference_spell_id` now follows the wiki `spellid` field under S3, as §2
+always described; earlier revisions read only the source `spell:id`. 43 values change:
+
+- **Runes.** Rune use now carries the id of its conjuring spell, for example 21 for Sudden Death Rune; no source
+  states an id for rune use.
+- **Instant spells that had no id.**
+  - Find Fiend takes the wiki 248, which settles the Canary 248 and Crystal 20 conflict.
+  - Lightest Magic Missile (Canary) and Practise Magic Missile (Crystal) both join the wiki page Practise Magic
+    Missile and take 168.
+- **Instant spells where the wiki supersedes the source id.**
+  - Lesser Front Sweep changes from 168 to 271; in the sources, 168 also belongs to Practise Magic Missile.
+  - Lesser Ethereal Spear changes from 169 to 270.
+  - Sharpshooter changes from 313 to 135.
+  - Bruise Bane changes from 170 to 175.
+  - Mud Attack changes from 174 to 172.
+  - Ice Burst and Terra Burst swap 262 and 263.
+
 ## 5. Decisions
 
 | # | Proposal | Basis |
