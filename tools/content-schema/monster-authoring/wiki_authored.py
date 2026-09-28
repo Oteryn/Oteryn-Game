@@ -52,7 +52,7 @@ monster.maxHealth = {hp}
 monster.race = "blood"
 monster.corpse = {itemid}
 monster.speed = 125
-monster.manaCost = 0
+monster.manaCost = {mana_cost}
 
 monster.changeTarget = {{
 	interval = 4000,
@@ -64,23 +64,23 @@ monster.strategiesTarget = {{
 }}
 
 monster.flags = {{
-	summonable = false,
+	summonable = {summonable},
 	attackable = true,
 	hostile = true,
-	convinceable = false,
-	pushable = false,
-	rewardBoss = false,
-	illusionable = false,
-	canPushItems = true,
+	convinceable = {convinceable},
+	pushable = {pushable},
+	rewardBoss = {reward_boss},
+	illusionable = {illusionable},
+	canPushItems = {push_items},
 	canPushCreatures = true,
 	staticAttackChance = 90,
 	targetDistance = 1,
 	runHealth = 0,
 	healthHidden = false,
 	isBlockable = false,
-	canWalkOnEnergy = true,
-	canWalkOnFire = true,
-	canWalkOnPoison = true,
+	canWalkOnEnergy = {walk_energy},
+	canWalkOnFire = {walk_fire},
+	canWalkOnPoison = {walk_poison},
 }}
 
 monster.light = {{
@@ -107,22 +107,22 @@ monster.defenses = {{
 }}
 
 monster.elements = {{
-	{{ type = COMBAT_PHYSICALDAMAGE, percent = 0 }},
-	{{ type = COMBAT_ENERGYDAMAGE, percent = 0 }},
-	{{ type = COMBAT_EARTHDAMAGE, percent = 0 }},
-	{{ type = COMBAT_FIREDAMAGE, percent = 0 }},
-	{{ type = COMBAT_LIFEDRAIN, percent = 0 }},
+	{{ type = COMBAT_PHYSICALDAMAGE, percent = {res_physical} }},
+	{{ type = COMBAT_ENERGYDAMAGE, percent = {res_energy} }},
+	{{ type = COMBAT_EARTHDAMAGE, percent = {res_earth} }},
+	{{ type = COMBAT_FIREDAMAGE, percent = {res_fire} }},
+	{{ type = COMBAT_LIFEDRAIN, percent = {res_life_drain} }},
 	{{ type = COMBAT_MANADRAIN, percent = 0 }},
-	{{ type = COMBAT_DROWNDAMAGE, percent = 0 }},
-	{{ type = COMBAT_ICEDAMAGE, percent = 0 }},
-	{{ type = COMBAT_HOLYDAMAGE, percent = 0 }},
-	{{ type = COMBAT_DEATHDAMAGE, percent = 0 }},
+	{{ type = COMBAT_DROWNDAMAGE, percent = {res_drown} }},
+	{{ type = COMBAT_ICEDAMAGE, percent = {res_ice} }},
+	{{ type = COMBAT_HOLYDAMAGE, percent = {res_holy} }},
+	{{ type = COMBAT_DEATHDAMAGE, percent = {res_death} }},
 }}
 
 monster.immunities = {{
-	{{ type = "paralyze", condition = true }},
+	{{ type = "paralyze", condition = {para_immune} }},
 	{{ type = "outfit", condition = false }},
-	{{ type = "invisible", condition = true }},
+	{{ type = "invisible", condition = {invis_immune} }},
 	{{ type = "bleed", condition = false }},
 }}
 
@@ -228,6 +228,58 @@ def number_range(raw):
     return int(match.group(1)), int(match.group(2))
 
 
+YES, NO = {'yes', 'sim'}, {'no', 'não', '--'}
+
+
+def boolean(*values):
+    """One boolean from wiki yes/no facts; the sources must agree and every value must be a plain yes or no."""
+    parsed = set()
+    for value in values:
+        value = value.strip().lower()
+        if value not in YES | NO:
+            raise ValueError(f'not a plain yes/no wiki value: {value!r}')
+        parsed.add(value in YES)
+    if len(parsed) != 1:
+        raise ValueError(f'wiki sources disagree: {values}')
+    return parsed.pop()
+
+
+def resistance(value):
+    """Canary reduction percent from a wiki damage modifier (100% -> 0, 80% -> 20); an uncertain `?` mark is accepted."""
+    match = re.fullmatch(r'(\d+)%\??', value.strip())
+    if not match:
+        raise ValueError(f'not a wiki damage modifier: {value!r}')
+    return 100 - int(match.group(1))
+
+
+def lua(value):
+    return 'true' if value else 'false'
+
+
+def derived_values(sources):
+    """Every source-backed flag, immunity and element of the authored file, derived from the pinned facts."""
+    fandom, br = sources['fandom.monster']['facts'], sources['br.monster']['facts']
+    summonable, convinceable = fandom['summon']['value'] != '--', fandom['convince']['value'] != '--'
+    if summonable or convinceable:
+        raise ValueError('a summonable or convinceable wiki-authored monster needs its mana cost authored')
+    br_immune = {part.strip().lower() for part in br['immunities']['value'].split(',')}
+    ignored = {part.strip().lower() for part in br['ignoresfields']['value'].split(',')}
+    values = {'summonable': lua(summonable), 'convinceable': lua(convinceable), 'mana_cost': 0,
+              'pushable': lua(boolean(fandom['pushable']['value'], br['pushable']['value'])),
+              'illusionable': lua(boolean(fandom['illusionable']['value'], br['illusionable']['value'])),
+              'reward_boss': lua(boolean(fandom['isboss']['value'], br['isboss']['value'])),
+              'push_items': lua(boolean(fandom['pushobjects']['value'], br['pushobjects']['value'])),
+              'para_immune': lua(boolean(fandom['paraimmune']['value'], 'yes' if 'paralysis' in br_immune else 'no')),
+              'invis_immune': lua(boolean(fandom['senseinvis']['value'], 'yes' if 'invisibility' in br_immune else 'no'))}
+    for element in ('energy', 'fire', 'poison'):
+        values[f'walk_{element}'] = lua(element in ignored)
+    for element in ('physical', 'energy', 'earth', 'fire', 'ice', 'holy', 'death'):
+        values[f'res_{element}'] = resistance(br[f'{element}DmgMod']['value'])
+    values['res_life_drain'] = resistance(fandom['hpDrainDmgMod']['value'])
+    values['res_drown'] = resistance(fandom['drownDmgMod']['value'])
+    return values
+
+
 def lua_text(sources):
     fandom, br = sources['fandom.monster']['facts'], sources['br.monster']['facts']
     if fandom['hp']['value'] != br['hp']['value']:
@@ -242,6 +294,7 @@ def lua_text(sources):
               'melee_max': number_range(br['hab_physical']['value'])[1]}
     values['exori_min'], values['exori_max'] = number_range(exori)
     values['ball_min'], values['ball_max'] = number_range(ball)
+    values.update(derived_values(sources))
     return DARK_MERUDRI.format(**values)
 
 
@@ -353,6 +406,28 @@ def self_test():
     text = lua_text(sample['sources'])
     assert 'monster.maxHealth = 6500' in text and 'lookType = 1824' in text and 'monster.corpse = 50311' in text, text
     assert 'minDamage = -430, maxDamage = -550' in text and 'minDamage = -290, maxDamage = -460' in text
+    assert '\tpushable = false,' in text and '\tcanPushItems = true,' in text and '\tcanWalkOnPoison = true,' in text
+    assert '{ type = "paralyze", condition = true }' in text and 'COMBAT_FIREDAMAGE, percent = 0' in text
+    changed = json.loads(json.dumps(sample['sources']))
+    for source_name in ('fandom.monster', 'br.monster'):
+        changed[source_name]['facts']['pushable']['value'] = {'fandom.monster': 'yes', 'br.monster': 'sim'}[source_name]
+    changed['br.monster']['facts']['fireDmgMod']['value'] = '80%'
+    changed_text = lua_text(changed)
+    assert '\tpushable = true,' in changed_text and 'COMBAT_FIREDAMAGE, percent = 20' in changed_text
+    changed['br.monster']['facts']['pushable']['value'] = 'não'
+    try:
+        lua_text(changed)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('disagreeing wiki pushable facts were accepted')
+    changed['fandom.monster']['facts']['summon']['value'] = '450'
+    try:
+        derived_values(changed)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('a summonable wiki monster was authored without a mana cost')
     assert text.startswith('local mType = Game.createMonsterType("Dark Merudri")'), text[:60]
     rows = [{'source_field': field, 'kind': 'field', 'status': 'approved_omission' if field == 'voices' else 'mapped',
              'destination': '/x', 'resolution': 'r'} for field in FIELDS if field not in IMPLICIT]
