@@ -57,6 +57,7 @@ jobs:
           python wiki_spells.py self-test
           python tibiopedia_spells.py self-test
           python verify_spells.py self-test
+          python tibiacom_spells.py self-test
           for bundle in samples/starter-bundles/*/; do
             python validate_spell.py "$bundle/spell.json" "$bundle/dependencies.json" \
               --catalog "$bundle/catalog.json" --manifest "$bundle/manifest.json" > /dev/null
@@ -106,5 +107,52 @@ jobs:
         with:
           name: spell-wiki-br-${{ github.event.pull_request.head.sha || github.sha }}
           path: ${{ runner.temp }}/out/wiki-spell-infoboxes-br.json
+          if-no-files-found: error
+          retention-days: 14
+
+  tibiacom:
+    # tibia.com answers a Cloudflare browser check from the build container; this job reads the spell
+    # library from a hosted runner in headless Chromium (no user-agent spoofing or challenge bypass).
+    # The artifact keeps table cells cut to 200 characters with page URL and SHA-256, never raw pages.
+    name: Spell authoring / tibia.com capture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/spell-authoring
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Capture the tibia.com spell library
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check playwright==1.55.0
+          python -m playwright install --with-deps chromium
+          python tibiacom_spells.py fetch --out "$RUNNER_TEMP/out/tibiacom-spell-tables.json"
+          python - "$RUNNER_TEMP/out/tibiacom-spell-tables.json" <<'PY'
+          import json, sys
+          doc = json.load(open(sys.argv[1], encoding='utf-8'))
+          pages = doc['pages']
+          assert len(pages) > 1, 'empty tibia.com capture'
+          assert all(set(p) == {'url', 'sha256', 'tables'} for p in pages), 'raw pages must not leave the runner'
+          assert all(len(c) <= 200 for p in pages for t in p['tables'] for r in t for c in r)
+          print(f"tibia.com pages: {len(pages)}")
+          PY
+
+      - name: Upload tibia.com spell tables
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spell-tibiacom-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/out/tibiacom-spell-tables.json
           if-no-files-found: error
           retention-days: 14
