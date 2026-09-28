@@ -1379,6 +1379,12 @@ pub(super) fn validate_ability_details(
                 "v2 encounter-backed Ability must be a spell",
             ));
         }
+        // D45: the encounter rule supplies the whole effect, so the cast has no geometry of its own.
+        if details.area.is_some() || details.chain.is_some() {
+            return Err(ProjectError::InvalidProject(
+                "v2 encounter-backed Ability has no area or chain",
+            ));
+        }
         family(
             encounter,
             ProjectV2Family::Encounter,

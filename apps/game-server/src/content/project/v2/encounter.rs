@@ -867,10 +867,19 @@ fn known(pool: &BTreeSet<&str>, value: &str, error: &'static str) -> Result<(), 
 /// interactions stay tokens until their owning domain admits them.
 fn token(value: &str, limits: ProjectEvidenceLimits) -> Result<(), ProjectError> {
     validate_v2_source_text("v2 encounter domain token", value, limits)?;
-    let namespaced = value
-        .split_once(':')
-        .is_some_and(|(namespace, local)| !namespace.is_empty() && !local.is_empty());
-    if !namespaced || !value.bytes().all(|byte| byte.is_ascii_graphic()) {
+    // The encounter authoring KEY grammar: `^[a-z][a-z0-9_.-]*:[a-z0-9_./-]+$`.
+    let key_byte =
+        |byte: u8| byte.is_ascii_lowercase() || byte.is_ascii_digit() || b"_.-".contains(&byte);
+    let valid = value.split_once(':').is_some_and(|(namespace, local)| {
+        namespace
+            .as_bytes()
+            .first()
+            .is_some_and(u8::is_ascii_lowercase)
+            && namespace.bytes().all(key_byte)
+            && !local.is_empty()
+            && local.bytes().all(|byte| key_byte(byte) || byte == b'/')
+    });
+    if !valid {
         return invalid("invalid v2 encounter domain token");
     }
     Ok(())

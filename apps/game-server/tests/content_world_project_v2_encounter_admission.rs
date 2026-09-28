@@ -335,7 +335,27 @@ fn admitted_encounter_round_trips_and_stays_declarative() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 20] = [
+    let cases: [(&str, &str, Mutation); 22] = [
+        (
+            "an encounter-backed ability with an area",
+            "v2 encounter-backed Ability has no area or chain",
+            |draft| {
+                ability_mut(draft).area = Some(ProjectV2AbilityArea::Circle { radius_tiles: 2 });
+            },
+        ),
+        (
+            "a quest progress token outside the key grammar",
+            "invalid v2 encounter domain token",
+            |draft| {
+                encounter_mut(draft).rules[0].conditions.push(
+                    ProjectV2EncounterCondition::WorldState {
+                        state: "X:a:b".into(),
+                        op: ProjectV2CompareOp::Equal,
+                        value: ProjectV2StateValue::Boolean(true),
+                    },
+                );
+            },
+        ),
         (
             "a per-player spawn owned by the death master",
             "v2 spawn_per_player owner is none or subject",
