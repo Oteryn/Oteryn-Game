@@ -73,7 +73,7 @@ const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "fff3626e1d6f7d97a071e981de09623459fdbbabfea532854017e1e99b816a33";
+const NPC_STAGED_SHA256: &str = "b49ffa0d19b514651130a8b832e3c6b451c911edd8ff4e9d3cb9c01448adcf5c";
 const NPC_STAGE_TOOL_SHA256: &str =
     "ec23b6f42dd0551e701c72e51aaeda82e5d837efb685cda589efb59a4d57ccd0";
 const NPC_CANDIDATES_SHA256: &str =
@@ -90,7 +90,7 @@ const NPC_DECLARATIONS: usize = 2073;
 const NPC_DIALOGUE_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260928-npc-dialogue-wave-a-staged.json");
 const NPC_DIALOGUE_STAGED_SHA256: &str =
-    "2b66952093610cf1bb7e12bfec146d179dfe90950acfb65095a70cab118c4cec";
+    "fec058688c59968f156df6aebbed75ec8df72760947c945487becc3c6a3f6fad";
 const NPC_DIALOGUES: usize = 617;
 const NPC_DIALOGUE_NODES: usize = 4220;
 const NPC_BINDINGS: usize = 2281;

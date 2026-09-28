@@ -31,6 +31,10 @@ DIALOGUE_FIELDS = ('greet', 'farewell', 'walkaway', 'send_trade', 'keywords', 'v
 CONTROL_CHARS = frozenset(chr(c) for c in range(0x20) if c != 0x0a) | {chr(0x7f)}
 
 
+CENSUS = {'canary': ROOT / 'tools/content-schema/npc-authoring/samples/census-canary-47dfd51f.json',
+          'crystal': ROOT / 'tools/content-schema/npc-authoring/samples/census-crystal-ff7ede59.json'}
+
+
 class StageError(Exception):
     pass
 
@@ -329,13 +333,43 @@ def load_bundle(bundles_dir: Path, source: str, provenance: dict) -> dict | None
     return bundle
 
 
-def stage(report: dict, canary_dir: Path, crystal_dir: Path) -> dict:
+def strip_text(value: Any) -> Any:
+    """The reference-only form of an --include-text bundle: every text reference without its text."""
+    if isinstance(value, dict):
+        return {k: strip_text(v) for k, v in value.items() if not (k == 'text' and 'sha256' in value)}
+    if isinstance(value, list):
+        return [strip_text(v) for v in value]
+    return value
+
+
+def census_bound_reference(reference_dir: Path, source: str) -> tuple[Path, str]:
+    """The reference-only bundle directory must reproduce the committed census bundle_digest (sorted
+    `<file name>:<sha256 of file>` lines), which authenticates every reference bundle."""
+    census_digest = json.loads(CENSUS[source].read_text())['bundle_digest']
+    lines = [f'{path.name}:{hashlib.sha256(path.read_bytes()).hexdigest()}'
+             for path in sorted(reference_dir.glob('*.json'))]
+    if hashlib.sha256('\n'.join(lines).encode()).hexdigest() != census_digest:
+        raise StageError(f'{source} reference bundles do not reproduce the committed census bundle_digest')
+    return reference_dir, census_digest
+
+
+def text_bundle_verified(bundle: dict, reference_dir: Path, source_key: str) -> bool:
+    """An --include-text bundle is authenticated when, without its text, it equals the census-bound
+    reference bundle; the text itself is bound by the per-reference digests checked in leaf_texts."""
+    reference = reference_dir / f"{source_key.split(':npc/', 1)[1]}.json"
+    return reference.exists() and json.loads(reference.read_text()) == strip_text(bundle)
+
+
+def stage(report: dict, canary_dir: Path, crystal_dir: Path, canary_reference: Path,
+          crystal_reference: Path) -> dict:
     if report['schema'] != 'OTERYN_NPC_PROMOTION_CANDIDATES/v1':
         raise StageError('promotion candidate report drifted')
     for bundles_dir in (canary_dir, crystal_dir):
         index_path = bundles_dir.parent / 'index.json'
         if not index_path.exists() or json.loads(index_path.read_text()).get('include_text') is not True:
             raise StageError(f'{bundles_dir} is not a convert.py --include-text output (its index.json)')
+    references = {'canary': census_bound_reference(canary_reference, 'canary'),
+                  'crystal': census_bound_reference(crystal_reference, 'crystal')}
     candidates = sorted(report['candidates'], key=lambda c: c['identity']['key'])
     stats = {
         'dropped_non_say_gated': 0, 'dropped_no_text': 0, 'dropped_no_triggers': 0, 'keyword_nodes': 0,
@@ -349,13 +383,21 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path) -> dict:
         slug = slug_of(npc_key)
         provenance = candidate['provenance']
         by_source: dict[str, dict | None] = {}
+        unverified = []
         for source, bundles_dir in (('canary', canary_dir), ('crystal', crystal_dir)):
             if source not in provenance:
                 continue
             bundle = load_bundle(bundles_dir, source, provenance[source])
             if bundle is None:
                 raise StageError(f'missing {source} bundle for {npc_key}: {provenance[source]["key"]}')
+            if not text_bundle_verified(bundle, references[source][0], provenance[source]['key']):
+                unverified.append(source)
+                continue
             by_source[source] = build_dialogue(bundle, stats)
+        if unverified:
+            # e.g. a script that registers keywords in Lua pairs() order converts differently per run
+            held.append({'npc': npc_key, 'reason': 'TEXT_BUNDLE_UNVERIFIED', 'sources': unverified})
+            continue
         if not by_source:
             continue
         if len(by_source) == 1:
@@ -391,8 +433,12 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path) -> dict:
     return {
         'schema': 'OTERYN_NPC_DIALOGUE_STAGED/v1',
         'source': {'canary_revision': CANARY_REVISION, 'crystal_revision': CRYSTAL_REVISION,
-                   'candidates_sha256': hashlib.sha256(CANDIDATES.read_bytes()).hexdigest()},
-        'counts': {'npcs_with_dialogue': len(dialogues), 'held_dialogue_conflict': len(held),
+                   'candidates_sha256': hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
+                   'canary_census_bundle_digest': references['canary'][1],
+                   'crystal_census_bundle_digest': references['crystal'][1]},
+        'counts': {'npcs_with_dialogue': len(dialogues),
+                   'held_dialogue_conflict': sum(h['reason'] == 'DIALOGUE_CONFLICT' for h in held),
+                   'held_text_bundle_unverified': sum(h['reason'] == 'TEXT_BUNDLE_UNVERIFIED' for h in held),
                    'keyword_nodes': keyword_node_total, 'voice_lines': voice_line_total,
                    'greet': greet_total, 'farewell': farewell_total, 'walkaway': walkaway_total,
                    'send_trade': send_trade_total,
@@ -414,11 +460,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--canary-bundles', type=Path, required=True)
     parser.add_argument('--crystal-bundles', type=Path, required=True)
+    parser.add_argument('--canary-reference-bundles', type=Path, required=True,
+                        help='reference-only convert.py output that reproduces the committed Canary census')
+    parser.add_argument('--crystal-reference-bundles', type=Path, required=True,
+                        help='reference-only convert.py output that reproduces the committed Crystal census')
     parser.add_argument('--out', type=Path, required=True)
     args = parser.parse_args()
     report = json.loads(CANDIDATES.read_text())
     try:
-        packet = stage(report, args.canary_bundles, args.crystal_bundles)
+        packet = stage(report, args.canary_bundles, args.crystal_bundles, args.canary_reference_bundles,
+                       args.crystal_reference_bundles)
     except StageError as error:
         print(f'npc dialogue stage: {error}', file=sys.stderr)
         return 1

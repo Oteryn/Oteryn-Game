@@ -61,8 +61,9 @@ Wave A NPCs gain their static dialogue. `npc_dialogue_stage.py` reads the Canary
 - `say` keyword replies with no condition and no effect, in source sibling order, with their conversation
   flags and fallback nodes; a reply that an earlier omitted sibling can shadow is left out.
 
-A dialogue is taken when both sources agree, or when only one source has the NPC. 130 NPCs whose sources
-disagree are held with `DIALOGUE_CONFLICT`.
+A dialogue is taken when both sources agree, or when only one source has the NPC. 129 NPCs whose sources
+disagree are held with `DIALOGUE_CONFLICT`, and one NPC whose text bundle cannot be authenticated
+against the committed census is held with `TEXT_BUNDLE_UNVERIFIED`.
 
 `npc_admission_stage.py --dialogues` links 617 Dialogue declarations (4,220 keyword nodes) to their NPCs.
 The deferred Dragon Ancestor Spirit keeps none. The materializer pins both staged files, and the successor

@@ -173,8 +173,11 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    sibling left out here can shadow (815 nodes; the engine answers with the first matching sibling, the rule
    `convert.py` applies to services). A voice profile
    without an interval or chance is left out (21 NPCs). A dialogue is admitted when both sources agree, or
-   when only one source has the NPC; a source bundle named by a candidate must exist. 130 NPCs whose sources
-   disagree are held with `DIALOGUE_CONFLICT`. 617 Dialogue declarations (4,220 keyword nodes) are admitted;
+   when only one source has the NPC; a source bundle named by a candidate must exist. Each text bundle is
+   authenticated against the committed census: the reference-only conversion must reproduce the census
+   `bundle_digest`, and the text bundle without its text must equal its reference bundle. 129 NPCs whose
+   sources disagree are held with `DIALOGUE_CONFLICT`; Captain Dreadnought, whose script registers keywords
+   in Lua `pairs()` order and so converts differently per run, is held with `TEXT_BUNDLE_UNVERIFIED`. 617 Dialogue declarations (4,220 keyword nodes) are admitted;
    the deferred Dragon Ancestor Spirit keeps none. The materializer verifies each admitted Dialogue against
    the pinned dialogue evidence. The successor tree
    gains `content/dialogues/definitions`.
