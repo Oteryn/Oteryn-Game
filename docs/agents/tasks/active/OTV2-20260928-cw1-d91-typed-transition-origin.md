@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-cw1-d91-typed-transition-origin
 title: D91 event-owned transitions - a typed PLAYER_USE / EVENT(owner) origin per bound transition
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-d91-typed-transition-origin
-pr: null
+pr: 1187
 base_sha: 3dcf3c82abc5d424542388a9f65ca1507e8746a4
 head_sha: null
 final_head_sha: null
@@ -114,5 +114,5 @@ smallest slice. It closes the gap where USE on an open timed teleporter could se
 
 ## Context checkpoint
 
-last_progress: D91 implemented and validated locally; PR opened for CI and review
+last_progress: D91 implemented and validated locally (code head fad71146); PR #1187 opened for CI and review
 jira: pending (no mapped Story resolved in this worker session)
