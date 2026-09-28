@@ -325,6 +325,14 @@ impl NativeEntryProject {
     }
 
     /// The qualified cells as a Movement lookup index bound to `server_generation`.
+    ///
+    /// The door cell (#162 A4-a, P1 r4120672731) is deliberately excluded: it stays `Walkable` in
+    /// `source().cells` (so it is a genuine FirstProduction Terrain cell for the accepted-bindings
+    /// bijection and future presentation), but M2a composes no `LocalObjectRuntime` for it, so
+    /// nothing ever consults its declared closed/Present blocking state. Landing it in the active
+    /// movement index before that runtime blocker exists would let a player occupy the supposedly
+    /// closed door tile. M2b must add the door cell to movement together with the runtime
+    /// blocker, atomically. Until then this index is exactly the three room Terrain cells.
     fn movement_cells(
         &self,
         server_generation: [u8; 32],
@@ -347,6 +355,7 @@ impl NativeEntryProject {
             .source
             .cells
             .iter()
+            .filter(|cell| cell.key.as_str() != accepted::DOOR_CELL.0)
             .map(|cell| EngineeringStaticCellClaim {
                 scope: scope.clone(),
                 cell: crate::content::LogicalCell {
@@ -1108,9 +1117,14 @@ fn lower(
     ) {
         return refuse("native entry door cell is outside the World");
     }
+    // Widened to i64 (r4120672740): a malformed project's declared World bounds can span the
+    // full i32 coordinate range, and an i32 subtraction/sum here would overflow before the later
+    // accepted-coordinate pin ever runs.
     let door_adjacent = coordinates.iter().any(|&(x, y, floor)| {
         floor == door_placement.floor
-            && (door_placement.x - x).abs() + (door_placement.y - y).abs() == 1
+            && (i64::from(door_placement.x) - i64::from(x)).abs()
+                + (i64::from(door_placement.y) - i64::from(y)).abs()
+                == 1
     });
     if !door_adjacent {
         return refuse("native entry door cell must be adjacent to the entry room");
@@ -1526,4 +1540,60 @@ fn lower(
         },
     };
     Ok((source, door_content))
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod tests {
+    use super::*;
+    use crate::content::LogicalCell;
+    use crate::content::static_cell_engine::StaticCellEngineError;
+
+    fn test_world_id() -> crate::foundation::WorldId {
+        let mut bytes = [0_u8; 16];
+        bytes[0] = 1;
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        bytes[15] = 1;
+        crate::foundation::WorldId::decode(&bytes).expect("valid UUIDv7 WorldId")
+    }
+
+    /// P1 r4120672731: the door cell stays a genuine, `Walkable` FirstProduction Terrain cell
+    /// (`source().cells`, needed for the accepted-bindings bijection), but the active Movement
+    /// index built by `movement_cells()` must not carry it until M2b composes the runtime
+    /// blocker for it — landing it in active movement first would let a player occupy the
+    /// supposedly closed door tile.
+    #[test]
+    fn movement_cells_exclude_the_door_cell() {
+        let room = qualify_native_entry_room(test_world_id()).expect("qualified native entry room");
+        let movement = room.movement_cells();
+        let door_cell = LogicalCell {
+            x: accepted::DOOR_CELL.1,
+            y: accepted::DOOR_CELL.2,
+            z: i32::from(accepted::DOOR_CELL.3),
+        };
+        let start_cell = LogicalCell {
+            x: accepted::CELLS[0].1,
+            y: accepted::CELLS[0].2,
+            z: i32::from(accepted::CELLS[0].3),
+        };
+        assert!(matches!(
+            movement.index().lookup(movement.scope(), door_cell),
+            Err(StaticCellEngineError::Absent)
+        ));
+        assert!(
+            movement
+                .index()
+                .lookup(movement.scope(), start_cell)
+                .is_ok()
+        );
+        // The door cell is still a genuine, Walkable FirstProduction Terrain cell — just not yet
+        // in the active movement index.
+        assert!(
+            room.compiled()
+                .server_digest()
+                .iter()
+                .any(|byte| *byte != 0)
+        );
+    }
 }

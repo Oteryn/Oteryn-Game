@@ -776,6 +776,23 @@ fn door_definition_key_must_match_the_accepted_binding() {
     refuses(&docs, "not the accepted binding");
 }
 
+/// r4120672740: a malformed project can declare World bounds spanning the full accepted i32
+/// coordinate range, reaching the door-adjacency distance calculation before the later
+/// accepted-coordinate pin. With a room cell near `i32::MIN` and the door near `i32::MAX`, i32
+/// subtraction/addition here would overflow (a debug-build panic); it must instead refuse with a
+/// `ProjectError`.
+#[test]
+fn door_adjacency_near_i32_extremes_refuses_without_panicking() {
+    let docs = edit("worlds/world.json", |w| {
+        w["worlds"][0]["bounds"]["min_x"] = json!(i64::from(i32::MIN));
+        w["worlds"][0]["bounds"]["max_x_exclusive"] = json!(i64::from(i32::MAX) + 1);
+        // Placements are written key-sorted: door(0), east(1), north(2), start(3).
+        w["placements"][0]["x"] = json!(i32::MAX);
+        w["placements"][2]["x"] = json!(i32::MIN);
+    });
+    refuses(&docs, "must be adjacent");
+}
+
 /// r4120444668: zero placements must refuse with a `ProjectError`, not panic by indexing
 /// `state.placements[0]` before cardinality is checked.
 #[test]
