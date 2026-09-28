@@ -153,13 +153,12 @@ reason: >
 
 ### Exact-head CI
 
-- candidate: the frozen final head of PR #1147 (a record commit cannot contain its own SHA; `a61536b` is
-  the last functional change); live exact-head checks on that head govern.
+- candidate: the frozen final head of PR #1147 (last functional change `a61536b`); its live checks govern.
 - result: pending (superseding the failed run on `1efc029`, which is no longer the tested head)
 
 ## Self-review
 
-- exact head: `a61536b2940360b8bc544d3d18c4ac843b21f670` (PR #1147)
+- exact head: `a61536b` (PR #1147)
 - method/reviewer: implementing agent (this session)
 - material findings: 4 Codex P2 findings (protocol-oteryn snapshot-domain bounds; dev-client frame
   correlation, deadlines, snapshot-type dispatch) plus one self-discovered-via-CI finding (the
