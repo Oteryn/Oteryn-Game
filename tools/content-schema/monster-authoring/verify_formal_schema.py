@@ -285,6 +285,11 @@ if __name__=='__main__':
     case('schedule magnitude minimum must not exceed maximum',caster({'minimum':300,'maximum':210}))
     case('chain targeting accepted (D12)',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':2,'range_tiles':3,'backtracking':False}),True)
     case('players-only chain accepted',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':2,'range_tiles':3,'backtracking':False,'target_filter':'players'}),True)
+    case('spell chain fields accepted',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':4,'range_tiles':4,'backtracking':False,'shape':'sequential','initial_range_tiles':4,'damage_step_percent':-5}),True)
+    case('fork chain with ranged monster filter accepted',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':5,'range_tiles':4,'backtracking':False,'shape':'fork','target_filter':'ranged_monsters'}),True)
+    case('chain shape is closed',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':2,'range_tiles':3,'backtracking':False,'shape':'star'}))
+    case('chain initial range must be positive',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':2,'range_tiles':3,'backtracking':False,'initial_range_tiles':0}))
+    case('chain damage step is bounded',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':2,'range_tiles':3,'backtracking':False,'damage_step_percent':-101}))
     case('chain target filter is closed',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':2,'range_tiles':3,'backtracking':False,'target_filter':'monsters'}))
     case('any local Item may be the corpse (D17)',set_value(['d','items',0,'classification','is_corpse'],False),True)
     case('change_target interval 0 disables timed changes',
