@@ -14,7 +14,7 @@ use crate::foundation::{
     NormalizedSemanticIntentIdentity, RetainedBindingIdentity, RuntimeScopeRefV1,
     ScopeOwnershipGeneration, TerminalSemanticOutcome,
 };
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
@@ -26,8 +26,6 @@ const DISPOSITION_STALE_STATE: &str = "STALE_STATE";
 const DISPOSITION_REVISION_EXHAUSTED: &str = "REVISION_EXHAUSTED";
 const LOCAL_OBJECT_TRANSITION_CAPABILITY: &str =
     "oteryn:runtime.capability.local-object-transition";
-const LOCAL_OBJECT_OPEN_INTENT_FAMILY: &str = "oteryn:reference.intent.local-object-open";
-const LOCAL_OBJECT_CLOSE_INTENT_FAMILY: &str = "oteryn:reference.intent.local-object-close";
 const REFERENCE_CONTENT_GENERATION_DOMAIN: &[u8] = b"OTERYN/CW4/REFERENCE_CONTENT_GENERATION/v1";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -384,10 +382,30 @@ fn validate_synthetic_placement_evidence(
     Ok(())
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum LocalObjectOperation {
-    Open,
-    Close,
+/// A D38 world-object operation on this runtime's pre-authored anchor, identified by the
+/// authored `TransitionBinding` it invokes (docs/architecture/
+/// OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md §4). `TRANSFORM(from,
+/// to)`, `CREATE(def)`/`REMOVE(def)` (a fixed-footprint anchor toggling collision-Present/
+/// collision-Absent) and `RETAG` (a same-collision-class rearm,
+/// `LOCAL_OBJECT_RETAG_INTENT_FAMILY`) get no separate Rust variant here: each is exactly
+/// "invoke one of this runtime's bound transitions", and `LocalObjectRuntime::bind` is what
+/// fixes which transitions a given instance may invoke. `prepare()` derives the next blocking
+/// footprint from the *target* state's own authored collision presence, so one execution path
+/// serves all four named operations. Open/Close are the two-state special case of this same
+/// mechanism, not a distinct code path.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct LocalObjectOperation(TransitionKey);
+
+impl LocalObjectOperation {
+    #[must_use]
+    pub(crate) const fn new(transition: TransitionKey) -> Self {
+        Self(transition)
+    }
+
+    #[must_use]
+    fn transition_key(&self) -> &TransitionKey {
+        &self.0
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -559,8 +577,8 @@ pub(crate) struct LocalObjectRuntime {
     content_generation: ReferenceContentGeneration,
     placement: PlacementKey,
     incarnation: u64,
-    open_transition: TransitionBinding,
-    close_transition: TransitionBinding,
+    states: Vec<LocalObjectStateDefinition>,
+    transitions: BTreeMap<TransitionKey, TransitionBinding>,
     state: ProductionKey,
     revision: u64,
     collision_cells: BTreeSet<LogicalCell>,
@@ -576,8 +594,7 @@ impl LocalObjectRuntime {
         scope_generation: ScopeOwnershipGeneration,
         placement_key: &PlacementKey,
         incarnation: u64,
-        open_transition_key: &TransitionKey,
-        close_transition_key: &TransitionKey,
+        transition_keys: &[TransitionKey],
     ) -> Result<Self, WorldRuntimeError> {
         validate_reference_semantic_core(content)?;
         if incarnation == 0 {
@@ -634,83 +651,66 @@ impl LocalObjectRuntime {
                 "placement definition is absent from active Content",
             ))?;
         let states = match &definition.kind {
-            ReferenceDefinitionKind::LocalObjectStates(states) if states.len() == 2 => states,
+            ReferenceDefinitionKind::LocalObjectStates(states) if !states.is_empty() => {
+                states.clone()
+            }
             _ => {
                 return Err(WorldRuntimeError::InvalidBinding(
-                    "first CW4 child requires exactly two local-object states",
+                    "local object definition declares no states",
                 ));
             }
         };
 
-        let open_transition = unique_transition(content, open_transition_key)?.clone();
-        let close_transition = unique_transition(content, close_transition_key)?.clone();
-        if open_transition.definition != placement.definition
-            || close_transition.definition != placement.definition
-        {
+        // D38 W1/W2: generalized beyond the fixed Open/Close pair to an arbitrary, non-empty set
+        // of pre-authored transitions (TRANSFORM/CREATE/REMOVE/RETAG are all just "a transition
+        // this runtime may invoke" — see `LocalObjectOperation`). Each bound transition still gets
+        // the same fail-closed structural checks the old two-key bind performed: it must target
+        // this placement's own definition, its source/target states must be declared by that
+        // definition's vocabulary, its capability must be the one this runtime profile supports,
+        // and it must carry no unresolved policy guard. Unknown states, undeclared-state
+        // references and cross-class RETAG pairs are additionally, and independently, rejected by
+        // the CW3 linker for every transition in `content` (`validate_reference_semantic_core`
+        // above re-runs it), not just the ones bound here.
+        if transition_keys.is_empty() {
             return Err(WorldRuntimeError::InvalidBinding(
-                "OPEN/CLOSE transitions do not bind the selected placement definition",
+                "local-object runtime requires at least one bound D38 world-object operation",
             ));
         }
-        if open_transition.source_state == open_transition.target_state
-            || close_transition.source_state != open_transition.target_state
-            || close_transition.target_state != open_transition.source_state
-        {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "OPEN/CLOSE transitions are not an exact two-state inverse pair",
-            ));
-        }
-        if !local_object_states_contain(states, &open_transition.source_state)
-            || !local_object_states_contain(states, &open_transition.target_state)
-        {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "OPEN/CLOSE transition states are not declared by the local object",
-            ));
-        }
-        if open_transition.normalized_intent_family == close_transition.normalized_intent_family {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "OPEN and CLOSE must have distinct normalized intent families",
-            ));
-        }
-        if open_transition.normalized_intent_family.as_str() != LOCAL_OBJECT_OPEN_INTENT_FAMILY
-            || close_transition.normalized_intent_family.as_str()
-                != LOCAL_OBJECT_CLOSE_INTENT_FAMILY
-        {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "OPEN/CLOSE transition intent families do not match runtime operations",
-            ));
-        }
-        if open_transition.owner_capability.capability_key.as_str()
-            != LOCAL_OBJECT_TRANSITION_CAPABILITY
-            || close_transition.owner_capability.capability_key.as_str()
+        let mut transitions = BTreeMap::new();
+        for transition_key in transition_keys {
+            let transition = unique_transition(content, transition_key)?.clone();
+            if transition.definition != placement.definition {
+                return Err(WorldRuntimeError::InvalidBinding(
+                    "bound transition does not target the selected placement definition",
+                ));
+            }
+            if !local_object_states_contain(&states, &transition.source_state)
+                || !local_object_states_contain(&states, &transition.target_state)
+            {
+                return Err(WorldRuntimeError::InvalidBinding(
+                    "bound transition references a state outside the local object's declared vocabulary",
+                ));
+            }
+            if transition.owner_capability.capability_key.as_str()
                 != LOCAL_OBJECT_TRANSITION_CAPABILITY
-        {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "OPEN/CLOSE transition capability is not supported by this runtime profile",
-            ));
-        }
-        if !open_transition.policy_guard_refs.is_empty()
-            || !close_transition.policy_guard_refs.is_empty()
-        {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "first CW4 child cannot bypass unresolved policy guards",
-            ));
-        }
-        // `prepare()` hard-codes Open -> empty blocking and Close -> full-footprint blocking; the
-        // linker only constrains collision class equality for RETAG-family transitions, so nothing
-        // else stops a definition whose OPEN target is collision-Present or whose CLOSE target is
-        // collision-Absent from binding here and then behaving inconsistently with its own declared
-        // vocabulary. Reject that mismatch at bind time instead of changing `prepare()`. Checked
-        // last among the OPEN/CLOSE structural invariants so an already-invalid pair (wrong
-        // definition, wrong intent family, swapped keys, etc.) keeps surfacing its own specific
-        // error first.
-        if local_object_state_collision(states, &open_transition.source_state)
-            != Some(LocalObjectCollisionPresence::Present)
-            || local_object_state_collision(states, &open_transition.target_state)
-                != Some(LocalObjectCollisionPresence::Absent)
-        {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "OPEN/CLOSE transition collision classes do not match runtime operations",
-            ));
+            {
+                return Err(WorldRuntimeError::InvalidBinding(
+                    "transition capability is not supported by this runtime profile",
+                ));
+            }
+            if !transition.policy_guard_refs.is_empty() {
+                return Err(WorldRuntimeError::InvalidBinding(
+                    "first CW4 child cannot bypass unresolved policy guards",
+                ));
+            }
+            if transitions
+                .insert(transition.key.clone(), transition)
+                .is_some()
+            {
+                return Err(WorldRuntimeError::InvalidBinding(
+                    "duplicate TransitionKey requested for local-object runtime binding",
+                ));
+            }
         }
 
         let collision_cells = absolute_collision_cells(placement)?;
@@ -725,7 +725,7 @@ impl LocalObjectRuntime {
         // The initial state's own collision presence — not the OPEN/CLOSE operation identity —
         // decides whether the object starts blocking: an authored Absent (e.g. "open") start must
         // not block movement, and an authored Present (e.g. "closed") start must.
-        let initial_collision = local_object_state_collision(states, &initial_state).ok_or(
+        let initial_collision = local_object_state_collision(&states, &initial_state).ok_or(
             WorldRuntimeError::InvalidBinding(
                 "placement's authored local object initial state is not declared by the local object",
             ),
@@ -744,8 +744,8 @@ impl LocalObjectRuntime {
             revision: 0,
             blocking_cells: initial_blocking,
             collision_cells,
-            open_transition,
-            close_transition,
+            states,
+            transitions,
         })
     }
 
@@ -784,19 +784,22 @@ impl LocalObjectRuntime {
         &self.blocking_cells
     }
 
-    #[must_use]
-    fn transition_for(&self, operation: LocalObjectOperation) -> &TransitionBinding {
-        match operation {
-            LocalObjectOperation::Open => &self.open_transition,
-            LocalObjectOperation::Close => &self.close_transition,
-        }
+    fn transition_for(
+        &self,
+        operation: &LocalObjectOperation,
+    ) -> Result<&TransitionBinding, WorldRuntimeError> {
+        self.transitions
+            .get(operation.transition_key())
+            .ok_or(WorldRuntimeError::InvalidBinding(
+                "command names a transition this local-object runtime does not bind",
+            ))
     }
 
     fn command_semantic_identity(
         &self,
         command: &LocalObjectCommand,
     ) -> Result<CommandSemanticIdentity, WorldRuntimeError> {
-        let transition = self.transition_for(command.operation);
+        let transition = self.transition_for(&command.operation)?;
         Ok(CommandSemanticIdentity::new(
             NormalizedSemanticIntentIdentity::new(
                 command.placement.as_str(),
@@ -990,17 +993,34 @@ impl LocalObjectRuntime {
             );
         }
 
-        let transition = self.transition_for(command.operation);
+        let transition = self.transition_for(&command.operation)?;
         if self.state == transition.target_state {
             return PreparedTerminal::unchanged(DISPOSITION_NO_CHANGE, &self.state, self.revision);
         }
         if self.state != transition.source_state {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "runtime state escaped the bound two-state transition",
-            ));
+            // Under the old fixed Open/Close pair this branch was unreachable: whichever of the
+            // two states `self.state` held always matched one of the two known transitions' own
+            // source or target. A runtime bound to more than two states, or more than one
+            // transition out of the same state, makes "this operation's authored source state
+            // does not match the current one" a normal, replay-safe outcome instead — the same
+            // kind of stale precondition `expected_revision` already guards, just named by state
+            // instead of by revision. Treat it identically: no mutation, no partial footprint.
+            return PreparedTerminal::unchanged(
+                DISPOSITION_STALE_STATE,
+                &self.state,
+                self.revision,
+            );
         }
 
-        if command.operation == LocalObjectOperation::Close
+        // D38: the next blocking footprint comes from the *target* state's own authored
+        // collision presence, not from which named operation was invoked. OCCUPIED is likewise
+        // general: any transition landing on a collision-Present state onto an occupied footprint
+        // is rejected, whether that transition is a CLOSE, a CREATE, a RETAG or a plain TRANSFORM.
+        let target_collision = local_object_state_collision(&self.states, &transition.target_state)
+            .ok_or(WorldRuntimeError::InvalidBinding(
+                "bound transition's target state is not declared by the local object",
+            ))?;
+        if target_collision == LocalObjectCollisionPresence::Present
             && !self.collision_cells.is_disjoint(occupied_cells)
         {
             return PreparedTerminal::unchanged(DISPOSITION_OCCUPIED, &self.state, self.revision);
@@ -1013,9 +1033,9 @@ impl LocalObjectRuntime {
                 self.revision,
             );
         };
-        let next_blocking = match command.operation {
-            LocalObjectOperation::Open => BTreeSet::new(),
-            LocalObjectOperation::Close => self.collision_cells.clone(),
+        let next_blocking = match target_collision {
+            LocalObjectCollisionPresence::Present => self.collision_cells.clone(),
+            LocalObjectCollisionPresence::Absent => BTreeSet::new(),
         };
         let outcome = TerminalSemanticOutcome::new(
             DISPOSITION_COMMITTED,
@@ -1172,10 +1192,10 @@ mod tests {
         CW2_B1_VASE_KEY, CW2_B1_VASE_REVISION, CanonicalProjectDocuments, ClientProjectionClass,
         ContentActivationController, ContentLockBinding, ContentLockEntry, CoordinateFrameRef,
         DefinitionRevisionRef, EvidenceBindingRef, EvidenceDisposition, FootprintCell,
-        MapRevisionRef, OwnerCapabilityRequirement, PackageManifestBinding, PlacementRef,
-        ProductionAtom, ProjectDraft, ProjectEvidenceLimits, ReferenceDefinition,
-        ReferenceItemDestination, ReferenceItemPhysicalClass, ReferenceItemStackClass,
-        Sha256HexDigest, TypedDefinitionRef, compile_reference_playable,
+        LOCAL_OBJECT_RETAG_INTENT_FAMILY, MapRevisionRef, OwnerCapabilityRequirement,
+        PackageManifestBinding, PlacementRef, ProductionAtom, ProjectDraft, ProjectEvidenceLimits,
+        ReferenceDefinition, ReferenceItemDestination, ReferenceItemPhysicalClass,
+        ReferenceItemStackClass, Sha256HexDigest, TypedDefinitionRef, compile_reference_playable,
         protected_cw2_b1_vase_import, stage_reference_playable,
     };
     use crate::foundation::{
@@ -1480,6 +1500,225 @@ mod tests {
         Ok(canonical)
     }
 
+    // D38 world-object overlay fixture: a four-state vocabulary (beyond the fixed two-state
+    // Open/Close pair) exercising the full TRANSFORM/CREATE/REMOVE/RETAG operation family this
+    // generalized runtime supports, plus a second, unrelated LocalObject definition used only to
+    // construct a transition this runtime must reject as foreign at bind time.
+    const WORLD_OBJECT_PLACEMENT: &str = "oteryn:reference.placement.world-object-overlay";
+    const CREATE_TRANSITION: &str = "oteryn:reference.transition.world-object-create";
+    const REMOVE_TRANSITION: &str = "oteryn:reference.transition.world-object-remove";
+    const RETAG_TRANSITION: &str = "oteryn:reference.transition.world-object-retag";
+    const TRANSFORM_TRANSITION: &str = "oteryn:reference.transition.world-object-transform";
+    const FOREIGN_TRANSITION: &str = "oteryn:reference.transition.world-object-foreign";
+
+    fn world_object_overlay_content(
+        package_revision_value: &str,
+    ) -> Result<CanonicalReferencePlayableContent, WorldRuntimeError> {
+        let world_id = decode_world(1)?;
+        let package_key = ProductionKey::new("oteryn:content.cw4-world-object-overlay")?;
+        let package_revision =
+            ProductionAtom::new("cw4 test package revision", package_revision_value)?;
+        let package_manifest = PackageManifestBinding::new(
+            package_key.clone(),
+            package_revision.clone(),
+            ProductionAtom::new("cw4 test schema", "schema-v1")?,
+            ProductionAtom::new("cw4 test license", "license:project-owned-v1")?,
+            Sha256HexDigest::new(
+                "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            )?,
+        );
+        let provenance = package_manifest.package_provenance_digest()?;
+        let content_lock = ContentLockBinding {
+            revision_digest_token: ProductionAtom::new(
+                "cw4 test content lock",
+                &format!("world-object-lock:{package_revision_value}"),
+            )?,
+            entries: vec![ContentLockEntry::exact(
+                package_key,
+                package_revision,
+                provenance,
+            )],
+        };
+
+        let object_ref = TypedDefinitionRef::new(
+            DefinitionFamily::LocalObject,
+            ProductionKey::new("oteryn:reference.object.world-object-anchor")?,
+            DefinitionRevisionRef::new("definition-r1")?,
+        );
+        let foreign_ref = TypedDefinitionRef::new(
+            DefinitionFamily::LocalObject,
+            ProductionKey::new("oteryn:reference.object.world-object-foreign")?,
+            DefinitionRevisionRef::new("definition-r1")?,
+        );
+        let absent = ProductionKey::new("oteryn:reference.state.world-object-absent")?;
+        let present = ProductionKey::new("oteryn:reference.state.world-object-present")?;
+        let armed = ProductionKey::new("oteryn:reference.state.world-object-armed")?;
+        let dormant = ProductionKey::new("oteryn:reference.state.world-object-dormant")?;
+        let foreign_state_a = ProductionKey::new("oteryn:reference.state.foreign-a")?;
+        let foreign_state_b = ProductionKey::new("oteryn:reference.state.foreign-b")?;
+        let coordinate_frame = CoordinateFrameRef::new("global-target-2026-09-27")?;
+        let capability = OwnerCapabilityRequirement {
+            capability_key: ProductionKey::new(
+                "oteryn:runtime.capability.local-object-transition",
+            )?,
+        };
+
+        let mut canonical = link_reference_playable(ReferencePlayableContentSource {
+            profile_revision: ProductionAtom::new(
+                "cw4 test profile",
+                REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
+            )?,
+            capability_profile: ProductionAtom::new(
+                "cw4 test capability profile",
+                REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
+            )?,
+            package_manifest,
+            content_lock,
+            world_id,
+            coordinate_frame: coordinate_frame.clone(),
+            definitions: vec![
+                ReferenceDefinition {
+                    definition: object_ref.clone(),
+                    kind: ReferenceDefinitionKind::LocalObjectStates(vec![
+                        LocalObjectStateDefinition {
+                            key: absent.clone(),
+                            collision: LocalObjectCollisionPresence::Absent,
+                        },
+                        LocalObjectStateDefinition {
+                            key: present.clone(),
+                            collision: LocalObjectCollisionPresence::Present,
+                        },
+                        LocalObjectStateDefinition {
+                            key: armed.clone(),
+                            collision: LocalObjectCollisionPresence::Present,
+                        },
+                        LocalObjectStateDefinition {
+                            key: dormant.clone(),
+                            collision: LocalObjectCollisionPresence::Absent,
+                        },
+                    ]),
+                    client_projection: ClientProjectionClass::ClientSafe,
+                },
+                ReferenceDefinition {
+                    definition: foreign_ref.clone(),
+                    kind: ReferenceDefinitionKind::LocalObjectStates(vec![
+                        LocalObjectStateDefinition {
+                            key: foreign_state_a.clone(),
+                            collision: LocalObjectCollisionPresence::Absent,
+                        },
+                        LocalObjectStateDefinition {
+                            key: foreign_state_b.clone(),
+                            collision: LocalObjectCollisionPresence::Present,
+                        },
+                    ]),
+                    client_projection: ClientProjectionClass::ClientSafe,
+                },
+            ],
+            placements: vec![],
+            ordered_placements: vec![],
+            transitions: vec![
+                TransitionBinding {
+                    key: TransitionKey::new(CREATE_TRANSITION)?,
+                    definition: object_ref.clone(),
+                    source_state: absent.clone(),
+                    normalized_intent_family: ProductionKey::new(
+                        "oteryn:reference.intent.world-object-create",
+                    )?,
+                    target_state: present.clone(),
+                    owner_capability: capability.clone(),
+                    policy_guard_refs: vec![],
+                },
+                TransitionBinding {
+                    key: TransitionKey::new(REMOVE_TRANSITION)?,
+                    definition: object_ref.clone(),
+                    source_state: present.clone(),
+                    normalized_intent_family: ProductionKey::new(
+                        "oteryn:reference.intent.world-object-remove",
+                    )?,
+                    target_state: absent.clone(),
+                    owner_capability: capability.clone(),
+                    policy_guard_refs: vec![],
+                },
+                TransitionBinding {
+                    key: TransitionKey::new(RETAG_TRANSITION)?,
+                    definition: object_ref.clone(),
+                    source_state: present.clone(),
+                    normalized_intent_family: ProductionKey::new(LOCAL_OBJECT_RETAG_INTENT_FAMILY)?,
+                    target_state: armed.clone(),
+                    owner_capability: capability.clone(),
+                    policy_guard_refs: vec![],
+                },
+                TransitionBinding {
+                    key: TransitionKey::new(TRANSFORM_TRANSITION)?,
+                    definition: object_ref.clone(),
+                    source_state: armed.clone(),
+                    normalized_intent_family: ProductionKey::new(
+                        "oteryn:reference.intent.world-object-transform",
+                    )?,
+                    target_state: dormant.clone(),
+                    owner_capability: capability.clone(),
+                    policy_guard_refs: vec![],
+                },
+                TransitionBinding {
+                    key: TransitionKey::new(FOREIGN_TRANSITION)?,
+                    definition: foreign_ref,
+                    source_state: foreign_state_a,
+                    normalized_intent_family: ProductionKey::new(
+                        "oteryn:reference.intent.world-object-foreign",
+                    )?,
+                    target_state: foreign_state_b,
+                    owner_capability: capability,
+                    policy_guard_refs: vec![],
+                },
+            ],
+        })?;
+
+        // Same disjointness rationale as `synthetic_content`'s placement witness: unpromoted,
+        // synthetic-only evidence, never Reference target authority.
+        let evidence = EvidenceBindingRef::new(
+            ProductionAtom::new("reference manifest revision", "manifest-r0")?,
+            ProductionKey::new("oteryn:cw4.world-object-placement")?,
+            EvidenceDisposition::Unknown,
+        );
+        let collision_members = vec![
+            FootprintCell {
+                dx: 0,
+                dy: 0,
+                dz: 0,
+            },
+            FootprintCell {
+                dx: 1,
+                dy: 0,
+                dz: 0,
+            },
+        ];
+        canonical.placements = vec![PlacementRef {
+            key: PlacementKey::new(WORLD_OBJECT_PLACEMENT)?,
+            map_revision: MapRevisionRef::new("map-r1")?,
+            definition: object_ref,
+            address: crate::content::SpatialAddress {
+                world_id,
+                coordinate_frame,
+                cell: LogicalCell {
+                    x: 300,
+                    y: 400,
+                    z: 3,
+                },
+                evidence: evidence.clone(),
+            },
+            presentation_footprint: FootprintRelation::Qualified {
+                members: collision_members.clone(),
+                evidence: evidence.clone(),
+            },
+            collision_footprint: FootprintRelation::Qualified {
+                members: collision_members,
+                evidence,
+            },
+            local_object_initial_state: Some(absent),
+        }];
+        Ok(canonical)
+    }
+
     fn authority(
         session_seed: u8,
         channel_seed: u8,
@@ -1544,9 +1783,23 @@ mod tests {
             scope_generation,
             &PlacementKey::new(placement)?,
             1,
-            &TransitionKey::new(OPEN_TRANSITION)?,
-            &TransitionKey::new(CLOSE_TRANSITION)?,
+            &[
+                TransitionKey::new(OPEN_TRANSITION)?,
+                TransitionKey::new(CLOSE_TRANSITION)?,
+            ],
         )
+    }
+
+    fn open_operation() -> Result<LocalObjectOperation, WorldRuntimeError> {
+        Ok(LocalObjectOperation::new(TransitionKey::new(
+            OPEN_TRANSITION,
+        )?))
+    }
+
+    fn close_operation() -> Result<LocalObjectOperation, WorldRuntimeError> {
+        Ok(LocalObjectOperation::new(TransitionKey::new(
+            CLOSE_TRANSITION,
+        )?))
     }
 
     fn command(
@@ -1583,13 +1836,13 @@ mod tests {
         let mut ingress_b = CommandIngress::new();
         let empty = BTreeSet::new();
 
-        let open = command(&runtime, session_a, 1, 1, LocalObjectOperation::Open, 0)?;
+        let open = command(&runtime, session_a, 1, 1, open_operation()?, 0)?;
         let opened = runtime.apply(&authority_a, &open, &mut ingress_a, &empty)?;
         assert_eq!(opened.disposition(), DISPOSITION_COMMITTED);
         assert_eq!(opened.revision(), 1);
         assert!(runtime.blocking_cells().is_empty());
 
-        let close = command(&runtime, session_b, 1, 1, LocalObjectOperation::Close, 1)?;
+        let close = command(&runtime, session_b, 1, 1, close_operation()?, 1)?;
         let closed = runtime.apply(&authority_b, &close, &mut ingress_b, &empty)?;
         assert_eq!(closed.disposition(), DISPOSITION_COMMITTED);
         assert_eq!(closed.revision(), 2);
@@ -1634,7 +1887,7 @@ mod tests {
 
         let mut ingress = CommandIngress::new();
         let empty = BTreeSet::new();
-        let close = command(&runtime, session, 1, 1, LocalObjectOperation::Close, 0)?;
+        let close = command(&runtime, session, 1, 1, close_operation()?, 0)?;
         let closed = runtime.apply(&authority, &close, &mut ingress, &empty)?;
         assert_eq!(closed.disposition(), DISPOSITION_COMMITTED);
         assert_eq!(closed.state(), "oteryn:reference.state.closed");
@@ -1651,14 +1904,14 @@ mod tests {
         let mut runtime_a = runtime_for(&content, scope, PLACEMENT_A, 1)?;
         let mut runtime_b = runtime_for(&content, scope, PLACEMENT_B, 1)?;
         let mut ingress = CommandIngress::new();
-        let first = command(&runtime_a, session, 1, 1, LocalObjectOperation::Open, 0)?;
+        let first = command(&runtime_a, session, 1, 1, open_operation()?, 0)?;
         let first_semantic = runtime_a.command_semantic_identity(&first)?;
         assert_eq!(
             ingress.reserve(first.command_ref().command_id(), first_semantic),
             IngressDecision::Reserved(first.command_ref().command_id())
         );
 
-        let second = command(&runtime_b, session, 2, 1, LocalObjectOperation::Open, 0)?;
+        let second = command(&runtime_b, session, 2, 1, open_operation()?, 0)?;
         let before = runtime_b.blocking_cells().clone();
         assert!(matches!(
             runtime_b.apply(&authority, &second, &mut ingress, &BTreeSet::new()),
@@ -1690,7 +1943,7 @@ mod tests {
     }
 
     #[test]
-    fn swapped_open_close_intents_fail_closed_before_runtime_creation()
+    fn binding_with_no_transitions_is_rejected_before_runtime_creation()
     -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let (_authority, _session, scope) = authority(22, 4, 1, 1)?;
@@ -1701,52 +1954,47 @@ mod tests {
             scope_generation,
             ReferenceContentGeneration::from_content(&content)?,
         );
-        let error = match LocalObjectRuntime::bind(
-            &content,
-            &active_content,
-            scope,
-            scope_generation,
-            &PlacementKey::new(PLACEMENT_A)?,
-            1,
-            &TransitionKey::new(CLOSE_TRANSITION)?,
-            &TransitionKey::new(OPEN_TRANSITION)?,
-        ) {
-            Ok(_runtime) => {
-                return Err(fixture_error(
-                    "swapped OPEN/CLOSE semantic intents unexpectedly bound",
-                ));
-            }
-            Err(error) => error,
-        };
         assert!(matches!(
-            error,
-            WorldRuntimeError::InvalidBinding(
-                "OPEN/CLOSE transition intent families do not match runtime operations"
-            )
+            LocalObjectRuntime::bind(
+                &content,
+                &active_content,
+                scope,
+                scope_generation,
+                &PlacementKey::new(PLACEMENT_A)?,
+                1,
+                &[],
+            ),
+            Err(WorldRuntimeError::InvalidBinding(
+                "local-object runtime requires at least one bound D38 world-object operation"
+            ))
         ));
         Ok(())
     }
 
     #[test]
-    fn mismatched_open_close_collision_classes_reject_before_runtime_creation()
+    fn binding_a_foreign_definition_transition_is_rejected_before_runtime_creation()
     -> Result<(), WorldRuntimeError> {
-        let mut content = synthetic_content("package-r1")?;
-        let ReferenceDefinitionKind::LocalObjectStates(states) = &mut content.definitions[0].kind
-        else {
-            return Err(fixture_error("local object definition"));
-        };
-        for state in states.iter_mut() {
-            state.collision = match state.collision {
-                LocalObjectCollisionPresence::Present => LocalObjectCollisionPresence::Absent,
-                LocalObjectCollisionPresence::Absent => LocalObjectCollisionPresence::Present,
-            };
-        }
-
-        let (_authority, _session, scope) = authority(50, 7, 1, 1)?;
+        let content = world_object_overlay_content("wo-r1")?;
+        let (_authority, _session, scope) = authority(51, 7, 1, 1)?;
+        let scope_generation = ScopeOwnershipGeneration::new(1)
+            .map_err(|_error: GenerationError| fixture_error("scope generation"))?;
+        let active_content = ScopeContentGenerationFence::for_test(
+            scope,
+            scope_generation,
+            ReferenceContentGeneration::from_content(&content)?,
+        );
         assert!(matches!(
-            runtime_for(&content, scope, PLACEMENT_A, 1),
+            LocalObjectRuntime::bind(
+                &content,
+                &active_content,
+                scope,
+                scope_generation,
+                &PlacementKey::new(WORLD_OBJECT_PLACEMENT)?,
+                1,
+                &[TransitionKey::new(FOREIGN_TRANSITION)?],
+            ),
             Err(WorldRuntimeError::InvalidBinding(
-                "OPEN/CLOSE transition collision classes do not match runtime operations"
+                "bound transition does not target the selected placement definition"
             ))
         ));
         Ok(())
@@ -1769,7 +2017,7 @@ mod tests {
         )
         .map_err(|_error| fixture_error("invalid current authority fixture"))?;
         let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
-        let command = command(&runtime, session, 1, 1, LocalObjectOperation::Open, 0)?;
+        let command = command(&runtime, session, 1, 1, open_operation()?, 0)?;
         let before_state = runtime.state_key().clone();
         let before_blocking = runtime.blocking_cells().clone();
         let mut ingress = CommandIngress::new();
@@ -1800,7 +2048,7 @@ mod tests {
         assert!(matches!(
             runtime_for(&content, scope, PLACEMENT_A, 1),
             Err(WorldRuntimeError::InvalidBinding(
-                "OPEN/CLOSE transition capability is not supported by this runtime profile"
+                "transition capability is not supported by this runtime profile"
             ))
         ));
         Ok(())
@@ -1842,8 +2090,10 @@ mod tests {
             scope_generation,
             &PlacementKey::new(PLACEMENT_A)?,
             1,
-            &TransitionKey::new(OPEN_TRANSITION)?,
-            &TransitionKey::new(CLOSE_TRANSITION)?,
+            &[
+                TransitionKey::new(OPEN_TRANSITION)?,
+                TransitionKey::new(CLOSE_TRANSITION)?,
+            ],
         )?;
         let before_state = runtime_a.state_key().clone();
         let before_blocking = runtime_a.blocking_cells().clone();
@@ -1855,8 +2105,10 @@ mod tests {
             scope_generation,
             &PlacementKey::new(PLACEMENT_B)?,
             1,
-            &TransitionKey::new(OPEN_TRANSITION)?,
-            &TransitionKey::new(CLOSE_TRANSITION)?,
+            &[
+                TransitionKey::new(OPEN_TRANSITION)?,
+                TransitionKey::new(CLOSE_TRANSITION)?,
+            ],
         ) {
             Ok(_runtime) => {
                 return Err(fixture_error(
@@ -1937,7 +2189,7 @@ mod tests {
         let content = synthetic_content("package-r1")?;
         let (_authority, session, scope) = authority(30, 5, 1, 1)?;
         let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
-        let command = command(&runtime, session, 1, 1, LocalObjectOperation::Open, 0)?;
+        let command = command(&runtime, session, 1, 1, open_operation()?, 0)?;
         let mut ingress = CommandIngress::new();
 
         let (stale_scope, _, _) = authority(30, 5, 2, 1)?;
@@ -1975,7 +2227,7 @@ mod tests {
         let runtime_b = runtime_for(&content, scope_b, PLACEMENT_A, 1)?;
         let before_b = runtime_b.blocking_cells().clone();
         let mut ingress_a = CommandIngress::new();
-        let open = command(&runtime_a, session_a, 1, 1, LocalObjectOperation::Open, 0)?;
+        let open = command(&runtime_a, session_a, 1, 1, open_operation()?, 0)?;
 
         runtime_a.apply(&authority_a, &open, &mut ingress_a, &BTreeSet::new())?;
         assert!(runtime_a.blocking_cells().is_empty());
@@ -1997,7 +2249,7 @@ mod tests {
         let runtime_b = runtime_for(&content, scope, PLACEMENT_B, 1)?;
         let mut ingress = CommandIngress::new();
 
-        let open = command(&runtime_a, session, 1, 1, LocalObjectOperation::Open, 0)?;
+        let open = command(&runtime_a, session, 1, 1, open_operation()?, 0)?;
         runtime_a.apply(&authority, &open, &mut ingress, &BTreeSet::new())?;
         assert!(runtime_a.blocking_cells().is_empty());
         assert_eq!(runtime_b.blocking_cells().len(), 2);
@@ -2006,7 +2258,7 @@ mod tests {
             WorldRuntimeError::InvalidBinding("test fixture has no collision cell"),
         )?;
         let occupied = BTreeSet::from([occupied_cell]);
-        let close = command(&runtime_a, session, 2, 1, LocalObjectOperation::Close, 1)?;
+        let close = command(&runtime_a, session, 2, 1, close_operation()?, 1)?;
         let rejected = runtime_a.apply(&authority, &close, &mut ingress, &occupied)?;
         assert_eq!(rejected.disposition(), DISPOSITION_OCCUPIED);
         assert_eq!(
@@ -2015,7 +2267,7 @@ mod tests {
         );
         assert!(runtime_a.blocking_cells().is_empty());
 
-        let close_after_leave = command(&runtime_a, session, 3, 1, LocalObjectOperation::Close, 1)?;
+        let close_after_leave = command(&runtime_a, session, 3, 1, close_operation()?, 1)?;
         let committed = runtime_a.apply(
             &authority,
             &close_after_leave,
@@ -2035,10 +2287,10 @@ mod tests {
         let (authority, session, scope) = authority(60, 9, 1, 1)?;
         let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
         let mut ingress = CommandIngress::new();
-        let open = command(&runtime, session, 1, 1, LocalObjectOperation::Open, 0)?;
+        let open = command(&runtime, session, 1, 1, open_operation()?, 0)?;
         runtime.apply(&authority, &open, &mut ingress, &BTreeSet::new())?;
 
-        let changed = command(&runtime, session, 1, 1, LocalObjectOperation::Close, 1)?;
+        let changed = command(&runtime, session, 1, 1, close_operation()?, 1)?;
         assert!(matches!(
             runtime.apply(&authority, &changed, &mut ingress, &BTreeSet::new()),
             Err(WorldRuntimeError::ConflictChangedInput)
@@ -2058,7 +2310,7 @@ mod tests {
         let (authority, session, scope) = authority(69, 10, 1, 1)?;
         let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
         let mut ingress = CommandIngress::new();
-        let first = command(&runtime, session, 1, 1, LocalObjectOperation::Open, 0)?;
+        let first = command(&runtime, session, 1, 1, open_operation()?, 0)?;
         runtime.apply(&authority, &first, &mut ingress, &BTreeSet::new())?;
 
         let mut changed = first.clone();
@@ -2083,7 +2335,7 @@ mod tests {
         let (authority, session, scope) = authority(70, 10, 1, 1)?;
         let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
         let mut ingress = CommandIngress::new();
-        let mut command = command(&runtime, session, 1, 1, LocalObjectOperation::Open, 0)?;
+        let mut command = command(&runtime, session, 1, 1, open_operation()?, 0)?;
         command.content_generation = ReferenceContentGeneration::from_content(&other_content)?;
 
         let result = runtime.apply(&authority, &command, &mut ingress, &BTreeSet::new())?;
@@ -2131,7 +2383,7 @@ mod tests {
             .ok_or(WorldRuntimeError::InvalidBinding(
                 "test command count overflow",
             ))?;
-        let open = command(&runtime, session, next, 1, LocalObjectOperation::Open, 0)?;
+        let open = command(&runtime, session, next, 1, open_operation()?, 0)?;
         let before = runtime.blocking_cells().clone();
         assert!(matches!(
             runtime.apply(&authority, &open, &mut ingress, &BTreeSet::new()),
@@ -2139,6 +2391,318 @@ mod tests {
         ));
         assert_eq!(runtime.revision(), 0);
         assert_eq!(runtime.blocking_cells(), &before);
+        Ok(())
+    }
+
+    fn world_object_runtime_for(
+        content: &CanonicalReferencePlayableContent,
+        scope: RuntimeScopeRefV1,
+        scope_generation: u64,
+        transition_keys: &[TransitionKey],
+    ) -> Result<LocalObjectRuntime, WorldRuntimeError> {
+        let scope_generation = ScopeOwnershipGeneration::new(scope_generation)
+            .map_err(|_error: GenerationError| fixture_error("scope generation"))?;
+        let active_content = ScopeContentGenerationFence::for_test(
+            scope,
+            scope_generation,
+            ReferenceContentGeneration::from_content(content)?,
+        );
+        LocalObjectRuntime::bind(
+            content,
+            &active_content,
+            scope,
+            scope_generation,
+            &PlacementKey::new(WORLD_OBJECT_PLACEMENT)?,
+            1,
+            transition_keys,
+        )
+    }
+
+    fn world_object_all_transitions() -> Result<Vec<TransitionKey>, WorldRuntimeError> {
+        Ok(vec![
+            TransitionKey::new(CREATE_TRANSITION)?,
+            TransitionKey::new(REMOVE_TRANSITION)?,
+            TransitionKey::new(RETAG_TRANSITION)?,
+            TransitionKey::new(TRANSFORM_TRANSITION)?,
+        ])
+    }
+
+    #[test]
+    fn create_retag_and_transform_drive_blocking_from_the_target_states_own_collision()
+    -> Result<(), WorldRuntimeError> {
+        let content = world_object_overlay_content("wo-r1")?;
+        let (authority, session, scope) = authority(80, 12, 1, 1)?;
+        let mut runtime =
+            world_object_runtime_for(&content, scope, 1, &world_object_all_transitions()?)?;
+        let mut ingress = CommandIngress::new();
+        let empty = BTreeSet::new();
+
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.world-object-absent"
+        );
+        assert!(runtime.blocking_cells().is_empty());
+
+        // CREATE: absent -> present, an anchor materializing into its fixed, pre-authored
+        // footprint (no dynamic geometry: `collision_cells` was reserved at bind time).
+        let create = command(
+            &runtime,
+            session,
+            1,
+            1,
+            LocalObjectOperation::new(TransitionKey::new(CREATE_TRANSITION)?),
+            0,
+        )?;
+        let created = runtime.apply(&authority, &create, &mut ingress, &empty)?;
+        assert_eq!(created.disposition(), DISPOSITION_COMMITTED);
+        assert_eq!(
+            created.state(),
+            "oteryn:reference.state.world-object-present"
+        );
+        assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
+
+        // RETAG: present -> armed, same collision class (an interaction-binding rearm only);
+        // blocking is unaffected by the identity change.
+        let retag = command(
+            &runtime,
+            session,
+            2,
+            1,
+            LocalObjectOperation::new(TransitionKey::new(RETAG_TRANSITION)?),
+            1,
+        )?;
+        let retagged = runtime.apply(&authority, &retag, &mut ingress, &empty)?;
+        assert_eq!(retagged.disposition(), DISPOSITION_COMMITTED);
+        assert_eq!(
+            retagged.state(),
+            "oteryn:reference.state.world-object-armed"
+        );
+        assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
+
+        // TRANSFORM: armed -> dormant, an arbitrary from/to move outside the CREATE/REMOVE/RETAG
+        // naming, landing on a collision-Absent state; this is also the >2-state case the fixed
+        // Open/Close pair could not represent.
+        let transform = command(
+            &runtime,
+            session,
+            3,
+            1,
+            LocalObjectOperation::new(TransitionKey::new(TRANSFORM_TRANSITION)?),
+            2,
+        )?;
+        let transformed = runtime.apply(&authority, &transform, &mut ingress, &empty)?;
+        assert_eq!(transformed.disposition(), DISPOSITION_COMMITTED);
+        assert_eq!(
+            transformed.state(),
+            "oteryn:reference.state.world-object-dormant"
+        );
+        assert!(runtime.blocking_cells().is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn create_then_remove_round_trips_and_replay_of_create_does_not_reexecute()
+    -> Result<(), WorldRuntimeError> {
+        let content = world_object_overlay_content("wo-r1")?;
+        let (authority_a, session_a, scope) = authority(81, 13, 1, 1)?;
+        let (authority_b, session_b, _) = authority(82, 13, 1, 1)?;
+        let mut runtime = world_object_runtime_for(
+            &content,
+            scope,
+            1,
+            &[
+                TransitionKey::new(CREATE_TRANSITION)?,
+                TransitionKey::new(REMOVE_TRANSITION)?,
+            ],
+        )?;
+        let mut ingress_a = CommandIngress::new();
+        let mut ingress_b = CommandIngress::new();
+        let empty = BTreeSet::new();
+
+        let create = command(
+            &runtime,
+            session_a,
+            1,
+            1,
+            LocalObjectOperation::new(TransitionKey::new(CREATE_TRANSITION)?),
+            0,
+        )?;
+        let created = runtime.apply(&authority_a, &create, &mut ingress_a, &empty)?;
+        assert_eq!(created.disposition(), DISPOSITION_COMMITTED);
+        assert_eq!(created.revision(), 1);
+        assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
+
+        let remove = command(
+            &runtime,
+            session_b,
+            1,
+            1,
+            LocalObjectOperation::new(TransitionKey::new(REMOVE_TRANSITION)?),
+            1,
+        )?;
+        let removed = runtime.apply(&authority_b, &remove, &mut ingress_b, &empty)?;
+        assert_eq!(removed.disposition(), DISPOSITION_COMMITTED);
+        assert_eq!(removed.revision(), 2);
+        assert!(runtime.blocking_cells().is_empty());
+
+        let replay = runtime.apply(&authority_a, &create, &mut ingress_a, &empty)?;
+        assert!(replay.replayed());
+        assert_eq!(replay.disposition(), DISPOSITION_COMMITTED);
+        assert_eq!(
+            replay.state(),
+            "oteryn:reference.state.world-object-present"
+        );
+        assert_eq!(replay.revision(), 1);
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.world-object-absent"
+        );
+        assert_eq!(runtime.revision(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn create_onto_an_occupied_footprint_is_rejected_and_leaves_no_partial_state()
+    -> Result<(), WorldRuntimeError> {
+        let content = world_object_overlay_content("wo-r1")?;
+        let (authority, session, scope) = authority(83, 14, 1, 1)?;
+        let mut runtime = world_object_runtime_for(
+            &content,
+            scope,
+            1,
+            &[TransitionKey::new(CREATE_TRANSITION)?],
+        )?;
+        let mut ingress = CommandIngress::new();
+        let occupied_cell = runtime.collision_cells().iter().next().copied().ok_or(
+            WorldRuntimeError::InvalidBinding("test fixture has no collision cell"),
+        )?;
+        let occupied = BTreeSet::from([occupied_cell]);
+
+        let create = command(
+            &runtime,
+            session,
+            1,
+            1,
+            LocalObjectOperation::new(TransitionKey::new(CREATE_TRANSITION)?),
+            0,
+        )?;
+        let rejected = runtime.apply(&authority, &create, &mut ingress, &occupied)?;
+        assert_eq!(rejected.disposition(), DISPOSITION_OCCUPIED);
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.world-object-absent"
+        );
+        assert_eq!(runtime.revision(), 0);
+        assert!(runtime.blocking_cells().is_empty());
+
+        let create_after_clear = command(
+            &runtime,
+            session,
+            2,
+            1,
+            LocalObjectOperation::new(TransitionKey::new(CREATE_TRANSITION)?),
+            0,
+        )?;
+        let committed = runtime.apply(
+            &authority,
+            &create_after_clear,
+            &mut ingress,
+            &BTreeSet::new(),
+        )?;
+        assert_eq!(committed.disposition(), DISPOSITION_COMMITTED);
+        assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
+        Ok(())
+    }
+
+    #[test]
+    fn retag_across_collision_classes_is_rejected_by_the_content_layer_before_runtime_creation()
+    -> Result<(), WorldRuntimeError> {
+        let mut content = world_object_overlay_content("wo-r1")?;
+        let ReferenceDefinitionKind::LocalObjectStates(states) = &mut content.definitions[0].kind
+        else {
+            return Err(fixture_error("world-object anchor definition"));
+        };
+        for state in states.iter_mut() {
+            if state.key.as_str() == "oteryn:reference.state.world-object-armed" {
+                state.collision = LocalObjectCollisionPresence::Absent;
+            }
+        }
+
+        let (_authority, _session, scope) = authority(84, 15, 1, 1)?;
+        assert!(matches!(
+            world_object_runtime_for(&content, scope, 1, &world_object_all_transitions()?),
+            Err(WorldRuntimeError::Content(ContentError::InvalidArtifact(
+                "reference-playable RETAG transition must preserve local-object collision class"
+            )))
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn operation_naming_an_unbound_transition_fails_closed_before_ingress_or_mutation()
+    -> Result<(), WorldRuntimeError> {
+        let content = world_object_overlay_content("wo-r1")?;
+        let (authority, session, scope) = authority(85, 16, 1, 1)?;
+        let mut runtime = world_object_runtime_for(
+            &content,
+            scope,
+            1,
+            &[TransitionKey::new(CREATE_TRANSITION)?],
+        )?;
+        let mut ingress = CommandIngress::new();
+        let unbound = command(
+            &runtime,
+            session,
+            1,
+            1,
+            LocalObjectOperation::new(TransitionKey::new(REMOVE_TRANSITION)?),
+            0,
+        )?;
+        assert!(matches!(
+            runtime.apply(&authority, &unbound, &mut ingress, &BTreeSet::new()),
+            Err(WorldRuntimeError::InvalidBinding(
+                "command names a transition this local-object runtime does not bind"
+            ))
+        ));
+        assert_eq!(ingress.outstanding(), 0);
+        assert_eq!(runtime.revision(), 0);
+        assert!(runtime.blocking_cells().is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn fresh_bind_after_scope_restart_restores_the_authored_initial_state()
+    -> Result<(), WorldRuntimeError> {
+        let content = world_object_overlay_content("wo-r1")?;
+        let (authority, session, scope) = authority(86, 17, 1, 1)?;
+        let all = world_object_all_transitions()?;
+        let mut runtime = world_object_runtime_for(&content, scope, 1, &all)?;
+        let mut ingress = CommandIngress::new();
+        let create = command(
+            &runtime,
+            session,
+            1,
+            1,
+            LocalObjectOperation::new(TransitionKey::new(CREATE_TRANSITION)?),
+            0,
+        )?;
+        runtime.apply(&authority, &create, &mut ingress, &BTreeSet::new())?;
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.world-object-present"
+        );
+        assert!(!runtime.blocking_cells().is_empty());
+
+        // D38 W2: world-object overlay state is scope-ephemeral. No persistence exists for it, so
+        // a scope restart is exactly a fresh `bind()` from the same immutable placements,
+        // independent of any earlier runtime instance or its mutations.
+        let restarted = world_object_runtime_for(&content, scope, 1, &all)?;
+        assert_eq!(
+            restarted.state_key().as_str(),
+            "oteryn:reference.state.world-object-absent"
+        );
+        assert_eq!(restarted.revision(), 0);
+        assert!(restarted.blocking_cells().is_empty());
         Ok(())
     }
 }
