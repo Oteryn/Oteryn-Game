@@ -933,6 +933,33 @@ B2 recaptures wiki evidence for those ids once identified; B3 (out of this task'
 scope entirely) folds the donor facts into the pinned engine revision once B1b/B2
 land, so a future `population_census.py` run covers them natively.
 
+## 5m. Routed Item pointer: `routed_to` (WO-1, 2026-09-28)
+
+WO-0 (`docs/architecture/reviews/OTERYN_GAME_WO0_WORLD_OBJECT_AND_TERRAIN_AUTHORING_FORMAT_DECISION_2026-09-28.md`,
+owner decisions D93 and D94) gives every routed id a Terrain or WorldObject family key. The key has the id's own frozen
+CW2-B1 sequence number: `oteryn:terrain.registry.iNNNNNNNN` or `oteryn:world-object.registry.iNNNNNNNN`.
+
+The routed id's Item record keeps `oteryn:item.registry.iNNNNNNNN`. It stays non-materializable and is never deleted
+or reused, and it carries a typed, versioned `routed_to {family, key, revision}` reference to that definition.
+
+- **Shape.** The shape is `tools/content-schema/world-object-authoring/routed-item-pointer.schema.json`:
+  - `identity` is the frozen Item key;
+  - `materializable` is `false`;
+  - `routed_to.family` is `Terrain` or `WorldObject`, with that family's key pattern.
+- **Rejected:**
+  - a bare key string;
+  - any other family, such as `LocalObject` or `Item`;
+  - a family and key pair that disagree;
+  - a `routed_to` key whose sequence number differs from the Item key's (`world_objects.validate_routed_item_pointer`).
+- **Not part of this Item authoring schema.** A routed id is never authored as an Item bundle, because it has no
+  `family_profile`. `item.schema.json` and its generator are therefore unchanged. The pointer is its own record shape,
+  next to the Terrain and WorldObject schemas it points into.
+- **Exclusions (D94).** Empty appearance slots, ids without a client appearance and the 20 Fluid kinds get no family
+  key and no `routed_to`.
+- **Runtime.** `DefinitionFamily` has no `WorldObject` variant today, and nothing in `content/**` carries `routed_to`
+  yet. The `ProjectReferenceRecord::Item` amendment therefore lands in WO-2 together with the first content that uses
+  it (#162 comment 5877980827).
+
 ## 6. Validation and non-claims
 
 The schema validator checks:
