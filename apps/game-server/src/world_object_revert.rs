@@ -695,8 +695,8 @@ mod tests {
         OwnerCapabilityRequirement, PackageManifestBinding, PlacementRef, ProductionAtom,
         REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
         ReferenceDefinition, ReferenceDefinitionKind, ReferencePlayableContentSource,
-        Sha256HexDigest, SpatialAddress, TransitionBinding, TypedDefinitionRef,
-        link_reference_playable,
+        Sha256HexDigest, SpatialAddress, TransitionBinding, TransitionEventOwner,
+        TypedDefinitionRef, link_reference_playable,
     };
     use crate::foundation::{
         ChannelId, CharacterId, CharacterLease, CommandId, CommandIngress, CommandRef,
@@ -729,6 +729,7 @@ mod tests {
     const CRACK: &str = "oteryn:reference.transition.timed-wall-crack";
     const MEND: &str = "oteryn:reference.transition.timed-wall-mend";
     const WALL_ACTION: &str = "oteryn:encounter/timed-wall/boss-death/0";
+    const WALL_OWNER: &str = "oteryn:encounter/timed-wall";
     const WALL_A: &str = "oteryn:reference.placement.timed-wall-a";
     const WALL_B: &str = "oteryn:reference.placement.timed-wall-b";
 
@@ -979,6 +980,7 @@ mod tests {
         let mut placement = object_at(&content, &anchor, SEALED_ITEM, 100)?;
         placement.local_object_state_attributes = tables.state_attributes.clone();
         placement.local_object_revert_after_ms = tables.revert_after_ms.clone();
+        placement.local_object_event_transitions = tables.event_transitions.clone();
         let mut placements = vec![placement];
         for (x, marker) in (200..).zip(&lowered.destination_markers) {
             placements.push(placement_at(
@@ -994,7 +996,9 @@ mod tests {
     }
 
     /// Synthetic walls: `sealed` (blocking) --CRACK--> `cracked` --MEND--> `sealed`, with the
-    /// given `(transition, action, ms)` revert durations on every placement.
+    /// given `(transition, action, ms)` revert durations on every placement. D91: when any
+    /// duration is given, CRACK and MEND are both event-owned by `WALL_OWNER`; untimed walls keep
+    /// both `PlayerUse`.
     fn wall_content(
         timed: &[(&str, &str, u64)],
         placements: &[(&str, i32)],
@@ -1022,6 +1026,14 @@ mod tests {
                     ),
                     *ms,
                 );
+            }
+            if !timed.is_empty() {
+                for transition in [CRACK, MEND] {
+                    placement.local_object_event_transitions.insert(
+                        TransitionKey::new(transition)?,
+                        TransitionEventOwner::new(WALL_OWNER)?,
+                    );
+                }
             }
             injected.push(placement);
         }
@@ -1708,9 +1720,9 @@ mod tests {
     }
 
     #[test]
-    fn use_and_session_commands_cannot_commit_a_timed_transition() -> TestResult {
-        // #1144 P1 4125535249: USE and `apply` never schedule, so a transition carrying
-        // `revert_after_ms` at the placement is refused there, exactly like an unbound one.
+    fn use_and_session_commands_cannot_commit_an_event_owned_transition() -> TestResult {
+        // #1144 P1 4125535249, subsumed by owner decision D91: a timed transition is event-owned,
+        // and USE and `apply` refuse every event-owned edge, exactly like an unbound one.
         let timed = wall_content(&[(CRACK, WALL_ACTION, 1_000)], &[(WALL_A, 100)], "lock:r1")?;
         let mut runtimes = walls(&timed, &[WALL_A])?;
         let wall = PlacementKey::new(WALL_A)?;
@@ -1729,7 +1741,8 @@ mod tests {
         assert_eq!(ingress.outstanding(), 0);
         assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_SEALED, 0));
 
-        // The untimed inverse stays USE-selectable and session-invocable (carry-over (b)).
+        // D91 replaces carry-over (b): the untimed but event-owned inverse is neither
+        // USE-selectable nor session-invocable once the forward has committed.
         let clock = ManualClock::new(Moment::ZERO);
         let mut driver = driver(&clock, RevertDriverLimits::registered())?;
         scheduled(forward(
@@ -1741,8 +1754,18 @@ mod tests {
             CRACK,
         )?)?;
         let runtime = runtimes.get_mut(&wall).ok_or(fixture("runtime"))?;
-        assert_eq!(apply_session(runtime, &mut ingress, 1, MEND)??, "COMMITTED");
-        assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_SEALED, 2));
+        assert_eq!(
+            runtime.attempt_use(1, &BTreeSet::new())?,
+            LocalObjectUseOutcome::NothingToUse
+        );
+        assert!(matches!(
+            apply_session(runtime, &mut ingress, 1, MEND)?,
+            Err(WorldRuntimeError::InvalidBinding(
+                "command names a transition this local-object runtime does not bind"
+            ))
+        ));
+        assert_eq!(ingress.outstanding(), 0);
+        assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_CRACKED, 1));
 
         // The duke teleporter cannot be opened by USE from its natural state.
         let (content, revert) = duke_content(DUKE)?;
@@ -1924,10 +1947,13 @@ mod tests {
     }
 
     #[test]
-    fn a_user_driven_revert_resolves_the_timer_terminal_without_a_double_revert() -> TestResult {
-        // #1133 carry-over (b): USE selects the bound inverse from the forward target state.
-        // §7's one path for an intervening change applies: the timer reaches `prepare` and
-        // terminalizes STALE_STATE; it never reverts a second time.
+    fn use_on_the_open_duke_teleporter_cannot_select_its_revert_and_an_early_event_revert_is_stale()
+    -> TestResult {
+        // Owner decision D91 gap regression: the open teleporter's only edge from its current
+        // state is the event-owned `/revert` inverse, so USE selects nothing and a session
+        // command naming it is refused; nothing mutates. §7's one path for an intervening
+        // change stays defensive: an early event-owned scope revert makes the timer reach
+        // `prepare` and terminalize STALE_STATE; it never reverts a second time.
         let (content, revert) = duke_content(DUKE)?;
         let anchor = duke_anchor()?;
         let mut runtimes = BTreeMap::from([(
@@ -1953,11 +1979,21 @@ mod tests {
         let post_revert = format!("{DUKE_ACTION}/post-revert");
         assert_eq!(
             runtime.attempt_use(1, &BTreeSet::new())?,
-            LocalObjectUseOutcome::Committed {
-                state: ProductionKey::new(&post_revert)?,
-                revision: 2,
-            }
+            LocalObjectUseOutcome::NothingToUse
         );
+        let mut ingress = CommandIngress::new();
+        assert!(matches!(
+            apply_session(runtime, &mut ingress, 1, revert.as_str())?,
+            Err(WorldRuntimeError::InvalidBinding(
+                "command names a transition this local-object runtime does not bind"
+            ))
+        ));
+        assert_eq!(ingress.outstanding(), 0);
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 1));
+
+        let runtime = runtimes.get_mut(&anchor).ok_or(fixture("runtime"))?;
+        assert_eq!(apply_plain(runtime, revert.as_str())?, "COMMITTED");
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(&post_revert, 2));
         clock.advance(millis(1_200_000))?;
         let report = driver.wake(&mut runtimes, &BTreeSet::new())?;
         let [(fired, outcome)] = report.fired.as_slice() else {

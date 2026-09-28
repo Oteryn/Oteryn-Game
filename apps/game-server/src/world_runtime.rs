@@ -4,8 +4,9 @@ use crate::content::{
     LocalObjectStateDefinition, LogicalCell, LoweredActionId, NonAuthoritativeReferenceStage,
     PlacementKey, ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
     REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinitionKind, ReferencePlayableContentSource,
-    ReferencePlayableGenerationIdentity, ReferenceServerItem, TransitionBinding, TransitionKey,
-    TypedDefinitionRef, link_reference_playable,
+    ReferencePlayableGenerationIdentity, ReferenceServerItem, TransitionBinding,
+    TransitionEventOwner, TransitionKey, TransitionOrigin, TypedDefinitionRef,
+    link_reference_playable,
 };
 use crate::foundation::{
     CharacterWorldEligibilityClaimV1, CommandId, CommandIngress, CommandLifecycleError, CommandRef,
@@ -470,6 +471,8 @@ pub(crate) fn bind_native_entry_door(
         ),
         local_object_state_attributes: BTreeMap::new(),
         local_object_revert_after_ms: BTreeMap::new(),
+        // D91: the door names no event origin, so both its edges stay PLAYER_USE.
+        local_object_event_transitions: BTreeMap::new(),
     };
     let mut content = door_content.clone();
     content.placements = vec![placement];
@@ -758,6 +761,9 @@ pub(crate) struct LocalObjectRuntime {
     transition_revert_after_ms: BTreeMap<(TransitionKey, LoweredActionId), u64>,
     // #162 §7: the unique bound inverse `bind` validated for each timed forward transition.
     revert_inverses: BTreeMap<TransitionKey, TransitionKey>,
+    // Owner decision D91: immutable after `bind`, read from the placement; a transition absent
+    // here is `TransitionOrigin::PlayerUse`.
+    event_transitions: BTreeMap<TransitionKey, TransitionEventOwner>,
 }
 
 impl LocalObjectRuntime {
@@ -951,6 +957,20 @@ impl LocalObjectRuntime {
                     "revert_after_ms transition has an ambiguous bound inverse at this placement",
                 ));
             }
+            // D91: a timed forward and its validated inverse are both event-owned by one owner,
+            // so neither is USE-selectable or session-invocable and only the owning event's
+            // scope path, with the revert scheduler, commits them.
+            let forward_owner = placement.local_object_event_transitions.get(&forward.key);
+            let Some(forward_owner) = forward_owner else {
+                return Err(WorldRuntimeError::InvalidBinding(
+                    "revert_after_ms transition is not event-owned at this placement",
+                ));
+            };
+            if placement.local_object_event_transitions.get(&inverse.key) != Some(forward_owner) {
+                return Err(WorldRuntimeError::InvalidBinding(
+                    "revert_after_ms inverse is not owned by its forward's event at this placement",
+                ));
+            }
             revert_inverses.insert(forward.key.clone(), inverse.key.clone());
         }
 
@@ -990,6 +1010,7 @@ impl LocalObjectRuntime {
             state_attributes: placement.local_object_state_attributes.clone(),
             transition_revert_after_ms: placement.local_object_revert_after_ms.clone(),
             revert_inverses,
+            event_transitions: placement.local_object_event_transitions.clone(),
         })
     }
 
@@ -1025,6 +1046,20 @@ impl LocalObjectRuntime {
         self.transition_revert_after_ms
             .get(&(transition.clone(), action.clone()))
             .copied()
+    }
+
+    /// Owner decision D91: `transition`'s typed origin at this placement, fixed at `bind`.
+    #[must_use]
+    pub(crate) fn transition_origin(&self, transition: &TransitionKey) -> TransitionOrigin {
+        self.event_transitions
+            .get(transition)
+            .map_or(TransitionOrigin::PlayerUse, |owner| {
+                TransitionOrigin::Event(owner.clone())
+            })
+    }
+
+    fn is_player_use(&self, transition: &TransitionKey) -> bool {
+        !self.event_transitions.contains_key(transition)
     }
 
     /// #162 §7: the unique bound inverse `bind` validated for a timed forward transition.
@@ -1075,13 +1110,15 @@ impl LocalObjectRuntime {
     /// both fail closed; this method reads only, it never mutates and never picks a plausible
     /// candidate over an exact one.
     fn select_use_transition(&self) -> Result<TransitionKey, UseSelectionError> {
-        // #162 §7 (#1144 review): a transition carrying `revert_after_ms` at this placement is
-        // never USE-selectable; only the scope's revert-scheduling path may commit it.
+        // Owner decision D91: only `PlayerUse` edges are candidates. An event-owned edge (any
+        // edge encounter lowering binds here, timed or not, forward, re-arm or revert inverse)
+        // is never USE-selectable. `bind` requires every timed edge to be event-owned, so this
+        // subsumes the #1144 rule that a `revert_after_ms` edge is not USE-selectable.
         let mut candidates = self
             .transitions
             .values()
             .filter(|transition| {
-                transition.source_state == self.state && !self.carries_revert(&transition.key)
+                transition.source_state == self.state && self.is_player_use(&transition.key)
             })
             .map(|transition| transition.key.clone());
         let first = candidates.next().ok_or(UseSelectionError::NoCandidate)?;
@@ -1165,7 +1202,8 @@ impl LocalObjectRuntime {
 
     /// #162 §7: whether this placement authors a `revert_after_ms` for `transition` under any
     /// action. Such a transition commits only through `apply_scope_operation` with the revert
-    /// driver's capability; the session and USE paths never schedule, so they refuse it.
+    /// driver's capability. It is always event-owned (D91, enforced at `bind`), so the session
+    /// and USE paths already refuse it.
     fn carries_revert(&self, transition: &TransitionKey) -> bool {
         self.transition_revert_after_ms
             .keys()
@@ -1176,9 +1214,10 @@ impl LocalObjectRuntime {
         &self,
         command: &LocalObjectCommand,
     ) -> Result<CommandSemanticIdentity, WorldRuntimeError> {
-        // #1144 review: a timed transition is not session-invocable; it is refused exactly like
-        // a transition this runtime does not bind, before ingress or mutation.
-        if self.carries_revert(command.operation.transition_key()) {
+        // Owner decision D91: an event-owned transition (which includes every timed one) is not
+        // session-invocable; it is refused exactly like a transition this runtime does not bind,
+        // before ingress or mutation. This covers `apply` and `resume_pending`.
+        if !self.is_player_use(command.operation.transition_key()) {
             return Err(WorldRuntimeError::InvalidBinding(
                 "command names a transition this local-object runtime does not bind",
             ));
@@ -1369,9 +1408,11 @@ impl LocalObjectRuntime {
     /// from it fails the whole operation with nothing committed (§7 Round 21: capacity is
     /// reserved only after `Publish`, in the same staged commit).
     ///
-    /// A transition carrying `revert_after_ms` at this placement is refused, before any
-    /// mutation, unless `capability` is presented (#1144 review). Only the §7 revert driver can
-    /// construct one, so a timed transition never commits without its lifecycle record.
+    /// Owner decision D91: only an event-owned transition is accepted; a `PlayerUse` edge is
+    /// refused before any mutation. A transition carrying `revert_after_ms` at this placement is
+    /// also refused, before any mutation, unless `capability` is presented (#1144 review). Only
+    /// the §7 revert driver can construct one, so a timed transition never commits without its
+    /// lifecycle record.
     pub(crate) fn apply_scope_operation<E>(
         &mut self,
         scope: RuntimeScopeRefV1,
@@ -1386,6 +1427,11 @@ impl LocalObjectRuntime {
         }
         if scope_generation != self.scope_generation {
             return Err(WorldRuntimeError::StaleScopeOwnershipGeneration);
+        }
+        if self.is_player_use(operation.transition_key()) {
+            return Err(WorldRuntimeError::InvalidBinding(
+                "player-use transition is not a scope operation",
+            ));
         }
         if capability.is_none() && self.carries_revert(operation.transition_key()) {
             return Err(WorldRuntimeError::InvalidBinding(
@@ -1948,6 +1994,7 @@ mod tests {
                 local_object_initial_state: Some(closed.clone()),
                 local_object_state_attributes: BTreeMap::new(),
                 local_object_revert_after_ms: BTreeMap::new(),
+                local_object_event_transitions: BTreeMap::new(),
             })
         };
         canonical.placements = vec![placement(PLACEMENT_A)?, placement(PLACEMENT_B)?];
@@ -2177,6 +2224,7 @@ mod tests {
             local_object_initial_state: Some(absent),
             local_object_state_attributes: BTreeMap::new(),
             local_object_revert_after_ms: BTreeMap::new(),
+            local_object_event_transitions: BTreeMap::new(),
         }];
         Ok(canonical)
     }
@@ -3344,6 +3392,62 @@ mod tests {
             }
         );
         assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
+        Ok(())
+    }
+
+    // Owner decision D91: the native entry door names no event origin, so both of its edges stay
+    // `PlayerUse`: USE opens and closes it as before, and a scope operation cannot run either.
+    #[test]
+    fn native_entry_door_edges_stay_player_use_and_scope_operations_refuse_them()
+    -> Result<(), Box<dyn Error>> {
+        use crate::content::accepted as door_accepted;
+        let (_authority, _session, scope) = authority(93, 20, 1, 1)?;
+        let room = crate::content::qualify_native_entry_room(scope.world_id())
+            .map_err(|error| format!("{error:?}"))?;
+        let door_content = room.door().clone();
+        let generation = ScopeOwnershipGeneration::new(1).map_err(|error| format!("{error:?}"))?;
+        let fence = ScopeContentGenerationFence::for_activation(
+            scope,
+            generation,
+            ReferenceContentGeneration::from_content(&door_content)?,
+        );
+        let mut door = bind_native_entry_door(&door_content, &fence, scope, generation)?;
+        let open = TransitionKey::new(door_accepted::DOOR_OPEN_TRANSITION)?;
+        let close = TransitionKey::new(door_accepted::DOOR_CLOSE_TRANSITION)?;
+        assert_eq!(door.transition_origin(&open), TransitionOrigin::PlayerUse);
+        assert_eq!(door.transition_origin(&close), TransitionOrigin::PlayerUse);
+
+        let scope_open = ScopeLocalObjectOperation::new(
+            door.placement_key().clone(),
+            door.incarnation(),
+            door.content_generation().clone(),
+            LocalObjectOperation::new(open),
+            door.revision(),
+        );
+        assert!(matches!(
+            door.apply_scope_operation(
+                scope,
+                generation,
+                &scope_open,
+                &BTreeSet::new(),
+                None,
+                |_| Ok::<(), std::convert::Infallible>(()),
+            ),
+            Err(WorldRuntimeError::InvalidBinding(
+                "player-use transition is not a scope operation"
+            ))
+        ));
+        assert_eq!(door.revision(), 0);
+
+        let empty = BTreeSet::new();
+        assert!(matches!(
+            door.attempt_use(0, &empty)?,
+            LocalObjectUseOutcome::Committed { revision: 1, .. }
+        ));
+        assert!(matches!(
+            door.attempt_use(1, &empty)?,
+            LocalObjectUseOutcome::Committed { revision: 2, .. }
+        ));
         Ok(())
     }
 }
