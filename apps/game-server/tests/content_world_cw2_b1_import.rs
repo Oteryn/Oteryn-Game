@@ -804,7 +804,7 @@ fn count_promoted_atoms(semantics: &ReferenceItemSemantics) -> usize {
 }
 
 #[test]
-fn protected_semantic_promotion_changes_exactly_13292_atoms_with_only_the_r7_p04_identity_rename_as_incidental_drift()
+fn protected_semantic_promotion_changes_exactly_14643_atoms_with_only_the_r7_p04_identity_rename_as_incidental_drift()
  {
     let base = full_family_import();
     let promoted = promoted_family_import();
@@ -893,7 +893,7 @@ fn r7_p04_renames_exactly_source_3031_and_carries_only_its_pinned_lowering_v1_pr
     // compute the exact same result. `base` (the raw, un-renamed, un-promoted full family)
     // is the only independent point of comparison left for the rename itself; unrelated-item
     // shape preservation across the whole family is already covered by
-    // `protected_semantic_promotion_changes_exactly_13292_atoms_with_only_the_r7_p04_identity_rename_as_incidental_drift`
+    // `protected_semantic_promotion_changes_exactly_14643_atoms_with_only_the_r7_p04_identity_rename_as_incidental_drift`
     // above, so this test only re-checks the R7 P04-specific bookkeeping and the one
     // typed field (`presentation.name`) the lowering v1 packet admits for source 3031.
     let base = full_family_import();
