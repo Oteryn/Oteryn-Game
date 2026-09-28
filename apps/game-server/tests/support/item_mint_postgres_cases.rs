@@ -374,7 +374,7 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
 
         let mut candidate = harness
             .root
-            .freeze_item_mint(request(1, 7, 1)?)
+            .freeze_item_mint(&authority, &harness.node, request(1, 7, 1)?)
             .await
             .map_err(debug)?;
         let result = committed(
@@ -415,8 +415,9 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
         assert_eq!(outbox.try_get::<i16, _>("publication_state")?, 1);
         assert_eq!(outbox.try_get::<i64, _>("event_type_id")?, 2);
 
-        // Exact replay and a separately frozen candidate for the same cause
-        // both return the original terminal result.
+        // Exact replay returns the original terminal result. Re-freezing the
+        // same cause resumes its durable reservation: the same identities and
+        // the same budget, so the third unit is the last one.
         let replay = already(
             harness
                 .root
@@ -425,12 +426,21 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
                 .map_err(debug)?,
         )?;
         assert_eq!(replay, result);
+        assert_eq!(candidate.work_units_used(), 2);
         let mut refrozen = harness
             .root
-            .freeze_item_mint(request(1, 7, 1)?)
+            .freeze_item_mint(&authority, &harness.node, request(1, 7, 1)?)
             .await
             .map_err(debug)?;
-        assert_ne!(refrozen.transaction_id(), candidate.transaction_id());
+        assert_eq!(refrozen.transaction_id(), candidate.transaction_id());
+        assert_eq!(refrozen.event_id(), candidate.event_id());
+        assert_eq!(refrozen.item_instance_id(), candidate.item_instance_id());
+        assert_eq!(
+            refrozen.occurred_at_unix_ms(),
+            candidate.occurred_at_unix_ms()
+        );
+        assert_eq!(refrozen.envelope(), candidate.envelope());
+        assert_eq!(refrozen.work_units_used(), 2);
         let duplicate = already(
             harness
                 .root
@@ -439,37 +449,28 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
                 .map_err(debug)?,
         )?;
         assert_eq!(duplicate, result);
-        assert_eq!(
+        assert_eq!(refrozen.work_units_used(), audit::RL08_RETRY_WORK_UNITS_MAX);
+        assert!(matches!(
             harness
                 .root
                 .reconcile_item_mint(&authority, &mut refrozen)
-                .await
-                .map_err(debug)?,
-            Some(result.clone())
-        );
+                .await,
+            Err(ItemMintError::CapacityExceeded)
+        ));
+        assert_eq!(harness.count("game_item_mint_reservations").await?, 1);
 
-        // Same cause, different intent: integrity conflict, nothing minted.
+        // Same cause, different intent: integrity conflict at the reservation,
+        // nothing reserved or minted.
         let mut changed = request(1, 7, 1)?;
         changed.item = definition("ItemType", "fixture:beta", "rev-b/7");
-        let mut conflicting = harness
-            .root
-            .freeze_item_mint(changed)
-            .await
-            .map_err(debug)?;
         assert!(matches!(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut conflicting)
+                .freeze_item_mint(&authority, &harness.node, changed)
                 .await,
             Err(ItemMintError::ConflictingCause)
         ));
-        assert!(matches!(
-            harness
-                .root
-                .reconcile_item_mint(&authority, &mut conflicting)
-                .await,
-            Err(ItemMintError::ConflictingCause)
-        ));
+        assert_eq!(harness.count("game_item_mint_reservations").await?, 1);
         harness.assert_minted(1).await?;
 
         let item = harness
@@ -491,7 +492,7 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
         // Every registered field at its maximum commits and reads back intact.
         let mut max = harness
             .root
-            .freeze_item_mint(max_request(9)?)
+            .freeze_item_mint(&authority, &harness.node, max_request(9)?)
             .await
             .map_err(debug)?;
         eprintln!(
@@ -517,7 +518,8 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
         assert_eq!(max_item.quantity, u32::MAX);
         harness.assert_minted(2).await?;
 
-        // Restart: a fresh root reads and reconciles the same terminal result.
+        // Restart: a fresh root resumes the max cause's reservation and
+        // reconciles the same terminal result within its remaining budget.
         let restarted = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
         assert!(restarted.maintain_ready_once().await?);
         let restart_seal = harness.recovery.seal_current().map_err(debug)?;
@@ -526,15 +528,17 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
             .await
             .map_err(debug)?;
         let mut after_restart = restarted
-            .freeze_item_mint(request(1, 7, 1)?)
+            .freeze_item_mint(&restart_authority, &harness.node, max_request(9)?)
             .await
             .map_err(debug)?;
+        assert_candidate_result(&after_restart, &max_result);
+        assert_eq!(after_restart.work_units_used(), 1);
         assert_eq!(
             restarted
                 .reconcile_item_mint(&restart_authority, &mut after_restart)
                 .await
                 .map_err(debug)?,
-            Some(result.clone())
+            Some(max_result.clone())
         );
         assert_eq!(
             already(
@@ -543,7 +547,7 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
                     .await
                     .map_err(debug)?
             )?,
-            result
+            max_result
         );
         assert_eq!(
             restarted
@@ -554,7 +558,7 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
         );
         // An authority of another root is refused before any work is charged.
         let mut foreign = restarted
-            .freeze_item_mint(request(1, 7, 2)?)
+            .freeze_item_mint(&restart_authority, &harness.node, request(1, 7, 2)?)
             .await
             .map_err(debug)?;
         assert!(matches!(
@@ -570,8 +574,17 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
         drop(restarted);
 
         // Database-level guards: committed rows are immutable, the audit event
-        // has no deletion path, and an ItemInstance cannot commit alone.
+        // and the reservation have no deletion path, a reservation changes
+        // only by one work-unit charge up to the maximum, and an ItemInstance
+        // cannot commit alone.
         for statement in [
+            "UPDATE game_item_mint_reservations SET work_units_used = 0",
+            "UPDATE game_item_mint_reservations SET work_units_used = work_units_used + 2",
+            "UPDATE game_item_mint_reservations \
+             SET work_units_used = work_units_used + 1, draw_ordinal = 9",
+            "UPDATE game_item_mint_reservations SET work_units_used = 4",
+            "DELETE FROM game_item_mint_reservations",
+            "TRUNCATE game_item_mint_reservations CASCADE",
             "UPDATE game_item_instances SET quantity = 2",
             "DELETE FROM game_item_ground_locations",
             "UPDATE game_item_mint_receipts SET draw_ordinal = 9",
@@ -625,7 +638,7 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
 
         let mut minted = harness
             .root
-            .freeze_item_mint(request(1, 7, 1)?)
+            .freeze_item_mint(&authority, &harness.node, request(1, 7, 1)?)
             .await
             .map_err(debug)?;
         let result = committed(
@@ -637,24 +650,13 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
         )?;
         let mut pending = harness
             .root
-            .freeze_item_mint(request(1, 8, 1)?)
+            .freeze_item_mint(&authority, &harness.node, request(1, 8, 1)?)
             .await
             .map_err(debug)?;
+        let pending_transaction = *pending.transaction_id();
 
-        // A death key naming a generation that is not the current assignment.
-        let mut future_generation = harness
-            .root
-            .freeze_item_mint(request(2, 7, 1)?)
-            .await
-            .map_err(debug)?;
-        assert!(matches!(
-            harness
-                .root
-                .commit_item_mint(&authority, &harness.node, &mut future_generation)
-                .await,
-            Err(ItemMintError::AuthorityRejected)
-        ));
-        // An unassigned Channel of the same World.
+        // A death key naming a generation that is not the current assignment,
+        // or an unassigned Channel of the same World, is never reserved.
         let mut unassigned = request(1, 7, 1)?;
         unassigned.cause = ItemMintCause::for_test(
             WorldId::decode(&id(WORLD)).map_err(debug)?,
@@ -666,18 +668,16 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
             "fixture:purpose.drop".into(),
             1,
         );
-        let mut unassigned = harness
-            .root
-            .freeze_item_mint(unassigned)
-            .await
-            .map_err(debug)?;
-        assert!(matches!(
-            harness
-                .root
-                .commit_item_mint(&authority, &harness.node, &mut unassigned)
-                .await,
-            Err(ItemMintError::AuthorityRejected)
-        ));
+        for refused in [request(2, 7, 1)?, unassigned] {
+            assert!(matches!(
+                harness
+                    .root
+                    .freeze_item_mint(&authority, &harness.node, refused)
+                    .await,
+                Err(ItemMintError::AuthorityRejected)
+            ));
+        }
+        assert_eq!(harness.count("game_item_mint_reservations").await?, 2);
         harness.assert_minted(1).await?;
 
         // The scope moves to another node: generation 1 ends.
@@ -700,8 +700,10 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
         };
         assert_eq!(moved.assignment.ownership_generation, 2);
 
-        // D52: the uncommitted descendant of generation 1 is refused by the
-        // former holder and by the new holder alike, and nothing is minted.
+        // D52: the uncommitted reservation of generation 1 is refused by the
+        // former holder and by the new holder alike, whether it is resumed by
+        // a re-freeze or committed from the held candidate. It is never
+        // re-reserved with new identities and nothing is minted.
         assert!(matches!(
             harness
                 .root
@@ -709,18 +711,22 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
                 .await,
             Err(ItemMintError::AuthorityRejected)
         ));
-        let mut pending_on_new_holder = harness
-            .root
-            .freeze_item_mint(request(1, 8, 1)?)
-            .await
-            .map_err(debug)?;
         assert!(matches!(
             harness
                 .root
-                .commit_item_mint(&authority, &node2, &mut pending_on_new_holder)
+                .commit_item_mint(&authority, &node2, &mut pending)
                 .await,
             Err(ItemMintError::AuthorityRejected)
         ));
+        for holder in [&harness.node, &node2] {
+            assert!(matches!(
+                harness
+                    .root
+                    .freeze_item_mint(&authority, holder, request(1, 8, 1)?)
+                    .await,
+                Err(ItemMintError::AuthorityRejected)
+            ));
+        }
         assert_eq!(
             harness
                 .root
@@ -729,14 +735,26 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
                 .map_err(debug)?,
             None
         );
+        assert_eq!(pending.work_units_used(), audit::RL08_RETRY_WORK_UNITS_MAX);
+        assert_eq!(harness.count("game_item_mint_reservations").await?, 2);
+        let reserved: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_mint_reservations \
+              WHERE death_actor_local_id = 8 AND transaction_id = encode($1,'hex')::uuid",
+        )
+        .bind(pending_transaction.as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(reserved, 1);
         harness.assert_minted(1).await?;
 
-        // Whatever committed in generation 1 stays committed.
+        // Whatever committed in generation 1 stays committed: its terminal
+        // receipt resumes and returns the identical result on the new holder.
         let mut replay = harness
             .root
-            .freeze_item_mint(request(1, 7, 1)?)
+            .freeze_item_mint(&authority, &node2, request(1, 7, 1)?)
             .await
             .map_err(debug)?;
+        assert_candidate_result(&replay, &result);
         assert_eq!(
             already(
                 harness
@@ -748,10 +766,17 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
             result
         );
 
-        // Generation 2 mints only on its current holder.
+        // Generation 2 reserves and mints only on its current holder.
+        assert!(matches!(
+            harness
+                .root
+                .freeze_item_mint(&authority, &harness.node, request(2, 7, 1)?)
+                .await,
+            Err(ItemMintError::AuthorityRejected)
+        ));
         let mut second = harness
             .root
-            .freeze_item_mint(request(2, 7, 1)?)
+            .freeze_item_mint(&authority, &node2, request(2, 7, 1)?)
             .await
             .map_err(debug)?;
         assert!(matches!(
@@ -770,21 +795,29 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
         )?;
         harness.assert_minted(2).await?;
 
-        // An ended incarnation cannot mint even in its assigned generation.
+        // An ended incarnation cannot reserve or mint even in its assigned
+        // generation, including a reservation it made while current.
+        let mut reserved_before_revoke = harness
+            .root
+            .freeze_item_mint(&authority, &node2, request(2, 10, 1)?)
+            .await
+            .map_err(debug)?;
         harness
             .root
             .revoke_node_registration(node2.fact())
             .await
             .map_err(debug)?;
-        let mut ended = harness
-            .root
-            .freeze_item_mint(request(2, 9, 1)?)
-            .await
-            .map_err(debug)?;
         assert!(matches!(
             harness
                 .root
-                .commit_item_mint(&authority, &node2, &mut ended)
+                .freeze_item_mint(&authority, &node2, request(2, 9, 1)?)
+                .await,
+            Err(ItemMintError::AuthorityRejected)
+        ));
+        assert!(matches!(
+            harness
+                .root
+                .commit_item_mint(&authority, &node2, &mut reserved_before_revoke)
                 .await,
             Err(ItemMintError::AuthorityRejected)
         ));
@@ -855,7 +888,7 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
         .await?;
         let mut aborted = harness
             .root
-            .freeze_item_mint(request(1, 7, 1)?)
+            .freeze_item_mint(&authority, &harness.node, request(1, 7, 1)?)
             .await
             .map_err(debug)?;
         assert!(matches!(
@@ -896,7 +929,7 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
         install_slow_commit(&harness.pool, true).await?;
         let mut unknown = harness
             .root
-            .freeze_item_mint(request(1, 8, 1)?)
+            .freeze_item_mint(&authority, &harness.node, request(1, 8, 1)?)
             .await
             .map_err(debug)?;
         let outcome = harness
@@ -936,7 +969,7 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
         install_slow_commit(&harness.pool, false).await?;
         let mut late = harness
             .root
-            .freeze_item_mint(request(1, 10, 1)?)
+            .freeze_item_mint(&authority, &harness.node, request(1, 10, 1)?)
             .await
             .map_err(debug)?;
         let outcome = harness
@@ -974,7 +1007,7 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
         // Lost acknowledgement: the commit happened but its answer was lost.
         let mut lost = harness
             .root
-            .freeze_item_mint(request(1, 9, 1)?)
+            .freeze_item_mint(&authority, &harness.node, request(1, 9, 1)?)
             .await
             .map_err(debug)?;
         let first = committed(
@@ -1015,114 +1048,323 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
     })
 }
 
+async fn install_receipt_rejection(pool: &sqlx::PgPool) -> TestResult {
+    sqlx::raw_sql(
+        "CREATE FUNCTION test_reject_item_receipt() RETURNS trigger LANGUAGE plpgsql AS $$ \
+         BEGIN RAISE EXCEPTION 'injected receipt failure'; END; $$; \
+         CREATE TRIGGER test_reject_item_receipt BEFORE INSERT ON game_item_mint_receipts \
+         FOR EACH ROW EXECUTE FUNCTION test_reject_item_receipt();",
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+async fn remove_receipt_rejection(pool: &sqlx::PgPool) -> TestResult {
+    sqlx::raw_sql(
+        "DROP TRIGGER test_reject_item_receipt ON game_item_mint_receipts; \
+         DROP FUNCTION test_reject_item_receipt();",
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+async fn stored_work_units(pool: &sqlx::PgPool, actor: i64) -> TestResult<i16> {
+    Ok(sqlx::query_scalar(
+        "SELECT work_units_used FROM game_item_mint_reservations \
+          WHERE death_actor_local_id = $1",
+    )
+    .bind(actor)
+    .fetch_one(pool)
+    .await?)
+}
+
 #[test]
-fn rl08_three_work_units_accepted_fourth_rejected_across_restart() -> TestResult {
+fn rl08_budget_is_durable_per_cause_across_refreeze_and_process_restart() -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
     runtime()?.block_on(async move {
         let harness = Harness::create(admin, "rl08").await?;
+
+        // Unit 1: a known-abort commit attempt. Unit 2: reconciliation proves
+        // that nothing committed. Both are durably charged to the reservation.
+        let (transaction_id, event_id, item_instance_id, occurred_at, envelope) = {
+            let seal = harness.recovery.seal_current().map_err(debug)?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let mut candidate = harness
+                .root
+                .freeze_item_mint(&authority, &harness.node, request(1, 7, 1)?)
+                .await
+                .map_err(debug)?;
+            assert_eq!(candidate.work_units_used(), 0);
+            install_receipt_rejection(&harness.pool).await?;
+            assert!(matches!(
+                harness
+                    .root
+                    .commit_item_mint(&authority, &harness.node, &mut candidate)
+                    .await,
+                Err(ItemMintError::Unavailable(DurabilityError::Database(_)))
+            ));
+            remove_receipt_rejection(&harness.pool).await?;
+            assert_eq!(
+                harness
+                    .root
+                    .reconcile_item_mint(&authority, &mut candidate)
+                    .await
+                    .map_err(debug)?,
+                None
+            );
+            assert_eq!(candidate.work_units_used(), 2);
+            assert_eq!(stored_work_units(&harness.pool, 7).await?, 2);
+            (
+                *candidate.transaction_id(),
+                *candidate.event_id(),
+                *candidate.item_instance_id(),
+                candidate.occurred_at_unix_ms(),
+                candidate.envelope().to_vec(),
+            )
+            // The candidate, the authority and the seal are dropped here.
+        };
+
+        // Simulated process restart in the same generation: no in-memory
+        // candidate survives; a fresh root re-freezes from the cause alone
+        // and resumes the same identities, event bytes and budget.
+        let restarted = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+        assert!(restarted.maintain_ready_once().await?);
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = restarted
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut resumed = restarted
+            .freeze_item_mint(&authority, &harness.node, request(1, 7, 1)?)
+            .await
+            .map_err(debug)?;
+        assert_eq!(resumed.transaction_id(), &transaction_id);
+        assert_eq!(resumed.event_id(), &event_id);
+        assert_eq!(resumed.item_instance_id(), &item_instance_id);
+        assert_eq!(resumed.occurred_at_unix_ms(), occurred_at);
+        assert_eq!(resumed.envelope(), envelope.as_slice());
+        assert_eq!(resumed.work_units_used(), 2);
+
+        // max=3: the third unit commits under the original TransactionId.
+        let result = committed(
+            restarted
+                .commit_item_mint(&authority, &harness.node, &mut resumed)
+                .await
+                .map_err(debug)?,
+        )?;
+        assert_eq!(result.transaction_id, transaction_id);
+        assert_eq!(result.item_instance_id, item_instance_id);
+        assert_eq!(resumed.work_units_used(), audit::RL08_RETRY_WORK_UNITS_MAX);
+
+        // max+1=4: the fourth unit is rejected, whether it is a commit attempt
+        // or a reconciliation, on the held candidate or a re-frozen one.
+        assert!(matches!(
+            restarted
+                .commit_item_mint(&authority, &harness.node, &mut resumed)
+                .await,
+            Err(ItemMintError::CapacityExceeded)
+        ));
+        assert!(matches!(
+            restarted
+                .reconcile_item_mint(&authority, &mut resumed)
+                .await,
+            Err(ItemMintError::CapacityExceeded)
+        ));
+        let mut refrozen = restarted
+            .freeze_item_mint(&authority, &harness.node, request(1, 7, 1)?)
+            .await
+            .map_err(debug)?;
+        assert_eq!(refrozen.transaction_id(), &transaction_id);
+        assert_eq!(refrozen.work_units_used(), audit::RL08_RETRY_WORK_UNITS_MAX);
+        assert!(matches!(
+            restarted
+                .reconcile_item_mint(&authority, &mut refrozen)
+                .await,
+            Err(ItemMintError::CapacityExceeded)
+        ));
+        assert!(matches!(
+            restarted
+                .commit_item_mint(&authority, &harness.node, &mut refrozen)
+                .await,
+            Err(ItemMintError::CapacityExceeded)
+        ));
+        assert_eq!(stored_work_units(&harness.pool, 7).await?, 3);
+
+        // An unresolved cause exhausts the same budget across re-freezes:
+        // three failed attempts, then the fourth is rejected unexecuted and
+        // the cause keeps its original TransactionId unminted.
+        install_receipt_rejection(&harness.pool).await?;
+        let mut first_holder = restarted
+            .freeze_item_mint(&authority, &harness.node, request(1, 8, 1)?)
+            .await
+            .map_err(debug)?;
+        let unresolved = *first_holder.transaction_id();
+        for _ in 0..2 {
+            assert!(matches!(
+                restarted
+                    .commit_item_mint(&authority, &harness.node, &mut first_holder)
+                    .await,
+                Err(ItemMintError::Unavailable(DurabilityError::Database(_)))
+            ));
+        }
+        drop(first_holder);
+        let mut second_holder = restarted
+            .freeze_item_mint(&authority, &harness.node, request(1, 8, 1)?)
+            .await
+            .map_err(debug)?;
+        assert_eq!(second_holder.transaction_id(), &unresolved);
+        assert_eq!(second_holder.work_units_used(), 2);
+        assert!(matches!(
+            restarted
+                .commit_item_mint(&authority, &harness.node, &mut second_holder)
+                .await,
+            Err(ItemMintError::Unavailable(DurabilityError::Database(_)))
+        ));
+        remove_receipt_rejection(&harness.pool).await?;
+        let mut third_holder = restarted
+            .freeze_item_mint(&authority, &harness.node, request(1, 8, 1)?)
+            .await
+            .map_err(debug)?;
+        assert_eq!(third_holder.transaction_id(), &unresolved);
+        assert!(matches!(
+            restarted
+                .commit_item_mint(&authority, &harness.node, &mut third_holder)
+                .await,
+            Err(ItemMintError::CapacityExceeded)
+        ));
+        assert_eq!(stored_work_units(&harness.pool, 8).await?, 3);
+        assert_eq!(harness.count("game_item_mint_reservations").await?, 2);
+        harness.assert_minted(1).await?;
+        drop(authority);
+        drop(seal);
+        drop(restarted);
+        harness.cleanup().await
+    })
+}
+
+/// Result of one charged pass, normalized for counting.
+type PassResult = Result<Option<CommittedItemMint>, ItemMintError>;
+
+fn commit_pass(outcome: Result<ItemMintOutcome, ItemMintError>) -> PassResult {
+    outcome.map(|outcome| match outcome {
+        ItemMintOutcome::Committed(result) | ItemMintOutcome::AlreadyCommitted(result) => {
+            Some(result)
+        }
+    })
+}
+
+#[test]
+fn rl08_concurrent_freezers_and_passes_share_one_reservation_and_budget() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "budget_race").await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-
-        // Unit 1: commit attempt. Unit 2: reconciliation.
-        let mut candidate = harness
-            .root
-            .freeze_item_mint(request(1, 7, 1)?)
+        let second_root = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+        assert!(second_root.maintain_ready_once().await?);
+        let second_authority = second_root
+            .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        assert_eq!(candidate.work_units_used(), 0);
-        let result = committed(
+
+        // Two concurrent freezers of one cause resume one reservation.
+        let (first, second) = join_two(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut candidate)
-                .await
-                .map_err(debug)?,
-        )?;
-        assert_eq!(
-            harness
-                .root
-                .reconcile_item_mint(&authority, &mut candidate)
-                .await
-                .map_err(debug)?,
-            Some(result.clone())
-        );
-        assert_eq!(candidate.work_units_used(), 2);
+                .freeze_item_mint(&authority, &harness.node, request(1, 7, 1)?),
+            second_root.freeze_item_mint(&second_authority, &harness.node, request(1, 7, 1)?),
+        )
+        .await;
+        let mut first = first.map_err(debug)?;
+        let mut second = second.map_err(debug)?;
+        assert_eq!(first.transaction_id(), second.transaction_id());
+        assert_eq!(first.event_id(), second.event_id());
+        assert_eq!(first.item_instance_id(), second.item_instance_id());
+        assert_eq!(first.envelope(), second.envelope());
+        assert_eq!(harness.count("game_item_mint_reservations").await?, 1);
 
-        // Restart the durability root; the frozen candidate and its budget
-        // survive. Unit 3 is accepted, unit 4 is rejected before any database
-        // work, whether it is a commit attempt or a reconciliation.
-        let restarted = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
-        assert!(restarted.maintain_ready_once().await?);
-        let restart_seal = harness.recovery.seal_current().map_err(debug)?;
-        let restart_authority = restarted
-            .open_character_authority(&restart_seal)
-            .await
-            .map_err(debug)?;
-        assert_eq!(
-            restarted
-                .reconcile_item_mint(&restart_authority, &mut candidate)
-                .await
-                .map_err(debug)?,
-            Some(result.clone())
-        );
-        assert_eq!(
-            candidate.work_units_used(),
-            audit::RL08_RETRY_WORK_UNITS_MAX
-        );
-        assert!(matches!(
-            restarted
-                .commit_item_mint(&restart_authority, &harness.node, &mut candidate)
-                .await,
-            Err(ItemMintError::CapacityExceeded)
-        ));
-        assert!(matches!(
-            restarted
-                .reconcile_item_mint(&restart_authority, &mut candidate)
-                .await,
-            Err(ItemMintError::CapacityExceeded)
-        ));
-        assert_eq!(
-            candidate.work_units_used(),
-            audit::RL08_RETRY_WORK_UNITS_MAX
-        );
-
-        // An unresolved candidate exhausts the same budget across the restart:
-        // three refused attempts, then the fourth is rejected unexecuted.
-        let mut refused = harness
-            .root
-            .freeze_item_mint(request(2, 7, 1)?)
-            .await
-            .map_err(debug)?;
-        for _ in 0..2 {
-            assert!(matches!(
-                harness
-                    .root
-                    .commit_item_mint(&authority, &harness.node, &mut refused)
-                    .await,
-                Err(ItemMintError::AuthorityRejected)
-            ));
+        // Each holder races three passes (commit, reconcile, commit): six
+        // attempts against one three-unit budget.
+        let (first_passes, second_passes) = join_two(
+            async {
+                let mut passes: Vec<PassResult> = Vec::new();
+                passes.push(commit_pass(
+                    harness
+                        .root
+                        .commit_item_mint(&authority, &harness.node, &mut first)
+                        .await,
+                ));
+                passes.push(
+                    harness
+                        .root
+                        .reconcile_item_mint(&authority, &mut first)
+                        .await,
+                );
+                passes.push(commit_pass(
+                    harness
+                        .root
+                        .commit_item_mint(&authority, &harness.node, &mut first)
+                        .await,
+                ));
+                passes
+            },
+            async {
+                let mut passes: Vec<PassResult> = Vec::new();
+                passes.push(commit_pass(
+                    second_root
+                        .commit_item_mint(&second_authority, &harness.node, &mut second)
+                        .await,
+                ));
+                passes.push(
+                    second_root
+                        .reconcile_item_mint(&second_authority, &mut second)
+                        .await,
+                );
+                passes.push(commit_pass(
+                    second_root
+                        .commit_item_mint(&second_authority, &harness.node, &mut second)
+                        .await,
+                ));
+                passes
+            },
+        )
+        .await;
+        let mut accepted = 0;
+        let mut results = Vec::new();
+        for pass in first_passes.into_iter().chain(second_passes) {
+            match pass {
+                Ok(result) => {
+                    accepted += 1;
+                    results.extend(result);
+                }
+                Err(ItemMintError::CapacityExceeded) => {}
+                Err(error) => return Err(format!("unexpected pass error: {error:?}").into()),
+            }
         }
-        assert!(matches!(
-            restarted
-                .commit_item_mint(&restart_authority, &harness.node, &mut refused)
-                .await,
-            Err(ItemMintError::AuthorityRejected)
-        ));
-        assert!(matches!(
-            restarted
-                .reconcile_item_mint(&restart_authority, &mut refused)
-                .await,
-            Err(ItemMintError::CapacityExceeded)
-        ));
+        eprintln!("ITEM-MINT-PG: concurrent passes accepted {accepted} of 6");
+        assert_eq!(accepted, i32::from(audit::RL08_RETRY_WORK_UNITS_MAX));
+        assert!(!results.is_empty());
+        assert!(results.iter().all(|result| *result == results[0]));
+        assert_eq!(&results[0].transaction_id, first.transaction_id());
+        assert_eq!(stored_work_units(&harness.pool, 7).await?, 3);
+        assert_eq!(harness.count("game_item_mint_reservations").await?, 1);
         harness.assert_minted(1).await?;
-        drop(restart_authority);
-        drop(restart_seal);
-        drop(restarted);
+        drop(second_authority);
+        drop(second_root);
         drop(authority);
         drop(seal);
         harness.cleanup().await
@@ -1158,17 +1400,18 @@ fn rl08_reconciliation_work_is_measured_on_real_postgresql() -> TestResult {
         const SAMPLES: u32 = 30;
         let (mut freeze, mut commit, mut replay, mut reconcile_hit, mut reconcile_miss) =
             (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
+        let mut freeze_resume = Vec::new();
         for draw in 0..SAMPLES {
             let started = Instant::now();
             let mut candidate = harness
                 .root
-                .freeze_item_mint(request(1, 7, draw)?)
+                .freeze_item_mint(&authority, &harness.node, request(1, 7, draw)?)
                 .await
                 .map_err(debug)?;
             freeze.push(started.elapsed());
             let mut missing = harness
                 .root
-                .freeze_item_mint(request(1, 8, draw)?)
+                .freeze_item_mint(&authority, &harness.node, request(1, 8, draw)?)
                 .await
                 .map_err(debug)?;
             let started = Instant::now();
@@ -1181,6 +1424,15 @@ fn rl08_reconciliation_work_is_measured_on_real_postgresql() -> TestResult {
                 None
             );
             reconcile_miss.push(started.elapsed());
+            let started = Instant::now();
+            let resumed = harness
+                .root
+                .freeze_item_mint(&authority, &harness.node, request(1, 8, draw)?)
+                .await
+                .map_err(debug)?;
+            freeze_resume.push(started.elapsed());
+            assert_eq!(resumed.transaction_id(), missing.transaction_id());
+            assert_eq!(resumed.work_units_used(), 1);
             let started = Instant::now();
             let result = committed(
                 harness
@@ -1216,6 +1468,8 @@ fn rl08_reconciliation_work_is_measured_on_real_postgresql() -> TestResult {
         harness.assert_minted(i64::from(SAMPLES)).await?;
         let all = commit
             .iter()
+            .chain(&freeze)
+            .chain(&freeze_resume)
             .chain(&replay)
             .chain(&reconcile_hit)
             .chain(&reconcile_miss)
@@ -1223,12 +1477,17 @@ fn rl08_reconciliation_work_is_measured_on_real_postgresql() -> TestResult {
             .copied()
             .ok_or("no samples")?;
         assert!(all < crate::durability::DB_PASS_DEADLINE);
+        // Each commit/reconcile call is two passes: the committed RL-08
+        // charge (3 statements) and then the pass's own work.
         eprintln!(
-            "RL08-MEASURE {{\"freeze\":{},\"commit_new\":{},\"commit_replay\":{},\
-             \"reconcile_committed\":{},\"reconcile_not_committed\":{},\
-             \"statements_excluding_begin_commit\":{{\"commit_new\":28,\
-             \"commit_replay\":21,\"reconcile\":4,\"freeze\":2}},\"pass_deadline_ms\":{}}}",
+            "RL08-MEASURE {{\"freeze_new\":{},\"freeze_resume\":{},\"commit_new\":{},\
+             \"commit_replay\":{},\"reconcile_committed\":{},\
+             \"reconcile_not_committed\":{},\
+             \"statements_excluding_begin_commit\":{{\"charge\":3,\"commit_new\":\"3+29\",\
+             \"commit_replay\":\"3+21\",\"reconcile\":\"3+4\",\"freeze_new\":8,\
+             \"freeze_resume\":7,\"freeze_resume_terminal\":5}},\"pass_deadline_ms\":{}}}",
             summary(&mut freeze),
+            summary(&mut freeze_resume),
             summary(&mut commit),
             summary(&mut replay),
             summary(&mut reconcile_hit),
@@ -1263,11 +1522,11 @@ fn concurrent_same_cause_on_two_roots_mints_exactly_once() -> TestResult {
 
         let mut first = harness
             .root
-            .freeze_item_mint(request(1, 7, 1)?)
+            .freeze_item_mint(&authority, &harness.node, request(1, 7, 1)?)
             .await
             .map_err(debug)?;
         let mut second = second_root
-            .freeze_item_mint(request(1, 7, 1)?)
+            .freeze_item_mint(&second_authority, &harness.node, request(1, 7, 1)?)
             .await
             .map_err(debug)?;
         let (first_outcome, second_outcome) = join_two(

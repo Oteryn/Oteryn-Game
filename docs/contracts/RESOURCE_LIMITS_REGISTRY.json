@@ -5393,7 +5393,7 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: each commit attempt or reconciliation pass on one frozen candidate charges one unit; the fourth is rejected before database work)"
+        "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: the logical transaction is a durable reservation keyed by the full cause tuple; each commit attempt or reconciliation pass first charges one unit to it with a committed conditional UPDATE, across re-freezes, restarts and concurrent holders; the fourth is rejected before the pass's work)"
       ],
       "notes": "D51, decision \u00a73.3: a policy value, not a measurement. Stage C must re-decide it once real PostgreSQL reconciliation exists and prove max/max+1 across a restart. Registered by OTV2-20260928-dur03-b4-binding-513."
     },

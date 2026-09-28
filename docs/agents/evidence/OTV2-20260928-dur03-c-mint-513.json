@@ -14,9 +14,19 @@
   "postgres_tests": {
     "character_authority_postgres": {
       "failed": 8,
+      "failed_cases": [
+        "authenticated_intent_qualification_matrix",
+        "bootstrap_is_atomic_and_audit_is_published_held_and_expired",
+        "character_progression_postgres_cases::distinct_occurrences_with_one_predecessor_cannot_both_commit",
+        "character_progression_postgres_cases::exact_replay_reconcile_and_restart_readback_are_durable",
+        "character_progression_postgres_cases::rollback_concurrency_and_ended_node_preserve_single_revision",
+        "character_progression_postgres_cases::stale_fences_context_and_missing_state_fail_closed",
+        "fresh_store_admission_refuses_any_prior_character_row",
+        "fresh_store_rerun_is_idempotent_and_interpretation_waits_for_it"
+      ],
       "failures": "pre-existing hard assertion server_version_num == 170006 (local 17.11)",
-      "item_mint_cases_passed": 6,
-      "passed": 474
+      "item_mint_cases_passed": 7,
+      "passed": 475
     },
     "durability_postgres": {
       "failed": 0,
@@ -24,126 +34,165 @@
     },
     "item_mint_postgres": {
       "failed": 0,
-      "item_mint_cases": 6,
-      "passed": 469
+      "item_mint_cases": 7,
+      "passed": 470
     }
   },
   "postgresql": {
     "canonical_lane": "170006 (not run locally)",
     "server_version_num": "170011"
   },
+  "repair_rounds": [
+    {
+      "finding": "Codex P1 PRRT_kwDOT8SzxM6mssr1 (item_mint.rs:339): a re-freeze of the same cause minted new IDs and reset work_units_used, bypassing the RL-08 cap and the TransactionId retention requirement",
+      "pr": 1112,
+      "repair": "durable game_item_mint_reservations row per full cause tuple, committed before the first pass; re-freeze resumes IDs, event bytes and budget; every commit/reconcile pass first commits a conditional work-unit UPDATE; fence = death generation + reserving node incarnation (D52 unchanged)",
+      "round": 1,
+      "superseded_frozen_head": "14c856f"
+    }
+  ],
   "rl08": {
-    "boundary": "3 accepted, 4th rejected before database work, across a durability-root restart",
+    "boundary": "3 accepted, 4th rejected before the pass's work, per logical transaction: across re-freezes, a simulated process restart (no in-memory candidate) and concurrent holders (3 of 6 racing passes accepted)",
+    "charge": "separate committed pass: recovery fence + UPDATE game_item_mint_reservations SET work_units_used = work_units_used + 1 WHERE <full cause> AND transaction_id = ? AND work_units_used < 3 RETURNING work_units_used",
     "freeze_counted": false,
+    "measurements_superseded": "pre-repair single-pass measurements at 14c856f (commit_new 28, commit_replay 21, reconcile 4, freeze 2 statements)",
     "measurements_us": [
       {
         "measure": {
           "commit_new": {
-            "max_us": 16037,
-            "median_us": 11232,
-            "min_us": 8202,
+            "max_us": 27409,
+            "median_us": 11296,
+            "min_us": 8910,
             "n": 30,
-            "p90_us": 14770
+            "p90_us": 22536
           },
           "commit_replay": {
-            "max_us": 19319,
-            "median_us": 6929,
-            "min_us": 5111,
+            "max_us": 12905,
+            "median_us": 8167,
+            "min_us": 6315,
             "n": 30,
-            "p90_us": 10448
+            "p90_us": 11811
           },
-          "freeze": {
-            "max_us": 3225,
-            "median_us": 1992,
-            "min_us": 1173,
+          "freeze_new": {
+            "max_us": 17458,
+            "median_us": 5097,
+            "min_us": 3769,
             "n": 30,
-            "p90_us": 2785
+            "p90_us": 7861
+          },
+          "freeze_resume": {
+            "max_us": 6631,
+            "median_us": 3327,
+            "min_us": 2293,
+            "n": 30,
+            "p90_us": 4485
           },
           "pass_deadline_ms": 2000,
           "reconcile_committed": {
-            "max_us": 7320,
-            "median_us": 3625,
-            "min_us": 1883,
+            "max_us": 8702,
+            "median_us": 4850,
+            "min_us": 3330,
             "n": 30,
-            "p90_us": 7288
+            "p90_us": 6635
           },
           "reconcile_not_committed": {
-            "max_us": 5980,
-            "median_us": 2960,
-            "min_us": 1841,
+            "max_us": 11785,
+            "median_us": 4377,
+            "min_us": 3161,
             "n": 30,
-            "p90_us": 4945
+            "p90_us": 6348
           },
           "statements_excluding_begin_commit": {
-            "commit_new": 28,
-            "commit_replay": 21,
-            "freeze": 2,
-            "reconcile": 4
+            "charge": 3,
+            "commit_new": "3+29",
+            "commit_replay": "3+21",
+            "freeze_new": 8,
+            "freeze_resume": 7,
+            "freeze_resume_terminal": 5,
+            "reconcile": "3+4"
           }
         },
-        "target": "item_mint_postgres"
+        "repair_round": 1,
+        "target": "item_mint_postgres",
+        "test_threads": 1
       },
       {
         "measure": {
           "commit_new": {
-            "max_us": 39980,
-            "median_us": 14280,
-            "min_us": 9917,
+            "max_us": 17504,
+            "median_us": 10299,
+            "min_us": 8423,
             "n": 30,
-            "p90_us": 19194
+            "p90_us": 13156
           },
           "commit_replay": {
-            "max_us": 24444,
-            "median_us": 7713,
-            "min_us": 4889,
+            "max_us": 9770,
+            "median_us": 6365,
+            "min_us": 5450,
             "n": 30,
-            "p90_us": 13205
+            "p90_us": 7652
           },
-          "freeze": {
-            "max_us": 5171,
-            "median_us": 2299,
-            "min_us": 1147,
+          "freeze_new": {
+            "max_us": 9395,
+            "median_us": 4010,
+            "min_us": 3124,
             "n": 30,
-            "p90_us": 3122
+            "p90_us": 4828
+          },
+          "freeze_resume": {
+            "max_us": 3968,
+            "median_us": 2920,
+            "min_us": 2194,
+            "n": 30,
+            "p90_us": 3790
           },
           "pass_deadline_ms": 2000,
           "reconcile_committed": {
-            "max_us": 7118,
-            "median_us": 3831,
-            "min_us": 1918,
+            "max_us": 5338,
+            "median_us": 3726,
+            "min_us": 2902,
             "n": 30,
-            "p90_us": 5934
+            "p90_us": 5187
           },
           "reconcile_not_committed": {
-            "max_us": 7343,
-            "median_us": 3588,
-            "min_us": 2634,
+            "max_us": 7232,
+            "median_us": 3900,
+            "min_us": 2972,
             "n": 30,
-            "p90_us": 5987
+            "p90_us": 6067
           },
           "statements_excluding_begin_commit": {
-            "commit_new": 28,
-            "commit_replay": 21,
-            "freeze": 2,
-            "reconcile": 4
+            "charge": 3,
+            "commit_new": "3+29",
+            "commit_replay": "3+21",
+            "freeze_new": 8,
+            "freeze_resume": 7,
+            "freeze_resume_terminal": 5,
+            "reconcile": "3+4"
           }
         },
-        "target": "character_authority_postgres"
+        "repair_round": 1,
+        "target": "character_authority_postgres",
+        "test_threads": 1
       }
     ],
     "pass_deadline_ms": 2000,
     "registered_hard_maximum": 3,
     "statements_excluding_begin_commit": {
-      "commit_new": 28,
-      "commit_replay": 21,
-      "freeze": 2,
-      "reconcile": 4
+      "charge": 3,
+      "commit_new": "3+29",
+      "commit_replay": "3+21",
+      "freeze_new": 8,
+      "freeze_resume": 7,
+      "freeze_resume_terminal": 5,
+      "reconcile": "3+4"
     },
-    "structural_finding": "3 units = exactly one ambiguity cycle (attempt, reconcile, retry); a second transient failure leaves the candidate held and, under D52, terminally not minted once the generation ends; duplication is impossible at any value (full-cause primary key)",
-    "unit": "one commit attempt or reconciliation pass on one frozen candidate"
+    "structural_finding": "3 units = exactly one ambiguity cycle (attempt, reconcile, retry) per cause; a second transient failure leaves the cause held with its reservation and TransactionId unchanged and, under D52, terminally not minted once the generation ends; duplication is impossible at any value (full-cause primary keys)",
+    "unit": "one commit attempt or reconciliation pass on one logical transaction (durable reservation row per full cause)"
   },
   "schema": {
     "audit_deletion": "none (no purge path)",
+    "deferred_integrity": "game_item_mint_consistent requires the receipt to equal its cause's reservation (full cause, intent binding, IDs, occurred_at, sha256(envelope))",
     "migration": "apps/game-server/migrations/0010_item_mint_ground.sql",
     "receipt_expiry_or_deletion": "none",
     "receipt_primary_key": [
@@ -161,14 +210,40 @@
     "relations": [
       "game_item_instances",
       "game_item_ground_locations",
+      "game_item_mint_reservations",
       "game_item_mint_receipts",
       "game_item_audit_outbox"
+    ],
+    "reservation_binds": [
+      "intent_binding",
+      "transaction_id",
+      "event_id",
+      "item_instance_id",
+      "occurred_at",
+      "envelope",
+      "fence_scope_ownership_generation",
+      "fence_holder_node_id",
+      "fence_holder_registration_revision",
+      "work_units_used"
+    ],
+    "reservation_expiry_or_deletion": "none; only mutation is work_units_used + 1 (trigger-guarded, CHECK 0..3, column-level UPDATE grant)",
+    "reservation_primary_key": [
+      "death_world_id",
+      "death_channel_id",
+      "death_scope_ownership_generation",
+      "death_actor_local_id",
+      "death_actor_local_generation",
+      "loot_table_family",
+      "loot_table_production_key",
+      "loot_table_revision_ref",
+      "loot_purpose_key",
+      "draw_ordinal"
     ]
   },
   "task_id": "OTV2-20260928-dur03-c-mint-513",
   "workspace_tests": {
     "failed": 0,
     "ignored": 7,
-    "passed": 4471
+    "passed": 4473
   }
 }

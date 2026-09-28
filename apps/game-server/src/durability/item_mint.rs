@@ -7,18 +7,26 @@
 //!
 //! Lifecycle of one logical MINT transaction:
 //! 1. [`DurabilityRoot::freeze_item_mint`] validates every registered bound and
-//!    fixes the TransactionId, EventId, ItemInstanceId, trusted timestamp and
-//!    exact event bytes before any commit attempt can become ambiguous.
+//!    commits, in its own transaction and keyed by the full cause tuple, a
+//!    durable reservation of the logical transaction: TransactionId, EventId,
+//!    ItemInstanceId, trusted timestamp, exact event bytes, the fence (scope
+//!    ownership generation plus holder node incarnation) and the DUR03-RL-08
+//!    work units used. Freezing an already reserved cause resumes that row:
+//!    the same identities and the same budget, never new ones.
 //! 2. [`DurabilityRoot::commit_item_mint`] commits that frozen candidate under
 //!    the current recovery, admission-relation, runtime-scope assignment and
-//!    node-incarnation fence. The death's ownership generation must be the
-//!    current assignment (D52); otherwise the MINT is refused, never deferred.
+//!    node-incarnation fence. The reservation's fence must be the live one:
+//!    the death's ownership generation is the current assignment held by the
+//!    reserving incarnation (D52); otherwise the MINT is refused, never
+//!    deferred and never re-reserved.
 //! 3. After an unknown outcome, [`DurabilityRoot::reconcile_item_mint`] reads
 //!    the receipt of the same cause. Committed returns the original result; not
 //!    committed permits a retry of the same frozen candidate.
 //!
-//! Each commit attempt and reconciliation pass charges one DUR03-RL-08 work
-//! unit to the frozen candidate; a fourth is rejected before database work.
+//! Each commit attempt and reconciliation pass first charges one DUR03-RL-08
+//! work unit to the reservation row with a conditional UPDATE committed before
+//! the pass's work, so the budget is shared by every holder of the cause and
+//! survives restarts; the fourth unit is rejected before the pass's work.
 
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
@@ -33,6 +41,7 @@ use super::item_mint_audit::{
 };
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
 use super::{DurabilityError, DurabilityRoot};
+use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -41,6 +50,38 @@ type Result<T> = std::result::Result<T, ItemMintError>;
 const INTENT_BINDING_VERSION: u8 = 1;
 const EVENT_TYPE_ID: i64 = audit::EVENT_TYPE_ID as i64;
 const EVENT_SCHEMA_REVISION: i64 = audit::EVENT_SCHEMA_REVISION as i64;
+
+/// Equality on the full cause tuple, parameters `$1..$10`; never a hash.
+macro_rules! cause_key {
+    () => {
+        "death_world_id = encode($1,'hex')::uuid \
+         AND death_channel_id = encode($2,'hex')::uuid \
+         AND death_scope_ownership_generation = $3::text::numeric(20,0) \
+         AND death_actor_local_id = $4 \
+         AND death_actor_local_generation = $5::text::numeric(20,0) \
+         AND loot_table_family = $6 AND loot_table_production_key = $7 \
+         AND loot_table_revision_ref = $8 AND loot_purpose_key = $9 \
+         AND draw_ordinal = $10"
+    };
+}
+
+/// Binds the full cause tuple as `$1..$10` of a query using `cause_key!()`.
+macro_rules! bind_cause {
+    ($query:expr, $cause:expr) => {{
+        let cause: &ItemMintCause = $cause;
+        $query
+            .bind(cause.death.world_id.as_bytes().as_slice())
+            .bind(cause.death.channel_id.as_bytes().as_slice())
+            .bind(cause.death.scope_ownership_generation.get().to_string())
+            .bind(i64::from(cause.death.actor_local_id))
+            .bind(cause.death.actor_local_generation.to_string())
+            .bind(&cause.loot_table.family)
+            .bind(&cause.loot_table.production_key)
+            .bind(&cause.loot_table.revision_ref)
+            .bind(&cause.purpose_key)
+            .bind(i64::from(cause.draw_ordinal))
+    }};
+}
 
 /// `TypedDefinitionRef = (DefinitionFamily, ProductionKey, DefinitionRevisionRef)`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -123,9 +164,10 @@ pub struct ItemMintRequest {
     pub sim_revision: String,
 }
 
-/// Frozen candidate of one logical MINT transaction. It is deliberately not
-/// `Clone`: every attempt and reconciliation reuses this exact value and its
-/// DUR03-RL-08 budget.
+/// Frozen candidate of one logical MINT transaction, a process-local view of
+/// its durable reservation. It is deliberately not `Clone`; the authoritative
+/// DUR03-RL-08 budget is the reservation row, and `work_units_used` is the
+/// last value this holder observed there.
 #[derive(Debug)]
 pub struct ItemMintCandidate {
     request: ItemMintRequest,
@@ -165,14 +207,18 @@ impl ItemMintCandidate {
     pub const fn work_units_used(&self) -> u8 {
         self.work_units_used
     }
+}
 
-    fn charge_work_unit(&mut self) -> Result<()> {
-        if self.work_units_used >= RL08_RETRY_WORK_UNITS_MAX {
-            return Err(ItemMintError::CapacityExceeded);
-        }
-        self.work_units_used += 1;
-        Ok(())
-    }
+/// The durable reservation row of one cause.
+struct Reservation {
+    transaction_id: [u8; 16],
+    event_id: [u8; 16],
+    item_instance_id: [u8; 16],
+    occurred_at_unix_ms: i64,
+    envelope: Vec<u8>,
+    fence_node_id: [u8; 16],
+    fence_registration_revision: u64,
+    work_units_used: u8,
 }
 
 /// Terminal committed result of one cause. It never changes after commit,
@@ -286,17 +332,55 @@ impl FrozenMint {
 }
 
 impl DurabilityRoot {
-    /// Validate every registered bound and fix the candidate identities and
-    /// exact event bytes. This pass reads only producer-owned UUIDv7 values and
-    /// the trusted database timestamp; it mutates nothing and grants nothing.
-    pub async fn freeze_item_mint(&self, request: ItemMintRequest) -> Result<ItemMintCandidate> {
+    /// Validate every registered bound and reserve the logical MINT
+    /// transaction of this cause, or resume its existing reservation. A new
+    /// reservation is created only while the death's ownership generation is
+    /// the current assignment held by `node`'s current incarnation; it binds
+    /// producer-owned UUIDv7 identities, the trusted database timestamp, the
+    /// exact event bytes, that fence and a zero DUR03-RL-08 budget, and commits
+    /// before any commit pass. An existing reservation is resumed with the same
+    /// identities and budget: while no receipt exists its fence must still be
+    /// live for `node` (D52), and a terminal receipt resumes regardless so the
+    /// original result stays reachable. This grants nothing and mints nothing.
+    pub async fn freeze_item_mint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: ItemMintRequest,
+    ) -> Result<ItemMintCandidate> {
         validate_request(&request)?;
         let intent_binding = intent_binding(&request)?;
-        let (transaction_id, event_id, item_instance_id, occurred_at_unix_ms) = self
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemMintError::AuthorityRejected)?;
+        let node = node.clone();
+        let (request, reservation) = self
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_cause(&mut tx, &request.cause).await?;
+                    if let Some(row) = load_reservation(&mut tx, &request.cause).await? {
+                        let stored: Vec<u8> = row.try_get("intent_binding")?;
+                        if stored != intent_binding {
+                            return Ok(Err(ItemMintError::ConflictingCause));
+                        }
+                        let reservation = decode_reservation(&row)?;
+                        let terminal = load_receipt(&mut tx, &request.cause).await?.is_some();
+                        let resumable = terminal
+                            || (fence_matches(&reservation, &node)
+                                && fence_is_live(&mut tx, &request.cause.death, &node).await?);
+                        if !resumable {
+                            return Ok(Err(ItemMintError::AuthorityRejected));
+                        }
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok((request, reservation)));
+                    }
+
+                    if !fence_is_live(&mut tx, &request.cause.death, &node).await? {
+                        return Ok(Err(ItemMintError::AuthorityRejected));
+                    }
                     let row = sqlx::query(
                         "SELECT game_character_uuid_v7()::text AS transaction_id, \
                                 game_character_uuid_v7()::text AS event_id, \
@@ -306,45 +390,131 @@ impl DurabilityRoot {
                     )
                     .fetch_one(&mut *tx)
                     .await?;
-                    let ids = (
-                        uuid_text(row.try_get("transaction_id")?)?,
-                        uuid_text(row.try_get("event_id")?)?,
-                        uuid_text(row.try_get("item_instance_id")?)?,
-                        row.try_get::<i64, _>("occurred_at")?,
-                    );
+                    let transaction_id = uuid_text(row.try_get("transaction_id")?)?;
+                    let event_id = uuid_text(row.try_get("event_id")?)?;
+                    let item_instance_id = uuid_text(row.try_get("item_instance_id")?)?;
+                    let occurred_at_unix_ms = row.try_get::<i64, _>("occurred_at")?;
+                    let envelope = match audit::encode_mint_event(
+                        MintEventIdentity {
+                            event_id,
+                            transaction_id,
+                            occurred_at_unix_ms,
+                            server_build_id: SERVER_BUILD_ID,
+                        },
+                        mint_message(&request, item_instance_id),
+                    ) {
+                        Ok(envelope) => envelope,
+                        Err(error) => return Ok(Err(error.into())),
+                    };
+                    let fact = node.fact();
+                    let reservation = Reservation {
+                        transaction_id,
+                        event_id,
+                        item_instance_id,
+                        occurred_at_unix_ms,
+                        envelope,
+                        fence_node_id: *fact.node_id().as_bytes(),
+                        fence_registration_revision: fact.registration_revision(),
+                        work_units_used: 0,
+                    };
+                    insert_reservation(&mut tx, &request, &intent_binding, &reservation).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(ids)
+                    Ok(Ok((request, reservation)))
+                })
+            })
+            .await??;
+        let envelope_sha256 = Sha256::digest(&reservation.envelope).into();
+        Ok(ItemMintCandidate {
+            request,
+            transaction_id: reservation.transaction_id,
+            event_id: reservation.event_id,
+            item_instance_id: reservation.item_instance_id,
+            occurred_at_unix_ms: reservation.occurred_at_unix_ms,
+            envelope: reservation.envelope,
+            envelope_sha256,
+            intent_binding,
+            work_units_used: reservation.work_units_used,
+        })
+    }
+
+    /// Durably charge one DUR03-RL-08 work unit to the candidate's reservation
+    /// in its own committed transaction, before the pass does any work. The
+    /// conditional UPDATE takes the row lock and re-checks the budget, so
+    /// concurrent holders of the same cause never exceed the maximum.
+    async fn charge_item_mint_work_unit(
+        &self,
+        recovery: CharacterRecoveryFenceV1,
+        candidate: &mut ItemMintCandidate,
+    ) -> Result<()> {
+        if candidate.work_units_used >= RL08_RETRY_WORK_UNITS_MAX {
+            return Err(ItemMintError::CapacityExceeded);
+        }
+        let cause = candidate.request.cause.clone();
+        let transaction_id = candidate.transaction_id;
+        let charged = self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let used = bind_cause!(
+                        sqlx::query(concat!(
+                            "UPDATE game_item_mint_reservations \
+                                SET work_units_used = work_units_used + 1 WHERE ",
+                            cause_key!(),
+                            " AND transaction_id = encode($11,'hex')::uuid \
+                              AND work_units_used < $12 RETURNING work_units_used"
+                        )),
+                        &cause
+                    )
+                    .bind(transaction_id.as_slice())
+                    .bind(i16::from(RL08_RETRY_WORK_UNITS_MAX))
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    let Some(used) = used else {
+                        let reserved = bind_cause!(
+                            sqlx::query(concat!(
+                                "SELECT 1 FROM game_item_mint_reservations WHERE ",
+                                cause_key!(),
+                                " AND transaction_id = encode($11,'hex')::uuid"
+                            )),
+                            &cause
+                        )
+                        .bind(transaction_id.as_slice())
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                        return Ok(Err(if reserved.is_some() {
+                            ItemMintError::CapacityExceeded
+                        } else {
+                            ItemMintError::ConflictingCandidate
+                        }));
+                    };
+                    let used = u8::try_from(used.try_get::<i16, _>("work_units_used")?)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(used))
                 })
             })
             .await?;
-        let envelope = audit::encode_mint_event(
-            MintEventIdentity {
-                event_id,
-                transaction_id,
-                occurred_at_unix_ms,
-                server_build_id: SERVER_BUILD_ID,
-            },
-            mint_message(&request, item_instance_id),
-        )?;
-        let envelope_sha256 = Sha256::digest(&envelope).into();
-        Ok(ItemMintCandidate {
-            request,
-            transaction_id,
-            event_id,
-            item_instance_id,
-            occurred_at_unix_ms,
-            envelope,
-            envelope_sha256,
-            intent_binding,
-            work_units_used: 0,
-        })
+        match charged {
+            Ok(used) => {
+                candidate.work_units_used = used;
+                Ok(())
+            }
+            Err(ItemMintError::CapacityExceeded) => {
+                candidate.work_units_used = RL08_RETRY_WORK_UNITS_MAX;
+                Err(ItemMintError::CapacityExceeded)
+            }
+            Err(error) => Err(error),
+        }
     }
 
     /// Commit one frozen MINT candidate. A cause that already minted returns
     /// its original terminal result without reacquiring runtime authority; a
     /// changed intent for the same cause conflicts. A new cause commits only
-    /// while its death's ownership generation is the current assignment held
-    /// by this node's current incarnation.
+    /// while its reservation's fence is live: the death's ownership generation
+    /// is the current assignment held by the reserving node's current
+    /// incarnation, which `node` must prove.
     pub async fn commit_item_mint(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -354,7 +524,8 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemMintError::AuthorityRejected)?;
-        candidate.charge_work_unit()?;
+        self.charge_item_mint_work_unit(recovery.clone(), candidate)
+            .await?;
         let frozen = FrozenMint::of(candidate);
         let node = node.clone();
 
@@ -374,6 +545,21 @@ impl DurabilityRoot {
                         let committed = decode_receipt(&row)?;
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(ItemMintOutcome::AlreadyCommitted(committed)));
+                    }
+
+                    let Some(row) = load_reservation(&mut tx, &frozen.request.cause).await? else {
+                        return Ok(Err(ItemMintError::ConflictingCandidate));
+                    };
+                    let stored: Vec<u8> = row.try_get("intent_binding")?;
+                    if stored != frozen.intent_binding {
+                        return Ok(Err(ItemMintError::ConflictingCause));
+                    }
+                    let reservation = decode_reservation(&row)?;
+                    if reservation.transaction_id != frozen.transaction_id
+                        || reservation.event_id != frozen.event_id
+                        || reservation.item_instance_id != frozen.item_instance_id
+                    {
+                        return Ok(Err(ItemMintError::ConflictingCandidate));
                     }
 
                     let identity_reused: bool = sqlx::query_scalar(
@@ -396,28 +582,12 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::ConflictingCandidate));
                     }
 
-                    // DUR-03 §32 / D52: the death's generation must be the
-                    // current assignment held by this node's live incarnation.
-                    let death = frozen.request.cause.death;
-                    let fact = node.fact();
-                    let assignment = sqlx::query(
-                        "SELECT 1 FROM game_runtime_scope_assignments \
-                         WHERE scope_key = $1 AND world_id = encode($2,'hex')::uuid \
-                           AND channel_id = encode($3,'hex')::uuid AND state = 1 \
-                           AND ownership_generation = $4::text::numeric(20,0) \
-                           AND holder_node_id = encode($5,'hex')::uuid \
-                           AND holder_registration_revision = $6::text::numeric(20,0) \
-                         FOR SHARE",
-                    )
-                    .bind(scope_key(death.world_id, death.channel_id).as_slice())
-                    .bind(death.world_id.as_bytes().as_slice())
-                    .bind(death.channel_id.as_bytes().as_slice())
-                    .bind(death.scope_ownership_generation.get().to_string())
-                    .bind(fact.node_id().as_bytes().as_slice())
-                    .bind(fact.registration_revision().to_string())
-                    .fetch_optional(&mut *tx)
-                    .await?;
-                    if assignment.is_none() || !prove_current_incarnation(&mut tx, &node).await? {
+                    // DUR-03 §32 / D52: the reservation's fence must be live:
+                    // the death's generation is the current assignment held by
+                    // the reserving node's current incarnation.
+                    if !fence_matches(&reservation, &node)
+                        || !fence_is_live(&mut tx, &frozen.request.cause.death, &node).await?
+                    {
                         return Ok(Err(ItemMintError::AuthorityRejected));
                     }
 
@@ -448,7 +618,8 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemMintError::AuthorityRejected)?;
-        candidate.charge_work_unit()?;
+        self.charge_item_mint_work_unit(recovery.clone(), candidate)
+            .await?;
         let cause = candidate.request.cause.clone();
         let binding = candidate.intent_binding;
         self.try_issue_semantic_pass()?
@@ -679,31 +850,129 @@ async fn load_receipt(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     cause: &ItemMintCause,
 ) -> std::result::Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
-    Ok(sqlx::query(
-        "SELECT intent_binding, transaction_id::text, event_id::text, \
-                item_instance_id::text, occurred_at, envelope_sha256 \
-           FROM game_item_mint_receipts \
-          WHERE death_world_id = encode($1,'hex')::uuid \
-            AND death_channel_id = encode($2,'hex')::uuid \
-            AND death_scope_ownership_generation = $3::text::numeric(20,0) \
-            AND death_actor_local_id = $4 \
-            AND death_actor_local_generation = $5::text::numeric(20,0) \
-            AND loot_table_family = $6 AND loot_table_production_key = $7 \
-            AND loot_table_revision_ref = $8 AND loot_purpose_key = $9 \
-            AND draw_ordinal = $10",
+    Ok(bind_cause!(
+        sqlx::query(concat!(
+            "SELECT intent_binding, transaction_id::text, event_id::text, \
+                    item_instance_id::text, occurred_at, envelope_sha256 \
+               FROM game_item_mint_receipts WHERE ",
+            cause_key!()
+        )),
+        cause
     )
-    .bind(cause.death.world_id.as_bytes().as_slice())
-    .bind(cause.death.channel_id.as_bytes().as_slice())
-    .bind(cause.death.scope_ownership_generation.get().to_string())
-    .bind(i64::from(cause.death.actor_local_id))
-    .bind(cause.death.actor_local_generation.to_string())
-    .bind(&cause.loot_table.family)
-    .bind(&cause.loot_table.production_key)
-    .bind(&cause.loot_table.revision_ref)
-    .bind(&cause.purpose_key)
-    .bind(i64::from(cause.draw_ordinal))
     .fetch_optional(&mut **tx)
     .await?)
+}
+
+async fn load_reservation(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    cause: &ItemMintCause,
+) -> std::result::Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
+    Ok(bind_cause!(
+        sqlx::query(concat!(
+            "SELECT intent_binding, transaction_id::text, event_id::text, \
+                    item_instance_id::text, occurred_at, envelope, \
+                    fence_holder_node_id::text, \
+                    fence_holder_registration_revision::text, work_units_used \
+               FROM game_item_mint_reservations WHERE ",
+            cause_key!()
+        )),
+        cause
+    )
+    .fetch_optional(&mut **tx)
+    .await?)
+}
+
+fn decode_reservation(
+    row: &sqlx::postgres::PgRow,
+) -> std::result::Result<Reservation, DurabilityError> {
+    let invalid = |_| DurabilityError::InvalidStoredState;
+    Ok(Reservation {
+        transaction_id: uuid_text(row.try_get("transaction_id")?)?,
+        event_id: uuid_text(row.try_get("event_id")?)?,
+        item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
+        occurred_at_unix_ms: row.try_get("occurred_at")?,
+        envelope: row.try_get("envelope")?,
+        fence_node_id: uuid_text(row.try_get("fence_holder_node_id")?)?,
+        fence_registration_revision: row
+            .try_get::<String, _>("fence_holder_registration_revision")?
+            .parse()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        work_units_used: u8::try_from(row.try_get::<i16, _>("work_units_used")?)
+            .map_err(invalid)?,
+    })
+}
+
+async fn insert_reservation(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    request: &ItemMintRequest,
+    intent_binding: &[u8; 33],
+    reservation: &Reservation,
+) -> std::result::Result<(), DurabilityError> {
+    // The fence generation ($3 again) is the death's own generation (D52).
+    bind_cause!(
+        sqlx::query(
+            "INSERT INTO game_item_mint_reservations(death_world_id, death_channel_id, \
+               death_scope_ownership_generation, death_actor_local_id, \
+               death_actor_local_generation, loot_table_family, loot_table_production_key, \
+               loot_table_revision_ref, loot_purpose_key, draw_ordinal, intent_binding, \
+               transaction_id, event_id, item_instance_id, occurred_at, envelope, \
+               fence_scope_ownership_generation, fence_holder_node_id, \
+               fence_holder_registration_revision, work_units_used, reserved_at) \
+             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3::text::numeric(20,0), \
+               $4, $5::text::numeric(20,0), $6, $7, $8, $9, $10, $11, \
+               encode($12,'hex')::uuid, encode($13,'hex')::uuid, encode($14,'hex')::uuid, \
+               $15, $16, $3::text::numeric(20,0), encode($17,'hex')::uuid, \
+               $18::text::numeric(20,0), 0, \
+               floor(extract(epoch FROM statement_timestamp())*1000)::bigint)",
+        ),
+        &request.cause
+    )
+    .bind(intent_binding.as_slice())
+    .bind(reservation.transaction_id.as_slice())
+    .bind(reservation.event_id.as_slice())
+    .bind(reservation.item_instance_id.as_slice())
+    .bind(reservation.occurred_at_unix_ms)
+    .bind(reservation.envelope.as_slice())
+    .bind(reservation.fence_node_id.as_slice())
+    .bind(reservation.fence_registration_revision.to_string())
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
+/// The reservation's fence names exactly this node incarnation.
+fn fence_matches(reservation: &Reservation, node: &NodeIncarnationProof) -> bool {
+    let fact = node.fact();
+    reservation.fence_node_id == *fact.node_id().as_bytes()
+        && reservation.fence_registration_revision == fact.registration_revision()
+}
+
+/// DUR-03 §32 / D52: the death's ownership generation is the current
+/// assignment of its scope, held by `node`, whose incarnation is current.
+async fn fence_is_live(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    death: &CreatureDeathKey,
+    node: &NodeIncarnationProof,
+) -> std::result::Result<bool, DurabilityError> {
+    let fact = node.fact();
+    let assignment = sqlx::query(
+        "SELECT 1 FROM game_runtime_scope_assignments \
+         WHERE scope_key = $1 AND world_id = encode($2,'hex')::uuid \
+           AND channel_id = encode($3,'hex')::uuid AND state = 1 \
+           AND ownership_generation = $4::text::numeric(20,0) \
+           AND holder_node_id = encode($5,'hex')::uuid \
+           AND holder_registration_revision = $6::text::numeric(20,0) \
+         FOR SHARE",
+    )
+    .bind(scope_key(death.world_id, death.channel_id).as_slice())
+    .bind(death.world_id.as_bytes().as_slice())
+    .bind(death.channel_id.as_bytes().as_slice())
+    .bind(death.scope_ownership_generation.get().to_string())
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
+    .fetch_optional(&mut **tx)
+    .await?;
+    Ok(assignment.is_some() && prove_current_incarnation(tx, node).await?)
 }
 
 async fn insert_mint(
