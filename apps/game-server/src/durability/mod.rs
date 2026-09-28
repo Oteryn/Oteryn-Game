@@ -13,6 +13,8 @@ pub mod content_activation;
 mod db;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
+pub mod item_mint;
+pub mod item_mint_audit;
 pub mod native_admission_source;
 pub mod recovery_evidence_composition;
 pub mod runtime_scope_assignment;
@@ -44,6 +46,26 @@ mod character_progression_linkage {
         let _ = DurabilityRoot::commit_character_experience::<2>;
         let _ = DurabilityRoot::reconcile_character_experience;
         let _ = DurabilityRoot::read_character_progression;
+    }
+}
+
+#[cfg(test)]
+mod item_mint_linkage {
+    use super::DurabilityRoot;
+    use super::item_mint::ItemMintCandidate;
+
+    #[test]
+    fn item_mint_api_is_linked() {
+        let _ = ItemMintCandidate::transaction_id;
+        let _ = ItemMintCandidate::event_id;
+        let _ = ItemMintCandidate::item_instance_id;
+        let _ = ItemMintCandidate::occurred_at_unix_ms;
+        let _ = ItemMintCandidate::envelope;
+        let _ = ItemMintCandidate::work_units_used;
+        let _ = DurabilityRoot::freeze_item_mint;
+        let _ = DurabilityRoot::commit_item_mint;
+        let _ = DurabilityRoot::reconcile_item_mint;
+        let _ = DurabilityRoot::read_item_instance;
     }
 }
 

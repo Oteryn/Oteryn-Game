@@ -1842,3 +1842,8 @@ async fn fresh_rerun(database: &Database) -> TestResult {
 // protected PostgreSQL 17.6 lane executes the exact same qualification.
 #[path = "support/character_progression_postgres_cases.rs"]
 mod character_progression_postgres_cases;
+
+// DUR-03 stage C one-item Ground MINT shares its cases with the focused
+// standalone target through the same protected PostgreSQL lane.
+#[path = "support/item_mint_postgres_cases.rs"]
+mod item_mint_postgres_cases;
