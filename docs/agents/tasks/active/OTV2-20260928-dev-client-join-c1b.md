@@ -4,15 +4,15 @@
 task_id: OTV2-20260928-dev-client-join-c1b
 title: dev client join C1b - dev/qualification-only native client, joins and decodes the join snapshot
 mode: IMPLEMENT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1147
 allocation_comment: 5875272684 (allocation); coordinator resume 5875470550 (owner: option 1, leases)
 base_branch: main
 branch: claude/dev-client-join-c1b
 base_sha: 8e2e474a3d82a6bfbc21be409f444cfd64d42961
-head_sha: pending final commit
+head_sha: fbca533c3e08b35ce27ffaf4d2cb42ecc3d055fd
 owner: "Oteryn: impl interaction" (Claude Code)
 created_at: 2026-09-28T00:00:00Z
 updated_at: 2026-09-28T00:00:00Z
@@ -154,12 +154,13 @@ reason: >
 
 ### Exact-head CI
 
-- candidate: pending PR open; live exact-head checks on that PR govern.
+- candidate: PR #1147, head `fbca533c3e08b35ce27ffaf4d2cb42ecc3d055fd`; live exact-head checks on
+  that PR govern.
 - result: pending
 
 ## Self-review
 
-- exact head: pending final commit on `claude/dev-client-join-c1b`
+- exact head: `fbca533c3e08b35ce27ffaf4d2cb42ecc3d055fd` (PR #1147)
 - method/reviewer: implementing agent (this session)
 - material findings: none in the final candidate. The one architectural blocker
   (architecture-check's kind-blind closure walk) was surfaced by an initial
@@ -172,7 +173,7 @@ reason: >
 - required: YES - touches two shared-lease files outside the original owned paths
   (`tools/architecture-check/**`, `crates/protocol-oteryn/**`), changes the production-closure
   checker's semantics, adds a workspace member wired as a dev-dependency of a production root.
-- exact head: pending PR open
+- exact head: `fbca533c3e08b35ce27ffaf4d2cb42ecc3d055fd` (PR #1147)
 - method/auditor: pending control-plane trigger
 - material findings: pending
 - verdict: pending
@@ -189,13 +190,13 @@ No `@codex` post, no auto-merge enabled.
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation complete, full local validation green; opening PR
-status: implementing
+last_progress: PR #1147 opened; full local validation green; awaiting exact-head CI and review
+status: ready
 branch: claude/dev-client-join-c1b
-head_sha: pending final commit
-pr: null
-final_head_sha: pending
-final_head_frozen_at: null
+head_sha: fbca533c3e08b35ce27ffaf4d2cb42ecc3d055fd
+pr: 1147
+final_head_sha: fbca533c3e08b35ce27ffaf4d2cb42ecc3d055fd (unless a material repair requires a new candidate)
+final_head_frozen_at: 2026-09-28T00:00:00Z
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
@@ -211,5 +212,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: open PR, await required checks and independent review
+next_action: await required checks and independent review on PR #1147
 ```
