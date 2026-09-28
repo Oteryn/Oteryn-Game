@@ -92,6 +92,41 @@ adoption, `ai/**` compilation, Ability wiring (all AI-2/AI-3/AI-4). No wiring of
   (hard_maximum 1, `owner_contract` pointing at this decision's §4.9), the only AI-1-owned row;
   the four `AI01-SPAWN-*` rows are left for AI-2, which owns spawn realization.
 
+### Repair generation 1 (Codex findings on `0d296c0`)
+
+Three Codex findings against `0d296c0` were repaired in owner_timer.rs (no forbidden path
+touched):
+
+- **P1** (`drain_due` only compared the lane's stored generation with a caller-supplied
+  generation value, both fixed at construction/call time, so a real handoff could never be
+  detected): `schedule` and `drain_due` now take `owner_fence: &foundation::ScopeRuntimeFence`
+  instead of a raw `ScopeOwnershipGeneration`. `ScopeRuntimeFence` is the existing FND-03
+  §10/§8 single-owner, mutated-in-place owner-cycle authority already used for
+  `RuntimeExecutionOrdinal` issuance; `mod.rs` gained one minimal public accessor,
+  `ScopeRuntimeFence::is_current(generation)`. A superseded owner still holding this lane and a
+  reference to the same fence now observes a real handoff (`apply_external_grant`) and is
+  refused, rather than draining/scheduling against a generation that merely still equals the
+  lane's own stored field.
+- **P2** (`max_pending_for_key` was a per-call argument, so a caller could pass a value above
+  the registered `AI01-PENDING-TIMERS-PER-ACTOR` hard maximum of 1): the cap is now a
+  `family_caps: Vec<(Family, usize)>` policy fixed once at `OwnerTimerLane::for_generation`
+  construction; `schedule` takes no cap argument at all, and an unregistered family fails
+  closed (cap 0). Registered rows (`docs/contracts/RESOURCE_LIMITS_REGISTRY.json`) are
+  unchanged; the fix makes the constructed lane structurally unable to exceed them from any
+  call site.
+- **P3** (a not-yet-due entry whose target had gone stale was never purged until its own
+  deadline): `drain_due`'s single retain pass now checks `target_is_current` for every pending
+  entry, due or not, and purges a stale-target entry immediately without returning it, so
+  death/respawn churn cannot accumulate stale entries ahead of their deadline.
+
+New/renamed tests (owner_timer.rs, all passing): `family_cap_is_fixed_at_construction_and_cannot_be_raised_per_call`,
+`family_without_a_constructed_cap_fails_closed`,
+`drain_due_requires_the_fence_to_still_be_current_after_a_real_handoff`,
+`drain_due_purges_not_yet_due_stale_target_without_returning_it`; the prior
+`schedule_rejects_stale_owner_generation`/`drain_due_fires_nothing_for_stale_lane_generation`
+were renamed to `..._a_fence_that_never_matched_this_lane` and kept as the simple
+never-matched-fence case alongside the new real-handoff test.
+
 ### Spec gap / forbidden-path need
 
 §4.2 is delivered as a standalone, fully tested lane. Wiring `OwnerTimerLane` into
@@ -107,9 +142,10 @@ add a `ChannelRuntimeV1`-held `OwnerTimerLane<AiTimerFamily, AiOccurrence>` fiel
 
 - `cargo fmt --all --check`: clean.
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: clean.
-- `cargo test -p oteryn-game-server --lib foundation`: 358 passed, 0 failed (11 of those are
-  `foundation::owner_timer::tests::*`, covering ordering, determinism, bounds, duplicate/
-  cancellation, owner-generation staleness and target-generation staleness).
+- `cargo test -p oteryn-game-server --lib foundation`: 362 passed, 0 failed (15 of those are
+  `foundation::owner_timer::tests::*`, covering ordering, determinism, the fixed per-family
+  cap, fence-based current-owner authority including a real in-place handoff, and eager
+  not-yet-due stale-target purging).
 - `python3 tools/agents/validate_governance.py`: passed (22 policy documents, 9 project lanes).
 - `python3 tools/repository/validate_repository_policy.py`: passed (23 files, 50 workflows).
 - `git diff --check`: clean.
@@ -137,9 +173,12 @@ add a `ChannelRuntimeV1`-held `OwnerTimerLane<AiTimerFamily, AiOccurrence>` fiel
 ## Context checkpoint
 
 ```yaml
-last_progress: owner_timer.rs implemented and unit-tested (11/11), foundation lib suite green
-  (358/358), registry row AI01-PENDING-TIMERS-PER-ACTOR added, governance/repository-policy
-  validators pass; pushing claude/ai1-owner-timer-lane for the coordinator
+last_progress: repair generation 1 on top of 0d296c0 - fixed 3 Codex findings in owner_timer.rs
+  (P1 fence-proven current owner authority via ScopeRuntimeFence.is_current, P2 per-family cap
+  fixed at lane construction with no per-call override, P3 eager not-yet-due stale-target purge
+  in drain_due); owner_timer.rs unit tests 15/15, foundation lib suite green (362/362),
+  fmt/clippy/governance/repository-policy validators pass; pushing new commit to
+  claude/ai1-owner-timer-lane
 status: waiting
 branch: claude/ai1-owner-timer-lane
 head_sha: pending_push

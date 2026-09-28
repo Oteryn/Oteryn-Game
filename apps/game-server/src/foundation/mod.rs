@@ -949,6 +949,18 @@ impl ScopeRuntimeFence {
         self.next_ordinal.is_some() && stamp.generation == self.generation
     }
 
+    /// Whether `generation` is this fence's *current* live ownership generation. This fence is
+    /// the single mutated-in-place owner-cycle authority for one Channel scope: a handoff
+    /// advances it via `apply_external_grant` (or clears it via `invalidate`), so any holder
+    /// consulting it — including one still holding a superseded copy of `generation` elsewhere —
+    /// observes the move, unlike comparing two values that were both fixed at some earlier
+    /// point and never change afterward (for example `OwnerTimerLane::schedule`/`drain_due`,
+    /// FND-03 §10.3 current-owner authority).
+    #[must_use]
+    pub fn is_current(&self, generation: ScopeOwnershipGeneration) -> bool {
+        self.next_ordinal.is_some() && self.generation == generation
+    }
+
     fn invalidate(&mut self) {
         self.next_ordinal = None;
     }
