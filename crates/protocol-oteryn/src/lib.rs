@@ -711,6 +711,198 @@ pub fn encode_command_protocol_error(
     Ok(output)
 }
 
+/// One `ClientCommand` a client sends (FND-02 §13): the client-direction counterpart of
+/// `ClientCommandView`, for constructing the message instead of decoding it. Expected revisions
+/// are not a field: no registered command type consumes them (`ClientCommandView` documents the
+/// same), so `encode_client_command` never emits `expected_revision`.
+#[derive(Debug, Clone, Copy)]
+pub struct ClientCommandValue<'a> {
+    pub command_id: u64,
+    pub command_type: u32,
+    pub payload: &'a [u8],
+}
+
+/// Encodes one framed-message-ready post-admission `ClientCommand` envelope carrying the current
+/// non-zero `connection_generation`. Bounds mirror `WireEnvelopeView::client_command`, so this
+/// side never produces a command a conforming server ingress would reject.
+pub fn encode_client_command(
+    connection_generation: u64,
+    value: &ClientCommandValue<'_>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    if connection_generation == 0 || value.command_id == 0 || value.command_type == 0 {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if value.payload.len() > MAX_COMMAND_PAYLOAD_BYTES {
+        return Err(FoundationProtocolError::PayloadLimitExceeded);
+    }
+    let mut body = Vec::with_capacity(value.payload.len() + 16);
+    push_scalar(&mut body, 1, value.command_id);
+    push_scalar(&mut body, 2, u64::from(value.command_type));
+    push_bytes(&mut body, 4, value.payload);
+    let mut output = Vec::with_capacity(body.len() + 16);
+    push_scalar(&mut output, 1, MessageType::ClientCommand as u64);
+    push_scalar(&mut output, 2, connection_generation);
+    push_bytes(&mut output, 4, &body);
+    Ok(output)
+}
+
+/// Encodes one post-admission `LivenessAck` answering the server's `LivenessProbe` numbered
+/// `probe_id`. `last_applied_server_sequence` is always emitted, including an explicit zero
+/// (the diagnostic hint stays distinct from omission, as `validate_liveness_ack_ingress` reads it).
+pub fn encode_liveness_ack(
+    connection_generation: u64,
+    probe_id: u64,
+    last_applied_server_sequence: u64,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    if connection_generation == 0 || probe_id == 0 {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let mut payload = Vec::new();
+    push_scalar(&mut payload, 1, probe_id);
+    push_varint(&mut payload, 2 << 3);
+    push_varint(&mut payload, last_applied_server_sequence);
+    let mut output = vec![8, MessageType::LivenessAck as u8];
+    push_scalar(&mut output, 2, connection_generation);
+    push_bytes(&mut output, 4, &payload);
+    Ok(output)
+}
+
+/// Decodes a `LivenessProbe` message payload's `probe_id` (field 1; zero or absent is invalid,
+/// `foundation.proto`: "Monotonic within one connection_generation; zero is invalid"), the
+/// client-direction counterpart of `encode_liveness_probe`.
+pub fn decode_liveness_probe(payload: &[u8]) -> Result<u64, FoundationProtocolError> {
+    let mut cursor = 0usize;
+    let mut probe_id = None;
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match field {
+            1 => read_singular_varint(payload, &mut cursor, wire, &mut probe_id)?,
+            _ => skip_field(payload, &mut cursor, wire)?,
+        }
+    }
+    probe_id
+        .filter(|id| *id != 0)
+        .ok_or(FoundationProtocolError::MalformedEnvelope)
+}
+
+/// Decoded `CommandResult` (FND-02 §13): the client-direction counterpart of
+/// `encode_command_result`. `payload` is the typed result owned by the command type (empty for a
+/// `Rejected` unregistered command). `authoritative_revision` entries are validated by
+/// `decode_wire_envelope`'s ingress but not surfaced: no registered command emits them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CommandResultView<'a> {
+    pub command_id: u64,
+    pub status: CommandStatus,
+    pub error_code: u32,
+    pub payload: &'a [u8],
+}
+
+/// Decodes one `CommandResult` message payload — a `WireEnvelopeView::payload()` whose
+/// `message_type()` is `MessageType::CommandResult`. Reuses `validate_command_result_ingress`,
+/// then recovers the typed fields. A zero/absent `command_id` or `status`, or a status this
+/// crate does not register (`DUPLICATE_REPLAY`, `DUPLICATE_OUTCOME_EXPIRED`: the server reports
+/// those as a `ProtocolError`, never as a `CommandResult`), fails closed.
+pub fn decode_command_result(
+    payload: &[u8],
+) -> Result<CommandResultView<'_>, FoundationProtocolError> {
+    validate_command_result_ingress(payload)?;
+    let mut cursor = 0usize;
+    let (mut command_id, mut status, mut error_code, mut result_payload) = (None, None, None, None);
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match field {
+            1 => read_singular_varint(payload, &mut cursor, wire, &mut command_id)?,
+            2 => read_singular_varint(payload, &mut cursor, wire, &mut status)?,
+            3 => read_singular_varint(payload, &mut cursor, wire, &mut error_code)?,
+            5 => read_singular_bytes(
+                payload,
+                &mut cursor,
+                wire,
+                &mut result_payload,
+                MAX_COMMAND_RESULT_PAYLOAD_BYTES,
+                FoundationProtocolError::PayloadLimitExceeded,
+            )?,
+            _ => skip_field(payload, &mut cursor, wire)?,
+        }
+    }
+    let status = match status {
+        Some(1) => CommandStatus::Accepted,
+        Some(2) => CommandStatus::Rejected,
+        _ => return Err(FoundationProtocolError::MalformedEnvelope),
+    };
+    Ok(CommandResultView {
+        command_id: command_id
+            .filter(|id| *id != 0)
+            .ok_or(FoundationProtocolError::MalformedEnvelope)?,
+        status,
+        error_code: u32::try_from(error_code.unwrap_or(0))
+            .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
+        payload: result_payload.unwrap_or(&[]),
+    })
+}
+
+/// Decoded `StateDelta` (FND-02 §15): the client-direction counterpart of `encode_state_delta`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StateDeltaView<'a> {
+    pub domain_id: u32,
+    pub base_revision: u64,
+    pub new_revision: u64,
+    pub delta_type: u32,
+    pub payload: &'a [u8],
+}
+
+/// Decodes one `StateDelta` message payload — a `WireEnvelopeView::payload()` whose
+/// `message_type()` is `MessageType::StateDelta`. Reuses `validate_state_delta_ingress`, then
+/// applies the same semantic bounds `encode_state_delta` enforces: a non-zero `domain_id` and
+/// `delta_type`, and `new_revision` strictly greater than `base_revision`.
+pub fn decode_state_delta(payload: &[u8]) -> Result<StateDeltaView<'_>, FoundationProtocolError> {
+    validate_state_delta_ingress(payload)?;
+    let mut cursor = 0usize;
+    let (mut domain_id, mut base_revision, mut new_revision, mut delta_type, mut delta_payload) =
+        (None, None, None, None, None);
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match field {
+            1 => read_singular_varint(payload, &mut cursor, wire, &mut domain_id)?,
+            2 => read_singular_varint(payload, &mut cursor, wire, &mut base_revision)?,
+            3 => read_singular_varint(payload, &mut cursor, wire, &mut new_revision)?,
+            4 => read_singular_varint(payload, &mut cursor, wire, &mut delta_type)?,
+            5 => read_singular_bytes(
+                payload,
+                &mut cursor,
+                wire,
+                &mut delta_payload,
+                MAX_STATE_DELTA_PAYLOAD_BYTES,
+                FoundationProtocolError::PayloadLimitExceeded,
+            )?,
+            _ => skip_field(payload, &mut cursor, wire)?,
+        }
+    }
+    let domain_id = domain_id
+        .and_then(|value| u32::try_from(value).ok())
+        .filter(|value| *value != 0);
+    let delta_type = delta_type
+        .and_then(|value| u32::try_from(value).ok())
+        .filter(|value| *value != 0);
+    let (base_revision, new_revision) = (base_revision.unwrap_or(0), new_revision.unwrap_or(0));
+    match (domain_id, delta_type) {
+        (Some(domain_id), Some(delta_type)) if new_revision > base_revision => Ok(StateDeltaView {
+            domain_id,
+            base_revision,
+            new_revision,
+            delta_type,
+            payload: delta_payload.unwrap_or(&[]),
+        }),
+        _ => Err(FoundationProtocolError::MalformedEnvelope),
+    }
+}
+
 /// Decoded `ServerAccepted` (FND-02 §11): the client-direction counterpart of
 /// `ServerAcceptedValue`/`encode_server_accepted`, for a client decoding what the server sent
 /// instead of encoding it.
@@ -847,6 +1039,10 @@ pub struct SnapshotBeginFields {
     pub snapshot_id: u64,
     pub chunk_count: u32,
     pub total_encoded_bytes: u64,
+    /// After the atomic snapshot application this becomes the client's
+    /// `last_applied_server_sequence` (`foundation.proto` `SnapshotBegin.target_server_sequence`;
+    /// an omitted field is the proto3 default 0, the fresh-admission value).
+    pub target_server_sequence: u64,
 }
 
 /// Decodes one `SnapshotBegin` message payload. Reuses `validate_snapshot_begin_ingress` (the
@@ -857,7 +1053,8 @@ pub fn decode_snapshot_begin(
 ) -> Result<SnapshotBeginFields, FoundationProtocolError> {
     validate_snapshot_begin_ingress(payload)?;
     let mut cursor = 0usize;
-    let (mut snapshot_id, mut chunk_count, mut total_encoded_bytes) = (None, None, None);
+    let (mut snapshot_id, mut chunk_count, mut total_encoded_bytes, mut target_server_sequence) =
+        (None, None, None, None);
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -875,6 +1072,9 @@ pub fn decode_snapshot_begin(
             3 if wire == 0 && total_encoded_bytes.is_none() => {
                 total_encoded_bytes = Some(read_varint(payload, &mut cursor)?);
             }
+            4 if wire == 0 && target_server_sequence.is_none() => {
+                target_server_sequence = Some(read_varint(payload, &mut cursor)?);
+            }
             _ => skip_field(payload, &mut cursor, wire)?,
         }
     }
@@ -889,6 +1089,7 @@ pub fn decode_snapshot_begin(
         // a declared zero is semantically usable.
         chunk_count: chunk_count.unwrap_or(0),
         total_encoded_bytes: total_encoded_bytes.unwrap_or(0),
+        target_server_sequence: target_server_sequence.unwrap_or(0),
     })
 }
 
@@ -3362,6 +3563,307 @@ mod tests {
                 Err(FoundationProtocolError::MalformedEnvelope),
                 "{id} {command_type}"
             );
+        }
+        Ok(())
+    }
+
+    /// `encode_client_command` round-trips through the same server-side ingress
+    /// (`decode_wire_envelope` + `WireEnvelopeView::client_command`) the shipped server uses for
+    /// every real `ClientCommand`, and matches bytes transcribed independently from
+    /// `foundation.proto` (envelope 1/2/4, command 1/2/4).
+    #[test]
+    fn client_command_encoder_round_trips_through_server_ingress_decode()
+    -> Result<(), FoundationProtocolError> {
+        const STEP_EAST: &[u8] = &[8, 7, 16, 3, 34, 8, 8, 5, 16, 1, 34, 2, 8, 2];
+        let wire = encode_client_command(
+            3,
+            &ClientCommandValue {
+                command_id: 5,
+                command_type: 1,
+                payload: &[0x08, 0x02],
+            },
+        )?;
+        assert_eq!(wire, STEP_EAST);
+        let envelope = decode_wire_envelope(&wire)?;
+        assert_eq!(envelope.message_type(), MessageType::ClientCommand);
+        assert_eq!(envelope.validate(Direction::ClientToServer, true), Ok(()));
+        assert_eq!(envelope.server_sequence(), 0);
+        assert_eq!(
+            envelope.client_command(3)?,
+            ClientCommandView {
+                command_id: 5,
+                command_type: 1,
+                payload: &[0x08, 0x02],
+            }
+        );
+        // A multi-byte command id and type survive the round trip.
+        let wire = encode_client_command(
+            u64::MAX,
+            &ClientCommandValue {
+                command_id: u64::MAX,
+                command_type: u32::MAX,
+                payload: &[],
+            },
+        )?;
+        let view = decode_wire_envelope(&wire)?.client_command(u64::MAX)?;
+        assert_eq!(
+            (view.command_id, view.command_type, view.payload),
+            (u64::MAX, u32::MAX, &[][..])
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn client_command_encoder_refuses_what_ingress_would_refuse() {
+        let value = ClientCommandValue {
+            command_id: 1,
+            command_type: 1,
+            payload: &[],
+        };
+        assert_eq!(
+            encode_client_command(0, &value),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        assert_eq!(
+            encode_client_command(
+                1,
+                &ClientCommandValue {
+                    command_id: 0,
+                    ..value
+                }
+            ),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        assert_eq!(
+            encode_client_command(
+                1,
+                &ClientCommandValue {
+                    command_type: 0,
+                    ..value
+                }
+            ),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        let at_limit = vec![0_u8; MAX_COMMAND_PAYLOAD_BYTES];
+        let over_limit = vec![0_u8; MAX_COMMAND_PAYLOAD_BYTES + 1];
+        assert!(
+            encode_client_command(
+                1,
+                &ClientCommandValue {
+                    payload: &at_limit,
+                    ..value
+                }
+            )
+            .is_ok()
+        );
+        assert_eq!(
+            encode_client_command(
+                1,
+                &ClientCommandValue {
+                    payload: &over_limit,
+                    ..value
+                }
+            ),
+            Err(FoundationProtocolError::PayloadLimitExceeded)
+        );
+    }
+
+    /// `encode_liveness_ack` matches the explicit-zero-diagnostic vector the ingress test above
+    /// transcribes, and `decode_liveness_probe` reads back what the existing server-side
+    /// `encode_liveness_probe` emits.
+    #[test]
+    fn liveness_ack_encoder_and_probe_decoder_round_trip_through_existing_codecs()
+    -> Result<(), FoundationProtocolError> {
+        let ack = encode_liveness_ack(7, 150, 0)?;
+        assert_eq!(
+            ack,
+            [
+                0x08, 0x06, 0x10, 0x07, 0x22, 0x05, 0x08, 0x96, 0x01, 0x10, 0x00
+            ]
+        );
+        assert_eq!(
+            decode_wire_envelope(&ack)?.liveness_ack(7)?,
+            LivenessAckView {
+                probe_id: 150,
+                last_applied_server_sequence: Some(0),
+            }
+        );
+        let ack = encode_liveness_ack(7, 1, 300)?;
+        assert_eq!(
+            decode_wire_envelope(&ack)?.liveness_ack(7)?,
+            LivenessAckView {
+                probe_id: 1,
+                last_applied_server_sequence: Some(300),
+            }
+        );
+
+        let probe = encode_liveness_probe(7, 150)?;
+        let envelope = decode_wire_envelope(&probe)?;
+        assert_eq!(envelope.validate(Direction::ServerToClient, true), Ok(()));
+        assert_eq!(decode_liveness_probe(envelope.payload())?, 150);
+
+        assert_eq!(
+            encode_liveness_ack(0, 1, 0),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        assert_eq!(
+            encode_liveness_ack(1, 0, 0),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        // Absent, zero, wrong-wire-type and repeated probe ids all fail closed.
+        for payload in [
+            &[][..],
+            &[0x08, 0x00],
+            &[0x0a, 0x01, 0x01],
+            &[0x08, 0x01, 0x08, 0x02],
+        ] {
+            assert_eq!(
+                decode_liveness_probe(payload),
+                Err(FoundationProtocolError::MalformedEnvelope),
+                "{payload:?}"
+            );
+        }
+        Ok(())
+    }
+
+    /// `decode_command_result` round-trips through the existing server-side
+    /// `encode_command_result`, including the sequenced envelope the client validates first.
+    #[test]
+    fn command_result_decoder_round_trips_through_existing_server_encoder()
+    -> Result<(), FoundationProtocolError> {
+        for (status, payload) in [
+            (CommandStatus::Accepted, &[0x08, 0x01][..]),
+            (CommandStatus::Rejected, &[][..]),
+        ] {
+            let wire = encode_command_result(4, 9, 300, status, payload)?;
+            let envelope = decode_wire_envelope(&wire)?;
+            assert_eq!(envelope.message_type(), MessageType::CommandResult);
+            assert_eq!(envelope.validate(Direction::ServerToClient, true), Ok(()));
+            assert_eq!(envelope.connection_generation(), 4);
+            assert_eq!(envelope.server_sequence(), 9);
+            assert_eq!(
+                decode_command_result(envelope.payload())?,
+                CommandResultView {
+                    command_id: 300,
+                    status,
+                    error_code: 0,
+                    payload,
+                }
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn command_result_decoder_fails_closed_on_unusable_results() {
+        // status 3/4 (not produced as CommandResults), unspecified or absent status, an absent
+        // or zero command id, a duplicated singular field, a wrong-wire-type payload and an
+        // error code above u32 all fail closed.
+        for payload in [
+            &[0x08, 0x01, 0x10, 0x03][..],
+            &[0x08, 0x01, 0x10, 0x04],
+            &[0x08, 0x01, 0x10, 0x00],
+            &[0x08, 0x01],
+            &[0x10, 0x01],
+            &[0x08, 0x00, 0x10, 0x01],
+            &[0x08, 0x01, 0x08, 0x02, 0x10, 0x01],
+            &[0x08, 0x01, 0x10, 0x01, 0x28, 0x01],
+            &[0x08, 0x01, 0x10, 0x01, 0x18, 0xff, 0xff, 0xff, 0xff, 0x1f],
+        ] {
+            assert_eq!(
+                decode_command_result(payload),
+                Err(FoundationProtocolError::MalformedEnvelope),
+                "{payload:?}"
+            );
+        }
+        // Optional error code and unknown fields decode; a bad authoritative_revision list is
+        // refused by the shared ingress validation.
+        assert_eq!(
+            decode_command_result(&[0x08, 0x01, 0x10, 0x02, 0x18, 0x07, 0x78, 0x01]),
+            Ok(CommandResultView {
+                command_id: 1,
+                status: CommandStatus::Rejected,
+                error_code: 7,
+                payload: &[],
+            })
+        );
+        assert_eq!(
+            decode_command_result(&[0x08, 0x01, 0x10, 0x01, 0x22, 0x02, 0x10, 0x01]),
+            Err(FoundationProtocolError::StateRevisionMismatch)
+        );
+    }
+
+    /// `decode_state_delta` round-trips through the existing server-side `encode_state_delta`.
+    #[test]
+    fn state_delta_decoder_round_trips_through_existing_server_encoder()
+    -> Result<(), FoundationProtocolError> {
+        let wire = encode_state_delta(2, 11, 2, 40, 41, 1, &[0xaa, 0xbb])?;
+        let envelope = decode_wire_envelope(&wire)?;
+        assert_eq!(envelope.message_type(), MessageType::StateDelta);
+        assert_eq!(envelope.validate(Direction::ServerToClient, true), Ok(()));
+        assert_eq!(envelope.server_sequence(), 11);
+        assert_eq!(
+            decode_state_delta(envelope.payload())?,
+            StateDeltaView {
+                domain_id: 2,
+                base_revision: 40,
+                new_revision: 41,
+                delta_type: 1,
+                payload: &[0xaa, 0xbb],
+            }
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn state_delta_decoder_applies_the_encoders_semantic_bounds() {
+        // Zero domain, zero delta type, a non-advancing revision, an absent revision pair and a
+        // duplicated singular field are all refused.
+        for payload in [
+            &[0x10, 0x01, 0x18, 0x02, 0x20, 0x01][..],
+            &[0x08, 0x01, 0x10, 0x01, 0x18, 0x02],
+            &[0x08, 0x01, 0x10, 0x02, 0x18, 0x02, 0x20, 0x01],
+            &[0x08, 0x01, 0x10, 0x03, 0x18, 0x02, 0x20, 0x01],
+            &[0x08, 0x01, 0x20, 0x01],
+            &[0x08, 0x01, 0x08, 0x02, 0x10, 0x01, 0x18, 0x02, 0x20, 0x01],
+        ] {
+            assert_eq!(
+                decode_state_delta(payload),
+                Err(FoundationProtocolError::MalformedEnvelope),
+                "{payload:?}"
+            );
+        }
+        assert_eq!(
+            decode_state_delta(&[0x08, 0x01, 0x18, 0x01, 0x20, 0x01]),
+            Ok(StateDeltaView {
+                domain_id: 1,
+                base_revision: 0,
+                new_revision: 1,
+                delta_type: 1,
+                payload: &[],
+            })
+        );
+    }
+
+    #[test]
+    fn snapshot_begin_decoder_reads_target_server_sequence_from_existing_server_encoder()
+    -> Result<(), FoundationProtocolError> {
+        let payload = [0_u8; 3];
+        for target in [0_u64, 42, u64::from(u32::MAX) + 1] {
+            let frames = encode_single_chunk_snapshot(
+                1,
+                9,
+                target,
+                &[DomainSnapshot {
+                    domain_id: 1,
+                    revision: 1,
+                    snapshot_type: 1,
+                    payload: &payload,
+                }],
+            )?;
+            let begin = decode_snapshot_begin(decode_wire_envelope(&frames[0])?.payload())?;
+            assert_eq!(begin.snapshot_id, 9);
+            assert_eq!(begin.target_server_sequence, target);
         }
         Ok(())
     }
