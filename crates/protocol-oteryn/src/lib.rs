@@ -813,6 +813,26 @@ pub fn decode_server_accepted(
     })
 }
 
+/// Decodes a `SnapshotBegin` or `SnapshotCommit` message payload's `snapshot_id` (field 1 of
+/// both — FND-02 §16, `encode_single_chunk_snapshot`'s `begin`/`commit`). A client correlates
+/// every frame of one snapshot transfer (`SnapshotBegin`, `SnapshotChunk` via
+/// `decode_snapshot_chunk`, `SnapshotCommit`) by this identity before trusting any of them.
+pub fn decode_snapshot_id(payload: &[u8]) -> Result<u64, FoundationProtocolError> {
+    let mut cursor = 0usize;
+    let mut snapshot_id = None;
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        if field == 1 && wire == 0 && snapshot_id.is_none() {
+            snapshot_id = Some(read_varint(payload, &mut cursor)?);
+        } else {
+            skip_field(payload, &mut cursor, wire)?;
+        }
+    }
+    snapshot_id.ok_or(FoundationProtocolError::MalformedEnvelope)
+}
+
 /// Decodes one `SnapshotChunk` message payload (FND-02 §16) into its `snapshot_id` and the
 /// `DomainSnapshot` entries `encode_single_chunk_snapshot` packed into the chunk body — the
 /// client-direction counterpart of that encoder, for the join/resync snapshot a client receives.
@@ -859,7 +879,20 @@ pub fn decode_snapshot_chunk(
             body.len(),
             FoundationProtocolError::MalformedEnvelope,
         )?;
-        domains.push(decode_domain_snapshot_entry(entry)?);
+        let decoded = decode_domain_snapshot_entry(entry)?;
+        // FND02-STATE-DOMAINS-PER-SYNC (RESOURCE_LIMITS_REGISTRY.json): bound the domain vector
+        // before it grows past the registered maximum, and refuse a repeated `domain_id` — the
+        // same two checks `encode_single_chunk_snapshot` enforces on the encode side.
+        if domains.len() >= MAX_STATE_DOMAINS_PER_SYNC {
+            return Err(FoundationProtocolError::PayloadLimitExceeded);
+        }
+        if domains
+            .iter()
+            .any(|existing: &DomainSnapshot<'_>| existing.domain_id == decoded.domain_id)
+        {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        domains.push(decoded);
     }
     Ok((
         snapshot_id.ok_or(FoundationProtocolError::MalformedEnvelope)?,
@@ -2097,6 +2130,80 @@ mod tests {
         assert_eq!(domains[1].revision, 0);
         assert_eq!(domains[1].snapshot_type, 1);
         assert_eq!(domains[1].payload, &world_object_overlay);
+        Ok(())
+    }
+
+    /// One `SnapshotChunk` payload of `domain_ids.len()` minimal entries (each `snapshot_type`
+    /// 1, empty payload), for exercising `decode_snapshot_chunk`'s own bounds directly — a
+    /// malformed/adversarial peer can send more or duplicate domain IDs even though this crate's
+    /// own `encode_single_chunk_snapshot` never would (it already refuses to construct either).
+    fn snapshot_chunk_payload_with_domain_ids(domain_ids: &[u32]) -> Vec<u8> {
+        let mut body = Vec::new();
+        for &domain_id in domain_ids {
+            let mut entry = Vec::new();
+            push_scalar(&mut entry, 1, u64::from(domain_id));
+            push_scalar(&mut entry, 3, 1);
+            push_bytes(&mut body, 1, &entry);
+        }
+        let mut chunk = Vec::new();
+        push_scalar(&mut chunk, 1, 1);
+        push_bytes(&mut chunk, 3, &body);
+        chunk
+    }
+
+    /// FND02-STATE-DOMAINS-PER-SYNC (`RESOURCE_LIMITS_REGISTRY.json`): 256 unique domains
+    /// accepted, 257 rejected.
+    #[test]
+    fn snapshot_chunk_domain_count_accepts_256_and_rejects_257()
+    -> Result<(), FoundationProtocolError> {
+        let ids: Vec<u32> = (1..=256).collect();
+        let payload_256 = snapshot_chunk_payload_with_domain_ids(&ids);
+        let (snapshot_id, domains) = decode_snapshot_chunk(&payload_256)?;
+        assert_eq!(snapshot_id, 1);
+        assert_eq!(domains.len(), 256);
+
+        let ids: Vec<u32> = (1..=257).collect();
+        let payload_257 = snapshot_chunk_payload_with_domain_ids(&ids);
+        assert_eq!(
+            decode_snapshot_chunk(&payload_257),
+            Err(FoundationProtocolError::PayloadLimitExceeded)
+        );
+        Ok(())
+    }
+
+    /// FND02-STATE-DOMAINS-PER-SYNC: duplicate domain IDs rejected.
+    #[test]
+    fn snapshot_chunk_rejects_a_duplicate_domain_id() {
+        assert_eq!(
+            decode_snapshot_chunk(&snapshot_chunk_payload_with_domain_ids(&[1, 2, 1])),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+    }
+
+    /// `decode_snapshot_id` round-trips through the existing server-side
+    /// `encode_single_chunk_snapshot`'s `SnapshotBegin` and `SnapshotCommit` frames: a client
+    /// correlates all three frames of one transfer by this identity.
+    #[test]
+    fn snapshot_id_decoder_round_trips_through_begin_and_commit()
+    -> Result<(), FoundationProtocolError> {
+        let payload = [0_u8];
+        let frames = encode_single_chunk_snapshot(
+            1,
+            9,
+            0,
+            &[DomainSnapshot {
+                domain_id: 1,
+                revision: 1,
+                snapshot_type: 1,
+                payload: &payload,
+            }],
+        )?;
+        let begin = decode_wire_envelope(&frames[0])?;
+        assert_eq!(begin.message_type(), MessageType::SnapshotBegin);
+        assert_eq!(decode_snapshot_id(begin.payload())?, 9);
+        let commit = decode_wire_envelope(&frames[2])?;
+        assert_eq!(commit.message_type(), MessageType::SnapshotCommit);
+        assert_eq!(decode_snapshot_id(commit.payload())?, 9);
         Ok(())
     }
 
