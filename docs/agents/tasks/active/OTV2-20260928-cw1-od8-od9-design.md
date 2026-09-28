@@ -4,13 +4,13 @@
 task_id: OTV2-20260928-cw1-od8-od9-design
 title: OD8/OD9 design - runtime-created local objects at death_position and pre-authored CREATE teleporters (proposal §10)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: 5879302658
 base_branch: main
 branch: claude/cw1-od8-od9-design
-pr: null
+pr: 1182
 base_sha: 3dcf3c82abc5d424542388a9f65ca1507e8746a4
 head_sha: null
 final_head_sha: null
@@ -80,5 +80,5 @@ This task adds a docs-only design as §10 of
 
 ## Context checkpoint
 
-last_progress: §10 drafted, pointers updated, #1164 record archived; validators run before push
+last_progress: §10 drafted, pointers updated, #1164 record archived; PR #1182 opened for CI and independent review
 jira: pending (no mapped Story resolved in this worker session)
