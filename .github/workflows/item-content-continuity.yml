@@ -7,7 +7,7 @@ on:
     paths:
       - tools/reference-world-corridor-census/item_target_continuity.py
       - tools/reference-world-corridor-census/item_target_continuity_self_test.py
-      - docs/agents/evidence/OTV2-20260922-content-world-item-target-continuity.json
+      - docs/agents/evidence/OTV2-20260927-content-world-item-target-continuity.json
       - docs/agents/tasks/active/OTV2-20260922-content-world-item-target-continuity-504.md
       - .github/workflows/item-content-continuity.yml
   workflow_dispatch:

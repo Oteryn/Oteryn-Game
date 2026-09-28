@@ -157,11 +157,11 @@ jobs:
           ROOT="$RUNNER_TEMP/item-target-continuity"
           python tools/reference-world-corridor-census/item_semantic_promotion.py \
             --continuity "$ROOT/target-continuity.json" \
-            --protected-manifest docs/agents/evidence/OTV2-20260922-content-world-item-target-continuity.json \
+            --protected-manifest docs/agents/evidence/OTV2-20260927-content-world-item-target-continuity.json \
             --output "$ROOT/semantic-promotion.json"
           python tools/reference-world-corridor-census/item_semantic_promotion.py \
             --continuity "$ROOT/target-continuity.json" \
-            --protected-manifest docs/agents/evidence/OTV2-20260922-content-world-item-target-continuity.json \
+            --protected-manifest docs/agents/evidence/OTV2-20260927-content-world-item-target-continuity.json \
             --output "$ROOT/semantic-promotion-repeat.json"
           cmp "$ROOT/semantic-promotion.json" "$ROOT/semantic-promotion-repeat.json"
           cmp "$ROOT/semantic-promotion.json" docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json
