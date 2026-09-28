@@ -61,26 +61,23 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
 
 - `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md` — PROVEN, read in full.
 - `world_runtime.rs` `bind`/`prepare` (~590-1055), `apply`/`resume_pending`/`terminalize_current`
-  (~817-888), `LocalObjectCommand`/`transition_for` (~397-419/~787-796) — PROVEN: no tick/time
-  parameter; every mutation needs a bound `TransitionKey` plus `placement`/`incarnation`/
-  `content_generation`; `prepare`'s first check (~978-987) rejects a mismatch with
-  `DISPOSITION_BINDING_MISMATCH`, distinct from `DISPOSITION_STALE_STATE`; every prepared outcome
-  terminalizes immediately and replays on retry.
-- `foundation/runtime_actor_carrier.rs` `from_committed_assignment` (~702-750) — PROVEN,
-  production-only: pins `scope_generation` once. No scope/global clock (`gameplay_transport/
-  connection.rs`, `content/project/v2/creature.rs`, SIM-DETERMINISM-01 224/419; bounded grep for
-  interval/sleep/select!/loop) — PROVEN.
-- `crates/foundation/src/time.rs` `Deadline`/`MonotonicClock`/`ManualClock`/`SystemClock::new()`
-  (~50-166) — PROVEN: tested, unused in `apps/game-server/src`, fresh incomparable origin per call.
-  `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144 — PROVEN: authors `revert_after_ms`.
-- `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §7/§9/§10/§14/§15.4/§28 — PROVEN: binds `revert_after`.
-  `foundation/mod.rs` `ScopeRuntimeFence::accept_input` (~1040-1050) — PROVEN: mints an ordinal per
-  generation only, tracks no timer identity. `movement.rs` `MovementOwnerTurn` (~201-249) — bounded
-  `max_inputs` precedent.
-- `TransitionBinding` (`content/reference_playable.rs` ~1334-1342) — no `revert_after_ms` field yet.
-- `GAME-INTERACTION-01_SUCCESSOR_CHILD_IDENTITY_RETRY_CONTRACT_CANDIDATE.md` §4.1/§4.4/§5.1/§5.8 and
-  `interaction/identity.rs` `RootSourceOccurrenceRef`/`ChildOccurrenceRef` (~15-157) — PROVEN, read
-  for round 11: nested-cascade child identity; ordinal is authority-fence evidence, not identity.
+  (~817-888) — PROVEN: no tick/time parameter; every mutation needs a bound `TransitionKey` plus
+  `placement`/`incarnation`/`content_generation`; `prepare`'s first check (~978-987) rejects a
+  mismatch with `DISPOSITION_BINDING_MISMATCH`, distinct from `DISPOSITION_STALE_STATE`.
+- `foundation/runtime_actor_carrier.rs` `from_committed_assignment` (~702-750) — production-only:
+  pins `scope_generation` once. No scope/global clock (bounded grep, evidence in §7) — PROVEN.
+- `crates/foundation/src/time.rs` `Deadline`/`ManualClock`/`SystemClock::new()` (~50-166) — PROVEN:
+  unused in `apps/game-server/src`, fresh incomparable origin per call. `OTERYN_ENCOUNTER_
+  AUTHORING_FORMAT_V1.md` line 144 — authors `revert_after_ms`.
+- `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §7/§9/§10/§14/§15.4/§28 — binds `revert_after`.
+  `foundation/mod.rs` `ScopeRuntimeFence::accept_input` (~1040-1050) — mints an ordinal per
+  generation only, tracks no timer identity. `movement.rs` `MovementOwnerTurn` — bounded precedent.
+- `GAME-INTERACTION-01_..._CANDIDATE.md` §4.1/§4.4/§5.1/§5.8, `interaction/identity.rs`
+  `ChildOccurrenceRef` (~69-157) — nested-cascade identity; ordinal is fence evidence, not identity.
+- `foundation/mod.rs` `CommandIngress`/`RetainedTerminalRecord`/`CommandId` (~53-55/202/498-742) —
+  round 12, PROVEN: only terminal-retention mechanism in the repo; `CommandId`-keyed (not
+  `InteractionChildOccurrenceRef`), single-slot (`MAX_RETAINED_TERMINAL_RECORDS = 1`), reachable only
+  via session-gated `apply`/`resume_pending`; grep confirms no other retention path exists.
 - PR #1055/#1046 (merged) generalized `LocalObjectRuntime`, shipped 1a/1b/1c. `git diff ac8395b8
   origin/main` — only `world_runtime.rs`/encounter doc line numbers shifted.
 
@@ -114,33 +111,36 @@ reason: >
 
 ## Implementation / findings
 
-Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Rounds 1-2: numbering/CW3 attribution;
-`Deadline` option recommended. Round 3: rebound §7 to an FND-03 §10 authoritative timer; staged
-capacity atomicity; equal-deadline tie-break; one clock per scope. Round 4: merged `origin/main` (PR
-#1055 CW4, #1046 CW3). Round 5: `revert_after_ms` admissible only with a bound inverse; staged commit
-stores inverse key + expected state/revision. Round 6: inverse rule tightened to exactly one match;
-pre-`prepare` discard restricted to `scope_generation`/`content_generation`. Round 7 (Codex
-4119354894): a mutually timed pair would ping-pong; fixed — timer-origin execution never re-arms.
-Round 8 (Codex 4119401513): round 7's wording would have starved the encounter-originated
-`DepthWarzoneBossDeath` teleporter revert; restated as an origin test. Round 9 (Codex 4119452692):
-pending entry lacked the target's `PlacementKey`/`incarnation`/`content_generation`; fixed — entry
-retains exact target identity captured at scheduling; changed `incarnation` joins the pre-`prepare`
-discard fences. Round 10 (Codex 4119516262, main→`74bb3fd3`, unrelated): Option 2's summary sentence
-still said only `scope_generation`/`content_generation` invalidate the timer, contradicting round 9's
-`incarnation` fence; fixed there and in the round-6 narrative after a whole-document grep.
+Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Rounds 1-6: numbering; `Deadline`
+option recommended; rebound to FND-03 §10 authoritative timer with staged capacity atomicity,
+equal-deadline tie-break, one clock per scope; merged origin/main (PR #1055/#1046); `revert_after_ms`
+admissible only with exactly one bound inverse; pre-`prepare` discard restricted to
+`scope_generation`/`content_generation`. Round 7 (Codex 4119354894): timer-origin execution never
+re-arms (mutually timed pair fix). Round 8 (Codex 4119401513): restated as an origin test so
+`DepthWarzoneBossDeath`'s revert isn't starved. Round 9 (Codex 4119452692): pending entry gained
+exact target identity (`PlacementKey`/`incarnation`/`content_generation`); changed `incarnation`
+joins the pre-`prepare` discard fences. Round 10 (Codex 4119516262, main→`74bb3fd3`, unrelated):
+fixed a stale summary sentence still contradicting round 9.
 
-Round 11 (Codex 4119565077, on frozen head `87b974b1`, main unmoved): every round asserted the
-revert's own "derived child identity" (GAME-INTERACTION-01 §5.1 nested-cascade, implemented in
-`interaction/identity.rs`) but never stored it, and it must never derive from the scheduling
-`RuntimeExecutionOrdinal` (§4.4/§5.8: authority-fence evidence, not logical identity) — the fourth
-one-field-per-round gap. Fixed structurally per coordinator instruction: one canonical "Pending
-entry: complete field list" table (10 rows + sourcing) atop "Exact delta" covers every firing-path
-input (addressing, fencing, ordering, `LocalObjectCommand` fields, terminal identity, replay/dedup;
-capacity release needs no separate field); Option 2, Must-decide-now item 1, and the staging/firing/
-occupancy/"Fenced, one path" text now reference it instead of re-enumerating fields. Firing
-terminalizes every disposition under the entry's stored `InteractionChildOccurrenceRef`. Added the
-redelivery-replays/distinct-occurrence-distinct-identity test obligation. Verified against
-GAME-INTERACTION-01 §4.1/§4.4/§5.1/§5.8 and `interaction/identity.rs` directly before writing.
+Round 11 (Codex 4119565077, head `87b974b1`): pending entry never stored the revert's own derived
+`InteractionChildOccurrenceRef` (GAME-INTERACTION-01 §5.1 nested-cascade; never the scheduling
+ordinal per §4.4/§5.8). Fixed structurally: one canonical "Pending entry: complete field list" table
+atop "Exact delta" that every other place in §7 now references; firing terminalizes every
+disposition under that stored identity.
+
+Round 12 (Codex 4119679783, head `8e12f6bf`): round 11's own text contradicted itself — the driver's
+pending-removal-before-`accept_input` rule says a re-presentation is a no-op with nothing left, but
+round 11's replay test said redelivery "finds that identity already terminal and replays it." Checked
+`foundation/mod.rs` `CommandIngress`/`RetainedTerminalRecord` directly: the only terminal-retention
+mechanism in the codebase is `CommandId`-keyed, single-slot (`MAX_RETAINED_TERMINAL_RECORDS = 1`),
+reachable only through session-gated `apply`/`resume_pending` this timer already doesn't use — cannot
+key by `InteractionChildOccurrenceRef`. Per coordinator decision (minimum-sufficient, no new ledger):
+exactly-once *execution*, not outcome *replay*, already guaranteed by atomic pending-removal. Fixed:
+rewrote the replay test obligation, firing/occupancy bullets, field list's closing paragraph and
+round-11 narrative — redelivery is now a plain no-op, the single emitted outcome carries the stored
+identity but is not retained; grepped the whole doc, fixed every timer-origin instance (client-command
+replay via `CommandIngress` unaffected). Merged `origin/main` (`79b85ec6`, unrelated); `git diff
+8e12f6bf HEAD` confirms every cited file is byte-identical to round 11's head, no citation drifted.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -150,13 +150,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-11; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-12; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 11, main unmoved since round 10; unchanged)
+  validation passed (23 files, 47 workflows)." (round 12, main unmoved since round 10; unchanged)
 
 ### E2E
 
@@ -181,8 +181,7 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ## Independent review
 
-- required: YES — routed through the same independent-review path as the rest of the proposal; this
-  task does not itself accept anything.
+- required: YES — same independent-review path as the proposal; not self-accepted.
 - exact head: pending
 - method/auditor: pending
 - material findings: pending
@@ -201,12 +200,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 11 (Codex 4119565077 on frozen head 87b974b1): pending entry never stored
-  the revert's own derived InteractionChildOccurrenceRef. Fixed structurally: one canonical "Pending
-  entry: complete field list" table in Exact delta that every other place in §7 now references;
-  firing terminalizes every disposition under the entry's stored identity, never the scheduling
-  ordinal; added redelivery-replays/distinct-occurrence test obligation. Verified against
-  GAME-INTERACTION-01 §4.1/§4.4/§5.1/§5.8 and interaction/identity.rs directly; validators pass.
+  PR #1045 pre-freeze round 12 (Codex 4119679783 on frozen head 8e12f6bf): round 11's replay test
+  contradicted the driver's pending-removal no-op rule. Checked foundation/mod.rs CommandIngress
+  directly: CommandId-keyed, single-slot (MAX_RETAINED_TERMINAL_RECORDS=1), session-gated -- cannot
+  key by InteractionChildOccurrenceRef. Per coordinator decision (no new ledger): timer-origin firing
+  needs exactly-once execution (atomic pending-removal), not outcome replay. Rewrote the replay test
+  obligation, firing/occupancy bullets, field-list closing paragraph; redelivery is now a plain
+  no-op, outcome carries stored identity but is not retained. Grepped whole doc; validators pass.
 status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
