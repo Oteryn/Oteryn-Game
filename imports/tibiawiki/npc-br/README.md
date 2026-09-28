@@ -6,7 +6,7 @@ capture made by `.github/workflows/npc-tibiawiki-br-capture.yml` (the site refus
 Each dated directory is immutable; a newer capture adds a new date directory instead of overwriting one.
 
 Per page: page id, exact revision and timestamp, the SHA-256 of the raw wikitext, infobox name,
-`implemented` and `removed` versions, map positions, trade lists (item name and explicit price) and the
+`implemented` and `removed` versions, map positions, trade lists (item name and each row's explicit price) and the
 lines the NPC itself speaks in the page's transcript. Those lines are Tibia NPC text, kept as reference
 data under `LICENSE-ASSETS.md` and `OTERYN_NPC_AUTHORING_SCHEMA_V1` D3/D9. Wiki prose (notes,
 descriptions) is not stored; the raw capture stays a CI artifact, and each page's `sha256` lets the facts

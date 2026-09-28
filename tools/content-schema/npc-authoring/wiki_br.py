@@ -10,7 +10,7 @@ bulk-copied, OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION).
 
 `facts` reduces a snapshot to the facts that are compared (OTERYN_NPC_AUTHORING_SCHEMA_V1 D3): page and
 revision ids, the SHA-256 of each raw page, infobox name, `implemented` and `removed` versions, map
-positions, trade lists (item name and explicit price) and the lines the NPC itself speaks in the
+positions, trade lists (item name and each row's explicit price) and the lines the NPC itself speaks in the
 transcript, which are Tibia NPC text kept as reference data (D9). No notes, descriptions or other wiki
 prose. That file is committed.
 
@@ -277,7 +277,8 @@ def page_facts(page):
             # `Blood;Vial of Blood` names the content page, then the offer's in-game name
             fields[0] = fields[0].rsplit(';', 1)[-1].strip()
             if fields[0]:
-                trades[direction].setdefault(fields[0], price_of(fields[1]) if len(fields) > 1 else None)
+                # a row listed twice is two offers; every row keeps its own price (None: the item's usual price)
+                trades[direction].setdefault(fields[0], []).append(price_of(fields[1]) if len(fields) > 1 else None)
     # a qualified page (`Hyacinth (NPC)`) labels its turns with the plain name
     speakers = {fold(re.sub(r'\s*\([^()]*\)$', '', label)) for label in (page['title'], name)}
     speakers |= {fold(page['title']), fold(name)}
@@ -378,7 +379,7 @@ def cmd_self_test(_args):
     text = ("{{Infobox_NPC\n| name = Goldro\n| implemented = 15.30\n| removed = \n"
             "| location = [[Salgadora]] ({{Mapa|34055,32503,7:2|aqui}}).\n| notes = Long wiki prose.\n"
             "| notes = Ferry to {{Mapa|1,2,3:1|there}}. Antes do update 12.70 it sold potions.\n"
-            "| sells = <small>''Antes do Update 12.70''</small>\n{{Trades/Sell\n| Old Potion,50}}\n{{Trades/Sell\n| Bread,4\n| [[Cheese]]\n| Cot, 200 [[Gold Coins|gp]]\n| Fire Sword, '''1 000'''\n| Blood;Vial of Blood\n| Beer; Mug of Beer, 3}}\n"
+            "| sells = <small>''Antes do Update 12.70''</small>\n{{Trades/Sell\n| Old Potion,50}}\n{{Trades/Sell\n| Bread,4\n| [[Cheese]]\n| Cot, 200 [[Gold Coins|gp]]\n| Fire Sword, '''1 000'''\n| Blood;Vial of Blood\n| Beer; Mug of Beer, 3\n| Mug of Beer, 3}}\n"
             "| falas = \n''Jogador:'' '''Hi'''</br>\n"
             "'''Goldro:''' Hello, ''Jogador''. Ask about [[Salgadora|the town]].</br>\n"
             "'''Goldro''': Bold name, colon outside.</br>\n'''[[Goldro]]:''' Linked name.</br>\n"
@@ -395,7 +396,7 @@ def cmd_self_test(_args):
         {'revid': 11, 'timestamp': 'T', 'slots': {'main': {'content': text}}}]}), 'role': 'npc'})
     assert facts['positions'] == [(34055, 32503, 7)], facts
     assert facts['trades'] == {'BuyFromPlayer': {}, 'SellToPlayer': {
-        'Bread': 4, 'Cheese': None, 'Cot': 200, 'Fire Sword': 1000, 'Vial of Blood': None, 'Mug of Beer': 3}}, facts
+        'Bread': [4], 'Cheese': [None], 'Cot': [200], 'Fire Sword': [1000], 'Vial of Blood': [None], 'Mug of Beer': [3, 3]}}, facts
     assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
                                   'Linked name.', 'Link form.', 'Plain form.', 'Italic form.',
                                   # a bold label of another name opens no turn, so it continues Goldro's

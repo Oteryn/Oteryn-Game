@@ -196,7 +196,7 @@ def check_trade(offers, trades, names):
     if not has_br:
         return {'status': 'NO_BR_TRADE', 'offers': len(offers)}
     if not offers:
-        return {'status': 'BR_ONLY', 'br_offers': sum(len(names) for names in trades.values())}
+        return {'status': 'BR_ONLY', 'br_offers': sum(len(prices) for items in trades.values() for prices in items.values())}
     # several offers can share one item name (four music sheets); both sides keep every offer
     ours = {'SellToPlayer': {}, 'BuyFromPlayer': {}}
     uncomparable = []
@@ -209,13 +209,13 @@ def check_trade(offers, trades, names):
     row = {'matched': 0, 'only_ours': [], 'only_br': [], 'price_mismatch': []}
     for direction in ('SellToPlayer', 'BuyFromPlayer'):
         mine, theirs = ours[direction], {}
-        for name, price in trades[direction].items():
+        for name, prices in trades[direction].items():
             for form in (QUALIFIER, CONTAINER):
                 base = form.match(name)
                 if (name not in mine and base and base.group(1) in mine
                         and (form is QUALIFIER or base.group(1) in FLUID_CONTAINERS)):
                     name = base.group(1)
-            theirs.setdefault(name, []).append(price)
+            theirs.setdefault(name, []).extend(prices)
         for name in sorted(set(mine) | set(theirs)):
             label = f'{direction}:{name}'
             mine_prices, br_prices = sorted(mine.get(name, [])), theirs.get(name, [])
@@ -268,8 +268,11 @@ def crosscheck(facts, candidates, dialogues, admission, names):
             totals['removed_on_br'] += 1
         row['position'] = check_position(candidate['placements'], [tuple(p) for p in page['positions']])
         totals[f'position:{row["position"]["status"]}'] += 1
-        trades = {direction: {normalize(item): price for item, price in items.items()}
-                  for direction, items in page['trades'].items()}
+        trades = {}
+        for direction, items in page['trades'].items():
+            trades[direction] = {}
+            for item, prices in items.items():
+                trades[direction].setdefault(normalize(item), []).extend(prices)
         trade = check_trade((candidate['trade_service'] or {}).get('offers', []), trades, names)
         if trade is not None:
             row['trade'] = trade

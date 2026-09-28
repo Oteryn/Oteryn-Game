@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "c5c0b2c1cc0e3d50bfd123ec2f97f03e90321828df353f964dd9f82c67808181",
+  "facts_sha256": "55ef233fd64f79bde9922bf0e0a5cf325f4b2592c4a1e1a5d9d21a7941a94def",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -5300,6 +5300,7 @@
    "trade": {
     "matched": 0,
     "only_br": [
+     "BuyFromPlayer:helmet of the deep",
      "BuyFromPlayer:helmet of the deep"
     ],
     "only_ours": [
@@ -5332,6 +5333,7 @@
    "trade": {
     "matched": 0,
     "only_br": [
+     "BuyFromPlayer:helmet of the deep",
      "BuyFromPlayer:helmet of the deep"
     ],
     "only_ours": [
@@ -13247,9 +13249,13 @@
      "SellToPlayer:poison field rune",
      "BuyFromPlayer:empty potion flask (small)",
      "BuyFromPlayer:leather legs",
+     "BuyFromPlayer:mage hat",
+     "BuyFromPlayer:magician's robe",
      "BuyFromPlayer:refined bow",
      "BuyFromPlayer:rope",
      "BuyFromPlayer:shovel",
+     "BuyFromPlayer:spellbook",
+     "BuyFromPlayer:spellbook of the novice",
      "BuyFromPlayer:worm"
     ],
     "only_ours": [
@@ -17738,6 +17744,7 @@
    "trade": {
     "matched": 121,
     "only_br": [
+     "SellToPlayer:dwarven shield",
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
@@ -22237,7 +22244,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "br_offers": 257,
+    "br_offers": 263,
     "status": "BR_ONLY"
    }
   },
