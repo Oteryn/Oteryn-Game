@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/quest-relocation-worldobject-transcription
 issue: 162
-pr: null
+pr: 1053
 base_sha: e91cafdd95c165668126e1dccaf93422af29d55c
 head_sha: null
 final_head_sha: null
@@ -155,7 +155,7 @@ commit the delta. `verify_quest_schema.py`/`validate_quest_content.py --interact
   matching old-shaped children left) and writes nothing (sha256 unchanged).
 
 ### Exact-head CI
-- final head: pending (set at freeze)
+- final head: c916c5668dab28307afd3fcfbe84f23abf533c97
 - trigger source: push
 - workflow/run/job: pending
 - result: pending
@@ -173,20 +173,20 @@ commit the delta. `verify_quest_schema.py`/`validate_quest_content.py --interact
 ## Independent review
 
 - required: YES — changes an accepted candidate format's committed samples and schema
-- exact head: pending (set at freeze)
+- exact head: pending
 - method/auditor: pending
 - material findings: pending
 - verdict: pending
 
 ## PR and closeout
 
-- changed-file review: pending (see Implementation)
+- changed-file review: pending
 - unresolved review threads: pending
 - related/superseded PRs: none known
 - protected auto-merge: pending
 - merge commit/result: pending
-- ownership release: pending — D38 real-corpus classification is residual scope for a follow-up task
-  allocated to a worker/session with Canary/CrystalServer checkout access ("Exact delta to unblock").
+- ownership release: pending — D38 real-corpus classification is residual scope for a worker/session
+  with Canary/CrystalServer checkout access ("Exact delta to unblock").
 
 ## Context checkpoint
 
@@ -195,8 +195,8 @@ last_progress: D37 fully transcribed on the real corpus; D38 schema/converter/te
   real-corpus classification blocked on denied source-checkout access
 status: blocked
 branch: claude/quest-relocation-worldobject-transcription
-head_sha: null
-pr: null
+head_sha: c916c5668dab28307afd3fcfbe84f23abf533c97
+pr: 1053
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
