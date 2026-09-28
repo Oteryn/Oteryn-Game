@@ -11,12 +11,12 @@ branch: claude/cw2-item-promotion-consolidation
 issue: 162
 pr: 1064
 base_sha: 45b6cc73d8dbd2988ec0153cfa5ad03318367d51
-head_sha: bed282187417d7912f83d6fa00b3d6debfb30bbe
+head_sha: f95244c9416d3938f7cb7a8aacdf6143b0d5f90b
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: content world build (Claude Code worker)
 created_at: 2026-09-28T06:45:00Z
-updated_at: 2026-09-28T08:40:00Z
+updated_at: 2026-09-28T08:50:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/cw2_b1_import.rs
@@ -215,10 +215,10 @@ unconsumed. No generic name normalization in `populate_items`.
 ## Context checkpoint
 
 ```yaml
-last_progress: repair round 3 pushed — item-content-promotion.yml's 2 stale exact test names updated to their round-1 replacements plus a fail-closed 0-test guard; verified locally both new names run exactly 1 test and the guard now fails on the retired name
+last_progress: repair round 3b pushed — grep -q replaced with grep >/dev/null in item-content-promotion.yml's two guard pipelines to avoid SIGPIPE-on-tee flakiness; re-verified both new names exit 0 and the retired name exits 1
 status: validating
 branch: claude/cw2-item-promotion-consolidation
-head_sha: bed282187417d7912f83d6fa00b3d6debfb30bbe
+head_sha: f95244c9416d3938f7cb7a8aacdf6143b0d5f90b
 pr: 1064
 final_head_sha: null
 final_head_frozen_at: null
