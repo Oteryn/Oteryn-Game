@@ -1,0 +1,71 @@
+name: tibia.com Snapshot Verify
+
+on:
+  pull_request:
+    paths:
+      - tools/official-capture/**
+      - tools/content-schema/spell-authoring/tibiacom_spells.py
+      - imports/official/tibia-com/**
+      - .github/workflows/tibiacom-snapshot-verify.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    # tibia.com answers the build container and GitHub-hosted runners (#1077) with a Cloudflare
+    # challenge; this tool is never run against the network here. `fetch` is run once by the
+    # repository owner on their own machine, and this job only checks the committed result.
+    name: tibia.com capture / self-test and snapshot verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Fetch PR base commit
+        if: github.event_name == 'pull_request'
+        run: git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+
+      - name: Reject edits to already-committed snapshot directories
+        if: github.event_name == 'pull_request'
+        working-directory: tools/official-capture
+        run: |
+          set -euo pipefail
+          python3 tibiacom_capture.py check-immutability \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha || github.sha }}"
+
+      - name: Self-test
+        working-directory: tools/official-capture
+        run: python3 tibiacom_capture.py self-test
+
+      - name: Verify the snapshot root (only README.md or dated directories)
+        working-directory: tools/official-capture
+        run: python3 tibiacom_capture.py verify-root ../../imports/official/tibia-com
+
+      - name: Verify every committed snapshot directory
+        working-directory: tools/official-capture
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          dirs=(../../imports/official/tibia-com/*/)
+          if [ "${#dirs[@]}" -eq 0 ]; then
+            echo "no tibia-com snapshot directories yet; nothing to verify"
+            exit 0
+          fi
+          python3 tibiacom_capture.py verify "${dirs[@]}"

@@ -2356,6 +2356,11 @@
                   "required": [
                     "regeneration"
                   ]
+                },
+                {
+                  "required": [
+                    "buff_spell"
+                  ]
                 }
               ]
             }

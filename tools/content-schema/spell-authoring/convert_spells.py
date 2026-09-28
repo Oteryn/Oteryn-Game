@@ -38,7 +38,7 @@ import canary_batch  # noqa: E402  monster converter: combat_ability, engine par
 import spell_scripts  # noqa: E402
 import wiki_spells as ws  # noqa: E402
 from spell_census import negate  # noqa: E402
-from validate_spell import evaluate, validate  # noqa: E402
+from validate_spell import COOLDOWN_GROUPS, evaluate, validate  # noqa: E402
 
 SAMPLES = ROOT / 'samples'
 CENSUS = SAMPLES / 'spell-census-canary-99902524-crystal-ff7ede5.json'
@@ -60,7 +60,6 @@ LEVEL_UNLOCK_NOTE = ('since patch 15.22 (27 January 2026) spells unlock automati
                      'no longer teach spells (https://tibiopedia.pl/updates/15.22.c93366).')
 # Registrar calls whose Canary 15.30 value votes in a BR/Fandom conflict (S14a); same units as the wiki crosswalk.
 VOTE_METHODS = {'level', 'mana', 'soul', 'cooldown', 'groupCooldown', 'basePower', 'magicLevel', 'range'}
-PRIMARY_GROUPS = {'attack', 'healing', 'support', 'special'}
 # Canary/Crystal engine defaults for an absent registrar call (src/creatures/combat/spells.hpp, actions.hpp).
 DEFAULTS = {'isAggressive': True, 'isSelfTarget': False, 'needTarget': False, 'needDirection': False,
             'needCasterTargetOrDirection': False, 'blockWalls': True, 'allowOnSelf': True, 'checkFloor': True,
@@ -395,6 +394,12 @@ class Bundle:
                          method='needLearn')
         value, provenance, note = self.wikis.resolve(pages, 'wheelspell', self.name)
         destination = base + '/requirements/wheel_unlock'
+        if value is not None and (note is not None or value not in ('yes', 'no')):
+            # Fail closed: an unrecognised value or a BR/Fandom conflict never makes a Wheel spell castable.
+            self.row('unresolved_semantics', 'wheelspell', resolution=f'S6/S16: the wiki Wheel marking {value!r} is '
+                     + ('contested (' + note + ')' if note else 'not a recognised yes/no') + '; the spell stays gated.',
+                     wiki=provenance[0])
+            return True
         if value is not None:
             for wiki, page in provenance:
                 self.row('mapped', 'wheelspell', destination, note or 'S6/S16: the wiki marks a Wheel of Destiny '
@@ -567,7 +572,7 @@ class Bundle:
         groups = []
         primary = self.field('/spell/spell/groups/0/group', 'subclass', 'group', pages,
                              transform=lambda v: (v[0] if isinstance(v, list) else v).lower())
-        if isinstance(primary, str) and primary not in PRIMARY_GROUPS:
+        if isinstance(primary, str) and 'primary' not in COOLDOWN_GROUPS.get(primary, ()):
             sources = {s: (r['registrar'].get('group') if not isinstance(r['registrar'].get('group'), list)
                            else r['registrar']['group'][0]) for s, r in self.records.items()}
             fallback = {str(v).lower() for v in sources.values() if v}

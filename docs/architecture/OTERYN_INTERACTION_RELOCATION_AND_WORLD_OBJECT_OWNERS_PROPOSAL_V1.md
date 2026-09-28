@@ -3,9 +3,11 @@
 - Date: 2026-09-27
 - DecisionStatus: CANDIDATE with owner decisions D37 and D38 taken (§6, 2026-09-27). The contract
   text becomes accepted after the independent review that authority changes require; until then
-  the Movement and WorldObject children stay blocked. §7 (`revert_after` progression) is a new
-  decision delta added after the independent review of D38 returned `ACCEPT_WITH_CONDITIONS`; it is
-  CANDIDATE only, has no owner acceptance yet, and does not itself resolve who accepts it.
+  the Movement and WorldObject children stay blocked. §7 (`revert_after` progression) is a decision
+  delta added after the independent review of D38 returned `ACCEPT_WITH_CONDITIONS`; its direction is
+  ACCEPTED by the owner (2026-09-28, issue #162, §7's own `DecisionStatus` line), with several items
+  delegated to the owning lane and one (attribute-bearing object state) owner-decided `YES` and under
+  design in a further section of this document — see §7 for the exact scope of what is accepted.
 - DeliveryStatus: OPEN
 - ImplementationStatus: NOT_STARTED
 - Requested by: the owner (2026-09-27) after the quest interaction transcription
@@ -200,12 +202,25 @@ The owner accepted every recommendation below ("zgadzam się", 2026-09-27):
 | W2 (D38) | Is world-object state scope-ephemeral, with anything durable held as quest state (D35)? | Yes. |
 | W3 (D38) | Are pick-up-able objects and carried-item removal always DUR-03, never overlay state? | Yes. |
 
-## 7. `revert_after` logical progression: CANDIDATE, owner-acceptance still open
+## 7. `revert_after` logical progression: direction ACCEPTED by owner 2026-09-28 (#162)
+
+- DecisionStatus: direction ACCEPTED by owner 2026-09-28 (issue #162), round 21. Accepted: the
+  scope-owned lifecycle record (one record per `InteractionChildOccurrenceRef`, `PENDING`→
+  `IN_FLIGHT`→`TERMINAL`, Round 14); commit-only scheduling (a non-timer-origin operation schedules a
+  revert only as part of its own staged commit, and only once `prepare` has already returned
+  `DISPOSITION_COMMITTED`/`PreparedMutation::Publish`, Round 20/21); the state+collision-only revert
+  scope (`revert_after_ms` covers exactly what `LocalObjectStateDefinition`/`PreparedMutation::Publish`
+  model today, Round 16); and rejection of attribute-changing transitions at authoring/lowering (Round
+  17/19). Delegated to the owning lane, unresolved by this document: open decisions 1, 2, 5, 6 and 7
+  below. Open decision 3 (attribute-bearing object state) is owner-decided `YES` — needed for the
+  playable path — with its design, and open decision 4's resolution (coupled to it), in a further
+  `CANDIDATE` §9 (Round 21 narrative below; task `OTV2-20260928-cw1-attribute-bearing-object-state`).
 
 The independent review of D38 (2026-09-27/28) returned `ACCEPT_WITH_CONDITIONS` with an
-`EVIDENCE_GAP`: `revert_after` names no scheduling mechanism. This section answers only which
-existing owner supplies the logical progression input `revert_after` is measured against. It does
-not accept the answer on the owner's behalf, and it binds condition C2 (the revert is the scope
+`EVIDENCE_GAP`: `revert_after` names no scheduling mechanism. This section originally answered only
+which existing owner supplies the logical progression input `revert_after` is measured against,
+without accepting the answer on the owner's behalf; the owner has since accepted this section's
+direction (Round 21, `DecisionStatus` above). It binds condition C2 (the revert is the scope
 runtime's own later operation: derived child identity, same World/scope/content-generation/
 overlay-revision fences, fired from the scope runtime's existing progression, cleared on scope
 restart — no per-object timer service, queue, receipt store or persistence; concretely, one
@@ -491,6 +506,37 @@ just reject a stale generation; the presentation-order text calling it "atomical
 `PENDING`→`IN_FLIGHT` transition did not account for that failure mode. Qualified that text and added
 open decision 6: fold ordinal issuance into the same atomic step, or invoke FND-03's own scope-terminal
 exhaustion recovery — this document does not redesign which.
+
+Round 21 correction (owner-authorized, owner acceptance recorded on issue #162, 2026-09-28): the owner
+accepted this section's direction, with open decisions 1, 2, 4, 5, 6 and 7 (below) delegated to the
+owning lane, and decided open decision 3 (attribute-bearing object state) `YES` — needed for the
+playable path (teleporter `destination`/`revert_destination` and `interaction` bindings) — with its
+design in progress as a further `CANDIDATE` section of this same document (task
+`OTV2-20260928-cw1-attribute-bearing-object-state`, not yet added at this round).
+Before this round, one further Codex finding (4120777222) had been raised on PR #1045's own thread
+after that PR's round-20 freeze and merge, too late to fold into that PR: the round-20 fix reserved
+lifecycle-record capacity for every non-timer-origin `revert_after`-carrying operation *before*
+`prepare` ran, then released that reservation on an `unchanged` result — correct in outcome (no record
+survives an `unchanged` result) but reserving capacity speculatively before the outcome is known is
+unnecessary work. Fixed here as open decision 7: capacity for one new lifecycle record is now reserved
+only once `prepare` has already returned `DISPOSITION_COMMITTED`/`PreparedMutation::Publish`, in the
+same staged commit as everything else — never before `prepare` runs, and never at all for an
+`unchanged` result. Corrected the staging bullet and the capacity-atomicity/no-revert-on-unchanged
+test obligations that the old pre-`prepare` reservation wording superseded.
+
+Round 22 correction (owner-authorized; Codex finding 4121718203 on PR #1097's thread, ~line 521 on
+`main`): round 21's own text above, and open decision 7's own list entry below, misattributed the
+reserve-only-after-`Publish` ordering to an "FND-03 §15.4 discipline." FND-03 §15.4 itself (evidence
+above, its exact text) requires only that committing an operation needing a timer fails before commit
+when capacity is unavailable, and that an already-accepted timer is not discarded for due-queue
+congestion — it says nothing about *when* a reservation attempt happens relative to `prepare`. Fixed:
+the reserve-only-after-`Publish` ordering is restated as this section's own accepted requirement
+(open decision 7, part of §7's owner-accepted direction, Round 21), never presented as something
+FND-03 mandates; FND-03 §15.4's fail-before-commit rule is cited only for what happens once a
+reservation is actually attempted and found wanting. Grepped the whole document for every other place
+that cites FND-03 §15.4 near this ordering; the staging bullet and the capacity-atomicity test
+obligation already correctly separated the two (FND-03 for fail-before-commit only, evidence above),
+so open decision 7's own text was the only other misattributed occurrence, fixed the same way.
 
 ### Problem
 
@@ -1034,33 +1080,33 @@ thing, not two — its lifecycle-record store).
   called again per call site) and use it for every `Deadline::after` at commit time and every
   `has_elapsed`/`remaining` at wake time for that scope — never mix two clock instances (evidence
   above: `SystemClock::new()` starts a fresh, incomparable origin each time).
-- On any `revert_after`-carrying overlay operation whose origin is *not* the firing of a pending
+- On a `revert_after`-carrying overlay operation whose origin is *not* the firing of a pending
   revert timer (evidence above: player/command via `apply`/`resume_pending`, a state-only
   encounter/server-event-originated overlay operation that has already passed the authoring/lowering
   rejection above (Round 18: `DepthWarzoneBossDeath` itself is not such an example — it is
   attribute-changing and rejected before it gets here), or any other non-timer authoritative input —
   the test is "is this execution the firing of a pending revert timer," not which entry point
-  produced it), as part of the *same* staged
-  commit as that `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4): reserve safe bounded
-  capacity for one new lifecycle record *once*, before `prepare` runs on that same operation — Round
-  14 folds round 13's separate "timer capacity" and "retained-outcome capacity" reservations into
-  this one reservation, since one record now serves the identity's whole life; if capacity is
-  unavailable, fail the *entire* original operation before anything commits — no object mutation and
-  no partial-lifecycle record survives. Whether that reservation is actually spent depends on the
-  *same* operation's own `prepare` result (Round 20, Codex finding 4120634397): create the record
-  `PENDING` — with the complete field
+  produced it): run that operation's own `prepare` first, exactly as for any operation without
+  `revert_after_ms` (evidence above). Reserve safe bounded capacity for one new lifecycle record only
+  when, and as part of the *same* staged commit as, that `prepare` call returns
+  `DISPOSITION_COMMITTED`/`PreparedMutation::Publish` (Round 21, Codex finding 4120777222 — corrects
+  Round 20's "reserve capacity before `prepare` runs, release it on an `unchanged` result"; evidence
+  above). For every `unchanged` disposition (`NO_CHANGE`/`STALE_STATE`/`OCCUPIED`/
+  `REVISION_EXHAUSTED`/`BINDING_MISMATCH`, the exhaustive set, evidence above), no capacity is
+  reserved at all and no lifecycle record is created — `prepare`'s own result already determined
+  nothing will change, so there is nothing for a revert to undo. When `prepare` returns `Publish`:
+  reserve capacity for one new lifecycle record — Round 14 folds round 13's separate "timer capacity"
+  and "retained-outcome capacity" reservations into this one reservation, since one record now serves
+  the identity's whole life; if capacity is unavailable, fail the *entire* original operation before
+  anything commits — no object mutation and no lifecycle record survives (FND-03 §15.4). If capacity
+  is available, create the record `PENDING` — with the complete field
   list above (World/Channel/InstanceId, `scope_generation`, `PlacementKey`, `incarnation`,
   `content_generation`, `Deadline`, scheduling `RuntimeExecutionOrdinal`/sequence, inverse
   `TransitionKey`, expected state/revision sourced from that same `Publish`'s `next_state`/
   `next_revision`) keyed by the revert's own `InteractionChildOccurrenceRef`
   computed now as a nested child of the original operation's own identity, under the FND-03 §10.1
-  scheduling key — **only when that `prepare` call returns `DISPOSITION_COMMITTED`/
-  `PreparedMutation::Publish`**, so nothing about the revert is derived later, only applied from what
-  was stored. For every `unchanged` disposition (`NO_CHANGE`/`STALE_STATE`/`OCCUPIED`/
-  `REVISION_EXHAUSTED`/`BINDING_MISMATCH`, the exhaustive set, evidence above), no lifecycle record is
-  created at all: the reserved capacity is released, or simply never committed, together with the
-  rest of that operation's own staged commit — there is nothing for a revert to undo when nothing
-  changed.
+  scheduling key, in the same staged commit as the object mutation `Publish` itself applies — so
+  nothing about the revert is derived later, only applied from what was stored.
   This record is `scope_generation`-scoped, owned by the same `ChannelRuntimeV1`/`InstanceRuntime`
   instance as the rest of the overlay; a scope restart is a new instance (corrected evidence above),
   so it is dropped whole, in whichever state it was in, with no separate cleanup path — the same
@@ -1125,11 +1171,13 @@ thing, not two — its lifecycle-record store).
   and stops; do not retry it on a later wake (decided below, not left open) — a later duplicate
   presentation is answered by step 2 of the presentation order above, never a fresh occupancy check.
 
-### Open decisions for the owning lane (Rounds 15/16/19/20)
+### Open decisions for the owning lane (Rounds 15/16/19/20/21)
 
-These are genuinely open — this document deliberately does not resolve them, per PLAYABLE_FIRST and
-this section's own `CANDIDATE` status. The owning lane resolves them alongside the exact delta above,
-not this architecture decision.
+These are genuinely open — this document deliberately does not resolve them, per PLAYABLE_FIRST; the
+owner's Round 21 acceptance covers this section's *direction* only (`DecisionStatus` above) and
+explicitly delegates every item below except open decision 3 (owner-decided `YES`, design in
+progress) to the owning lane. The owning lane resolves them alongside the exact delta above, not this
+architecture decision.
 
 1. **`TERMINAL`-record retention window/count and its eviction/compaction policy.**
    GAME-INTERACTION-01 §5.9/§25 leaves this unfrozen for every `InteractionChildOccurrenceRef`, not
@@ -1159,7 +1207,11 @@ not this architecture decision.
    `IN_FLIGHT` reconciliation (how a stranded record eventually reaches `TERMINAL`, or is recognized as
    needing owner intervention), which this document does not design and does not choose between.
 3. **Attribute-bearing object state and its timed revert (e.g. teleporter `destination`/
-   `revert_destination`, and — Round 19 — `interaction` bindings).** `revert_after_ms` under this
+   `revert_destination`, and — Round 19 — `interaction` bindings). Owner-decided `YES` (Round 21,
+   issue #162, 2026-09-28) — needed for the playable path; design in progress as a further section of
+   this document (task `OTV2-20260928-cw1-attribute-bearing-object-state`). The rest of this item is
+   kept as the evidence and framing that design builds on; unlike items 1, 2 and 4-7, whether to
+   support this case is no longer open, only how.** `revert_after_ms` under this
    proposal covers only the state-key-plus-collision footprint `LocalObjectStateDefinition`/
    `PreparedMutation::Publish` already model (Round 16, evidence above; "Exact delta" above rejects
    anything wider at authoring/lowering, Round 17 — `bind` cannot do this check itself, evidence
@@ -1183,15 +1235,18 @@ not this architecture decision.
    case, not
    about how it is safely refused today.
 4. **Where `revert_after_ms` and inverse-selection metadata are actually carried (Round 19, Codex
-   finding 4120487841).** "Exact delta" above described adding `revert_after_ms` to `TransitionBinding`
-   or its content source; Codex's rationale for why that is not simply an implementation detail:
-   `TransitionBinding` is shared, content-level state for a definition's transition, but different
-   invocations of the same bound transition can legitimately carry different `revert_after_ms`
-   durations, or none at all — a single shared field cannot represent that. This document does not
-   redesign the home here; it only removes the claim that `TransitionBinding` is settled as that home
-   (evidence above, "Exact delta" corrected). The owning lane decides where the duration and the
-   inverse-selection metadata actually live — plausibly on the lowered operation occurrence rather
-   than the shared binding, but that choice, and its bind-time validation shape, is the owning lane's.
+   finding 4120487841) — resolved by §9 (CANDIDATE).** "Exact delta" above described adding
+   `revert_after_ms` to `TransitionBinding` or its content source; Codex's rationale for why that is
+   not simply an implementation detail: `TransitionBinding` is shared, content-level state for a
+   definition's transition, but different invocations of the same bound transition can legitimately
+   carry different `revert_after_ms` durations, or none at all — a single shared field cannot
+   represent that. This document did not redesign the home here at the time this item was written; it
+   only removed the claim that `TransitionBinding` is settled as that home (evidence above, "Exact
+   delta" corrected). §9 below (design point 5, CANDIDATE, coupled to open decision 3 since both are
+   per-placement facts) now names the home: `local_object_revert_after_ms`, keyed by `TransitionKey`
+   *per placement* — this item is kept, not deleted, as the record of the finding and the reasoning
+   §9's design answers; the owning lane implements §9's shape once it is accepted, rather than
+   choosing its own.
 5. **Compaction still needs a bounded duplicate-delivery horizon (Round 19, Codex finding
    4120487862).** Open decision 1 above names a compact tombstone (identity → outcome code) as one
    possible compaction shape once a `TERMINAL` record ages out of full detail. Codex's rationale: a
@@ -1215,6 +1270,25 @@ not this architecture decision.
    scope-terminal until safe ownership lifecycle recovery establishes a new generation) for the record
    left `IN_FLIGHT`. Nothing in this document should be read as claiming the current ordering already
    handles this safely.
+7. **Reserve lifecycle-record capacity only after `prepare` returns `Publish`, not speculatively
+   before `prepare` runs — this section's own accepted requirement, not an FND-03 invariant (Round
+   21, Codex finding 4120777222 on PR #1045's thread; corrected Round 22, Codex finding 4121718203).**
+   Round 20 reserved capacity for every non-timer-origin `revert_after`-carrying operation *before*
+   calling `prepare`, then released that reservation again on an `unchanged` result — correct in
+   outcome, but reserving speculatively before the outcome is known is unnecessary work. This ordering
+   choice is *this document's own* accepted requirement (§7's `DecisionStatus`, Round 21), not
+   something FND-03 §15.4 itself mandates: FND-03 §15.4's own text (evidence above) requires only that
+   committing an operation needing a timer fails before commit when capacity is unavailable, and that
+   an already-accepted timer is not discarded for due-queue congestion — it says nothing about when a
+   reservation attempt happens relative to `prepare`. This document now states the corrected direction
+   (staging bullet and the matching test obligations above, Round 21): reserve capacity only once
+   `prepare` has already returned `DISPOSITION_COMMITTED`/`PreparedMutation::Publish`, as part of the
+   same staged commit as the object mutation itself; FND-03 §15.4's fail-before-commit rule then
+   governs what happens once that reservation is actually attempted and found wanting. What remains
+   open for the owning lane is the exact implementation-level mechanics of that atomicity — `prepare`
+   is a pure query today (evidence above); making "check capacity" and "commit the object mutation and
+   create the `PENDING` record" a single atomic step around an already-computed `prepare` result is an
+   implementation detail this document does not design.
 
 ### Exact test obligations
 
@@ -1345,16 +1419,19 @@ not this architecture decision.
   *every* authored sample under `encounter-authoring/samples/**` for `revert_after_ms` admissibility
   must observe zero passes — only the synthetic fixture is expected to pass until "Open decisions"
   item 3 is resolved.
-- **An original operation that does not commit registers no revert (P1, Round 20, Codex finding
-  4120634397).** Bind a `revert_after_ms`-carrying transition and drive an operation against it whose
+- **An original operation that does not commit registers no revert, and reserves no capacity for one
+  (P1, Round 20/21, Codex findings 4120634397/4120777222).** Bind a `revert_after_ms`-carrying
+  transition and drive an operation against it whose
   `prepare` result is `NO_CHANGE`, `STALE_STATE`, `OCCUPIED`, `REVISION_EXHAUSTED` or
   `BINDING_MISMATCH` (any `unchanged` disposition, the exhaustive set, evidence above) — for example,
   replaying it against an already-stale `expected_revision`
   or a target cell that is currently occupied. The test must observe zero lifecycle records created for
-  that operation: no `PENDING` record exists afterward, and the capacity reserved for one is released
-  or simply never committed together with the rest of that operation's own staged commit. A test
-  asserting a record is created (and a timer later fires) for an operation whose own `prepare` result
-  was `unchanged` must fail — a revert has nothing to undo when the original operation changed nothing.
+  that operation (no `PENDING` record exists afterward) and zero capacity reservation attempts: since
+  capacity for one new lifecycle record is reserved only after `prepare` returns `Publish` (Round 21 —
+  corrects round 20's "reserve before `prepare`, release on `unchanged`"), an `unchanged` result never
+  reaches the reservation step at all. A test asserting a record is created (and a timer later fires),
+  or that capacity was reserved and then released, for an operation whose own `prepare` result was
+  `unchanged` must fail — a revert has nothing to undo when the original operation changed nothing.
 - **Revert restores exactly the pre-operation state (P1).** Firing a scheduled revert whose fences
   and expected revision still hold must land the object back in precisely the state it was in
   immediately before the original operation committed — the one unique `source_state`/`target_state`
@@ -1431,14 +1508,16 @@ not this architecture decision.
   a revert must eventually succeed despite occupancy, that is a future definition-level requirement
   (the definition names a fallback, which would be a *distinct* occurrence with its own identity), not
   a hidden retry loop here.
-- **Lifecycle-record capacity atomicity (FND-03 §15.4, Round 14).** If safe bounded capacity for one
-  new lifecycle record is unavailable when a non-timer-origin `revert_after`-carrying operation is
-  about to commit — player/command, encounter/server-event-originated, or any other authoritative
-  input — the *entire* original operation fails before anything commits: neither the world-object
-  mutation nor a partial-lifecycle record survives. This is a distinct case from an `unchanged`
-  `prepare` result releasing an already-made reservation (previous obligation, Round 20): here the
-  reservation itself cannot be made at all, regardless of what `prepare` would otherwise return. Only
-  a timer-origin execution (the firing path itself) never attempts this reservation at all (Round
+- **Lifecycle-record capacity atomicity (FND-03 §15.4, Round 14, corrected Round 21).** If safe
+  bounded capacity for one new lifecycle record is unavailable at the point a non-timer-origin
+  `revert_after`-carrying operation's own `prepare` has just returned `DISPOSITION_COMMITTED`/
+  `PreparedMutation::Publish` — player/command, encounter/server-event-originated, or any other
+  authoritative input — the *entire* original operation fails before anything commits: neither the
+  world-object mutation nor a lifecycle record survives (Round 21, Codex finding 4120777222: the
+  reservation attempt itself only happens at this point, never before `prepare` runs and never for an
+  `unchanged` result — previous obligation). A test asserting a capacity check or reservation attempt
+  happens before `prepare` returns, or for an `unchanged` disposition, must fail. Only a timer-origin
+  execution (the firing path itself) never attempts this reservation at all (Round
   7/8), so it has nothing to fail on.
   An already-accepted `PENDING`/`IN_FLIGHT` record is never discarded merely because the due queue is
   congested (FND-03 §15.4, second sentence) — that pressure produces `CAPACITY_EXCEEDED` on the *next
@@ -1477,11 +1556,16 @@ not this architecture decision.
    `LOCAL_OBJECT_RETAG_INTENT_FAMILY` decision (PR #1046, merged).
 6. **CW4 (runtime) — done.** Shipped `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` without `revert_after`,
    generalizing `LocalObjectRuntime` off the Open/Close two-state pair, per the coordinator
-   direction recorded in §4 (PR #1055, merged 2026-09-28); `revert_after` awaits §7 being accepted.
+   direction recorded in §4 (PR #1055, merged 2026-09-28); `revert_after` awaits the owning lane's
+   implementation of §7 (direction ACCEPTED, Round 21, issue #162).
 7. **Scope-runtime / Foundation carrier lane (`ChannelRuntimeV1`/`InstanceRuntime`).** Own §7's
-   decision: accept or supersede the recommended `revert_after` progression option and supply the
-   exact delta §7 names — including, if no existing scope cadence is proven, the scope's own step
-   driver itself. CW4 then adds `revert_after` on top of the already-shipped operations.
+   implementation now that its direction is owner-accepted (Round 21): supply the exact delta §7
+   names, resolve open decisions 1, 2, 5, 6 and 7 — including, if no existing scope cadence is
+   proven, the scope's own step driver itself. CW4 then adds `revert_after` on top of the
+   already-shipped operations. Open decision 3 (attribute-bearing object state, owner-decided `YES`)
+   and open decision 4 (where `revert_after_ms`/inverse-selection metadata live, coupled to decision
+   3) are both designed in §9 below (CANDIDATE); this lane implements §9's design, once accepted,
+   before it can support the currently-rejected authored shapes.
 
 ## 9. Attribute-bearing object state: teleporter destination/interaction bindings — CANDIDATE
 

@@ -199,6 +199,8 @@ def validate(bundle, deps, catalog=None, manifest=None):
     words = spell.get('words')
     if words is not None and words != re.sub(r'\s+', ' ', words.strip().lower()):
         errors.append('spell/words: must be lowercase with single spaces and no outer whitespace')
+    if spell['requirements'].get('learning_required') is True:
+        errors.append('spell/requirements/learning_required: since patch 15.22 no spell is taught (S16)')
     vocations = spell['requirements']['vocations']
     if vocations != sorted(vocations):
         errors.append('spell/requirements/vocations: must be sorted')
