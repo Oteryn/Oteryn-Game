@@ -216,6 +216,16 @@ pub enum ProjectV2Declaration {
     },
     Dialogue {
         identity: ProjectV2Identity,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        greet: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        farewell: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        walkaway: Option<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        keywords: Vec<ProjectV2DialogueKeyword>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        voices: Vec<String>,
         fields: Vec<ProjectV2CandidateField>,
     },
     Service {
@@ -371,6 +381,12 @@ impl ProjectV2Declaration {
                         .sort_by(|left, right| left.field_path.cmp(&right.field_path));
                 }
             }
+            Self::Dialogue {
+                keywords, voices, ..
+            } => {
+                canonicalize_v2_dialogue_keywords(keywords);
+                voices.sort();
+            }
             _ => {}
         }
     }
@@ -492,6 +508,14 @@ impl ProjectV2Declaration {
             _ => {}
         }
         references
+    }
+}
+
+fn canonicalize_v2_dialogue_keywords(keywords: &mut [ProjectV2DialogueKeyword]) {
+    keywords.sort_by(|left, right| left.key.cmp(&right.key));
+    for keyword in keywords.iter_mut() {
+        keyword.triggers.sort();
+        canonicalize_v2_dialogue_keywords(&mut keyword.children);
     }
 }
 
@@ -1152,6 +1176,19 @@ pub struct ProjectV2TravelDestination {
     pub floor: i16,
 }
 
+/// A declarative NPC dialogue keyword node: the words that trigger it, the reply and the
+/// follow-up keywords. No runtime reader executes it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2DialogueKeyword {
+    /// Lowercase slug, unique among sibling keywords.
+    pub key: String,
+    pub triggers: Vec<String>,
+    pub reply: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub children: Vec<ProjectV2DialogueKeyword>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2Bounds {
@@ -1752,15 +1789,7 @@ fn validate_v2_travel_routes(
         ));
     }
     for route in routes {
-        let key_ok = !route.key.is_empty()
-            && route.key.len() <= 64
-            && route.key.split('_').all(|part| {
-                !part.is_empty()
-                    && part
-                        .bytes()
-                        .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
-            });
-        if !key_ok {
+        if !is_v2_lowercase_slug(&route.key) {
             return Err(ProjectError::InvalidProject(
                 "v2 Service route key is not a lowercase slug",
             ));
@@ -1775,6 +1804,105 @@ fn validate_v2_travel_routes(
                 "v2 Service route destination is out of range",
             ));
         }
+    }
+    Ok(())
+}
+
+/// Shared slug rule for `_`-joined lowercase-alphanumeric keys: Service travel route keys and
+/// Dialogue keyword keys.
+fn is_v2_lowercase_slug(key: &str) -> bool {
+    !key.is_empty()
+        && key.len() <= 64
+        && key.split('_').all(|part| {
+            !part.is_empty()
+                && part
+                    .bytes()
+                    .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
+        })
+}
+
+/// Dialogue text allows an embedded `\n` (unlike other v2 source text) but still forbids other
+/// ASCII control characters. `|PLAYERNAME|`-style placeholders and `{link}` braces are ordinary
+/// text bytes here.
+fn validate_v2_dialogue_text(
+    field: &'static str,
+    value: &str,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(field, value.len(), limits.max_string_bytes)?;
+    if value.trim() != value
+        || value.is_empty()
+        || value
+            .chars()
+            .any(|character| character.is_control() && character != '\n')
+    {
+        return Err(ProjectError::InvalidProject("invalid v2 dialogue text"));
+    }
+    Ok(())
+}
+
+const V2_DIALOGUE_MAX_DEPTH: usize = 8;
+
+fn validate_v2_dialogue_keywords(
+    keywords: &[ProjectV2DialogueKeyword],
+    depth: usize,
+    node_count: &mut usize,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    if depth > V2_DIALOGUE_MAX_DEPTH {
+        return Err(ProjectError::InvalidProject(
+            "v2 Dialogue keyword nesting exceeds the maximum depth",
+        ));
+    }
+    limits.check(
+        "v2 Dialogue keywords",
+        keywords.len(),
+        limits.max_reference_records,
+    )?;
+    if keywords.windows(2).any(|pair| pair[0].key >= pair[1].key) {
+        return Err(ProjectError::InvalidProject(
+            "v2 Dialogue keywords are not key sorted and unique",
+        ));
+    }
+    for keyword in keywords {
+        *node_count += 1;
+        limits.check("v2 Dialogue nodes", *node_count, limits.max_decoded_fields)?;
+        if !is_v2_lowercase_slug(&keyword.key) {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword key is not a lowercase slug",
+            ));
+        }
+        limits.check(
+            "v2 Dialogue keyword triggers",
+            keyword.triggers.len(),
+            limits.max_reference_records,
+        )?;
+        if keyword.triggers.is_empty() {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword triggers are empty",
+            ));
+        }
+        if keyword.triggers.windows(2).any(|pair| pair[0] >= pair[1]) {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword triggers are not sorted and unique",
+            ));
+        }
+        for trigger in &keyword.triggers {
+            let trigger_ok = !trigger.is_empty()
+                && trigger.len() <= 64
+                && trigger.trim() == trigger.as_str()
+                && !trigger.chars().any(|character| character.is_control())
+                && !trigger
+                    .chars()
+                    .any(|character| character.is_ascii_uppercase());
+            if !trigger_ok {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Dialogue keyword trigger is not a trimmed lowercase word",
+                ));
+            }
+        }
+        validate_v2_dialogue_text("v2 Dialogue keyword reply", &keyword.reply, limits)?;
+        validate_v2_dialogue_keywords(&keyword.children, depth + 1, node_count, limits)?;
     }
     Ok(())
 }
@@ -1923,6 +2051,39 @@ fn validate_v2_declaration(
                     require_ref(currency)?;
                 }
             }
+        }
+        ProjectV2Declaration::Dialogue {
+            greet,
+            farewell,
+            walkaway,
+            keywords,
+            voices,
+            ..
+        } => {
+            if let Some(value) = greet {
+                validate_v2_dialogue_text("v2 Dialogue greet", value, limits)?;
+            }
+            if let Some(value) = farewell {
+                validate_v2_dialogue_text("v2 Dialogue farewell", value, limits)?;
+            }
+            if let Some(value) = walkaway {
+                validate_v2_dialogue_text("v2 Dialogue walkaway", value, limits)?;
+            }
+            limits.check(
+                "v2 Dialogue voices",
+                voices.len(),
+                limits.max_reference_records,
+            )?;
+            if voices.windows(2).any(|pair| pair[0] >= pair[1]) {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Dialogue voices are not sorted and unique",
+                ));
+            }
+            for voice in voices {
+                validate_v2_dialogue_text("v2 Dialogue voice", voice, limits)?;
+            }
+            let mut node_count = 0_usize;
+            validate_v2_dialogue_keywords(keywords, 1, &mut node_count, limits)?;
         }
         _ => {}
     }

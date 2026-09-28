@@ -91,6 +91,11 @@ fn candidate() -> ProjectV2Draft {
                 },
                 ProjectV2Declaration::Dialogue {
                     identity: identity("dialogue.courier"),
+                    greet: None,
+                    farewell: None,
+                    walkaway: None,
+                    keywords: vec![],
+                    voices: vec![],
                     fields: vec![ProjectV2CandidateField {
                         field_path: "oteryn:source.dialogue-text".into(),
                         value: ProjectV2CandidateValue::Text("hello".into()),

@@ -12,6 +12,7 @@ const PRESENTATION: &str = "oteryn:presentation.npc.captain_bluebear";
 const BEHAVIOR: &str = "oteryn:behavior.npc.captain_bluebear";
 const TRADE: &str = "oteryn:service.trade.captain_bluebear";
 const TRAVEL: &str = "oteryn:service.travel.captain_bluebear";
+const DIALOGUE: &str = "oteryn:dialogue.captain_bluebear";
 const AXE: &str = "oteryn:item.registry.i00003155";
 const RUNE: &str = "oteryn:item.registry.i00003161";
 const TOKEN: &str = "oteryn:item.registry.i00021718";
@@ -207,6 +208,96 @@ fn routes() -> Vec<ProjectV2TravelRoute> {
     vec![route("carlin", 32387, 31820, 110), edron]
 }
 
+fn keyword(
+    key: &str,
+    triggers: &[&str],
+    reply: &str,
+    children: Vec<ProjectV2DialogueKeyword>,
+) -> ProjectV2DialogueKeyword {
+    ProjectV2DialogueKeyword {
+        key: key.into(),
+        triggers: triggers.iter().map(|trigger| (*trigger).into()).collect(),
+        reply: reply.into(),
+        children,
+    }
+}
+
+fn keyword_owned(
+    key: String,
+    trigger: String,
+    reply: &str,
+    children: Vec<ProjectV2DialogueKeyword>,
+) -> ProjectV2DialogueKeyword {
+    ProjectV2DialogueKeyword {
+        key,
+        triggers: vec![trigger],
+        reply: reply.into(),
+        children,
+    }
+}
+
+/// Sorted (by key) so the base draft already matches the canonical rewrite.
+fn dialogue_keywords() -> Vec<ProjectV2DialogueKeyword> {
+    vec![
+        keyword(
+            "cargo",
+            &["cargo", "hold"],
+            "We carry crates of spice and cloth.",
+            vec![keyword(
+                "price",
+                &["cost", "price"],
+                "Ask about one good for its price.",
+                vec![],
+            )],
+        ),
+        keyword(
+            "trade",
+            &["shop", "trade"],
+            "Step up to the counter if you wish to trade.",
+            vec![],
+        ),
+    ]
+}
+
+/// Sorted so the base draft already matches the canonical rewrite.
+fn dialogue_voices() -> Vec<String> {
+    vec![
+        "Gulls cry above the mast.".into(),
+        "The deck creaks under his boots.".into(),
+    ]
+}
+
+fn dialogue_declaration() -> ProjectV2Declaration {
+    ProjectV2Declaration::Dialogue {
+        identity: identity(DIALOGUE),
+        greet: Some("Welcome aboard, sailor!".into()),
+        farewell: Some("Fair winds until we meet again.".into()),
+        walkaway: Some("Suit yourself, then.".into()),
+        keywords: dialogue_keywords(),
+        voices: dialogue_voices(),
+        fields: vec![],
+    }
+}
+
+/// A chain of `depth` nested keywords, one child per level, `depth_1` at the top.
+fn dialogue_keyword_chain(depth: u32) -> ProjectV2DialogueKeyword {
+    let mut node = keyword_owned(
+        format!("depth_{depth}"),
+        format!("trigger{depth}"),
+        "Reply at the deepest level.",
+        vec![],
+    );
+    for level in (1..depth).rev() {
+        node = keyword_owned(
+            format!("depth_{level}"),
+            format!("trigger{level}"),
+            "Reply at a nested level.",
+            vec![node],
+        );
+    }
+    node
+}
+
 fn draft() -> ProjectV2Draft {
     ProjectV2Draft {
         core: ProjectDraft {
@@ -232,7 +323,7 @@ fn draft() -> ProjectV2Draft {
                     identity: identity(NPC),
                     presentation: Some(reference(ProjectV2Family::Presentation, PRESENTATION)),
                     behavior: Some(reference(ProjectV2Family::Behavior, BEHAVIOR)),
-                    dialogue: None,
+                    dialogue: Some(reference(ProjectV2Family::Dialogue, DIALOGUE)),
                     services: vec![
                         reference(ProjectV2Family::Service, TRADE),
                         reference(ProjectV2Family::Service, TRAVEL),
@@ -256,6 +347,7 @@ fn draft() -> ProjectV2Draft {
                     routes: routes(),
                     fields: vec![],
                 },
+                dialogue_declaration(),
             ],
             authoring_profiles: profiles(),
             ..ProjectV2State::default()
@@ -302,6 +394,45 @@ fn service<'a>(
         .expect("service")
 }
 
+fn dialogue_mut(draft: &mut ProjectV2Draft) -> &mut ProjectV2Declaration {
+    draft
+        .state
+        .declarations
+        .iter_mut()
+        .find(|declaration| matches!(declaration, ProjectV2Declaration::Dialogue { .. }))
+        .expect("dialogue")
+}
+
+fn dialogue(project: &WorldProject) -> &ProjectV2Declaration {
+    project
+        .v2()
+        .expect("v2 state")
+        .declarations
+        .iter()
+        .find(|declaration| matches!(declaration, ProjectV2Declaration::Dialogue { .. }))
+        .expect("dialogue")
+}
+
+fn dialogue_fields(
+    project: &WorldProject,
+) -> (&Option<String>, &[ProjectV2DialogueKeyword], &[String]) {
+    project
+        .v2()
+        .expect("v2 state")
+        .declarations
+        .iter()
+        .find_map(|declaration| match declaration {
+            ProjectV2Declaration::Dialogue {
+                greet,
+                keywords,
+                voices,
+                ..
+            } => Some((greet, keywords.as_slice(), voices.as_slice())),
+            _ => None,
+        })
+        .expect("dialogue")
+}
+
 #[test]
 fn npc_services_round_trip_and_stay_declarative() {
     let documents =
@@ -326,6 +457,14 @@ fn npc_services_round_trip_and_stay_declarative() {
         ["carlin", "edron"]
     );
     assert_eq!(travel[1].min_level, Some(8));
+    let (greet, keywords, voices) = dialogue_fields(&parsed);
+    assert_eq!(greet.as_deref(), Some("Welcome aboard, sailor!"));
+    assert_eq!(
+        keywords.iter().map(|k| k.key.as_str()).collect::<Vec<_>>(),
+        ["cargo", "trade"]
+    );
+    assert_eq!(keywords[0].children[0].key, "price");
+    assert_eq!(voices.len(), 2);
     assert_eq!(
         parsed
             .canonical_documents(limits())
@@ -363,9 +502,43 @@ fn offers_and_routes_are_canonicalized() {
 }
 
 #[test]
+fn dialogue_keywords_are_canonicalized() {
+    let mut changed = draft();
+    if let ProjectV2Declaration::Dialogue {
+        keywords, voices, ..
+    } = dialogue_mut(&mut changed)
+    {
+        keywords.reverse();
+        for keyword in keywords.iter_mut() {
+            keyword.triggers.reverse();
+            for child in keyword.children.iter_mut() {
+                child.triggers.reverse();
+            }
+        }
+        voices.reverse();
+    }
+    let reordered = admit(changed).expect("admit reordered dialogue");
+    let original = admit(draft()).expect("admit dialogue");
+    assert_eq!(dialogue(&reordered), dialogue(&original));
+    let (_, keywords, _) = dialogue_fields(&reordered);
+    assert_eq!(
+        keywords.iter().map(|k| k.key.as_str()).collect::<Vec<_>>(),
+        ["cargo", "trade"]
+    );
+    assert_eq!(
+        keywords[0]
+            .children
+            .iter()
+            .map(|child| child.key.as_str())
+            .collect::<Vec<_>>(),
+        ["price"]
+    );
+}
+
+#[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 11] = [
+    let cases: [(&str, &str, Mutation); 20] = [
         (
             "wander without walking",
             "v2 wander requires a walking creature and a positive interval",
@@ -463,6 +636,88 @@ fn each_broken_invariant_is_rejected() {
                 }
             },
         ),
+        (
+            "dialogue keyword key with capitals",
+            "v2 Dialogue keyword key is not a lowercase slug",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].key = "Cargo".into();
+                }
+            },
+        ),
+        (
+            "duplicate dialogue keyword sibling key",
+            "v2 Dialogue keywords are not key sorted and unique",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[1].key = keywords[0].key.clone();
+                }
+            },
+        ),
+        (
+            "empty dialogue keyword triggers",
+            "v2 Dialogue keyword triggers are empty",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].triggers.clear();
+                }
+            },
+        ),
+        (
+            "uppercase dialogue trigger",
+            "v2 Dialogue keyword trigger is not a trimmed lowercase word",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].triggers[0] = "Cargo".into();
+                }
+            },
+        ),
+        (
+            "duplicate dialogue trigger",
+            "v2 Dialogue keyword triggers are not sorted and unique",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    let first = keywords[0].triggers[0].clone();
+                    keywords[0].triggers[1] = first;
+                }
+            },
+        ),
+        (
+            "empty dialogue keyword reply",
+            "invalid v2 dialogue text",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].reply.clear();
+                }
+            },
+        ),
+        (
+            "dialogue reply with a control character",
+            "invalid v2 dialogue text",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].reply = "Ahoy\u{7}there.".into();
+                }
+            },
+        ),
+        (
+            "dialogue keyword nesting past the maximum depth",
+            "v2 Dialogue keyword nesting exceeds the maximum depth",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    *keywords = vec![dialogue_keyword_chain(9)];
+                }
+            },
+        ),
+        (
+            "duplicate dialogue voice",
+            "v2 Dialogue voices are not sorted and unique",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { voices, .. } = dialogue_mut(draft) {
+                    voices[1] = voices[0].clone();
+                }
+            },
+        ),
     ];
     for (case, expected, mutate) in cases {
         let mut changed = draft();
@@ -491,5 +746,27 @@ fn unknown_route_fields_fail_closed() {
     assert!(
         serde_json::from_value::<ProjectV2Declaration>(travel).is_err(),
         "unknown route field admitted"
+    );
+}
+
+#[test]
+fn unknown_dialogue_keyword_fields_fail_closed() {
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(draft(), limits()).expect("npc documents");
+    let declarations: Value =
+        serde_json::from_slice(&documents.documents()["definitions/declarations.json"])
+            .expect("declarations");
+    let mut dialogue = declarations["records"]
+        .as_array()
+        .expect("records")
+        .iter()
+        .find(|record| record["identity"]["key"] == DIALOGUE)
+        .expect("dialogue")
+        .clone();
+    assert!(serde_json::from_value::<ProjectV2Declaration>(dialogue.clone()).is_ok());
+    dialogue["keywords"][0]["cooldown_ms"] = json!(500);
+    assert!(
+        serde_json::from_value::<ProjectV2Declaration>(dialogue).is_err(),
+        "unknown dialogue keyword field admitted"
     );
 }
