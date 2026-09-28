@@ -1255,6 +1255,11 @@ architecture decision.
    representation is also needed before space is actually freed. Decide this together with the
    matching `RESOURCE_LIMITS_REGISTRY.json` bound (FND-03 §14.1) — the same registry entry as the
    lifecycle-record creation capacity above, or a related one, is the owning lane's call.
+   **Owning-lane resolution (task `OTV2-20260928-cw1-timed-revert-runtime`):** no eviction or
+   compaction. `TERMINAL` records stay for the whole scope generation, under one per-scope cap on
+   records in any state (`WOBJ-RL-04`, the creation-capacity entry). A full store fails the next
+   forward operation `CAPACITY_EXCEEDED` before commit, so no identity that reached `TERMINAL` can
+   fall through to the fences or `prepare` again.
 2. **`IN_FLIGHT` reconciliation for an owner-turn interruption while the scope stays live.** Checked
    directly (evidence above): the one existing "one owner work item" precedent
    (`ComposedFreshAdmission::step`) runs synchronously once its lock is acquired, with no internal
@@ -1269,6 +1274,9 @@ architecture decision.
    generation live with a record stranded `IN_FLIGHT` — if chosen, the owning lane must design explicit
    `IN_FLIGHT` reconciliation (how a stranded record eventually reaches `TERMINAL`, or is recognized as
    needing owner intervention), which this document does not design and does not choose between.
+   **Owning-lane resolution (task `OTV2-20260928-cw1-timed-revert-runtime`):** option (a).
+   `PENDING`→`IN_FLIGHT`→`TERMINAL` is one synchronous owner-turn step with no await. An error inside
+   it leaves the record `IN_FLIGHT` and makes the driver scope-terminal until a restart drops it.
 3. **Attribute-bearing object state and its timed revert (e.g. teleporter `destination`/
    `revert_destination`, and — Round 19 — `interaction` bindings). Owner-decided `YES` (Round 21,
    issue #162, 2026-09-28) — needed for the playable path; design in progress as a further section of
@@ -1322,6 +1330,8 @@ architecture decision.
    as capacity reclamation rather than a fixed-size-per-occurrence cost with a smaller constant. This
    document does not design that horizon; the owning lane decides it together with open decision 1
    and the matching `RESOURCE_LIMITS_REGISTRY.json` bound.
+   **Owning-lane resolution (task `OTV2-20260928-cw1-timed-revert-runtime`):** the horizon is the
+   scope generation. Capacity is reclaimed only when a restart drops the scope-ephemeral store.
 6. **Ordinal issuance inside the `PENDING`→`IN_FLIGHT` step (Round 20, Codex finding 4120634408).**
    `ScopeRuntimeFence::accept_input` returns `Result<RuntimeExecutionOrdinal, GenerationError>` and can
    fail with `GenerationError::Exhausted` (evidence above), not only reject a stale generation. This
@@ -1335,6 +1345,10 @@ architecture decision.
    scope-terminal until safe ownership lifecycle recovery establishes a new generation) for the record
    left `IN_FLIGHT`. Nothing in this document should be read as claiming the current ordering already
    handles this safely.
+   **Owning-lane resolution (task `OTV2-20260928-cw1-timed-revert-runtime`):** issuance is folded
+   into the step. After the fences pass, `accept_input` runs first and the record moves to
+   `IN_FLIGHT` only on `Ok`. On `Exhausted` the record stays `PENDING` and the driver stops as
+   scope-terminal (FND-03 line 266).
 7. **Reserve lifecycle-record capacity only after `prepare` returns `Publish`, not speculatively
    before `prepare` runs — this section's own accepted requirement, not an FND-03 invariant (Round
    21, Codex finding 4120777222 on PR #1045's thread; corrected Round 22, Codex finding 4121718203).**
