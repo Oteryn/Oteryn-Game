@@ -49,8 +49,37 @@ fn records() -> Value {
         {"kind": "Generic", "identity": def("Presentation", "oteryn:presentation/rat"),
          "client_projection": "ClientSafe"},
         {"kind": "Generic", "identity": def("Terrain", "oteryn:terrain/stone-floor"),
-         "client_projection": "ServerOnly"}
+         "client_projection": "ServerOnly"},
+        {"kind": "LocalObject", "identity": def("LocalObject", "oteryn:local-object/entry-door"),
+         "client_projection": "ClientSafe",
+         "states": [
+            {"key": "oteryn:reference.state.closed", "collision": "Present"},
+            {"key": "oteryn:reference.state.open", "collision": "Absent"}
+         ]}
     ])
+}
+
+fn door_cell() -> Value {
+    json!({
+        "key": "oteryn:cell/entry-door", "world": "oteryn:entry.world",
+        "map_revision": "oteryn:map/entry-r1",
+        "definition": def("Terrain", "oteryn:terrain/stone-floor"),
+        "area": def("Area", "oteryn:area/entry-room"),
+        "coordinate_frame": FRAME, "x": 1, "y": -1, "floor": 0,
+        "presentation_order": {"plane": 0, "order": 0}, "disposition": "CandidateOnly"
+    })
+}
+
+fn door_overlay() -> Value {
+    json!({
+        "cell": {"placement_key": "oteryn:cell/entry-door", "region_key": "oteryn:region/entry",
+            "collision": "Walkable"},
+        "definition": def("LocalObject", "oteryn:local-object/entry-door"),
+        "closed_state": "oteryn:reference.state.closed",
+        "open_state": "oteryn:reference.state.open",
+        "open_transition": {"key": "oteryn:transition/entry-door-open"},
+        "close_transition": {"key": "oteryn:transition/entry-door-close"}
+    })
 }
 
 fn placement(key: &str, x: i32, y: i32) -> Value {
@@ -68,12 +97,13 @@ fn state() -> Value {
         "declarations": [{"kind": "Area",
             "identity": {"key": "oteryn:area/entry-room", "revision": REV}, "fields": []}],
         "worlds": [{"key": "oteryn:entry.world", "world_id": WORLD_ID, "coordinate_frame": FRAME,
-            "bounds": {"min_x": 0, "min_y": -1, "max_x_exclusive": 2, "max_y_exclusive": 1},
+            "bounds": {"min_x": 0, "min_y": -1, "max_x_exclusive": 3, "max_y_exclusive": 1},
             "floors": [0]}],
         "placements": [
             placement("oteryn:cell/entry-start", 0, 0),
             placement("oteryn:cell/entry-east", 1, 0),
-            placement("oteryn:cell/entry-north", 0, -1)
+            placement("oteryn:cell/entry-north", 0, -1),
+            door_cell()
         ]
     })
 }
@@ -99,6 +129,7 @@ fn overlay() -> Value {
             {"placement_key": "oteryn:cell/entry-north", "region_key": "oteryn:region/entry",
              "collision": "Blocked"}
         ],
+        "doors": [door_overlay()],
         "relocation": {"key": "oteryn:relocation/entry-east-return",
             "from_cell": "oteryn:cell/entry-east", "to_cell": "oteryn:cell/entry-start"},
         "behavior": {"definition": def("Behavior", "oteryn:behavior/passive-idle"),
@@ -297,7 +328,12 @@ fn native_entry_captures_qualifies_and_compiles_a_deterministic_pair() {
     fs::remove_dir_all(parent).expect("cleanup");
     assert_eq!(first, second);
     let source = first.source();
-    assert_eq!(source.cells.len(), 3);
+    // #162 A4-a: the three room Terrain cells plus the door's own walkable Terrain cell.
+    assert_eq!(source.cells.len(), 4);
+    let door = first.door();
+    assert_eq!(door.placements.len(), 1);
+    assert_eq!(door.transitions.len(), 2);
+    assert_eq!(door.definitions.len(), 1);
     assert_eq!(
         source.package_manifest.licensing_metadata.as_str(),
         NATIVE_ENTRY_LICENSING
@@ -423,6 +459,7 @@ fn accepted_product_bindings_are_enforced() {
     refuses(
         &overlay_edit(|o| {
             o["region"]["key"] = json!("oteryn:region/other");
+            o["doors"][0]["cell"]["region_key"] = json!("oteryn:region/other");
             for cell in o["cells"].as_array_mut().expect("cells") {
                 cell["region_key"] = json!("oteryn:region/other");
             }
@@ -653,6 +690,71 @@ fn every_single_invariant_mutation_refuses_for_its_reason() {
             w["placements"][1]["area"] = Value::Null
         }),
         "placement binding",
+    );
+}
+
+/// #162 comment 5865792400 (owner decision A4-a): the entry room's one usable door. Every
+/// negative case changes one invariant of the otherwise-valid door while the three room cells and
+/// everything else stay valid.
+#[test]
+fn door_admission_refuses_every_invariant_mutation() {
+    // No door.
+    refuses(
+        &overlay_edit(|o| o["doors"] = json!([])),
+        "exactly one door",
+    );
+    // Two doors.
+    refuses(
+        &overlay_edit(|o| {
+            let extra = o["doors"][0].clone();
+            o["doors"].as_array_mut().expect("doors").push(extra);
+        }),
+        "exactly one door",
+    );
+    // Placements are written key-sorted, so "oteryn:cell/entry-door" (index 0) sorts before
+    // east/north/start.
+    const DOOR_PLACEMENT_INDEX: usize = 0;
+    // Not adjacent: (2, -1) is inside the World envelope (which is one column wider than the
+    // four placed cells, see `accepted::BOUNDS`) but is not a unit step from any room cell.
+    refuses(
+        &edit("worlds/world.json", |w| {
+            w["placements"][DOOR_PLACEMENT_INDEX]["x"] = json!(2);
+        }),
+        "must be adjacent",
+    );
+    // Off the room frame: outside the World envelope entirely (refused by the generic v2
+    // placement/World bounds check before native-entry's own door-specific checks even run).
+    refuses(
+        &edit("worlds/world.json", |w| {
+            w["placements"][DOOR_PLACEMENT_INDEX]["x"] = json!(5);
+        }),
+        "world/frame/position mismatch",
+    );
+    // Unknown state: the overlay names a state the LocalObject record never declares.
+    refuses(
+        &overlay_edit(|o| {
+            o["doors"][0]["closed_state"] = json!("oteryn:reference.state.other");
+        }),
+        "unknown state",
+    );
+    // Unknown state: the record's own vocabulary no longer matches (both states end up Absent).
+    // Records are written family-then-key sorted: Ability, Behavior, Creature, Effect, Formula,
+    // Item, LocalObject (index 6), Presentation x3, Terrain.
+    const DOOR_RECORD_INDEX: usize = 6;
+    refuses(
+        &edit("definitions/reference.json", |r| {
+            r["records"][DOOR_RECORD_INDEX]["states"][0]["collision"] = json!("Absent");
+        }),
+        "unknown state",
+    );
+    // Bad transition: the door's own two transitions must keep their exactly-accepted, distinct
+    // keys — collapsing them onto one key is refused as an unaccepted door transition binding.
+    refuses(
+        &overlay_edit(|o| {
+            let close_key = o["doors"][0]["close_transition"]["key"].clone();
+            o["doors"][0]["open_transition"]["key"] = close_key;
+        }),
+        "not the accepted binding",
     );
 }
 

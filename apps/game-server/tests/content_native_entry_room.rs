@@ -93,7 +93,12 @@ fn committed_room_binds_any_world_id_deterministically() {
     assert_eq!(first.documents(), second.documents());
     assert_eq!(first.documents().len(), 11);
     let project = qualify_bound_room(world_id, "local");
-    assert_eq!(project.source().cells.len(), NATIVE_ENTRY_CELLS);
+    // #162 A4-a: the three room Terrain cells plus the door's own walkable Terrain cell.
+    assert_eq!(
+        project.source().cells.len(),
+        NATIVE_ENTRY_CELLS + NATIVE_ENTRY_DOOR_CELLS
+    );
+    assert_eq!(project.door().placements.len(), 1);
     let other = parse_uuid_v7("01890f4c-3b2a-7c01-8d11-9a321b7c0009");
     assert_ne!(
         native_entry_room_documents(other)
