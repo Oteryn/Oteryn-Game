@@ -2165,6 +2165,39 @@ fn require_target(
     Ok(())
 }
 
+/// E3: every creature an encounter covers lists that encounter in its Creature profile, and every
+/// encounter a Creature profile lists covers it.
+fn validate_v2_encounter_bindings(
+    profiles: &[ProjectV2AuthoringProfile],
+) -> Result<(), ProjectError> {
+    let mut covered = std::collections::BTreeSet::new();
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Encounter(ProjectV2EncounterAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+        {
+            for creature in &details.covers {
+                covered.insert((&creature.key, &creature.revision, &profile.target));
+            }
+        }
+    }
+    let mut bound = std::collections::BTreeSet::new();
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Creature(creature) = &profile.data {
+            for encounter in &creature.encounters {
+                bound.insert((&profile.target.key, &profile.target.revision, encounter));
+            }
+        }
+    }
+    if covered != bound {
+        return Err(ProjectError::InvalidProject(
+            "v2 Creature encounters differ from the creatures their encounters cover",
+        ));
+    }
+    Ok(())
+}
+
 fn validate_v2_authoring_profile(
     profile: &ProjectV2AuthoringProfile,
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
@@ -2435,9 +2468,13 @@ fn validate_v2_authoring_profile(
                 require_ref,
                 limits,
             )?;
-            if let Some(details) = &value.details {
-                validate_encounter_details(details, require_ref, limits)?;
-            }
+            // E1: an admitted encounter carries its whole authored fight, never its identity alone.
+            let Some(details) = &value.details else {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Encounter authoring requires details",
+                ));
+            };
+            validate_encounter_details(details, require_ref, limits)?;
             validate_v2_candidate_fields(&value.fields)?;
         }
         ProjectV2AuthoringProfileData::WorldObject(value) => {
@@ -2608,6 +2645,7 @@ fn validate_v2_state(
             "v2 authoring profiles are not target sorted and unique",
         ));
     }
+    validate_v2_encounter_bindings(&state.authoring_profiles)?;
     for profile in &state.authoring_profiles {
         validate_v2_authoring_profile(profile, &require_ref, limits)?;
         if let ProjectV2AuthoringProfileData::Loot(loot) = &profile.data {

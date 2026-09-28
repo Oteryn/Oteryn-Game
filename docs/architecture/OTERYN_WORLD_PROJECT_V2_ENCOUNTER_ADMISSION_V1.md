@@ -97,8 +97,10 @@ creatures, in the same slices.
    Done in `OTV2-20260928-encounter-admission-rust`, in `apps/game-server/src/content/project/v2/encounter.rs`.
    `ProjectV2EncounterAuthoring.details` holds the typed vocabulary, with percentages as exact ppm and every union as a
    tagged value. Rust checks ranges, exact references, and that every role, anchor, area, counter, flag, timer, phase,
-   outcome and encounter ability a rule names is declared. `ProjectV2CreatureAuthoring.encounters` binds a creature to
-   its encounters (E3). The D45 summon spells get `ProjectV2AbilityDetails.encounter`: exactly one of effects, variants
+   outcome and encounter ability a rule names is declared. An Encounter profile must carry these details (E1).
+   `ProjectV2EncounterDetails.covers` names the participant creatures the encounter covers, and
+   `ProjectV2CreatureAuthoring.encounters` binds a creature to its encounters (E3). The project checks both directions:
+   a covered creature lists its encounter, and a listed encounter covers the creature. The D45 summon spells get `ProjectV2AbilityDetails.encounter`: exactly one of effects, variants
    and encounter, and an encounter-backed ability must be a spell. Tests:
    `apps/game-server/tests/content_world_project_v2_encounter_admission.rs`.
 4. Writer and the first wave: `creature_admission_stage.py` stages the encounters and their creatures under E4, the

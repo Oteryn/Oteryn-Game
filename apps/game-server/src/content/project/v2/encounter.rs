@@ -22,6 +22,10 @@ pub struct ProjectV2EncounterDetails {
     pub display_name: String,
     /// Authored order; roles are unique.
     pub participants: Vec<ProjectV2EncounterParticipant>,
+    /// E3: the participant creatures this encounter covers, sorted and unique. Each lists the
+    /// encounter in its Creature profile, and is never activated without it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub covers: Vec<ProjectV2DefinitionRef>,
     /// Authored order; names are unique.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub phases: Vec<String>,
@@ -781,6 +785,7 @@ impl ProjectV2EncounterDetails {
         for participant in &mut self.participants {
             participant.creatures.sort();
         }
+        self.covers.sort();
         for ability in &mut self.abilities {
             ability.affects.creatures.sort();
         }
@@ -1005,6 +1010,20 @@ pub(super) fn validate_encounter_details(
             require_ref,
             limits,
         )?;
+    }
+    sorted_refs(
+        &details.covers,
+        ProjectV2Family::Creature,
+        require_ref,
+        limits,
+    )?;
+    if details.covers.iter().any(|covered| {
+        !details
+            .participants
+            .iter()
+            .any(|participant| participant.creatures.contains(covered))
+    }) {
+        return invalid("v2 encounter covers a creature that is not a participant");
     }
     for anchor in &details.anchors {
         validate_v2_source_text(

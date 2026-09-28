@@ -113,6 +113,7 @@ fn details_json() -> Value {
             {"role": "the_hunger", "creatures": [creature_ref(BOSS)]},
             {"role": "greed", "creatures": [creature_ref(ADD)]}
         ],
+        "covers": [creature_ref(BOSS)],
         "anchors": [
             {"key": "hunger_vortex", "description": "Canary (32244, 31371, 14).",
              "location": {"kind": "point", "x": 32244, "y": 31371, "floor": 14}},
@@ -334,7 +335,56 @@ fn admitted_encounter_round_trips_and_stays_declarative() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 16] = [
+    let cases: [(&str, &str, Mutation); 19] = [
+        (
+            "a covered creature without its encounter binding",
+            "v2 Creature encounters differ from the creatures their encounters cover",
+            |draft| {
+                for profile in &mut draft.state.authoring_profiles {
+                    if let ProjectV2AuthoringProfileData::Creature(creature) = &mut profile.data {
+                        creature.encounters.clear();
+                    }
+                }
+            },
+        ),
+        (
+            "an encounter covering a creature that is not a participant",
+            "v2 encounter covers a creature that is not a participant",
+            |draft| {
+                let details = encounter_mut(draft);
+                details
+                    .participants
+                    .retain(|participant| participant.role != "the_hunger");
+                details.rules.clear();
+                details.rules.push(ProjectV2EncounterRule {
+                    key: "started".into(),
+                    trigger: ProjectV2EncounterTrigger::EncounterStarted,
+                    delay_ms: None,
+                    conditions: vec![],
+                    actions: vec![ProjectV2EncounterAction::Flag {
+                        flag: "summon_delay".into(),
+                        value: true,
+                    }],
+                });
+            },
+        ),
+        (
+            "an encounter profile without details",
+            "v2 Encounter authoring requires details",
+            |draft| {
+                for profile in &mut draft.state.authoring_profiles {
+                    match &mut profile.data {
+                        ProjectV2AuthoringProfileData::Encounter(encounter) => {
+                            encounter.details = None
+                        }
+                        ProjectV2AuthoringProfileData::Creature(creature) => {
+                            creature.encounters.clear()
+                        }
+                        _ => {}
+                    }
+                }
+            },
+        ),
         (
             "an encounter-backed melee ability",
             "v2 encounter-backed Ability must be a spell",
@@ -467,8 +517,8 @@ fn each_broken_invariant_is_rejected() {
             },
         ),
         (
-            "a creature bound to an unadmitted encounter",
-            "unresolved v2 typed definition reference",
+            "a creature bound to an encounter that does not cover it",
+            "v2 Creature encounters differ from the creatures their encounters cover",
             |draft| {
                 for profile in &mut draft.state.authoring_profiles {
                     if let ProjectV2AuthoringProfileData::Creature(creature) = &mut profile.data {
