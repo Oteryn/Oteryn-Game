@@ -85,6 +85,12 @@ This task adds a docs-only design as §10 of
   - §10.2 states the `PendingRevert` flag and the terminal-release exception explicitly, and the
     "unchanged" claims in §10 are corrected.
   - The `triggering_object` target is restricted to `ON_ENTER`.
+- **Round 5** (Codex P1 4127573494 on `9ec1b1c0`, accepted):
+  - Two present → absent `REMOVE` edges, each with a single D91 owner: `/remove` (revert driver,
+    the encounter owner) and `/consume` (the interaction).
+  - `bind`'s inverse search requires the forward's own origin, so `/remove` stays the unique
+    inverse.
+  - Consumption still retires the object, and the later timer still fences to a no-op.
 - **Closeout** of `OTV2-20260928-cw1-teleporter-rearm`: archived as completed, merged `195ef53a`.
 
 ## Excluded scope
@@ -101,5 +107,5 @@ This task adds a docs-only design as §10 of
 
 ## Context checkpoint
 
-last_progress: Round 4 repair (Codex P1 4127532478, P1 4127532494, P2 4127532499) on PR #1182; new candidate head pending freeze
+last_progress: Round 5 repair (Codex P1 4127573494) on PR #1182; new candidate head pending freeze
 jira: pending (no mapped Story resolved in this worker session)

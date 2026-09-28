@@ -2289,9 +2289,29 @@ is a transition between them:
   `LOCAL_OBJECT_TRANSITION_CAPABILITY`, no policy guards. The owning event commits it through
   `ScopeRevertDriver::apply_forward`, carrying `revert_after_ms` keyed by
   `(<action id>/create, action id)` (§9 design point 5).
-- **Inverse** `<action id>/remove`: present → absent, `REMOVE` intent family. Its `target_state`
-  equals the forward's `source_state` exactly, so `bind`'s unique-inverse rule (§7, with the
-  existing `CREATE`↔`REMOVE` pairing) accepts it without the §9 `attribute_variant_of` widening.
+- **Inverse** `<action id>/remove`: present → absent, `REMOVE` intent family. Its D91 origin is
+  `EVENT(owner)` with the same owner as the create forward, which is the encounter event that
+  owns the action. The revert driver commits it as that owner's own later operation (§7 C2). Its
+  `target_state` equals the forward's `source_state` exactly, so `bind`'s unique-inverse rule
+  (§7, with the existing `CREATE`↔`REMOVE` pairing) accepts it without the §9
+  `attribute_variant_of` widening.
+- **Consume edge** `<action id>/consume` (Round 5, Codex P1 4127573494): present → absent,
+  `REMOVE` intent family, untimed.
+  - **When it exists:** it is synthesized only for an OD8 template whose resolved interaction
+    carries the typed `triggering_object` `REMOVE` (10.3 D5). Today that means `mazzinor` and
+    `cult_soul_remains`. `azerus`, `gaz_haragoth` and OD9 have none.
+  - **Its owner:** its D91 origin is `EVENT(owner)` with the resolved interaction as owner, so the
+    step-in interaction child commits it through the scope owner. D91 gives an edge exactly one
+    owner, so the revert driver and the interaction each need their own edge, and neither is
+    ever a bypass of the other.
+  - **Why it is not a second inverse.** It has the same states and family as `/remove`, so under
+    the current rule it would qualify as a second inverse of the timed create, and `bind` would
+    fail with "ambiguous bound inverse". The unique-inverse search therefore gains one condition:
+    a candidate inverse must carry the same D91 origin as the forward it reverts. That is §7's
+    own premise, since the revert is the same owner's later operation. `/consume` has a
+    different owner, so it never qualifies, and `/remove` stays the unique inverse. The condition
+    is inert for every placement without D91 origins, which is all content today. D91 is already
+    a precondition for these shapes (10.3 D5).
 
 Because a revert lands exactly on the absent state, where the authored forward matches again, no
 separate re-arm edge is needed. This is the case `encounter_map_item.rs` already describes for a
@@ -2308,7 +2328,10 @@ not change either, with two exceptions, both used only by OD8 runtime placements
   narrow exception to §7 open decisions 1 and 5 that D3 argues for.
 
 For every pre-authored placement, including all OD9 teleporters and all §9 content, the flag is
-never set and the driver behaves exactly as it does today.
+never set and the driver behaves exactly as it does today. Separately, `bind`'s unique-inverse
+search gains the same-origin condition from the consume-edge bullet above. It has no effect until
+D91 origins exist, and it has no effect on any placement without a second edge of the paired
+family.
 
 ### 10.3 OD8: runtime placements at `death_position`
 
@@ -2406,8 +2429,8 @@ absent state:
   `apply_scope_operation`). `COMMITTED` lands on absent, and the scope owner retires the object.
   This is Canary's `removeTeleport`.
 - **Consumed first (`mazzinor`, `cult_soul_remains`).** The step-in interaction child (the
-  `interaction` content, GAME-INTERACTION) asks the scope owner to commit the untimed remove edge.
-  The object lands on absent and is retired. Its still-`PENDING` record later reaches `present`,
+  `interaction` content, GAME-INTERACTION) asks the scope owner to commit the object's own
+  interaction-owned `<action id>/consume` edge (10.2). The object lands on absent and is retired. Its still-`PENDING` record later reaches `present`,
   finds no runtime at the placement, and becomes `TERMINAL` as `Fenced(Incarnation)` with no
   mutation. This is Canary's "item already gone, timer does nothing".
 - **Last overlay word.** The delta that publishes the absent state is the last one sent for that
@@ -2474,7 +2497,8 @@ position) stay excluded by C3, unchanged. That would be a new decision.
   - **Compatibility.** Exactly one definition must resolve, and it must meet three conditions:
     - its `source.edge` is `ON_ENTER`, since each covered object is used by stepping onto it;
     - every `WorldObject` child it carries is a `REMOVE` whose **typed** target is the
-      triggering object itself, which lowers onto this template's own untimed remove edge;
+      triggering object itself, which lowers onto this template's own interaction-owned
+      `<action id>/consume` edge (10.2), never onto the revert-owned `/remove`;
     - it names no other world-object target.
 
   - **No inferred targets (Round 3, Codex P1 4127486973).** The linker never infers a mutation
@@ -2534,11 +2558,13 @@ position) stay excluded by C3, unchanged. That would be a new decision.
   firing schedules nothing. No re-arm or extension exists, since each death creates a new object
   (Canary property 6).
 - **Dependency on D91.** The create forward is timed, so it is never USE-selectable or
-  session-invocable (existing rule). The untimed remove edge must not be either: otherwise a
-  player's USE on a vortex or teleporter would delete it, which Canary does not do. D91's typed
-  origin (`EVENT(owner)`, excluded from `select_use_transition` and session `apply`) is therefore
-  a precondition for admitting these shapes. The consuming remove requested by the step-in
-  interaction is committed by the scope owner on that child's behalf. It is not a USE.
+  session-invocable (existing rule). The untimed `/remove` and `/consume` edges must not be
+  either: otherwise a player's USE on a vortex or teleporter would delete it, which Canary does
+  not do. D91's typed origin (`EVENT(owner)`, excluded from `select_use_transition` and session
+  `apply`) is therefore a precondition for admitting these shapes.
+  - `/remove` is committed only by the revert driver, for its own owner.
+  - `/consume` is committed only on behalf of the owning interaction child. That is not a USE.
+  - Neither edge is ever committed by the other's owner.
 
 **D6. Capacity: proposed row `WOBJ-RL-08`.** This is named here only; `RESOURCE_LIMITS_REGISTRY.json`
 is not edited by this section.
@@ -2619,6 +2645,8 @@ This section adds:
 - one optional field on `LocalObjectStateAttributes` (`interaction`);
 - one immutable content artifact per `death_position` action (`RuntimePlacementTemplate`);
 - one scope-owned creation sequence and live-object count, with the retire-on-absent rule;
+- one interaction-owned `/consume` edge per interaction template, and the same-origin condition in
+  `bind`'s inverse search (10.2);
 - one flag on `PendingRevert` for record release;
 - one proposed limit (`WOBJ-RL-08`);
 - the lowering of `create` into the absent/present pair.
@@ -2684,7 +2712,8 @@ OD8:
     `runtimes`), its slot is freed and its record is released.
   - A second presentation of the revert identity returns `UnknownOccurrence` and mutates nothing.
 - **Consumed first (the `mazzinor` shape).**
-  - A consuming remove commits before the deadline, and the object is retired.
+  - The interaction-owned `/consume` edge commits before the deadline, and the object is
+    retired.
   - At the deadline, the record becomes `TERMINAL` as `Fenced(Incarnation)`, with no ordinal
     minted for `prepare` and nothing mutated, and is then released.
 - **Occupied cell.** A creation at a cell occupied by a player commits (never `OCCUPIED`), and
@@ -2706,7 +2735,19 @@ OD8:
 - **Scope restart.** Dropping the scope drops all runtime objects, the sequence and the records.
   A new generation starts from an empty set, and its sequence restarts.
 - **USE and session exclusion (after D91).** USE on a present runtime object selects nothing, and
-  session `apply` naming its create or remove edge is refused.
+  session `apply` naming its create, remove or consume edge is refused.
+- **Two REMOVE edges, one owner each (Round 5, Codex P1 4127573494).**
+  - A `mazzinor` template binds both `/remove` (`EVENT` of the encounter owner) and `/consume`
+    (`EVENT` of the interaction).
+  - `bind` selects `/remove` as the unique inverse of the timed `/create`. `/consume` never
+    qualifies, because its origin differs.
+  - A test asserting that `bind` rejects the template as "ambiguous bound inverse", or selects
+    `/consume` as the inverse, must fail.
+  - The revert driver committing `/consume` is refused. The interaction committing `/remove` is
+    refused.
+  - A template without an interaction (`azerus`) lowers no `/consume` edge.
+  - The same-origin condition changes no `bind` outcome for existing content without D91
+    origins.
 
 OD9:
 
@@ -2834,5 +2875,6 @@ them.
 | Runtime identity (D2) | Scope-monotonic sequence in a reserved-namespace `PlacementKey`: never reused and needs no memory. | Key derived from the creating occurrence identity. It recognizes duplicate creations, but a retired key must then be remembered for the whole generation (unbounded tombstones), and occurrence identities (`WOBJ-RL-07`, 4,096 bytes) do not fit the 512-byte key bound. | Bounded and simple. The cost is safety condition C-A: creation happens in-turn only, since a sequence cannot recognize duplicates. |
 | Record retention (D3) | Release a runtime placement's records at `TERMINAL`; this is structurally safe because the key is retired and the forward cannot recur. | Keep §7 open decisions 1/5 as they are: no exception, but `WOBJ-RL-04` runs out after 1,024 creations per Channel generation, a Canary deviation for `channel_shared` remains. Or evict under a bounded dedup horizon, which GAME-INTERACTION-01 has not frozen. | It keeps `channel_shared` hunting playable without inventing a horizon. The cost: late re-presentations get `UnknownOccurrence`. |
 | Capacity (D6) | `WOBJ-RL-08` = 64, plus a combined `< 486` check when an object is materialized. | Reserve 64 overlay slots at content validation (pre-authored ≤ 422). This guarantees runtime room, but constrains every scope, including those that never create objects. | One comparison and no content-validation change. The cost: a creation can be refused in a densely pre-authored scope. |
+| Consumption edge (10.2, Round 5) | Two present → absent `REMOVE` edges, each with one D91 owner: `/remove` for the revert driver and `/consume` for the interaction. The inverse search requires the forward's own origin. | One shared `/remove` edge committed by both callers. That needs two owners on one edge or a D91 bypass, which D91 forbids. | Each caller commits only its own typed edge, and the inverse stays unique. The cost: one extra synthesized edge per interaction template, plus the same-origin condition in `bind`. |
 | Contract prerequisite (D5) | A typed `REMOVE` target `{"kind": "triggering_object"}` in the interaction contract, `ON_ENTER` only, owned by the interaction lane. | Infer the target from `value_source_line`: no wait, but it is a security-relevant inference (discipline lines 54-58). Or drop the consuming `REMOVE`: the object would outlive a step-in, a Canary deviation. | Explicit and typed. The cost: `mazzinor` and `cult_soul_remains` wait on another lane. |
 | OD9 model (10.4) | A synthesized absent state on the pre-authored placement, reusing §7/§9. | Treat OD9 as an OD8 runtime creation at a fixed cell. That duplicates the runtime-placement machinery for a place that already has a placement, and loses D90's plain re-arm. | Smallest: one marker and a lowering rule. |
