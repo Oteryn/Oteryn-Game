@@ -96,7 +96,7 @@ fn candidate() -> ProjectV2Draft {
                     walkaway: vec![],
                     send_trade: vec![],
                     keywords: vec![],
-                    voices: vec![],
+                    voices: None,
                     fields: vec![ProjectV2CandidateField {
                         field_path: "oteryn:source.dialogue-text".into(),
                         value: ProjectV2CandidateValue::Text("hello".into()),

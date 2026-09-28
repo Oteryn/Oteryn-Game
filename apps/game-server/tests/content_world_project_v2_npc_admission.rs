@@ -283,12 +283,22 @@ fn dialogue_keywords() -> Vec<ProjectV2DialogueKeyword> {
     ]
 }
 
-/// Sorted so the base draft already matches the canonical rewrite.
-fn dialogue_voices() -> Vec<String> {
-    vec![
-        "Gulls cry above the mast.".into(),
-        "The deck creaks under his boots.".into(),
-    ]
+/// Authored order is kept: the canonical rewrite never sorts voices.
+fn dialogue_voices() -> Option<ProjectV2Voices> {
+    Some(ProjectV2Voices {
+        interval_ms: 15_000,
+        chance_ppm: 100_000,
+        entries: vec![
+            ProjectV2Voice {
+                text: "The deck creaks under his boots.".into(),
+                mode: ProjectV2SpeechMode::Say,
+            },
+            ProjectV2Voice {
+                text: "All hands on deck!".into(),
+                mode: ProjectV2SpeechMode::Yell,
+            },
+        ],
+    })
 }
 
 fn dialogue_declaration() -> ProjectV2Declaration {
@@ -441,7 +451,13 @@ fn dialogue(project: &WorldProject) -> &ProjectV2Declaration {
         .expect("dialogue")
 }
 
-fn dialogue_fields(project: &WorldProject) -> (&[String], &[ProjectV2DialogueKeyword], &[String]) {
+fn dialogue_fields(
+    project: &WorldProject,
+) -> (
+    &[String],
+    &[ProjectV2DialogueKeyword],
+    &Option<ProjectV2Voices>,
+) {
     project
         .v2()
         .expect("v2 state")
@@ -453,7 +469,7 @@ fn dialogue_fields(project: &WorldProject) -> (&[String], &[ProjectV2DialogueKey
                 keywords,
                 voices,
                 ..
-            } => Some((greet.as_slice(), keywords.as_slice(), voices.as_slice())),
+            } => Some((greet.as_slice(), keywords.as_slice(), voices)),
             _ => None,
         })
         .expect("dialogue")
@@ -491,7 +507,9 @@ fn npc_services_round_trip_and_stay_declarative() {
     );
     assert!(keywords[0].children[0].fallback && keywords[0].children[0].triggers.is_empty());
     assert_eq!(keywords[0].children[1].key, "price");
-    assert_eq!(voices.len(), 2);
+    let voices = voices.as_ref().expect("voices");
+    assert_eq!(voices.entries.len(), 2);
+    assert_eq!(voices.entries[1].mode, ProjectV2SpeechMode::Yell);
     assert_eq!(
         parsed
             .canonical_documents(limits())
@@ -531,10 +549,7 @@ fn offers_and_routes_are_canonicalized() {
 #[test]
 fn dialogue_keywords_are_canonicalized() {
     let mut changed = draft();
-    if let ProjectV2Declaration::Dialogue {
-        keywords, voices, ..
-    } = dialogue_mut(&mut changed)
-    {
+    if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(&mut changed) {
         keywords.reverse();
         for keyword in keywords.iter_mut() {
             keyword.triggers.reverse();
@@ -542,7 +557,6 @@ fn dialogue_keywords_are_canonicalized() {
                 child.triggers.reverse();
             }
         }
-        voices.reverse();
     }
     let reordered = admit(changed).expect("admit reordered dialogue");
     let original = admit(draft()).expect("admit dialogue");
@@ -821,11 +835,15 @@ fn each_broken_invariant_is_rejected() {
             },
         ),
         (
-            "duplicate dialogue voice",
-            "v2 Dialogue voices are not sorted and unique",
+            "dialogue voices without an entry",
+            "v2 voices require an entry",
             |draft| {
-                if let ProjectV2Declaration::Dialogue { voices, .. } = dialogue_mut(draft) {
-                    voices[1] = voices[0].clone();
+                if let ProjectV2Declaration::Dialogue {
+                    voices: Some(voices),
+                    ..
+                } = dialogue_mut(draft)
+                {
+                    voices.entries.clear();
                 }
             },
         ),

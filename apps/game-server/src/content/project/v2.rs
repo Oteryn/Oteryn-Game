@@ -226,8 +226,9 @@ pub enum ProjectV2Declaration {
         send_trade: Vec<String>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         keywords: Vec<ProjectV2DialogueKeyword>,
-        #[serde(default, skip_serializing_if = "Vec::is_empty")]
-        voices: Vec<String>,
+        /// Ambient lines, in authored order, with the source cadence.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        voices: Option<ProjectV2Voices>,
         fields: Vec<ProjectV2CandidateField>,
     },
     Service {
@@ -383,12 +384,7 @@ impl ProjectV2Declaration {
                         .sort_by(|left, right| left.field_path.cmp(&right.field_path));
                 }
             }
-            Self::Dialogue {
-                keywords, voices, ..
-            } => {
-                canonicalize_v2_dialogue_keywords(keywords);
-                voices.sort();
-            }
+            Self::Dialogue { keywords, .. } => canonicalize_v2_dialogue_keywords(keywords),
             _ => {}
         }
     }
@@ -1186,7 +1182,8 @@ pub struct ProjectV2TravelDestination {
 pub struct ProjectV2DialogueKeyword {
     /// Lowercase slug, unique among sibling keywords.
     pub key: String,
-    /// Words that must all occur in the player's message, as in the source keyword handlers.
+    /// Literal words that must all occur in the player's message, as in the source keyword
+    /// handlers (whose Lua patterns are staged as literal words).
     /// Empty exactly when `fallback` is set.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub triggers: Vec<String>,
@@ -2126,18 +2123,8 @@ fn validate_v2_declaration(
             validate_v2_dialogue_message("v2 Dialogue farewell", farewell, limits)?;
             validate_v2_dialogue_message("v2 Dialogue walkaway", walkaway, limits)?;
             validate_v2_dialogue_message("v2 Dialogue send_trade", send_trade, limits)?;
-            limits.check(
-                "v2 Dialogue voices",
-                voices.len(),
-                limits.max_reference_records,
-            )?;
-            if voices.windows(2).any(|pair| pair[0] >= pair[1]) {
-                return Err(ProjectError::InvalidProject(
-                    "v2 Dialogue voices are not sorted and unique",
-                ));
-            }
-            for voice in voices {
-                validate_v2_dialogue_text("v2 Dialogue voice", voice, limits)?;
+            if let Some(voices) = voices {
+                validate_v2_voices(voices, limits)?;
             }
             let mut node_count = 0_usize;
             validate_v2_dialogue_keywords(keywords, 1, &mut node_count, limits)?;
