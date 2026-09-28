@@ -777,10 +777,6 @@ PRIMARYTYPE_PROFILE = {
     # (Crystal `data/libs/systems/blessing.lua` `Blessings.All[*].charm`); the blessing
     # effect itself is runtime behaviour, not part of the family.
     "blessing charms": "progression_material",
-    # Owner decision 2026-09-28: TibiaWiki files every "Clothing Accessories" item as a
-    # creature product (green piece of cloth, ivory comb: primary Creature Products,
-    # secondary Clothing Accessories; old rag is its look-alike event drop).
-    "clothing accessories": "material_valuable",
 }
 # English TibiaWiki (tibia.fandom.com) infobox `primarytype` uses a handful of exact
 # vocabulary variants of the values above (case-folding and pluralization only, verified
@@ -918,6 +914,14 @@ WIKI_OBJECTCLASS_PROFILE = {
     # to `progression_material` (verified: no other profile lists it).
     "imbuement scrolls": "progression_material",
 }
+# Owner decision 2026-09-28: an infobox `status = event` names an item dropped only
+# during a time-limited Tibia event (e.g. an anniversary), which is exactly
+# `event_collectible`. This is the lowest-priority admitted field: the capture tool
+# consults it only when neither `primarytype` nor `objectclass` resolves through the
+# mappings above.
+WIKI_STATUS_PROFILE = {
+    "event": "event_collectible",
+}
 
 
 def resolve_wiki_family_value(field, value):
@@ -930,6 +934,8 @@ def resolve_wiki_family_value(field, value):
         return PRIMARYTYPE_PROFILE.get(folded)
     if field == "objectclass":
         return WIKI_OBJECTCLASS_PROFILE.get(folded)
+    if field == "status":
+        return WIKI_STATUS_PROFILE.get(folded)
     return None
 
 
@@ -969,6 +975,7 @@ def load_wiki_family_fallback(path, identity_index):
     is fail-closed, exactly like `load_delivery_overrides`: an unknown top-level or
     record key, a duplicate JSON key, a `snapshot_sha256` that does not match the
     recomputed digest of `records`, a `registry_key` absent from the identity index, a
+    missing or unrecognized `match_basis` (must be exactly `itemid` or `title`), a
     `field`/`value` (or, for a disambiguation, any candidate's `field`/`value`) that the
     admitted mapping does not resolve to exactly one profile, or a profile absent from
     `PROFILE_ITEM_CLASS` (the converter's own admitted family_profile set) is a hard
@@ -1032,6 +1039,7 @@ def load_wiki_family_fallback(path, identity_index):
         "registry_key",
         "matched_names",
         "resolution",
+        "match_basis",
         "wiki_title",
         "page_id",
         "revision_id",
@@ -1085,8 +1093,10 @@ def load_wiki_family_fallback(path, identity_index):
 
     def resolve_field_value(row, where):
         field = require_str(row.get("field"), f"{where}.field")
-        if field not in ("primarytype", "objectclass"):
-            raise SystemExit(f"{where}.field must be primarytype or objectclass")
+        if field not in ("primarytype", "objectclass", "status"):
+            raise SystemExit(
+                f"{where}.field must be primarytype, objectclass or status"
+            )
         value = require_str(row.get("value"), f"{where}.value")
         profile = resolve_wiki_family_value(field, value)
         if profile is None:
@@ -1122,12 +1132,16 @@ def load_wiki_family_fallback(path, identity_index):
         resolution = record.get("resolution")
         if resolution not in ("direct", "disambiguation"):
             raise SystemExit(f"{where}: 'resolution' must be direct or disambiguation")
+        match_basis = record.get("match_basis")
+        if match_basis not in ("itemid", "title"):
+            raise SystemExit(f"{where}: 'match_basis' must be itemid or title")
 
         if resolution == "direct":
             wiki_source_fields(record, where)
             profile = resolve_field_value(record, where)
             evidence = {
                 "resolution": "direct",
+                "match_basis": match_basis,
                 "field": record["field"],
                 "value": record["value"],
                 "wiki_source": _wiki_evidence_source_from_record(record),
@@ -1164,6 +1178,7 @@ def load_wiki_family_fallback(path, identity_index):
             (profile,) = profiles
             evidence = {
                 "resolution": "disambiguation",
+                "match_basis": match_basis,
                 "candidates": evidence_candidates,
             }
 

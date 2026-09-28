@@ -4,23 +4,12 @@
       "blocker": "sprite_atlas_not_admitted",
       "examples": [
         "oteryn:item.registry.i00000023",
+        "oteryn:item.registry.i00000028",
+        "oteryn:item.registry.i00000031",
         "oteryn:item.registry.i00000033",
-        "oteryn:item.registry.i00000037",
-        "oteryn:item.registry.i00000038",
-        "oteryn:item.registry.i00000039"
+        "oteryn:item.registry.i00000034"
       ],
-      "items": 10993
-    },
-    {
-      "blocker": "family_profile_unresolved",
-      "examples": [
-        "oteryn:item.registry.i00000001",
-        "oteryn:item.registry.i00000002",
-        "oteryn:item.registry.i00000003",
-        "oteryn:item.registry.i00000004",
-        "oteryn:item.registry.i00000005"
-      ],
-      "items": 904
+      "items": 11458
     },
     {
       "blocker": "converter_missing:proficiency.proficiency_id",
@@ -32,6 +21,17 @@
         "oteryn:item.weapon.wand.snakebite_rod"
       ],
       "items": 631
+    },
+    {
+      "blocker": "family_profile_unresolved",
+      "examples": [
+        "oteryn:item.registry.i00000001",
+        "oteryn:item.registry.i00000002",
+        "oteryn:item.registry.i00000003",
+        "oteryn:item.registry.i00000004",
+        "oteryn:item.registry.i00000005"
+      ],
+      "items": 439
     },
     {
       "blocker": "delivery_task_decision_not_admitted",
@@ -3069,31 +3069,31 @@
       "items": 1
     }
   ],
-  "bundle_digest": "6c41b11853d10587297e2c4831ae61477ccf327cc05fe7564318be8f5b3f1729",
+  "bundle_digest": "2b949616644bfa6726f5e69cc648634634aed69d807072a58af501f813f9fbdd",
   "by_profile": {
-    "container": 276,
+    "container": 280,
     "container_equipment": 8,
-    "decoration": 2825,
-    "document": 417,
+    "decoration": 2961,
+    "document": 431,
     "equipment_armor": 459,
     "equipment_offhand": 439,
-    "event_collectible": 179,
-    "fluid": 88,
-    "food": 188,
-    "key": 12,
-    "light_source": 168,
-    "material_valuable": 2863,
-    "plant": 859,
+    "event_collectible": 193,
+    "fluid": 91,
+    "food": 196,
+    "key": 13,
+    "light_source": 174,
+    "material_valuable": 2939,
+    "plant": 901,
     "progression_material": 7,
-    "quest_item": 1032,
+    "quest_item": 1116,
     "rune": 41,
-    "tool": 325,
+    "tool": 326,
     "transformation_item": 23,
-    "trash": 196,
-    "unresolved": 26333,
-    "weapon_distance": 141,
+    "trash": 212,
+    "unresolved": 25868,
+    "weapon_distance": 165,
     "weapon_magic": 86,
-    "weapon_melee": 562
+    "weapon_melee": 598
   },
   "delivery_task": {
     "crystal_list": {
@@ -3136,20 +3136,20 @@
       "unique": 436
     },
     "decision": {
-      "eligible_false": 10793,
+      "eligible_false": 11258,
       "eligible_true": 401,
       "override": 0,
       "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
     },
     "observation": {
       "member": 9,
-      "not_member": 11185,
+      "not_member": 11650,
       "source": "canary_task_board_weekly_items"
     }
   },
   "family_profile_basis": {
-    "engine_attribute": 10359,
-    "wiki_evidence_fallback": 835
+    "engine_attribute": 10357,
+    "wiki_evidence_fallback": 1302
   },
   "field_coverage": {
     "absorbpercentall": {
@@ -4444,9 +4444,9 @@
   },
   "outcome": {
     "blocked": 877,
-    "fully_resolved": 10317,
+    "fully_resolved": 10782,
     "items": 37527,
-    "not_converted": 1140,
+    "not_converted": 675,
     "routed_non_item": 25193
   },
   "routed_non_item": [

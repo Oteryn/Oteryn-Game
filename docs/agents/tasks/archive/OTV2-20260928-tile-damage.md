@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-tile-damage
 title: Untyped tile damage for named targets in monster area spells
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1056
 jira: KAN-16
 base_sha: ac6d820bf744ac3abe9674258607b9e830eb2306
-head_sha: null
-final_head_sha: null
+head_sha: 17e7bc1927c676487fbc0d09a15cfca0ec45df4a
+final_head_sha: 17e7bc1927c676487fbc0d09a15cfca0ec45df4a
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-28
@@ -82,3 +82,9 @@ change.
 - The Rust tests pass, including the new `Players` case.
 - The governance and policy validators pass.
 - The PR gets an exact-head review because `content/world` changes.
+
+## Completion
+
+Merged as PR #1056 (`e4a463d09bbe5ad98c3dfa9d4761ac10db48ceab`) from final head `17e7bc1`; required checks passed on that head. The Codex finding
+(probe a player summon before a players-only effect) was fixed in `17e7bc1`.
+Owner released.

@@ -50,8 +50,9 @@ Access from the cloud sessions on 2026-09-27:
 |---|---|---|
 | 1 | This decision; coordinate frame renamed in code, tests, the NPC admission tool and its staged evidence; `content/world` regenerated. | This change |
 | 2 | Monster authoring re-read at 2026-09-27: the population and batch wiki comparisons, the ability scenes, D15/D25/D32 (new D33), census and wave A restaged. | This change |
-| 3 | Item pipeline: the `target_cut` of the item current-source, verification, continuity and promotion tools and their three CI workflows. The protected item evidence is re-collected at 2026-09-27, and the materializer post-cut limits (`2026-07-28T23:59:59Z`) move with it. | Next, coordinated with the Item import owner |
+| 3a | Item evidence chain: the `target_cut` of the item current-source, field verification, continuity and promotion tools and their CI workflows. The protected current-source, field-verification, continuity and semantic-promotion evidence is re-collected at 2026-09-27 on hosted runners (same partitions and the same 69 promoted values as at 2026-07-28). Since #1064 `cw2_b1_import` takes Item promotion from the #1048 lowering pass, so the packet stays protected evidence only. | #1061 |
+| 3b | G4 wiki captures still cut at 2026-07-28: the 165 exact Items, the Item Wave 1 snapshot and stage, the 252 Mounts and 133 Outfits. They are re-captured at 2026-09-27, and the materializer post-cut limits (`2026-07-28T23:59:59Z`) move with them. | Next, coordinated with the Item import owner |
 | 4 | `docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json`: a new manifest revision that re-reads each case at the new target. | After #1019 (manifest revision 5) |
 
-Until steps 3 and 4 land, those artefacts still say 2026-07-28. Where they differ from this decision, this decision
+Until steps 3b and 4 land, those artefacts still say 2026-07-28. Where they differ from this decision, this decision
 states the intended target.
