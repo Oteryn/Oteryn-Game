@@ -48,7 +48,7 @@ def walk(actions, where):
 
 
 CREATURE_TRIGGERS = ('creature_died', 'lethal_damage', 'health_crossed', 'creature_spawned', 'ability_cast', 'damage_taken',
-                     'heal_received', 'damage_accumulated', 'item_used')
+                     'heal_received', 'damage_accumulated', 'item_used', 'stepped_on')
 
 
 def semantic(e, catalog):
@@ -136,7 +136,7 @@ def semantic(e, catalog):
             elif ck == 'in_anchor':
                 subject(condition['subject'], at, trigger)
                 need_area(condition['anchor'], at)
-            elif ck in ('has_master', 'summon_count'):
+            elif ck in ('has_master', 'summon_count', 'has_condition'):
                 need('role', condition['role'], known_roles, at)
             elif ck == 'health_percent':
                 need('role', condition['role'], known_roles, at)

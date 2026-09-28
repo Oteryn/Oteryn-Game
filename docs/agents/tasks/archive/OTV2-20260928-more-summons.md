@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-more-summons
 title: Remaining summon spells through encounters (owner decision D45)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1121
 jira: KAN-16
 base_sha: a1d0e4796210c38cd185790b44f8a3a6fb59d1e8
-head_sha: null
-final_head_sha: null
+head_sha: 68065760f229b2fb88ec8978fadc1ec87c69f80f
+final_head_sha: 68065760f229b2fb88ec8978fadc1ec87c69f80f
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-28
@@ -67,3 +67,10 @@ bosses' existing encounters.
 - The census, the staging, the tree regeneration and its validators pass.
 - The Rust tests pass.
 - Exact-head review before the Merge Queue because staged creature evidence changes.
+
+## Completion
+
+Merged as PR #1121 (`a311c4eb2b16d88b45b24f20a12f7f2b76fb78c3`) from final head `6806576`; required checks passed on that head and the exact-head Codex review
+found no issues. The census is at 1,555; World Devourer and Mounted Thorn Knight wait in the creature staging with the
+other encounter-covered monsters (162).
+Owner released.

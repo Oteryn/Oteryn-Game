@@ -224,6 +224,22 @@ PER_PLAYER = {'kind': 'spawn_per_player', 'players_in': 'arena', 'by_base_vocati
               'at': {'offset_tiles': 1}, 'owner': 'none', 'health': 'full', 'counter': 'adds_killed'}
 case('per-player spawn accepted', rule([PER_PLAYER]), True)
 case('spawn at the closest free tile accepted', rule([{**PER_PLAYER, 'at': 'closest_free_tile'}]), True)
+case('stepped-on trigger accepted (D46)', rule(trigger={'kind': 'stepped_on', 'role': 'boss', 'item': ref('Item', 'vortex')}), True)
+case('stepped-on needs a catalogued item', rule(trigger={'kind': 'stepped_on', 'role': 'boss', 'item': ref('Item', 'stranger')}))
+case('stepped-on needs a known role', rule(trigger={'kind': 'stepped_on', 'role': 'ghost', 'item': ref('Item', 'vortex')}))
+case('stepped-on remove triggering accepted', rule([{'kind': 'remove', 'triggering': True}],
+                                                   trigger={'kind': 'stepped_on', 'role': 'boss', 'item': ref('Item', 'vortex')}), True)
+case('has_condition accepted (D46)', rule(trigger={'kind': 'creature_died', 'role': 'boss'},
+                                          conditions=[{'kind': 'has_condition', 'role': 'boss', 'conditions': ['poison', 'bleeding'],
+                                                       'present': True}]), True)
+case('has_condition needs a known role', rule(trigger={'kind': 'creature_died', 'role': 'boss'},
+                                              conditions=[{'kind': 'has_condition', 'role': 'ghost', 'conditions': ['poison'],
+                                                           'present': True}]))
+case('has_condition takes known conditions', rule(trigger={'kind': 'creature_died', 'role': 'boss'},
+                                                  conditions=[{'kind': 'has_condition', 'role': 'boss', 'conditions': ['sleepy'],
+                                                               'present': True}]))
+case('relative position accepted (D46)', rule([{**PER_PLAYER, 'at': {'relative': {'x': 0, 'y': -1}}}]), True)
+case('relative position needs both offsets', rule([{**PER_PLAYER, 'at': {'relative': {'y': -1}}}]))
 case('damage accumulated as a percent of maximum health accepted',
      rule(trigger={'kind': 'damage_accumulated', 'role': 'boss', 'percent': 15}), True)
 case('damage accumulated takes an amount or a percent, not both',

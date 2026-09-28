@@ -19,8 +19,8 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 95,
-    "fully_resolved": 1555,
+    "blocked": 93,
+    "fully_resolved": 1557,
     "not_converted": 6,
     "wiki_adopted_monsters": 1186,
     "wiki_authored": 1
@@ -141,20 +141,11 @@
     },
     {
       "blocker": "unresolved_semantics defenses[] -> conditional_summon",
-      "monsters": 4,
+      "monsters": 3,
       "examples": [
-        "soulcatcher",
         "glooth_generator",
         "professor_maxxen",
         "the_welter"
-      ]
-    },
-    {
-      "blocker": "unresolved_semantics attacks[] -> conditional_summon",
-      "monsters": 2,
-      "examples": [
-        "the_hunger",
-        "gaz_haragoth"
       ]
     },
     {
@@ -218,6 +209,13 @@
       "monsters": 1,
       "examples": [
         "a_greedy_eye"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> conditional_summon",
+      "monsters": 1,
+      "examples": [
+        "gaz_haragoth"
       ]
     },
     {
@@ -1524,6 +1522,7 @@
     "soul_of_dragonking_zyrtarch",
     "soul_reaper",
     "soul_scourge",
+    "soulcatcher",
     "souleater",
     "soulless_minion",
     "spark_of_burning_hatred",
@@ -1652,6 +1651,7 @@
     "the_handmaiden",
     "the_heat_of_summer",
     "the_horned_fox",
+    "the_hunger",
     "the_hungry_baron_from_below",
     "the_imperor",
     "the_keeper",

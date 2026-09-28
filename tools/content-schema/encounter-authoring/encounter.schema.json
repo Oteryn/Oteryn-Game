@@ -528,6 +528,31 @@
           "required": [
             "offset_tiles"
           ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "relative": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "integer"
+                },
+                "y": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          },
+          "required": [
+            "relative"
+          ]
         }
       ]
     },
@@ -859,6 +884,27 @@
           "additionalProperties": false,
           "properties": {
             "kind": {
+              "const": "stepped_on"
+            },
+            "role": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "item": {
+              "$ref": "#/$defs/ItemRef"
+            }
+          },
+          "required": [
+            "kind",
+            "role",
+            "item"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
               "const": "encounter_started"
             }
           },
@@ -947,6 +993,45 @@
             "counter",
             "op",
             "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "has_condition"
+            },
+            "role": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "conditions": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "poison",
+                  "fire",
+                  "energy",
+                  "bleeding",
+                  "drown",
+                  "freezing",
+                  "dazzled",
+                  "cursed"
+                ]
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "present": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "kind",
+            "role",
+            "conditions",
+            "present"
           ]
         },
         {

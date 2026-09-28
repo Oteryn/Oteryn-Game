@@ -2845,6 +2845,76 @@ def more_arena_summons(build):
                 'does not mention the summon: this rule is Canary evidence. NEEDS VERIFICATION.')
 
 
+def vortex_and_caster_conditions(build):
+    """D46: the stepped-on trigger (the Heart of Destruction vortex, which unlocks The Hunger's summons) and the caster
+    condition (the Soulcatcher's summon)."""
+    item = build.items['world_devourer']
+    encounter = item['encounter']
+    encounter['state']['counters'].append({'name': 'hunger_summons', 'initial': 0})
+    encounter['state']['flags'].append({'name': 'hunger_summon_delay', 'initial': False})
+    encounter['state']['timers'].append({'name': 'hunger_summon_delay', 'duration_ms': 15000, 'repeat': False})
+    encounter['anchors'] += [{'key': 'hunger_vortex', 'kind': 'point', 'description': 'Canary (32244, 31371, 14).'},
+                             {'key': 'devourer_vortex', 'kind': 'point', 'description': 'Canary (32271, 31346, 14).'}]
+    build.participant(item, 'greed', 'Greed')
+    ability = build.covers_spell(item, 'the_hunger', 'The Hunger', 'hunger summon')
+    greed = creature('Greed')
+    path = build.rule(item, {'key': 'the_hunger_summons_greed',
+                             'trigger': {'kind': 'ability_cast', 'role': 'the_hunger', 'ability': ability},
+                             'conditions': [{'kind': 'flag', 'flag': 'hunger_summon_delay', 'value': False},
+                                            {'kind': 'counter_compare', 'counter': 'hunger_summons', 'op': '<', 'value': 3}],
+                             'actions': [{'kind': 'spawn', 'creature': greed, 'count': 1, 'at': {'offset_tiles': 1}, 'owner': 'none',
+                                          'health': 'full'},
+                                         {'kind': 'counter', 'counter': 'hunger_summons', 'operation': 'add', 'value': 1},
+                                         {'kind': 'flag', 'flag': 'hunger_summon_delay', 'value': True},
+                                         {'kind': 'timer', 'timer': 'hunger_summon_delay', 'operation': 'start'}]})
+    build.entry(item, SPELLS + 'hunger_summon.lua', [1, 10, 11, 12, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27], 'mapped', path,
+                'onCastSpell: unless the 15 s delay runs, while the hungerSummon counter is below three a Greed appears on a random '
+                'tile next to The Hunger (x and y each -1..1), the counter rises and the delay starts. The spell\'s own combat has '
+                'type COMBAT_NONE and no effect. The reference-date wiki (Fandom World Devourer rev 1086448) describes the Greed '
+                'and the teleport that removes it.')
+    path = build.rule(item, {'key': 'hunger_summon_delay_ends', 'trigger': {'kind': 'timer_elapsed', 'timer': 'hunger_summon_delay'},
+                             'conditions': [], 'actions': [{'kind': 'flag', 'flag': 'hunger_summon_delay', 'value': False}]})
+    build.entry(item, SPELLS + 'hunger_summon.lua', [10, 11, 12, 23], 'mapped', path, 'removeDelay clears the flag after 15 s.')
+    closed, opened = ref('Item', 'canary:item/23469'), ref('Item', 'canary:item/23470')
+    build.define(item, closed)
+    build.define(item, opened)
+    vortex = HEART + 'movements_vortex_hunger.lua'
+    for role, anchor, lines in (('the_hunger', 'hunger_vortex', [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]),
+                                ('world_devourer', 'devourer_vortex', [9, 19, 20, 21, 22, 23, 24, 25, 26, 27])):
+        path = build.rule(item, {'key': f'{role}_opens_its_vortex', 'trigger': {'kind': 'stepped_on', 'role': role, 'item': closed},
+                                 'conditions': [],
+                                 'actions': [{'kind': 'map_item', 'operation': 'transform', 'item': closed, 'into': opened,
+                                              'anchor': anchor}]})
+        build.entry(item, vortex, [1, 3, 4, 5, 6, 7] + lines + [36, 39, 40, 41], 'mapped', path,
+                    f'A {role.replace("_", " ")} stepping on a closed vortex (23469) opens the vortex at its fixed tile (23470). '
+                    'decay() does nothing: items.xml gives the vortex no decay, so it stays open. The reference-date wiki says to '
+                    '"walk the boss over the teleport so that it changes its color".')
+    path = build.rule(item, {'key': 'greed_leaves_through_the_open_vortex', 'trigger': {'kind': 'stepped_on', 'role': 'greed', 'item': opened},
+                             'conditions': [],
+                             'actions': [{'kind': 'remove', 'triggering': True},
+                                         {'kind': 'counter', 'counter': 'hunger_summons', 'operation': 'add', 'value': -1},
+                                         {'kind': 'counter', 'counter': 'devourer_summons', 'operation': 'add', 'value': -1}]})
+    build.entry(item, vortex, [29, 30, 31, 32, 33, 34, 35], 'mapped', path,
+                'A Greed stepping on an open vortex (23470) disappears and lowers both summon counters. The reference-date wiki: '
+                '"walk the Greed on the teleport so it disappears".')
+
+    # Soulcatcher: a Corrupted Soul on the tile north of it, only while it is poisoned or bleeding.
+    item = build.items['soulcatcher']
+    ability = build.covers_spell(item, 'soulcatcher', 'Soulcatcher', 'soulcatcher summon')
+    soul = creature('Corrupted Soul')
+    build.define(item, soul)
+    path = build.rule(item, {'key': 'soulcatcher_summons_a_corrupted_soul',
+                             'trigger': {'kind': 'ability_cast', 'role': 'soulcatcher', 'ability': ability},
+                             'conditions': [{'kind': 'has_condition', 'role': 'soulcatcher', 'conditions': ['poison', 'bleeding'],
+                                             'present': True}],
+                             'actions': [{'kind': 'spawn', 'creature': soul, 'count': 1, 'at': {'relative': {'x': 0, 'y': -1}},
+                                          'owner': 'none', 'health': 'full'}]})
+    build.entry(item, SPELLS + 'soulcatcher_summon.lua', list(range(1, 14)), 'mapped', path,
+                'onCastSpell: while the Soulcatcher is poisoned or bleeding, a Corrupted Soul is created (forced) on the tile north '
+                'of it; the teleport effect is cosmetic. The reference-date wiki (Fandom Soulcatcher rev 1116439) gives no abilities: '
+                'this rule is Canary evidence. NEEDS VERIFICATION.')
+
+
 GRAVE_DANGER = 'data-otservbr-global/scripts/quests/grave_danger_quest/'
 
 
@@ -2939,7 +3009,7 @@ def main():
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos, burning_hatred, arena_summons, count_vlarkorth, more_arena_summons):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos, burning_hatred, arena_summons, count_vlarkorth, more_arena_summons, vortex_and_caster_conditions):
         transcribe(build)
     print(json.dumps(build.write()))
 

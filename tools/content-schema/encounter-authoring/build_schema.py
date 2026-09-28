@@ -70,7 +70,9 @@ d = {
     'position': {'oneOf': [enum('death_position', 'subject_position', 'closest_free_tile'), obj({'anchor': NAME}, ('anchor',)),
                            obj({'random_in': NAME}, ('random_in',)),
                            obj({'role_position': NAME, 'otherwise': enum('death_position')}, ('role_position',)),
-                           obj({'offset_tiles': integer(0)}, ('offset_tiles',))]},
+                           obj({'offset_tiles': integer(0)}, ('offset_tiles',)),
+                           # D46: the tile at a fixed offset from the subject on its floor, used even when occupied.
+                           obj({'relative': obj({'x': {'type': 'integer'}, 'y': {'type': 'integer'}}, ('x', 'y'))}, ('relative',))]},
 }
 
 d['trigger'] = {'oneOf': [
@@ -90,12 +92,18 @@ d['trigger'] = {'oneOf': [
     kinded('area_left', {'anchor': NAME, 'who': enum('player', 'role'), 'role': NAME}, ('anchor', 'who')),
     kinded('phase_entered', {'phase': NAME}, ('phase',)),
     kinded('item_used', {'role': NAME, 'item': use('ItemRef'), 'base_vocation': use('baseVocation')}, ('role', 'item')),
+    # D46: a creature of the role steps onto a tile that holds the item (a MoveEvent stepin registered on the item id).
+    kinded('stepped_on', {'role': NAME, 'item': use('ItemRef')}, ('role', 'item')),
     kinded('encounter_started'), kinded('encounter_reset')]}
 
 d['condition'] = {'oneOf': [
     kinded('chance_percent', {'value': {'type': 'number', 'exclusiveMinimum': 0, 'maximum': 100}}, ('value',)),
     kinded('chance_from_amount', {'per': integer(1)}, ('per',)),
     kinded('counter_compare', {'counter': NAME, 'op': OP, 'value': {'type': 'integer'}}, ('counter', 'op', 'value')),
+    # D46: whether the role's creature has any of the listed conditions on itself now.
+    kinded('has_condition', {'role': NAME, 'conditions': array(enum('poison', 'fire', 'energy', 'bleeding', 'drown', 'freezing',
+                                                                     'dazzled', 'cursed'), 1, True), 'present': BOOL},
+           ('role', 'conditions', 'present')),
     kinded('flag', {'flag': NAME, 'value': BOOL}, ('flag', 'value')),
     kinded('creature_present', {'role': NAME, 'anchor': NAME, 'near': obj({'role': NAME, 'radius': integer(0), 'shape': enum('square', 'circle')}, ('role', 'radius')),
                                  'present': BOOL}, ('role', 'present')),
