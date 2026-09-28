@@ -5,9 +5,9 @@
   },
   "counts": {
     "per_field": {
-      "charges.count": 122,
+      "charges.count": 126,
       "container.capacity": 453,
-      "presentation.name": 12021,
+      "presentation.name": 12301,
       "protection.armor": 432,
       "weapon.attack": 621,
       "weapon.defense": 636,
@@ -15,8 +15,8 @@
       "weapon.hit_chance": 56,
       "weapon.range_cells": 142
     },
-    "promoted_fields": 14643,
-    "promoted_items": 12021
+    "promoted_fields": 14927,
+    "promoted_items": 12301
   },
   "invariants": {
     "identity_reminted": false,
@@ -25812,6 +25812,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00003909",
+      "source_item_id": 4054,
+      "source_value": "red chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "red chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00003910",
       "source_item_id": 4055,
       "source_value": "large amphora",
@@ -25828,6 +25838,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "globe"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00003914",
+      "source_item_id": 4059,
+      "source_value": "wooden horse",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "wooden horse"
       }
     },
     {
@@ -25962,6 +25982,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004108",
+      "source_item_id": 4253,
+      "source_value": "dead troll",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead troll"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00004109",
       "source_item_id": 4254,
       "source_value": "pile of bones",
@@ -25988,6 +26018,66 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "dead rat"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004111",
+      "source_item_id": 4256,
+      "source_value": "dead rat",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead rat"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004112",
+      "source_item_id": 4257,
+      "source_value": "dead rat",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead rat"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004113",
+      "source_item_id": 4258,
+      "source_value": "dead rat",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead rat"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004114",
+      "source_item_id": 4259,
+      "source_value": "dead snake",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead snake"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004115",
+      "source_item_id": 4260,
+      "source_value": "dead snake",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead snake"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004116",
+      "source_item_id": 4261,
+      "source_value": "dead snake",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead snake"
       }
     },
     {
@@ -26034,6 +26124,16 @@
       "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00004119",
       "source_item_id": 4264,
+      "source_value": "dead spider",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead spider"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004120",
+      "source_item_id": 4265,
       "source_value": "dead spider",
       "typed_value": {
         "kind": "TEXT",
@@ -26114,6 +26214,16 @@
       "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00004124",
       "source_item_id": 4269,
+      "source_value": "dead wolf",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead wolf"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004125",
+      "source_item_id": 4270,
       "source_value": "dead wolf",
       "typed_value": {
         "kind": "TEXT",
@@ -26472,6 +26582,26 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004151",
+      "source_item_id": 4296,
+      "source_value": "slain ghoul",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "slain ghoul"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004152",
+      "source_item_id": 4297,
+      "source_value": "slain ghoul",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "slain ghoul"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00004153",
       "source_item_id": 4298,
       "source_value": "pile of bones",
@@ -26494,6 +26624,26 @@
       "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00004156",
       "source_item_id": 4301,
+      "source_value": "dead rabbit",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead rabbit"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004157",
+      "source_item_id": 4302,
+      "source_value": "dead rabbit",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead rabbit"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00004158",
+      "source_item_id": 4303,
       "source_value": "dead rabbit",
       "typed_value": {
         "kind": "TEXT",
@@ -33310,6 +33460,26 @@
       "typed_value": {
         "kind": "SIGNED_POINTS",
         "value": 15
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00006388",
+      "source_item_id": 6556,
+      "source_value": "tic-tac-toe token",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "tic-tac-toe token"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00006389",
+      "source_item_id": 6557,
+      "source_value": "tic-tac-toe token",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "tic-tac-toe token"
       }
     },
     {
@@ -45702,6 +45872,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00009209",
+      "source_item_id": 9407,
+      "source_value": "slain Boogey",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "slain Boogey"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00009233",
       "source_item_id": 9432,
       "source_value": "statue",
@@ -53732,6 +53912,36 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011710",
+      "source_item_id": 12144,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011711",
+      "source_item_id": 12145,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011712",
+      "source_item_id": 12146,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00011713",
       "source_item_id": 12147,
       "source_value": "cake",
@@ -54252,6 +54462,26 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011813",
+      "source_item_id": 12247,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011814",
+      "source_item_id": 12248,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00011817",
       "source_item_id": 12251,
       "source_value": "shapechanger",
@@ -54288,6 +54518,106 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "sugar"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011848",
+      "source_item_id": 12282,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011849",
+      "source_item_id": 12283,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011850",
+      "source_item_id": 12284,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011860",
+      "source_item_id": 12294,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011861",
+      "source_item_id": 12295,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011862",
+      "source_item_id": 12296,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011863",
+      "source_item_id": 12297,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011864",
+      "source_item_id": 12298,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011865",
+      "source_item_id": 12299,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011866",
+      "source_item_id": 12300,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
       }
     },
     {
@@ -55568,6 +55898,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "corms"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00012185",
+      "source_item_id": 12656,
+      "source_value": "root vegetable dish",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "root vegetable dish"
       }
     },
     {
@@ -60108,6 +60448,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00014103",
+      "source_item_id": 14670,
+      "source_value": "CM token",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "CM token"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00014104",
       "source_item_id": 14671,
       "source_value": "Delany's golden bug trophy",
@@ -61680,12 +62030,72 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00014555",
+      "source_item_id": 15151,
+      "source_value": "toad stool",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "toad stool"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00014556",
+      "source_item_id": 15152,
+      "source_value": "toad stool",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "toad stool"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00014557",
+      "source_item_id": 15153,
+      "source_value": "toad stool",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "toad stool"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00014558",
+      "source_item_id": 15154,
+      "source_value": "toad stool",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "toad stool"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00014559",
       "source_item_id": 15155,
       "source_value": "mushroom table",
       "typed_value": {
         "kind": "TEXT",
         "value": "mushroom table"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00014560",
+      "source_item_id": 15156,
+      "source_value": "large decorative mushroom",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "large decorative mushroom"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00014561",
+      "source_item_id": 15157,
+      "source_value": "large decorative mushroom",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "large decorative mushroom"
       }
     },
     {
@@ -83474,6 +83884,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022700",
+      "source_item_id": 23512,
+      "source_value": "spying eye",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "spying eye"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022701",
       "source_item_id": 23513,
       "source_value": "strange proto matter",
@@ -83844,6 +84264,36 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022768",
+      "source_item_id": 23580,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022769",
+      "source_item_id": 23581,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022770",
+      "source_item_id": 23582,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022771",
       "source_item_id": 23583,
       "source_value": "weapon of mayhem",
@@ -83866,6 +84316,36 @@
       "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022773",
       "source_item_id": 23585,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022774",
+      "source_item_id": 23586,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022775",
+      "source_item_id": 23587,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022776",
+      "source_item_id": 23588,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -83904,8 +84384,68 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022780",
+      "source_item_id": 23592,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022781",
+      "source_item_id": 23593,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022782",
+      "source_item_id": 23594,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022783",
+      "source_item_id": 23595,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022784",
       "source_item_id": 23596,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022785",
+      "source_item_id": 23597,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022786",
+      "source_item_id": 23598,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -83926,6 +84466,36 @@
       "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022788",
       "source_item_id": 23600,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022789",
+      "source_item_id": 23601,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022790",
+      "source_item_id": 23602,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022792",
+      "source_item_id": 23604,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -83964,8 +84534,28 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022796",
+      "source_item_id": 23608,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022797",
       "source_item_id": 23609,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022798",
+      "source_item_id": 23610,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -83984,8 +84574,68 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022800",
+      "source_item_id": 23612,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022801",
+      "source_item_id": 23613,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022802",
       "source_item_id": 23614,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022803",
+      "source_item_id": 23615,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022804",
+      "source_item_id": 23616,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022805",
+      "source_item_id": 23617,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022806",
+      "source_item_id": 23618,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -84014,8 +84664,28 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022809",
+      "source_item_id": 23621,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022810",
       "source_item_id": 23622,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022811",
+      "source_item_id": 23623,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -84034,6 +84704,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022813",
+      "source_item_id": 23625,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022814",
       "source_item_id": 23626,
       "source_value": "weapon of mayhem",
@@ -84044,8 +84724,108 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022815",
+      "source_item_id": 23627,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022816",
       "source_item_id": 23628,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022817",
+      "source_item_id": 23629,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022818",
+      "source_item_id": 23630,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022819",
+      "source_item_id": 23631,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022820",
+      "source_item_id": 23632,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022821",
+      "source_item_id": 23633,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022822",
+      "source_item_id": 23634,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022823",
+      "source_item_id": 23635,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022824",
+      "source_item_id": 23636,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022825",
+      "source_item_id": 23637,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -84136,6 +84916,96 @@
       "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022834",
       "source_item_id": 23646,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022835",
+      "source_item_id": 23647,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022836",
+      "source_item_id": 23648,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022837",
+      "source_item_id": 23649,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022838",
+      "source_item_id": 23650,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022839",
+      "source_item_id": 23651,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022840",
+      "source_item_id": 23652,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022841",
+      "source_item_id": 23653,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022842",
+      "source_item_id": 23654,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022843",
+      "source_item_id": 23655,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -88843,6 +89713,26 @@
       }
     },
     {
+      "field_path": "charges.count",
+      "native_key": "oteryn:item.registry.i00024881",
+      "source_item_id": 25719,
+      "source_value": 500,
+      "typed_value": {
+        "kind": "COUNT_U32",
+        "value": 500
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00024881",
+      "source_item_id": 25719,
+      "source_value": "temporary gold converter",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "temporary gold converter"
+      }
+    },
+    {
       "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00024882",
       "source_item_id": 25720,
@@ -89536,6 +90426,26 @@
     },
     {
       "field_path": "charges.count",
+      "native_key": "oteryn:item.registry.i00025046",
+      "source_item_id": 25893,
+      "source_value": 1000,
+      "typed_value": {
+        "kind": "COUNT_U32",
+        "value": 1000
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00025046",
+      "source_item_id": 25893,
+      "source_value": "supreme mana cask",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "supreme mana cask"
+      }
+    },
+    {
+      "field_path": "charges.count",
       "native_key": "oteryn:item.registry.i00025047",
       "source_item_id": 25899,
       "source_value": 1000,
@@ -89752,6 +90662,26 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "ultimate mana keg"
+      }
+    },
+    {
+      "field_path": "charges.count",
+      "native_key": "oteryn:item.registry.i00025058",
+      "source_item_id": 25912,
+      "source_value": 500,
+      "typed_value": {
+        "kind": "COUNT_U32",
+        "value": 500
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00025058",
+      "source_item_id": 25912,
+      "source_value": "supreme mana keg",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "supreme mana keg"
       }
     },
     {
@@ -94106,6 +95036,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00025268",
+      "source_item_id": 26124,
+      "source_value": "unknown corpse (skeleton)",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "unknown corpse (skeleton)"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00025294",
       "source_item_id": 26150,
       "source_value": "wheat carpet",
@@ -94162,6 +95102,46 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "decorated carpet"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00025300",
+      "source_item_id": 26156,
+      "source_value": "ornate chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "ornate chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00025301",
+      "source_item_id": 26157,
+      "source_value": "ornate chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "ornate chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00025302",
+      "source_item_id": 26158,
+      "source_value": "ornate chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "ornate chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00025303",
+      "source_item_id": 26159,
+      "source_value": "ornate chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "ornate chair"
       }
     },
     {
@@ -96220,6 +97200,86 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00026809",
+      "source_item_id": 27667,
+      "source_value": "light of change",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "light of change"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00026810",
+      "source_item_id": 27668,
+      "source_value": "light of change",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "light of change"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00026811",
+      "source_item_id": 27669,
+      "source_value": "light of change",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "light of change"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00026812",
+      "source_item_id": 27670,
+      "source_value": "light of change",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "light of change"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00026813",
+      "source_item_id": 27671,
+      "source_value": "torch of change",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "torch of change"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00026815",
+      "source_item_id": 27673,
+      "source_value": "torch of change",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "torch of change"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00026816",
+      "source_item_id": 27674,
+      "source_value": "torch of change",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "torch of change"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00026817",
+      "source_item_id": 27675,
+      "source_value": "torch of change",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "torch of change"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00026821",
       "source_item_id": 27679,
       "source_value": "alchemistic bookstand",
@@ -96610,6 +97670,26 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00027028",
+      "source_item_id": 27898,
+      "source_value": "black wooden chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "black wooden chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00027029",
+      "source_item_id": 27899,
+      "source_value": "black wooden chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "black wooden chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00027050",
       "source_item_id": 27920,
       "source_value": "scroll",
@@ -96826,6 +97906,26 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "hovering shelf"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00027336",
+      "source_item_id": 28209,
+      "source_value": "stepladder",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stepladder"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00027337",
+      "source_item_id": 28210,
+      "source_value": "stepladder",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stepladder"
       }
     },
     {
@@ -99102,6 +100202,26 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00028041",
+      "source_item_id": 28922,
+      "source_value": "luminescent fungi",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "luminescent fungi"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00028042",
+      "source_item_id": 28923,
+      "source_value": "luminescent fungi",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "luminescent fungi"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00028043",
       "source_item_id": 28924,
       "source_value": "gloomy poisonous fungi",
@@ -100750,6 +101870,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "frozen chest"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00029265",
+      "source_item_id": 30146,
+      "source_value": "elven parchment",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "elven parchment"
       }
     },
     {
@@ -103395,6 +104525,46 @@
       }
     },
     {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00030157",
+      "source_item_id": 31183,
+      "source_value": "dwarven stone chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dwarven stone chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00030158",
+      "source_item_id": 31184,
+      "source_value": "dwarven stone chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dwarven stone chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00030159",
+      "source_item_id": 31185,
+      "source_value": "dwarven stone chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dwarven stone chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00030160",
+      "source_item_id": 31186,
+      "source_value": "dwarven stone chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dwarven stone chair"
+      }
+    },
+    {
       "field_path": "container.capacity",
       "native_key": "oteryn:item.registry.i00030161",
       "source_item_id": 31187,
@@ -105728,6 +106898,26 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00030671",
+      "source_item_id": 31697,
+      "source_value": "little big flower lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "little big flower lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00030672",
+      "source_item_id": 31698,
+      "source_value": "little big flower lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "little big flower lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00030677",
       "source_item_id": 31703,
       "source_value": "baby unicorn",
@@ -105834,6 +107024,26 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "recipe"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00030695",
+      "source_item_id": 31723,
+      "source_value": "sulphur blossom lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sulphur blossom lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00030696",
+      "source_item_id": 31724,
+      "source_value": "sulphur blossom lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sulphur blossom lamp"
       }
     },
     {
@@ -112068,6 +113278,46 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00031905",
+      "source_item_id": 33036,
+      "source_value": "heart chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "heart chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00031906",
+      "source_item_id": 33037,
+      "source_value": "heart chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "heart chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00031907",
+      "source_item_id": 33038,
+      "source_value": "heart chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "heart chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00031908",
+      "source_item_id": 33039,
+      "source_value": "heart chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "heart chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00031909",
       "source_item_id": 33040,
       "source_value": "bat",
@@ -112498,6 +113748,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032325",
+      "source_item_id": 33891,
+      "source_value": "some mortal essence",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "some mortal essence"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00032326",
       "source_item_id": 33892,
       "source_value": "love elixir",
@@ -112828,6 +114088,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032376",
+      "source_item_id": 33950,
+      "source_value": "cleansed sanity",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "cleansed sanity"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00032377",
       "source_item_id": 33952,
       "source_value": "figurine of spite",
@@ -113018,6 +114288,46 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032429",
+      "source_item_id": 34030,
+      "source_value": "artist shelf",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "artist shelf"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032430",
+      "source_item_id": 34031,
+      "source_value": "artist shelf",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "artist shelf"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032431",
+      "source_item_id": 34032,
+      "source_value": "artist shelf",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "artist shelf"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032432",
+      "source_item_id": 34033,
+      "source_value": "artist shelf",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "artist shelf"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00032433",
       "source_item_id": 34034,
       "source_value": "artist table",
@@ -113034,6 +114344,46 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "artist table"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032435",
+      "source_item_id": 34036,
+      "source_value": "artist chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "artist chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032436",
+      "source_item_id": 34037,
+      "source_value": "artist chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "artist chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032437",
+      "source_item_id": 34038,
+      "source_value": "artist chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "artist chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032438",
+      "source_item_id": 34039,
+      "source_value": "artist chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "artist chair"
       }
     },
     {
@@ -113174,6 +114524,46 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "sculptor table"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032449",
+      "source_item_id": 34050,
+      "source_value": "sculptor chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sculptor chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032450",
+      "source_item_id": 34051,
+      "source_value": "sculptor chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sculptor chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032451",
+      "source_item_id": 34052,
+      "source_value": "sculptor chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sculptor chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032452",
+      "source_item_id": 34053,
+      "source_value": "sculptor chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sculptor chair"
       }
     },
     {
@@ -114484,6 +115874,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032618",
+      "source_item_id": 34237,
+      "source_value": "dead frog",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dead frog"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00032625",
       "source_item_id": 34249,
       "source_value": "wooden trash",
@@ -114644,6 +116044,26 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032640",
+      "source_item_id": 34270,
+      "source_value": "glowworms",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "glowworms"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032641",
+      "source_item_id": 34271,
+      "source_value": "glowworms",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "glowworms"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00032642",
       "source_item_id": 34272,
       "source_value": "oven",
@@ -114720,6 +116140,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "cupboard"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032648",
+      "source_item_id": 34280,
+      "source_value": "wallcupboard",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "wallcupboard"
       }
     },
     {
@@ -114810,6 +116240,46 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "kitchen table"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032658",
+      "source_item_id": 34292,
+      "source_value": "kitchen chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "kitchen chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032659",
+      "source_item_id": 34293,
+      "source_value": "kitchen chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "kitchen chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032660",
+      "source_item_id": 34294,
+      "source_value": "kitchen chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "kitchen chair"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032661",
+      "source_item_id": 34295,
+      "source_value": "kitchen chair",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "kitchen chair"
       }
     },
     {
@@ -115114,6 +116584,66 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032723",
+      "source_item_id": 35155,
+      "source_value": "forge",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "forge"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032724",
+      "source_item_id": 35156,
+      "source_value": "forge",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "forge"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032725",
+      "source_item_id": 35157,
+      "source_value": "forge",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "forge"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032726",
+      "source_item_id": 35158,
+      "source_value": "forge",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "forge"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032727",
+      "source_item_id": 35159,
+      "source_value": "forge",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "forge"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032728",
+      "source_item_id": 35160,
+      "source_value": "forge",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "forge"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00032729",
       "source_item_id": 35161,
       "source_value": "metal wall lamp",
@@ -115133,6 +116663,86 @@
       }
     },
     {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032731",
+      "source_item_id": 35163,
+      "source_value": "workbench",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "workbench"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032732",
+      "source_item_id": 35164,
+      "source_value": "workbench",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "workbench"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032733",
+      "source_item_id": 35165,
+      "source_value": "workbench",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "workbench"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032734",
+      "source_item_id": 35166,
+      "source_value": "workbench",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "workbench"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032735",
+      "source_item_id": 35167,
+      "source_value": "wooden stool",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "wooden stool"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032736",
+      "source_item_id": 35168,
+      "source_value": "wooden stool",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "wooden stool"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032737",
+      "source_item_id": 35169,
+      "source_value": "wooden stool",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "wooden stool"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032738",
+      "source_item_id": 35170,
+      "source_value": "wooden stool",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "wooden stool"
+      }
+    },
+    {
       "field_path": "container.capacity",
       "native_key": "oteryn:item.registry.i00032739",
       "source_item_id": 35171,
@@ -115250,6 +116860,86 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "wooden cabinet"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032745",
+      "source_item_id": 35177,
+      "source_value": "grinding wheel",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "grinding wheel"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032746",
+      "source_item_id": 35178,
+      "source_value": "grinding wheel",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "grinding wheel"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032747",
+      "source_item_id": 35179,
+      "source_value": "grinding wheel",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "grinding wheel"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032748",
+      "source_item_id": 35180,
+      "source_value": "grinding wheel",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "grinding wheel"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032749",
+      "source_item_id": 35181,
+      "source_value": "pair of bellows",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "pair of bellows"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032750",
+      "source_item_id": 35182,
+      "source_value": "pair of bellows",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "pair of bellows"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032751",
+      "source_item_id": 35183,
+      "source_value": "pair of bellows",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "pair of bellows"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032752",
+      "source_item_id": 35184,
+      "source_value": "pair of bellows",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "pair of bellows"
       }
     },
     {
@@ -115270,6 +116960,26 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "anvil"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032755",
+      "source_item_id": 35187,
+      "source_value": "water bucket",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "water bucket"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00032756",
+      "source_item_id": 35188,
+      "source_value": "water bucket",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "water bucket"
       }
     },
     {
@@ -117646,6 +119356,36 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033162",
+      "source_item_id": 36601,
+      "source_value": "sacramental wine",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sacramental wine"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033163",
+      "source_item_id": 36605,
+      "source_value": "gnomish lava fishing rod",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "gnomish lava fishing rod"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033168",
+      "source_item_id": 36617,
+      "source_value": "sticky elemental goo",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sticky elemental goo"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00033169",
       "source_item_id": 36618,
       "source_value": "volcanic basin",
@@ -119239,6 +120979,26 @@
       }
     },
     {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033345",
+      "source_item_id": 36811,
+      "source_value": "megasylvan sapling",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "megasylvan sapling"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033346",
+      "source_item_id": 36812,
+      "source_value": "violet tulip",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "violet tulip"
+      }
+    },
+    {
       "field_path": "container.capacity",
       "native_key": "oteryn:item.registry.i00033347",
       "source_item_id": 36813,
@@ -119410,12 +121170,62 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033380",
+      "source_item_id": 36875,
+      "source_value": "golden hand mirror",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "golden hand mirror"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00033382",
       "source_item_id": 36877,
       "source_value": "strange idol",
       "typed_value": {
         "kind": "TEXT",
         "value": "strange idol"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033419",
+      "source_item_id": 36915,
+      "source_value": "sun mosaic",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sun mosaic"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033420",
+      "source_item_id": 36916,
+      "source_value": "sun mosaic",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sun mosaic"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033421",
+      "source_item_id": 36917,
+      "source_value": "sun mosaic",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sun mosaic"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033427",
+      "source_item_id": 36923,
+      "source_value": "ritual notes",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "ritual notes"
       }
     },
     {
@@ -119626,6 +121436,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "chest"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033465",
+      "source_item_id": 36981,
+      "source_value": "gnome shovel",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "gnome shovel"
       }
     },
     {
@@ -120146,6 +121966,26 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "Evora"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033533",
+      "source_item_id": 37109,
+      "source_value": "sliver",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sliver"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033534",
+      "source_item_id": 37110,
+      "source_value": "exalted core",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "exalted core"
       }
     },
     {
@@ -121160,6 +123000,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033730",
+      "source_item_id": 37332,
+      "source_value": "time-particle extractor",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "time-particle extractor"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00033731",
       "source_item_id": 37333,
       "source_value": "Adventurers' Guild picture",
@@ -121180,12 +123030,82 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033733",
+      "source_item_id": 37335,
+      "source_value": "black skull",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "black skull"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00033734",
       "source_item_id": 37336,
       "source_value": "bridal wreath",
       "typed_value": {
         "kind": "TEXT",
         "value": "bridal wreath"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033735",
+      "source_item_id": 37337,
+      "source_value": "white skull",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "white skull"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033736",
+      "source_item_id": 37338,
+      "source_value": "red skull",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "red skull"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033737",
+      "source_item_id": 37339,
+      "source_value": "yellow skull",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "yellow skull"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033738",
+      "source_item_id": 37340,
+      "source_value": "orange skull",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "orange skull"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033739",
+      "source_item_id": 37341,
+      "source_value": "green skull",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "green skull"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033740",
+      "source_item_id": 37342,
+      "source_value": "bridal black skull",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "bridal black skull"
       }
     },
     {
@@ -122779,6 +124699,46 @@
       }
     },
     {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033906",
+      "source_item_id": 37557,
+      "source_value": "dragon pinata",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dragon pinata"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033907",
+      "source_item_id": 37558,
+      "source_value": "dragon pinata",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dragon pinata"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033908",
+      "source_item_id": 37559,
+      "source_value": "dragon pinata",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dragon pinata"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033909",
+      "source_item_id": 37560,
+      "source_value": "dragon pinata",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "dragon pinata"
+      }
+    },
+    {
       "field_path": "container.capacity",
       "native_key": "oteryn:item.registry.i00033910",
       "source_item_id": 37561,
@@ -123000,6 +124960,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033947",
+      "source_item_id": 37605,
+      "source_value": "decorative plume",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "decorative plume"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00033948",
       "source_item_id": 37607,
       "source_value": "green demon legs",
@@ -123106,6 +125076,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "kraken watcher lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00033967",
+      "source_item_id": 37708,
+      "source_value": "old health potion",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "old health potion"
       }
     },
     {
@@ -123930,6 +125910,26 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00034687",
+      "source_item_id": 38649,
+      "source_value": "silver hand",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "silver hand"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00034688",
+      "source_item_id": 38650,
+      "source_value": "golden hand",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "golden hand"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00034689",
       "source_item_id": 38651,
       "source_value": "bronze hand",
@@ -123996,6 +125996,26 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "podium of vigour"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00034774",
+      "source_item_id": 38752,
+      "source_value": "crystal stool",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "crystal stool"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00034775",
+      "source_item_id": 38753,
+      "source_value": "crystal stool",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "crystal stool"
       }
     },
     {
@@ -124640,6 +126660,36 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00034849",
+      "source_item_id": 38827,
+      "source_value": "mushroom lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "mushroom lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00034850",
+      "source_item_id": 38828,
+      "source_value": "mushroom lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "mushroom lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00034857",
+      "source_item_id": 38843,
+      "source_value": "silver and a golden hand",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "silver and a golden hand"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00034858",
       "source_item_id": 38844,
       "source_value": "asuri talisman",
@@ -124710,6 +126760,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00034945",
+      "source_item_id": 38934,
+      "source_value": "handwritten message",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "handwritten message"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00035047",
       "source_item_id": 39036,
       "source_value": "rainbow opal",
@@ -124770,12 +126830,92 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035128",
+      "source_item_id": 39132,
+      "source_value": "moon mint",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "moon mint"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00035129",
       "source_item_id": 39133,
       "source_value": "jungle moa nest",
       "typed_value": {
         "kind": "TEXT",
         "value": "jungle moa nest"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035130",
+      "source_item_id": 39134,
+      "source_value": "moonshine pearl",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "moonshine pearl"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035131",
+      "source_item_id": 39135,
+      "source_value": "shimmering pearl",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "shimmering pearl"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035132",
+      "source_item_id": 39136,
+      "source_value": "celestial chart",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "celestial chart"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035133",
+      "source_item_id": 39137,
+      "source_value": "burning splint",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "burning splint"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035136",
+      "source_item_id": 39141,
+      "source_value": "coral vow flower",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "coral vow flower"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035137",
+      "source_item_id": 39144,
+      "source_value": "splint",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "splint"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035138",
+      "source_item_id": 39145,
+      "source_value": "blessed water",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "blessed water"
       }
     },
     {
@@ -125472,6 +127612,46 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035221",
+      "source_item_id": 39241,
+      "source_value": "glass lens",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "glass lens"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035222",
+      "source_item_id": 39242,
+      "source_value": "empty bucket",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "empty bucket"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035223",
+      "source_item_id": 39243,
+      "source_value": "bucket full of water",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "bucket full of water"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035224",
+      "source_item_id": 39244,
+      "source_value": "bucket full of sparkles",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "bucket full of sparkles"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00035225",
       "source_item_id": 39246,
       "source_value": "turtle shell",
@@ -125688,6 +127868,26 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "damselfly eye"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035317",
+      "source_item_id": 39338,
+      "source_value": "flask of mango juice",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "flask of mango juice"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035318",
+      "source_item_id": 39339,
+      "source_value": "flask of mango honey juice",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "flask of mango honey juice"
       }
     },
     {
@@ -125918,6 +128118,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "ornamented chest"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035357",
+      "source_item_id": 39397,
+      "source_value": "coral powder",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "coral powder"
       }
     },
     {
@@ -126772,6 +128982,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035462",
+      "source_item_id": 39546,
+      "source_value": "primal bag",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "primal bag"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00035463",
       "source_item_id": 39547,
       "source_value": "energy vein",
@@ -126862,6 +129082,26 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035481",
+      "source_item_id": 39568,
+      "source_value": "naga nest",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "naga nest"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035482",
+      "source_item_id": 39569,
+      "source_value": "naga nest",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "naga nest"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00035484",
       "source_item_id": 39571,
       "source_value": "canary feather",
@@ -126888,6 +129128,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "gemmed lotus brooch"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035490",
+      "source_item_id": 39577,
+      "source_value": "bag with naga eggs",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "bag with naga eggs"
       }
     },
     {
@@ -127338,6 +129588,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "box full of balloons"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035565",
+      "source_item_id": 39707,
+      "source_value": "Pantibian Amphora",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "Pantibian Amphora"
       }
     },
     {
@@ -127798,6 +130058,46 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "flower bed"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035621",
+      "source_item_id": 39793,
+      "source_value": "turquoise flower lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "turquoise flower lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035622",
+      "source_item_id": 39794,
+      "source_value": "turquoise flower lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "turquoise flower lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035623",
+      "source_item_id": 39795,
+      "source_value": "purple flower lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "purple flower lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035624",
+      "source_item_id": 39796,
+      "source_value": "purple flower lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "purple flower lamp"
       }
     },
     {
@@ -128642,6 +130942,46 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035841",
+      "source_item_id": 42299,
+      "source_value": "sea-devil wall lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sea-devil wall lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035842",
+      "source_item_id": 42300,
+      "source_value": "sea-devil wall lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "sea-devil wall lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035843",
+      "source_item_id": 42301,
+      "source_value": "seafood bucket",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "seafood bucket"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035844",
+      "source_item_id": 42302,
+      "source_value": "seafood bucket",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "seafood bucket"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00035845",
       "source_item_id": 42303,
       "source_value": "ship bell",
@@ -128932,6 +131272,66 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035875",
+      "source_item_id": 42344,
+      "source_value": "scales wall lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "scales wall lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035876",
+      "source_item_id": 42345,
+      "source_value": "scales wall lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "scales wall lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035877",
+      "source_item_id": 42346,
+      "source_value": "opulent floor lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "opulent floor lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035878",
+      "source_item_id": 42347,
+      "source_value": "opulent floor lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "opulent floor lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035879",
+      "source_item_id": 42348,
+      "source_value": "opulent floor lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "opulent floor lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035880",
+      "source_item_id": 42349,
+      "source_value": "opulent floor lamp",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "opulent floor lamp"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00035881",
       "source_item_id": 42350,
       "source_value": "opulent item stand",
@@ -129038,6 +131438,46 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "podium of tenacity"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035942",
+      "source_item_id": 43501,
+      "source_value": "the essence of Murcion",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "the essence of Murcion"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035943",
+      "source_item_id": 43502,
+      "source_value": "the essence of Ichgahal",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "the essence of Ichgahal"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035944",
+      "source_item_id": 43503,
+      "source_value": "the essence of Vemiath",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "the essence of Vemiath"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00035945",
+      "source_item_id": 43504,
+      "source_value": "the essence of Chagorz",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "the essence of Chagorz"
       }
     },
     {
@@ -131006,6 +133446,26 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "greater fragment"
+      }
+    },
+    {
+      "field_path": "charges.count",
+      "native_key": "oteryn:item.registry.i00036234",
+      "source_item_id": 46627,
+      "source_value": 10,
+      "typed_value": {
+        "kind": "COUNT_U32",
+        "value": 10
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00036234",
+      "source_item_id": 46627,
+      "source_value": "crusher",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "crusher"
       }
     },
     {
@@ -139224,6 +141684,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037101",
+      "source_item_id": 49164,
+      "source_value": "soul prism",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "soul prism"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00037102",
       "source_item_id": 49271,
       "source_value": "transcendence potion",
@@ -143810,6 +146280,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037694",
+      "source_item_id": 51443,
+      "source_value": "etcher",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "etcher"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00037695",
       "source_item_id": 51444,
       "source_value": "powerful bash scroll",
@@ -144290,6 +146770,26 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037755",
+      "source_item_id": 51526,
+      "source_value": "special bat coffin",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "special bat coffin"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037756",
+      "source_item_id": 51527,
+      "source_value": "special bat coffin",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "special bat coffin"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00037788",
       "source_item_id": 51568,
       "source_value": "boat ticket",
@@ -144496,6 +146996,116 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "ink sword"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037821",
+      "source_item_id": 51702,
+      "source_value": "the Tale of Joran and Yvette - Part I",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "the Tale of Joran and Yvette - Part I"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037822",
+      "source_item_id": 51703,
+      "source_value": "the Tale of Joran and Yvette - Part II",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "the Tale of Joran and Yvette - Part II"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037823",
+      "source_item_id": 51704,
+      "source_value": "the Tale of Joran and Yvette - Part III",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "the Tale of Joran and Yvette - Part III"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037824",
+      "source_item_id": 51706,
+      "source_value": "effigy of winged vengeance",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "effigy of winged vengeance"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037825",
+      "source_item_id": 51707,
+      "source_value": "effigy of winged vengeance",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "effigy of winged vengeance"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037826",
+      "source_item_id": 51708,
+      "source_value": "effigy of winged vengeance",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "effigy of winged vengeance"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037827",
+      "source_item_id": 51709,
+      "source_value": "effigy of winged vengeance",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "effigy of winged vengeance"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037828",
+      "source_item_id": 51710,
+      "source_value": "effigy of winged vengeance",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "effigy of winged vengeance"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037829",
+      "source_item_id": 51711,
+      "source_value": "effigy of winged vengeance",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "effigy of winged vengeance"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037830",
+      "source_item_id": 51712,
+      "source_value": "effigy of winged vengeance",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "effigy of winged vengeance"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037831",
+      "source_item_id": 51713,
+      "source_value": "effigy of winged vengeance",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "effigy of winged vengeance"
       }
     },
     {
@@ -144798,6 +147408,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "brooch"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037866",
+      "source_item_id": 51976,
+      "source_value": "jade dragon head",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "jade dragon head"
       }
     },
     {
@@ -145304,12 +147924,52 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037930",
+      "source_item_id": 52634,
+      "source_value": "oak wood",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "oak wood"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037931",
+      "source_item_id": 52635,
+      "source_value": "salvaged iron parts",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "salvaged iron parts"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00037932",
       "source_item_id": 52636,
       "source_value": "tender venison",
       "typed_value": {
         "kind": "TEXT",
         "value": "tender venison"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037933",
+      "source_item_id": 52637,
+      "source_value": "repair kit for boats",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "repair kit for boats"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037934",
+      "source_item_id": 52638,
+      "source_value": "marinated sturgeon",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "marinated sturgeon"
       }
     },
     {
@@ -145644,6 +148304,36 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037986",
+      "source_item_id": 52743,
+      "source_value": "salvaged silver parts",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "salvaged silver parts"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037987",
+      "source_item_id": 52744,
+      "source_value": "personal letter of Michael the Stalwart I",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "personal letter of Michael the Stalwart I"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037988",
+      "source_item_id": 52745,
+      "source_value": "bottle of Raubritter Lager",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "bottle of Raubritter Lager"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00037989",
       "source_item_id": 52746,
       "source_value": "twisted marionette",
@@ -145670,6 +148360,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "battle tactics"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00037996",
+      "source_item_id": 52758,
+      "source_value": "salvaged bronze parts",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "salvaged bronze parts"
       }
     },
     {
@@ -145720,6 +148420,36 @@
       "typed_value": {
         "kind": "SIGNED_POINTS",
         "value": 0
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038000",
+      "source_item_id": 52785,
+      "source_value": "cool bottle of Raubritter Lager",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "cool bottle of Raubritter Lager"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038001",
+      "source_item_id": 52788,
+      "source_value": "meal from the beak of a night harpy",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "meal from the beak of a night harpy"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038002",
+      "source_item_id": 52789,
+      "source_value": "bottle of enhanced Raubritter Lager",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "bottle of enhanced Raubritter Lager"
       }
     },
     {
@@ -145844,6 +148574,86 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038015",
+      "source_item_id": 52816,
+      "source_value": "personal letter of Clavius I",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "personal letter of Clavius I"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038016",
+      "source_item_id": 52817,
+      "source_value": "personal letter of Clavius II",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "personal letter of Clavius II"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038017",
+      "source_item_id": 52818,
+      "source_value": "personal letter of Clavius III",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "personal letter of Clavius III"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038018",
+      "source_item_id": 52819,
+      "source_value": "personal letter of Adlerauge I",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "personal letter of Adlerauge I"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038019",
+      "source_item_id": 52820,
+      "source_value": "personal letter of Adlerauge II",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "personal letter of Adlerauge II"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038020",
+      "source_item_id": 52821,
+      "source_value": "personal letter of Adlerauge III",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "personal letter of Adlerauge III"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038021",
+      "source_item_id": 52822,
+      "source_value": "personal letter of Michael the Stalwart II",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "personal letter of Michael the Stalwart II"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038022",
+      "source_item_id": 52823,
+      "source_value": "personal letter of Michael the Stalwart III",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "personal letter of Michael the Stalwart III"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00038023",
       "source_item_id": 52824,
       "source_value": "the broken sword of Eldoran Etzel",
@@ -145880,6 +148690,16 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "lit candlestick"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038050",
+      "source_item_id": 52864,
+      "source_value": "test proficiency catalyst",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "test proficiency catalyst"
       }
     },
     {
@@ -145950,6 +148770,26 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "barebone grill"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038058",
+      "source_item_id": 52873,
+      "source_value": "inert dragon head",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "inert dragon head"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00038059",
+      "source_item_id": 52874,
+      "source_value": "jade dragon head",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "jade dragon head"
       }
     },
     {
@@ -146590,7 +149430,7 @@
       }
     },
     "source_engine": "crystal",
-    "source_population_bundle_digest": "78c2cd278be2031cfe70988e790341fa15f4fddcbc0b86621daed07779d65e29",
+    "source_population_bundle_digest": "2f0ae3016b09b05edae8d2336a3622c366fed189190bb7902c66e6f1283f541d",
     "source_profile": "crystal_ff7ede5_item_definition_v1",
     "source_repository": "zimbadev/crystalserver",
     "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a"
