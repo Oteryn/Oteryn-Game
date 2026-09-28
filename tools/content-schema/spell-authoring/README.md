@@ -16,7 +16,9 @@ the one shared Ability); this folder adds the player-casting layer and the `play
 | `verify_formal_schema.py` | Focused positive/negative cases; regenerates the `synthetic-*.json` fixtures (Light Healing, Sudden Death rune and its conjuring spell, from Crystal Server). |
 | `spell_census.py` | Loads every `data/scripts/spells/**` and `data/scripts/runes/**` script of a Canary and a Crystal Server checkout in a stubbed LuaJIT sandbox (needs `lupa==2.8`); records registrar calls, Combats, cast tier and the damage/heal formulas as exact expression trees; compares the two sources. |
 | `wiki_spells.py` | Fetches TibiaWiki (Fandom) `Infobox Spell` pages and `Category:Runes` as of a given day (default today; owner decision S3), keeps allowlisted facts only, and compares them with the census. |
-| `convert_spells.py` | Plan phase P2: turns the census into Spell bundles (Spell, Ability/Effect/Formula, catalog, import manifest) under S1–S5, S11; plain combats go through the monster converter's `combat_ability`. Needs both checkouts and `lupa`. |
+| `convert_spells.py` | Plan phase P2: turns the census into Spell bundles (Spell, Ability/Effect/Formula, catalog, import manifest) under S1–S5, S11, S13; plain combats go through the monster converter's `combat_ability`. Needs both checkouts and `lupa`. |
+| `tibiopedia_spells.py` | Fetches the tibiopedia.pl spell pages (owner decision S12) and keeps single facts with the page URL and page SHA-256, in Fandom field names; no descriptions or comments. |
+| `verify_spells.py` | Checks every converted bundle against Fandom, BR and tibiopedia.pl field by field: `agree`, `ours_differs` (the references agree, we do not), `sources_disagree`. |
 | `official-changes.json` | S11 evidence: official changes that decide a BR/Fandom conflict (fact, date, source URL). |
 | `samples/spell-readiness-p2.json` | `convert_spells.py --readiness`: per spell `ready`/`blocked`, its blockers and the bundle SHA-256 (bundles are not committed). |
 | `samples/starter-bundles/` | The P3 starter spells converted by `convert_spells.py --only ... --out`; validated in CI with their manifests. |
@@ -26,6 +28,8 @@ the one shared Ability); this folder adds the player-casting layer and the `play
 | `samples/wiki-spell-facts-br-2026-09-27.json` | `wiki_spells.py br-facts` over the hosted-runner BR capture: mapped short facts with revision ids. |
 | `samples/wiki-spell-compare-br-2026-09-27.json` | `wiki_spells.py compare` of the census with TibiaWiki BR. |
 | `samples/wiki-spell-crosswalk-fandom-br-2026-09-27.json` | `wiki_spells.py crosswalk`: BR ↔ Fandom per-field agreement and conflicts (S3). |
+| `samples/tibiopedia-spell-facts-2026-09-28.json` | `tibiopedia_spells.py facts`: spell and rune facts with URL and page SHA-256. |
+| `samples/spell-verify-3-sources-2026-09-28.json` | `verify_spells.py`: our value against the three references, with the disagreeing rows. |
 
 ```text
 pip install -r requirements.txt
@@ -33,6 +37,7 @@ python build_formal_schema.py && git diff --exit-code -- .
 python verify_formal_schema.py
 python validate_spell.py synthetic-valid-light-healing.json synthetic-valid-light-healing-dependencies.json --catalog synthetic-catalog.json
 python spell_census.py self-test && python wiki_spells.py self-test
+python tibiopedia_spells.py self-test && python verify_spells.py self-test
 
 # evidence regeneration (network / source checkouts)
 python spell_census.py --canary <canary@47dfd51f> --crystal <crystalserver@ff7ede5> \
@@ -44,6 +49,9 @@ python wiki_spells.py compare --facts samples/wiki-spell-facts-fandom-2026-09-27
     --out samples/wiki-spell-compare-fandom-2026-09-27.json
 python convert_spells.py --canary <canary@47dfd51f> --crystal <crystalserver@ff7ede5> \
     --readiness samples/spell-readiness-p2.json [--out <dir>] [--only "light healing" ...]
+python tibiopedia_spells.py fetch --cache <dir>
+python tibiopedia_spells.py facts --cache <dir> --out samples/tibiopedia-spell-facts-2026-09-28.json
+python verify_spells.py --bundles <convert_spells --out dir> --out samples/spell-verify-3-sources-2026-09-28.json
 # BR: download the spell-wiki-br-<sha> artifact of spell-wiki-capture.yml, then
 python wiki_spells.py br-facts --artifact wiki-spell-infoboxes-br.json --out samples/wiki-spell-facts-br-2026-09-27.json
 python wiki_spells.py compare --facts samples/wiki-spell-facts-br-2026-09-27.json \

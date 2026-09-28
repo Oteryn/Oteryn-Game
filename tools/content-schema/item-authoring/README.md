@@ -107,21 +107,25 @@ python lower_promotion_packet.py --source /path/to/crystalserver --self-check
 python lower_promotion_packet.py --source /path/to/crystalserver --check
 ```
 
-Re-running the command above regenerates a fresh **candidate**,
-`samples/promotion-crystal-ff7ede5.json`: 13,292 rows over 10,674 Items
-(`charges.count` 121, `container.capacity` 453, `presentation.name` 10,674,
+Re-running the command above regenerates a fresh **candidate**. The committed output
+is `samples/promotion-crystal-ff7ede5.json`: 14,173 rows over 11,555 Items
+(`charges.count` 121, `container.capacity` 453, `presentation.name` 11,555,
 `protection.armor` 429, `weapon.attack` 621, `weapon.defense` 636,
 `weapon.extra_defense` 160, `weapon.hit_chance` 56, `weapon.range_cells` 142;
 ~3.4 MiB). Its `schema`/`profile`/`status`/`next_action` are deliberately different
 literal strings from this lowering packet's own pinned Rust constants, so a fresh
-candidate this script produces can never be mistaken for, or silently accepted as, the
-exact pinned/wired bytes. The wired evidence file
+candidate this script produces can never be mistaken for, or silently accepted as,
+the exact pinned/wired bytes.
+
+The wired evidence file
 (`docs/agents/evidence/OTV2-20260928-item-promotion-lowering-v1.json`) is a
-byte-for-byte copy of this same candidate as it stood when #1018/#1048 pinned and wired
-it; re-pinning it after a further population/schema change (byte-count/digest
-constants, and the Rust decoder if the 9 field paths themselves change) is left to the
-Content/World import role, since it is the one that owns and can requalify the target
-Item family this applies to.
+byte-for-byte copy of an *earlier* candidate snapshot (13,292 rows over 10,674
+Items, before the wiki family fallback and blessing charms Items grew the
+population) as it stood when #1018/#1048 pinned and wired it. Re-pinning it to the
+grown `samples/promotion-crystal-ff7ede5.json` above (updated byte-count/digest
+constants, and the Rust decoder if the 9 field paths themselves change) is a
+separate follow-up task, left to the Content/World import role, since it is the one
+that owns and can requalify the target Item family this applies to.
 
 ### Value-dependent fields and non-Item routing
 
