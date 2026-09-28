@@ -8,6 +8,7 @@ members = [
     "crates/client-runtime",
     "crates/platform-contracts",
     "crates/platform-client",
+    "crates/protocol-oteryn",
     "crates/identity",
     "crates/client-domain",
     "crates/client-simulation",
