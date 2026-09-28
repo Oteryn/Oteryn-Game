@@ -39,6 +39,12 @@ lands in one of three buckets:
 
 Record per quest what is needed to finish it, without forcing anything the data cannot say.
 
+Result:
+- 3,688 items: 467 wait for a named owner, 145 fit one of three shared mechanisms, and 3,076 are
+  bespoke.
+- 112 of 204 quests have no gap. Of the 92 with bespoke work, the ten largest hold 1,322 items.
+- Documented in the quest format §6.8.
+
 ## Architecture and source of truth
 
 - `PROVEN`: Canary `04b83b51` and CrystalServer `9f5a72c6` (pinned).
