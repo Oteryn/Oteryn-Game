@@ -8,7 +8,8 @@ use crate::domain::{CharacterId, CharacterRevision};
 use crate::durability::admission_authority_guards::GuardPublicationDisposition;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceAwardRequest,
-    ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    ExperienceCommitOutcome, ExperienceRewardOccurrence, INITIAL_LEVEL, INITIAL_TOTAL_EXPERIENCE,
+    ProgressionInitialization, ProgressionInitializationOutcome,
 };
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
@@ -933,6 +934,282 @@ fn distinct_occurrences_with_one_predecessor_cannot_both_commit() -> TestResult 
                     .fetch_one(&harness.pool)
                     .await?;
             assert_eq!(receipts, 1);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+}
+
+fn initialization() -> ProgressionInitialization {
+    ProgressionInitialization {
+        context: context(),
+        policy_revision: "policy-1".into(),
+        reward_revision: "reward-1".into(),
+    }
+}
+
+/// An award policy whose table starts at the D84 initial level.
+fn level_one_request(tag: u8, amount: i64) -> TestResult<ExperienceAwardRequest<2>> {
+    let mut award = request(tag, amount)?;
+    award.policy.thresholds = [
+        LevelThreshold {
+            level: 1,
+            minimum_experience: ExactI64::new(0),
+        },
+        LevelThreshold {
+            level: 2,
+            minimum_experience: ExactI64::new(100),
+        },
+    ];
+    award.policy.terminal_exclusive_experience = ExactI64::new(200);
+    Ok(award)
+}
+
+#[test]
+fn initialization_creates_d84_state_once_and_never_regresses() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let harness = Harness::create(admin, "init", false).await?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let character =
+                CharacterId::from_bytes(id(41)).map_err(|error| format!("{error:?}"))?;
+            assert!(
+                harness
+                    .root
+                    .read_character_progression(&authority, character)
+                    .await
+                    .map_err(|error| format!("{error:?}"))?
+                    .is_none(),
+                "a bootstrap-only Character has no progression"
+            );
+
+            let first = harness
+                .root
+                .initialize_character_progression(
+                    &authority,
+                    &harness.node,
+                    fence(1)?,
+                    initialization(),
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let ProgressionInitializationOutcome::Initialized(initial) = first else {
+                return Err(format!("first initialization was not applied: {first:?}").into());
+            };
+            assert_eq!(initial.level, INITIAL_LEVEL);
+            assert_eq!(initial.level, 1);
+            assert_eq!(initial.total_experience.get(), INITIAL_TOTAL_EXPERIENCE);
+            assert_eq!(initial.total_experience.get(), 0);
+            assert_eq!(initial.character_revision.get(), 1);
+            let stored = harness
+                .root
+                .read_character_progression(&authority, character)
+                .await
+                .map_err(|error| format!("{error:?}"))?
+                .ok_or("initialized progression was not stored")?;
+            assert_eq!(stored, initial);
+            let root_revision: String =
+                sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(
+                root_revision, "1",
+                "initialization is not a CharacterRevision"
+            );
+
+            // Exact repetition returns the same state.
+            assert_eq!(
+                harness
+                    .root
+                    .initialize_character_progression(
+                        &authority,
+                        &harness.node,
+                        fence(1)?,
+                        initialization(),
+                    )
+                    .await
+                    .map_err(|error| format!("{error:?}"))?,
+                ProgressionInitializationOutcome::AlreadyInitialized(initial.clone())
+            );
+
+            // The initialized Character is ready: the P03 writer awards XP from level 1.
+            let award = harness
+                .root
+                .commit_character_experience(
+                    &authority,
+                    &harness.node,
+                    fence(1)?,
+                    level_one_request(70, 150)?,
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let ExperienceCommitOutcome::Committed(award) = award else {
+                return Err("award after initialization was not committed".into());
+            };
+            assert_eq!(award.level_before, 1);
+            assert_eq!(award.experience_before.get(), 0);
+            assert_eq!(award.level_after, 2);
+            assert_eq!(award.experience_after.get(), 150);
+
+            // Initializing again after progress never resets it.
+            let again = harness
+                .root
+                .initialize_character_progression(
+                    &authority,
+                    &harness.node,
+                    fence(2)?,
+                    initialization(),
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let ProgressionInitializationOutcome::AlreadyInitialized(progressed) = again else {
+                return Err(format!("progressed Character was re-initialized: {again:?}").into());
+            };
+            assert_eq!(progressed.level, 2);
+            assert_eq!(progressed.total_experience.get(), 150);
+            assert_eq!(progressed.character_revision.get(), 2);
+
+            // A different identity is refused, never written over the existing one.
+            let mut other = initialization();
+            other.policy_revision = "policy-2".into();
+            assert!(matches!(
+                harness
+                    .root
+                    .initialize_character_progression(&authority, &harness.node, fence(2)?, other)
+                    .await,
+                Err(CharacterProgressionError::ProgressionContextMismatch)
+            ));
+            let policy: String =
+                sqlx::query_scalar("SELECT policy_revision FROM game_character_progression_state")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(policy, "policy-1");
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+}
+
+#[test]
+fn initialization_is_fenced_and_bound_to_the_root() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let harness = Harness::create(admin, "initfence", false).await?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+
+            let mut stale_connection = fence(1)?;
+            stale_connection.connection_generation =
+                ConnectionGeneration::new(2).map_err(|error| format!("{error:?}"))?;
+            let mut stale_lease = fence(1)?;
+            stale_lease.character_lease_generation = 2;
+            let mut stale_scope = fence(1)?;
+            stale_scope.scope_ownership_generation =
+                ScopeOwnershipGeneration::new(2).map_err(|error| format!("{error:?}"))?;
+            for stale in [stale_connection, stale_lease, stale_scope] {
+                assert!(matches!(
+                    harness
+                        .root
+                        .initialize_character_progression(
+                            &authority,
+                            &harness.node,
+                            stale,
+                            initialization(),
+                        )
+                        .await,
+                    Err(CharacterProgressionError::AuthorityRejected)
+                ));
+            }
+            assert!(matches!(
+                harness
+                    .root
+                    .initialize_character_progression(
+                        &authority,
+                        &harness.node,
+                        fence(2)?,
+                        initialization(),
+                    )
+                    .await,
+                Err(CharacterProgressionError::CharacterRevisionMismatch)
+            ));
+            let mut foreign_content = initialization();
+            foreign_content.context.content = "content-2".into();
+            assert!(matches!(
+                harness
+                    .root
+                    .initialize_character_progression(
+                        &authority,
+                        &harness.node,
+                        fence(1)?,
+                        foreign_content,
+                    )
+                    .await,
+                Err(CharacterProgressionError::ProgressionContextMismatch)
+            ));
+            let mut malformed = initialization();
+            malformed.reward_revision = "-bad".into();
+            assert!(matches!(
+                harness
+                    .root
+                    .initialize_character_progression(
+                        &authority,
+                        &harness.node,
+                        fence(1)?,
+                        malformed,
+                    )
+                    .await,
+                Err(CharacterProgressionError::InvalidInput)
+            ));
+
+            sqlx::query(
+                "UPDATE game_durability_reconnect_sessions SET session_state = 3 \
+                 WHERE game_session_id = encode($1,'hex')::uuid",
+            )
+            .bind(id(50).as_slice())
+            .execute(&harness.pool)
+            .await?;
+            assert!(matches!(
+                harness
+                    .root
+                    .initialize_character_progression(
+                        &authority,
+                        &harness.node,
+                        fence(1)?,
+                        initialization(),
+                    )
+                    .await,
+                Err(CharacterProgressionError::AuthorityRejected)
+            ));
+            let rows: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_progression_state")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(rows, 0, "a refused initialization writes nothing");
             drop(authority);
             drop(seal);
             harness.cleanup().await

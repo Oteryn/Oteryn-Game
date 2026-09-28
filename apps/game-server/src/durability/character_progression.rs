@@ -92,6 +92,29 @@ pub struct CommittedExperienceAward {
     pub experience_awarded: ExactI64,
 }
 
+/// Owner decision D84 (#162 5875188437): a Character's typed progression starts at level 1
+/// with 0 experience, as the Tibia 15.x Newhaven start.
+pub const INITIAL_LEVEL: u32 = 1;
+pub const INITIAL_TOTAL_EXPERIENCE: i64 = 0;
+
+/// The revision identity a Character's progression is initialized under.  It must be the
+/// identity its later XP awards carry: the award writer refuses any other.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProgressionInitialization {
+    pub context: ProgressionRevisionContext<String>,
+    pub policy_revision: String,
+    pub reward_revision: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ProgressionInitializationOutcome {
+    /// This call created the D84 initial state.
+    Initialized(CharacterProgressionState),
+    /// Progression already existed under the same identity; it is returned as it is now,
+    /// never reset or regressed.
+    AlreadyInitialized(CharacterProgressionState),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExperienceCommitOutcome {
     Committed(CommittedExperienceAward),
@@ -193,144 +216,11 @@ impl DurabilityRoot {
                         return Ok(Ok(ExperienceCommitOutcome::AlreadyCommitted(committed)));
                     }
 
-                    let RuntimeScopeRefV1::Channel {
-                        world_id,
-                        channel_id,
-                    } = fence.runtime_scope
-                    else {
-                        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+                    let fenced = match fence_character_root(&mut tx, &node, &fence).await? {
+                        Ok(fenced) => fenced,
+                        Err(error) => return Ok(Err(error)),
                     };
-                    let session = sqlx::query(
-                        "SELECT account_id::text FROM game_durability_reconnect_sessions \
-                         WHERE game_session_id = encode($1,'hex')::uuid \
-                           AND character_id = encode($2,'hex')::uuid \
-                           AND world_id = encode($3,'hex')::uuid \
-                           AND runtime_scope_kind = 1 \
-                           AND runtime_scope_world_id = encode($3,'hex')::uuid \
-                           AND runtime_scope_channel_id = encode($4,'hex')::uuid \
-                           AND runtime_scope_instance_id IS NULL \
-                           AND current_generation = $5::text::numeric(20,0) \
-                           AND character_lease_generation = $6::text::numeric(20,0) \
-                           AND scope_ownership_generation = $7::text::numeric(20,0) \
-                           AND session_state IN (1,2) FOR SHARE",
-                    )
-                    .bind(fence.game_session_id.as_bytes().as_slice())
-                    .bind(fence.character_id.as_bytes().as_slice())
-                    .bind(world_id.as_bytes().as_slice())
-                    .bind(channel_id.as_bytes().as_slice())
-                    .bind(fence.connection_generation.get().to_string())
-                    .bind(fence.character_lease_generation.to_string())
-                    .bind(fence.scope_ownership_generation.get().to_string())
-                    .fetch_optional(&mut *tx)
-                    .await?;
-                    let Some(session) = session else {
-                        return Ok(Err(CharacterProgressionError::AuthorityRejected));
-                    };
-                    let account_text: String = session.try_get("account_id")?;
-
-                    let key = scope_key(world_id, channel_id);
-                    let fact = node.fact();
-                    let assignment = sqlx::query(
-                        "SELECT 1 FROM game_runtime_scope_assignments \
-                         WHERE scope_key = $1 AND world_id = encode($2,'hex')::uuid \
-                           AND channel_id = encode($3,'hex')::uuid AND state = 1 \
-                           AND ownership_generation = $4::text::numeric(20,0) \
-                           AND holder_node_id = encode($5,'hex')::uuid \
-                           AND holder_registration_revision = $6::text::numeric(20,0) \
-                         FOR SHARE",
-                    )
-                    .bind(key.as_slice())
-                    .bind(world_id.as_bytes().as_slice())
-                    .bind(channel_id.as_bytes().as_slice())
-                    .bind(fence.scope_ownership_generation.get().to_string())
-                    .bind(fact.node_id().as_bytes().as_slice())
-                    .bind(fact.registration_revision().to_string())
-                    .fetch_optional(&mut *tx)
-                    .await?;
-                    if assignment.is_none() || !prove_current_incarnation(&mut tx, &node).await? {
-                        return Ok(Err(CharacterProgressionError::AuthorityRejected));
-                    }
-
-                    let guards_ok: bool = sqlx::query_scalar(
-                        "SELECT EXISTS (SELECT 1 \
-                           FROM game_durability_admission_character_guards c \
-                           JOIN game_durability_admission_account_guards a \
-                             ON a.account_id = c.account_id \
-                           JOIN game_durability_admission_runtime_guards g \
-                             ON g.scope_key = $1 \
-                          WHERE c.character_id = encode($2,'hex')::uuid \
-                            AND c.account_id = $3::uuid \
-                            AND c.world_id = encode($4,'hex')::uuid \
-                            AND c.eligible \
-                            AND c.lease_generation = $5::text::numeric(20,0) \
-                            AND c.holder_game_session_id = encode($6,'hex')::uuid \
-                            AND a.presence_character_id = c.character_id \
-                            AND a.holder_game_session_id = c.holder_game_session_id \
-                            AND g.ready \
-                            AND g.ownership_generation = $7::text::numeric(20,0))",
-                    )
-                    .bind(key.as_slice())
-                    .bind(fence.character_id.as_bytes().as_slice())
-                    .bind(&account_text)
-                    .bind(world_id.as_bytes().as_slice())
-                    .bind(fence.character_lease_generation.to_string())
-                    .bind(fence.game_session_id.as_bytes().as_slice())
-                    .bind(fence.scope_ownership_generation.get().to_string())
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    if !guards_ok {
-                        return Ok(Err(CharacterProgressionError::AuthorityRejected));
-                    }
-
-                    let root = sqlx::query(
-                        "SELECT account_id::text, world_id::text, character_revision::text, \
-                                profile_revision, ruleset_revision, content_revision, \
-                                starter_template_revision \
-                           FROM game_character_roots \
-                          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
-                          FOR UPDATE",
-                    )
-                    .bind(fence.character_id.as_bytes().as_slice())
-                    .fetch_optional(&mut *tx)
-                    .await?;
-                    let Some(root) = root else {
-                        return Ok(Err(CharacterProgressionError::AuthorityRejected));
-                    };
-                    if root.try_get::<String, _>("account_id")? != account_text
-                        || uuid_text(root.try_get("world_id")?)? != *world_id.as_bytes()
-                    {
-                        return Ok(Err(CharacterProgressionError::AuthorityRejected));
-                    }
-                    let root_revision = numeric_u64(&root, "character_revision")?;
-                    if root_revision != fence.expected_character_revision.get() {
-                        return Ok(Err(CharacterProgressionError::CharacterRevisionMismatch));
-                    }
-
-                    let current = sqlx::query(
-                        "SELECT profile_revision, ruleset_revision, content_revision, \
-                                starter_template_revision \
-                           FROM game_character_interpretations \
-                          ORDER BY interpretation_revision DESC LIMIT 1 FOR SHARE",
-                    )
-                    .fetch_optional(&mut *tx)
-                    .await?;
-                    let Some(current) = current else {
-                        return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
-                    };
-                    for column in [
-                        "profile_revision",
-                        "ruleset_revision",
-                        "content_revision",
-                        "starter_template_revision",
-                    ] {
-                        if root.try_get::<String, _>(column)?
-                            != current.try_get::<String, _>(column)?
-                        {
-                            return Ok(Err(
-                                CharacterProgressionError::ProgressionContextMismatch,
-                            ));
-                        }
-                    }
+                    let root_revision = fenced.revision;
 
                     let state = sqlx::query(
                         "SELECT character_revision::text, level, total_experience, \
@@ -348,12 +238,9 @@ impl DurabilityRoot {
                     };
                     if numeric_u64(&state, "character_revision")? != root_revision
                         || !stored_context_matches(&state, &request)
-                        || state.try_get::<String, _>("profile_revision")?
-                            != root.try_get::<String, _>("profile_revision")?
-                        || state.try_get::<String, _>("ruleset_revision")?
-                            != root.try_get::<String, _>("ruleset_revision")?
-                        || state.try_get::<String, _>("content_revision")?
-                            != root.try_get::<String, _>("content_revision")?
+                        || state.try_get::<String, _>("profile_revision")? != fenced.profile
+                        || state.try_get::<String, _>("ruleset_revision")? != fenced.ruleset
+                        || state.try_get::<String, _>("content_revision")? != fenced.content
                     {
                         return Ok(Err(
                             CharacterProgressionError::ProgressionContextMismatch,
@@ -480,6 +367,112 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// Make a Character's progression ready: create the D84 initial state (level 1, 0 XP)
+    /// under `initialization` for a Character that has none, through the same FND-04
+    /// gameplay fence as an XP award.  Idempotent: an already initialized Character is
+    /// returned unchanged, whatever it has earned since, and a different identity is
+    /// refused rather than overwritten.  Absence is never read as zero.
+    pub async fn initialize_character_progression(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        initialization: ProgressionInitialization,
+    ) -> Result<ProgressionInitializationOutcome> {
+        validate_initialization(&fence, &initialization)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let fenced = match fence_character_root(&mut tx, &node, &fence).await? {
+                        Ok(fenced) => fenced,
+                        Err(error) => return Ok(Err(error)),
+                    };
+                    let context = &initialization.context;
+                    if context.profile != fenced.profile
+                        || context.ruleset != fenced.ruleset
+                        || context.content != fenced.content
+                    {
+                        return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                    }
+
+                    let existing = sqlx::query(
+                        "SELECT character_revision::text, level, total_experience, \
+                                profile_revision, ruleset_revision, content_revision, \
+                                simulation_revision, evidence_revision, declaration_revision, \
+                                policy_revision, reward_revision \
+                           FROM game_character_progression_state \
+                          WHERE character_id = encode($1,'hex')::uuid FOR UPDATE",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    if let Some(row) = existing {
+                        let state = decode_state(&row, fence.character_id)?;
+                        if state.character_revision.get() != fenced.revision {
+                            return Err(DurabilityError::InvalidStoredState);
+                        }
+                        if state.context != initialization.context
+                            || state.policy_revision != initialization.policy_revision
+                            || state.reward_revision != initialization.reward_revision
+                        {
+                            return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                        }
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(ProgressionInitializationOutcome::AlreadyInitialized(
+                            state,
+                        )));
+                    }
+                    // 0009 lets only the bootstrap revision exist without typed state; a
+                    // later revision without it is corrupt, never a fresh start.
+                    if fenced.revision != 1 {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    sqlx::query(
+                        "INSERT INTO game_character_progression_state(\
+                           character_id, character_revision, level, total_experience, \
+                           profile_revision, ruleset_revision, content_revision, \
+                           simulation_revision, evidence_revision, declaration_revision, \
+                           policy_revision, reward_revision) \
+                         VALUES (encode($1,'hex')::uuid, 1, $2, $3, $4, $5, $6, $7, $8, $9, \
+                           $10, $11)",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(i64::from(INITIAL_LEVEL))
+                    .bind(INITIAL_TOTAL_EXPERIENCE)
+                    .bind(&context.profile)
+                    .bind(&context.ruleset)
+                    .bind(&context.content)
+                    .bind(&context.simulation)
+                    .bind(&context.evidence)
+                    .bind(&context.declaration)
+                    .bind(&initialization.policy_revision)
+                    .bind(&initialization.reward_revision)
+                    .execute(&mut *tx)
+                    .await?;
+                    let state = CharacterProgressionState {
+                        character_id: fence.character_id,
+                        character_revision: fence.expected_character_revision,
+                        level: INITIAL_LEVEL,
+                        total_experience: ExactI64::new(INITIAL_TOTAL_EXPERIENCE),
+                        context: initialization.context.clone(),
+                        policy_revision: initialization.policy_revision.clone(),
+                        reward_revision: initialization.reward_revision.clone(),
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(ProgressionInitializationOutcome::Initialized(state)))
+                })
+            })
+            .await?
+    }
+
     /// Read a retained outcome after a lost response.  This proves only what
     /// committed for the occurrence and never reacquires gameplay authority.
     pub async fn reconcile_character_experience(
@@ -541,6 +534,191 @@ impl DurabilityRoot {
             })
             .await?
     }
+}
+
+/// The Character root under the current FND-04 gameplay fence, locked FOR UPDATE.
+struct FencedRoot {
+    revision: u64,
+    profile: String,
+    ruleset: String,
+    content: String,
+}
+
+/// Prove the gameplay fence in `tx` (session, Character lease, scope assignment, node
+/// incarnation and admission guards are all current) and lock the fenced Character root at
+/// its expected revision under the current interpretation.  Every fenced Character
+/// progression write goes through here.
+async fn fence_character_root(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterGameplayFence,
+) -> std::result::Result<Result<FencedRoot>, DurabilityError> {
+    let RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
+        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+    };
+    let session = sqlx::query(
+        "SELECT account_id::text FROM game_durability_reconnect_sessions \
+             WHERE game_session_id = encode($1,'hex')::uuid \
+               AND character_id = encode($2,'hex')::uuid \
+               AND world_id = encode($3,'hex')::uuid \
+               AND runtime_scope_kind = 1 \
+               AND runtime_scope_world_id = encode($3,'hex')::uuid \
+               AND runtime_scope_channel_id = encode($4,'hex')::uuid \
+               AND runtime_scope_instance_id IS NULL \
+               AND current_generation = $5::text::numeric(20,0) \
+               AND character_lease_generation = $6::text::numeric(20,0) \
+               AND scope_ownership_generation = $7::text::numeric(20,0) \
+               AND session_state IN (1,2) FOR SHARE",
+    )
+    .bind(fence.game_session_id.as_bytes().as_slice())
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(world_id.as_bytes().as_slice())
+    .bind(channel_id.as_bytes().as_slice())
+    .bind(fence.connection_generation.get().to_string())
+    .bind(fence.character_lease_generation.to_string())
+    .bind(fence.scope_ownership_generation.get().to_string())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(session) = session else {
+        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+    };
+    let account_text: String = session.try_get("account_id")?;
+
+    let key = scope_key(world_id, channel_id);
+    let fact = node.fact();
+    let assignment = sqlx::query(
+        "SELECT 1 FROM game_runtime_scope_assignments \
+             WHERE scope_key = $1 AND world_id = encode($2,'hex')::uuid \
+               AND channel_id = encode($3,'hex')::uuid AND state = 1 \
+               AND ownership_generation = $4::text::numeric(20,0) \
+               AND holder_node_id = encode($5,'hex')::uuid \
+               AND holder_registration_revision = $6::text::numeric(20,0) \
+             FOR SHARE",
+    )
+    .bind(key.as_slice())
+    .bind(world_id.as_bytes().as_slice())
+    .bind(channel_id.as_bytes().as_slice())
+    .bind(fence.scope_ownership_generation.get().to_string())
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
+    .fetch_optional(&mut **tx)
+    .await?;
+    if assignment.is_none() || !prove_current_incarnation(tx, node).await? {
+        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+    }
+
+    let guards_ok: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 \
+               FROM game_durability_admission_character_guards c \
+               JOIN game_durability_admission_account_guards a \
+                 ON a.account_id = c.account_id \
+               JOIN game_durability_admission_runtime_guards g \
+                 ON g.scope_key = $1 \
+              WHERE c.character_id = encode($2,'hex')::uuid \
+                AND c.account_id = $3::uuid \
+                AND c.world_id = encode($4,'hex')::uuid \
+                AND c.eligible \
+                AND c.lease_generation = $5::text::numeric(20,0) \
+                AND c.holder_game_session_id = encode($6,'hex')::uuid \
+                AND a.presence_character_id = c.character_id \
+                AND a.holder_game_session_id = c.holder_game_session_id \
+                AND g.ready \
+                AND g.ownership_generation = $7::text::numeric(20,0))",
+    )
+    .bind(key.as_slice())
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(&account_text)
+    .bind(world_id.as_bytes().as_slice())
+    .bind(fence.character_lease_generation.to_string())
+    .bind(fence.game_session_id.as_bytes().as_slice())
+    .bind(fence.scope_ownership_generation.get().to_string())
+    .fetch_one(&mut **tx)
+    .await?;
+    if !guards_ok {
+        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+    }
+
+    let root = sqlx::query(
+        "SELECT account_id::text, world_id::text, character_revision::text, \
+                    profile_revision, ruleset_revision, content_revision, \
+                    starter_template_revision \
+               FROM game_character_roots \
+              WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
+              FOR UPDATE",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(root) = root else {
+        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+    };
+    if root.try_get::<String, _>("account_id")? != account_text
+        || uuid_text(root.try_get("world_id")?)? != *world_id.as_bytes()
+    {
+        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+    }
+    let root_revision = numeric_u64(&root, "character_revision")?;
+    if root_revision != fence.expected_character_revision.get() {
+        return Ok(Err(CharacterProgressionError::CharacterRevisionMismatch));
+    }
+
+    let current = sqlx::query(
+        "SELECT profile_revision, ruleset_revision, content_revision, \
+                    starter_template_revision \
+               FROM game_character_interpretations \
+              ORDER BY interpretation_revision DESC LIMIT 1 FOR SHARE",
+    )
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(current) = current else {
+        return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+    };
+    for column in [
+        "profile_revision",
+        "ruleset_revision",
+        "content_revision",
+        "starter_template_revision",
+    ] {
+        if root.try_get::<String, _>(column)? != current.try_get::<String, _>(column)? {
+            return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+        }
+    }
+
+    Ok(Ok(FencedRoot {
+        revision: root_revision,
+        profile: root.try_get("profile_revision")?,
+        ruleset: root.try_get("ruleset_revision")?,
+        content: root.try_get("content_revision")?,
+    }))
+}
+
+fn validate_initialization(
+    fence: &CurrentCharacterGameplayFence,
+    initialization: &ProgressionInitialization,
+) -> Result<()> {
+    let context = &initialization.context;
+    if fence.character_lease_generation == 0
+        || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+        || ![
+            context.profile.as_str(),
+            context.ruleset.as_str(),
+            context.content.as_str(),
+            context.simulation.as_str(),
+            context.evidence.as_str(),
+            context.declaration.as_str(),
+            initialization.policy_revision.as_str(),
+            initialization.reward_revision.as_str(),
+        ]
+        .into_iter()
+        .all(valid_revision)
+    {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    Ok(())
 }
 
 fn validate_request<const N: usize>(
@@ -879,6 +1057,39 @@ mod tests {
             command_binding(&first_fence, &changed_amount).expect("changed amount"),
             binding
         );
+    }
+
+    #[test]
+    fn initialization_is_d84_and_rejects_malformed_identity_before_database_work() {
+        let _ = DurabilityRoot::initialize_character_progression;
+        assert_eq!((INITIAL_LEVEL, INITIAL_TOTAL_EXPERIENCE), (1, 0));
+        let valid = ProgressionInitialization {
+            context: context(),
+            policy_revision: "policy-1".into(),
+            reward_revision: "reward-1".into(),
+        };
+        assert!(validate_initialization(&fence(), &valid).is_ok());
+
+        let mut unleased = fence();
+        unleased.character_lease_generation = 0;
+        assert!(matches!(
+            validate_initialization(&unleased, &valid),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
+        for malformed in ["", "-policy", "policy/1"] {
+            let mut initialization = valid.clone();
+            initialization.policy_revision = malformed.into();
+            assert!(matches!(
+                validate_initialization(&fence(), &initialization),
+                Err(CharacterProgressionError::InvalidInput)
+            ));
+        }
+        let mut oversized = valid;
+        oversized.context.simulation = "s".repeat(MAX_REVISION_BYTES + 1);
+        assert!(matches!(
+            validate_initialization(&fence(), &oversized),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
     }
 
     #[test]
