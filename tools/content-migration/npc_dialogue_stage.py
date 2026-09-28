@@ -229,8 +229,8 @@ def build_voice_entries(profile: dict, stats: dict) -> list[dict]:
         if not isinstance(textref, dict) or 'parts' in textref:
             stats['dropped_voice_lines_invalid'] += 1
             continue
-        raw = textref.get('text')
-        if not isinstance(raw, str) or has_control_chars(raw):
+        raw, = leaf_texts(textref)  # requires the text and checks it against its digest
+        if has_control_chars(raw):
             stats['dropped_voice_lines_invalid'] += 1
             continue
         text = raw.strip()

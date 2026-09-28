@@ -1234,6 +1234,7 @@ fn verify_npc_dialogues(
         return Err("staged NPC dialogue source identity drifted".into());
     }
     let mut staged = BTreeMap::new();
+    let mut staged_by_npc = BTreeMap::new();
     for entry in packet["dialogues"]
         .as_array()
         .ok_or("staged NPC dialogues missing")?
@@ -1243,13 +1244,31 @@ fn verify_npc_dialogues(
         let ProjectV2Declaration::Dialogue { identity, .. } = &declaration else {
             return Err("staged NPC dialogue is not a Dialogue".into());
         };
+        let npc = entry["npc"]
+            .as_str()
+            .ok_or("staged NPC dialogue names no NPC")?;
+        staged_by_npc.insert(npc.to_owned(), identity.key.clone());
         staged.insert(identity.key.clone(), declaration);
     }
     for declaration in declarations {
-        if let ProjectV2Declaration::Dialogue { identity, .. } = declaration
-            && staged.get(&identity.key) != Some(declaration)
-        {
-            return Err("admitted NPC dialogue differs from the staged dialogue evidence".into());
+        match declaration {
+            ProjectV2Declaration::Dialogue { identity, .. }
+                if staged.get(&identity.key) != Some(declaration) =>
+            {
+                return Err(
+                    "admitted NPC dialogue differs from the staged dialogue evidence".into(),
+                );
+            }
+            ProjectV2Declaration::Npc {
+                identity, dialogue, ..
+            } if dialogue.as_ref().map(|reference| &reference.key)
+                != staged_by_npc.get(&identity.key) =>
+            {
+                return Err(
+                    "NPC dialogue reference differs from the staged dialogue evidence".into(),
+                );
+            }
+            _ => {}
         }
     }
     Ok(())
