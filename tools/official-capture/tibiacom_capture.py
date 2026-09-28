@@ -13,6 +13,7 @@ key -- and capped per section).
 
     python3 tibiacom_capture.py fetch --out imports/official/tibia-com/2026-09-28
     python3 tibiacom_capture.py verify imports/official/tibia-com/2026-09-28
+    python3 tibiacom_capture.py verify-root imports/official/tibia-com
     python3 tibiacom_capture.py check-immutability --base <sha> --head <sha>
     python3 tibiacom_capture.py self-test
 
@@ -43,7 +44,6 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 SNAPSHOT_PREFIX = 'imports/official/tibia-com/'
-DATED_DIR_RE = re.compile(re.escape(SNAPSHOT_PREFIX) + r'([^/]+)/')
 
 MANUAL_URL = 'https://www.tibia.com/gameguides/?subtopic=manual&section={section}'
 MANUAL_SECTIONS = ('controls', 'characters', 'combat', 'world', 'controls_trading', 'starting')
@@ -64,6 +64,9 @@ FACT_KEYS = {'section', 'anchor', 'key', 'value'}
 # A snapshot directory holds exactly these two files -- no raw pages, scratch files or
 # subdirectories (P2 r4121003204, page-copy class).
 SNAPSHOT_FILENAMES = {'manifest.json', 'facts.json'}
+# Directly under imports/official/tibia-com/, only README.md is allowed alongside the dated
+# snapshot directories (P2 r4121271454) -- no other root-level file.
+ROOT_ALLOWED_FILENAMES = {'README.md'}
 FACT_VALUE_LIMIT = 300
 # Every serialized text field is bounded, not only `value` (P2 r4120883667): a `key`/`anchor` this
 # long is not an identifier any more, so both fetch and verify cap them the same way.
@@ -79,6 +82,15 @@ TOTAL_FACT_VALUE_BYTES_LIMIT = 200_000
 # RAW bytes of facts.json on disk (not the parsed field lengths) must fit the same 25% ratio, plus
 # a fixed per-fact JSON-structure overhead allowance.
 PER_FACT_JSON_OVERHEAD_BYTES = 64
+# Absolute bounds that do not depend on the snapshot's own self-reported visible_text_chars
+# (P2 r4121271445): inflating that claim must not be able to widen the ratio-based allowance
+# without limit. A per-page cap, plus a fixed budget sized off the real fact caps (not off
+# anything the snapshot itself asserts): 6 manual sections * 40 facts/section * ~400 B/fact, and a
+# separate spell-library allowance of 600 facts * ~400 B/fact, only counted when spells=="captured".
+MAX_VISIBLE_TEXT_CHARS_PER_PAGE = 200_000
+ABSOLUTE_FACT_SIZE_ESTIMATE_BYTES = 400
+ABSOLUTE_MANUAL_FACTS_BUDGET_BYTES = len(MANUAL_SECTIONS) * FACTS_PER_SECTION_CAP * ABSOLUTE_FACT_SIZE_ESTIMATE_BYTES
+ABSOLUTE_SPELL_FACTS_BUDGET_BYTES = SPELL_RECORDS_CAP * ABSOLUTE_FACT_SIZE_ESTIMATE_BYTES
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
 ACCEPTED_HTTP_STATUS = 200
 # Strict match on what utc_now() produces (P2 r4120883679): an ISO-8601 UTC timestamp ending in Z.
@@ -536,8 +548,12 @@ def verify_snapshot(directory):
         if page['http_status'] != ACCEPTED_HTTP_STATUS:
             errors.append(f'{directory}: manifest page {page["section"]} http_status is {page["http_status"]!r}, '
                           f'must be {ACCEPTED_HTTP_STATUS} (a failed/error fetch cannot become committed evidence)')
-        if not isinstance(page['visible_text_chars'], int) or page['visible_text_chars'] < 0:
-            errors.append(f'{directory}: manifest page {page["section"]} visible_text_chars must be a non-negative int')
+        # Absolute per-page bound, independent of anything else in the snapshot (P2 r4121271445):
+        # a self-reported visible_text_chars this large would otherwise widen the ratio-based
+        # allowance below without limit.
+        if not isinstance(page['visible_text_chars'], int) or not (0 <= page['visible_text_chars'] <= MAX_VISIBLE_TEXT_CHARS_PER_PAGE):
+            errors.append(f'{directory}: manifest page {page["section"]} visible_text_chars must be an int in '
+                          f'[0, {MAX_VISIBLE_TEXT_CHARS_PER_PAGE}], got {page["visible_text_chars"]!r}')
         fetched_dt = parse_utc_timestamp(page.get('fetched_at'))
         if fetched_dt is None:
             errors.append(f'{directory}: manifest page {page["section"]} fetched_at must be an ISO-8601 UTC '
@@ -702,6 +718,18 @@ def verify_snapshot(directory):
                       f'visible-text chars + {PER_FACT_JSON_OVERHEAD_BYTES} B/fact overhead) -- looks '
                       f'like hidden text regardless of encoding')
 
+    # Absolute cap, kept in addition to the ratio check above (P2 r4121271445): it does not depend
+    # on visible_text_chars or any other number the snapshot itself asserts, so inflating that
+    # claim cannot widen it. Sized off the real fact caps (FACTS_PER_SECTION_CAP/SPELL_RECORDS_CAP)
+    # and a realistic per-fact JSON size, not off anything self-reported.
+    absolute_budget_bytes = ABSOLUTE_MANUAL_FACTS_BUDGET_BYTES
+    if spells == 'captured':
+        absolute_budget_bytes += ABSOLUTE_SPELL_FACTS_BUDGET_BYTES
+    if raw_facts_bytes > absolute_budget_bytes:
+        errors.append(f'{directory}: facts.json is {raw_facts_bytes} bytes on disk, over the absolute '
+                      f'{absolute_budget_bytes}-byte cap (independent of any self-reported '
+                      f'visible_text_chars)')
+
     return errors
 
 
@@ -717,9 +745,57 @@ def cmd_verify(directories):
     return 0
 
 
-def dated_dir_for_path(path):
-    match = DATED_DIR_RE.match(path)
-    return f'{SNAPSHOT_PREFIX}{match.group(1)}' if match else None
+def verify_snapshot_root(root_dir):
+    """Every entry directly under the tibia-com snapshot root is README.md or a dated directory
+    (a real YYYY-MM-DD calendar date name) -- P2 r4121271454. The "Verify every committed snapshot
+    directory" step only globs directories, so this is what actually rejects a stray root-level
+    file like raw.html; `check-immutability` also rejects one, but only within the current PR's
+    diff, not the full committed state.
+    """
+    errors = []
+    if not root_dir.is_dir():
+        return errors  # no snapshots committed yet; nothing to check
+    for entry in sorted(root_dir.iterdir()):
+        if entry.is_dir():
+            if not is_real_calendar_date(entry.name):
+                errors.append(f'{root_dir}: directory {entry.name!r} must be a real YYYY-MM-DD calendar date')
+        elif entry.name not in ROOT_ALLOWED_FILENAMES:
+            errors.append(f'{root_dir}: unexpected entry {entry.name!r} directly under the snapshot '
+                          f'root (only {sorted(ROOT_ALLOWED_FILENAMES)} or a dated directory allowed)')
+    return errors
+
+
+def cmd_verify_root(root_dir):
+    errors = verify_snapshot_root(root_dir)
+    if errors:
+        for error in errors:
+            print(f'FAIL: {error}', file=sys.stderr)
+        return 1
+    print(f'verify-root: {root_dir} OK')
+    return 0
+
+
+def classify_snapshot_path(path):
+    """Classify a path under `SNAPSHOT_PREFIX` (P2 r4121271454): `('root', filename)` for a path
+    directly under it, `('dated', dated_dir, dir_name)` for a path inside a subdirectory, or None
+    if `path` isn't under `SNAPSHOT_PREFIX` at all. Every path under the prefix is one or the
+    other -- there is no unclassified case a check can silently skip.
+    """
+    if not path.startswith(SNAPSHOT_PREFIX):
+        return None
+    rest = path[len(SNAPSHOT_PREFIX):]
+    if '/' not in rest:
+        return ('root', rest)
+    dir_name = rest.split('/', 1)[0]
+    return ('dated', f'{SNAPSHOT_PREFIX}{dir_name}', dir_name)
+
+
+def is_real_calendar_date(name):
+    try:
+        date.fromisoformat(name)
+        return True
+    except ValueError:
+        return False
 
 
 def parse_raw_diff_line(line):
@@ -741,16 +817,19 @@ def parse_raw_diff_line(line):
 
 def find_immutability_violations(diff_lines, exists_at_base):
     """Dated snapshot directories are immutable once committed, hold exactly two files, and never
-    a symlink (P2 r4120578808/r4120758029/r4121003204/r4121095564).
+    a symlink; only README.md may change directly under the snapshot root
+    (P2 r4120578808/r4120758029/r4121003204/r4121095564/r4121271454).
 
     `diff_lines` are `git diff --raw -M <base> <head> -- <SNAPSHOT_PREFIX>` lines (any iterable of
     strings); `exists_at_base(dated_dir)` reports whether that dated directory already existed at
     the base commit. Returns one violation string per offending line: a symlink mode (120000) on
-    either side of the change; any `A`, `M`, `D`, `R` or `C` whose affected path's dated directory
-    already existed at base -- including an `A` that only adds a new file inside an
-    already-committed directory; or whose filename is not in `SNAPSHOT_FILENAMES`, even inside a
-    brand-new dated directory. Only `manifest.json`/`facts.json`, as regular files, inside a
-    brand-new dated directory are allowed.
+    either side of the change; a root-level path (directly under `SNAPSHOT_PREFIX`, no
+    subdirectory) whose filename is not in `ROOT_ALLOWED_FILENAMES`; a path inside a subdirectory
+    whose name is not a real calendar date; any `A`, `M`, `D`, `R` or `C` whose affected path's
+    dated directory already existed at base -- including an `A` that only adds a new file inside
+    an already-committed directory; or whose filename is not in `SNAPSHOT_FILENAMES`, even inside
+    a brand-new dated directory. Only `manifest.json`/`facts.json`, as regular files, inside a
+    brand-new, real-calendar-date-named dated directory are allowed (plus README.md at the root).
     """
     violations = []
     for line in diff_lines:
@@ -765,9 +844,21 @@ def find_immutability_violations(diff_lines, exists_at_base):
                               f'allowed in a snapshot directory)')
             continue
         for path in paths:
-            dated_dir = dated_dir_for_path(path)
-            if not dated_dir:
+            classified = classify_snapshot_path(path)
+            if classified is None:
                 continue
+            if classified[0] == 'root':
+                filename = classified[1]
+                if filename not in ROOT_ALLOWED_FILENAMES:
+                    violations.append(f'{status}\t{path} (only {sorted(ROOT_ALLOWED_FILENAMES)} may '
+                                      f'live directly under {SNAPSHOT_PREFIX})')
+                    break
+                continue  # README.md may change freely; it isn't a dated snapshot
+            _, dated_dir, dir_name = classified
+            if not is_real_calendar_date(dir_name):
+                violations.append(f'{status}\t{path} (directory name {dir_name!r} must be a real '
+                                  f'YYYY-MM-DD calendar date)')
+                break
             if exists_at_base(dated_dir):
                 violations.append(f'{status}\t{path} (dated directory {dated_dir}/ exists at the PR base)')
                 break  # one violation per offending diff line, even if several of its paths match
@@ -983,6 +1074,40 @@ def self_test():
     assert parse_raw_diff_line('not a raw diff line') is None
     assert parse_raw_diff_line('') is None
 
+    # Only README.md may change directly under the snapshot root; a raw file added there is
+    # rejected, and a directory whose name isn't a real calendar date is too (P2 r4121271454).
+    assert classify_snapshot_path(f'{SNAPSHOT_PREFIX}README.md') == ('root', 'README.md')
+    assert classify_snapshot_path(f'{SNAPSHOT_PREFIX}2026-09-28/manifest.json') == (
+        'dated', f'{SNAPSHOT_PREFIX}2026-09-28', '2026-09-28')
+    assert classify_snapshot_path('unrelated/path.txt') is None
+    assert is_real_calendar_date('2026-09-28')
+    assert not is_real_calendar_date('not-a-date')
+    assert not is_real_calendar_date('2026-02-30')
+    assert find_immutability_violations(
+        [_raw('M', f'{SNAPSHOT_PREFIX}README.md')], exists_at_base) == []
+    assert len(find_immutability_violations(
+        [_raw('A', f'{SNAPSHOT_PREFIX}raw.html', old_mode='000000')], exists_at_base)) == 1
+    assert len(find_immutability_violations(
+        [_raw('A', f'{SNAPSHOT_PREFIX}not-a-date/manifest.json', old_mode='000000')], exists_at_base)) == 1
+
+    # verify-root: the workflow's own root check, since the "verify every directory" glob only
+    # ever looks at subdirectories and would never see a stray root-level file (P2 r4121271454).
+    import tempfile
+    with tempfile.TemporaryDirectory() as root_tmp:
+        snapshot_root = Path(root_tmp)
+        assert verify_snapshot_root(snapshot_root) == []  # empty root: nothing to check yet
+        (snapshot_root / 'README.md').write_text('# snapshots\n', encoding='utf-8')
+        assert verify_snapshot_root(snapshot_root) == []
+        (snapshot_root / '2026-09-28').mkdir()
+        assert verify_snapshot_root(snapshot_root) == []
+        (snapshot_root / 'raw.html').write_text('<html></html>', encoding='utf-8')
+        errors = verify_snapshot_root(snapshot_root)
+        assert any('raw.html' in e for e in errors), errors
+        (snapshot_root / 'raw.html').unlink()
+        (snapshot_root / 'not-a-date').mkdir()
+        errors = verify_snapshot_root(snapshot_root)
+        assert any('not-a-date' in e and 'calendar date' in e for e in errors), errors
+
     import copy
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
@@ -1114,6 +1239,37 @@ def self_test():
         _write_snapshot(directory, manifest, facts_doc)
         errors = verify_snapshot(directory)
         assert any('visible-text chars, over the' in e for e in errors), errors
+
+        # Absolute bounds that do not trust the snapshot's own claims (P2 r4121271445): a
+        # visible_text_chars over the fixed per-page cap is rejected regardless of anything else.
+        manifest = copy.deepcopy(base_manifest)
+        manifest['pages'][0]['visible_text_chars'] = MAX_VISIBLE_TEXT_CHARS_PER_PAGE + 1
+        _write_snapshot(directory, manifest, base_facts)
+        errors = verify_snapshot(directory)
+        assert any('visible_text_chars must be an int in' in e for e in errors), errors
+
+        # Inflating visible_text_chars must not be able to widen the ratio-based allowance past
+        # the absolute facts.json byte cap: every page claims the max allowed count (so the ratio
+        # check alone would allow far more than the absolute manual-sections budget), but padding
+        # facts.json past that absolute budget must still fail even though the ratio check passes.
+        manifest = copy.deepcopy(base_manifest)
+        for page in manifest['pages']:
+            page['visible_text_chars'] = MAX_VISIBLE_TEXT_CHARS_PER_PAGE
+        _write_snapshot(directory, manifest, base_facts)
+        assert verify_snapshot(directory) == [], verify_snapshot(directory)  # still valid so far
+        facts_file = directory / 'facts.json'
+        padded_size = ABSOLUTE_MANUAL_FACTS_BUDGET_BYTES + 1_000
+        padded = facts_file.read_text(encoding='utf-8')
+        padded += ' ' * max(0, padded_size - len(padded.encode('utf-8')))
+        facts_file.write_text(padded, encoding='utf-8')
+        # The ratio-based allowance is enormous here (25% of 6*200,000), so only the absolute cap
+        # can be what's failing this.
+        ratio_allowance = len(manifest['pages']) * MAX_VISIBLE_TEXT_CHARS_PER_PAGE * FACT_TO_VISIBLE_TEXT_RATIO_LIMIT
+        assert facts_file.stat().st_size < ratio_allowance, 'test padding must stay under the ratio allowance'
+        errors = verify_snapshot(directory)
+        assert any('absolute' in e and 'byte cap' in e for e in errors), errors
+        assert not any('visible-text chars, over the' in e for e in errors), errors  # ratio check itself passes
+        _write_snapshot(directory, base_manifest, base_facts)  # restore
 
         facts_doc = copy.deepcopy(base_facts)
         facts_doc['facts'][0]['value'] = 'z' * (FACT_VALUE_LIMIT + 1)
@@ -1336,6 +1492,11 @@ def main(argv=None):
     verify_parser = subparsers.add_parser('verify', help='offline: check one or more snapshot directories')
     verify_parser.add_argument('directories', nargs='+', type=Path)
 
+    verify_root_parser = subparsers.add_parser(
+        'verify-root', help="offline: check imports/official/tibia-com/'s own root entries "
+                            '(README.md or dated directories only)')
+    verify_root_parser.add_argument('root_dir', type=Path)
+
     immutability_parser = subparsers.add_parser(
         'check-immutability', help='offline (needs a local git checkout): reject edits to already-committed '
                                     'dated snapshot directories between two commits')
@@ -1349,6 +1510,8 @@ def main(argv=None):
         return cmd_fetch(args.out)
     if args.command == 'verify':
         return cmd_verify(args.directories)
+    if args.command == 'verify-root':
+        return cmd_verify_root(args.root_dir)
     if args.command == 'check-immutability':
         return cmd_check_immutability(args.base, args.head)
     if args.command == 'self-test':

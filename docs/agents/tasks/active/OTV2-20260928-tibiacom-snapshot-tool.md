@@ -122,28 +122,29 @@ reason: >
   or a slug of the text) and the text of `p`/`li`/`td`/`th`/`dd` blocks under each, with no
   CSS-class guess at tibia.com's real structure (unreachable here — same Cloudflare block).
 
-## Repair: Codex review findings (PR #1083, return to AUTHORING; 6 rounds, 22 findings)
+## Repair: Codex review findings (PR #1083, return to AUTHORING; 7 rounds, 24 findings)
 
 Every finding was accepted and repaired (or explicitly dispositioned, R6 P1): a self-test case
 added, its review thread replied to before that round's push. Full text is in the PR review
-threads; this is an index by head SHA — comment ids are `#1083#discussion_r<id>`.
+threads (`#1083#discussion_r<id>`); this is a terse index by head SHA.
 
-- R1 `1a82643` (4): 578784/578795/578800/578808 — no-page-copy cap+ratio, HTTP-200-only,
-  six-section completeness, workflow immutability diff.
-- R2 `a90b128` (5): 758016/758045/758054/758029/758056 — spell cap, positive
-  `visible_text_chars`, hash raw bytes, immutability covers `A`, no duplicate sections/URLs.
-- R3 `557730b` (3): 883657/883667/883679 — normalized `anchor`, `key`/`anchor` bounded (ratio
-  counts all 3 fields), strict/consistent timestamps.
-- R4 `018b479` (3, material page-copy class per #162): 1003204/1003212/1003195 — exactly 2 files,
+- R1 `1a82643` (4): 578784/795/800/808 — no-page-copy cap+ratio, HTTP-200-only, six-section
+  completeness, workflow immutability diff.
+- R2 `a90b128` (5): 758016/045/054/029/056 — spell cap, positive `visible_text_chars`, hash raw
+  bytes, immutability covers `A`, no duplicate sections/URLs.
+- R3 `557730b` (3): 883657/667/679 — normalized `anchor`, `key`/`anchor` bounded, strict/
+  consistent timestamps.
+- R4 `018b479` (3, material page-copy class/#162): 1003204/212/195 — exactly 2 files,
   `bound_key()` collision-safe truncation, closed schema.
-- R5 `52a61b5` (3+1 generic): 1095556/1095564/1095570 — duplicate-JSON-key rejection,
-  `os.lstat`/`S_ISREG`+`git diff --raw` symlink rejection, dir name = real calendar date =
-  `captured_at`'s date; plus a generic raw-byte-size cap on `facts.json` closing the
-  smuggled-text class.
-- R6 `2ee4b77` (2+1 disposition): 1218009 empty (post-`.strip()`) values rejected, don't count
-  toward completeness; 1217996 workflow triggers on `tibiacom_spells.py` too; 1217986 (P1, gate
-  wiring) — HARDENING per #162 5868131104, reply posted verbatim, `merge-gate.yml`/
-  `merge-group-gate.yml` untouched (protected aggregates, separate serialized change).
+- R5 `52a61b5` (3+1 generic): 1095556/564/570 — duplicate-JSON-key rejection, `os.lstat`+`git
+  diff --raw` symlink rejection, dir name = real date = `captured_at`'s date; + raw-byte-size cap
+  on `facts.json`.
+- R6 `2ee4b77` (2+1 disposition): 1218009 empty values rejected/don't count; 1217996 workflow
+  triggers on `tibiacom_spells.py`; 1217986 (P1 gate wiring) HARDENING per #162 5868131104, reply
+  verbatim, `merge-gate.yml`/`merge-group-gate.yml` untouched.
+- R7 `6b4dc10` (2, material page-copy class/#162): 1271454 root allowlist (`README.md` only,
+  `verify-root` new subcommand + `classify_snapshot_path`); 1271445 absolute bounds independent
+  of self-reported numbers (`MAX_VISIBLE_TEXT_CHARS_PER_PAGE`, fixed `facts.json` byte budget).
 
 ## Validation
 
@@ -190,10 +191,10 @@ threads; this is an index by head SHA — comment ids are `#1083#discussion_r<id
 - required: it happened regardless of the `NO` self-assessment above (evidence/tooling-only, no
   public contract/protocol/persistence/authority surface): automated PR review is unconditional in
   this repository.
-- exact head: see Repair section above for each round's head SHA (r1-r6)
+- exact head: see Repair section above (r1-r7)
 - method/auditor: Codex, automated PR review (not triggered by this worker)
-- material findings: 22 total; 21 accepted and repaired, 1 (R6 1217986, gate wiring) dispositioned
-  HARDENING per #162 5868131104; R4 explicitly MATERIAL under the #162 page-copy closure rule
+- material findings: 24 total; 23 accepted and repaired, 1 (R6 1217986) HARDENING per #162
+  5868131104; R4/R7 explicitly MATERIAL under the #162 page-copy closure rule
 - verdict: findings addressed; a fresh review of the repaired head is for the control plane to
   request, not this worker (no `@codex` trigger from this task)
 

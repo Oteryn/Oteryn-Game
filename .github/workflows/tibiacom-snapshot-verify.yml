@@ -54,6 +54,10 @@ jobs:
         working-directory: tools/official-capture
         run: python3 tibiacom_capture.py self-test
 
+      - name: Verify the snapshot root (only README.md or dated directories)
+        working-directory: tools/official-capture
+        run: python3 tibiacom_capture.py verify-root ../../imports/official/tibia-com
+
       - name: Verify every committed snapshot directory
         working-directory: tools/official-capture
         run: |
