@@ -1866,6 +1866,226 @@ fn transfer_channel_must_match_the_removed_ground_location() -> TestResult {
     })
 }
 
+/// Codex P1 on #1152, finding 1: the consistency guard proved a TRANSFER's
+/// audit event only by TransactionId/EventId/timestamp/envelope hash, and
+/// `game_item_audit_outbox` carries the same `event_type_id` (2) for a MINT's
+/// own outbox row as for a TRANSFER's, so a forged commit could replay a
+/// still-live MINT's row -- transaction_id, event_id, occurred_at and
+/// envelope hash all genuinely matching -- as its own audit evidence,
+/// without writing a fresh outbox row of its own. The guard now also
+/// requires that matched row's `created_xact_id` to be the CURRENT physical
+/// transaction's, which a historical, already-committed MINT row can never
+/// be.
+#[test]
+fn transfer_cannot_reuse_the_mint_audit_event() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "mintreuse").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let source = harness.mint(&authority, STONE, 1).await?;
+        assert!(harness.on_ground(source).await?);
+
+        // The MINT's own outbox row, read back exactly as the real MINT
+        // committed it: same transaction_id, event_id, occurred_at and
+        // envelope hash the consistency guard checks for a TRANSFER.
+        let row = sqlx::query(
+            "SELECT transaction_id::text, event_id::text, occurred_at, \
+               encode(envelope_sha256,'hex') \
+               FROM game_item_audit_outbox WHERE item_instance_id = encode($1,'hex')::uuid",
+        )
+        .bind(source.as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        let mint_tx_id: String = row.try_get(0)?;
+        let mint_event_id: String = row.try_get(1)?;
+        let mint_occurred_at: i64 = row.try_get(2)?;
+        let mint_envelope_sha256_hex: String = row.try_get(3)?;
+
+        let uuid = uuid_text;
+        let character = uuid(id(CHARACTER));
+        let world = uuid(id(WORLD));
+        let channel = uuid(id(CHANNEL));
+        let source_text = uuid(source);
+        // Every statement below is one a real container-slot TRANSFER commit
+        // would issue, except that no fresh row is ever inserted into
+        // `game_item_audit_outbox` -- the reservation and receipt instead
+        // reuse the MINT's own transaction_id/event_id/occurred_at/hash.
+        let statements = [
+            format!(
+                "INSERT INTO game_item_transfer_reservations VALUES \
+                 ('{character}', 1, '{character}', '{world}', '{channel}', '{source_text}', 1, \
+                   decode(repeat('ab',33),'hex'), '{mint_tx_id}', '{mint_event_id}', \
+                   {mint_occurred_at}, 1, 0)"
+            ),
+            format!(
+                "UPDATE game_item_instances SET last_transaction_id = '{mint_tx_id}' \
+                   WHERE item_instance_id = '{source_text}' AND lifecycle = 1 AND quantity = 1"
+            ),
+            format!(
+                "DELETE FROM game_item_ground_locations WHERE item_instance_id = '{source_text}'"
+            ),
+            format!(
+                "INSERT INTO game_item_container_slots VALUES \
+                 ('{character}', '{source_text}', '{world}', '{mint_tx_id}')"
+            ),
+            format!(
+                "INSERT INTO game_item_transfer_receipts \
+                   (game_session_id, command_id, character_id, intent_binding, transaction_id, \
+                    event_id, shape, source_item_instance_id, source_quantity_before, \
+                    source_quantity_after, occurred_at, envelope_sha256, committed_at) \
+                 VALUES \
+                 ('{character}', 1, '{character}', decode(repeat('ab',33),'hex'), '{mint_tx_id}', \
+                   '{mint_event_id}', 1, '{source_text}', 1, 1, {mint_occurred_at}, \
+                   decode('{mint_envelope_sha256_hex}','hex'), {mint_occurred_at})"
+            ),
+        ];
+        let mut tx = harness.pool.begin().await?;
+        let applied: TestResult = async {
+            for statement in &statements {
+                sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
+                    .execute(&mut *tx)
+                    .await?;
+            }
+            tx.commit().await?;
+            Ok(())
+        }
+        .await;
+        assert!(
+            applied.is_err(),
+            "a historical MINT outbox row was reused as a TRANSFER's own audit evidence"
+        );
+        // Nothing moved: the item is still on Ground, untouched.
+        assert_eq!(harness.item_state(source).await?, (1, 1));
+        assert!(harness.on_ground(source).await?);
+        assert_eq!(harness.count("game_item_container_slots").await?, 0);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// Codex P1 on #1152, finding 2: the consistency guard bound a TRANSFER to
+/// the source item's World but never checked the destination Character's own
+/// root World against it, so a forged commit could place a World-A Ground
+/// item into a Character rooted in a different World B. The guard now also
+/// requires `game_character_roots.world_id` of the destination Character to
+/// equal the source item's World. A forged commit with every other fact
+/// genuine -- a fresh reservation and its own fresh audit row, the real
+/// removed Ground row's World and Channel, the real captured quantity
+/// evidence -- but a destination Character rooted in another World must be
+/// rejected.
+#[test]
+fn transfer_rejects_a_destination_character_in_another_world() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "worldcheck").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        // A second Character root, genuinely rooted in a different World,
+        // seeded the same way `seed_character` seeds the first one, reusing
+        // the account guard it already installed.
+        let uuid = uuid_text;
+        let other_character = uuid(id(52));
+        let other_world = uuid(id(53));
+        let account = uuid(id(40));
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "INSERT INTO game_character_roots VALUES \
+             ('{other_character}', '{account}', '{other_world}', 1, 1, \
+               'profile-1', 'ruleset-1', 'content-1', 'starter-1')"
+        )))
+        .execute(&harness.pool)
+        .await?;
+
+        let source = harness.mint(&authority, STONE, 1).await?;
+        assert!(harness.on_ground(source).await?);
+
+        let world = uuid(id(WORLD));
+        let channel = uuid(id(CHANNEL));
+        let source_text = uuid(source);
+        let tx_id = uuid(id(60));
+        let event_id = uuid(id(61));
+        // Every statement below is one a real container-slot TRANSFER commit
+        // would issue -- fresh reservation, fresh audit row of this same
+        // physical transaction, the item's real World and Channel -- except
+        // the destination Character (`other_character`) is rooted in
+        // `other_world`, not the source item's real World.
+        let statements = [
+            format!(
+                "INSERT INTO game_item_transfer_reservations VALUES \
+                 ('{other_character}', 1, '{other_character}', '{world}', '{channel}', \
+                   '{source_text}', 1, decode(repeat('ab',33),'hex'), '{tx_id}', '{event_id}', \
+                   1000, 1, 900)"
+            ),
+            format!(
+                "INSERT INTO game_item_audit_outbox VALUES \
+                 ('{event_id}', '{tx_id}', 1, 1, 2, 1, \
+                   'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', '{source_text}', 1000, \
+                   7776001000, decode(repeat('ab',16),'hex'), \
+                   sha256(decode(repeat('ab',16),'hex')), 1, NULL)"
+            ),
+            format!(
+                "UPDATE game_item_instances SET last_transaction_id = '{tx_id}' \
+                   WHERE item_instance_id = '{source_text}' AND lifecycle = 1 AND quantity = 1"
+            ),
+            format!(
+                "DELETE FROM game_item_ground_locations WHERE item_instance_id = '{source_text}'"
+            ),
+            format!(
+                "INSERT INTO game_item_container_slots VALUES \
+                 ('{other_character}', '{source_text}', '{world}', '{tx_id}')"
+            ),
+            format!(
+                "INSERT INTO game_item_transfer_receipts \
+                   (game_session_id, command_id, character_id, intent_binding, transaction_id, \
+                    event_id, shape, source_item_instance_id, source_quantity_before, \
+                    source_quantity_after, occurred_at, envelope_sha256, committed_at) \
+                 VALUES \
+                 ('{other_character}', 1, '{other_character}', decode(repeat('ab',33),'hex'), \
+                   '{tx_id}', '{event_id}', 1, '{source_text}', 1, 1, 1000, \
+                   sha256(decode(repeat('ab',16),'hex')), 1000)"
+            ),
+        ];
+        let mut tx = harness.pool.begin().await?;
+        let applied: TestResult = async {
+            for statement in &statements {
+                sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
+                    .execute(&mut *tx)
+                    .await?;
+            }
+            tx.commit().await?;
+            Ok(())
+        }
+        .await;
+        assert!(
+            applied.is_err(),
+            "a destination Character rooted in another World was accepted"
+        );
+        // Nothing moved: the item is still on Ground, untouched.
+        assert_eq!(harness.item_state(source).await?, (1, 1));
+        assert!(harness.on_ground(source).await?);
+        assert_eq!(harness.count("game_item_container_slots").await?, 0);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
 /// Raw-SQL statements of one forged shape-2 (NewEntry) TRANSFER commit, the
 /// exact sequence `apply_transfer` issues, for the two-connection capacity
 /// race below (repair generation 2, finding 4).
