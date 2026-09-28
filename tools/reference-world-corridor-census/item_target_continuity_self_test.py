@@ -46,7 +46,7 @@ class FakeClient:
         self.calls.append(dict(params))
         page_id = int(params["pageids"])
         start = params["rvstart"]
-        if start == "2026-07-27T23:59:59Z":
+        if start == continuity.PRE_TARGET_DAY_END:
             value = 42 if page_id == 101 else 4
             field = "attack" if page_id == 101 else "defense"
             return {
@@ -58,7 +58,7 @@ class FakeClient:
                             "revisions": [
                                 {
                                     "revid": page_id * 10,
-                                    "timestamp": "2026-07-27T12:00:00Z",
+                                    "timestamp": "2026-09-26T12:00:00Z",
                                     "slots": {
                                         "main": {
                                             "content": json.dumps({field: value})
@@ -247,7 +247,7 @@ def test_history_continuation_is_pre_target_only():
 
     collector = FakeCollector()
 
-    pre_client = ContinuationClient("2026-07-27T23:59:59Z")
+    pre_client = ContinuationClient(continuity.PRE_TARGET_DAY_END)
     history = continuity.fetch_page_history(pre_client, collector, 101)
     assert history["pre_target_revision"]["revision_id"] == 1010
     assert pre_client.calls[0]["rvlimit"] == "1"
@@ -271,7 +271,7 @@ def test_derived_conflict_and_unknown_rules():
         {
             "pre_target_revision": {
                 "revision_id": 1,
-                "revision_timestamp": "2026-07-27T00:00:00Z",
+                "revision_timestamp": "2026-09-26T00:00:00Z",
                 "source_digest": "a" * 64,
                 "normalized_fields": {"attack": {"state": "VALUE", "value": 42}},
             },
@@ -293,7 +293,7 @@ def test_derived_conflict_and_unknown_rules():
         {
             "pre_target_revision": {
                 "revision_id": 1,
-                "revision_timestamp": "2026-07-27T00:00:00Z",
+                "revision_timestamp": "2026-09-26T00:00:00Z",
                 "source_digest": "a" * 64,
                 "normalized_fields": {"attack": {"state": "VALUE", "value": 41}},
             },
@@ -317,7 +317,7 @@ def test_full_compile_partition_and_no_promotion():
         101: {
             "pre_target_revision": {
                 "revision_id": 1,
-                "revision_timestamp": "2026-07-27T00:00:00Z",
+                "revision_timestamp": "2026-09-26T00:00:00Z",
                 "source_digest": "a" * 64,
                 "normalized_fields": {"attack": {"state": "VALUE", "value": 42}},
             },
@@ -326,7 +326,7 @@ def test_full_compile_partition_and_no_promotion():
         102: {
             "pre_target_revision": {
                 "revision_id": 2,
-                "revision_timestamp": "2026-07-27T00:00:00Z",
+                "revision_timestamp": "2026-09-26T00:00:00Z",
                 "source_digest": "b" * 64,
                 "normalized_fields": {"defense": {"state": "VALUE", "value": 4}},
             },
@@ -364,7 +364,7 @@ def test_unparseable_history_becomes_unknown_not_batch_failure():
         {
             "pre_target_revision": {
                 "revision_id": 1,
-                "revision_timestamp": "2026-07-27T00:00:00Z",
+                "revision_timestamp": "2026-09-26T00:00:00Z",
                 "source_digest": "a" * 64,
                 "parse_state": "UNPARSED",
                 "normalized_fields": {},

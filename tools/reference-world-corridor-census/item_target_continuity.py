@@ -18,6 +18,7 @@ from typing import Any, Iterable
 
 TARGET_COUNT = 38_157
 TARGET_DATE = "2026-09-27"
+PRE_TARGET_DAY_END = "2026-09-26T23:59:59Z"
 TARGET_DAY_START = "2026-09-27T00:00:00Z"
 TARGET_DAY_END = "2026-09-27T23:59:59Z"
 
@@ -347,7 +348,7 @@ def fetch_page_history(client, collector, page_id: int) -> dict[str, Any]:
         client,
         collector,
         page_id=page_id,
-        rvstart="2026-07-27T23:59:59Z",
+        rvstart=PRE_TARGET_DAY_END,
         rvend=None,
         rvdir="older",
         rvlimit=1,
