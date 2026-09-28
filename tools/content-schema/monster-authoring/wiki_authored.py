@@ -49,7 +49,7 @@ monster.outfit = {{
 
 monster.health = {hp}
 monster.maxHealth = {hp}
-monster.race = "blood"
+monster.race = "{race}"
 monster.corpse = {itemid}
 monster.speed = 125
 monster.manaCost = {mana_cost}
@@ -295,7 +295,47 @@ def derived_values(sources):
         values[f'res_{element}'] = resistance(br[f'{element}DmgMod']['value'])
     values['res_life_drain'] = resistance(fandom['hpDrainDmgMod']['value'])
     values['res_drown'] = resistance(fandom['drownDmgMod']['value'])
+    # Canary has no healing modifier: only the default 100% (no change) can be authored.
+    if resistance(br['healDmgMod']['value']) or resistance(fandom['healMod']['value']):
+        raise ValueError('a healing modifier other than 100% cannot be authored in the Canary format')
+    creature_class = br['creatureclass']['value'].strip()
+    if creature_class not in CLASS_RACE:
+        raise ValueError(f'no race for TibiaWiki BR creature class {creature_class!r}')
+    values['race'] = CLASS_RACE[creature_class]
+    corpse = sources['fandom.corpse']['facts']['name']['value']
+    if f'[[{corpse}]]' not in fandom['notes']['value']:
+        raise ValueError(f'the Fandom monster notes no longer name the corpse {corpse!r}')
     return values
+
+
+# TibiaWiki BR creature class -> Canary race (the blood residue); only classes the authored monsters use.
+CLASS_RACE = {'Humanos': 'blood'}
+
+
+def cited_facts():
+    """(source, fact) pairs the manifest cites as the source of an authored value."""
+    cited = {(source_name, fact) for cites, _ in FIELDS.values() for source_name, fact in cites}
+    return cited | {('fandom.monster', 'name'), ('br.monster', 'name')}
+
+
+class TrackedFacts(dict):
+    """A facts dict that records which facts the authoring code reads."""
+
+    def __init__(self, source_name, facts, used):
+        super().__init__(facts)
+        self.source_name, self.used = source_name, used
+
+    def __getitem__(self, fact):
+        self.used.add((self.source_name, fact))
+        return super().__getitem__(fact)
+
+
+def unread_cited_facts(sources):
+    """Cited facts the authoring code never reads, so a change to them could not change or fail the output."""
+    used = set()
+    tracked = {name: {**source, 'facts': TrackedFacts(name, source['facts'], used)} for name, source in sources.items()}
+    lua_text(tracked)
+    return sorted(cited_facts() - used)
 
 
 def lua_text(sources):
@@ -411,6 +451,8 @@ def bundles(converter):
     result = manifest_for(sources, [dict(r) for r in manifest['entries']], template_rows)
     emitted = {row['source_field'] for row in manifest['entries']}
     missing = set(FIELDS) - emitted - set(IMPLICIT)
+    if unread_cited_facts(sources):
+        raise ValueError(f'cited wiki facts the authoring does not read: {unread_cited_facts(sources)}')
     uncovered = uncovered_keys(text, emitted | set(IMPLICIT) | OMITTED_KEYS)
     if uncovered:
         raise ValueError(f'authored keys with no manifest row: {uncovered}')
@@ -444,7 +486,10 @@ def self_test():
         pass
     else:
         raise AssertionError('disagreeing wiki pushable facts were accepted')
-    for source_name, fact, value in (('br.monster', 'exp', '100'), ('br.monster', 'immunities', 'Invisibility, Paralysis, Fire'),
+    assert unread_cited_facts(sample['sources']) == [], unread_cited_facts(sample['sources'])
+    for source_name, fact, value in (('br.monster', 'healDmgMod', '50%'), ('fandom.monster', 'healMod', '50%'),
+                                     ('br.monster', 'creatureclass', 'Mortos-Vivos'), ('fandom.monster', 'notes', 'Unrelated.'),
+                                     ('br.monster', 'exp', '100'), ('br.monster', 'immunities', 'Invisibility, Paralysis, Fire'),
                                      ('br.monster', 'hab_physical', '[[Melee|Corpo a corpo]] (0-???).')):
         broken = json.loads(json.dumps(sample['sources']))
         broken[source_name]['facts'][fact]['value'] = value
