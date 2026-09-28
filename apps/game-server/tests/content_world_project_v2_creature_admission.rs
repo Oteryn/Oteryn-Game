@@ -793,3 +793,20 @@ fn players_only_chain_round_trips_and_other_filters_fail_closed() {
         "unknown chain target filter admitted"
     );
 }
+
+#[test]
+fn players_only_affects_round_trips_and_needs_no_creatures() {
+    let affects: ProjectV2EffectAffects = serde_json::from_value(json!({
+        "kind": "Players",
+        "top_creature_only": true,
+        "excludes_caster_name": false,
+        "includes_caster": false,
+    }))
+    .expect("players-only affects");
+    assert_eq!(affects.kind, ProjectV2AffectsKind::Players);
+    assert!(affects.creatures.is_empty());
+    assert_eq!(
+        serde_json::to_value(&affects).expect("affects")["kind"],
+        json!("Players")
+    );
+}

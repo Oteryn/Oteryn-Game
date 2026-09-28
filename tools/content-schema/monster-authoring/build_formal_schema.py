@@ -41,7 +41,7 @@ d['ratio']=obj({'numerator':{'type':'integer'},'denominator':integer(1)},('numer
                 'WorldProject/v2 validate_v2_ratio. Percent values represent percentage points, not fractions of one.')
 d['nonnegativePercent']=copy.deepcopy(d['ratio']);d['nonnegativePercent']['properties']['numerator']=integer()
 d['nonnegativeRatio']=copy.deepcopy(d['nonnegativePercent']);d['nonnegativeRatio']['description']='Exact nonnegative dimensionless ratio.'
-d['damageType']=enum('physical','energy','earth','fire','life_drain','mana_drain','drowning','ice','holy','death','agony','neutral','healing')
+d['damageType']=enum('physical','energy','earth','fire','life_drain','mana_drain','drowning','ice','holy','death','agony','neutral','untyped','healing')
 d['conditionType']=text(pattern=r'^[a-z][a-z0-9_]*$',description='Canonical condition key; source aliases require an explicit import mapping.')
 d['resistance']=obj({'damage_type':use('damageType'),'reduction_percent':use('ratio')},('damage_type','reduction_percent'))
 d['damageResponse']=obj({'damage_type':use('damageType'),'percent':use('nonnegativePercent')},('damage_type','percent'))
@@ -195,14 +195,14 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
     'appearance_transform':obj({'creature':use('CreatureRef'),'item':use('ItemRef')},oneOf=[
         {'required':['creature'],**forbid('item')},{'required':['item'],**forbid('creature')}]),
     'created_item':use('ItemRef'),
-    'affects':obj({'kind':enum('masterless_monsters','non_player_side','player_side','named_creatures'),
+    'affects':obj({'kind':enum('masterless_monsters','non_player_side','player_side','players','named_creatures'),
         'creatures':array(use('CreatureRef'),1,True),'top_creature_only':use('bool'),'excludes_caster_name':use('bool'),
         'includes_caster':use('bool')},
         ('kind','top_creature_only','excludes_caster_name','includes_caster'),allOf=[
         {'if':{'properties':{'kind':{'const':'named_creatures'}},'required':['kind']},'then':{'required':['creatures']},'else':forbid('creatures')}],
         description='D18: which creatures in the ability area this damage/heal reaches instead of the combat targets. masterless_monsters = '
             'monsters without a master; non_player_side = neither a player nor a player-owned summon; player_side = a player or a '
-            'player-owned summon; named_creatures = those creatures. top_creature_only: only the top creature of each tile; excludes_caster_name: not '
+            'player-owned summon; players = players only; named_creatures = those creatures. top_creature_only: only the top creature of each tile; excludes_caster_name: not '
             'creatures named like the caster; includes_caster: the caster is affected when it stands in the area.'),
     'removed_items':obj({'items':array(use('ItemRef'),1,True),'selection':enum('first_listed_per_tile','top_item_first_tile')},
         ('items','selection'),description='D18: remove_items over the ability area. first_listed_per_tile removes on every tile the first '

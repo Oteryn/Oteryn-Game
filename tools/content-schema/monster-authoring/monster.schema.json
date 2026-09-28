@@ -358,6 +358,7 @@
         "death",
         "agony",
         "neutral",
+        "untyped",
         "healing"
       ]
     },
@@ -2400,6 +2401,7 @@
                 "masterless_monsters",
                 "non_player_side",
                 "player_side",
+                "players",
                 "named_creatures"
               ]
             },
@@ -2457,7 +2459,7 @@
               }
             }
           ],
-          "description": "D18: which creatures in the ability area this damage/heal reaches instead of the combat targets. masterless_monsters = monsters without a master; non_player_side = neither a player nor a player-owned summon; player_side = a player or a player-owned summon; named_creatures = those creatures. top_creature_only: only the top creature of each tile; excludes_caster_name: not creatures named like the caster; includes_caster: the caster is affected when it stands in the area."
+          "description": "D18: which creatures in the ability area this damage/heal reaches instead of the combat targets. masterless_monsters = monsters without a master; non_player_side = neither a player nor a player-owned summon; player_side = a player or a player-owned summon; players = players only; named_creatures = those creatures. top_creature_only: only the top creature of each tile; excludes_caster_name: not creatures named like the caster; includes_caster: the caster is affected when it stands in the area."
         },
         "removed_items": {
           "type": "object",

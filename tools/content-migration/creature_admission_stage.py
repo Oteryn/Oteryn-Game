@@ -244,7 +244,8 @@ class Stage:
             if 'affects' in effect:
                 affects = effect['affects']
                 data['affects'] = {'kind': {'masterless_monsters': 'MasterlessMonsters', 'non_player_side': 'NonPlayerSide',
-                                            'player_side': 'PlayerSide', 'named_creatures': 'NamedCreatures'}[affects['kind']],
+                                            'player_side': 'PlayerSide', 'players': 'Players',
+                                            'named_creatures': 'NamedCreatures'}[affects['kind']],
                                    'top_creature_only': affects['top_creature_only'],
                                    'excludes_caster_name': affects['excludes_caster_name'],
                                    'includes_caster': affects['includes_caster']}

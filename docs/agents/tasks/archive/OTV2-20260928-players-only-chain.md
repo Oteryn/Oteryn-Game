@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-players-only-chain
 title: Players-only chain picker for monster chain spells
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1052
 jira: KAN-16
 base_sha: e91cafdd95c165668126e1dccaf93422af29d55c
-head_sha: null
-final_head_sha: null
+head_sha: e8129de4f7a3bfce6ee1fe13f7bf5f1d425255b7
+final_head_sha: e8129de4f7a3bfce6ee1fe13f7bf5f1d425255b7
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-28
@@ -81,3 +81,9 @@ authority change.
 - The Rust tests pass, including a round trip of the new field.
 - The governance and policy validators pass.
 - The PR gets an exact-head review because `content/world` changes.
+
+## Completion
+
+Merged as PR #1052 (`ac6d820bf744ac3abe9674258607b9e830eb2306`) from final head `e8129de`; required checks passed on that head. The Codex finding
+(bind the picker to its combat) was fixed in `e8129de`.
+Owner released.
