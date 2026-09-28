@@ -62,6 +62,18 @@ which mints identity, requires independent identity review when allocated.
 
 - Identity minting, schemas, validators, runtime code, map placements.
 
+## Finding dispositions
+
+Codex review of `0b18850`: three P1, all ACCEPTED in repair generation 1 of 1 (#162 convergence
+rule 5869165340). No owner decision changed.
+
+- 4126280751 (no WorldObject reference on LocalObject states): an optional typed `presentation`
+  reference `{family: WorldObject, key, revision}`, added by the new WO-3 child (§4.4, §5).
+- 4126280766 (`routed_to` not admitted and untyped): a typed versioned reference; WO-1 amends the
+  Item formal schema and `ProjectReferenceRecord::Item` (§4.1, §5).
+- 4126280775 (Item-owned corpse fields): decay target, duration and container capacity stay on the
+  routed Item record; the WorldObject corpse row keeps only corpse flags (§4.3).
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.

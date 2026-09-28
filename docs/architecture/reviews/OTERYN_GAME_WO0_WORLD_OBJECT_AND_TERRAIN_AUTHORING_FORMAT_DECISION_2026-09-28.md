@@ -65,7 +65,10 @@ these ids get, which facts belong to each family, and how do they relate to the 
   `oteryn:world-object.registry.iNNNNNNNN` for a WorldObject route. The mapping is a pure function
   of the frozen Item allocation and the route; it mints no new number and cannot collide.
 - **Item pointer.** The Item record `oteryn:item.registry.iNNNNNNNN` stays, non-materializable,
-  with `routed_to` naming the family key. It is never deleted or reused (frozen allocator).
+  with `routed_to` as a typed, versioned definition reference `{family, key, revision}` (Item
+  schema §2) to the Terrain or WorldObject definition. It is never deleted or reused (frozen
+  allocator). The Item formal schema and `ProjectReferenceRecord::Item` do not admit `routed_to`
+  today; WO-1 amends both (§5).
 - **Route is identity-relevant.** The route is fixed by the converter rule at the frozen source
   generation. A later route change is a new decision and never moves an existing key between
   families.
@@ -103,7 +106,7 @@ these ids get, which facts belong to each family, and how do they relate to the 
 | `floor_change` | floorchange | ladders and holes |
 | `bed` | bed parts, sleepers, transforms, partner direction | the sleep behaviour belongs to Interaction |
 | `fluid_source` | fluidsource, liquid pool | the fluid type is a typed Item fluid reference |
-| `corpse` | corpse flags, decay target and duration, container capacity | the loot and death link belong to Combat and DUR-03; a corpse definition holds no loot |
+| `corpse` | corpse and player-corpse flags | decay target, duration and container capacity stay Item-owned facts (`ITEM_TYPED`, `/item/temporal/*`, `/item/container/capacity`) on the routed Item record, read through its `routed_to` link; no second authority. The loot and death link belong to Combat and DUR-03; a corpse definition holds no loot |
 | `door` | level door, house-guest use | the open/close behaviour is the `LocalObject` state machine |
 | `client_projection` | the appearance reference | facts only |
 | `provenance` | source and revision per field | |
@@ -115,9 +118,14 @@ Item definitions; an unknown fact is never defaulted.
 
 - A **WorldObject** record is static catalog content: what an object is.
 - A **LocalObject** record (existing runtime family) is the stateful placement behaviour: its
-  states, per-state collision, transitions and attributes (owners proposal §4, §9). Each
-  LocalObject state names the WorldObject definition that presents it (for example a closed and an
-  open door are two WorldObject keys).
+  states, per-state collision, transitions and attributes (owners proposal §4, §9).
+- **Presentation link.** Each LocalObject state gains an optional `presentation` field, a typed,
+  revision-bound reference `{family: WorldObject, key, revision}` to the WorldObject definition
+  that presents it (for example a closed and an open door are two WorldObject keys). Today
+  `LocalObjectStateDefinition` and `ProjectReferenceRecord::LocalObject` carry no such field; the
+  WO-3 child adds it to both, validated fail-closed (the referenced definition must exist at the
+  bound revision). Absent, the state keeps today's behaviour; state keys, transitions and the
+  owners proposal's runtime binding are otherwise unchanged.
 - A placement references a WorldObject or Terrain key directly when it has no state machine, and a
   LocalObject when it has one. The owners proposal's runtime binding is unchanged.
 - Anything a player can pick up is an Item (owners proposal §4 value boundary). A WorldObject is
@@ -133,8 +141,9 @@ state a value; Canary and Crystal stay hypotheses). No original asset bytes are 
 
 | Child | Scope | Depends on |
 |---|---|---|
-| WO-1 | Schema, validator and census for `content/world/terrain/` and `content/world/objects/`, reusing the converter routing; no identity | this decision |
+| WO-1 | Schema, validator and census for `content/world/terrain/` and `content/world/objects/`, reusing the converter routing; the Item formal schema and `ProjectReferenceRecord::Item` amendment admitting the typed `routed_to` reference; no identity | this decision |
 | WO-2 | Population: family keys by the D93 rule, facts with provenance, Item `routed_to` pointers; independent identity review | WO-1; the item re-pin; B1b for donor ids |
+| WO-3 | The optional typed `presentation` reference on LocalObject states (`LocalObjectStateDefinition`, `ProjectReferenceRecord::LocalObject`), validated fail-closed | WO-2 |
 | Later | Runtime `WorldObject` family in code, map placements, corpse runtime link | their owners |
 
 ## 6. Rejected options
@@ -167,10 +176,12 @@ cross_repository_authority_changed: false
 implementation_may_resume: true   # WO-1 may be allocated
 required_fresh_allocation: true
 required_independent_review: "exact-head independent review (identity mapping, field ownership, overlay relation)"
-implementation_lanes: [WO-1, WO-2]
+implementation_lanes: [WO-1, WO-2, WO-3]
 required_revalidation:
   - "WO-1: every routed id maps to exactly one family key by the D93 rule; excluded routes get none; the key is reproducible from the frozen allocation; unknown facts stay UNKNOWN"
-  - "WO-2: no key collides with an existing key; every routed Item record points to its family key; no Item key is removed or renumbered"
+  - "WO-1: an Item record with a typed routed_to {family, key, revision} validates; a bare key or an unknown family is rejected"
+  - "WO-2: no key collides with an existing key; every routed Item record points to its family key; no Item key is removed or renumbered; corpse decay and capacity facts stay on the Item record only"
+  - "WO-3: a LocalObject state with a presentation reference to an existing WorldObject revision validates; a missing or wrong-family reference is rejected; a state without one behaves as today"
 remaining_unknowns:
   - Global evidence for contested routes
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates WO-1."
