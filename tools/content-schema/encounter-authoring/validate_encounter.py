@@ -48,7 +48,7 @@ def walk(actions, where):
 
 
 CREATURE_TRIGGERS = ('creature_died', 'lethal_damage', 'health_crossed', 'creature_spawned', 'ability_cast', 'damage_taken',
-                     'heal_received', 'damage_accumulated', 'item_used')
+                     'heal_received', 'damage_accumulated', 'item_used', 'stepped_on')
 
 
 def semantic(e, catalog):
@@ -86,6 +86,11 @@ def semantic(e, catalog):
             errors.append(f'{where}: the killer exists only for death, lethal damage and damage triggers')
 
     def position(value, where, rule):
+        # D46: positions measured from the subject need a trigger fired by one creature.
+        relative_to_subject = value in ('subject_position', 'closest_free_tile') or (
+            isinstance(value, dict) and ('offset_tiles' in value or 'relative' in value))
+        if relative_to_subject and rule['trigger']['kind'] not in CREATURE_TRIGGERS:
+            errors.append(f'{where}: a position measured from the subject needs a trigger fired by one creature')
         if isinstance(value, dict):
             if 'anchor' in value:
                 need('anchor', value['anchor'], anchors, where)
@@ -136,7 +141,7 @@ def semantic(e, catalog):
             elif ck == 'in_anchor':
                 subject(condition['subject'], at, trigger)
                 need_area(condition['anchor'], at)
-            elif ck in ('has_master', 'summon_count'):
+            elif ck in ('has_master', 'summon_count', 'has_condition'):
                 need('role', condition['role'], known_roles, at)
             elif ck == 'health_percent':
                 need('role', condition['role'], known_roles, at)

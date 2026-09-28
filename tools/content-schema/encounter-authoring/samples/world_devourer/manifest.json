@@ -28,6 +28,9 @@
     ],
     "spell.devourer summon": [
       "canary:creature/world_devourer"
+    ],
+    "spell.hunger summon": [
+      "canary:creature/the_hunger"
     ]
   },
   "sources": [
@@ -142,6 +145,27 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/spells/monster/devourer_summon.lua",
       "blob_sha1": "823dd5cb247832086cb73300bb465b62ca8ae452"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/greed.lua",
+      "blob_sha1": "31d99df683f946843e94c8450131cb8bf6c56995"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/hunger_summon.lua",
+      "blob_sha1": "751d38126f32378624948f3e21bb3f8b612dd895"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/movements_vortex_hunger.lua",
+      "blob_sha1": "7d62640fce86b071d8922f6dc180ab1e1ffe3992"
     }
   ],
   "entries": [
@@ -674,6 +698,139 @@
       "status": "mapped",
       "resolution": "onCastSpell: while the devourerSummon counter is below three, one of Greed, Frenzy or Disruption (uniform) appears on a random tile next to the World Devourer (x and y each -1..1) and the counter rises; the deaths of Frenzies and Disruptions already lower it. The spell's own combat has type COMBAT_NONE and no effect. The reference-date wiki (Fandom World Devourer rev 1086448) names all three minions in the fight.",
       "destination": "/encounter/rules/13"
+    },
+    {
+      "source_index": 16,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Greed is the greed participant.",
+      "destination": "/encounter/participants/8/creatures"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "The Hunger is the the_hunger participant.",
+      "destination": "/encounter/participants/4/creatures"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        78
+      ],
+      "status": "mapped",
+      "resolution": "The Hunger casts the registered spell \"hunger summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 17,
+      "source_lines": [
+        1,
+        10,
+        11,
+        12,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        27
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell: unless the 15 s delay runs, while the hungerSummon counter is below three a Greed appears on a random tile next to The Hunger (x and y each -1..1), the counter rises and the delay starts. The spell's own combat has type COMBAT_NONE and no effect. The reference-date wiki (Fandom World Devourer rev 1086448) describes the Greed and the teleport that removes it.",
+      "destination": "/encounter/rules/14"
+    },
+    {
+      "source_index": 17,
+      "source_lines": [
+        10,
+        11,
+        12,
+        23
+      ],
+      "status": "mapped",
+      "resolution": "removeDelay clears the flag after 15 s.",
+      "destination": "/encounter/rules/15"
+    },
+    {
+      "source_index": 18,
+      "source_lines": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        36,
+        39,
+        40,
+        41
+      ],
+      "status": "mapped",
+      "resolution": "A the hunger stepping on a closed vortex (23469) opens the vortex at its fixed tile (23470). decay() does nothing: items.xml gives the vortex no decay, so it stays open. The reference-date wiki says to \"walk the boss over the teleport so that it changes its color\".",
+      "destination": "/encounter/rules/16"
+    },
+    {
+      "source_index": 18,
+      "source_lines": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        9,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        36,
+        39,
+        40,
+        41
+      ],
+      "status": "mapped",
+      "resolution": "A world devourer stepping on a closed vortex (23469) opens the vortex at its fixed tile (23470). decay() does nothing: items.xml gives the vortex no decay, so it stays open. The reference-date wiki says to \"walk the boss over the teleport so that it changes its color\".",
+      "destination": "/encounter/rules/17"
+    },
+    {
+      "source_index": 18,
+      "source_lines": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "status": "mapped",
+      "resolution": "A Greed stepping on an open vortex (23470) disappears and lowers both summon counters. The reference-date wiki: \"walk the Greed on the teleport so it disappears\".",
+      "destination": "/encounter/rules/18"
     }
   ],
   "outcome_evidence": [

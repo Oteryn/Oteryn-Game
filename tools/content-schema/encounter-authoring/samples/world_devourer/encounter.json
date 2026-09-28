@@ -85,6 +85,16 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "greed",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/greed",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [
@@ -97,6 +107,16 @@
       "key": "exit_vortex",
       "kind": "point",
       "description": "Canary (32281, 31348, 14), the vortex of the room."
+    },
+    {
+      "key": "hunger_vortex",
+      "kind": "point",
+      "description": "Canary (32244, 31371, 14)."
+    },
+    {
+      "key": "devourer_vortex",
+      "kind": "point",
+      "description": "Canary (32271, 31346, 14)."
     }
   ],
   "phases": [],
@@ -117,6 +137,10 @@
       {
         "name": "bosses_killed",
         "initial": 0
+      },
+      {
+        "name": "hunger_summons",
+        "initial": 0
       }
     ],
     "flags": [
@@ -135,11 +159,20 @@
       {
         "name": "destruction_summon_delay",
         "initial": false
+      },
+      {
+        "name": "hunger_summon_delay",
+        "initial": false
       }
     ],
     "timers": [
       {
         "name": "destruction_summon_delay",
+        "duration_ms": 15000,
+        "repeat": false
+      },
+      {
+        "name": "hunger_summon_delay",
         "duration_ms": 15000,
         "repeat": false
       }
@@ -582,6 +615,169 @@
           "counter": "devourer_summons",
           "operation": "add",
           "value": 1
+        }
+      ]
+    },
+    {
+      "key": "the_hunger_summons_greed",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "the_hunger",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/hunger_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "hunger_summon_delay",
+          "value": false
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "hunger_summons",
+          "op": "<",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/greed",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "offset_tiles": 1
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "hunger_summons",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "hunger_summon_delay",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "hunger_summon_delay",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "hunger_summon_delay_ends",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "hunger_summon_delay"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "hunger_summon_delay",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "the_hunger_opens_its_vortex",
+      "trigger": {
+        "kind": "stepped_on",
+        "role": "the_hunger",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/23469",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/23469",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/23470",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "hunger_vortex"
+        }
+      ]
+    },
+    {
+      "key": "world_devourer_opens_its_vortex",
+      "trigger": {
+        "kind": "stepped_on",
+        "role": "world_devourer",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/23469",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/23469",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/23470",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "devourer_vortex"
+        }
+      ]
+    },
+    {
+      "key": "greed_leaves_through_the_open_vortex",
+      "trigger": {
+        "kind": "stepped_on",
+        "role": "greed",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/23470",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "triggering": true
+        },
+        {
+          "kind": "counter",
+          "counter": "hunger_summons",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": -1
         }
       ]
     }

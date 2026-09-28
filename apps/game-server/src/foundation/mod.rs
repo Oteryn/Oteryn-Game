@@ -9,17 +9,18 @@ pub mod fnd04_verifier;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
-#[cfg(test)]
-#[allow(unused_imports)] // Path-included Foundation test crates have no Movement module.
-pub(crate) use runtime_actor_carrier::MovementActorFixture;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
     CarrierError, ChannelContentPin, ChannelRuntimeV1, CommittedLethalReceipt, ControlLossMark,
-    CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit,
-    CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition,
-    MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot, OwnerDamageCommand,
-    OwnerDamageResult, PlayerActorReservation, RuntimeCorpseProjection,
+    CreatureDeathOccurrenceKey, CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath,
+    CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition,
+    ExactActorRef, FirstEntryPosition, MovementLocalPosition, MovementPositionContext,
+    MovementPositionSnapshot, OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation,
+    RuntimeCorpseProjection,
 };
+#[cfg(test)]
+#[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.
+pub(crate) use runtime_actor_carrier::{CombatDeathFixture, MovementActorFixture};
 #[cfg(test)]
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Standalone Foundation test crates lack the library root.

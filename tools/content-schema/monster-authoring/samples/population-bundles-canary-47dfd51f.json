@@ -16,7 +16,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1556,
+  "bundles": 1558,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -1230,6 +1230,7 @@
     {"monster":"soul_of_dragonking_zyrtarch","file":"quests/forgotten_knowledge/bosses/soul_of_dragonking_zyrtarch","sha256":"48b0941a652050a2414a447ffb241b8276d14d750c16c73a360c0ce1200f1182"},
     {"monster":"soul_reaper","file":"quests/cults_of_tibia/bosses/summons/soul_reaper","sha256":"43c0d0848df02037a53cf1759d3c89a2a6534cdb4b78a322f2bf9f815c28954a"},
     {"monster":"soul_scourge","file":"quests/grave_danger/soul_scourge","sha256":"ec7b5c84c683960bb9fdeeb86dd22dd3faa7ca9faa7aa055252ff720ea7cba87"},
+    {"monster":"soulcatcher","file":"quests/forgotten_knowledge/soulcatcher","sha256":"23c436ddba9d900c00ce4445056c0ce02e8b2e565edf5a38da3edb23e4f768cb"},
     {"monster":"souleater","file":"undeads/souleater","sha256":"476da681d88b8ff762b3f779de7b02bcad254ba463410ac22fbb3f020e45c3df"},
     {"monster":"soulless_minion","file":"quests/grave_danger/soulless_minion","sha256":"b73e8397429967841b5f79e25a87856d8cbb4d43a5e24d590c096fd150b61318"},
     {"monster":"spark_of_burning_hatred","file":"quests/soul_war/normal_monsters/burning_hatred/spark_of_burning_hatred","sha256":"25be93c9207c17d9dc813b752b316044df728d382c5f7bf2a6f9a38c27d5d8a5"},
@@ -1358,6 +1359,7 @@
     {"monster":"the_handmaiden","file":"quests/pits_of_inferno/the_handmaiden","sha256":"39a6b0f1ac81273cb3ff4a3fd032a100fd02fe105b02714d3bdf500c066daa5d"},
     {"monster":"the_heat_of_summer","file":"quests/the_dream_courts/the_heat_of_summer","sha256":"0121e2b31b44697e9da27dacb4f87f1d99208356d57145a20c42c0f21c38a644"},
     {"monster":"the_horned_fox","file":"raids/the_horned_fox","sha256":"0d7b53446f355ddd6141af819e3acdb80ddbcbf557330f851db1cfebaf59e911"},
+    {"monster":"the_hunger","file":"quests/heart_of_destruction/the_hunger","sha256":"c5799b9dc25d30ea191260f42da8d2fcb3c5184eeed29f942c4f7b35b00a481b"},
     {"monster":"the_hungry_baron_from_below","file":"quests/dangerous_depth/bosses/the_hungry_baron_from_below","sha256":"fc2fb22d685c66de5fd4995978f5ef0685ad2b6ed37486ee7e8d79ed8efb2a5c"},
     {"monster":"the_imperor","file":"quests/pits_of_inferno/the_imperor","sha256":"c1617c8dd43982d616a59bf8f019511536ef1f1c83f9eb8c1fb170ee0d5ed498"},
     {"monster":"the_keeper","file":"quests/wrath_of_the_emperor/the_keeper","sha256":"3cf77fd69752c7ce633bc3ec9aaaefb0211c460e57b626b146a2587697a1f406"},
