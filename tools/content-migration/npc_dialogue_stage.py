@@ -106,14 +106,13 @@ def keyword_words(node: dict) -> set[str]:
     return {str(k).strip().lower() for k in (node.get('keywords') or [])}
 
 
-def shadowed_by_gated_sibling(node: dict, earlier: list) -> bool:
-    """The engine answers with the first matching sibling whose predicate passes, so an earlier gated
-    sibling that can match the same message makes this reply conditional (convert.py marks the same
-    shadowing for services). An empty keyword matches every message."""
+def shadowed_by_omitted_sibling(node: dict, omitted: list) -> bool:
+    """The engine answers with the first sibling whose keywords match (and whose predicate passes), so an
+    earlier sibling that is not emitted here (gated, scripted, an action keyword, or itself dropped) and can
+    match the same message decides what this reply really answers; convert.py marks the same shadowing
+    for services. An empty keyword matches every message."""
     words = keyword_words(node)
-    for previous in earlier:
-        if previous.get('gate') == 'NONE':
-            continue
+    for previous in omitted:
         other = keyword_words(previous)
         if '' in words or '' in other or words & other:
             return True
@@ -124,17 +123,21 @@ def build_keyword_nodes(nodes: list, depth: int, stats: dict) -> list[dict]:
     if depth > MAX_DEPTH or not nodes:
         return []
     prepared = []  # source order, one entry per node that survives per-node validation
-    for index, node in enumerate(nodes):
+    omitted = []  # earlier siblings that are not emitted
+    for node in nodes:
         if node.get('kind') != 'say' or node.get('gate') != 'NONE' or node.get('effect') != 'NONE':
             stats['dropped_non_say_gated'] += 1
+            omitted.append(node)
             continue
-        if shadowed_by_gated_sibling(node, nodes[:index]):
-            stats['dropped_shadowed_by_gated_sibling'] += 1
+        if shadowed_by_omitted_sibling(node, omitted):
+            stats['dropped_shadowed_by_omitted_sibling'] += 1
+            omitted.append(node)
             continue
 
         reply = text_parts_cleaned(node.get('text'))
         if not reply:
             stats['dropped_no_text'] += 1
+            omitted.append(node)
             continue
 
         flags_src = node.get('flags') or {}
@@ -144,6 +147,7 @@ def build_keyword_nodes(nodes: list, depth: int, stats: dict) -> list[dict]:
         ungreet = bool(flags_src.get('ungreet'))
         if only_focus and only_unfocus:
             stats['dropped_conflicting_focus_flags'] += 1
+            omitted.append(node)
             continue
 
         move_up_raw = flags_src.get('move_up')
@@ -151,6 +155,7 @@ def build_keyword_nodes(nodes: list, depth: int, stats: dict) -> list[dict]:
         if move_up_raw is not None:
             if isinstance(move_up_raw, bool) or not isinstance(move_up_raw, int) or not (1 <= move_up_raw <= depth):
                 stats['dropped_bad_move_up'] += 1
+                omitted.append(node)
                 continue
             move_up = move_up_raw
 
@@ -165,6 +170,7 @@ def build_keyword_nodes(nodes: list, depth: int, stats: dict) -> list[dict]:
             fallback = True
         if not triggers and not fallback:
             stats['dropped_no_triggers'] += 1
+            omitted.append(node)
             continue
 
         children = build_keyword_nodes(node.get('children') or [], depth + 1, stats)
@@ -311,7 +317,7 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path) -> dict:
     stats = {
         'dropped_non_say_gated': 0, 'dropped_no_text': 0, 'dropped_no_triggers': 0, 'keyword_nodes': 0,
         'dropped_extra_fallback': 0, 'dropped_bad_move_up': 0, 'dropped_conflicting_focus_flags': 0,
-        'voices_dropped_no_cadence': 0, 'dropped_voice_lines_invalid': 0, 'dropped_shadowed_by_gated_sibling': 0,
+        'voices_dropped_no_cadence': 0, 'dropped_voice_lines_invalid': 0, 'dropped_shadowed_by_omitted_sibling': 0,
     }
     dialogues, held = [], []
     voice_line_total = greet_total = farewell_total = walkaway_total = send_trade_total = 0
@@ -375,7 +381,7 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path) -> dict:
                    'dropped_conflicting_focus_flags_nodes': stats['dropped_conflicting_focus_flags'],
                    'voices_dropped_no_cadence': stats['voices_dropped_no_cadence'],
                    'dropped_voice_lines_invalid': stats['dropped_voice_lines_invalid'],
-                   'dropped_shadowed_by_gated_sibling_nodes': stats['dropped_shadowed_by_gated_sibling']},
+                   'dropped_shadowed_by_omitted_sibling_nodes': stats['dropped_shadowed_by_omitted_sibling']},
         'dialogues': dialogues,
         'held': held,
     }

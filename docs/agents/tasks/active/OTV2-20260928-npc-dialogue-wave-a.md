@@ -59,12 +59,12 @@ Wave A NPCs gain their static dialogue. `npc_dialogue_stage.py` reads the Canary
 - greet, farewell, walk-away and send-trade messages, as lists of parts;
 - ambient voices with their cadence and say/yell mode;
 - `say` keyword replies with no condition and no effect, in source sibling order, with their conversation
-  flags and fallback nodes; a reply that an earlier gated sibling can shadow is left out.
+  flags and fallback nodes; a reply that an earlier omitted sibling can shadow is left out.
 
 A dialogue is taken when both sources agree, or when only one source has the NPC. 130 NPCs whose sources
 disagree are held with `DIALOGUE_CONFLICT`.
 
-`npc_admission_stage.py --dialogues` links 617 Dialogue declarations (4,260 keyword nodes) to their NPCs.
+`npc_admission_stage.py --dialogues` links 617 Dialogue declarations (4,220 keyword nodes) to their NPCs.
 The deferred Dragon Ancestor Spirit keeps none. The materializer pins both staged files, and the successor
 tree gains `content/dialogues/definitions`. Tibia NPC text is used as reference data under D9 and the
 repository's asset policy (#1050).
