@@ -4,10 +4,10 @@
 task_id: OTV2-20260928-death1c-fresh-bag
 title: DEATH-1c - empty bag after a lost container
 mode: IMPLEMENT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1178
 allocation_comment: "#162 5879250283 row 2 (PROVEN), owner answer 2 and standing mode 12A in 5879169470"
 base_branch: main
 branch: claude/death1c-fresh-bag
