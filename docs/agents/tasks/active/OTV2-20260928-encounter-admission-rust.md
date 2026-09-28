@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-encounter-admission-rust
 title: Typed WorldProject/v2 Encounter profile (encounter admission slice 3)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1142
 jira: KAN-16
 base_sha: 812930a7c338aa079650b7db6ea0ec25bae3106d
 head_sha: null
