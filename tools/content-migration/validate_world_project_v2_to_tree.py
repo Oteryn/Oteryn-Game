@@ -23,10 +23,17 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
+<<<<<<< HEAD
 NPC_COUNT = 1088
 NPC_BINDING_COUNT = 2282
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 58
+=======
+NPC_COUNT = 1093
+# Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
+ENCOUNTER_COUNT = 58
+NPC_BINDING_COUNT = 2281
+>>>>>>> 67d2c409 (wip slice 4 tree)
 DIALOGUE_COUNT = 701
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 307, "Service.Travel": 55}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}

@@ -813,7 +813,9 @@ def main() -> None:
         stage.add(stage.profiles, 'Encounter', identity['key'], profile(identity, 'Encounter', {
             'encounter_type': 'Boss' if boss else 'Generic',
             'scope': {'instance_per_party': 'Instance', 'channel_shared': 'Channel'}[encounter['scope']],
-            'details': encounter_details(encounter, mapper)}), name)
+            'details': {**encounter_details(encounter, mapper),
+                        'covers': sorted((mapper.ref({'family': 'Creature', 'key': key, 'revision': REVISION})
+                                          for key in item['covers']), key=lambda r: r['key'])}}), name)
         stage.bindings.append({'source_key': 'oteryn:source.canary', 'source_revision': CANARY_REVISION,
                                'identity_namespace': 'canary/encounter', 'external_id': name,
                                'target': identity, 'disposition': 'EXACT'})
