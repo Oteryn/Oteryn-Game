@@ -12,7 +12,7 @@ allocation_comment: 5875272684 (allocation); coordinator resume 5875470550 (owne
 base_branch: main
 branch: claude/dev-client-join-c1b
 base_sha: 8e2e474a3d82a6bfbc21be409f444cfd64d42961
-head_sha: pending fix-round commit
+head_sha: a61536b2940360b8bc544d3d18c4ac843b21f670
 owner: "Oteryn: impl interaction" (Claude Code)
 created_at: 2026-09-28T00:00:00Z
 updated_at: 2026-09-28T00:00:00Z
@@ -153,12 +153,13 @@ reason: >
 
 ### Exact-head CI
 
-- candidate: pending fix-round push to PR #1147; live exact-head checks on that PR govern.
+- candidate: PR #1147, head `a61536b2940360b8bc544d3d18c4ac843b21f670`; live exact-head checks on
+  that PR govern.
 - result: pending (superseding the failed run on `1efc029`, which is no longer the tested head)
 
 ## Self-review
 
-- exact head: pending fix-round commit
+- exact head: `a61536b2940360b8bc544d3d18c4ac843b21f670` (PR #1147)
 - method/reviewer: implementing agent (this session)
 - material findings: 4 Codex P2 findings (protocol-oteryn snapshot-domain bounds; dev-client frame
   correlation, deadlines, snapshot-type dispatch) plus one self-discovered-via-CI finding (the
@@ -172,8 +173,8 @@ reason: >
 - required: YES - touches two shared-lease files outside the original owned paths
   (`tools/architecture-check/**`, `crates/protocol-oteryn/**`), changes the production-closure
   checker's semantics, adds a workspace member wired as a dev-dependency of a production root.
-- exact head: pending fix-round commit
-- method/auditor: pending control-plane trigger (Codex re-review of the 4 threads on `1efc029`)
+- exact head: `a61536b2940360b8bc544d3d18c4ac843b21f670` (PR #1147)
+- method/auditor: pending control-plane trigger (4 threads on `1efc029` replied naming `a61536b`)
 - material findings: the 4 P2 findings above; disposition `fixed` for each (see Fix round)
 - verdict: pending
 
@@ -187,13 +188,13 @@ reason: >
 ## Context checkpoint
 
 ```yaml
-last_progress: fix round complete (4 Codex P2 findings + CI door-assertion failure); pushing
+last_progress: fix round pushed (a61536b); replied on the 4 Codex threads naming the fixing commit
 status: ready
 branch: claude/dev-client-join-c1b
-head_sha: pending fix-round commit
+head_sha: a61536b2940360b8bc544d3d18c4ac843b21f670
 pr: 1147
-final_head_sha: pending (supersedes 1efc029, which failed CI at stage=dev_client)
-final_head_frozen_at: null
+final_head_sha: a61536b2940360b8bc544d3d18c4ac843b21f670 (supersedes 1efc029, which failed CI at stage=dev_client)
+final_head_frozen_at: 2026-09-28T00:00:00Z
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
@@ -209,5 +210,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: push fix-round commit, reply on the 4 Codex threads, await new exact-head CI and review
+next_action: await new exact-head CI and review on PR #1147 (a61536b)
 ```
