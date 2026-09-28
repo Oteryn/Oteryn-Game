@@ -115,7 +115,18 @@
             "mode": null,
             "value": null
           }
-        ]
+        ],
+        "light": {
+          "level": null,
+          "color": null
+        },
+        "regeneration": {
+          "health_gain": null,
+          "health_interval_ms": null,
+          "mana_gain": null,
+          "mana_interval_ms": null
+        },
+        "buff_spell": null
       },
       "mitigated_by": [
         null

@@ -94,6 +94,9 @@ complete this qualification itself.
 - Root cause of the missing CI: #1087 (S16 and the S9 catalogue) changed the schema status line on
   main, so the PR conflicted. Main was merged in; the status line now reads S13–S16 plus S6–S10, and
   the S1–S15 references read S1–S16.
+- Dequeued for a second conflict: #1093 (S17 and the SPELL-D5 owner sub-decisions D5a and D5b)
+  changed the status line again. Main was merged in; the status line reads S13–S17 plus S6–S10,
+  and the SPELL-D5 row records D5a and D5b with a pointer to the vitals sample.
 
 ## Context checkpoint
 

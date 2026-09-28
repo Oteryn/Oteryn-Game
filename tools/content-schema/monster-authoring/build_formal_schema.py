@@ -184,9 +184,21 @@ d['condition']=obj({'type':use('conditionType'),'lifetime':enum('fixed_duration'
     'damage_over_time':use('damageOverTime'),'speed_formula':use('FormulaRef'),
     'attribute_modifiers':array(obj({'attribute':text(pattern=r'^[a-z][a-z0-9_]*$'),'mode':enum('percent_of_base','add'),
         'value':{'type':'integer'}},('attribute','mode','value')),1,
-        description='D12: percent_of_base sets the attribute to value% of its base; add adds value.')},('type','lifetime'),allOf=[
+        description='D12: percent_of_base sets the attribute to value% of its base; add adds value.'),
+    'light':obj({'level':integer(1,255),'color':integer(0,255)},('level','color'),
+        description='S17: light radius level and 8-bit light colour of a light condition.'),
+    'regeneration':obj({'health_gain':integer(1),'health_interval_ms':use('ms'),'mana_gain':integer(1),
+                        'mana_interval_ms':use('ms')},(),minProperties=2,
+        dependentRequired={'health_gain':['health_interval_ms'],'health_interval_ms':['health_gain'],
+                           'mana_gain':['mana_interval_ms'],'mana_interval_ms':['mana_gain']},
+        description='S17: hitpoints and/or mana restored every interval while the regeneration condition lasts.'),
+    'buff_spell':{'type':'boolean','description':'S17: the condition is a spell buff (Canary CONDITION_PARAM_BUFF_SPELL).'}},
+    ('type','lifetime'),allOf=[
     {'if':{'properties':{'lifetime':{'const':'damage_schedule'}},'required':['lifetime']},
-     'then':{'required':['damage_over_time'],**forbid('speed_formula')},'else':forbid('damage_over_time')}])
+     'then':{'required':['damage_over_time'],**forbid('speed_formula','light','regeneration')},'else':forbid('damage_over_time')},
+    {'if':{'properties':{'type':{'const':'light'}},'required':['type']},'then':{'required':['light']},'else':forbid('light')},
+    {'if':{'properties':{'type':{'const':'regeneration'}},'required':['type']},'then':{'required':['regeneration']},
+     'else':forbid('regeneration')}])
 d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','condition','appearance_transform','create_item','presentation_only','remove_condition',
                      'remove_items','summon_creature'),
     'damage_type':use('damageType'),'formula':use('FormulaRef'),'duration_ms':use('ms'),'condition':use('condition'),

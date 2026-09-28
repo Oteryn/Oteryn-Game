@@ -2256,6 +2256,68 @@
           },
           "minItems": 1,
           "description": "D12: percent_of_base sets the attribute to value% of its base; add adds value."
+        },
+        "light": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "level": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 255
+            },
+            "color": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            }
+          },
+          "required": [
+            "level",
+            "color"
+          ],
+          "description": "S17: light radius level and 8-bit light colour of a light condition."
+        },
+        "regeneration": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "health_gain": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "health_interval_ms": {
+              "$ref": "#/$defs/ms"
+            },
+            "mana_gain": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "mana_interval_ms": {
+              "$ref": "#/$defs/ms"
+            }
+          },
+          "required": [],
+          "minProperties": 2,
+          "dependentRequired": {
+            "health_gain": [
+              "health_interval_ms"
+            ],
+            "health_interval_ms": [
+              "health_gain"
+            ],
+            "mana_gain": [
+              "mana_interval_ms"
+            ],
+            "mana_interval_ms": [
+              "mana_gain"
+            ]
+          },
+          "description": "S17: hitpoints and/or mana restored every interval while the regeneration condition lasts."
+        },
+        "buff_spell": {
+          "type": "boolean",
+          "description": "S17: the condition is a spell buff (Canary CONDITION_PARAM_BUFF_SPELL)."
         }
       },
       "required": [
@@ -2284,6 +2346,16 @@
                   "required": [
                     "speed_formula"
                   ]
+                },
+                {
+                  "required": [
+                    "light"
+                  ]
+                },
+                {
+                  "required": [
+                    "regeneration"
+                  ]
                 }
               ]
             }
@@ -2294,6 +2366,62 @@
                 {
                   "required": [
                     "damage_over_time"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "light"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "light"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "light"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "regeneration"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "regeneration"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "regeneration"
                   ]
                 }
               ]
