@@ -18,7 +18,12 @@
 //!   appended per enclosing `one_of` branch;
 //! - a `revert_destination` lowers to post-revert state `<action id>/post-revert` (declared
 //!   `attribute_variant_of` the natural source state) and its dedicated inverse transition
-//!   `<action id>/revert`.
+//!   `<action id>/revert`;
+//! - owner decision D90 (re-arm): the same action also lowers to a re-arm forward
+//!   `<action id>/rearm` from the post-revert state back to the forward's target, bound like the
+//!   authored forward (same family, capability, guards, attributes and `revert_after_ms`), whose
+//!   unique inverse is the dedicated `<action id>/revert`. A covered teleporter therefore opens on
+//!   every owning event, not once per scope generation.
 
 use super::{
     ContentError, FootprintCell, FootprintRelation, LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY,
@@ -144,6 +149,9 @@ pub struct LoweredEncounterMapItems {
     pub post_revert_states: Vec<(TypedDefinitionRef, LocalObjectStateDefinition)>,
     /// Dedicated inverse transitions, one per `revert_destination`-bearing action.
     pub inverse_transitions: Vec<TransitionBinding>,
+    /// D90 re-arm forwards (post-revert state -> forward target), one per
+    /// `revert_destination`-bearing action.
+    pub rearm_transitions: Vec<TransitionBinding>,
     /// Keyed by the transform anchor's placement.
     pub placements: BTreeMap<PlacementKey, LoweredPlacementTables>,
     /// Destination anchors; each is one Generic marker placement (`marker_placement`).
@@ -151,8 +159,9 @@ pub struct LoweredEncounterMapItems {
 }
 
 impl LoweredEncounterMapItems {
-    /// Adds the synthesized post-revert states and inverse transitions to `source` before it is
-    /// linked; the linker then validates every declared `attribute_variant_of`.
+    /// Adds the synthesized post-revert states, inverse transitions and re-arm forwards to
+    /// `source` before it is linked; the linker then validates every declared
+    /// `attribute_variant_of`.
     pub fn apply_to_source(
         &self,
         source: &mut ReferencePlayableContentSource,
@@ -174,6 +183,9 @@ impl LoweredEncounterMapItems {
         source
             .transitions
             .extend(self.inverse_transitions.iter().cloned());
+        source
+            .transitions
+            .extend(self.rearm_transitions.iter().cloned());
         Ok(())
     }
 }
@@ -400,6 +412,7 @@ pub fn lower_map_item_transforms(
     let mut lowered = LoweredEncounterMapItems {
         post_revert_states: Vec::new(),
         inverse_transitions: Vec::new(),
+        rearm_transitions: Vec::new(),
         placements: BTreeMap::new(),
         destination_markers: BTreeSet::new(),
     };
@@ -485,6 +498,12 @@ pub fn lower_map_item_transforms(
         let Some(revert_destination) = &transform.revert_destination else {
             continue;
         };
+        // Admission already requires `revert_after_ms` beside `revert_destination`.
+        let revert_after_ms = transform.revert_after_ms.ok_or(
+            EncounterMapItemError::RevertDestinationWithoutRevert {
+                action: action.to_owned(),
+            },
+        )?;
         let revert_destination = anchor_placement_key(&admitted.encounter, revert_destination)?;
         let source_collision = states
             .iter()
@@ -509,6 +528,22 @@ pub fn lower_map_item_transforms(
             owner_capability: forward.owner_capability.clone(),
             policy_guard_refs: forward.policy_guard_refs.clone(),
         });
+        // D90: the re-arm forward C -> B, bound like A -> B. It enters the same target state, so
+        // it exposes the same `destination`, and it carries the same authored duration, keyed by
+        // its own `TransitionKey`; its unique inverse is the dedicated revert above.
+        let rearm = TransitionKey::new(&format!("{action}/rearm"))?;
+        lowered.rearm_transitions.push(TransitionBinding {
+            key: rearm.clone(),
+            definition: definition.clone(),
+            source_state: post_revert.clone(),
+            normalized_intent_family: forward.normalized_intent_family.clone(),
+            target_state: forward.target_state.clone(),
+            owner_capability: forward.owner_capability.clone(),
+            policy_guard_refs: forward.policy_guard_refs.clone(),
+        });
+        tables
+            .revert_after_ms
+            .insert((rearm, transform.action.clone()), revert_after_ms);
         lowered
             .destination_markers
             .insert(revert_destination.clone());
@@ -795,6 +830,10 @@ mod tests {
         TransitionKey::new(&format!("{DUKE_ACTION}/revert"))
     }
 
+    fn duke_rearm() -> Result<TransitionKey, ContentError> {
+        TransitionKey::new(&format!("{DUKE_ACTION}/rearm"))
+    }
+
     /// The duke sample lowered and linked, with its anchor and destination markers injected.
     fn duke_content() -> TestResult<CanonicalReferencePlayableContent> {
         let mut source = duke_source()?;
@@ -1027,15 +1066,23 @@ mod tests {
                 &format!("{DUKE_ACTION}/post-revert"),
             )?]
         );
+        // D90: the re-arm forward leaves the post-revert variant for the forward's target state
+        // and carries the same authored duration under its own key.
+        assert_eq!(
+            lowered.rearm_transitions,
+            vec![transition(
+                &format!("{DUKE_ACTION}/rearm"),
+                &format!("{DUKE_ACTION}/post-revert"),
+                OPEN_ITEM,
+            )?]
+        );
+        let action = LoweredActionId::new(DUKE_ACTION)?;
         assert_eq!(
             tables.revert_after_ms,
-            BTreeMap::from([(
-                (
-                    TransitionKey::new(FORWARD)?,
-                    LoweredActionId::new(DUKE_ACTION)?
-                ),
-                1_200_000
-            )])
+            BTreeMap::from([
+                ((TransitionKey::new(FORWARD)?, action.clone()), 1_200_000),
+                ((duke_rearm()?, action), 1_200_000),
+            ])
         );
         assert_eq!(
             lowered.destination_markers,
@@ -1050,9 +1097,23 @@ mod tests {
         let content = duke_content()?;
         let anchor = duke_anchor()?;
         let revert = duke_revert()?;
+        let rearm = duke_rearm()?;
         let action = LoweredActionId::new(DUKE_ACTION)?;
-        let mut runtime = bind(&content, anchor.as_str(), &[FORWARD, revert.as_str()])?;
+        let mut runtime = bind(
+            &content,
+            anchor.as_str(),
+            &[FORWARD, rearm.as_str(), revert.as_str()],
+        )?;
         let mut ingress = CommandIngress::new();
+
+        // D90: the widened unique-inverse search accepts the re-arm forward unchanged; the
+        // authored forward and the re-arm forward share the dedicated revert as their inverse.
+        assert_eq!(
+            runtime.revert_inverse(&TransitionKey::new(FORWARD)?),
+            Some(&revert)
+        );
+        assert_eq!(runtime.revert_inverse(&rearm), Some(&revert));
+        assert_eq!(runtime.revert_after_ms(&rearm, &action), Some(1_200_000));
 
         // Freshly bound in the natural source state: no destination is reachable.
         assert_eq!(runtime.state_key().as_str(), SEALED_ITEM);
@@ -1546,6 +1607,7 @@ mod tests {
             ])
         );
         assert!(lowered.post_revert_states.is_empty());
+        assert!(lowered.rearm_transitions.is_empty());
         assert!(tables.state_attributes.is_empty());
 
         // Two placements bind the same shared transition; only the authored one carries it.

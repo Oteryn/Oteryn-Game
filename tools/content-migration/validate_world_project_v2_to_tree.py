@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
 CREATURE_FAMILY_COUNTS = {
-    "Creature": 1319, "Presentation": 2407, "Behavior": 2407, "Loot": 978, "Ability": 5257, "Effect": 3929, "Formula": 4227,
+    "Creature": 1450, "Presentation": 2538, "Behavior": 2538, "Loot": 1025, "Ability": 5826, "Effect": 4432, "Formula": 4746,
 }
 CREATURE_FAMILY_NODES = {
     "Creature": "content/creatures/definitions/",
@@ -25,6 +25,8 @@ CREATURE_FAMILY_NODES = {
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
 NPC_COUNT = 1088
 NPC_BINDING_COUNT = 2296
+# Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
+ENCOUNTER_COUNT = 58
 DIALOGUE_COUNT = 701
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 307, "Service.Travel": 55}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
@@ -134,7 +136,8 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
 
 def validate_creature_families(reference: Any, declarations: Any, sources: Any) -> tuple[int, int, int]:
     """Round-trip the admitted creature families, their authoring profiles and source bindings."""
-    legacy_profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])}
+    legacy_profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])
+                       if row["target"]["family"] != "Encounter"}
     migrated_profiles: dict[tuple[str, str, str], Any] = {}
     migrated_bindings: list[Any] = []
     for family, node in CREATURE_FAMILY_NODES.items():
@@ -233,6 +236,43 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
     return len(migrated_npcs), len(migrated_npc_bindings), migrated_service_count
 
 
+def validate_encounters(declarations: Any, sources: Any) -> int:
+    """Round-trip the admitted Encounter declarations with their authoring profiles and source bindings."""
+    legacy = [row for row in declarations["records"] if row.get("kind") == "Encounter"]
+    require(len(legacy) == ENCOUNTER_COUNT, "LEGACY_ENCOUNTER_COUNT")
+    legacy_profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])
+                       if row["target"]["family"] == "Encounter"}
+    legacy_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Encounter"]
+    require(len(legacy_profiles) == len(legacy_bindings) == ENCOUNTER_COUNT, "LEGACY_ENCOUNTER_ATTACHMENTS")
+    index = load(ROOT / "content/encounters/definitions/index.json")
+    require(index["schema"] == "OTERYN_FAMILY_INDEX/v1" and index["family"] == "Encounter", "ENCOUNTER_INDEX")
+    require(index["record_count"] == len(legacy), "ENCOUNTER_INDEX_COUNT")
+    migrated: list[Any] = []
+    migrated_profiles: dict[tuple[str, str, str], Any] = {}
+    migrated_bindings: list[Any] = []
+    expected_start = 0
+    for shard_path in index["shards"]:
+        require(isinstance(shard_path, str) and shard_path.startswith("content/encounters/definitions/"), "ENCOUNTER_SHARD_REF")
+        payload = load(ROOT / shard_path)
+        require(payload["family"] == "Encounter" and payload["shard"]["start"] == expected_start, "ENCOUNTER_SHARD_GAP")
+        require(payload["shard"]["count"] == len(payload["records"]), "ENCOUNTER_SHARD_COUNT")
+        for row in payload["records"]:
+            declaration = row["declaration"]
+            migrated.append(declaration)
+            target = ("Encounter", declaration["identity"]["key"], declaration["identity"]["revision"])
+            if "authoring" in row:
+                migrated_profiles[target] = row["authoring"]
+            for binding in row.get("source_bindings", []):
+                require(target_id(binding["target"]) == target, "ENCOUNTER_BINDING_TARGET")
+                migrated_bindings.append(binding)
+        expected_start = payload["shard"]["end"] + 1
+    require(expected_start == ENCOUNTER_COUNT, "ENCOUNTER_SHARD_COVERAGE")
+    require(migrated == legacy, "ENCOUNTER_DECLARATION_ROUNDTRIP")
+    require(migrated_profiles == legacy_profiles, "ENCOUNTER_AUTHORING_ROUNDTRIP")
+    require(canonical_sorted(migrated_bindings) == canonical_sorted(legacy_bindings), "ENCOUNTER_BINDING_ROUNDTRIP")
+    return len(migrated)
+
+
 def validate_dialogue(declarations: Any) -> int:
     """Round-trip the admitted Dialogue declarations (no source bindings exist for Dialogue)."""
     legacy_dialogues = [row for row in declarations["records"] if row.get("kind") == "Dialogue"]
@@ -279,7 +319,8 @@ def main() -> int:
         "runtime_switch_authorized": False,
     }, "COMPATIBILITY_BOUNDARY")
     require(lock["family_counts"] == {"Item": 38157, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
-                                       "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS}, "LOCK_COUNTS")
+                                       "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS},
+            "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
     require(item_index["record_count"] == 38157 and len(item_index["shards"]) == 77, "ITEM_INDEX")
     require(mount_index["record_count"] == 252 and len(mount_index["shards"]) == 1, "MOUNT_INDEX")
@@ -355,11 +396,13 @@ def main() -> int:
     creature_records, creature_profiles, creature_bindings = validate_creature_families(reference, declarations, sources)
     npc_records, npc_bindings, service_records = validate_npc_services(declarations, sources)
     dialogue_records = validate_dialogue(declarations)
+    encounter_records = validate_encounters(declarations, sources)
     print(
         "PASS items=38157 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
-        f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records}"
+        f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "
+        f"encounter_records={encounter_records}"
     )
     return 0
 

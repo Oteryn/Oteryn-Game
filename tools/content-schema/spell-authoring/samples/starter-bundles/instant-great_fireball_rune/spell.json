@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/great_fireball_rune",
-      "revision": "spell-p2-r9"
+      "revision": "spell-p2-r10"
     },
     "name": "Great Fireball Rune",
     "carrier": "instant",
@@ -47,14 +47,14 @@
         "result": {
           "family": "Item",
           "key": "candidate:item/3191",
-          "revision": "spell-p2-r9"
+          "revision": "spell-p2-r10"
         },
         "count": 4,
         "effect_asset_binding": "canary.appearance:effect/magic_red",
         "reagent": {
           "family": "Item",
           "key": "candidate:item/3147",
-          "revision": "spell-p2-r9"
+          "revision": "spell-p2-r10"
         }
       }
     }

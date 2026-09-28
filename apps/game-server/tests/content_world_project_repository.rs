@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "fdddd4de974419733c985a0d85230f611b4ad1a54879ed9fb60950f09131080d",
+        "30b8fd9687ad8372aa26eee8fbd910cb90380bdbd2dd1d6e858d198bf6ebb7d5",
     ),
     (
         "definitions/declarations.json",
-        13_535_587,
-        "64fd820008ca0bc279d5c22992cbe32f99322afdfe872d312c6a0720fc5fa4c3",
+        14_749_406,
+        "d93be39dc50a4ec2235a88c6f3d31e81884dc78d487b4d0ec44e3925219bb6bb",
     ),
     (
         "definitions/reference.json",
-        21_886_837,
-        "92628fc165efa45e64803ccf30b358d8042f5c5bbab043bb3abed17784de820c",
+        22_561_121,
+        "a28b4d553248ce184496a7c501bc54ec18682451b5fb0c2c85a8250496c2d8b8",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1936,
-        "60084dde7fd5dd2f26f83ac2093cf381e6c428e1a1fcd74b9c67f1de2a0746ce",
+        1937,
+        "52d44da06df03e6e6ab840de9c27a6235749a5dae4645ee37cd13b5f91884713",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "ad8a537285e625be43b04993d660ecf61db9397f93912236c27c9db05bcdb22c",
+        "7444be734e29c84e26be46c911d41a885b403522fac760c0c5a5558640a2931c",
     ),
     (
         "provenance/imports.json",
-        5573,
-        "1c350400997f18b5f451286bfb0deed2da4f67b391bb686cb2ed5a49f1060a44",
+        30_006,
+        "af0c339fe26471812839f86d1c0ca9ef7b78cd57a6ed07072dfb4ffbe83e0284",
     ),
     (
         "provenance/sources.json",
-        1_218_026,
-        "502a801e2242e1097abec62ad9d7d766d851728d495ed5c15ae2015f578689b8",
+        1_277_028,
+        "25afc88d9964c0df3cbcf1f025947494a2b19dd91724138e186cd83ef60d8390",
     ),
     (
         "worlds/world.json",
@@ -84,19 +84,21 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "cfee830f0846b5f98ac39884f3b871ba040ac70e3d06872d8aff749d5b0d5e80";
+const TREE_SHA256: &str = "c3421db6285f79c155fad085a23bf9e9e789939466674d8a20aa125a63925b9b";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
-const CREATURES: usize = 1319;
-const CREATURE_RECORDS: usize = 18348;
-const CREATURE_PROFILES: usize = 17381;
+const CREATURES: usize = 1450;
+const CREATURE_RECORDS: usize = 20379;
+const CREATURE_PROFILES: usize = 19435;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1088;
 const NPC_RECORDS: usize = 2176;
 const NPC_DECLARATIONS: usize = 2151;
 const NPC_DIALOGUES: usize = 701;
 const NPC_BINDINGS: usize = 2296;
+/// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
+const ENCOUNTERS: usize = 58;
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -118,7 +120,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
         max_import_records: 9,
-        max_reimport_states: 1,
+        max_reimport_states: ENCOUNTERS,
     }
 }
 
@@ -297,7 +299,16 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "47dfd51f45280a59a1d3e50ba7edd573d7234446"
     );
     assert!(creature_import.candidates.is_empty());
-    assert!(creature_import.reimport_states.is_empty());
+    // E5: each admitted encounter keeps its manifest digest as an unchanged reimport baseline.
+    assert_eq!(creature_import.reimport_states.len(), ENCOUNTERS);
+    assert!(creature_import.reimport_states.iter().all(|state| {
+        state.stable_identity.starts_with("oteryn:encounter.")
+            && state.field_path == "encounter_manifest_sha256"
+            && matches!(&state.baseline, Some(CandidateValue::Text(digest)) if digest.len() == 64)
+            && state.upstream == state.baseline
+            && state.local == state.baseline
+            && state.decision == ReimportDecision::Unchanged
+    }));
     let wiki = &project.imports()[2];
     assert_eq!(wiki.batch_id, "g4-item-exact-165-tibiawiki-r1");
     assert_eq!(
@@ -330,7 +341,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(mount_import.reimport_states.is_empty());
 
     let v2 = project.v2().expect("WorldProject/v2 state");
-    assert_eq!(v2.declarations.len(), 385 + NPC_DECLARATIONS);
+    assert_eq!(v2.declarations.len(), 385 + NPC_DECLARATIONS + ENCOUNTERS);
+    assert_eq!(
+        v2.declarations
+            .iter()
+            .filter(|declaration| matches!(declaration, ProjectV2Declaration::Encounter { .. }))
+            .count(),
+        ENCOUNTERS
+    );
     assert_eq!(
         v2.declarations
             .iter()
@@ -398,6 +416,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         ProjectV2Declaration::Service {
             recipes, fields, ..
         } => recipes.is_empty() && fields.is_empty(),
+        ProjectV2Declaration::Encounter { fields, .. } => fields.is_empty(),
         _ => false,
     }));
     assert_eq!(v2.item_authoring.len(), 164);
@@ -431,7 +450,15 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             | ProjectV2Family::Ability
             | ProjectV2Family::Effect
             | ProjectV2Family::Formula
+            | ProjectV2Family::Encounter
     )));
+    assert_eq!(
+        v2.authoring_profiles
+            .iter()
+            .filter(|profile| profile.target.family == ProjectV2Family::Encounter)
+            .count(),
+        ENCOUNTERS
+    );
     assert!(v2.worlds.is_empty());
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
@@ -547,7 +574,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(
         v2.source_identity_bindings.len(),
-        550 + CREATURES + NPC_BINDINGS
+        550 + CREATURES + ENCOUNTERS + NPC_BINDINGS
     );
     assert_eq!(v2.editor.len(), 550);
     let mut outfit_ids = BTreeSet::new();
@@ -555,6 +582,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     let mut item_ids = BTreeSet::new();
     let mut creature_files = BTreeSet::new();
     let mut npc_bindings = 0;
+    let mut encounter_bindings = 0;
     for binding in &v2.source_identity_bindings {
         assert_eq!(
             binding.disposition,
@@ -572,6 +600,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             assert_eq!(binding.identity_namespace, "canary/monster-file");
             assert!(binding.target.key.starts_with("oteryn:creature."));
             assert!(creature_files.insert(&binding.external_id));
+            continue;
+        }
+        if binding.target.family == ProjectV2Family::Encounter {
+            assert_eq!(binding.source_key, "oteryn:source.canary");
+            assert_eq!(binding.source_revision, v2.sources[0].revision);
+            assert_eq!(binding.identity_namespace, "canary/encounter");
+            assert!(binding.target.key.starts_with("oteryn:encounter."));
+            encounter_bindings += 1;
             continue;
         }
         if binding.target.family == ProjectV2Family::Npc {
@@ -614,6 +650,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     }
     assert_eq!(creature_files.len(), CREATURES - 1);
     assert_eq!(npc_bindings, NPC_BINDINGS);
+    assert_eq!(encounter_bindings, ENCOUNTERS);
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
     assert!(outfit_ids.iter().all(|id| id.as_str() != "68724"));

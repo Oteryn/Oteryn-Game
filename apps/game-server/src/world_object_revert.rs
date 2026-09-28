@@ -21,7 +21,9 @@
 //!
 //! Scope-ephemeral (§7 C2): nothing here is persisted; a scope restart builds a new driver.
 
-use crate::content::{LogicalCell, LoweredActionId, PlacementKey, ProductionKey, TransitionKey};
+use crate::content::{
+    LogicalCell, LoweredActionId, PlacementKey, ProductionKey, TransitionBinding, TransitionKey,
+};
 use crate::foundation::{
     GenerationError, RuntimeExecutionOrdinal, RuntimeScopeRefV1, ScopeOwnershipGeneration,
     ScopeRuntimeFence, TerminalSemanticOutcome,
@@ -76,6 +78,31 @@ pub(crate) fn revert_child_occurrence(
         None,
         revisions,
     )
+}
+
+/// Owner decision D90 (re-arm): the one timed forward `action` may commit from `runtime`'s
+/// current state. From the natural state that is the authored forward A -> B; from a §9
+/// post-revert variant C it is the lowered re-arm forward C -> B; while no timed edge of
+/// `action` leaves the current state (the teleporter is open) it is `None`, and the owning
+/// event commits nothing. `transitions` is the bound Content's transition set; only edges this
+/// placement times for `action` (and so binds, `LocalObjectRuntime::bind`) are candidates.
+/// More than one candidate is an ambiguous authored binding and fails closed.
+pub(crate) fn select_timed_forward<'a>(
+    runtime: &LocalObjectRuntime,
+    action: &LoweredActionId,
+    transitions: impl IntoIterator<Item = &'a TransitionBinding>,
+) -> Result<Option<TransitionKey>, RevertError> {
+    let mut candidates = transitions.into_iter().filter(|transition| {
+        &transition.source_state == runtime.state_key()
+            && runtime.revert_after_ms(&transition.key, action).is_some()
+    });
+    let Some(first) = candidates.next() else {
+        return Ok(None);
+    };
+    if candidates.any(|other| other.key != first.key) {
+        return Err(RevertError::AmbiguousForward);
+    }
+    Ok(Some(first.key.clone()))
 }
 
 /// Counts rendered bytes and stops, without allocating, once `limit` is exceeded.
@@ -207,6 +234,8 @@ pub(crate) enum RevertError {
     /// `WOBJ-RL-07`: the forward or revert occurrence is too large; nothing committed.
     OccurrenceTooLarge,
     UnknownOccurrence,
+    /// D90: more than one timed forward of one action leaves the current state.
+    AmbiguousForward,
     InvalidLimits(&'static str),
     /// Ordinal space exhausted or another fatal step error: no work until a new generation.
     ScopeTerminal,
@@ -224,6 +253,7 @@ impl Display for RevertError {
             Self::OccurrenceTooDeep => formatter.write_str("revert occurrence exceeds WOBJ-RL-06"),
             Self::OccurrenceTooLarge => formatter.write_str("revert occurrence exceeds WOBJ-RL-07"),
             Self::UnknownOccurrence => formatter.write_str("unknown revert occurrence"),
+            Self::AmbiguousForward => formatter.write_str("ambiguous timed forward transition"),
             Self::InvalidLimits(reason) => write!(formatter, "invalid revert limits: {reason}"),
             Self::ScopeTerminal => formatter.write_str("revert driver is scope-terminal"),
             Self::Ordinal(error) => write!(formatter, "{error}"),
@@ -919,6 +949,11 @@ mod tests {
         anchor_placement_key(DUKE_KEY, anchor)
     }
 
+    /// D90: the lowered re-arm forward (post-revert variant -> open), bound beside the forward.
+    fn duke_rearm() -> String {
+        format!("{DUKE_ACTION}/rearm")
+    }
+
     /// `the_duke_of_the_depths` lowered by task A's §9 lowering, linked, with its anchor and
     /// destination markers injected. Returns the content and the dedicated inverse.
     fn duke_content(
@@ -1161,7 +1196,12 @@ mod tests {
         let anchor = duke_anchor()?;
         let mut runtimes = BTreeMap::from([(
             anchor.clone(),
-            bind_at(&content, &anchor, &[OPEN_TELEPORTER, revert.as_str()], 1)?,
+            bind_at(
+                &content,
+                &anchor,
+                &[OPEN_TELEPORTER, &duke_rearm(), revert.as_str()],
+                1,
+            )?,
         )]);
         let clock = ManualClock::new(Moment::ZERO);
         let mut driver = driver(&clock, RevertDriverLimits::registered())?;
@@ -1230,6 +1270,175 @@ mod tests {
         );
         assert_eq!(driver.issuer().minted, minted);
         assert_eq!(state_of(&runtimes, anchor.as_str())?, at(&post_revert, 2));
+        Ok(())
+    }
+
+    /// One duke death as the encounter owner delivers it: select the timed forward from the
+    /// teleporter's current state (D90) and, if there is one, commit it through the driver.
+    fn duke_kill(
+        driver: &mut ScopeRevertDriver<TestIssuer>,
+        runtimes: &mut BTreeMap<PlacementKey, LocalObjectRuntime>,
+        content: &CanonicalReferencePlayableContent,
+        death: &str,
+    ) -> TestResult<Option<ForwardOutcome>> {
+        let anchor = duke_anchor()?;
+        let runtime = runtimes.get(&anchor).ok_or(fixture("runtime"))?;
+        let action = LoweredActionId::new(DUKE_ACTION)?;
+        let Some(transition) = select_timed_forward(runtime, &action, &content.transitions)? else {
+            return Ok(None);
+        };
+        Ok(Some(forward(
+            driver,
+            runtimes,
+            anchor.as_str(),
+            death,
+            DUKE_ACTION,
+            transition.as_str(),
+        )?))
+    }
+
+    #[test]
+    fn duke_teleporter_re_arms_on_every_kill_and_a_kill_while_open_is_a_no_op() -> TestResult {
+        // Owner decision D90: after the timed revert lands on the post-revert variant, the next
+        // kill reopens the teleporter through the lowered re-arm forward.
+        let (content, revert) = duke_content(DUKE)?;
+        let anchor = duke_anchor()?;
+        let rearm = duke_rearm();
+        let mut runtimes = BTreeMap::from([(
+            anchor.clone(),
+            bind_at(
+                &content,
+                &anchor,
+                &[OPEN_TELEPORTER, &rearm, revert.as_str()],
+                1,
+            )?,
+        )]);
+        let clock = ManualClock::new(Moment::ZERO);
+        let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+        let post_revert = format!("{DUKE_ACTION}/post-revert");
+        let reward = duke_destination("reward_destination")?;
+        let warzone = duke_destination("warzone_exit")?;
+        let destination = |runtimes: &BTreeMap<PlacementKey, LocalObjectRuntime>| {
+            runtimes
+                .get(&anchor)
+                .and_then(destination_of)
+                .map(str::to_owned)
+        };
+
+        // Kill 1 from the natural state: A -> B, reward destination, one PENDING record.
+        let kill_1 = duke_kill(&mut driver, &mut runtimes, &content, DUKE_DEATH)?
+            .ok_or(fixture("kill 1 selected no forward"))?;
+        assert_eq!(kill_1.outcome.disposition(), "COMMITTED");
+        let first = scheduled(kill_1)?;
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 1));
+        assert_eq!(destination(&runtimes), Some(reward.as_str().to_owned()));
+
+        // A kill while open selects no forward: no ordinal, no record, no mutation.
+        let minted = driver.issuer().minted;
+        assert!(
+            duke_kill(
+                &mut driver,
+                &mut runtimes,
+                &content,
+                "canary:occurrence/the_duke_of_the_depths/death/open-1"
+            )?
+            .is_none()
+        );
+        assert_eq!(driver.issuer().minted, minted);
+        assert_eq!(driver.record_count(), 1);
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 1));
+
+        // 1,200,000 ms later the revert B -> C lands on the warzone exit.
+        clock.advance(millis(1_200_000))?;
+        let report = driver.wake(&mut runtimes, &BTreeSet::new())?;
+        let [(fired, first_outcome)] = report.fired.as_slice() else {
+            return Err("expected the first revert to fire".into());
+        };
+        assert_eq!(fired, &first);
+        assert!(first_outcome.committed());
+        let first_outcome = first_outcome.clone();
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(&post_revert, 2));
+        assert_eq!(destination(&runtimes), Some(warzone.as_str().to_owned()));
+
+        // Kill 2 from the post-revert variant: the re-arm forward C -> B reopens the teleporter
+        // to the reward destination and schedules a second, distinct revert of the same inverse.
+        let runtime = runtimes.get(&anchor).ok_or(fixture("runtime"))?;
+        let selected = select_timed_forward(
+            runtime,
+            &LoweredActionId::new(DUKE_ACTION)?,
+            &content.transitions,
+        )?;
+        assert_eq!(
+            selected.as_ref().map(TransitionKey::as_str),
+            Some(rearm.as_str())
+        );
+        let kill_2 = duke_kill(
+            &mut driver,
+            &mut runtimes,
+            &content,
+            "canary:occurrence/the_duke_of_the_depths/death/2",
+        )?
+        .ok_or(fixture("kill 2 selected no forward"))?;
+        assert_eq!(kill_2.outcome.disposition(), "COMMITTED");
+        let second = scheduled(kill_2)?;
+        assert_ne!(second, first);
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 3));
+        assert_eq!(destination(&runtimes), Some(reward.as_str().to_owned()));
+        let Some(RevertLifecycle::Pending(pending)) = driver.lifecycle(&second) else {
+            return Err("second revert record is not PENDING".into());
+        };
+        assert_eq!(pending.inverse(), &revert);
+        assert_eq!(pending.expected_state().as_str(), OPEN_ITEM);
+        assert_eq!(pending.expected_revision(), 3);
+
+        // A kill while open again is a no-op, and the first revert still stands.
+        let minted = driver.issuer().minted;
+        assert!(
+            duke_kill(
+                &mut driver,
+                &mut runtimes,
+                &content,
+                "canary:occurrence/the_duke_of_the_depths/death/open-2"
+            )?
+            .is_none()
+        );
+        assert_eq!(driver.issuer().minted, minted);
+        assert_eq!(driver.record_count(), 2);
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 3));
+        assert_eq!(
+            driver.lifecycle(&first),
+            Some(&RevertLifecycle::Terminal(first_outcome.clone()))
+        );
+
+        // 1,200,000 ms after kill 2 the teleporter reverts to the warzone exit again.
+        clock.advance(millis(1_199_999))?;
+        assert!(
+            driver
+                .wake(&mut runtimes, &BTreeSet::new())?
+                .fired
+                .is_empty()
+        );
+        clock.advance(millis(1))?;
+        let report = driver.wake(&mut runtimes, &BTreeSet::new())?;
+        let [(fired, second_outcome)] = report.fired.as_slice() else {
+            return Err("expected the second revert to fire".into());
+        };
+        assert_eq!(fired, &second);
+        assert!(second_outcome.committed());
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(&post_revert, 4));
+        assert_eq!(destination(&runtimes), Some(warzone.as_str().to_owned()));
+
+        // Two distinct TERMINAL lifecycle records, one per kill.
+        assert_eq!(driver.record_count(), 2);
+        assert_eq!(
+            driver.lifecycle(&first),
+            Some(&RevertLifecycle::Terminal(first_outcome))
+        );
+        assert_eq!(
+            driver.lifecycle(&second),
+            Some(&RevertLifecycle::Terminal(second_outcome.clone()))
+        );
+        assert_eq!(driver.next_deadline(), None);
         Ok(())
     }
 
@@ -1538,7 +1747,12 @@ mod tests {
         // The duke teleporter cannot be opened by USE from its natural state.
         let (content, revert) = duke_content(DUKE)?;
         let anchor = duke_anchor()?;
-        let mut duke = bind_at(&content, &anchor, &[OPEN_TELEPORTER, revert.as_str()], 1)?;
+        let mut duke = bind_at(
+            &content,
+            &anchor,
+            &[OPEN_TELEPORTER, &duke_rearm(), revert.as_str()],
+            1,
+        )?;
         assert_eq!(
             duke.attempt_use(0, &BTreeSet::new())?,
             LocalObjectUseOutcome::NothingToUse
@@ -1718,7 +1932,12 @@ mod tests {
         let anchor = duke_anchor()?;
         let mut runtimes = BTreeMap::from([(
             anchor.clone(),
-            bind_at(&content, &anchor, &[OPEN_TELEPORTER, revert.as_str()], 1)?,
+            bind_at(
+                &content,
+                &anchor,
+                &[OPEN_TELEPORTER, &duke_rearm(), revert.as_str()],
+                1,
+            )?,
         )]);
         let clock = ManualClock::new(Moment::ZERO);
         let mut driver = driver(&clock, RevertDriverLimits::registered())?;
@@ -2067,7 +2286,8 @@ mod tests {
         // #1133 carry-over (a).
         let (content, revert) = duke_content(DUKE)?;
         let anchor = duke_anchor()?;
-        let transitions = [OPEN_TELEPORTER, revert.as_str()];
+        let rearm = duke_rearm();
+        let transitions = [OPEN_TELEPORTER, &rearm, revert.as_str()];
         let reward = duke_destination("reward_destination")?;
 
         let mut duplicate = content.clone();
@@ -2123,11 +2343,18 @@ mod tests {
         actions.push(first);
         let (content, revert) = duke_content(&serde_json::to_string(&encounter)?)?;
         let second_revert = format!("{}/1/revert", DUKE_ACTION.trim_end_matches("/0"));
+        let second_rearm = format!("{}/1/rearm", DUKE_ACTION.trim_end_matches("/0"));
         assert!(matches!(
             bind_at(
                 &content,
                 &duke_anchor()?,
-                &[OPEN_TELEPORTER, revert.as_str(), &second_revert],
+                &[
+                    OPEN_TELEPORTER,
+                    &duke_rearm(),
+                    &second_rearm,
+                    revert.as_str(),
+                    &second_revert,
+                ],
                 1
             ),
             Err(WorldRuntimeError::InvalidBinding(
