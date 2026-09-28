@@ -34,6 +34,7 @@ mod compiler;
 mod cw2_b1_import;
 mod cw2_b4_import;
 mod digest;
+pub mod encounter_map_item;
 mod fixture;
 mod model;
 mod production;

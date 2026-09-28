@@ -1,11 +1,11 @@
 use crate::content::{
     CanonicalReferencePlayableContent, ContentError, DefinitionFamily, FootprintRelation,
-    LocalObjectCollisionPresence, LocalObjectStateDefinition, LogicalCell,
-    NonAuthoritativeReferenceStage, PlacementKey, ProductionKey,
-    REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
-    ReferenceDefinitionKind, ReferencePlayableContentSource, ReferencePlayableGenerationIdentity,
-    ReferenceServerItem, TransitionBinding, TransitionKey, TypedDefinitionRef,
-    link_reference_playable,
+    LocalObjectCollisionPresence, LocalObjectIntentFamily, LocalObjectStateAttributes,
+    LocalObjectStateDefinition, LogicalCell, LoweredActionId, NonAuthoritativeReferenceStage,
+    PlacementKey, ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
+    REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinitionKind, ReferencePlayableContentSource,
+    ReferencePlayableGenerationIdentity, ReferenceServerItem, TransitionBinding, TransitionKey,
+    TypedDefinitionRef, link_reference_playable,
 };
 use crate::foundation::{
     CharacterWorldEligibilityClaimV1, CommandId, CommandIngress, CommandLifecycleError, CommandRef,
@@ -467,6 +467,8 @@ pub(crate) fn bind_native_entry_door(
         local_object_initial_state: Some(
             ProductionKey::new(door_accepted::DOOR_CLOSED_STATE).map_err(invalid)?,
         ),
+        local_object_state_attributes: BTreeMap::new(),
+        local_object_revert_after_ms: BTreeMap::new(),
     };
     let mut content = door_content.clone();
     content.placements = vec![placement];
@@ -705,6 +707,11 @@ pub(crate) struct LocalObjectRuntime {
     revision: u64,
     collision_cells: BTreeSet<LogicalCell>,
     blocking_cells: BTreeSet<LogicalCell>,
+    // #162 §9 (design point 2): immutable after `bind`; attributes are a pure read of
+    // `(state_attributes, state)` and revert durations are keyed per bound transition and
+    // authored action.
+    state_attributes: BTreeMap<ProductionKey, LocalObjectStateAttributes>,
+    transition_revert_after_ms: BTreeMap<(TransitionKey, LoweredActionId), u64>,
 }
 
 impl LocalObjectRuntime {
@@ -835,6 +842,66 @@ impl LocalObjectRuntime {
             }
         }
 
+        // #162 §9 (design points 1/5): the linker never sees this injected placement, so its
+        // attribute and revert tables are re-validated here, and every revert-bearing transition
+        // must be bound at this placement with exactly one bound inverse (§7 Round 23/24).
+        crate::content::validate_local_object_placement_attributes(
+            placement,
+            definition,
+            &content.placements,
+            &content.transitions,
+        )?;
+        for (transition_key, _action) in placement.local_object_revert_after_ms.keys() {
+            let forward =
+                transitions
+                    .get(transition_key)
+                    .ok_or(WorldRuntimeError::InvalidBinding(
+                        "revert_after_ms names a transition this placement does not bind",
+                    ))?;
+            // §7: a timed transition must carry a recognized intent family, and its inverse must
+            // carry the paired one (TRANSFORM↔TRANSFORM, CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE).
+            let paired_family =
+                LocalObjectIntentFamily::from_key(&forward.normalized_intent_family)
+                    .ok_or(WorldRuntimeError::InvalidBinding(
+                        "revert_after_ms transition carries no recognized intent family",
+                    ))?
+                    .inverse();
+            // Widened rule: a candidate inverse leaves the forward target and lands either on the
+            // forward source itself or on a state whose *own* declared `attribute_variant_of` is
+            // the forward source — never the reverse direction. Inert when no state declares one.
+            let state_matches = transitions
+                .values()
+                .filter(|candidate| {
+                    candidate.key != forward.key
+                        && candidate.source_state == forward.target_state
+                        && (candidate.target_state == forward.source_state
+                            || states
+                                .iter()
+                                .find(|state| state.key == candidate.target_state)
+                                .and_then(|state| state.attribute_variant_of.as_ref())
+                                == Some(&forward.source_state))
+                })
+                .collect::<Vec<_>>();
+            let mut inverses = state_matches.iter().filter(|candidate| {
+                LocalObjectIntentFamily::from_key(&candidate.normalized_intent_family)
+                    == Some(paired_family)
+            });
+            if inverses.next().is_none() {
+                return Err(WorldRuntimeError::InvalidBinding(
+                    if state_matches.is_empty() {
+                        "revert_after_ms transition has no bound inverse at this placement"
+                    } else {
+                        "revert_after_ms inverse does not carry the paired intent family"
+                    },
+                ));
+            }
+            if inverses.next().is_some() {
+                return Err(WorldRuntimeError::InvalidBinding(
+                    "revert_after_ms transition has an ambiguous bound inverse at this placement",
+                ));
+            }
+        }
+
         let collision_cells = absolute_collision_cells(placement)?;
         // D38 W1b mechanical adaptation: the linker now requires every LocalObject placement to
         // carry an authored initial state validated against this same `states` vocabulary, so the
@@ -868,7 +935,43 @@ impl LocalObjectRuntime {
             collision_cells,
             states,
             transitions,
+            state_attributes: placement.local_object_state_attributes.clone(),
+            transition_revert_after_ms: placement.local_object_revert_after_ms.clone(),
         })
+    }
+
+    /// #162 §9 (design point 2): the attributes this placement exposes in its current state —
+    /// a pure read of the bind-time table, never separately tracked mutable state.
+    #[cfg_attr(
+        not(test),
+        allow(
+            dead_code,
+            reason = "§9 accessor; its gameplay consumer is a later allocation"
+        )
+    )]
+    #[must_use]
+    pub(crate) fn attributes(&self) -> Option<&LocalObjectStateAttributes> {
+        self.state_attributes.get(&self.state)
+    }
+
+    /// #162 §9 (design points 5/6): this placement's authored revert duration for one bound
+    /// transition invoked by one authored action; `None` when that invocation carries none.
+    #[cfg_attr(
+        not(test),
+        allow(
+            dead_code,
+            reason = "§9 accessor; the §7 revert driver is a later allocation"
+        )
+    )]
+    #[must_use]
+    pub(crate) fn revert_after_ms(
+        &self,
+        transition: &TransitionKey,
+        action: &LoweredActionId,
+    ) -> Option<u64> {
+        self.transition_revert_after_ms
+            .get(&(transition.clone(), action.clone()))
+            .copied()
     }
 
     #[must_use]
@@ -1612,10 +1715,12 @@ mod tests {
                     LocalObjectStateDefinition {
                         key: closed.clone(),
                         collision: LocalObjectCollisionPresence::Present,
+                        attribute_variant_of: None,
                     },
                     LocalObjectStateDefinition {
                         key: open.clone(),
                         collision: LocalObjectCollisionPresence::Absent,
+                        attribute_variant_of: None,
                     },
                 ]),
                 client_projection: ClientProjectionClass::ClientSafe,
@@ -1696,6 +1801,8 @@ mod tests {
                 // starting state the runtime previously derived from the OPEN transition, so
                 // existing CW4 test assertions (both instances start Closed) are unchanged.
                 local_object_initial_state: Some(closed.clone()),
+                local_object_state_attributes: BTreeMap::new(),
+                local_object_revert_after_ms: BTreeMap::new(),
             })
         };
         canonical.placements = vec![placement(PLACEMENT_A)?, placement(PLACEMENT_B)?];
@@ -1785,18 +1892,22 @@ mod tests {
                         LocalObjectStateDefinition {
                             key: absent.clone(),
                             collision: LocalObjectCollisionPresence::Absent,
+                            attribute_variant_of: None,
                         },
                         LocalObjectStateDefinition {
                             key: present.clone(),
                             collision: LocalObjectCollisionPresence::Present,
+                            attribute_variant_of: None,
                         },
                         LocalObjectStateDefinition {
                             key: armed.clone(),
                             collision: LocalObjectCollisionPresence::Present,
+                            attribute_variant_of: None,
                         },
                         LocalObjectStateDefinition {
                             key: dormant.clone(),
                             collision: LocalObjectCollisionPresence::Absent,
+                            attribute_variant_of: None,
                         },
                     ]),
                     client_projection: ClientProjectionClass::ClientSafe,
@@ -1807,10 +1918,12 @@ mod tests {
                         LocalObjectStateDefinition {
                             key: foreign_state_a.clone(),
                             collision: LocalObjectCollisionPresence::Absent,
+                            attribute_variant_of: None,
                         },
                         LocalObjectStateDefinition {
                             key: foreign_state_b.clone(),
                             collision: LocalObjectCollisionPresence::Present,
+                            attribute_variant_of: None,
                         },
                     ]),
                     client_projection: ClientProjectionClass::ClientSafe,
@@ -1917,6 +2030,8 @@ mod tests {
                 evidence,
             },
             local_object_initial_state: Some(absent),
+            local_object_state_attributes: BTreeMap::new(),
+            local_object_revert_after_ms: BTreeMap::new(),
         }];
         Ok(canonical)
     }

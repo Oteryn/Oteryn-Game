@@ -832,6 +832,10 @@ impl LocalObjectStateDocument {
         Ok(LocalObjectStateDefinition {
             key: ProductionKey::new(&self.key)?,
             collision: self.collision.lower(),
+            // #162 §9: attribute variants are synthesized by the encounter `map_item` lowering,
+            // never authored through this project document, so the document shape (and every
+            // existing content byte) is unchanged.
+            attribute_variant_of: None,
         })
     }
 }
