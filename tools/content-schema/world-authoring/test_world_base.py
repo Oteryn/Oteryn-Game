@@ -25,18 +25,33 @@ ALL_ATTRS = {
     "teleport": (65535, 65535, 15),
     "depot": 65535,
 }
-ITEMS_BY_SERVER_ID = json.dumps(
-    {
-        "bindings": [
-            {
-                "external_id": str(server_id),
-                "identity_namespace": "ots/item_server_id",
-                "target": {"key": f"oteryn:item.registry.i{number:08}"},
-            }
-            for server_id, number in ((100, 7), (1234, 90000000), (1949, 3))
-        ]
-    }
-).encode()
+GOLD = "oteryn:item.currency.gold_coin"
+REGISTRY = "oteryn:item.registry.i90000000"
+DONOR = convert.DONOR_PREFIX
+assert DONOR == "donor:crystalserver@00ce02a5:item/"
+
+
+def bindings_for(pairs) -> bytes:
+    return json.dumps(
+        {
+            "bindings": [
+                {
+                    "external_id": str(server_id),
+                    "identity_namespace": "ots/item_server_id",
+                    "target": {"key": key},
+                }
+                for server_id, key in pairs
+            ]
+        }
+    ).encode()
+
+
+# 100 is bound to a named key, 1234 to a registry key and 1949 (the teleport) is unbound.
+ITEMS_BY_SERVER_ID = bindings_for([(100, GOLD), (1234, REGISTRY), (7, "oteryn:x")])
+ITEMS_XML = (
+    b'<items><item id="7" name="x"/><item fromid="100" toid="101" name="y"/></items>'
+)
+ITEMS_XML_WITH_TELEPORT = ITEMS_XML.replace(b"</items>", b'<item id="1949"/></items>')
 
 
 def normalized(tiles):
@@ -168,19 +183,25 @@ class CodecTest(unittest.TestCase):
 
 class ConvertAndValidateTest(unittest.TestCase):
     def setUp(self):
-        self.blobs = {convert.OTBM: fixtures.fixture_map()}
+        self.blobs = {
+            convert.OTBM: fixtures.fixture_map(),
+            convert.ITEMS_XML: ITEMS_XML,
+        }
         self.out = convert.build(self.blobs, ITEMS_BY_SERVER_ID)
         self.root = Path(tempfile.mkdtemp())
         for path, data in self.out.items():
             (self.root / path).parent.mkdir(parents=True, exist_ok=True)
             (self.root / path).write_bytes(data)
-        bindings = self.root / validate.ITEM_BINDINGS
-        bindings.parent.mkdir(parents=True, exist_ok=True)
-        bindings.write_bytes(ITEMS_BY_SERVER_ID)
+        self.write_bindings(ITEMS_BY_SERVER_ID)
         self.region = self.root / validate.DIRECTORY / "region-z07-x003-y003.b3"
 
     def tearDown(self):
         shutil.rmtree(self.root)
+
+    def write_bindings(self, data):
+        bindings = self.root / validate.ITEM_BINDINGS
+        bindings.parent.mkdir(parents=True, exist_ok=True)
+        bindings.write_bytes(data)
 
     def index(self):
         return json.loads((self.root / validate.INDEX).read_text())
@@ -191,6 +212,11 @@ class ConvertAndValidateTest(unittest.TestCase):
     def errors(self):
         return validate.validate(self.root)
 
+    def summary(self, out=None):
+        return json.loads(
+            (out or self.out)[str(convert.SUMMARY.relative_to(convert.ROOT))]
+        )
+
     def test_fixture_converts_to_a_valid_family(self):
         self.assertEqual(self.errors(), [])
         index = self.index()
@@ -198,26 +224,54 @@ class ConvertAndValidateTest(unittest.TestCase):
             index["totals"], {"items": 4, "regions": 1, "sectors": 1, "tiles": 4}
         )
         self.assertEqual(index["shards"], [row["path"] for row in index["regions"]])
-        self.assertEqual(index["source"]["files"][0]["path"], convert.OTBM)
-        summary = json.loads(self.out[str(convert.SUMMARY.relative_to(convert.ROOT))])
+        self.assertEqual(
+            [row["path"] for row in index["source"]["files"]],
+            [convert.OTBM, convert.ITEMS_XML],
+        )
+        self.assertEqual(
+            index["palette"],
+            [
+                {"key": GOLD, "provisional": False, "source_item_id": 100},
+                {"key": REGISTRY, "provisional": False, "source_item_id": 1234},
+                {
+                    "key": DONOR + "1949",
+                    "provisional": True,
+                    "source_item_id": 1949,
+                },
+            ],
+        )
+        summary = self.summary()
         self.assertEqual(summary["tiles_by_floor"], {"7": 4})
         self.assertEqual(summary["tiles_with_house"], 2)
         self.assertEqual(summary["item_attributes"], {"door": 1, "teleport": 2})
+        self.assertEqual(summary["rejected_items"], {"unsupported_attributes": 0})
+        self.assertEqual(
+            summary["palette"],
+            {
+                "entries": 3,
+                "provisional": {
+                    "appearance_only": {"entries": 1, "occurrences": 2},
+                    "entries": 1,
+                    "in_items_xml": {"entries": 0, "occurrences": 0},
+                    "occurrences": 2,
+                },
+            },
+        )
         z, rx, ry, sectors = codec.decode_region(self.region.read_bytes())
         self.assertEqual((z, rx, ry), (7, 3, 3))
         tiles = {(x, y): (f, h, zn, i) for x, y, f, h, zn, i in sectors[0][1]}
         self.assertEqual(
             tiles,
             {
-                (1000 + 1, 1000 + 1): (0, 0xFE, (), [(90000000, 0, {"door": 3})]),
-                (1002, 1001): (0, 0xFE, (), [(7, 0, None)]),
+                (1001, 1001): (0, 0xFE, (), [(1, 0, {"door": 3})]),
+                (1002, 1001): (0, 0xFE, (), [(0, 0, None)]),
                 (1001, 1003): (
                     0,
                     0,
                     (),
                     [
-                        (3, 0, {"teleport": (1002, 1002, 7)}),
-                        (3, 0, {"teleport": (0, 0, 0)}),
+                        (2, 0, {"teleport": (1002, 1002, 7)}),
+                        (2, 0, {"teleport": (0, 0, 0)}),
                     ],
                 ),
                 (1002, 1002): (0, 0, (), []),
@@ -227,31 +281,39 @@ class ConvertAndValidateTest(unittest.TestCase):
     def test_conversion_is_deterministic(self):
         self.assertEqual(convert.build(self.blobs, ITEMS_BY_SERVER_ID), self.out)
 
-    def test_unbound_item_ids_fail_closed_and_are_all_reported(self):
-        bindings = json.loads(ITEMS_BY_SERVER_ID)
-        bindings["bindings"] = [
-            b for b in bindings["bindings"] if b["external_id"] == "1949"
-        ]
-        with self.assertRaises(convert.ConvertError) as raised:
-            convert.build(self.blobs, json.dumps(bindings).encode())
-        self.assertIn("1234", str(raised.exception))
-        self.assertIn("100", str(raised.exception))
-
-    def test_named_item_targets_carry_no_registry_number(self):
-        bindings = json.loads(ITEMS_BY_SERVER_ID)
-        bindings["bindings"][0]["target"]["key"] = "oteryn:item.currency.gold_coin"
-        with self.assertRaises(convert.UnboundItemsError) as raised:
-            convert.build(self.blobs, json.dumps(bindings).encode())
+    def test_split_of_provisional_ids_follows_items_xml(self):
+        blobs = {**self.blobs, convert.ITEMS_XML: ITEMS_XML_WITH_TELEPORT}
+        provisional = self.summary(convert.build(blobs, ITEMS_BY_SERVER_ID))["palette"]
         self.assertEqual(
-            raised.exception.report()["unbound"],
-            [
-                {
-                    "named_target": "oteryn:item.currency.gold_coin",
-                    "occurrences": 1,
-                    "server_id": 100,
-                }
-            ],
+            provisional["provisional"],
+            {
+                "appearance_only": {"entries": 0, "occurrences": 0},
+                "entries": 1,
+                "in_items_xml": {"entries": 1, "occurrences": 2},
+                "occurrences": 2,
+            },
         )
+
+    def test_without_bindings_every_id_is_provisional_and_regions_do_not_change(self):
+        out = convert.build(self.blobs, bindings_for([]))
+        palette = json.loads(out[validate.INDEX])["palette"]
+        self.assertEqual(
+            [
+                (row["source_item_id"], row["key"], row["provisional"])
+                for row in palette
+            ],
+            [(i, f"{DONOR}{i}", True) for i in (100, 1234, 1949)],
+        )
+        region = f"{validate.DIRECTORY}/region-z07-x003-y003.b3"
+        self.assertEqual(out[region], self.out[region])
+
+    def test_ambiguous_or_shared_bindings_fail_closed(self):
+        for pairs in (
+            [(100, GOLD), (100, REGISTRY)],
+            [(100, GOLD), (1234, GOLD)],
+        ):
+            with self.assertRaises(convert.ConvertError, msg=pairs):
+                convert.build(self.blobs, bindings_for(pairs))
 
     def test_unpopulated_marker_is_accepted_until_the_family_exists(self):
         marker = {
@@ -281,7 +343,10 @@ class ConvertAndValidateTest(unittest.TestCase):
                 0, fixtures.struct.pack("<IHHII", 4, 64, 64, 3, 57), map_data
             )
             with self.assertRaises(convert.ConvertError, msg=attr):
-                convert.build({convert.OTBM: raw}, ITEMS_BY_SERVER_ID)
+                convert.build(
+                    {convert.OTBM: raw, convert.ITEMS_XML: ITEMS_XML},
+                    ITEMS_BY_SERVER_ID,
+                )
 
     def test_reader_streams_tiles_with_containers_and_inline_items(self):
         inner = fixtures.node(6, fixtures.struct.pack("<H", 1949))
@@ -330,13 +395,79 @@ class ConvertAndValidateTest(unittest.TestCase):
         self.region.unlink()
         self.assertTrue(any("files other than" in e for e in self.errors()))
 
-    def test_unbound_registry_number_in_a_region_is_rejected(self):
-        bindings = json.loads(ITEMS_BY_SERVER_ID)
-        bindings["bindings"] = [
-            b for b in bindings["bindings"] if b["external_id"] != "1949"
-        ]
-        (self.root / validate.ITEM_BINDINGS).write_text(json.dumps(bindings))
-        self.assertTrue(any("without a binding" in e for e in self.errors()))
+    def edit_palette(self, edit):
+        index = self.index()
+        edit(index["palette"])
+        self.write_index(index)
+        return self.errors()
+
+    def test_palette_rules_are_enforced(self):
+        def unused(palette):
+            palette.append(
+                {"key": DONOR + "2000", "provisional": True, "source_item_id": 2000}
+            )
+
+        def out_of_range(palette):
+            palette.pop()
+
+        def provisional_but_bound(palette):
+            palette[1] = {**palette[1], "key": DONOR + "1234", "provisional": True}
+
+        def wrong_binding(palette):
+            palette[0] = {**palette[0], "key": "oteryn:item.currency.other"}
+
+        def wrong_revision(palette):
+            palette[2] = {**palette[2], "key": "donor:crystalserver@ff7ede59:item/1949"}
+
+        def unsorted(palette):
+            palette.reverse()
+
+        def duplicate_key(palette):
+            palette[1] = {**palette[1], "key": GOLD}
+
+        def duplicate_id(palette):
+            palette[1] = {**palette[1], "source_item_id": 100}
+
+        def extra_field(palette):
+            palette[0] = {**palette[0], "name": "x"}
+
+        for edit, expected in (
+            (unused, "no item uses"),
+            (out_of_range, "palette indexes outside"),
+            (provisional_but_bound, "has a binding"),
+            (wrong_binding, "not a binding target"),
+            (wrong_revision, "provisional key must be"),
+            (unsorted, "ascending"),
+            (duplicate_key, "listed twice"),
+            (duplicate_id, "listed twice"),
+            (extra_field, "malformed entry"),
+        ):
+            with self.subTest(edit.__name__):
+                errors = self.edit_palette(edit)
+                self.assertTrue(any(expected in e for e in errors), errors)
+                self.write_index(json.loads(self.out[validate.INDEX]))
+        self.assertEqual(self.errors(), [])
+
+    def test_bindings_change_makes_a_registry_entry_stale(self):
+        self.write_bindings(bindings_for([(100, GOLD), (1234, GOLD.upper())]))
+        self.assertTrue(any("not a binding target" in e for e in self.errors()))
+        self.write_bindings(
+            bindings_for([(100, GOLD), (1234, REGISTRY), (1949, "a:b")])
+        )
+        self.assertTrue(any("has a binding" in e for e in self.errors()))
+
+    def test_summary_palette_counts_are_checked(self):
+        path = self.root / validate.SUMMARY
+        summary = json.loads(path.read_text())
+        summary["palette"]["provisional"]["occurrences"] += 1
+        path.write_bytes(validate.canonical(summary))
+        self.assertTrue(
+            any("provisional entries/occurrences" in e for e in self.errors())
+        )
+        summary["palette"]["provisional"]["occurrences"] -= 1
+        summary["palette"]["provisional"]["in_items_xml"]["entries"] += 1
+        path.write_bytes(validate.canonical(summary))
+        self.assertTrue(any("does not add up" in e for e in self.errors()))
 
     def replace_region(self, data):
         self.region.write_bytes(data)

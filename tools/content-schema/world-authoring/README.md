@@ -91,39 +91,59 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
 
 - **Layout:** `index.json` (`OTERYN_FAMILY_INDEX/v1`, family `WorldPlacement.Base`) plus one
   file per non-empty 256x256 region, `region-z{z:02}-x{rx:03}-y{ry:03}.b3`
-  (`rx = x // 256`). The index lists the shards, and a `regions` table with each file's
-  `path`, `sha256`, `tiles` and `items`. `samples/world-base-capture-v1.json` records the
-  source, extent, totals, per-floor tiles, bytes on disk, the zstd build and the count of
-  rejected items (must be 0).
+  (`rx = x // 256`). The index lists the shards, a `regions` table with each file's
+  `path`, `sha256`, `tiles` and `items`, and the item `palette`.
+  `samples/world-base-capture-v1.json` records the source, extent, totals, per-floor
+  tiles, bytes on disk, the zstd build, the palette counts and the count of rejected
+  attributes (must be 0).
 - **Format** (`OTERYN_WORLD_REGION_B3/v1`, spec in the `world_region_codec.py` docstring): a
   12-byte header (`OTRB`, version, floor, `rx`, `ry`, sector count), a sector table
   (index 0-63, offset, length) and one zstd level-3 frame per non-empty 32x32 sector. A
   sector lists its tiles sorted by (y, x) with delta-coded positions and varints. Items
   are in stacking order, container contents flattened behind their container with a depth.
 - **Carried per tile:** flags, house id, tile zone ids (Canary `OTBM_TILE_ZONE`, 476 tiles
-  on floor 10). **Per item:** the Oteryn item registry number and, when present, count,
+  on floor 10). **Per item:** the palette index and, when present, count,
   charges, action id, unique id, text, description, teleport destination, depot id, house
   door id. Presence is exact, so a present zero or empty text stays present.
-- **Item identity:** the converter maps each map server id through
-  `imports/crystalserver/bindings/items.json` (`ots/item_server_id`) to the number in
-  `oteryn:item.registry.iNNNNNNNN`. It fails closed, and never guesses, when an id has no
-  binding, is bound to a named item key without a registry number, or when the map holds
-  an item or tile attribute outside the carried set. `--unbound-report PATH` lists every
-  offending id.
+- **Item identity (palette):** a region file never names an item. It stores, per item, an
+  index into `palette` in `index.json`. The palette holds exactly the distinct server item
+  ids the map uses, ordered by ascending id, as `{"key", "source_item_id", "provisional"}`:
+  - an id bound in `imports/crystalserver/bindings/items.json` (`ots/item_server_id`) takes
+    that binding's target key, either `oteryn:item.registry.iNNNNNNNN` or a named key such
+    as `oteryn:item.currency.gold_coin`, with `provisional: false`;
+  - any other id takes `donor:crystalserver@00ce02a5:item/<id>` (the donor-census key
+    form) with `provisional: true`. This covers appearance-only terrain ids that are not in
+    `items.xml` and new items that no binding covers yet.
+
+  Later identity work (admitting the provisional items, a Terrain identity path) rewrites
+  palette entries in `index.json` only. The 22 MB of region files do not change. The
+  capture summary counts provisional entries and occurrences, split into ids that
+  `items.xml` declares at the pinned revision and appearance-only ids. Current counts:
+  25,963 palette entries, 5,987 provisional, 811,579 provisional item occurrences.
+  The converter still fails closed, and never guesses, on an item or tile attribute
+  outside the carried set.
 - **Measured** (prototype of this codec on the same map, one thread): full load 1.7 s into
   a naive model, one sector read about 30 us, compact in-memory base about 170 MB (a
   shared immutable base for all channels). An edit rewrites one sector but changes the
   region file as a whole, so git stores it as a binary diff (`.b3` is marked `binary`).
   Runtime loading and the per-channel overlay are out of scope here.
-- **Speed:** `convert_world_base.py` takes about 2 minutes and 0.7 GB. `validate_world_base.py`
-  decodes all 1,208 regions in about 10 s on four cores (about 40 s on one).
+- **Speed:** `convert_world_base.py` takes about 2.2 minutes. `validate_world_base.py`
+  decodes all 1,208 regions in about 13 s on four cores (about 50 s of CPU).
 
 ```bash
-python validate_world_base.py              # committed family: sha256, decode, counts, bindings
+python validate_world_base.py              # committed family: sha256, decode, counts, palette
 python test_world_base.py                  # codec round trips, converter, validator, negatives
 # Regenerate (needs the pinned crystalserver checkout, not fetched by CI):
-python convert_world_base.py --crystal-root /path/to/crystalserver [--check] [--unbound-report FILE]
+python convert_world_base.py --crystal-root /path/to/crystalserver [--check]
 ```
 
 Region files are compressed by libzstd through the pinned `zstandard` package. The capture
 summary records the versions, and `--check` compares bytes, so run it with the same pins.
+
+To update from a newer CrystalServer revision, change the pin in `convert_world_metadata.py`
+and the `items.xml` digest in `convert_world_base.py`, then rerun the converter. Region
+files whose tiles did not change stay byte-identical, so only the changed regions differ,
+plus `index.json` and the summary. Palette indexes are assigned by ascending server id, so a
+new id that sorts before existing ones renumbers later indexes and rewrites every region
+that uses them. Oteryn edits authored on top of the base map will later need a separate
+patch layer that survives a regeneration. That layer is not implemented.

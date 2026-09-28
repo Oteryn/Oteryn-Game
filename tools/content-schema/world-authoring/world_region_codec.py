@@ -15,14 +15,16 @@ decompresses to a sector payload (all integers are LEB128 varints unless noted):
     position_delta = local_index - previous_local_index - 1   (local_index = y % 32 * 32 + x % 32)
     control        = item_count << 3 | zones_present << 2 | house_present << 1 | flags_present
     zones          = zone_count, then that many zone ids
-    item           = registry << 1 | has_mask      then, when has_mask: mask, attribute values
+    item           = palette << 1 | has_mask       then, when has_mask: mask, attribute values
 
 Items are flattened in stacking order and container contents follow their container; the
-``depth`` attribute (0 for top-level items) restores the nesting. ``registry`` is the Oteryn
-item registry number, never a source server id. Attribute presence is exact: an attribute
-that is present with value 0 or an empty text stays present.
+``depth`` attribute (0 for top-level items) restores the nesting. ``palette`` is an index
+into the ``palette`` list of the family ``index.json``; the codec neither knows nor checks
+what an index stands for, so item identity can change without rewriting a region file.
+Attribute presence is exact: an attribute that is present with value 0 or an empty text
+stays present.
 
-In memory an item is ``(registry, depth, attrs)`` where ``attrs`` is ``None`` or a dict
+In memory an item is ``(palette, depth, attrs)`` where ``attrs`` is ``None`` or a dict
 using the names in ``ATTRIBUTES``, and a tile is ``(x, y, flags, house, zones, items)``
 with ``zones`` a tuple of u16 tile zone ids (empty when the tile has none).
 """
@@ -135,8 +137,8 @@ def encode_tile(flags: int, house: int, zones, items) -> bytes:
         for zone in zones:
             _put(out, _limit(zone, 0xFFFF, "tile zone id"))
     previous = -1
-    for registry, depth, attrs in items:
-        _limit(registry, 0xFFFFFFFF >> 1, "item registry number")
+    for palette, depth, attrs in items:
+        _limit(palette, 0xFFFFFFFF >> 1, "item palette index")
         _limit(depth, 0xFF, "item depth")
         if depth > previous + 1:
             raise CodecError("item depth skips a container level")
@@ -148,7 +150,7 @@ def encode_tile(flags: int, house: int, zones, items) -> bytes:
                 raise CodecError(f"unknown item attributes {sorted(unknown)}")
             for name in attrs:
                 mask |= ATTRIBUTES[name][0]
-        _put(out, registry << 1 | (mask != 0))
+        _put(out, palette << 1 | (mask != 0))
         if mask:
             _put(out, mask)
             if depth:
@@ -250,20 +252,20 @@ def parse_region(data: bytes) -> tuple[int, int, int, list[tuple[int, int, int]]
 
 
 def decode_sector(
-    payload: bytes, sx: int, sy: int, registries: set[int] | None = None
+    payload: bytes, sx: int, sy: int, palette_indexes: set[int] | None = None
 ) -> list[tuple]:
     """Decode a sector payload to tiles ``(x, y, flags, house, zones, items)``.
 
-    Every registry number met is added to ``registries`` when it is given.
+    Every palette index met is added to ``palette_indexes`` when it is given.
     """
     try:
-        tiles = _decode_sector(payload, sx, sy, registries)
+        tiles = _decode_sector(payload, sx, sy, palette_indexes)
     except (IndexError, struct.error) as error:
         raise CodecError("sector payload is truncated") from error
     return tiles
 
 
-def _decode_sector(payload: bytes, sx: int, sy: int, registries) -> list[tuple]:
+def _decode_sector(payload: bytes, sx: int, sy: int, palette_indexes) -> list[tuple]:
     get = _get
     pos = 0
     count, pos = get(payload, pos)
@@ -308,7 +310,7 @@ def _decode_sector(payload: bytes, sx: int, sy: int, registries) -> list[tuple]:
                 pos += 1
             else:
                 word, pos = get(payload, pos)
-            registry = word >> 1
+            palette = word >> 1
             depth = 0
             attrs = None
             if word & 1:
@@ -354,9 +356,9 @@ def _decode_sector(payload: bytes, sx: int, sy: int, registries) -> list[tuple]:
             if depth > depth_limit:
                 raise CodecError("item depth skips a container level")
             depth_limit = depth + 1
-            if registries is not None:
-                registries.add(registry)
-            items.append((registry, depth, attrs))
+            if palette_indexes is not None:
+                palette_indexes.add(palette)
+            items.append((palette, depth, attrs))
         tiles.append(
             (base_x + (index & 31), base_y + (index >> 5), flags, house, zones, items)
         )
@@ -366,7 +368,7 @@ def _decode_sector(payload: bytes, sx: int, sy: int, registries) -> list[tuple]:
 
 
 def decode_region(
-    data: bytes, registries: set[int] | None = None
+    data: bytes, palette_indexes: set[int] | None = None
 ) -> tuple[int, int, int, list[tuple[int, list[tuple]]]]:
     """Decode a region file to ``(z, rx, ry, [(local_index, tiles)])``."""
     z, rx, ry, table = parse_region(data)
@@ -381,5 +383,5 @@ def decode_region(
             raise CodecError(f"sector {local}: {error}") from error
         sx = rx * SECTORS_PER_SIDE + local % SECTORS_PER_SIDE
         sy = ry * SECTORS_PER_SIDE + local // SECTORS_PER_SIDE
-        sectors.append((local, decode_sector(payload, sx, sy, registries)))
+        sectors.append((local, decode_sector(payload, sx, sy, palette_indexes)))
     return z, rx, ry, sectors

@@ -19,7 +19,7 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import world_region_codec as codec
-from convert_world_base import PINNED_TOTALS
+from convert_world_base import DONOR_PREFIX, ITEM_NAMESPACE, PINNED_TOTALS
 
 HERE = Path(__file__).resolve().parent
 DIRECTORY = "content/world/placements"
@@ -29,7 +29,6 @@ ITEM_BINDINGS = "imports/crystalserver/bindings/items.json"
 REGION_PATH = re.compile(
     rf"^{re.escape(DIRECTORY)}/region-z(\d{{2}})-x(\d{{3}})-y(\d{{3}})\.b3$"
 )
-REGISTRY_KEY = re.compile(r"^oteryn:item\.registry\.i(\d{8})$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 INDEX_KEYS = {
     "codec",
@@ -37,6 +36,7 @@ INDEX_KEYS = {
     "family",
     "generator",
     "item_bindings",
+    "palette",
     "population_state",
     "region_size",
     "regions",
@@ -49,6 +49,7 @@ INDEX_KEYS = {
 }
 REGION_KEYS = {"items", "path", "sha256", "tiles"}
 TOTAL_KEYS = {"items", "regions", "sectors", "tiles"}
+PALETTE_KEYS = {"key", "provisional", "source_item_id"}
 
 
 class ValidationError(Exception):
@@ -74,8 +75,8 @@ def load(root: Path, path: str, strict: bool = True):
 _STATE: dict = {}
 
 
-def _init(root: str, extent: tuple[int, int], registries: set[int]) -> None:
-    _STATE.update(root=Path(root), extent=extent, registries=registries)
+def _init(root: str, extent: tuple[int, int], palette_size: int) -> None:
+    _STATE.update(root=Path(root), extent=extent, palette_size=palette_size)
 
 
 def check_region(row: dict) -> dict:
@@ -91,6 +92,7 @@ def check_region(row: dict) -> dict:
         "zones": 0,
         "z": -1,
         "attributes": Counter(),
+        "palette": Counter(),
     }
     errors = result["errors"]
     try:
@@ -115,6 +117,14 @@ def check_region(row: dict) -> dict:
     width, height = _STATE["extent"]
     tiles = items = houses = zones = 0
     attributes = result["attributes"]
+    used = result["palette"]
+    size = _STATE["palette_size"]
+    if any(p >= size for p in seen):
+        errors.append(
+            f"{path}: palette indexes outside 0..{size - 1}: "
+            f"{sorted(p for p in seen if p >= size)[:10]}"
+        )
+        return result
     for local, sector in sectors:
         if not sector:
             errors.append(f"{path}: sector {local} is empty")
@@ -133,17 +143,13 @@ def check_region(row: dict) -> dict:
             houses += house != 0
             zones += bool(tile_zones)
             items += len(tile_items)
-            for _registry, depth, attrs in tile_items:
+            for palette, depth, attrs in tile_items:
+                used[palette] += 1
                 if depth:
                     attributes["depth"] += 1
                 if attrs:
                     attributes.update(attrs.keys())
         tiles += len(sector)
-    unknown = seen - _STATE["registries"]
-    if unknown:
-        errors.append(
-            f"{path}: registry numbers without a binding: {sorted(unknown)[:10]}"
-        )
     if (tiles, items) != (row["tiles"], row["items"]):
         errors.append(
             f"{path}: decoded {tiles} tiles/{items} items, index says {row['tiles']}/{row['items']}"
@@ -182,6 +188,102 @@ def check_index(index: dict, summary: dict, errors: list[str]) -> None:
     generator = str(index.get("generator"))
     if not (HERE.parents[2] / generator).is_file():
         errors.append(f"{INDEX}: generator {generator!r} does not exist")
+
+
+def check_palette(palette, bound: dict[int, set[str]], errors: list[str]) -> bool:
+    """Check the palette in isolation; returns False when it cannot be indexed."""
+    if not isinstance(palette, list) or not palette:
+        errors.append(f"{INDEX}: palette must be a non-empty list")
+        return False
+    start = len(errors)
+    keys: set[str] = set()
+    previous = -1
+    for position, row in enumerate(palette):
+        where = f"{INDEX}: palette[{position}]"
+        if (
+            not isinstance(row, dict)
+            or set(row) != PALETTE_KEYS
+            or not isinstance(row["key"], str)
+            or not isinstance(row["provisional"], bool)
+            or not isinstance(row["source_item_id"], int)
+            or isinstance(row["source_item_id"], bool)
+            or row["source_item_id"] < 0
+        ):
+            errors.append(f"{where}: malformed entry {row!r}"[:200])
+            continue
+        server_id, key = row["source_item_id"], row["key"]
+        if server_id == previous:
+            errors.append(f"{where}: source_item_id {server_id} is listed twice")
+        elif server_id < previous:
+            errors.append(f"{where}: source_item_id {server_id} breaks ascending order")
+        previous = max(previous, server_id)
+        if key in keys:
+            errors.append(f"{where}: key {key!r} is listed twice")
+        keys.add(key)
+        if row["provisional"]:
+            if key != f"{DONOR_PREFIX}{server_id}":
+                errors.append(
+                    f"{where}: provisional key must be {DONOR_PREFIX}{server_id}"
+                )
+            if server_id in bound:
+                errors.append(f"{where}: provisional id {server_id} has a binding")
+        elif key not in bound.get(server_id, ()):
+            errors.append(
+                f"{where}: key {key!r} is not a binding target of server id {server_id}"
+            )
+    return len(errors) == start
+
+
+def check_palette_use(
+    palette: list, used: Counter, summary: dict, items: int, errors: list[str]
+) -> None:
+    unused = [i for i in range(len(palette)) if used[i] == 0]
+    if unused:
+        errors.append(
+            f"{INDEX}: palette entries no item uses: "
+            f"{[palette[i]['source_item_id'] for i in unused[:10]]}"
+        )
+    if sum(used.values()) != items:
+        errors.append(f"{INDEX}: palette occurrences differ from the item total")
+    entries = occurrences = 0
+    for i, row in enumerate(palette):
+        if row["provisional"]:
+            entries += 1
+            occurrences += used[i]
+    recorded = summary.get("palette")
+    provisional = recorded.get("provisional") if isinstance(recorded, dict) else None
+    if not isinstance(provisional, dict) or set(recorded) != {
+        "entries",
+        "provisional",
+    }:
+        errors.append(f"{SUMMARY}: palette must hold entries and provisional")
+        return
+    if recorded["entries"] != len(palette):
+        errors.append(f"{SUMMARY}: palette.entries differs from the index palette")
+    if (provisional.get("entries"), provisional.get("occurrences")) != (
+        entries,
+        occurrences,
+    ):
+        errors.append(
+            f"{SUMMARY}: palette.provisional entries/occurrences differ from the "
+            f"decoded {entries}/{occurrences}"
+        )
+    split = [provisional.get(k) for k in ("in_items_xml", "appearance_only")]
+    if set(provisional) != {
+        "appearance_only",
+        "entries",
+        "in_items_xml",
+        "occurrences",
+    } or any(
+        not isinstance(row, dict) or set(row) != {"entries", "occurrences"}
+        for row in split
+    ):
+        errors.append(f"{SUMMARY}: palette.provisional split is malformed")
+    elif tuple(sum(row[k] for row in split) for k in ("entries", "occurrences")) != (
+        entries,
+        occurrences,
+    ):
+        errors.append(f"{SUMMARY}: palette.provisional split does not add up")
 
 
 def unpopulated(root: Path) -> bool:
@@ -228,13 +330,15 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
         )
         return errors
 
-    registries = set()
+    bound: dict[int, set[str]] = {}
     for row in load(root, ITEM_BINDINGS, strict=False)["bindings"]:
-        match = REGISTRY_KEY.match(row["target"]["key"])
-        if match:
-            registries.add(int(match.group(1)))
+        if row["identity_namespace"] == ITEM_NAMESPACE:
+            bound.setdefault(int(row["external_id"]), set()).add(row["target"]["key"])
+    palette = index["palette"]
+    if not check_palette(palette, bound, errors):
+        return errors
     extent = (summary["map"]["width"], summary["map"]["height"])
-    args = (str(root), extent, registries)
+    args = (str(root), extent, len(palette))
     if workers > 1 and len(rows) > 8:
         with ProcessPoolExecutor(workers, initializer=_init, initargs=args) as pool:
             results = list(pool.map(check_region, rows, chunksize=16))
@@ -244,9 +348,11 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
 
     floors: Counter = Counter()
     attributes: Counter = Counter()
+    used: Counter = Counter()
     totals = Counter()
     for result in results:
         errors.extend(result["errors"])
+        used.update(result["palette"])
         floors[result["z"]] += result["tiles"]
         attributes.update(result["attributes"])
         totals.update(
@@ -263,6 +369,7 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
         errors.append(
             f"{INDEX}: totals {index['totals']} differ from the decoded {counted}"
         )
+    check_palette_use(palette, used, summary, counted["items"], errors)
     if summary.get("totals") != index["totals"]:
         errors.append(f"{SUMMARY}: totals differ from the index")
     if summary.get("bytes_on_disk") != totals["bytes"]:
@@ -279,14 +386,8 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
         errors.append(f"{SUMMARY}: item_attributes differs from the decoded items")
     if summary.get("schema") != "OTERYN_WORLD_BASE_SOURCE_CAPTURE/v1":
         errors.append(f"{SUMMARY}: wrong schema")
-    if any(
-        summary.get("rejected_items", {}).get(k) != 0
-        for k in ("unbound_item_ids", "unsupported_attributes")
-    ) or set(summary.get("rejected_items", {})) != {
-        "unbound_item_ids",
-        "unsupported_attributes",
-    }:
-        errors.append(f"{SUMMARY}: rejected_items must all be 0")
+    if summary.get("rejected_items") != {"unsupported_attributes": 0}:
+        errors.append(f"{SUMMARY}: rejected_items must be unsupported_attributes 0")
     info = summary.get("codec", {})
     if (info.get("name"), info.get("zstd_level")) != (codec.CODEC, codec.ZSTD_LEVEL):
         errors.append(f"{SUMMARY}: codec differs from the index")

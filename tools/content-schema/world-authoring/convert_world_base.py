@@ -2,9 +2,11 @@
 """Convert the pinned CrystalServer world map into the WorldPlacement.Base region family.
 
 Writes content/world/placements/ (region files and index.json) plus the committed capture
-summary. The source is OTS_HYPOTHESIS_ONLY migration evidence. Every map item is written
-under its Oteryn item registry number, resolved through the item bindings. The conversion
-fails closed on an unbound item id or an item or tile attribute it does not carry.
+summary. The source is OTS_HYPOTHESIS_ONLY migration evidence. Region files store, per
+item, an index into the ``palette`` of index.json. The palette holds one entry per distinct
+map server item id, in ascending id order. An id bound in the item bindings resolves to its
+binding target key. Any other id gets a provisional donor key. The conversion fails closed
+on an item or tile attribute it does not carry.
 
     python convert_world_base.py --crystal-root /path/to/crystalserver [--check]
 """
@@ -14,11 +16,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import re
 import sys
 from collections import Counter
 from itertools import pairwise
 from pathlib import Path
+from xml.etree import ElementTree
 
 import convert_world_metadata as metadata
 import otbm_reader
@@ -31,14 +33,22 @@ HERE = metadata.HERE
 SUMMARY = HERE / "samples/world-base-capture-v1.json"
 ITEM_BINDINGS = metadata.ITEM_BINDINGS
 OTBM = "data-global/world/world.otbm"
+ITEMS_XML = "data/items/items.xml"
 DIRECTORY = "content/world/placements"
 GENERATOR = "tools/content-schema/world-authoring/convert_world_base.py"
 PINNED_TOTALS = {"items": 24925845, "tiles": 19325129}
-REGISTRY_KEY = re.compile(r"^oteryn:item\.registry\.i(\d{8})$")
+ITEM_NAMESPACE = "ots/item_server_id"
+DONOR_PREFIX = f"donor:crystalserver@{metadata.SOURCE['revision'][:8]}:item/"
 
 SOURCE = {
     **metadata.SOURCE,
-    "files": [row for row in metadata.SOURCE["files"] if row["path"] == OTBM],
+    "files": [
+        *(row for row in metadata.SOURCE["files"] if row["path"] == OTBM),
+        {
+            "path": ITEMS_XML,
+            "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+        },
+    ],
 }
 # OTBM item attribute -> carried name.
 CARRIED = {
@@ -56,73 +66,71 @@ DEST_KEY = "dest"
 _INDEX = list(range(codec.SECTOR_SIZE * codec.SECTOR_SIZE))
 
 
-class UnboundItemsError(ConvertError):
-    """Map items whose server id has no Oteryn item registry number."""
-
-    def __init__(self, unbound: Counter, named: dict[int, str]):
-        self.unbound, self.named = unbound, named
-        top = ", ".join(f"{i}: {n}" for i, n in unbound.most_common(15))
-        super().__init__(
-            f"{len(unbound)} map item ids ({sum(unbound.values())} items) have no Oteryn "
-            f"item registry number: {sum(1 for i in unbound if i in named)} are bound to a "
-            f"named item key, {sum(1 for i in unbound if i not in named)} have no binding. "
-            f"Most used (id: occurrences): {top}; --unbound-report lists them all"
-        )
-
-    def report(self) -> dict:
-        return {
-            "unbound": [
-                {
-                    "named_target": self.named.get(server_id),
-                    "occurrences": count,
-                    "server_id": server_id,
-                }
-                for server_id, count in sorted(self.unbound.items())
-            ]
-        }
+def donor_key(server_id: int) -> str:
+    """The provisional key of a server id that has no item binding."""
+    return f"{DONOR_PREFIX}{server_id}"
 
 
-def registry_numbers(
-    bindings: bytes,
-) -> tuple[dict[int, int], set[int], dict[int, str]]:
-    """Return ``(server id -> registry number, registry numbers of bound targets, named)``.
-
-    A target with a named key (not ``oteryn:item.registry.iNNNNNNNN``) has no registry
-    number, so its server id stays out of the mapping (``named`` maps it to the key) and a
-    map item using it fails closed.
-    """
-    by_server: dict[int, int] = {}
-    targets: set[int] = set()
-    named: dict[int, str] = {}
+def bound_keys(bindings: bytes) -> dict[int, str]:
+    """Return ``{server id: target key}`` for every ``ots/item_server_id`` binding."""
+    keys: dict[int, str] = {}
     for row in json.loads(bindings)["bindings"]:
-        match = REGISTRY_KEY.match(row["target"]["key"])
-        if match is None:
-            if row["identity_namespace"] == "ots/item_server_id":
-                named[int(row["external_id"])] = row["target"]["key"]
+        if row["identity_namespace"] != ITEM_NAMESPACE:
             continue
-        number = int(match.group(1))
-        targets.add(number)
-        if row["identity_namespace"] != "ots/item_server_id":
-            continue
-        server_id = int(row["external_id"])
-        if by_server.setdefault(server_id, number) != number:
-            raise ConvertError(
-                f"server id {server_id} is bound to two registry numbers"
+        server_id, key = int(row["external_id"]), row["target"]["key"]
+        if keys.setdefault(server_id, key) != key:
+            raise ConvertError(f"server id {server_id} is bound to two item keys")
+    return keys
+
+
+def build_palette(bound: dict[int, str], occurrences: Counter) -> list[dict]:
+    """One entry per distinct map server id, ascending by id."""
+    palette = []
+    for server_id in sorted(occurrences):
+        key = bound.get(server_id)
+        palette.append(
+            {
+                "key": key or donor_key(server_id),
+                "provisional": key is None,
+                "source_item_id": server_id,
+            }
+        )
+    keys = Counter(row["key"] for row in palette)
+    duplicated = sorted(key for key, count in keys.items() if count > 1)
+    if duplicated:
+        raise ConvertError(
+            f"palette keys shared by several server ids: {duplicated[:5]}"
+        )
+    return palette
+
+
+def items_xml_ids(xml: bytes) -> set[int]:
+    """Every item id items.xml declares, ranges included."""
+    ids: set[int] = set()
+    for element in ElementTree.fromstring(xml).iter("item"):
+        if "id" in element.attrib:
+            ids.add(int(element.attrib["id"]))
+        else:
+            ids.update(
+                range(int(element.attrib["fromid"]), int(element.attrib["toid"]) + 1)
             )
-    return by_server, targets, named
+    return ids
 
 
 class Collector:
-    """Buffers encoded tiles per sector; identical tile bodies share one bytes object."""
+    """Buffers encoded tiles per sector; identical tile bodies share one bytes object.
 
-    def __init__(self, by_server: dict[int, int], named: dict[int, str]):
-        self.by_server = by_server
-        self.named = named
+    Bodies are encoded with the source server id as the item number and remapped to
+    palette indexes once the palette is known (``remap``).
+    """
+
+    def __init__(self):
         self.sectors: dict[tuple[int, int, int], tuple[list, list]] = {}
         self.bodies: dict[bytes, bytes] = {}
+        self.final: dict[bytes, bytes] = {}
         self.sector_items: Counter = Counter()
         self.tiles = self.items = 0
-        self.unbound: Counter = Counter()
+        self.occurrences: Counter = Counter()
         self.unsupported: Counter = Counter()
         self.attributes: Counter = Counter()
         self.house_tiles = self.zone_tiles = 0
@@ -130,10 +138,7 @@ class Collector:
     def __call__(self, x, y, z, flags, house, zones, items) -> None:
         converted = []
         for server_id, depth, attrs in items:
-            number = self.by_server.get(server_id)
-            if number is None:
-                self.unbound[server_id] += 1
-                continue
+            self.occurrences[server_id] += 1
             named = None
             if attrs:
                 named = {}
@@ -144,10 +149,10 @@ class Collector:
                     else:
                         named[name] = value
                         self.attributes[name] += 1
-            converted.append((number, depth, named))
+            converted.append((server_id, depth, named))
         if house == 0:
             raise ConvertError(f"house tile ({x}, {y}, {z}) has house id 0")
-        body = codec.encode_tile(flags or 0, house or 0, zones, converted)
+        body = codec.encode_tile(flags or 0, house or 0, zones or (), converted)
         body = self.bodies.setdefault(body, body)
         key = (z, x // codec.SECTOR_SIZE, y // codec.SECTOR_SIZE)
         sector = self.sectors.get(key)
@@ -164,16 +169,28 @@ class Collector:
         self.zone_tiles += bool(zones)
 
     def check(self) -> None:
-        if self.unbound:
-            raise UnboundItemsError(self.unbound, self.named)
         if self.unsupported:
             raise ConvertError(
                 f"unsupported OTBM item attributes (attr: occurrences): "
                 f"{dict(sorted(self.unsupported.items()))}"
             )
 
+    def remap(self, index_of: dict[int, int]) -> None:
+        """Rewrite every distinct tile body from server ids to palette indexes."""
+        for body in self.bodies:
+            _x, _y, flags, house, zones, items = codec.decode_sector(
+                b"\x01\x00" + body, 0, 0
+            )[0]
+            self.final[body] = codec.encode_tile(
+                flags,
+                house,
+                zones,
+                [(index_of[sid], depth, attrs) for sid, depth, attrs in items],
+            )
+
     def sector_payload(self, key: tuple[int, int, int]) -> bytes:
-        indexes, bodies = self.sectors.pop(key)
+        indexes, raw = self.sectors.pop(key)
+        bodies = [self.final[body] for body in raw]
         order = range(len(indexes))
         if indexes != sorted(indexes):
             order = sorted(order, key=indexes.__getitem__)
@@ -197,8 +214,8 @@ def zstd_info() -> dict:
 def build(blobs: dict[str, bytes], bindings: bytes | None = None) -> dict[str, bytes]:
     if bindings is None:
         bindings = ITEM_BINDINGS.read_bytes()
-    by_server, _, named = registry_numbers(bindings)
-    collector = Collector(by_server, named)
+    bound = bound_keys(bindings)
+    collector = Collector()
     facts = otbm_reader.read_tiles(blobs[OTBM], collector)
     if facts.unknown_item_attrs or facts.unknown_tile_attrs:
         raise ConvertError(
@@ -210,6 +227,19 @@ def build(blobs: dict[str, bytes], bindings: bytes | None = None) -> dict[str, b
         raise ConvertError("map extent exceeds the region coordinate range")
     if collector.tiles != facts.tiles:
         raise ConvertError("tile count differs from the reader")
+    palette = build_palette(bound, collector.occurrences)
+    collector.remap({row["source_item_id"]: i for i, row in enumerate(palette)})
+    declared = items_xml_ids(blobs[ITEMS_XML])
+    provisional = {"appearance_only": [0, 0], "in_items_xml": [0, 0]}
+    for row in palette:
+        if row["provisional"]:
+            kind = (
+                "in_items_xml"
+                if row["source_item_id"] in declared
+                else "appearance_only"
+            )
+            provisional[kind][0] += 1
+            provisional[kind][1] += collector.occurrences[row["source_item_id"]]
 
     per_region: dict[tuple[int, int, int], dict[int, bytes]] = {}
     region_tiles: Counter = Counter()
@@ -259,6 +289,7 @@ def build(blobs: dict[str, bytes], bindings: bytes | None = None) -> dict[str, b
                 "path": str(ITEM_BINDINGS.relative_to(ROOT)),
                 "sha256": hashlib.sha256(bindings).hexdigest(),
             },
+            "palette": palette,
             "population_state": "POPULATED",
             "region_size": codec.REGION_SIZE,
             "regions": regions,
@@ -284,10 +315,22 @@ def build(blobs: dict[str, bytes], bindings: bytes | None = None) -> dict[str, b
             "otbm_version": facts.version,
             "width": facts.width,
         },
-        "rejected_items": {
-            "unbound_item_ids": len(collector.unbound),
-            "unsupported_attributes": len(collector.unsupported),
+        "palette": {
+            "entries": len(palette),
+            "provisional": {
+                "appearance_only": {
+                    "entries": provisional["appearance_only"][0],
+                    "occurrences": provisional["appearance_only"][1],
+                },
+                "entries": sum(v[0] for v in provisional.values()),
+                "in_items_xml": {
+                    "entries": provisional["in_items_xml"][0],
+                    "occurrences": provisional["in_items_xml"][1],
+                },
+                "occurrences": sum(v[1] for v in provisional.values()),
+            },
         },
+        "rejected_items": {"unsupported_attributes": len(collector.unsupported)},
         "schema": "OTERYN_WORLD_BASE_SOURCE_CAPTURE/v1",
         "source": SOURCE,
         "tiles_by_floor": {str(z): n for z, n in sorted(floors.items())},
@@ -313,11 +356,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--crystal-root", type=Path, required=True)
     parser.add_argument("--check", action="store_true", help="fail instead of writing")
-    parser.add_argument(
-        "--unbound-report",
-        type=Path,
-        help="on an unbound-item failure, write every offending id to this JSON file",
-    )
     args = parser.parse_args()
     try:
         out = build(read_source(args.crystal_root))
@@ -328,8 +366,6 @@ def main() -> int:
             )
     except (ConvertError, otbm_reader.OtbmError, OSError) as error:
         print(f"FAIL {error}", file=sys.stderr)
-        if isinstance(error, UnboundItemsError) and args.unbound_report:
-            args.unbound_report.write_bytes(canonical(error.report()))
         return 1
     stale = [
         path
