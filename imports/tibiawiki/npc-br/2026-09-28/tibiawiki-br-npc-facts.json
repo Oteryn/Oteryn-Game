@@ -3,7 +3,7 @@
  "counts": {
   "pages": 1253,
   "removed": 11,
-  "with_npc_lines": 620,
+  "with_npc_lines": 617,
   "with_positions": 1237,
   "with_trades": 386
  },
@@ -8947,24 +8947,6 @@
    "implemented": "6.2",
    "name": "A Wrinkled Bonelord",
    "npc_lines": [
-    "What is this? An optically challenged entity called Jogador. How fascinating!",
-    "Yes, yes, I will kill you soon enough, now let me continue my investigation on you.",
-    "They will mourn the day they abandoned us.",
-    "I am the great librarian.",
-    "It's a fine library, isn't it?",
-    "I am 486486 and NOT 'Blinky' as some people called me ... before they died.",
-    "It's 1, not 'Tibia', silly.",
-    "Uglyness incarnate. One eye! Imagine that! Horrible!",
-    "These fools and their superstitious life cult don't understand anything of importance.",
-    "Only inferior species need weapons.",
-    "I heard that elves moved in upstairs.",
-    "Numbers are essential. They are the secret behind the scenes. If you are a master of mathematics you are a master over life and death.",
-    "Our books are written in 469, of course you can't understand them.",
-    "The language of my kind. Superior to any other language and only to be spoken by entities with enough eyes to blink it.",
-    "Noisy pests.",
-    "Their mages are so close to the truth. Closer then they know and closer then it's good for them.",
-    "Good tools to work with ... After their death, that is.",
-    "Wait right there. I will eat you after writing down what I found out.",
     "What's this? An optically challenged entity called Jogador. How fascinating!",
     "It's 1, not 'Tibia', silly.",
     "They will mourn the day they abandoned us.",
@@ -10491,8 +10473,6 @@
     "Come back, when you have enough money.",
     "I actually know some spells! Do you want to learn how to 'lessen your load' for 200 gold?",
     "Here you are, I already lessened your load.",
-    "Do you wish to join the fools' guild?",
-    "Sorry, you already are a member.",
     "Do you wish to become a jester and join the fools guild?'",
     "So you want to make a total fool of yourself? Fine with me, but note that becoming a real fool means moe than being just an ordinary fool ...",
     "'You will have to master a whole series of challenging, lengthy and, above all, totally foolish quests ...'",
@@ -36760,9 +36740,6 @@
     "You defeated the five alpha leaders! Well done, this should weaken them enough to hold them at bay for quite a while. Please take this pendant in return, it may be of use for you. ...",
     "The were-sickness won't disappear completely but it will be easier for us now. At least I hope so! Yesterday a travelling salesman told me that he spotted a feral creature in the Darama desert that looked like half man and half lion. ...",
     "Banor grant that this is just unfounded gossip and that the curse didn't spread further. Well, I guess, we will find out soon. Edron, for the time being, is a safer place now, thanks to you.",
-    "Thank you again for your assistance, Jogador! The Curse of the Full Moon still exists on Edron. But thanks to your heroic deeds we can keep it within certain bounds. At least I hope so! ...",
-    "Yesterday a travelling salesman told me that he spotted a feral creature in the Darama desert that looked like half man and half lion. Banor grant that this is just unfounded gossip and that the curse didn't spread further. ...",
-    "Well, I guess, we will find out soon. Edron, for the time being, is a safer place now, thanks to you.",
     "Lately I heard rumours about the curse. That it has spread to the Darama Desert and that the lions there could also be were-creatures. Do you want to get to the bottom of it?",
     "Then please travel to Darashia and search for a man called Domizian. He lives in a house at the harbour. I know him for many years, he's a trustworthy friend. ...",
     "I'm sure, he can tell you more about the curse in the Darama Desert.",
@@ -36841,9 +36818,7 @@
     "Explore the isle and destroy any enemy forces encountered. The honor shall be your reward.",
     "The cemetery is north of the hamlet of Stonehome, which is at the east coast, northeast of Edron city. The cemetary is rumoured to be haunted.",
     "There are the Dogs of War, the Red Guards, and the Silver Guards.",
-    "LONG LIVE THE KING!",
-    "In the city there is a furniture store and a jeweller. The Noodles Academy and the cemetary are outside.",
-    "The cemetery is north of the hamlet of Stonehome, which is at the east coast, northeast of Edron city. The cemetary is rumoured to be haunted."
+    "LONG LIVE THE KING!"
    ],
    "pageid": 11957,
    "positions": [
@@ -64668,26 +64643,7 @@
   {
    "implemented": "10.94",
    "name": "Lorenzo",
-   "npc_lines": [
-    "Hello, brave fighter! What can I do for you? Do you want information, to exchange something or to simply talk?",
-    "I will hand out arena badges depending on your results in the PvE arena. You can keep them or exchange them for potions - with a chance to win a special surprise cube, just to spice things up a bit.",
-    "If you finish all 10 waves of an arena battle, you'll obtain a fixed amount of arena badges. The exact amount depends on the selected difficulty level. ...",
-    "I can check the total amount and offer you potions in exchange for them. Do you want me to hand out your arena badges now?",
-    "There are 5 difficulty levels when fighting against waves of monsters in the arena. Each difficulty level grants you a certain amount of arena badges which I will hand out to you. ...",
-    "Level 1 grants one badge, level 2 grants two, level 3 grants three, level 4 grants four and level 5 grants five arena badges.",
-    "As a special service for our most valued customers, we hand out a surprise cube! By using it, you have a chance of getting nice little goodies.",
-    "Well, I guess you'd like to know what I'm doing here.",
-    "It's my fate to trade potions in exchange for arena badges. Actually my whole family earns its living that way - maybe you'll get to know them someday! ...",
-    "You can meet my brothers and sisters by visiting the other arenas.",
-    "It's my fate to trade potions in exchange for arena badges. Actually my whole family earns its living that way - maybe you'll get to know them someday! ...",
-    "You can meet my brothers and sisters by visiting the other arenas.",
-    "It's quite easy. I give you arena badges for each completed arena battle. Surviving 10 waves against monsters in the arena will grant you a fixed amount of badges depending on the difficulty level. ...",
-    "You can keep the arena badges or exchange them for each kind of health, mana and spirit potions. I'll charge 1 arena badge for the amount of 100 mana or health potions. ...",
-    "100 strong potions of either mana or health will be charged with 2, 100 great health potions with 4 and 100 great mana potions with 3, 100 ultimate potions of either type with 7 and 100 supreme potions with 10 arena badges. ....",
-    "You can also select 100 great spirit potions for 4 and 100 ultimate spirit potions for 8 arena badges. ...",
-    "Would you like to exchange for health, mana or spirit potions now?",
-    "Take care and come back soon!"
-   ],
+   "npc_lines": [],
    "pageid": 38256,
    "positions": [
     [
@@ -65220,25 +65176,7 @@
   {
    "implemented": "10.94",
    "name": "Agostina",
-   "npc_lines": [
-    "Hello, brave fighter! What can I do for you? Do you want information, to exchange something or to simply talk?",
-    "I will hand out arena badges depending on your results in the PvE arena. You can keep them or exchange them for potions - with a chance to win a special surprise cube, just to spice things up a bit.",
-    "If you finish all 10 waves of an arena battle, you'll obtain a fixed amount of arena badges. The exact amount depends on the selected difficulty level. ...",
-    "I can check the total amount and offer you potions in exchange for them. Do you want me to hand out your arena badges now?",
-    "As a special service for our most valued customers, we hand out a surprise cube! By using it, you have a chance of getting nice little goodies.",
-    "Well, I guess you'd like to know what I'm doing here.",
-    "There are 5 difficulty levels when fighting against waves of monsters in the arena. Each difficulty level grants you a certain amount of arena badges which I will hand out to you. ...",
-    "Level 1 grants one badge, level 2 grants two, level 3 grants three, level 4 grants four and level 5 grants five arena badges.",
-    "It's quite easy. I give you arena badges for each completed arena battle. Surviving 10 waves against monsters in the arena will grant you a fixed amount of badges depending on the difficulty level. ...",
-    "You can keep the arena badges or exchange them for each kind of health, mana and spirit potions. I'll charge 1 arena badge for the amount of 100 mana or health potions. ...",
-    "100 strong potions of either mana or health will be charged with 2, 100 great health potions with 4 and 100 great mana potions with 3, 100 ultimate potions of either type with 7 and 100 supreme potions with 10 arena badges. ....",
-    "You can also select 100 great spirit potions for 4 and 100 ultimate spirit potions for 8 arena badges. ...",
-    "Would you like to exchange for health, mana or spirit potions now?",
-    "I specialised in trading potions in exchange for arena badges. Actually my whole family earns their living this way, you can meet my brothers and sisters by visiting the other arenas. ...",
-    "Maybe you'll even get to know my whole family someday!",
-    "Agostina, you're welcome!",
-    "Take care and come back soon!"
-   ],
+   "npc_lines": [],
    "pageid": 38893,
    "positions": [
     [
@@ -65489,25 +65427,7 @@
   {
    "implemented": "10.94",
    "name": "Fabiana",
-   "npc_lines": [
-    "Hello, brave fighter! What can I do for you? Do you want information, to exchange something or to simply talk?",
-    "I will hand out arena badges depending on your results in the PvE arena. You can keep them or exchange them for potions - with a chance to win a special surprise cube, just to spice things up a bit.",
-    "If you finish all 10 waves of an arena battle, you'll obtain a fixed amount of arena badges. The exact amount depends on the selected difficulty level. ...",
-    "I can check the total amount and offer you potions in exchange for them. Do you want me to hand out your arena badges now?",
-    "As a special service for our most valued customers, we hand out a surprise cube! By using it, you have a chance of getting nice little goodies.",
-    "Well, I guess you'd like to know what I'm doing here.",
-    "There are 5 difficulty levels when fighting against waves of monsters in the arena. Each difficulty level grants you a certain amount of arena badges which I will hand out to you. ...",
-    "Level 1 grants one badge, level 2 grants two, level 3 grants three, level 4 grants four and level 5 grants five arena badges.",
-    "It's quite easy. I give you arena badges for each completed arena battle. Surviving 10 waves against monsters in the arena will grant you a fixed amount of badges depending on the difficulty level. ...",
-    "You can keep the arena badges or exchange them for each kind of health, mana and spirit potions. I'll charge 1 arena badge for the amount of 100 mana or health potions. ...",
-    "100 strong potions of either mana or health will be charged with 2, 100 great health potions with 4 and 100 great mana potions with 3, 100 ultimate potions of either type with 7 and 100 supreme potions with 10 arena badges. ....",
-    "You can also select 100 great spirit potions for 4 and 100 ultimate spirit potions for 8 arena badges. ...",
-    "Would you like to exchange for health, mana or spirit potions now?",
-    "I specialised in trading potions in exchange for arena badges. Actually my whole family earns their living this way, you can meet my brothers and sisters by visiting the other arenas. ...",
-    "Maybe you'll even get to know my whole family someday!",
-    "Just call me Fabiana.",
-    "Take care and come back soon!"
-   ],
+   "npc_lines": [],
    "pageid": 38897,
    "positions": [
     [

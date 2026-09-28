@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "55ef233fd64f79bde9922bf0e0a5cf325f4b2592c4a1e1a5d9d21a7941a94def",
+  "facts_sha256": "49734a5f580c45e5e1603ae2cbb04e321cf0f33fe5953ddedebfa33e5ac6050f",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -21,6 +21,7 @@
     "br_lines": 47,
     "matched": 18,
     "near": 27,
+    "status": "CHECKED",
     "texts": 46
    },
    "name": "A Bearded Woman",
@@ -49,6 +50,7 @@
     "br_lines": 30,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "A Beautiful Girl",
@@ -62,6 +64,10 @@
     "pageid": 33515,
     "revid": 420131,
     "title": "A Beggar"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "A Beggar",
    "npc": "oteryn:npc.a_beggar",
@@ -111,6 +117,7 @@
     "br_lines": 12,
     "matched": 2,
     "near": 8,
+    "status": "CHECKED",
     "texts": 14
    },
    "name": "A Confused Frog",
@@ -161,6 +168,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 2,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "A Dead Bureaucrat (1)",
@@ -189,6 +197,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 2,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "A Dead Bureaucrat (2)",
@@ -217,6 +226,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 2,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "A Dead Bureaucrat (3)",
@@ -245,6 +255,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 2,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "A Dead Bureaucrat (4)",
@@ -347,6 +358,10 @@
     "revid": 416752,
     "title": "A Fading Memory"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "A Fading Memory",
    "npc": "oteryn:npc.a_fading_memory",
    "position": {
@@ -373,6 +388,7 @@
     "br_lines": 4,
     "matched": 5,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "A Fluffy Squirrel",
@@ -395,6 +411,7 @@
     "br_lines": 12,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 11
    },
    "name": "A Frog",
@@ -457,6 +474,7 @@
     "br_lines": 20,
     "matched": 0,
     "near": 1,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "A Ghostly Sage",
@@ -480,6 +498,10 @@
     "pageid": 10447,
     "revid": 416452,
     "title": "A Ghostly Woman"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
    },
    "name": "A Ghostly Woman",
    "npc": "oteryn:npc.a_ghostly_woman",
@@ -657,6 +679,10 @@
     "revid": 420152,
     "title": "A Majestic Warwolf"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
+   },
    "name": "A Majestic Warwolf",
    "npc": "oteryn:npc.a_majestic_warwolf",
    "position": {
@@ -705,6 +731,7 @@
     "br_lines": 31,
     "matched": 19,
     "near": 4,
+    "status": "CHECKED",
     "texts": 25
    },
    "name": "A Prisoner",
@@ -759,6 +786,7 @@
     "br_lines": 4,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "A Seagull",
@@ -831,6 +859,7 @@
     "br_lines": 24,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "A Strange Chalice",
@@ -871,6 +900,7 @@
     "br_lines": 13,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "A Swan",
@@ -899,6 +929,7 @@
     "br_lines": 40,
     "matched": 16,
     "near": 7,
+    "status": "CHECKED",
     "texts": 29
    },
    "name": "A Sweaty Cyclops",
@@ -987,6 +1018,7 @@
     "br_lines": 3,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "A Wandering Soul",
@@ -1015,6 +1047,7 @@
     "br_lines": 22,
     "matched": 5,
     "near": 0,
+    "status": "CHECKED",
     "texts": 6
    },
    "match": "POSITION_ALIAS",
@@ -1041,9 +1074,10 @@
     "title": "A Wrinkled Bonelord"
    },
    "dialogue": {
-    "br_lines": 54,
-    "matched": 20,
-    "near": 0,
+    "br_lines": 36,
+    "matched": 9,
+    "near": 6,
+    "status": "CHECKED",
     "texts": 25
    },
    "name": "A Wrinkled Bonelord",
@@ -1150,6 +1184,7 @@
     "br_lines": 5,
     "matched": 3,
     "near": 1,
+    "status": "CHECKED",
     "texts": 16
    },
    "name": "Adrian",
@@ -1168,6 +1203,7 @@
     "br_lines": 19,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Ahmet",
@@ -1235,6 +1271,10 @@
     "revid": 416515,
     "title": "Ajax"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
+   },
    "name": "Ajax",
    "npc": "oteryn:npc.ajax",
    "position": {
@@ -1261,6 +1301,7 @@
     "br_lines": 66,
     "matched": 60,
     "near": 1,
+    "status": "CHECKED",
     "texts": 72
    },
    "name": "Al Dee",
@@ -1342,6 +1383,7 @@
     "br_lines": 34,
     "matched": 19,
     "near": 0,
+    "status": "CHECKED",
     "texts": 32
    },
    "name": "Albinius",
@@ -1396,6 +1438,10 @@
     "revid": 420197,
     "title": "Alesar"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
+   },
    "name": "Alesar",
    "npc": "oteryn:npc.alesar",
    "position": {
@@ -1432,6 +1478,7 @@
     "br_lines": 16,
     "matched": 4,
     "near": 1,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Alexander",
@@ -1469,6 +1516,7 @@
     "br_lines": 18,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Alia",
@@ -1513,6 +1561,7 @@
     "br_lines": 13,
     "matched": 10,
     "near": 0,
+    "status": "CHECKED",
     "texts": 11
    },
    "name": "Alkestios",
@@ -1541,6 +1590,7 @@
     "br_lines": 9,
     "matched": 4,
     "near": 1,
+    "status": "CHECKED",
     "texts": 14
    },
    "name": "Allen",
@@ -1603,6 +1653,10 @@
     "revid": 420203,
     "title": "Altar (NPC)"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
+   },
    "name": "Altar",
    "npc": "oteryn:npc.altar",
    "position": {
@@ -1614,6 +1668,10 @@
     "pageid": 20666,
     "revid": 420252,
     "title": "Alternative Rock"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Alternative Rock",
    "npc": "oteryn:npc.alternative_rock",
@@ -1659,6 +1717,10 @@
     "revid": 420205,
     "title": "Alyxo"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Alyxo",
    "npc": "oteryn:npc.alyxo",
    "position": {
@@ -1685,6 +1747,7 @@
     "br_lines": 20,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Amanda",
@@ -1713,6 +1776,7 @@
     "br_lines": 35,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Amarie",
@@ -1741,6 +1805,7 @@
     "br_lines": 20,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Ambassador Of Rathleton",
@@ -1769,6 +1834,7 @@
     "br_lines": 63,
     "matched": 60,
     "near": 4,
+    "status": "CHECKED",
     "texts": 73
    },
    "name": "Amber",
@@ -1881,6 +1947,7 @@
     "br_lines": 7,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "An Old Dragonlord",
@@ -1905,6 +1972,10 @@
     "revid": 431682,
     "title": "An Ominous Bat"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "An Ominous Bat",
    "npc": "oteryn:npc.an_ominous_bat",
    "position": {
@@ -1926,6 +1997,10 @@
     "pageid": 17435,
     "revid": 420212,
     "title": "An Orc Guard"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "An Orc Guard",
    "npc": "oteryn:npc.an_orc_guard",
@@ -2027,6 +2102,10 @@
     "revid": 416640,
     "title": "Anderson"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 21
+   },
    "name": "Anderson",
    "npc": "oteryn:npc.anderson",
    "position": {
@@ -2048,6 +2127,10 @@
     "pageid": 45061,
     "revid": 420213,
     "title": "Andrew Lyze"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Andrew Lyze",
    "npc": "oteryn:npc.andrew_lyze",
@@ -2079,6 +2162,7 @@
     "br_lines": 33,
     "matched": 9,
     "near": 3,
+    "status": "CHECKED",
     "texts": 20
    },
    "name": "Anerui",
@@ -2111,6 +2195,7 @@
     "br_lines": 36,
     "matched": 6,
     "near": 0,
+    "status": "CHECKED",
     "texts": 26
    },
    "name": "Aneus",
@@ -2139,6 +2224,7 @@
     "br_lines": 35,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Angelina",
@@ -2163,6 +2249,10 @@
     "revid": 420214,
     "title": "Angelo"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Angelo",
    "npc": "oteryn:npc.angelo",
    "position": {
@@ -2184,6 +2274,10 @@
     "pageid": 10388,
     "revid": 420215,
     "title": "Angus"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 7
    },
    "name": "Angus",
    "npc": "oteryn:npc.angus",
@@ -2225,6 +2319,7 @@
     "br_lines": 10,
     "matched": 5,
     "near": 0,
+    "status": "CHECKED",
     "texts": 21
    },
    "name": "Anna",
@@ -2249,6 +2344,10 @@
     "revid": 420216,
     "title": "Appaloosa"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Appaloosa",
    "npc": "oteryn:npc.appaloosa",
    "position": {
@@ -2267,6 +2366,10 @@
   },
   {
    "br": null,
+   "dialogue": {
+    "status": "NO_BR_PAGE",
+    "texts": 5
+   },
    "name": "Archery",
    "npc": "oteryn:npc.archery"
   },
@@ -2275,6 +2378,10 @@
     "pageid": 11818,
     "revid": 420219,
     "title": "Ariella"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Ariella",
    "npc": "oteryn:npc.ariella",
@@ -2304,6 +2411,10 @@
     "pageid": 11215,
     "revid": 420220,
     "title": "Arito"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Arito",
    "npc": "oteryn:npc.arito",
@@ -2342,6 +2453,10 @@
     "pageid": 28539,
     "revid": 416472,
     "title": "Arkarra"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Arkarra",
    "npc": "oteryn:npc.arkarra",
@@ -2391,6 +2506,7 @@
     "br_lines": 23,
     "matched": 10,
     "near": 0,
+    "status": "CHECKED",
     "texts": 14
    },
    "name": "Arkulius",
@@ -2427,6 +2543,7 @@
     "br_lines": 23,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Armenius",
@@ -2487,6 +2604,10 @@
     "revid": 420226,
     "title": "Aruda"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 7
+   },
    "name": "Aruda",
    "npc": "oteryn:npc.aruda",
    "position": {
@@ -2513,6 +2634,7 @@
     "br_lines": 44,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Ashari",
@@ -2541,6 +2663,7 @@
     "br_lines": 21,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Ashtamor",
@@ -2568,6 +2691,10 @@
     "pageid": 11427,
     "revid": 429301,
     "title": "Asima"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Asima",
    "npc": "oteryn:npc.asima",
@@ -2673,6 +2800,7 @@
     "br_lines": 28,
     "matched": 8,
     "near": 6,
+    "status": "CHECKED",
     "texts": 56
    },
    "name": "Asrak",
@@ -2697,6 +2825,10 @@
     "revid": 420235,
     "title": "Asralius"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Asralius",
    "npc": "oteryn:npc.asralius",
    "position": {
@@ -2718,6 +2850,10 @@
     "pageid": 10431,
     "revid": 420231,
     "title": "Atrad"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Atrad",
    "npc": "oteryn:npc.atrad",
@@ -2745,6 +2881,10 @@
     "revid": 420232,
     "title": "Atur"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Atur",
    "npc": "oteryn:npc.atur",
    "position": {
@@ -2756,6 +2896,10 @@
     "pageid": 49346,
     "revid": 420247,
     "title": "Augustin"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
    },
    "name": "Augustin",
    "npc": "oteryn:npc.augustin",
@@ -2782,6 +2926,10 @@
     "pageid": 66770,
     "revid": 433391,
     "title": "Aurelia"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 11
    },
    "name": "Aurelia",
    "npc": "oteryn:npc.aurelia",
@@ -2817,6 +2965,10 @@
     "pageid": 41687,
     "revid": 420250,
     "title": "Aurita"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Aurita",
    "npc": "oteryn:npc.aurita",
@@ -2860,6 +3012,7 @@
     "br_lines": 20,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Avar Tar",
@@ -2888,6 +3041,7 @@
     "br_lines": 13,
     "matched": 14,
     "near": 0,
+    "status": "CHECKED",
     "texts": 23
    },
    "name": "Avriel",
@@ -3016,6 +3170,10 @@
     "revid": 420317,
     "title": "Baa'Leal"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Baa'Leal",
    "npc": "oteryn:npc.baa_leal",
    "position": {
@@ -3042,6 +3200,7 @@
     "br_lines": 32,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Balduin The Baker",
@@ -3108,6 +3267,7 @@
     "br_lines": 43,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Bambi Bonecrusher",
@@ -3132,6 +3292,10 @@
     "revid": 420310,
     "title": "Barazbaz"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Barazbaz",
    "npc": "oteryn:npc.barazbaz",
    "position": {
@@ -3148,6 +3312,7 @@
     "br_lines": 4,
     "matched": 1,
     "near": 2,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Barbara",
@@ -3242,6 +3407,7 @@
     "br_lines": 26,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Bashira",
@@ -3305,6 +3471,10 @@
   },
   {
    "br": null,
+   "dialogue": {
+    "status": "NO_BR_PAGE",
+    "texts": 4
+   },
    "name": "Battlemart",
    "npc": "oteryn:npc.battlemart"
   },
@@ -3318,6 +3488,7 @@
     "br_lines": 34,
     "matched": 9,
     "near": 13,
+    "status": "CHECKED",
     "texts": 42
    },
    "name": "Baxter",
@@ -3356,6 +3527,7 @@
     "br_lines": 16,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Beatrice",
@@ -3398,6 +3570,7 @@
     "br_lines": 17,
     "matched": 7,
     "near": 1,
+    "status": "CHECKED",
     "texts": 18
    },
    "name": "Benevola",
@@ -3426,6 +3599,7 @@
     "br_lines": 36,
     "matched": 27,
     "near": 4,
+    "status": "CHECKED",
     "texts": 43
    },
    "name": "Benjamin",
@@ -3453,6 +3627,10 @@
     "pageid": 12303,
     "revid": 416635,
     "title": "Benny The Baker"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Benny The Baker",
    "npc": "oteryn:npc.benny_the_baker",
@@ -3506,6 +3684,7 @@
     "br_lines": 41,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Bertha",
@@ -3651,6 +3830,10 @@
     "revid": 421310,
     "title": "Biff The Baker"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Biff The Baker",
    "npc": "oteryn:npc.biff_the_baker",
    "position": {
@@ -3711,6 +3894,7 @@
     "br_lines": 24,
     "matched": 2,
     "near": 3,
+    "status": "CHECKED",
     "texts": 70
    },
    "name": "Billy",
@@ -3745,6 +3929,10 @@
     "revid": 421313,
     "title": "Billy The Baker"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Billy The Baker",
    "npc": "oteryn:npc.billy_the_baker",
    "position": {
@@ -3766,6 +3954,10 @@
     "pageid": 10882,
     "revid": 421314,
     "title": "Black Bert"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
    },
    "name": "Black Bert",
    "npc": "oteryn:npc.black_bert",
@@ -3825,6 +4017,10 @@
     "revid": 443273,
     "title": "Blind Orc"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Blind Orc",
    "npc": "oteryn:npc.blind_orc",
    "position": {
@@ -3878,6 +4074,7 @@
     "br_lines": 48,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "match": "POSITION_ALIAS",
@@ -3897,6 +4094,7 @@
     "br_lines": 42,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Blossom Bonecrusher",
@@ -3920,6 +4118,10 @@
     "pageid": 11233,
     "revid": 421319,
     "title": "Bo'Ques"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Bo'Ques",
    "npc": "oteryn:npc.bo_ques",
@@ -3969,6 +4171,7 @@
     "br_lines": 10,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Bodh The Kan",
@@ -3987,6 +4190,7 @@
     "br_lines": 23,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Bolfona",
@@ -4043,6 +4247,7 @@
     "br_lines": 13,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Boozer",
@@ -4111,6 +4316,10 @@
     "revid": 421331,
     "title": "Bounac Guard"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Bounac Guard",
    "npc": "oteryn:npc.bounac_guard",
    "position": {
@@ -4137,6 +4346,7 @@
     "br_lines": 25,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Boveas",
@@ -4184,9 +4394,10 @@
     "title": "Bozo"
    },
    "dialogue": {
-    "br_lines": 61,
+    "br_lines": 59,
     "matched": 22,
     "near": 9,
+    "status": "CHECKED",
     "texts": 64
    },
    "name": "Bozo",
@@ -4259,6 +4470,7 @@
     "br_lines": 25,
     "matched": 2,
     "near": 8,
+    "status": "CHECKED",
     "texts": 13
    },
    "name": "Brasith",
@@ -4356,6 +4568,10 @@
     "revid": 431288,
     "title": "Brewmaster Bhaan"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 11
+   },
    "name": "Brewmaster Bhaan",
    "npc": "oteryn:npc.brewmaster_bhaan",
    "position": {
@@ -4367,6 +4583,10 @@
     "pageid": 12000,
     "revid": 421341,
     "title": "Brewster"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 9
    },
    "name": "Brewster",
    "npc": "oteryn:npc.brewster",
@@ -4394,6 +4614,7 @@
     "br_lines": 52,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Brian The Baker",
@@ -4422,6 +4643,7 @@
     "br_lines": 29,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Briasol",
@@ -4488,6 +4710,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "Brodrosch",
@@ -4515,6 +4738,10 @@
     "pageid": 17261,
     "revid": 421346,
     "title": "Broken Servant Sentry"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Broken Servant Sentry",
    "npc": "oteryn:npc.broken_servant_sentry",
@@ -4560,6 +4787,10 @@
     "pageid": 11643,
     "revid": 416514,
     "title": "Bron"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 15
    },
    "name": "Bron",
    "npc": "oteryn:npc.bron",
@@ -4609,6 +4840,7 @@
     "br_lines": 5,
     "matched": 5,
     "near": 0,
+    "status": "CHECKED",
     "texts": 11
    },
    "name": "Bruno",
@@ -4664,6 +4896,7 @@
     "br_lines": 34,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Brutus The Baker",
@@ -4692,6 +4925,7 @@
     "br_lines": 52,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Buddel",
@@ -4724,6 +4958,7 @@
     "br_lines": 52,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Buddel (Helheim)",
@@ -4746,6 +4981,7 @@
     "br_lines": 52,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Buddel (Okolnir)",
@@ -4768,6 +5004,7 @@
     "br_lines": 52,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Buddel (Raider Camp)",
@@ -4790,6 +5027,7 @@
     "br_lines": 52,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Buddel (Tyrsung)",
@@ -4812,6 +5050,7 @@
     "br_lines": 12,
     "matched": 5,
     "near": 4,
+    "status": "CHECKED",
     "texts": 20
    },
    "name": "Budrik",
@@ -4840,6 +5079,7 @@
     "br_lines": 40,
     "matched": 42,
     "near": 0,
+    "status": "CHECKED",
     "texts": 45
    },
    "name": "Bunny Bonecrusher",
@@ -4868,6 +5108,7 @@
     "br_lines": 42,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Busty Bonecrusher",
@@ -4891,6 +5132,10 @@
     "pageid": 11786,
     "revid": 351854,
     "title": "Cael"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
    },
    "name": "Cael",
    "npc": "oteryn:npc.cael",
@@ -4944,6 +5189,7 @@
     "br_lines": 12,
     "matched": 10,
     "near": 0,
+    "status": "CHECKED",
     "texts": 13
    },
    "name": "Camilla",
@@ -4984,6 +5230,7 @@
     "br_lines": 15,
     "matched": 0,
     "near": 2,
+    "status": "CHECKED",
     "texts": 14
    },
    "name": "Captain Breezelda",
@@ -5007,6 +5254,10 @@
     "pageid": 31813,
     "revid": 423235,
     "title": "Captain Chelop"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 13
    },
    "name": "Captain Chelop",
    "npc": "oteryn:npc.captain_chelop",
@@ -5034,6 +5285,7 @@
     "br_lines": 35,
     "matched": 6,
     "near": 0,
+    "status": "CHECKED",
     "texts": 11
    },
    "name": "Captain Cookie",
@@ -5080,6 +5332,10 @@
     "revid": 357210,
     "title": "Captain Fearless"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 36
+   },
    "name": "Captain Fearless",
    "npc": "oteryn:npc.captain_fearless",
    "position": {
@@ -5106,6 +5362,7 @@
     "br_lines": 15,
     "matched": 11,
     "near": 3,
+    "status": "CHECKED",
     "texts": 48
    },
    "name": "Captain Greyhound",
@@ -5130,6 +5387,10 @@
     "revid": 402754,
     "title": "Captain Gulliver"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 24
+   },
    "name": "Captain Gulliver",
    "npc": "oteryn:npc.captain_gulliver",
    "position": {
@@ -5141,6 +5402,10 @@
     "pageid": 12081,
     "revid": 352113,
     "title": "Captain Haba"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 53
    },
    "name": "Captain Haba",
    "npc": "oteryn:npc.captain_haba",
@@ -5168,6 +5433,10 @@
     "revid": 353298,
     "title": "Captain Harava"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 19
+   },
    "name": "Captain Harava",
    "npc": "oteryn:npc.captain_harava",
    "position": {
@@ -5184,6 +5453,7 @@
     "br_lines": 4,
     "matched": 5,
     "near": 0,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Captain Indigo",
@@ -5197,6 +5467,10 @@
     "pageid": 11673,
     "revid": 416544,
     "title": "Captain Jack"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Captain Jack",
    "npc": "oteryn:npc.captain_jack",
@@ -5268,6 +5542,7 @@
     "br_lines": 12,
     "matched": 12,
     "near": 0,
+    "status": "CHECKED",
     "texts": 14
    },
    "name": "Captain Marie-Denise Banner",
@@ -5281,6 +5556,10 @@
     "pageid": 12029,
     "revid": 416338,
     "title": "Captain Max"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 8
    },
    "name": "Captain Max",
    "npc": "oteryn:npc.captain_max",
@@ -5314,6 +5593,10 @@
     "pageid": 12029,
     "revid": 416338,
     "title": "Captain Max"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 10
    },
    "name": "Captain Max (Calassa)",
    "npc": "oteryn:npc.captain_max_calassa",
@@ -5352,6 +5635,7 @@
     "br_lines": 10,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 26
    },
    "name": "Captain Pelagia",
@@ -5375,6 +5659,10 @@
     "pageid": 11052,
     "revid": 416361,
     "title": "Captain Seagull"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 40
    },
    "name": "Captain Seagull",
    "npc": "oteryn:npc.captain_seagull",
@@ -5402,6 +5690,7 @@
     "br_lines": 14,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 30
    },
    "name": "Captain Seahorse",
@@ -5448,6 +5737,10 @@
     "revid": 355625,
     "title": "Captain Tiberius"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 11
+   },
    "name": "Captain Tiberius",
    "npc": "oteryn:npc.captain_tiberius",
    "position": {
@@ -5469,6 +5762,10 @@
     "pageid": 11854,
     "revid": 367404,
     "title": "Captain Waverider"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Captain Waverider",
    "npc": "oteryn:npc.captain_waverider",
@@ -5492,6 +5789,10 @@
     "revid": 367404,
     "title": "Captain Waverider"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 8
+   },
    "name": "Captain Waverider (Island)",
    "npc": "oteryn:npc.captain_waverider_island",
    "position": {
@@ -5514,6 +5815,10 @@
     "revid": 416092,
     "title": "Caramellia"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 13
+   },
    "name": "Caramellia",
    "npc": "oteryn:npc.caramellia",
    "position": {
@@ -5535,6 +5840,10 @@
     "pageid": 11448,
     "revid": 367533,
     "title": "Carina"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Carina",
    "npc": "oteryn:npc.carina",
@@ -5570,6 +5879,7 @@
     "br_lines": 1,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 8
    },
    "name": "Carlos",
@@ -5598,6 +5908,10 @@
     "revid": 416641,
     "title": "Carlson"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 18
+   },
    "name": "Carlson",
    "npc": "oteryn:npc.carlson",
    "position": {
@@ -5616,6 +5930,10 @@
   },
   {
    "br": null,
+   "dialogue": {
+    "status": "NO_BR_PAGE",
+    "texts": 3
+   },
    "name": "Cassino",
    "npc": "oteryn:npc.cassino"
   },
@@ -5624,6 +5942,10 @@
     "pageid": 12036,
     "revid": 421834,
     "title": "Cedrik"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 9
    },
    "name": "Cedrik",
    "npc": "oteryn:npc.cedrik",
@@ -5709,6 +6031,7 @@
     "br_lines": 4,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Ceiron",
@@ -5737,6 +6060,7 @@
     "br_lines": 28,
     "matched": 7,
     "near": 4,
+    "status": "CHECKED",
     "texts": 14
    },
    "name": "Cerdras",
@@ -5830,6 +6154,10 @@
     "revid": 353340,
     "title": "Charles"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 11
+   },
    "name": "Charles",
    "npc": "oteryn:npc.charles",
    "position": {
@@ -5878,6 +6206,7 @@
     "br_lines": 21,
     "matched": 2,
     "near": 1,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Charos",
@@ -5906,6 +6235,7 @@
     "br_lines": 12,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Chartan",
@@ -5938,6 +6268,7 @@
     "br_lines": 2,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 72
    },
    "name": "Chatterbone",
@@ -5951,6 +6282,10 @@
     "pageid": 33517,
     "revid": 407311,
     "title": "Chavis"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Chavis",
    "npc": "oteryn:npc.chavis",
@@ -6037,6 +6372,7 @@
     "br_lines": 3,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Chesa The Guardian",
@@ -6055,6 +6391,7 @@
     "br_lines": 45,
     "matched": 18,
     "near": 13,
+    "status": "CHECKED",
     "texts": 76
    },
    "name": "Chester Kahs",
@@ -6083,6 +6420,7 @@
     "br_lines": 30,
     "matched": 31,
     "near": 3,
+    "status": "CHECKED",
     "texts": 34
    },
    "name": "Chief Grarkharok",
@@ -6111,6 +6449,7 @@
     "br_lines": 49,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Chondur",
@@ -6143,6 +6482,7 @@
     "br_lines": 12,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Chrak",
@@ -6219,6 +6559,7 @@
     "br_lines": 21,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Chrystal",
@@ -6273,6 +6614,7 @@
     "br_lines": 31,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Chuckles",
@@ -6336,6 +6678,7 @@
     "br_lines": 105,
     "matched": 72,
     "near": 1,
+    "status": "CHECKED",
     "texts": 74
    },
    "name": "Cipfried",
@@ -6386,6 +6729,7 @@
     "br_lines": 17,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Cledwyn",
@@ -6499,6 +6843,7 @@
     "br_lines": 20,
     "matched": 14,
     "near": 2,
+    "status": "CHECKED",
     "texts": 23
    },
    "name": "Coltrayne",
@@ -6540,6 +6885,10 @@
     "revid": 385653,
     "title": "Commander Stone"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Commander Stone",
    "npc": "oteryn:npc.commander_stone",
    "position": {
@@ -6566,6 +6915,7 @@
     "br_lines": 14,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Cornelia",
@@ -6598,6 +6948,7 @@
     "br_lines": 25,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Cornell",
@@ -6611,6 +6962,10 @@
     "pageid": 42801,
     "revid": 354356,
     "title": "Corym Butler"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Corym Butler",
    "npc": "oteryn:npc.corym_butler",
@@ -6634,6 +6989,10 @@
     "revid": 354355,
     "title": "Corym Footman"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Corym Footman",
    "npc": "oteryn:npc.corym_footman",
    "position": {
@@ -6655,6 +7014,10 @@
     "pageid": 42797,
     "revid": 354354,
     "title": "Corym Ratter"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Corym Ratter",
    "npc": "oteryn:npc.corym_ratter",
@@ -6678,6 +7041,10 @@
     "revid": 354353,
     "title": "Corym Servant"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Corym Servant",
    "npc": "oteryn:npc.corym_servant",
    "position": {
@@ -6699,6 +7066,10 @@
     "pageid": 43248,
     "revid": 354352,
     "title": "Corym Slave"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Corym Slave",
    "npc": "oteryn:npc.corym_slave",
@@ -6722,6 +7093,10 @@
     "revid": 354351,
     "title": "Corym Worker"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Corym Worker (1)",
    "npc": "oteryn:npc.corym_worker_1",
    "position": {
@@ -6743,6 +7118,10 @@
     "pageid": 42799,
     "revid": 354351,
     "title": "Corym Worker"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Corym Worker (2)",
    "npc": "oteryn:npc.corym_worker_2",
@@ -6766,6 +7145,10 @@
     "revid": 354351,
     "title": "Corym Worker"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Corym Worker (3)",
    "npc": "oteryn:npc.corym_worker_3",
    "position": {
@@ -6788,6 +7171,10 @@
     "revid": 354351,
     "title": "Corym Worker"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Corym Worker (4)",
    "npc": "oteryn:npc.corym_worker_4",
    "position": {
@@ -6809,6 +7196,10 @@
     "pageid": 42799,
     "revid": 354351,
     "title": "Corym Worker"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Corym Worker (5)",
    "npc": "oteryn:npc.corym_worker_5",
@@ -6836,6 +7227,7 @@
     "br_lines": 24,
     "matched": 13,
     "near": 7,
+    "status": "CHECKED",
     "texts": 22
    },
    "name": "Costello",
@@ -6849,6 +7241,10 @@
     "pageid": 12248,
     "revid": 394617,
     "title": "Cranky Lizard Crone"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 9
    },
    "name": "Cranky Lizard Crone",
    "npc": "oteryn:npc.cranky_lizard_crone",
@@ -6898,6 +7294,7 @@
     "br_lines": 20,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Cruleo",
@@ -6925,6 +7322,10 @@
     "pageid": 12354,
     "revid": 393817,
     "title": "Curos"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Curos",
    "npc": "oteryn:npc.curos",
@@ -6996,6 +7397,7 @@
     "br_lines": 5,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Dahr-Enpa Rahng",
@@ -7014,6 +7416,7 @@
     "br_lines": 12,
     "matched": 6,
     "near": 1,
+    "status": "CHECKED",
     "texts": 8
    },
    "name": "Dajcho The Monk",
@@ -7054,6 +7457,10 @@
     "revid": 432115,
     "title": "Dal The Huntress"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Dal the Huntress (Day)",
    "npc": "oteryn:npc.dal_the_huntress_day",
    "position": {
@@ -7079,6 +7486,10 @@
     "pageid": 49585,
     "revid": 432115,
     "title": "Dal The Huntress"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Dal the Huntress (Night)",
    "npc": "oteryn:npc.dal_the_huntress_night",
@@ -7110,6 +7521,7 @@
     "br_lines": 11,
     "matched": 9,
     "near": 1,
+    "status": "CHECKED",
     "texts": 13
    },
    "name": "Dalbrect",
@@ -7134,6 +7546,10 @@
     "revid": 385654,
     "title": "Dallheim"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 72
+   },
    "name": "Dallheim",
    "npc": "oteryn:npc.dallheim",
    "position": {
@@ -7155,6 +7571,10 @@
     "pageid": 41737,
     "revid": 353079,
     "title": "Dancing Fairy"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Dancing Fairy",
    "npc": "oteryn:npc.dancing_fairy",
@@ -7182,6 +7602,7 @@
     "br_lines": 40,
     "matched": 6,
     "near": 1,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Dane",
@@ -7221,9 +7642,10 @@
     "title": "Daniel Steelsoul"
    },
    "dialogue": {
-    "br_lines": 67,
+    "br_lines": 64,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Daniel Steelsoul",
@@ -7357,6 +7779,7 @@
     "br_lines": 46,
     "matched": 35,
     "near": 0,
+    "status": "CHECKED",
     "texts": 36
    },
    "name": "Dedoras",
@@ -7408,6 +7831,10 @@
     "revid": 355569,
     "title": "Denominator"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Denominator",
    "npc": "oteryn:npc.denominator",
    "position": {
@@ -7434,6 +7861,7 @@
     "br_lines": 14,
     "matched": 10,
     "near": 0,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Dermot",
@@ -7482,6 +7910,7 @@
     "br_lines": 88,
     "matched": 57,
     "near": 1,
+    "status": "CHECKED",
     "texts": 64
    },
    "name": "Dixi",
@@ -7551,6 +7980,7 @@
     "br_lines": 34,
     "matched": 24,
     "near": 1,
+    "status": "CHECKED",
     "texts": 25
    },
    "name": "Donald McRonald",
@@ -7638,6 +8068,10 @@
     "revid": 357458,
     "title": "Dorian"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 20
+   },
    "name": "Dorian",
    "npc": "oteryn:npc.dorian",
    "position": {
@@ -7663,6 +8097,10 @@
     "pageid": 33522,
     "revid": 354181,
     "title": "Doubleday"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Doubleday",
    "npc": "oteryn:npc.doubleday",
@@ -7750,6 +8188,7 @@
     "br_lines": 30,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Dreadeye",
@@ -7880,6 +8319,10 @@
   },
   {
    "br": null,
+   "dialogue": {
+    "status": "NO_BR_PAGE",
+    "texts": 12
+   },
    "name": "Drunken Sailor",
    "npc": "oteryn:npc.drunken_sailor"
   },
@@ -7911,6 +8354,10 @@
     "revid": 367666,
     "title": "Dukosch"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Dukosch",
    "npc": "oteryn:npc.dukosch",
    "position": {
@@ -7936,6 +8383,10 @@
     "pageid": 11819,
     "revid": 352583,
     "title": "Duncan"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Duncan",
    "npc": "oteryn:npc.duncan",
@@ -7967,6 +8418,7 @@
     "br_lines": 10,
     "matched": 4,
     "near": 3,
+    "status": "CHECKED",
     "texts": 22
    },
    "name": "Duria",
@@ -8039,6 +8491,7 @@
     "br_lines": 16,
     "matched": 3,
     "near": 1,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Ebenizer",
@@ -8062,6 +8515,10 @@
     "pageid": 10891,
     "revid": 357659,
     "title": "Eclesius"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 22
    },
    "name": "Eclesius",
    "npc": "oteryn:npc.eclesius",
@@ -8089,6 +8546,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Edala",
@@ -8121,6 +8579,7 @@
     "br_lines": 8,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Eddy",
@@ -8196,6 +8655,7 @@
     "br_lines": 21,
     "matched": 19,
     "near": 2,
+    "status": "CHECKED",
     "texts": 27
    },
    "name": "Edgar-Ellen",
@@ -8312,6 +8772,7 @@
     "br_lines": 89,
     "matched": 70,
     "near": 24,
+    "status": "CHECKED",
     "texts": 132
    },
    "name": "Edowir",
@@ -8362,6 +8823,7 @@
     "br_lines": 8,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Edvard",
@@ -8445,6 +8907,7 @@
     "br_lines": 4,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Eighty",
@@ -8491,6 +8954,10 @@
     "revid": 436907,
     "title": "Elane"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 67
+   },
    "name": "Elane",
    "npc": "oteryn:npc.elane",
    "position": {
@@ -8521,6 +8988,7 @@
     "br_lines": 23,
     "matched": 15,
     "near": 7,
+    "status": "CHECKED",
     "texts": 34
    },
    "name": "Elathriel",
@@ -8575,6 +9043,7 @@
     "br_lines": 27,
     "matched": 24,
     "near": 0,
+    "status": "CHECKED",
     "texts": 28
    },
    "name": "Eldoran the Ambitious",
@@ -8588,6 +9057,10 @@
     "pageid": 12049,
     "revid": 352556,
     "title": "Eleonore"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Eleonore",
    "npc": "oteryn:npc.eleonore",
@@ -8615,6 +9088,7 @@
     "br_lines": 10,
     "matched": 9,
     "near": 0,
+    "status": "CHECKED",
     "texts": 11
    },
    "name": "Elf Guard",
@@ -8639,6 +9113,10 @@
     "revid": 356981,
     "title": "Elgar"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Elgar",
    "npc": "oteryn:npc.elgar",
    "position": {
@@ -8657,6 +9135,10 @@
     "pageid": 46962,
     "revid": 371153,
     "title": "Eliyas"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
    },
    "name": "Eliyas",
    "npc": "oteryn:npc.eliyas",
@@ -8685,6 +9167,7 @@
     "br_lines": 14,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Eliza",
@@ -8709,6 +9192,10 @@
     "revid": 395147,
     "title": "Elliott"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Elliott",
    "npc": "oteryn:npc.elliott",
    "position": {
@@ -8725,6 +9212,7 @@
     "br_lines": 17,
     "matched": 16,
     "near": 0,
+    "status": "CHECKED",
     "texts": 19
    },
    "name": "Elvith",
@@ -8764,6 +9252,7 @@
     "br_lines": 19,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Elyen Ravenlock",
@@ -8782,6 +9271,7 @@
     "br_lines": 8,
     "matched": 6,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "Emael",
@@ -8836,6 +9326,7 @@
     "br_lines": 32,
     "matched": 13,
     "near": 1,
+    "status": "CHECKED",
     "texts": 28
    },
    "name": "Emiliana",
@@ -8876,6 +9367,10 @@
     "revid": 416559,
     "title": "Emma"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 24
+   },
    "name": "Emma",
    "npc": "oteryn:npc.emma",
    "position": {
@@ -8902,6 +9397,7 @@
     "br_lines": 76,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Emperor Kruzak",
@@ -8934,6 +9430,7 @@
     "br_lines": 33,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Emperor Rehal",
@@ -8973,6 +9470,10 @@
     "pageid": 11816,
     "revid": 352594,
     "title": "Erayo"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Erayo",
    "npc": "oteryn:npc.erayo",
@@ -9029,6 +9530,7 @@
     "br_lines": 9,
     "matched": 9,
     "near": 0,
+    "status": "CHECKED",
     "texts": 46
    },
    "name": "Eroth",
@@ -9057,6 +9559,7 @@
     "br_lines": 70,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Eruaran",
@@ -9085,6 +9588,10 @@
     "revid": 353301,
     "title": "Eshaya"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
+   },
    "name": "Eshaya",
    "npc": "oteryn:npc.eshaya",
    "position": {
@@ -9106,6 +9613,10 @@
     "pageid": 11767,
     "revid": 421822,
     "title": "Esrik"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Esrik",
    "npc": "oteryn:npc.esrik",
@@ -9187,6 +9698,7 @@
     "br_lines": 7,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 61
    },
    "name": "Etzel",
@@ -9232,6 +9744,10 @@
     "pageid": 10751,
     "revid": 416575,
     "title": "Eva"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
    },
    "name": "Eva",
    "npc": "oteryn:npc.eva",
@@ -9285,6 +9801,7 @@
     "br_lines": 21,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "match": "POSITION_ALIAS",
@@ -9304,6 +9821,7 @@
     "br_lines": 21,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Evrard the Miller",
@@ -9347,6 +9865,10 @@
     "revid": 354255,
     "title": "Ezebeth"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Ezebeth",
    "npc": "oteryn:npc.ezebeth",
    "position": {
@@ -9368,6 +9890,10 @@
     "pageid": 11238,
     "revid": 401852,
     "title": "Fa'Hradin"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Fa'Hradin",
    "npc": "oteryn:npc.fa_hradin",
@@ -9433,6 +9959,7 @@
     "br_lines": 19,
     "matched": 22,
     "near": 0,
+    "status": "CHECKED",
     "texts": 23
    },
    "name": "Falonzo",
@@ -9456,6 +9983,10 @@
     "pageid": 46963,
     "revid": 371154,
     "title": "Faloriel"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Faloriel",
    "npc": "oteryn:npc.faloriel",
@@ -9483,6 +10014,10 @@
     "revid": 434492,
     "title": "Faluae"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 18
+   },
    "name": "Faluae",
    "npc": "oteryn:npc.faluae",
    "position": {
@@ -9504,6 +10039,10 @@
     "pageid": 45110,
     "revid": 353112,
     "title": "Farhilorn Of The Winter Court"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Farhilorn Of The Winter Court",
    "npc": "oteryn:npc.farhilorn_of_the_winter_court",
@@ -9558,6 +10097,10 @@
     "pageid": 11216,
     "revid": 401915,
     "title": "Feizuhl"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Feizuhl",
    "npc": "oteryn:npc.feizuhl",
@@ -9635,6 +10178,7 @@
     "br_lines": 4,
     "matched": 1,
     "near": 2,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Fenbala",
@@ -9648,6 +10192,10 @@
     "pageid": 11222,
     "revid": 429323,
     "title": "Fenech"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
    },
    "name": "Fenech",
    "npc": "oteryn:npc.fenech",
@@ -9702,6 +10250,10 @@
     "revid": 354482,
     "title": "Ferks"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Ferks",
    "npc": "oteryn:npc.ferks",
    "position": {
@@ -9718,6 +10270,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Ferryman Kamil",
@@ -9736,6 +10289,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Ferryman Kamil (Meluna)",
@@ -9764,6 +10318,7 @@
     "br_lines": 11,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Ferus",
@@ -9810,6 +10365,10 @@
     "revid": 416386,
     "title": "Finarfin"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Finarfin",
    "npc": "oteryn:npc.finarfin",
    "position": {
@@ -9826,6 +10385,7 @@
     "br_lines": 14,
     "matched": 6,
     "near": 0,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Fiona",
@@ -9849,6 +10409,10 @@
     "pageid": 66707,
     "revid": 432114,
     "title": "Fitzduncan"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 10
    },
    "name": "Fitzduncan",
    "npc": "oteryn:npc.fitzduncan",
@@ -9888,6 +10452,7 @@
     "br_lines": 19,
     "matched": 5,
     "near": 0,
+    "status": "CHECKED",
     "texts": 24
    },
    "name": "Flavius",
@@ -9950,6 +10515,10 @@
     "revid": 376004,
     "title": "Flora"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Flora",
    "npc": "oteryn:npc.flora",
    "position": {
@@ -9971,6 +10540,10 @@
     "pageid": 10484,
     "revid": 416605,
     "title": "Florentine"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Florentine",
    "npc": "oteryn:npc.florentine",
@@ -9998,6 +10571,7 @@
     "br_lines": 20,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Frafnar",
@@ -10048,6 +10622,7 @@
     "br_lines": 14,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Fral the Butcher (Day)",
@@ -10080,6 +10655,7 @@
     "br_lines": 14,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Fral the Butcher (Night)",
@@ -10130,6 +10706,10 @@
     "revid": 429319,
     "title": "Frans"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
+   },
    "name": "Frans",
    "npc": "oteryn:npc.frans",
    "position": {
@@ -10161,6 +10741,10 @@
     "revid": 429303,
     "title": "Frederik"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Frederik",
    "npc": "oteryn:npc.frederik",
    "position": {
@@ -10181,6 +10765,10 @@
     "pageid": 11814,
     "revid": 386708,
     "title": "Freezhild"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Freezhild",
    "npc": "oteryn:npc.freezhild",
@@ -10208,6 +10796,7 @@
     "br_lines": 79,
     "matched": 51,
     "near": 2,
+    "status": "CHECKED",
     "texts": 63
    },
    "name": "Frodo",
@@ -10257,6 +10846,10 @@
     "pageid": 45671,
     "revid": 401433,
     "title": "Frosty"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Frosty",
    "npc": "oteryn:npc.frosty",
@@ -10331,6 +10924,10 @@
     "revid": 401847,
     "title": "Gabel"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Gabel",
    "npc": "oteryn:npc.gabel",
    "position": {
@@ -10352,6 +10949,10 @@
     "pageid": 11974,
     "revid": 353345,
     "title": "Gail"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Gail",
    "npc": "oteryn:npc.gail",
@@ -10402,6 +11003,7 @@
     "br_lines": 15,
     "matched": 18,
     "near": 0,
+    "status": "CHECKED",
     "texts": 22
    },
    "name": "Galuna",
@@ -10438,6 +11040,7 @@
     "br_lines": 6,
     "matched": 5,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Gamel",
@@ -10494,6 +11097,7 @@
     "br_lines": 33,
     "matched": 29,
     "near": 4,
+    "status": "CHECKED",
     "texts": 40
    },
    "name": "Gamon",
@@ -10561,6 +11165,7 @@
     "br_lines": 51,
     "matched": 14,
     "near": 0,
+    "status": "CHECKED",
     "texts": 47
    },
    "name": "Garamond",
@@ -10584,6 +11189,10 @@
     "pageid": 12249,
     "revid": 351900,
     "title": "Gate Guardian"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Gate Guardian",
    "npc": "oteryn:npc.gate_guardian",
@@ -10629,6 +11238,10 @@
     "revid": 416463,
     "title": "Gelagos"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 10
+   },
    "name": "Gelagos",
    "npc": "oteryn:npc.gelagos",
    "position": {
@@ -10655,6 +11268,7 @@
     "br_lines": 7,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Gelidrazah'S Thirst",
@@ -10695,6 +11309,7 @@
     "br_lines": 55,
     "matched": 24,
     "near": 6,
+    "status": "CHECKED",
     "texts": 54
    },
    "name": "Gerimor",
@@ -10719,6 +11334,10 @@
     "revid": 357231,
     "title": "Gewen"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 19
+   },
    "name": "Gewen",
    "npc": "oteryn:npc.gewen",
    "position": {
@@ -10734,6 +11353,10 @@
     "pageid": 37305,
     "revid": 385229,
     "title": "Ghorza"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 7
    },
    "name": "Ghorza",
    "npc": "oteryn:npc.ghorza",
@@ -10770,6 +11393,10 @@
     "revid": 367160,
     "title": "Ghost Of A Priest"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 40
+   },
    "name": "Ghost Of A Priest",
    "npc": "oteryn:npc.ghost_of_a_priest",
    "position": {
@@ -10785,6 +11412,10 @@
     "pageid": 40988,
     "revid": 352832,
     "title": "Ghostly Wolf"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Ghostly Wolf",
    "npc": "oteryn:npc.ghostly_wolf",
@@ -10807,6 +11438,10 @@
     "pageid": 64875,
     "revid": 443153,
     "title": "Ghouliver"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Ghouliver",
    "npc": "oteryn:npc.ghouliver",
@@ -10905,6 +11540,7 @@
     "br_lines": 11,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Gnomad",
@@ -10928,6 +11564,10 @@
     "pageid": 55585,
     "revid": 365205,
     "title": "Gnomadness"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Gnomadness",
    "npc": "oteryn:npc.gnomadness",
@@ -10977,6 +11617,10 @@
     "revid": 385661,
     "title": "Gnomally"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Gnomally",
    "npc": "oteryn:npc.gnomally",
    "position": {
@@ -11019,6 +11663,7 @@
     "br_lines": 10,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Gnomargery",
@@ -11042,6 +11687,10 @@
     "pageid": 25526,
     "revid": 385662,
     "title": "Gnomaticus"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Gnomaticus",
    "npc": "oteryn:npc.gnomaticus",
@@ -11069,6 +11718,7 @@
     "br_lines": 10,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Gnombold",
@@ -11114,6 +11764,10 @@
     "pageid": 25520,
     "revid": 429304,
     "title": "Gnomegica"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
    },
    "name": "Gnomegica",
    "npc": "oteryn:npc.gnomegica",
@@ -11172,6 +11826,10 @@
     "revid": 357913,
     "title": "Gnomelvis"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Gnomelvis",
    "npc": "oteryn:npc.gnomelvis",
    "position": {
@@ -11216,6 +11874,10 @@
     "revid": 385667,
     "title": "Gnomeral"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Gnomeral",
    "npc": "oteryn:npc.gnomeral",
    "position": {
@@ -11242,6 +11904,7 @@
     "br_lines": 10,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Gnomercy",
@@ -11265,6 +11928,10 @@
     "pageid": 25524,
     "revid": 385669,
     "title": "Gnomerik"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Gnomerik",
    "npc": "oteryn:npc.gnomerik",
@@ -11322,6 +11989,10 @@
     "revid": 385670,
     "title": "Gnomespector"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Gnomespector",
    "npc": "oteryn:npc.gnomespector",
    "position": {
@@ -11359,6 +12030,10 @@
     "pageid": 25618,
     "revid": 385672,
     "title": "Gnomewart"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Gnomewart",
    "npc": "oteryn:npc.gnomewart",
@@ -11424,6 +12099,10 @@
     "revid": 385673,
     "title": "Gnomillion"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Gnomillion",
    "npc": "oteryn:npc.gnomillion",
    "position": {
@@ -11450,6 +12129,7 @@
     "br_lines": 10,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Gnomilly",
@@ -11500,6 +12180,10 @@
     "revid": 365208,
     "title": "Gnominer"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Gnominer",
    "npc": "oteryn:npc.gnominer",
    "position": {
@@ -11522,6 +12206,10 @@
     "revid": 385675,
     "title": "Gnominus"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Gnominus",
    "npc": "oteryn:npc.gnominus",
    "position": {
@@ -11538,6 +12226,10 @@
     "revid": 391814,
     "title": "Gnomish Operative (Catching)"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Gnomish Operative (Catching)",
    "npc": "oteryn:npc.gnomish_operative_catching",
    "position": {
@@ -11549,6 +12241,10 @@
     "pageid": 56362,
     "revid": 391815,
     "title": "Gnomish Operative (GT-M-01)"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Gnomish Operative (GT-M-01)",
    "npc": "oteryn:npc.gnomish_operative_gt_m_01",
@@ -11562,6 +12258,10 @@
     "revid": 391816,
     "title": "Gnomish Operative (Raiders)"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Gnomish Operative (Raiders)",
    "npc": "oteryn:npc.gnomish_operative_raiders",
    "position": {
@@ -11574,6 +12274,10 @@
     "revid": 391819,
     "title": "Gnomish Operative (Resonating)"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Gnomish Operative (Resonating)",
    "npc": "oteryn:npc.gnomish_operative_resonating",
    "position": {
@@ -11585,6 +12289,10 @@
     "pageid": 55986,
     "revid": 391817,
     "title": "Gnomish Operative (Volcano)"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Gnomish Operative (Volcano)",
    "npc": "oteryn:npc.gnomish_operative_volcano",
@@ -11602,6 +12310,7 @@
     "br_lines": 12,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Gnomission",
@@ -11642,6 +12351,7 @@
     "br_lines": 11,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Gnommander",
@@ -11665,6 +12375,10 @@
     "pageid": 25718,
     "revid": 385677,
     "title": "Gnomole"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Gnomole",
    "npc": "oteryn:npc.gnomole",
@@ -11692,6 +12406,7 @@
     "br_lines": 39,
     "matched": 12,
     "near": 0,
+    "status": "CHECKED",
     "texts": 13
    },
    "name": "Gnomus",
@@ -11748,6 +12463,7 @@
     "br_lines": 11,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Golem Servant",
@@ -11798,6 +12514,7 @@
     "br_lines": 23,
     "matched": 25,
     "near": 0,
+    "status": "CHECKED",
     "texts": 41
    },
    "name": "Gorn",
@@ -11871,6 +12588,7 @@
     "br_lines": 9,
     "matched": 9,
     "near": 0,
+    "status": "CHECKED",
     "texts": 15
    },
    "name": "Graubart",
@@ -11962,6 +12680,7 @@
     "br_lines": 24,
     "matched": 23,
     "near": 0,
+    "status": "CHECKED",
     "texts": 54
    },
    "name": "Gregor",
@@ -11985,6 +12704,10 @@
     "pageid": 11978,
     "revid": 375639,
     "title": "Grizzly Adams"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Grizzly Adams",
    "npc": "oteryn:npc.grizzly_adams",
@@ -12038,6 +12761,7 @@
     "br_lines": 32,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Grof, The Guard",
@@ -12066,6 +12790,7 @@
     "br_lines": 21,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Grombur",
@@ -12128,6 +12853,7 @@
     "br_lines": 15,
     "matched": 12,
     "near": 0,
+    "status": "CHECKED",
     "texts": 16
    },
    "name": "Guard Captain Hartford",
@@ -12164,6 +12890,10 @@
     "revid": 431300,
     "title": "Guard Post"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 7
+   },
    "name": "Guard Post",
    "npc": "oteryn:npc.guard_post",
    "position": {
@@ -12175,6 +12905,10 @@
     "pageid": 46966,
     "revid": 393815,
     "title": "Guard Saros"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Guard Saros",
    "npc": "oteryn:npc.guard_saros",
@@ -12242,6 +12976,10 @@
     "revid": 416599,
     "title": "Guide Alexena"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 33
+   },
    "name": "Guide Alexena",
    "npc": "oteryn:npc.guide_alexena",
    "position": {
@@ -12264,6 +13002,10 @@
     "revid": 401887,
     "title": "Guide Behil"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 15
+   },
    "name": "Guide Behil",
    "npc": "oteryn:npc.guide_behil",
    "position": {
@@ -12285,6 +13027,10 @@
     "pageid": 11032,
     "revid": 352558,
     "title": "Guide Davina"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 15
    },
    "name": "Guide Davina",
    "npc": "oteryn:npc.guide_davina",
@@ -12312,6 +13058,7 @@
     "br_lines": 55,
     "matched": 8,
     "near": 2,
+    "status": "CHECKED",
     "texts": 12
    },
    "name": "Guide Edna",
@@ -12336,6 +13083,10 @@
     "revid": 357211,
     "title": "Guide Elena"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 16
+   },
    "name": "Guide Elena",
    "npc": "oteryn:npc.guide_elena",
    "position": {
@@ -12357,6 +13108,10 @@
     "pageid": 11038,
     "revid": 352869,
     "title": "Guide Jonathan"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 14
    },
    "name": "Guide Jonathan",
    "npc": "oteryn:npc.guide_jonathan",
@@ -12380,6 +13135,10 @@
     "revid": 354262,
     "title": "Guide Kunibert"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 14
+   },
    "name": "Guide Kunibert",
    "npc": "oteryn:npc.guide_kunibert",
    "position": {
@@ -12401,6 +13160,10 @@
     "pageid": 10983,
     "revid": 357468,
     "title": "Guide Luke"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 26
    },
    "name": "Guide Luke",
    "npc": "oteryn:npc.guide_luke",
@@ -12446,6 +13209,10 @@
     "revid": 401913,
     "title": "Guide Rahlkora"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 16
+   },
    "name": "Guide Rahlkora",
    "npc": "oteryn:npc.guide_rahlkora",
    "position": {
@@ -12468,6 +13235,10 @@
     "revid": 357135,
     "title": "Guide Thelandil"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 13
+   },
    "name": "Guide Thelandil",
    "npc": "oteryn:npc.guide_thelandil",
    "position": {
@@ -12489,6 +13260,10 @@
     "pageid": 11039,
     "revid": 353355,
     "title": "Guide Tiko"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 16
    },
    "name": "Guide Tiko",
    "npc": "oteryn:npc.guide_tiko",
@@ -12534,6 +13309,10 @@
     "revid": 354863,
     "title": "Gurbasch"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 9
+   },
    "name": "Gurbasch",
    "npc": "oteryn:npc.gurbasch",
    "position": {
@@ -12560,6 +13339,7 @@
     "br_lines": 16,
     "matched": 12,
     "near": 0,
+    "status": "CHECKED",
     "texts": 25
    },
    "name": "Gustavo, The Guard",
@@ -12678,6 +13458,10 @@
     "revid": 421829,
     "title": "Habdel"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Habdel",
    "npc": "oteryn:npc.habdel",
    "position": {
@@ -12742,6 +13526,7 @@
     "br_lines": 12,
     "matched": 9,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Hairycles",
@@ -12851,6 +13636,7 @@
     "br_lines": 28,
     "matched": 6,
     "near": 5,
+    "status": "CHECKED",
     "texts": 13
    },
    "name": "Halvar",
@@ -12901,6 +13687,7 @@
     "br_lines": 26,
     "matched": 15,
     "near": 0,
+    "status": "CHECKED",
     "texts": 33
    },
    "name": "Hamish",
@@ -12932,6 +13719,10 @@
     "pageid": 10551,
     "revid": 357446,
     "title": "Hanna"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 11
    },
    "name": "Hanna",
    "npc": "oteryn:npc.hanna",
@@ -12981,6 +13772,7 @@
     "br_lines": 5,
     "matched": 5,
     "near": 0,
+    "status": "CHECKED",
     "texts": 8
    },
    "name": "Hardek",
@@ -13080,6 +13872,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Harog",
@@ -13100,6 +13893,10 @@
     "pageid": 11241,
     "revid": 412337,
     "title": "Haroun"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Haroun",
    "npc": "oteryn:npc.haroun",
@@ -13133,6 +13930,10 @@
     "revid": 357471,
     "title": "Harsky"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Harsky",
    "npc": "oteryn:npc.harsky",
    "position": {
@@ -13144,6 +13945,10 @@
     "pageid": 58215,
     "revid": 378945,
     "title": "Hawkhurst"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
    },
    "name": "Hawkhurst",
    "npc": "oteryn:npc.hawkhurst",
@@ -13166,6 +13971,10 @@
     "pageid": 58215,
     "revid": 378945,
     "title": "Hawkhurst"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
    },
    "match": "POSITION_ALIAS",
    "name": "Hawkhurst Ingol",
@@ -13218,6 +14027,7 @@
     "br_lines": 38,
     "matched": 10,
     "near": 0,
+    "status": "CHECKED",
     "texts": 17
    },
    "name": "Hector The Mentor",
@@ -13308,6 +14118,10 @@
     "revid": 413483,
     "title": "Henricus"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 30
+   },
    "name": "Henricus",
    "npc": "oteryn:npc.henricus",
    "position": {
@@ -13386,6 +14200,7 @@
     "br_lines": 19,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Hjaern",
@@ -13482,6 +14297,7 @@
     "br_lines": 13,
     "matched": 12,
     "near": 0,
+    "status": "CHECKED",
     "texts": 21
    },
    "name": "Hoggle",
@@ -13532,6 +14348,7 @@
     "br_lines": 37,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Humgolf",
@@ -13582,6 +14399,10 @@
     "revid": 416289,
     "title": "Humphrey"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
+   },
    "name": "Humphrey",
    "npc": "oteryn:npc.humphrey",
    "position": {
@@ -13612,6 +14433,7 @@
     "br_lines": 6,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Huntsman",
@@ -13640,6 +14462,7 @@
     "br_lines": 19,
     "matched": 8,
     "near": 8,
+    "status": "CHECKED",
     "texts": 62
    },
    "name": "Hyacinth",
@@ -13672,6 +14495,10 @@
     "revid": 357756,
     "title": "Ikassis"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Ikassis",
    "npc": "oteryn:npc.ikassis",
    "position": {
@@ -13698,6 +14525,7 @@
     "br_lines": 5,
     "matched": 1,
     "near": 1,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Imalas",
@@ -13729,6 +14557,10 @@
   },
   {
    "br": null,
+   "dialogue": {
+    "status": "NO_BR_PAGE",
+    "texts": 4
+   },
    "name": "Imbuement Assistant",
    "npc": "oteryn:npc.imbuement_assistant"
   },
@@ -13742,6 +14574,7 @@
     "br_lines": 21,
     "matched": 0,
     "near": 1,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Imbul",
@@ -13770,6 +14603,7 @@
     "br_lines": 155,
     "matched": 18,
     "near": 0,
+    "status": "CHECKED",
     "texts": 29
    },
    "name": "Inigo",
@@ -13878,6 +14712,7 @@
     "br_lines": 45,
     "matched": 4,
     "near": 2,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Iptar-Sin",
@@ -13901,6 +14736,10 @@
     "pageid": 11090,
     "revid": 416403,
     "title": "Irea"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 15
    },
    "name": "Irea",
    "npc": "oteryn:npc.irea",
@@ -13963,6 +14802,10 @@
     "revid": 367524,
     "title": "Irmana"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Irmana",
    "npc": "oteryn:npc.irmana",
    "position": {
@@ -14021,6 +14864,7 @@
     "br_lines": 10,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Ishebad",
@@ -14048,6 +14892,10 @@
     "pageid": 11424,
     "revid": 401872,
     "title": "Ishina"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
    },
    "name": "Ishina",
    "npc": "oteryn:npc.ishina",
@@ -14128,6 +14976,7 @@
     "br_lines": 32,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Isimov",
@@ -14156,6 +15005,7 @@
     "br_lines": 15,
     "matched": 19,
     "near": 0,
+    "status": "CHECKED",
     "texts": 37
    },
    "name": "Iskan",
@@ -14206,6 +15056,7 @@
     "br_lines": 31,
     "matched": 8,
     "near": 0,
+    "status": "CHECKED",
     "texts": 12
    },
    "name": "Ivalisse",
@@ -14234,6 +15085,7 @@
     "br_lines": 18,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Iwan",
@@ -14290,6 +15142,10 @@
     "pageid": 11273,
     "revid": 357246,
     "title": "Iwar"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Iwar",
    "npc": "oteryn:npc.iwar",
@@ -14363,6 +15219,10 @@
     "revid": 408513,
     "title": "Iyad"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 40
+   },
    "name": "Iyad",
    "npc": "oteryn:npc.iyad",
    "position": {
@@ -14388,6 +15248,10 @@
     "pageid": 12398,
     "revid": 421612,
     "title": "Izsh"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Izsh",
    "npc": "oteryn:npc.izsh",
@@ -14415,6 +15279,7 @@
     "br_lines": 20,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Jack",
@@ -14439,6 +15304,10 @@
     "revid": 352563,
     "title": "Jack Fate"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 24
+   },
    "name": "Jack Fate",
    "npc": "oteryn:npc.jack_fate",
    "position": {
@@ -14460,6 +15329,10 @@
     "pageid": 11781,
     "revid": 352563,
     "title": "Jack Fate"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 7
    },
    "name": "Jack Fate (Goroma)",
    "npc": "oteryn:npc.jack_fate_goroma",
@@ -14487,6 +15360,7 @@
     "br_lines": 37,
     "matched": 32,
     "near": 1,
+    "status": "CHECKED",
     "texts": 40
    },
    "name": "Jack Springer",
@@ -14537,6 +15411,10 @@
     "revid": 395148,
     "title": "Jacob"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Jacob",
    "npc": "oteryn:npc.jacob",
    "position": {
@@ -14570,6 +15448,10 @@
     "pageid": 11221,
     "revid": 401920,
     "title": "Jakahr"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Jakahr",
    "npc": "oteryn:npc.jakahr",
@@ -14622,6 +15504,10 @@
     "pageid": 41813,
     "revid": 395096,
     "title": "Jamesfrancis"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Jamesfrancis",
    "npc": "oteryn:npc.jamesfrancis",
@@ -14785,6 +15671,10 @@
     "revid": 352564,
     "title": "Jefrey"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Jefrey",
    "npc": "oteryn:npc.jefrey",
    "position": {
@@ -14819,6 +15709,10 @@
     "revid": 385239,
     "title": "Jehan The Baker"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Jehan The Baker (Day)",
    "npc": "oteryn:npc.jehan_the_baker_day",
    "position": {
@@ -14844,6 +15738,10 @@
     "pageid": 49584,
     "revid": 385239,
     "title": "Jehan The Baker"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Jehan The Baker (Night)",
    "npc": "oteryn:npc.jehan_the_baker_night",
@@ -14871,6 +15769,10 @@
     "revid": 367670,
     "title": "Jerom"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 49
+   },
    "name": "Jerom",
    "npc": "oteryn:npc.jerom",
    "position": {
@@ -14897,6 +15799,7 @@
     "br_lines": 36,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Jessica",
@@ -14945,6 +15848,10 @@
     "pageid": 11217,
     "revid": 401916,
     "title": "Jezzara"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
    },
    "name": "Jezzara",
    "npc": "oteryn:npc.jezzara",
@@ -15088,6 +15995,10 @@
     "revid": 354254,
     "title": "Jondrin"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Jondrin",
    "npc": "oteryn:npc.jondrin",
    "position": {
@@ -15114,6 +16025,7 @@
     "br_lines": 11,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Jorge",
@@ -15200,6 +16112,7 @@
     "br_lines": 11,
     "matched": 10,
     "near": 0,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Julius",
@@ -15228,6 +16141,10 @@
     "revid": 353757,
     "title": "Junkar"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 12
+   },
    "name": "Junkar (Mines)",
    "npc": "oteryn:npc.junkar_mines",
    "position": {
@@ -15249,6 +16166,10 @@
     "pageid": 17282,
     "revid": 353757,
     "title": "Junkar"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 12
    },
    "name": "Junkar (Robsons)",
    "npc": "oteryn:npc.junkar_robsons",
@@ -15272,6 +16193,10 @@
     "revid": 353757,
     "title": "Junkar"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 12
+   },
    "name": "Junkar (Thais)",
    "npc": "oteryn:npc.junkar_thais",
    "position": {
@@ -15283,6 +16208,10 @@
     "pageid": 40573,
     "revid": 416287,
     "title": "Kais"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 19
    },
    "name": "Kais",
    "npc": "oteryn:npc.kais",
@@ -15314,6 +16243,7 @@
     "br_lines": 68,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Kallimae",
@@ -15354,6 +16284,7 @@
     "br_lines": 35,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "Karith",
@@ -15377,6 +16308,10 @@
     "pageid": 10492,
     "revid": 416619,
     "title": "Karl"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 29
    },
    "name": "Karl",
    "npc": "oteryn:npc.karl",
@@ -15416,6 +16351,7 @@
     "br_lines": 46,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Kasmir",
@@ -15434,6 +16370,7 @@
     "br_lines": 28,
     "matched": 28,
     "near": 0,
+    "status": "CHECKED",
     "texts": 29
    },
    "name": "Kawill",
@@ -15461,6 +16398,10 @@
     "pageid": 37318,
     "revid": 401287,
     "title": "Kaya"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Kaya",
    "npc": "oteryn:npc.kaya",
@@ -15514,6 +16455,7 @@
     "br_lines": 8,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 32
    },
    "name": "Kendra",
@@ -15542,6 +16484,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 12
    },
    "name": "Kendra (Thais)",
@@ -15570,6 +16513,7 @@
     "br_lines": 12,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Kepar",
@@ -15638,6 +16582,10 @@
     "revid": 353920,
     "title": "Kesar The Younger"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Kesar the Younger (Day)",
    "npc": "oteryn:npc.kesar_the_younger_day",
    "position": {
@@ -15649,6 +16597,10 @@
     "pageid": 49586,
     "revid": 353920,
     "title": "Kesar The Younger"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Kesar the Younger (Night)",
    "npc": "oteryn:npc.kesar_the_younger_night",
@@ -15673,6 +16625,10 @@
     "pageid": 46698,
     "revid": 429320,
     "title": "Khanna"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Khanna",
    "npc": "oteryn:npc.khanna",
@@ -15794,6 +16750,10 @@
     "revid": 352589,
     "title": "Klaus"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Klaus",
    "npc": "oteryn:npc.klaus",
    "position": {
@@ -15842,6 +16802,7 @@
     "br_lines": 28,
     "matched": 12,
     "near": 0,
+    "status": "CHECKED",
     "texts": 17
    },
    "name": "Klom Stonecutter",
@@ -15914,6 +16875,7 @@
     "br_lines": 11,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Kroox",
@@ -15950,6 +16912,7 @@
     "br_lines": 32,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Kulag, The Guard",
@@ -15978,6 +16941,7 @@
     "br_lines": 9,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Lailene",
@@ -16000,6 +16964,7 @@
     "br_lines": 27,
     "matched": 8,
     "near": 0,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Lardoc Bashsmite",
@@ -16088,6 +17053,7 @@
     "br_lines": 27,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Lavirias",
@@ -16106,6 +17072,7 @@
     "br_lines": 37,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Lazaran",
@@ -16134,6 +17101,7 @@
     "br_lines": 8,
     "matched": 8,
     "near": 0,
+    "status": "CHECKED",
     "texts": 69
    },
    "name": "Lea",
@@ -16157,6 +17125,10 @@
     "pageid": 10493,
     "revid": 416614,
     "title": "Lector"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Lector",
    "npc": "oteryn:npc.lector",
@@ -16188,6 +17160,7 @@
     "br_lines": 21,
     "matched": 4,
     "near": 2,
+    "status": "CHECKED",
     "texts": 66
    },
    "name": "Lee'Delle",
@@ -16254,6 +17227,10 @@
     "revid": 436902,
     "title": "Legola"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 29
+   },
    "name": "Legola",
    "npc": "oteryn:npc.legola",
    "position": {
@@ -16269,6 +17246,10 @@
     "pageid": 66772,
     "revid": 433361,
     "title": "Leonora"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 9
    },
    "name": "Leonora",
    "npc": "oteryn:npc.leonora",
@@ -16320,6 +17301,10 @@
     "revid": 416622,
     "title": "Liane"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 8
+   },
    "name": "Liane",
    "npc": "oteryn:npc.liane",
    "position": {
@@ -16345,6 +17330,10 @@
     "pageid": 66153,
     "revid": 431301,
     "title": "Lieutenant Harlan"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 15
    },
    "name": "Lieutenant Harlan",
    "npc": "oteryn:npc.lieutenant_harlan",
@@ -16384,6 +17373,7 @@
     "br_lines": 12,
     "matched": 10,
     "near": 1,
+    "status": "CHECKED",
     "texts": 81
    },
    "name": "Lily",
@@ -16424,6 +17414,7 @@
     "br_lines": 18,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Lisander",
@@ -16503,6 +17494,7 @@
     "br_lines": 32,
     "matched": 18,
     "near": 1,
+    "status": "CHECKED",
     "texts": 24
    },
    "name": "Lizzie",
@@ -16516,6 +17508,10 @@
     "pageid": 11198,
     "revid": 416411,
     "title": "Llathriel"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Llathriel",
    "npc": "oteryn:npc.llathriel",
@@ -16538,6 +17534,10 @@
     "pageid": 11277,
     "revid": 385691,
     "title": "Lokur"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Lokur",
    "npc": "oteryn:npc.lokur",
@@ -16591,6 +17591,7 @@
     "br_lines": 35,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Lorbas",
@@ -16619,6 +17620,7 @@
     "br_lines": 8,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Lorek",
@@ -16647,6 +17649,7 @@
     "br_lines": 46,
     "matched": 40,
     "near": 2,
+    "status": "CHECKED",
     "texts": 49
    },
    "name": "Loria",
@@ -16675,6 +17678,7 @@
     "br_lines": 27,
     "matched": 1,
     "near": 1,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Lorietta",
@@ -16727,6 +17731,7 @@
     "br_lines": 41,
     "matched": 41,
     "near": 3,
+    "status": "CHECKED",
     "texts": 47
    },
    "name": "Loui",
@@ -16755,6 +17760,7 @@
     "br_lines": 14,
     "matched": 6,
     "near": 1,
+    "status": "CHECKED",
     "texts": 18
    },
    "name": "Lubo",
@@ -16828,6 +17834,7 @@
     "br_lines": 52,
     "matched": 41,
     "near": 0,
+    "status": "CHECKED",
     "texts": 58
    },
    "name": "Lugri",
@@ -16851,6 +17858,10 @@
     "pageid": 27740,
     "revid": 359853,
     "title": "Lukosch"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Lukosch",
    "npc": "oteryn:npc.lukosch",
@@ -16882,6 +17893,7 @@
     "br_lines": 14,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Luna",
@@ -16914,6 +17926,7 @@
     "br_lines": 14,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Lunch",
@@ -16964,6 +17977,7 @@
     "br_lines": 52,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Lurik",
@@ -16996,6 +18010,7 @@
     "br_lines": 36,
     "matched": 15,
     "near": 3,
+    "status": "CHECKED",
     "texts": 44
    },
    "name": "Lynda",
@@ -17046,6 +18061,10 @@
     "revid": 436900,
     "title": "Maealil"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 28
+   },
    "name": "Maealil",
    "npc": "oteryn:npc.maealil",
    "position": {
@@ -17067,6 +18086,10 @@
     "pageid": 41685,
     "revid": 353081,
     "title": "Maelyrra"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Maelyrra",
    "npc": "oteryn:npc.maelyrra",
@@ -17094,6 +18117,7 @@
     "br_lines": 26,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Maeryn",
@@ -17122,6 +18146,7 @@
     "br_lines": 21,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Malor",
@@ -17234,6 +18259,10 @@
     "revid": 352585,
     "title": "Marina"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Marina",
    "npc": "oteryn:npc.marina",
    "position": {
@@ -17260,6 +18289,7 @@
     "br_lines": 29,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 11
    },
    "name": "Maris",
@@ -17288,6 +18318,7 @@
     "br_lines": 29,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 11
    },
    "name": "Maris (Fenrock)",
@@ -17316,6 +18347,7 @@
     "br_lines": 29,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 11
    },
    "name": "Maris (Mistrock)",
@@ -17366,6 +18398,7 @@
     "br_lines": 23,
     "matched": 22,
     "near": 0,
+    "status": "CHECKED",
     "texts": 33
    },
    "name": "Markwin",
@@ -17394,6 +18427,7 @@
     "br_lines": 26,
     "matched": 7,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "Marlene",
@@ -17468,6 +18502,7 @@
     "br_lines": 30,
     "matched": 31,
     "near": 0,
+    "status": "CHECKED",
     "texts": 99
    },
    "name": "Marvik",
@@ -17491,6 +18526,10 @@
     "pageid": 33518,
     "revid": 354177,
     "title": "Marvin"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Marvin",
    "npc": "oteryn:npc.marvin",
@@ -17518,6 +18557,7 @@
     "br_lines": 17,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Maryza",
@@ -17594,6 +18634,7 @@
     "br_lines": 53,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Mazarius",
@@ -17617,6 +18658,10 @@
     "pageid": 11219,
     "revid": 401918,
     "title": "Mehkesh"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
    },
    "name": "Mehkesh",
    "npc": "oteryn:npc.mehkesh",
@@ -17648,6 +18693,7 @@
     "br_lines": 64,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Melchior",
@@ -17671,6 +18717,10 @@
     "pageid": 11279,
     "revid": 415760,
     "title": "Melfar"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Melfar",
    "npc": "oteryn:npc.melfar",
@@ -17704,6 +18754,10 @@
     "revid": 353462,
     "title": "Melian"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 44
+   },
    "name": "Melian",
    "npc": "oteryn:npc.melian",
    "position": {
@@ -17725,6 +18779,10 @@
     "pageid": 11214,
     "revid": 421825,
     "title": "Memech"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Memech",
    "npc": "oteryn:npc.memech",
@@ -17953,6 +19011,10 @@
     "revid": 357480,
     "title": "Miles, The Guard"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 52
+   },
    "name": "Miles, The Guard",
    "npc": "oteryn:npc.miles_the_guard",
    "position": {
@@ -17979,6 +19041,7 @@
     "br_lines": 40,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Milos",
@@ -18007,6 +19070,7 @@
     "br_lines": 19,
     "matched": 7,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "Mirabell",
@@ -18035,6 +19099,10 @@
     "revid": 401877,
     "title": "Miraia"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Miraia",
    "npc": "oteryn:npc.miraia",
    "position": {
@@ -18060,6 +19128,10 @@
     "pageid": 46643,
     "revid": 367574,
     "title": "Moe"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
    },
    "name": "Moe",
    "npc": "oteryn:npc.moe",
@@ -18105,6 +19177,10 @@
     "revid": 429321,
     "title": "Mordecai"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 10
+   },
    "name": "Mordecai",
    "npc": "oteryn:npc.mordecai",
    "position": {
@@ -18136,6 +19212,10 @@
     "revid": 352586,
     "title": "Morgan"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Morgan",
    "npc": "oteryn:npc.morgan",
    "position": {
@@ -18147,6 +19227,10 @@
     "pageid": 66777,
     "revid": 433367,
     "title": "Morla"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 8
    },
    "name": "Morla",
    "npc": "oteryn:npc.morla",
@@ -18209,6 +19293,10 @@
     "pageid": 10505,
     "revid": 416630,
     "title": "Mortimer"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 12
    },
    "name": "Mortimer",
    "npc": "oteryn:npc.mortimer",
@@ -18283,6 +19371,7 @@
     "br_lines": 18,
     "matched": 4,
     "near": 1,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Mother Of Jack",
@@ -18306,6 +19395,10 @@
     "pageid": 34761,
     "revid": 407313,
     "title": "Mr Brandon"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Mr Brandon",
    "npc": "oteryn:npc.mr_brandon",
@@ -18333,6 +19426,7 @@
     "br_lines": 28,
     "matched": 18,
     "near": 1,
+    "status": "CHECKED",
     "texts": 33
    },
    "name": "Mr Morris",
@@ -18458,6 +19552,10 @@
     "revid": 401900,
     "title": "Muhad"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 12
+   },
    "name": "Muhad",
    "npc": "oteryn:npc.muhad",
    "position": {
@@ -18474,6 +19572,7 @@
     "br_lines": 42,
     "matched": 29,
     "near": 3,
+    "status": "CHECKED",
     "texts": 108
    },
    "name": "Muriel",
@@ -18492,6 +19591,7 @@
     "br_lines": 13,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Murim",
@@ -18519,6 +19619,10 @@
     "pageid": 11438,
     "revid": 401863,
     "title": "Muzir"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Muzir",
    "npc": "oteryn:npc.muzir",
@@ -18580,6 +19684,7 @@
     "br_lines": 11,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Myzzi",
@@ -18603,6 +19708,10 @@
     "pageid": 11254,
     "revid": 401851,
     "title": "Nah'Bob"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Nah'Bob",
    "npc": "oteryn:npc.nah_bob",
@@ -18640,6 +19749,10 @@
     "revid": 357482,
     "title": "Naji"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Naji",
    "npc": "oteryn:npc.naji",
    "position": {
@@ -18666,6 +19779,7 @@
     "br_lines": 17,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Narsai",
@@ -18750,6 +19864,7 @@
     "br_lines": 39,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Nelly",
@@ -18974,6 +20089,10 @@
     "revid": 416646,
     "title": "Nielson"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 21
+   },
    "name": "Nielson",
    "npc": "oteryn:npc.nielson",
    "position": {
@@ -19016,6 +20135,7 @@
     "br_lines": 16,
     "matched": 0,
     "near": 1,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Nilsor",
@@ -19048,6 +20168,7 @@
     "br_lines": 4,
     "matched": 3,
     "near": 1,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Nina",
@@ -19076,6 +20197,7 @@
     "br_lines": 43,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Ninev",
@@ -19104,6 +20226,7 @@
     "br_lines": 9,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Ninos",
@@ -19121,6 +20244,10 @@
     "pageid": 55688,
     "revid": 429317,
     "title": "Nipuna"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Nipuna",
    "npc": "oteryn:npc.nipuna",
@@ -19151,6 +20278,7 @@
     "br_lines": 16,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Nokmir",
@@ -19175,6 +20303,10 @@
     "revid": 390105,
     "title": "Nomad (NPC)"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 20
+   },
    "name": "Nomad",
    "npc": "oteryn:npc.nomad",
    "position": {
@@ -19190,6 +20322,10 @@
     "pageid": 11107,
     "revid": 357483,
     "title": "Noodles"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 20
    },
    "name": "Noodles",
    "npc": "oteryn:npc.noodles",
@@ -19207,6 +20343,7 @@
     "br_lines": 9,
     "matched": 0,
     "near": 1,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Noozer",
@@ -19230,6 +20367,10 @@
     "pageid": 11813,
     "revid": 386706,
     "title": "Nor"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Nor",
    "npc": "oteryn:npc.nor",
@@ -19279,6 +20420,10 @@
     "revid": 416292,
     "title": "Norf"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 11
+   },
    "name": "Norf",
    "npc": "oteryn:npc.norf",
    "position": {
@@ -19309,6 +20454,7 @@
     "br_lines": 25,
     "matched": 24,
     "near": 0,
+    "status": "CHECKED",
     "texts": 57
    },
    "name": "Norma",
@@ -19399,6 +20545,7 @@
     "br_lines": 1,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Nurik",
@@ -19417,6 +20564,7 @@
     "br_lines": 4,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Nydala",
@@ -19544,6 +20692,7 @@
     "br_lines": 91,
     "matched": 60,
     "near": 1,
+    "status": "CHECKED",
     "texts": 65
    },
    "name": "Obi",
@@ -19576,6 +20725,7 @@
     "br_lines": 21,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Oblivion",
@@ -19604,6 +20754,7 @@
     "br_lines": 6,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Oblivis",
@@ -19627,6 +20778,10 @@
     "pageid": 11828,
     "revid": 397306,
     "title": "Ocelus"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Ocelus",
    "npc": "oteryn:npc.ocelus",
@@ -19756,6 +20911,7 @@
     "br_lines": 23,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Old Adall",
@@ -19806,6 +20962,7 @@
     "br_lines": 32,
     "matched": 10,
     "near": 6,
+    "status": "CHECKED",
     "texts": 30
    },
    "name": "Oldrak",
@@ -19846,6 +21003,10 @@
     "revid": 416421,
     "title": "Olrik"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
+   },
    "name": "Olrik",
    "npc": "oteryn:npc.olrik",
    "position": {
@@ -19874,6 +21035,10 @@
     "pageid": 64883,
     "revid": 427908,
     "title": "Omniphant (NPC)"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Omniphant",
    "npc": "oteryn:npc.omniphant",
@@ -19917,6 +21082,7 @@
     "br_lines": 18,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "One-Eyed Joe",
@@ -19945,6 +21111,7 @@
     "br_lines": 22,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Onfroi (Day)",
@@ -20013,6 +21180,7 @@
     "br_lines": 22,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Onfroi (Night)",
@@ -20081,6 +21249,7 @@
     "br_lines": 25,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Ongulf",
@@ -20131,6 +21300,7 @@
     "br_lines": 44,
     "matched": 11,
     "near": 3,
+    "status": "CHECKED",
     "texts": 23
    },
    "name": "Oressa",
@@ -20193,6 +21363,10 @@
     "revid": 420348,
     "title": "Ortelio"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
+   },
    "name": "Ortelio",
    "npc": "oteryn:npc.ortelio",
    "position": {
@@ -20219,6 +21393,7 @@
     "br_lines": 24,
     "matched": 18,
     "near": 0,
+    "status": "CHECKED",
     "texts": 18
    },
    "name": "Ortheus",
@@ -20247,6 +21422,7 @@
     "br_lines": 36,
     "matched": 37,
     "near": 0,
+    "status": "CHECKED",
     "texts": 49
    },
    "name": "Oswald",
@@ -20297,6 +21473,7 @@
     "br_lines": 9,
     "matched": 9,
     "near": 0,
+    "status": "CHECKED",
     "texts": 73
    },
    "name": "Padreia",
@@ -20351,6 +21528,7 @@
     "br_lines": 27,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Palimuth",
@@ -20374,6 +21552,10 @@
     "pageid": 17255,
     "revid": 355557,
     "title": "Palomino"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 16
    },
    "name": "Palomino",
    "npc": "oteryn:npc.palomino",
@@ -20445,6 +21627,7 @@
     "br_lines": 29,
     "matched": 11,
     "near": 15,
+    "status": "CHECKED",
     "texts": 27
    },
    "name": "Partos",
@@ -20499,6 +21682,7 @@
     "br_lines": 40,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Paulie",
@@ -20621,6 +21805,7 @@
     "br_lines": 17,
     "matched": 7,
     "near": 0,
+    "status": "CHECKED",
     "texts": 12
    },
    "name": "Pemaret",
@@ -20653,6 +21838,7 @@
     "br_lines": 10,
     "matched": 10,
     "near": 0,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Penny",
@@ -20727,6 +21913,10 @@
     "revid": 416661,
     "title": "Percybald"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Percybald",
    "npc": "oteryn:npc.percybald",
    "position": {
@@ -20770,6 +21960,10 @@
     "pageid": 11975,
     "revid": 443960,
     "title": "Perod"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Perod",
    "npc": "oteryn:npc.perod",
@@ -20855,6 +22049,7 @@
     "br_lines": 21,
     "matched": 17,
     "near": 0,
+    "status": "CHECKED",
     "texts": 17
    },
    "name": "Peter",
@@ -20868,6 +22063,10 @@
     "pageid": 11439,
     "revid": 401888,
     "title": "Petros"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 22
    },
    "name": "Petros",
    "npc": "oteryn:npc.petros",
@@ -20885,6 +22084,7 @@
     "br_lines": 29,
     "matched": 28,
     "near": 0,
+    "status": "CHECKED",
     "texts": 28
    },
    "name": "Phillip",
@@ -20909,6 +22109,10 @@
     "revid": 357486,
     "title": "Pig (NPC)"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 13
+   },
    "name": "Pig",
    "npc": "oteryn:npc.pig",
    "position": {
@@ -20925,6 +22129,7 @@
     "br_lines": 15,
     "matched": 10,
     "near": 2,
+    "status": "CHECKED",
     "texts": 23
    },
    "name": "Pino",
@@ -20953,6 +22158,7 @@
     "br_lines": 31,
     "matched": 19,
     "near": 4,
+    "status": "CHECKED",
     "texts": 30
    },
    "name": "Plunderpurse",
@@ -21003,6 +22209,7 @@
     "br_lines": 11,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Pompan",
@@ -21067,6 +22274,7 @@
     "br_lines": 18,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Prezil",
@@ -21095,6 +22303,7 @@
     "br_lines": 7,
     "matched": 7,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "Prisoner",
@@ -21182,6 +22391,10 @@
     "revid": 359852,
     "title": "Pukosch"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Pukosch",
    "npc": "oteryn:npc.pukosch",
    "position": {
@@ -21212,6 +22425,7 @@
     "br_lines": 26,
     "matched": 25,
     "near": 0,
+    "status": "CHECKED",
     "texts": 36
    },
    "name": "Pydar",
@@ -21288,6 +22502,7 @@
     "br_lines": 39,
     "matched": 6,
     "near": 1,
+    "status": "CHECKED",
     "texts": 10
    },
    "name": "Pythius The Rotten",
@@ -21328,6 +22543,7 @@
     "br_lines": 36,
     "matched": 39,
     "near": 8,
+    "status": "CHECKED",
     "texts": 63
    },
    "name": "Queen Eloise",
@@ -21350,6 +22566,7 @@
     "br_lines": 43,
     "matched": 41,
     "near": 0,
+    "status": "CHECKED",
     "texts": 50
    },
    "name": "Quentin",
@@ -21378,6 +22595,7 @@
     "br_lines": 13,
     "matched": 9,
     "near": 2,
+    "status": "CHECKED",
     "texts": 12
    },
    "name": "Quero",
@@ -21401,6 +22619,10 @@
     "pageid": 64877,
     "revid": 427950,
     "title": "Quill (NPC)"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Quill",
    "npc": "oteryn:npc.quill",
@@ -21428,6 +22650,7 @@
     "br_lines": 28,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Rabaz",
@@ -21461,6 +22684,10 @@
     "revid": 429309,
     "title": "Rachel"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
+   },
    "name": "Rachel",
    "npc": "oteryn:npc.rachel",
    "position": {
@@ -21492,6 +22719,10 @@
     "revid": 367596,
     "title": "Raffael"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Raffael",
    "npc": "oteryn:npc.raffael",
    "position": {
@@ -21507,6 +22738,10 @@
     "pageid": 27744,
     "revid": 402041,
     "title": "Rafzan"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 14
    },
    "name": "Rafzan",
    "npc": "oteryn:npc.rafzan",
@@ -21661,6 +22896,7 @@
     "br_lines": 24,
     "matched": 24,
     "near": 0,
+    "status": "CHECKED",
     "texts": 26
    },
    "name": "Rashid",
@@ -21681,6 +22917,10 @@
   },
   {
    "br": null,
+   "dialogue": {
+    "status": "NO_BR_PAGE",
+    "texts": 26
+   },
    "name": "Rashid of Island",
    "npc": "oteryn:npc.rashid_of_island"
   },
@@ -21689,6 +22929,10 @@
     "pageid": 11255,
     "revid": 401932,
     "title": "Rata'Mari"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Rata'Mari",
    "npc": "oteryn:npc.rata_mari",
@@ -21702,6 +22946,10 @@
     "revid": 431291,
     "title": "Raubritter Battler"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Raubritter Battler",
    "npc": "oteryn:npc.raubritter_battler",
    "position": {
@@ -21713,6 +22961,10 @@
     "pageid": 66146,
     "revid": 431294,
     "title": "Raubritter Chastigator"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Raubritter Chastigator",
    "npc": "oteryn:npc.raubritter_chastigator",
@@ -21726,6 +22978,10 @@
     "revid": 431299,
     "title": "Raubritter Guard"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Raubritter Guard",
    "npc": "oteryn:npc.raubritter_guard",
    "position": {
@@ -21737,6 +22993,10 @@
     "pageid": 66145,
     "revid": 431293,
     "title": "Raubritter Guardsman"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Raubritter Guardsman",
    "npc": "oteryn:npc.raubritter_guardsman",
@@ -21761,6 +23021,10 @@
     "pageid": 66142,
     "revid": 431290,
     "title": "Raubritter Patrol"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Raubritter Patrol",
    "npc": "oteryn:npc.raubritter_patrol",
@@ -21796,6 +23060,10 @@
     "revid": 431295,
     "title": "Raubritter Purifier"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Raubritter Purifier",
    "npc": "oteryn:npc.raubritter_purifier",
    "position": {
@@ -21807,6 +23075,10 @@
     "pageid": 66148,
     "revid": 431296,
     "title": "Raubritter Sentinel"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Raubritter Sentinel",
    "npc": "oteryn:npc.raubritter_sentinel",
@@ -21820,6 +23092,10 @@
     "revid": 431297,
     "title": "Raubritter Sentry"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Raubritter Sentry",
    "npc": "oteryn:npc.raubritter_sentry",
    "position": {
@@ -21831,6 +23107,10 @@
     "pageid": 66150,
     "revid": 431298,
     "title": "Raubritter Thug"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Raubritter Thug",
    "npc": "oteryn:npc.raubritter_thug",
@@ -21869,6 +23149,10 @@
     "pageid": 11835,
     "revid": 352588,
     "title": "Raymond Striker"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Raymond Striker",
    "npc": "oteryn:npc.raymond_striker",
@@ -21935,6 +23219,10 @@
     "pageid": 12038,
     "revid": 443958,
     "title": "Red Lilly"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 35
    },
    "name": "Red Lilly",
    "npc": "oteryn:npc.red_lilly",
@@ -22023,6 +23311,7 @@
     "br_lines": 31,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Rehon",
@@ -22063,6 +23352,7 @@
     "br_lines": 21,
     "matched": 10,
     "near": 3,
+    "status": "CHECKED",
     "texts": 24
    },
    "name": "Richard",
@@ -22097,6 +23387,10 @@
     "pageid": 11283,
     "revid": 416750,
     "title": "Riddler"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 11
    },
    "name": "Riddler",
    "npc": "oteryn:npc.riddler",
@@ -22192,6 +23486,7 @@
     "br_lines": 25,
     "matched": 28,
     "near": 0,
+    "status": "CHECKED",
     "texts": 32
    },
    "name": "Robin",
@@ -22210,6 +23505,7 @@
     "br_lines": 22,
     "matched": 5,
     "near": 0,
+    "status": "CHECKED",
     "texts": 11
    },
    "name": "Robson",
@@ -22237,6 +23533,10 @@
     "pageid": 20338,
     "revid": 421831,
     "title": "Rock In A Hard Place"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 7
    },
    "name": "Rock In A Hard Place",
    "npc": "oteryn:npc.rock_in_a_hard_place",
@@ -22275,6 +23575,10 @@
     "pageid": 24450,
     "revid": 367474,
     "title": "Rock With A Soft Spot"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 9
    },
    "name": "Rock With A Soft Spot",
    "npc": "oteryn:npc.rock_with_a_soft_spot",
@@ -22358,6 +23662,10 @@
     "revid": 367536,
     "title": "Rokyn"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Rokyn",
    "npc": "oteryn:npc.rokyn",
    "position": {
@@ -22384,6 +23692,7 @@
     "br_lines": 15,
     "matched": 13,
     "near": 0,
+    "status": "CHECKED",
     "texts": 14
    },
    "name": "Romella",
@@ -22484,6 +23793,7 @@
     "br_lines": 26,
     "matched": 25,
     "near": 1,
+    "status": "CHECKED",
     "texts": 29
    },
    "name": "Rosemarie",
@@ -22508,6 +23818,10 @@
   },
   {
    "br": null,
+   "dialogue": {
+    "status": "NO_BR_PAGE",
+    "texts": 8
+   },
    "name": "Rosina",
    "npc": "oteryn:npc.rosina"
   },
@@ -22543,6 +23857,7 @@
     "br_lines": 24,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Roswitha",
@@ -22571,6 +23886,7 @@
     "br_lines": 61,
     "matched": 8,
     "near": 1,
+    "status": "CHECKED",
     "texts": 24
    },
    "name": "Rotem Valos",
@@ -22598,6 +23914,10 @@
     "pageid": 11721,
     "revid": 367597,
     "title": "Rottin Wood"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Rottin Wood",
    "npc": "oteryn:npc.rottin_wood",
@@ -22687,6 +24007,7 @@
     "br_lines": 17,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Rudolph",
@@ -22724,6 +24045,7 @@
     "br_lines": 1,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "Ruprecht",
@@ -22756,6 +24078,7 @@
     "br_lines": 9,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Saideh",
@@ -22774,6 +24097,7 @@
     "br_lines": 12,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Saih The Guardian",
@@ -22809,6 +24133,10 @@
     "pageid": 10541,
     "revid": 421839,
     "title": "Sam"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 34
    },
    "name": "Sam",
    "npc": "oteryn:npc.sam",
@@ -22875,6 +24203,7 @@
     "br_lines": 64,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "Sandomo",
@@ -22903,6 +24232,7 @@
     "br_lines": 16,
     "matched": 6,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "Sandra",
@@ -22930,6 +24260,10 @@
     "pageid": 31422,
     "revid": 385263,
     "title": "Sane Mage"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 12
    },
    "name": "Sane Mage",
    "npc": "oteryn:npc.sane_mage",
@@ -23046,6 +24380,7 @@
     "br_lines": 85,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Santiago",
@@ -23074,6 +24409,7 @@
     "br_lines": 4,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Sarina",
@@ -23158,6 +24494,10 @@
     "revid": 416644,
     "title": "Scott"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 10
+   },
    "name": "Scott",
    "npc": "oteryn:npc.scott",
    "position": {
@@ -23200,6 +24540,7 @@
     "br_lines": 9,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 12
    },
    "name": "Scrutinon",
@@ -23268,6 +24609,10 @@
     "revid": 352575,
     "title": "Sebastian"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 10
+   },
    "name": "Sebastian (Nargor)",
    "npc": "oteryn:npc.sebastian_nargor",
    "position": {
@@ -23294,6 +24639,7 @@
     "br_lines": 10,
     "matched": 10,
     "near": 0,
+    "status": "CHECKED",
     "texts": 14
    },
    "name": "Second in Command Demeron",
@@ -23322,6 +24668,7 @@
     "br_lines": 35,
     "matched": 6,
     "near": 4,
+    "status": "CHECKED",
     "texts": 35
    },
    "name": "Ser Tybald",
@@ -23350,6 +24697,7 @@
     "br_lines": 18,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Serafin",
@@ -23377,6 +24725,10 @@
     "pageid": 17276,
     "revid": 420116,
     "title": "Servant Sentry"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 8
    },
    "name": "Servant Sentry",
    "npc": "oteryn:npc.servant_sentry",
@@ -23448,6 +24800,7 @@
     "br_lines": 40,
     "matched": 5,
     "near": 2,
+    "status": "CHECKED",
     "texts": 87
    },
    "name": "Seymour",
@@ -23510,6 +24863,10 @@
     "pageid": 11095,
     "revid": 421824,
     "title": "Shanar"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Shanar",
    "npc": "oteryn:npc.shanar",
@@ -23652,6 +25009,7 @@
     "br_lines": 17,
     "matched": 0,
     "near": 1,
+    "status": "CHECKED",
     "texts": 18
    },
    "name": "Sharon",
@@ -23680,6 +25038,7 @@
     "br_lines": 37,
     "matched": 32,
     "near": 5,
+    "status": "CHECKED",
     "texts": 37
    },
    "name": "Shauna",
@@ -23703,6 +25062,10 @@
     "pageid": 10858,
     "revid": 357493,
     "title": "Sherry McRonald"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 29
    },
    "name": "Sherry McRonald",
    "npc": "oteryn:npc.sherry_mcronald",
@@ -23734,6 +25097,7 @@
     "br_lines": 16,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Shiantis",
@@ -23809,6 +25173,10 @@
     "revid": 353317,
     "title": "Shimun"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Shimun",
    "npc": "oteryn:npc.shimun",
    "position": {
@@ -23830,6 +25198,10 @@
     "pageid": 11092,
     "revid": 429310,
     "title": "Shiriel"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Shiriel",
    "npc": "oteryn:npc.shiriel",
@@ -23856,6 +25228,7 @@
     "br_lines": 9,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Shirith",
@@ -23884,6 +25257,10 @@
     "revid": 353111,
     "title": "Shirtalis Of The Summer Court"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Shirtalis Of The Summer Court",
    "npc": "oteryn:npc.shirtalis_of_the_summer_court",
    "position": {
@@ -23910,6 +25287,7 @@
     "br_lines": 10,
     "matched": 3,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "Shoddy Beggar",
@@ -23933,6 +25311,10 @@
     "pageid": 33520,
     "revid": 354253,
     "title": "Sholley"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Sholley",
    "npc": "oteryn:npc.sholley",
@@ -23972,6 +25354,7 @@
     "br_lines": 17,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Siestaar",
@@ -24000,6 +25383,7 @@
     "br_lines": 14,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Siflind",
@@ -24037,6 +25421,10 @@
     "pageid": 11285,
     "revid": 429312,
     "title": "Sigurd"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
    },
    "name": "Sigurd",
    "npc": "oteryn:npc.sigurd",
@@ -24123,6 +25511,7 @@
     "br_lines": 26,
     "matched": 23,
     "near": 1,
+    "status": "CHECKED",
     "texts": 28
    },
    "name": "Simon The Beggar",
@@ -24158,6 +25547,7 @@
     "br_lines": 17,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Sinatuki",
@@ -24186,6 +25576,7 @@
     "br_lines": 39,
     "matched": 7,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "Sinclair",
@@ -24222,6 +25613,10 @@
     "revid": 394624,
     "title": "Sissek"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Sissek",
    "npc": "oteryn:npc.sissek",
    "position": {
@@ -24248,6 +25643,7 @@
     "br_lines": 18,
     "matched": 4,
     "near": 1,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Sister Of Jack",
@@ -24300,6 +25696,7 @@
     "br_lines": 12,
     "matched": 10,
     "near": 0,
+    "status": "CHECKED",
     "texts": 12
    },
    "name": "Skjaar",
@@ -24327,6 +25724,10 @@
     "pageid": 11558,
     "revid": 434495,
     "title": "Smiley"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 64
    },
    "name": "Smiley",
    "npc": "oteryn:npc.smiley",
@@ -24414,6 +25815,10 @@
     "revid": 391934,
     "title": "Spectulus"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 14
+   },
    "name": "Spectulus",
    "npc": "oteryn:npc.spectulus",
    "position": {
@@ -24488,6 +25893,10 @@
     "revid": 433368,
     "title": "Sterling"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 9
+   },
    "name": "Sterling",
    "npc": "oteryn:npc.sterling",
    "position": {
@@ -24500,6 +25909,10 @@
     "revid": 431287,
     "title": "Steward Volkmar"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 14
+   },
    "name": "Steward Volkmar",
    "npc": "oteryn:npc.steward_volkmar",
    "position": {
@@ -24511,6 +25924,10 @@
     "pageid": 35028,
     "revid": 385267,
     "title": "Strange Pipe"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Strange Pipe",
    "npc": "oteryn:npc.strange_pipe",
@@ -24534,6 +25951,10 @@
     "revid": 385267,
     "title": "Strange Pipe"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Strange Pipe (1)",
    "npc": "oteryn:npc.strange_pipe_1",
    "position": {
@@ -24545,6 +25966,10 @@
     "pageid": 35028,
     "revid": 385267,
     "title": "Strange Pipe"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Strange Pipe (2)",
    "npc": "oteryn:npc.strange_pipe_2",
@@ -24567,6 +25992,10 @@
     "pageid": 35028,
     "revid": 385267,
     "title": "Strange Pipe"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Strange Pipe (3)",
    "npc": "oteryn:npc.strange_pipe_3",
@@ -24592,6 +26021,10 @@
     "revid": 357496,
     "title": "Stutch"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Stutch",
    "npc": "oteryn:npc.stutch",
    "position": {
@@ -24603,6 +26036,10 @@
     "pageid": 55686,
     "revid": 429316,
     "title": "Sundara"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Sundara",
    "npc": "oteryn:npc.sundara",
@@ -24635,6 +26072,10 @@
     "pageid": 11137,
     "revid": 357495,
     "title": "Suzy"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Suzy",
    "npc": "oteryn:npc.suzy",
@@ -24680,6 +26121,10 @@
     "revid": 416642,
     "title": "Svenson"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 18
+   },
    "name": "Svenson",
    "npc": "oteryn:npc.svenson",
    "position": {
@@ -24710,6 +26155,7 @@
     "br_lines": 11,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 11
    },
    "name": "Swolt",
@@ -24762,6 +26208,10 @@
     "pageid": 41686,
     "revid": 353083,
     "title": "Taegen"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 7
    },
    "name": "Taegen",
    "npc": "oteryn:npc.taegen",
@@ -24817,6 +26267,10 @@
     "pageid": 41728,
     "revid": 413926,
     "title": "Talila"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 6
    },
    "name": "Talila",
    "npc": "oteryn:npc.talila",
@@ -25030,6 +26484,10 @@
     "revid": 429313,
     "title": "Tandros"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Tandros",
    "npc": "oteryn:npc.tandros",
    "position": {
@@ -25061,6 +26519,10 @@
     "revid": 367461,
     "title": "Tanyt"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 30
+   },
    "name": "Tanyt",
    "npc": "oteryn:npc.tanyt",
    "position": {
@@ -25087,6 +26549,7 @@
     "br_lines": 45,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Tarak (Inner)",
@@ -25115,6 +26578,7 @@
     "br_lines": 45,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Tarak (Sunken)",
@@ -25143,6 +26607,7 @@
     "br_lines": 13,
     "matched": 2,
     "near": 1,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Tarun",
@@ -25171,6 +26636,10 @@
     "revid": 367576,
     "title": "Tefrit"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Tefrit",
    "npc": "oteryn:npc.tefrit",
    "position": {
@@ -25197,6 +26666,7 @@
     "br_lines": 25,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Tehlim",
@@ -25225,6 +26695,7 @@
     "br_lines": 111,
     "matched": 0,
     "near": 1,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Telas",
@@ -25257,6 +26728,7 @@
     "br_lines": 62,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Telas Golem",
@@ -25285,6 +26757,7 @@
     "br_lines": 43,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Tereban",
@@ -25309,6 +26782,10 @@
     "revid": 354174,
     "title": "Terrence"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Terrence",
    "npc": "oteryn:npc.terrence",
    "position": {
@@ -25330,6 +26807,10 @@
     "pageid": 11218,
     "revid": 401917,
     "title": "Tesha"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Tesha",
    "npc": "oteryn:npc.tesha",
@@ -25427,6 +26908,10 @@
     "revid": 413300,
     "title": "Thanita"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
+   },
    "name": "Thanita",
    "npc": "oteryn:npc.thanita",
    "position": {
@@ -25448,6 +26933,10 @@
     "pageid": 33511,
     "revid": 354256,
     "title": "The Beggar King"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "The Beggar King",
    "npc": "oteryn:npc.the_beggar_king",
@@ -25471,6 +26960,10 @@
     "revid": 353373,
     "title": "The Blind Prophet"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 12
+   },
    "name": "The Blind Prophet",
    "npc": "oteryn:npc.the_blind_prophet",
    "position": {
@@ -25492,6 +26985,10 @@
     "pageid": 11732,
     "revid": 373139,
     "title": "The Bone Master"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "The Bone Master",
    "npc": "oteryn:npc.the_bone_master",
@@ -25523,6 +27020,7 @@
     "br_lines": 6,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "The Crone",
@@ -25563,6 +27061,7 @@
     "br_lines": 53,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 2
    },
    "name": "The Dream Master",
@@ -25591,6 +27090,10 @@
     "revid": 353324,
     "title": "The Empress"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "The Empress",
    "npc": "oteryn:npc.the_empress",
    "position": {
@@ -25617,6 +27120,7 @@
     "br_lines": 61,
     "matched": 6,
     "near": 0,
+    "status": "CHECKED",
     "texts": 7
    },
    "name": "The First Dragon",
@@ -25640,6 +27144,10 @@
     "pageid": 63933,
     "revid": 420346,
     "title": "The Forgemaster (NPC)"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "The Forgemaster",
    "npc": "oteryn:npc.the_forgemaster",
@@ -25685,6 +27193,10 @@
     "revid": 371152,
     "title": "The Librarian"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
+   },
    "name": "The Librarian",
    "npc": "oteryn:npc.the_librarian",
    "position": {
@@ -25728,6 +27240,10 @@
   },
   {
    "br": null,
+   "dialogue": {
+    "status": "NO_BR_PAGE",
+    "texts": 2
+   },
    "name": "The Lootmonger",
    "npc": "oteryn:npc.the_lootmonger"
   },
@@ -25736,6 +27252,10 @@
     "pageid": 10964,
     "revid": 357681,
     "title": "The Oracle"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "The Oracle",
    "npc": "oteryn:npc.the_oracle",
@@ -25763,6 +27283,7 @@
     "br_lines": 21,
     "matched": 16,
     "near": 1,
+    "status": "CHECKED",
     "texts": 17
    },
    "name": "The Orc King",
@@ -25786,6 +27307,10 @@
     "pageid": 11674,
     "revid": 421546,
     "title": "The Queen Of The Banshees"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 15
    },
    "name": "The Queen Of The Banshees",
    "npc": "oteryn:npc.the_queen_of_the_banshees",
@@ -25868,6 +27393,10 @@
     "revid": 353041,
     "title": "Thorgrin"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 11
+   },
    "name": "Thorgrin",
    "npc": "oteryn:npc.thorgrin",
    "position": {
@@ -25906,6 +27435,7 @@
     "br_lines": 42,
     "matched": 35,
     "near": 2,
+    "status": "CHECKED",
     "texts": 37
    },
    "name": "Tibra",
@@ -25934,6 +27464,7 @@
     "br_lines": 16,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Tigo",
@@ -25962,6 +27493,7 @@
     "br_lines": 34,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Tim, The Guard",
@@ -25990,6 +27522,7 @@
     "br_lines": 20,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Timothy",
@@ -26018,6 +27551,7 @@
     "br_lines": 15,
     "matched": 16,
     "near": 0,
+    "status": "CHECKED",
     "texts": 20
    },
    "name": "Timur",
@@ -26084,6 +27618,7 @@
     "br_lines": 18,
     "matched": 14,
     "near": 0,
+    "status": "CHECKED",
     "texts": 18
    },
    "name": "Todd",
@@ -26116,6 +27651,7 @@
     "br_lines": 19,
     "matched": 15,
     "near": 0,
+    "status": "CHECKED",
     "texts": 15
    },
    "name": "Tokel",
@@ -26143,6 +27679,10 @@
     "pageid": 10384,
     "revid": 357674,
     "title": "Tom"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 50
    },
    "name": "Tom",
    "npc": "oteryn:npc.tom",
@@ -26184,6 +27724,7 @@
     "br_lines": 28,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Tomruk The Ruddy",
@@ -26212,6 +27753,7 @@
     "br_lines": 15,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Tonar",
@@ -26240,6 +27782,7 @@
     "br_lines": 15,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "match": "POSITION_ALIAS",
@@ -26287,6 +27830,10 @@
     "revid": 416437,
     "title": "Tooth Fairy"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 20
+   },
    "name": "Tooth Fairy",
    "npc": "oteryn:npc.tooth_fairy",
    "position": {
@@ -26309,6 +27856,10 @@
     "revid": 416627,
     "title": "Toothless Tim"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
+   },
    "name": "Toothless Tim",
    "npc": "oteryn:npc.toothless_tim",
    "position": {
@@ -26330,6 +27881,10 @@
     "pageid": 11139,
     "revid": 429314,
     "title": "Topsy"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 42
    },
    "name": "Topsy",
    "npc": "oteryn:npc.topsy",
@@ -26391,6 +27946,7 @@
     "br_lines": 21,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Torkada",
@@ -26441,6 +27997,10 @@
     "revid": 357499,
     "title": "Towncryer"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
+   },
    "name": "Towncryer",
    "npc": "oteryn:npc.towncryer",
    "position": {
@@ -26467,6 +28027,7 @@
     "br_lines": 29,
     "matched": 28,
     "near": 1,
+    "status": "CHECKED",
     "texts": 35
    },
    "name": "Trimegis",
@@ -26490,6 +28051,10 @@
     "pageid": 10851,
     "revid": 436887,
     "title": "Trisha"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 19
    },
    "name": "Trisha",
    "npc": "oteryn:npc.trisha",
@@ -26557,6 +28122,10 @@
     "revid": 421841,
     "title": "Turvy"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 43
+   },
    "name": "Turvy",
    "npc": "oteryn:npc.turvy",
    "position": {
@@ -26617,6 +28186,10 @@
     "revid": 352580,
     "title": "Tyrias"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 9
+   },
    "name": "Tyrias",
    "npc": "oteryn:npc.tyrias",
    "position": {
@@ -26639,6 +28212,10 @@
     "revid": 401929,
     "title": "Ubaid"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Ubaid",
    "npc": "oteryn:npc.ubaid",
    "position": {
@@ -26660,6 +28237,10 @@
     "pageid": 11091,
     "revid": 416439,
     "title": "Ukea"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Ukea",
    "npc": "oteryn:npc.ukea",
@@ -26755,6 +28336,10 @@
     "revid": 351876,
     "title": "Ulala"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Ulala",
    "npc": "oteryn:npc.ulala",
    "position": {
@@ -26815,6 +28400,10 @@
     "revid": 401849,
     "title": "Umar"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
+   },
    "name": "Umar",
    "npc": "oteryn:npc.umar",
    "position": {
@@ -26858,6 +28447,10 @@
     "pageid": 45183,
     "revid": 353096,
     "title": "Undal"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Undal",
    "npc": "oteryn:npc.undal",
@@ -26908,6 +28501,10 @@
     "pageid": 55683,
     "revid": 365360,
     "title": "Urks The Mute"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 8
    },
    "name": "Urks The Mute",
    "npc": "oteryn:npc.urks_the_mute",
@@ -26981,6 +28578,10 @@
     "revid": 421833,
     "title": "Uzgod"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
+   },
    "name": "Uzgod",
    "npc": "oteryn:npc.uzgod",
    "position": {
@@ -27032,6 +28633,7 @@
     "br_lines": 12,
     "matched": 13,
     "near": 4,
+    "status": "CHECKED",
     "texts": 39
    },
    "name": "Uzon",
@@ -27060,6 +28662,7 @@
     "br_lines": 12,
     "matched": 3,
     "near": 3,
+    "status": "CHECKED",
     "texts": 11
    },
    "name": "Uzon Back",
@@ -27105,6 +28708,10 @@
     "pageid": 10872,
     "revid": 353279,
     "title": "Valentina"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 18
    },
    "name": "Valentina",
    "npc": "oteryn:npc.valentina",
@@ -27197,6 +28804,10 @@
     "revid": 395095,
     "title": "Vanys"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
+   },
    "name": "Vanys",
    "npc": "oteryn:npc.vanys",
    "position": {
@@ -27218,6 +28829,10 @@
     "pageid": 17007,
     "revid": 357683,
     "title": "Vascalir"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Vascalir",
    "npc": "oteryn:npc.vascalir",
@@ -27266,6 +28881,10 @@
     "pageid": 10513,
     "revid": 416643,
     "title": "Vera"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 5
    },
    "name": "Vera",
    "npc": "oteryn:npc.vera",
@@ -27340,6 +28959,10 @@
     "pageid": 12007,
     "revid": 353333,
     "title": "Vescu"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 2
    },
    "name": "Vescu",
    "npc": "oteryn:npc.vescu",
@@ -27453,6 +29076,7 @@
     "br_lines": 31,
     "matched": 12,
     "near": 1,
+    "status": "CHECKED",
     "texts": 21
    },
    "name": "Viola",
@@ -27466,6 +29090,10 @@
     "pageid": 33494,
     "revid": 354245,
     "title": "Virgil"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 4
    },
    "name": "Virgil",
    "npc": "oteryn:npc.virgil",
@@ -27551,6 +29179,10 @@
     "revid": 388601,
     "title": "Walter Jaeger"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 8
+   },
    "name": "Walter Jaeger",
    "npc": "oteryn:npc.walter_jaeger",
    "position": {
@@ -27581,6 +29213,7 @@
     "br_lines": 32,
     "matched": 45,
     "near": 0,
+    "status": "CHECKED",
     "texts": 51
    },
    "name": "Walter, The Guard",
@@ -27649,6 +29282,10 @@
     "revid": 385271,
     "title": "Wentworth"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 15
+   },
    "name": "Wentworth",
    "npc": "oteryn:npc.wentworth",
    "position": {
@@ -27675,6 +29312,7 @@
     "br_lines": 21,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Wes the Blacksmith (Day)",
@@ -27816,6 +29454,7 @@
     "br_lines": 21,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Wes the Blacksmith (Night)",
@@ -27979,6 +29618,7 @@
     "br_lines": 17,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Willard",
@@ -28056,6 +29696,10 @@
     "revid": 416606,
     "title": "William"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 12
+   },
    "name": "William",
    "npc": "oteryn:npc.william",
    "position": {
@@ -28082,6 +29726,7 @@
     "br_lines": 28,
     "matched": 7,
     "near": 9,
+    "status": "CHECKED",
     "texts": 55
    },
    "name": "Willie",
@@ -28143,6 +29788,7 @@
     "br_lines": 6,
     "matched": 5,
     "near": 1,
+    "status": "CHECKED",
     "texts": 14
    },
    "name": "Woblin",
@@ -28171,6 +29817,7 @@
     "br_lines": 16,
     "matched": 18,
     "near": 0,
+    "status": "CHECKED",
     "texts": 42
    },
    "name": "Wyat",
@@ -28199,6 +29846,7 @@
     "br_lines": 82,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Wyda",
@@ -28227,6 +29875,7 @@
     "br_lines": 17,
     "matched": 4,
     "near": 1,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Wyrdin",
@@ -28289,6 +29938,7 @@
     "br_lines": 10,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Xelvar",
@@ -28316,6 +29966,10 @@
     "pageid": 11146,
     "revid": 429315,
     "title": "Xodet"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 11
    },
    "name": "Xodet",
    "npc": "oteryn:npc.xodet",
@@ -28355,6 +30009,7 @@
     "br_lines": 21,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 3
    },
    "name": "Xorlosh",
@@ -28390,6 +30045,10 @@
     "pageid": 11261,
     "revid": 412338,
     "title": "Yaman"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Yaman",
    "npc": "oteryn:npc.yaman",
@@ -28427,6 +30086,7 @@
     "br_lines": 18,
     "matched": 5,
     "near": 0,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Yana",
@@ -28488,6 +30148,7 @@
     "br_lines": 6,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 1
    },
    "name": "Yasir",
@@ -28674,6 +30335,7 @@
     "br_lines": 31,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Yberius",
@@ -28702,6 +30364,7 @@
     "br_lines": 10,
     "matched": 1,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Yoem",
@@ -28765,6 +30428,10 @@
     "pageid": 46640,
     "revid": 353326,
     "title": "Yonan"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Yonan",
    "npc": "oteryn:npc.yonan",
@@ -28853,6 +30520,10 @@
     "revid": 394625,
     "title": "Zalamon"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Zalamon",
    "npc": "oteryn:npc.zalamon",
    "position": {
@@ -28901,6 +30572,7 @@
     "br_lines": 24,
     "matched": 4,
     "near": 0,
+    "status": "CHECKED",
     "texts": 6
    },
    "name": "Zarifan",
@@ -28929,6 +30601,7 @@
     "br_lines": 20,
     "matched": 2,
     "near": 1,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Zebron",
@@ -28957,6 +30630,7 @@
     "br_lines": 18,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 9
    },
    "name": "Zedrulon The Fallen",
@@ -28985,6 +30659,7 @@
     "br_lines": 42,
     "matched": 6,
     "near": 5,
+    "status": "CHECKED",
     "texts": 74
    },
    "name": "Zerbrus",
@@ -29035,6 +30710,7 @@
     "br_lines": 10,
     "matched": 5,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Zethra",
@@ -29067,6 +30743,7 @@
     "br_lines": 71,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Zirella",
@@ -29113,6 +30790,10 @@
     "revid": 365367,
     "title": "Ziyad"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 30
+   },
    "name": "Ziyad",
    "npc": "oteryn:npc.ziyad",
    "position": {
@@ -29124,6 +30805,10 @@
     "pageid": 12252,
     "revid": 394627,
     "title": "Zizzle"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
    },
    "name": "Zizzle",
    "npc": "oteryn:npc.zizzle",
@@ -29146,6 +30831,10 @@
     "pageid": 12254,
     "revid": 394628,
     "title": "Zlak"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 3
    },
    "name": "Zlak",
    "npc": "oteryn:npc.zlak",
@@ -29173,6 +30862,7 @@
     "br_lines": 23,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 4
    },
    "name": "Znozel",
@@ -29201,6 +30891,7 @@
     "br_lines": 35,
     "matched": 2,
     "near": 0,
+    "status": "CHECKED",
     "texts": 22
    },
    "name": "Zoltan",
@@ -29229,6 +30920,7 @@
     "br_lines": 30,
     "matched": 0,
     "near": 0,
+    "status": "CHECKED",
     "texts": 5
    },
    "name": "Zora",
@@ -29267,6 +30959,10 @@
     "revid": 413295,
     "title": "Ztiss"
    },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 1
+   },
    "name": "Ztiss",
    "npc": "oteryn:npc.ztiss",
    "position": {
@@ -29293,6 +30989,10 @@
     "pageid": 12255,
     "revid": 397308,
     "title": "Zumtah"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 12
    },
    "name": "Zumtah",
    "npc": "oteryn:npc.zumtah",
@@ -29357,10 +31057,15 @@
  ],
  "schema": "OTERYN_NPC_TIBIAWIKI_BR_CROSSCHECK/v1",
  "totals": {
+  "dialogue:admitted": 701,
   "dialogue:br_only": 179,
   "dialogue:checked": 368,
-  "dialogue:matched": 2865,
-  "dialogue:near": 343,
+  "dialogue:matched": 2854,
+  "dialogue:near": 349,
+  "dialogue:no_br_page": 8,
+  "dialogue:no_br_page_texts": 64,
+  "dialogue:no_br_transcript": 325,
+  "dialogue:no_br_transcript_texts": 2699,
   "dialogue:no_text_matched": 65,
   "dialogue:texts": 5851,
   "matched_by_position_alias": 7,

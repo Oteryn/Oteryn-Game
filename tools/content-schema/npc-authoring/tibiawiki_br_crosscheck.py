@@ -24,6 +24,8 @@ of an admitted placement on the same floor; the row then records `match: POSITIO
   |TIME|, |TRAVELCOST|, ...) as a wildcard, and the in-game
   `{keyword}` highlight braces removed (transcripts show plain text). A text that does not match but is
   at least NEAR_RATIO similar to a transcript line is counted as near (a small wording difference).
+  Every admitted Dialogue is reported: CHECKED when compared, NO_BR_TRANSCRIPT when the BR page has no
+  current NPC lines, NO_BR_PAGE when no BR page matches (both with the unchecked text count).
 
 Inputs are committed files only, so the report is reproducible byte for byte:
     python tibiawiki_br_crosscheck.py --out samples/tibiawiki-br-crosscheck-v1.json
@@ -241,6 +243,15 @@ def check_trade(offers, trades, names):
     return {key: value for key, value in row.items() if value not in ([], 0) or key in ('status', 'matched')}
 
 
+def unchecked_dialogue(declaration, status, totals):
+    """An admitted dialogue with nothing on BR to compare against is still reported, with its text count."""
+    texts = len(dialogue_texts(declaration))
+    totals['dialogue:admitted'] += 1
+    totals[f'dialogue:{status.lower()}'] += 1
+    totals[f'dialogue:{status.lower()}_texts'] += texts
+    return {'status': status, 'texts': texts}
+
+
 def crosscheck(facts, candidates, dialogues, admission, names):
     index = br_index(facts)
     admitted = {d['identity']['key'] for d in admission['declarations'] if d['kind'] == 'NPC'}
@@ -257,9 +268,12 @@ def crosscheck(facts, candidates, dialogues, admission, names):
             if page is not None:
                 row['match'] = 'POSITION_ALIAS'
                 totals['matched_by_position_alias'] += 1
+        declaration = dialogue_by_npc.get(key)
         if page is None:
             row['br'] = None
             totals['no_br_page'] += 1
+            if declaration is not None:
+                row['dialogue'] = unchecked_dialogue(declaration, 'NO_BR_PAGE', totals)
             rows.append(row)
             continue
         row['br'] = {'pageid': page['pageid'], 'revid': page['revid'], 'title': page['title']}
@@ -278,12 +292,15 @@ def crosscheck(facts, candidates, dialogues, admission, names):
             row['trade'] = trade
             totals[f'trade:{trade["status"]}'] += 1
         lines = [normalize(line) for line in page['npc_lines']]
-        declaration = dialogue_by_npc.get(key)
-        if declaration is not None and lines:
+        if declaration is not None and not lines:
+            row['dialogue'] = unchecked_dialogue(declaration, 'NO_BR_TRANSCRIPT', totals)
+        elif declaration is not None:
             texts = dialogue_texts(declaration)
             matched = [text for text in texts if text_matches(text, lines)]
             near = sum(1 for text in texts if text not in matched and text_near(text, lines))
-            row['dialogue'] = {'texts': len(texts), 'matched': len(matched), 'near': near, 'br_lines': len(lines)}
+            row['dialogue'] = {'status': 'CHECKED', 'texts': len(texts), 'matched': len(matched), 'near': near,
+                               'br_lines': len(lines)}
+            totals['dialogue:admitted'] += 1
             totals['dialogue:checked'] += 1
             totals['dialogue:texts'] += len(texts)
             totals['dialogue:matched'] += len(matched)

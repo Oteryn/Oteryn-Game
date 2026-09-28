@@ -183,6 +183,11 @@ SPEAKER = re.compile(r"\s*([^:<>{}|]{1,60}?)\s*:\s*(.*)$")
 TIMESTAMP = re.compile(r'^\s*\d{1,2}:\d{2}(?::\d{2})?\s+')  # `03:07 Marcus: ...` is a chat log line
 # a trade table introduced as historical (`Antes do Update 12.70`) is not a current offer list
 HISTORICAL = re.compile(r'(?i)\bantes d[oa]\b')
+# a transcript section headed as dialogue from before an update (`Antes do Update 10.20`) is not current speech;
+# a section headed as after one (`Após o Update 10.20`, `Depois do Patch ...`) is current again
+HISTORICAL_SECTION = re.compile(r'(?i)\bantes d[oa]\b[^:]*?\b(?:update|patch)')
+CURRENT_SECTION = re.compile(r'(?i)\b(?:depois d[oa]|ap[oó]s [oa]|a partir d[oa])\b[^:]*?\b(?:update|patch)')
+SECTION_MARKER_MAX = 100  # a section heading is short; a long prose sentence mentioning an update is not one
 # the infobox `location` field, up to the next field; map links elsewhere (notes, travel) are not NPC positions
 LOCATION = re.compile(r'^\|\s*location\s*=(.*?)(?=^\|\s*[a-z0-9_]+\s*=|\Z)', re.M | re.S)
 ORDERED = re.compile(r'^\s*\d+[.)]?\s+')  # `1 Edgar-Ellen: ...` numbers a turn
@@ -258,6 +263,29 @@ def fold(text):
     return re.sub(r'\s+', ' ', text).strip().casefold()
 
 
+def section_period(raw, speakers, historical):
+    """Whether the transcript is inside a historical section after this physical line. An infobox field, a
+    heading or a rule starts a new section; a short line that opens no turn and names the text as from before
+    (or after) an update opens a historical (or current) one; any other line keeps the section as it is."""
+    line = raw.strip()
+    if line.startswith(('|', '==', '----')) or re.match(r'<\s*h\d', line, re.I):
+        historical = False
+        if line.startswith('|'):
+            return historical
+    first = BREAK.split(line)[0]
+    text = re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(first))).strip()
+    if not text or len(text) > SECTION_MARKER_MAX:
+        return historical
+    turn = read_turn(first, speakers)
+    if turn and turn[1]:
+        return historical
+    if HISTORICAL_SECTION.search(text):
+        return True
+    if CURRENT_SECTION.search(text):
+        return False
+    return historical
+
+
 def page_facts(page):
     wikitext = COMMENT.sub('', page['wikitext'])  # hidden HTML comments are not page content
     name = infobox_field(wikitext, 'name') or page['title']
@@ -290,7 +318,12 @@ def page_facts(page):
                  and any(edit_distance(label, speaker) == 1 for speaker in speakers)}
     lines = []
     speaker = None
+    historical = False
     for raw in wikitext.split('\n'):
+        historical = section_period(raw, speakers, historical)
+        if historical:  # dialogue from before an update is not what the NPC says now
+            speaker = None
+            continue
         # one physical line can hold several turns separated by <br>; a segment without a speaker continues the
         # turn before it, also across physical lines, until a transcript boundary (a blank line, an infobox
         # field, a template, a heading or a rule) ends it. MediaWiki indentation (`:`, `*`, `#`, `;`) is stripped
@@ -410,6 +443,16 @@ def cmd_self_test(_args):
         {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': "[[Hyacinth (NPC)|Hyacinth]]: Greetings."}}}]}),
         'role': 'npc'})
     assert qualified['npc_lines'] == ['Greetings.'], qualified
+    periods = page_facts({**page_record({'pageid': 10, 'title': 'Bozo', 'revisions': [
+        {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': (
+            "| notes = Antes do update 12.70 he sold potions.\n| falas =\n"
+            "Antes do início do evento:\n'''Bozo:''' Event phase.\n"
+            "<big>Antes do [[Updates/10.20|Update 10.20]].</big></br>\n'''Bozo:''' Old greeting.\n\n"
+            "'''Bozo:''' Old, after a blank line.\n''Depois do Update de Natal 2007:''</br>\n'''Bozo:''' New greeting.\n"
+            "''Jogador:'' '''hi''' (''antes do level 300'')</br>\n'''Bozo:''' Still new.\n"
+            "''Antes do Patch 13.34''</br>\n'''Bozo:''' Old again.\n=== Quest ===\n'''Bozo:''' Quest line.")}}}]}),
+        'role': 'npc'})
+    assert periods['npc_lines'] == ['Event phase.', 'New greeting.', 'Still new.', 'Quest line.'], periods
     assert build_facts(snapshot, 'f' * 64)['snapshot_sha256'] == 'f' * 64
     dropped = {**snapshot, 'pages': snapshot['pages'][:1], 'counts': {**snapshot['counts'], 'captured': 1}}
     inconsistent = {**snapshot, 'missing_pages': []}
