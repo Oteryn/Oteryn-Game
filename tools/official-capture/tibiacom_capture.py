@@ -336,13 +336,18 @@ def extract_facts(section, body):
 
 
 def fetch_url(url):
-    """Return (status, raw_bytes) -- the exact response body, undecoded (P2 r4120758054)."""
+    """Return (status, raw_bytes, final_url) -- the exact response body, undecoded
+    (P2 r4120758054), and the URL the response actually came from. `urlopen` follows redirects
+    transparently, so `final_url` (from `geturl()`) is how a redirect away from the requested URL
+    is detected downstream (P2 r4121400366): tibia.com redirecting a manual/spell URL to a login
+    or homepage page must not be recorded as a successful fetch of the requested page.
+    """
     request = urllib.request.Request(url, headers={'User-Agent': USER_AGENT})
     try:
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-            return response.status, response.read()
+            return response.status, response.read(), response.geturl()
     except urllib.error.HTTPError as error:
-        return error.code, error.read()
+        return error.code, error.read(), error.geturl()
 
 
 def load_spell_module():
@@ -359,10 +364,16 @@ def fetch_page_or_abort(url, what):
     response. `raw_bytes` is the exact, undecoded response body (hash that); `body` is a separate
     decoded copy for parsing only (P2 r4120758054).
 
-    On anything else -- a non-200 status (P2 r4120578795) or a Cloudflare challenge served with a
-    200 -- prints a clear message and returns None so the caller aborts without writing output.
+    On anything else -- a redirect away from `url` (P2 r4121400366), a non-200 status
+    (P2 r4120578795) or a Cloudflare challenge served with a 200 -- prints a clear message and
+    returns None so the caller aborts without writing output.
     """
-    status, raw = fetch_url(url)
+    status, raw, final_url = fetch_url(url)
+    if final_url != url:
+        print(f'tibiacom_capture: fetching {what} ({url}) redirected to {final_url!r}; this tool '
+              f'never follows a redirect away from the requested URL. Aborting without writing '
+              f'output.', file=sys.stderr)
+        return None
     if status != ACCEPTED_HTTP_STATUS:
         print(f'tibiacom_capture: fetching {what} ({url}) returned HTTP {status}; only HTTP '
               f'{ACCEPTED_HTTP_STATUS} is accepted. Aborting without writing output.', file=sys.stderr)
@@ -1025,7 +1036,7 @@ def self_test():
     global fetch_url, load_spell_module
     _original_fetch_url = fetch_url
     raw_sample = b'<html><body><p>Deals 42 damage.</p>broken utf8: \xff\xfe end</body></html>'
-    fetch_url = lambda url: (200, raw_sample)
+    fetch_url = lambda url: (200, raw_sample, url)
     try:
         result = fetch_page_or_abort('http://example.test/raw-bytes', 'a raw-bytes test page')
     finally:
@@ -1034,6 +1045,23 @@ def self_test():
     _, raw, body = result
     assert raw == raw_sample, raw
     assert hashlib.sha256(raw).hexdigest() == hashlib.sha256(raw_sample).hexdigest()
+
+    # Reject a redirect away from the requested URL (P2 r4121400366): urlopen follows redirects
+    # transparently, so fetch_page_or_abort compares fetch_url's returned final_url against what
+    # was actually requested and aborts on any mismatch, regardless of the final page's status.
+    requested_url = 'https://www.tibia.com/gameguides/?subtopic=manual&section=controls'
+    fetch_url = lambda url: (200, b'<html>you have been redirected</html>',
+                             'https://www.tibia.com/account/login')
+    try:
+        redirected_result = fetch_page_or_abort(requested_url, 'a redirect test page')
+    finally:
+        fetch_url = _original_fetch_url
+    assert redirected_result is None
+    fetch_url = lambda url: (200, raw_sample, url)  # no redirect: unaffected
+    try:
+        assert fetch_page_or_abort(requested_url, 'a non-redirect test page') is not None
+    finally:
+        fetch_url = _original_fetch_url
     assert hashlib.sha256(raw).hexdigest() != hashlib.sha256(body.encode('utf-8')).hexdigest()
 
     # Immutability (P2 r4120758029): only paths inside a brand-new dated directory are allowed --
@@ -1350,7 +1378,7 @@ def self_test():
         fetch_body = f'<h2 id="x">Heading</h2><p>{filler}Value is 5 here.</p>'.encode()
 
         _original_fetch_url, _original_load_spell_module = fetch_url, load_spell_module
-        fetch_url = lambda url: (200, fetch_body)
+        fetch_url = lambda url: (200, fetch_body, url)
         load_spell_module = lambda: _FakeSpellModule()
         _original_sleep = time.sleep
         time.sleep = lambda seconds: None

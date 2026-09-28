@@ -122,7 +122,7 @@ reason: >
   or a slug of the text) and the text of `p`/`li`/`td`/`th`/`dd` blocks under each, with no
   CSS-class guess at tibia.com's real structure (unreachable here — same Cloudflare block).
 
-## Repair: Codex review findings (PR #1083, return to AUTHORING; 7 rounds, 24 findings)
+## Repair: Codex review findings (PR #1083, return to AUTHORING; 8 rounds, 25 findings)
 
 Every finding was accepted and repaired (or explicitly dispositioned, R6 P1): a self-test case
 added, its review thread replied to before that round's push. Full text is in the PR review
@@ -134,17 +134,17 @@ threads (`#1083#discussion_r<id>`); this is a terse index by head SHA.
   bytes, immutability covers `A`, no duplicate sections/URLs.
 - R3 `557730b` (3): 883657/667/679 — normalized `anchor`, `key`/`anchor` bounded, strict/
   consistent timestamps.
-- R4 `018b479` (3, material page-copy class/#162): 1003204/212/195 — exactly 2 files,
-  `bound_key()` collision-safe truncation, closed schema.
+- R4 `018b479` (3, material/#162): 1003204/212/195 — exactly 2 files, `bound_key()` collision-safe
+  truncation, closed schema.
 - R5 `52a61b5` (3+1 generic): 1095556/564/570 — duplicate-JSON-key rejection, `os.lstat`+`git
-  diff --raw` symlink rejection, dir name = real date = `captured_at`'s date; + raw-byte-size cap
-  on `facts.json`.
-- R6 `2ee4b77` (2+1 disposition): 1218009 empty values rejected/don't count; 1217996 workflow
-  triggers on `tibiacom_spells.py`; 1217986 (P1 gate wiring) HARDENING per #162 5868131104, reply
-  verbatim, `merge-gate.yml`/`merge-group-gate.yml` untouched.
-- R7 `6b4dc10` (2, material page-copy class/#162): 1271454 root allowlist (`README.md` only,
-  `verify-root` new subcommand + `classify_snapshot_path`); 1271445 absolute bounds independent
-  of self-reported numbers (`MAX_VISIBLE_TEXT_CHARS_PER_PAGE`, fixed `facts.json` byte budget).
+  diff --raw` symlink rejection, dir name = real date = `captured_at`'s date; + raw-byte-size cap.
+- R6 `2ee4b77` (2+1 disposition): 1218009 empty values don't count; 1217996 workflow triggers on
+  `tibiacom_spells.py`; 1217986 (P1 gate wiring) HARDENING #162 5868131104, reply verbatim,
+  `merge-gate.yml`/`merge-group-gate.yml` untouched.
+- R7 `6b4dc10` (2, material/#162): 1271454 root allowlist (`README.md` only, `verify-root`
+  subcommand); 1271445 absolute bounds independent of self-reported numbers.
+- R8 `8fada8b` (1, material/#162): 1400366 `fetch` rejects a redirect away from the requested URL
+  (`fetch_url` returns `response.geturl()`, compared in `fetch_page_or_abort`).
 
 ## Validation
 
@@ -191,10 +191,10 @@ threads (`#1083#discussion_r<id>`); this is a terse index by head SHA.
 - required: it happened regardless of the `NO` self-assessment above (evidence/tooling-only, no
   public contract/protocol/persistence/authority surface): automated PR review is unconditional in
   this repository.
-- exact head: see Repair section above (r1-r7)
+- exact head: see Repair section above (r1-r8)
 - method/auditor: Codex, automated PR review (not triggered by this worker)
-- material findings: 24 total; 23 accepted and repaired, 1 (R6 1217986) HARDENING per #162
-  5868131104; R4/R7 explicitly MATERIAL under the #162 page-copy closure rule
+- material findings: 25 total; 24 accepted and repaired, 1 (R6 1217986) HARDENING per #162
+  5868131104; R4/R7/R8 explicitly MATERIAL under the #162 page-copy closure rule
 - verdict: findings addressed; a fresh review of the repaired head is for the control plane to
   request, not this worker (no `@codex` trigger from this task)
 
