@@ -106,7 +106,10 @@ How does such a transaction relate to the global `CharacterRevision`?
      `current_generation`, lease generation, scope ownership generation,
      `session_state IN (1,2)`);
    - the runtime-scope assignment and current node incarnation;
-   - the admission character, account and runtime guards.
+   - the admission character, account and runtime guards;
+   - binding checks: the cause's CharacterId equals the fenced Character, and the fenced runtime
+     scope owns the source placement or Ground (DUR-03 §32). A fence taken from another session
+     or scope, or a cause keyed to another Character, commits nothing.
 
    It never uses `expected_character_revision` as its authority fence.
 3. **Session-generation semantics and the DUR-03 §31 continuation.** The committing runtime
@@ -194,7 +197,7 @@ required_fresh_allocation: true
 required_independent_review: "exact-head independent review (persistence/value and session-fence semantics)"
 required_revalidation:
   - DUR-03 and Character contract text for D40-D42 cites this decision (reward chest §7 step 2)
-  - "the first RewardClaim/MINT migration proves: no CharacterRevision change; each one-changed stale fence rejected (connection_generation, GameSession, lease generation, scope ownership generation, session_state, runtime assignment, node incarnation); a still-pending reserved CommandRef commits after an eligible same-GameSession reconnect with the current connection_generation; a retry after commit replays the first outcome; refused capacity writes nothing; idempotent repeat per (claim, character); a concurrent XP award and item transaction serialize on character_root without deadlock"
+  - "the first RewardClaim/MINT migration proves: no CharacterRevision change; each one-changed stale fence rejected (connection_generation, GameSession, lease generation, scope ownership generation, session_state, runtime assignment, node incarnation); a still-pending reserved CommandRef commits after an eligible same-GameSession reconnect with the current connection_generation; a cause keyed to another Character or a fence scope that does not own the source is rejected; a retry after commit replays the first outcome; refused capacity writes nothing; idempotent repeat per (claim, character); a concurrent XP award and item transaction serialize on character_root without deadlock"
 remaining_unknowns:
   - inventory position/capacity/weight policy and numbers
   - RewardClaim physical schema and cooldown identity
