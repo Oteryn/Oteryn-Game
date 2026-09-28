@@ -40,6 +40,10 @@ LICENSE_NOTE = 'Tibiopedia, player-observed reference data; trade facts only, us
 PAUSE_SECONDS = 1.5
 RETRIES = 4
 MAX_PAGES = 5000
+# a capture below these bounds is a failed setup, a changed sitemap or changed page markup, never facts
+MIN_NPC_URLS = 1000
+MIN_NPC_PAGES = 1000
+MAX_SKIPPED_SHARE = 0.2
 NPC_URL_RE = re.compile(r'<loc>(https://tibiopedia\.pl/npcs/[^<]+)</loc>')
 OFFER_RE = re.compile(r'<a[^>]*href="https://tibiopedia\.pl/items/[^"]*">([^<]+)</a>\s*\(([^)]*)\)')
 PRICE_RE = re.compile(r'([\d]+(?:[.,]\d+)?)(k*)gp')
@@ -108,8 +112,8 @@ def cmd_fetch(args):
     fetched_at = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     jar = opener()
     urls = sorted(set(NPC_URL_RE.findall(get(jar, SITEMAP).decode('utf-8'))) - {SITE + '/npcs/search'})
-    if len(urls) > MAX_PAGES:
-        raise SystemExit(f'{len(urls)} NPC URLs exceed MAX_PAGES')
+    if not MIN_NPC_URLS <= len(urls) <= MAX_PAGES:
+        raise SystemExit(f'{len(urls)} NPC URLs in the sitemap, outside {MIN_NPC_URLS}..{MAX_PAGES}')
     pages, skipped = [], 0
     for index, url in enumerate(urls):
         body = get(jar, url)
@@ -120,6 +124,8 @@ def cmd_fetch(args):
         pages.append({'url': url, 'sha256': hashlib.sha256(body).hexdigest(), **facts})
         if index % 100 == 0:
             print(f'{index}/{len(urls)} {url}', flush=True)
+    if len(pages) < MIN_NPC_PAGES or skipped > MAX_SKIPPED_SHARE * len(urls):
+        raise SystemExit(f'{len(pages)} NPC pages, {skipped} without a trade flag: the capture is incomplete')
     pages.sort(key=lambda p: p['url'])
     digest = hashlib.sha256(''.join(p['url'] + p['sha256'] for p in pages).encode('utf-8')).hexdigest()
     result = {'schema': FACTS_SCHEMA, 'site': SITE, 'fetched_at': fetched_at, 'license': LICENSE_NOTE,
