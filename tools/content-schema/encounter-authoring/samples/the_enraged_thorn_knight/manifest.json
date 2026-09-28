@@ -16,6 +16,9 @@
     "ThornKnightDeath": [
       "canary:creature/mounted_thorn_knight",
       "canary:creature/the_shielded_thorn_knight"
+    ],
+    "spell.thorn summon": [
+      "canary:creature/mounted_thorn_knight"
     ]
   },
   "sources": [
@@ -74,6 +77,13 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_thorn_knight_death.lua",
       "blob_sha1": "f8b17adf7083a4eba8405213d41b230b954ff1ac"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/thorn_summon.lua",
+      "blob_sha1": "56ff1720bb161deae4ec435b92d9890eb5f2b14d"
     }
   ],
   "entries": [
@@ -465,6 +475,47 @@
       ],
       "status": "approved_omission",
       "resolution": "checkBlood removes the unmovable items (the blood splash) from the death tile 1 ms later; cosmetic."
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Mounted Thorn Knight is the mounted_thorn_knight participant.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        85
+      ],
+      "status": "mapped",
+      "resolution": "Mounted Thorn Knight casts the registered spell \"thorn summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 8,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell creates a Thorn Minion on a random tile within three of the Mounted Thorn Knight (x and y each -3..3); the red magic effect is cosmetic. The reference-date wiki places Thorn Minions in the Desecrated Glade dungeon of the Thorn Knights (Fandom Thorn Minion rev 1071797) but the Mounted Thorn Knight page (rev 1200326) does not mention the summon: this rule is Canary evidence. NEEDS VERIFICATION.",
+      "destination": "/encounter/rules/11"
     }
   ],
   "outcome_evidence": [

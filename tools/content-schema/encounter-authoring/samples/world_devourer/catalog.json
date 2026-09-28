@@ -59,6 +59,16 @@
       "family": "Ability",
       "key": "canary:ability/spell/destruction_summon",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/devourer_summon",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/greed",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

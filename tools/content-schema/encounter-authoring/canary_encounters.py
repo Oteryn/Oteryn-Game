@@ -2771,6 +2771,80 @@ def arena_summons(build):
             build.entry(item, SPELLS + script, [8, 9, 10, 23], 'mapped', path, 'removeDelay clears the flag after 15 s.')
 
 
+def more_arena_summons(build):
+    """D45: the remaining summon spells that the existing vocabulary expresses, each an ability_cast rule of the boss's
+    existing encounter."""
+    # World Devourer: while fewer than three are out, one of Greed, Frenzy or Disruption next to the boss.
+    item = build.items['world_devourer']
+    ability = build.covers_spell(item, 'world_devourer', 'World Devourer', 'devourer summon')
+    branches = []
+    for minion in ('Greed', 'Frenzy', 'Disruption'):
+        minion_ref = creature(minion)
+        build.define(item, minion_ref)
+        branches.append({'weight': 1, 'actions': [{'kind': 'spawn', 'creature': minion_ref, 'count': 1, 'at': {'offset_tiles': 1},
+                                                   'owner': 'none', 'health': 'full'}]})
+    path = build.rule(item, {'key': 'world_devourer_summons_a_minion',
+                             'trigger': {'kind': 'ability_cast', 'role': 'world_devourer', 'ability': ability},
+                             'conditions': [{'kind': 'counter_compare', 'counter': 'devourer_summons', 'op': '<', 'value': 3}],
+                             'actions': [{'kind': 'one_of', 'branches': branches},
+                                         {'kind': 'counter', 'counter': 'devourer_summons', 'operation': 'add', 'value': 1}]})
+    build.entry(item, SPELLS + 'devourer_summon.lua', list(range(8, 17)), 'mapped', path,
+                'onCastSpell: while the devourerSummon counter is below three, one of Greed, Frenzy or Disruption (uniform) '
+                'appears on a random tile next to the World Devourer (x and y each -1..1) and the counter rises; the deaths of '
+                'Frenzies and Disruptions already lower it. The spell\'s own combat has type COMBAT_NONE and no effect. The '
+                'reference-date wiki (Fandom World Devourer rev 1086448) names all three minions in the fight.')
+
+    # Plagirath: fills its summons up to four Disgusting Oozes anywhere in its room.
+    item = build.items['plagirath']
+    ability = build.covers_spell(item, 'plagirath', 'Plagirath', 'plagirath summon')
+    item['encounter']['anchors'].append({'key': 'plagirath_room', 'kind': 'area',
+                                         'description': 'Every tile from Canary (33163, 31497, 13) to (33180, 31506, 13).'})
+    ooze = creature('Disgusting Ooze')
+    build.define(item, ooze)
+    for present in range(4):
+        path = build.rule(item, {'key': f'plagirath_summons_oozes_with_{present}_out',
+                                 'trigger': {'kind': 'ability_cast', 'role': 'plagirath', 'ability': ability},
+                                 'conditions': [{'kind': 'summon_count', 'role': 'plagirath', 'op': '==', 'value': present}],
+                                 'actions': [{'kind': 'spawn', 'creature': ooze, 'count': 4 - present,
+                                              'at': {'random_in': 'plagirath_room'}, 'owner': 'subject', 'health': 'full'}]})
+        build.entry(item, SPELLS + 'plagirath_summon.lua', list(range(3, 16)), 'mapped', path,
+                    f'onCastSpell: with {present} summons out, Plagirath gets {4 - present} more Disgusting Oozes as its summons at '
+                    'random tiles of x 33163-33180, y 31497-31506 on floor 13 (it fills up to four). The reference-date wiki '
+                    '(Fandom Disgusting Ooze rev 989432) says they appear with Plagirath.')
+
+    # Lady Tenebris: a Shadow Fiend anywhere in her room, which speaks as it appears.
+    item = build.items['lady_tenebris']
+    ability = build.covers_spell(item, 'lady_tenebris', 'Lady Tenebris', 'tenebris summon')
+    item['encounter']['anchors'].append({'key': 'tenebris_room', 'kind': 'area',
+                                         'description': 'Every tile from Canary (32906, 31594, 14) to (32918, 31604, 14).'})
+    fiend = creature('Shadow Fiend')
+    build.define(item, fiend)
+    path = build.rule(item, {'key': 'lady_tenebris_revives_a_shadow_fiend',
+                             'trigger': {'kind': 'ability_cast', 'role': 'lady_tenebris', 'ability': ability}, 'conditions': [],
+                             'actions': [{'kind': 'spawn', 'creature': fiend, 'count': 1, 'at': {'random_in': 'tenebris_room'},
+                                          'owner': 'none', 'health': 'full'},
+                                         {'kind': 'say', 'subject': {'spawned': True}, 'text': 'The shadow fiend revives!', 'mode': 'say'}]})
+    build.entry(item, SPELLS + 'tenebris_summon.lua', list(range(1, 16)), 'mapped', path,
+                'onCastSpell creates a Shadow Fiend at a random tile of x 32906-32918, y 31594-31604 on floor 14, which says '
+                '"The shadow fiend revives!"; the red magic effect of the spell\'s own combat is cosmetic. The reference-date wiki '
+                '(Fandom Shadow Fiend rev 1116447) says it appears with Lady Tenebris.')
+
+    # Mounted Thorn Knight: a Thorn Minion within three tiles.
+    item = build.items['the_enraged_thorn_knight']
+    ability = build.covers_spell(item, 'mounted_thorn_knight', 'Mounted Thorn Knight', 'thorn summon')
+    minion = creature('Thorn Minion')
+    build.define(item, minion)
+    path = build.rule(item, {'key': 'mounted_thorn_knight_summons_a_minion',
+                             'trigger': {'kind': 'ability_cast', 'role': 'mounted_thorn_knight', 'ability': ability}, 'conditions': [],
+                             'actions': [{'kind': 'spawn', 'creature': minion, 'count': 1, 'at': {'offset_tiles': 3},
+                                          'owner': 'none', 'health': 'full'}]})
+    build.entry(item, SPELLS + 'thorn_summon.lua', list(range(1, 16)), 'mapped', path,
+                'onCastSpell creates a Thorn Minion on a random tile within three of the Mounted Thorn Knight (x and y each '
+                '-3..3); the red magic effect is cosmetic. The reference-date wiki places Thorn Minions in the Desecrated Glade '
+                'dungeon of the Thorn Knights (Fandom Thorn Minion rev 1071797) but the Mounted Thorn Knight page (rev 1200326) '
+                'does not mention the summon: this rule is Canary evidence. NEEDS VERIFICATION.')
+
+
 GRAVE_DANGER = 'data-otservbr-global/scripts/quests/grave_danger_quest/'
 
 
@@ -2865,7 +2939,7 @@ def main():
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos, burning_hatred, arena_summons, count_vlarkorth):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos, burning_hatred, arena_summons, count_vlarkorth, more_arena_summons):
         transcribe(build)
     print(json.dumps(build.write()))
 

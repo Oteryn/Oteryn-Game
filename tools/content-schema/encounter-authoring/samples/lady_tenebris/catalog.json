@@ -9,6 +9,16 @@
       "family": "Creature",
       "key": "canary:creature/shadow_tentacle",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/tenebris_summon",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/shadow_fiend",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

@@ -463,3 +463,17 @@ A seventeenth slice uses the last D34 addition, the per-vocation summon:
 
 83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 128/128; the census rises from 1,552 to
 1,553. Count Vlarkorth waits in the creature staging like the other encounter-covered monsters.
+
+An eighteenth slice moves the remaining summon spells that the vocabulary already expresses into their bosses' encounters
+(D45):
+
+| Spell | Encounter | Notes |
+|---|---|---|
+| `devourer summon` | `world_devourer` | While fewer than three minions are out (the existing `devourer_summons` counter, which Frenzy and Disruption deaths lower), one of Greed, Frenzy or Disruption next to the World Devourer; the wiki names all three in the fight. |
+| `plagirath summon` | `plagirath` | Plagirath fills its summons up to four Disgusting Oozes anywhere in its room (one rule per number already out); the wiki places them with Plagirath. |
+| `tenebris summon` | `lady_tenebris` | A Shadow Fiend anywhere in the room, which says "The shadow fiend revives!"; the wiki places it with Lady Tenebris. |
+| `thorn summon` | `the_enraged_thorn_knight` | A Thorn Minion within three tiles of the Mounted Thorn Knight. The wiki places Thorn Minions in the Thorn Knights' dungeon but does not name the summon: Canary evidence, to be verified. |
+
+83 encounters validate, 78 manifests resolve fully; the census rises from 1,553 to 1,555 (World Devourer and Mounted Thorn
+Knight). Plagirath and Lady Tenebris stay blocked by `plagirath bog` and `tenebris ultimate`; The Hunger waits for the
+vortex that lowers its summon counter, and Soulcatcher for a condition on the caster's own poison or bleeding.
