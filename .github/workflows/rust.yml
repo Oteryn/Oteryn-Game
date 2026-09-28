@@ -111,14 +111,14 @@ jobs:
           from pathlib import Path
 
           forbidden = (
-              'protocol-canary', 'protocol-core',
+              'protocol-canary', 'protocol-core', 'protocol-oteryn',
               'transport', 'game-session', 'oteryn-client-domain',
               'oteryn-client-simulation', 'oteryn-synthetic-assets',
               'oteryn-test-support', 'oteryn-synthetic-client-harness',
           )
           for package in ('oteryn-client', 'oteryn-game-server'):
               tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')
-              found = [name for name in forbidden if name in tree]
+              found = [name for name in forbidden if name in tree and (package, name) != ('oteryn-game-server', 'protocol-oteryn')]
               if found:
                   raise SystemExit(f'{package} production closure contains forbidden entries: {found}')
               print(f'{package} production closure: PASS')
