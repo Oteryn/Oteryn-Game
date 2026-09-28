@@ -21,12 +21,22 @@
     {
       "key": "exit_teleporter",
       "kind": "point",
-      "description": "Canary (33393, 32438, 14)."
+      "description": "Canary (33393, 32438, 14).",
+      "location": {
+        "x": 33393,
+        "y": 32438,
+        "floor": 14
+      }
     },
     {
       "key": "shatterer_exit",
       "kind": "point",
-      "description": "Canary (33436, 32443, 15)."
+      "description": "Canary (33436, 32443, 15).",
+      "location": {
+        "x": 33436,
+        "y": 32443,
+        "floor": 15
+      }
     }
   ],
   "phases": [],

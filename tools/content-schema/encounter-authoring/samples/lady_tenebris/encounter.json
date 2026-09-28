@@ -31,7 +31,22 @@
     {
       "key": "tenebris_room",
       "kind": "area",
-      "description": "Every tile from Canary (32906, 31594, 14) to (32918, 31604, 14)."
+      "description": "Every tile from Canary (32906, 31594, 14) to (32918, 31604, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32906,
+              32918
+            ],
+            "y": [
+              31594,
+              31604
+            ],
+            "floor": 14
+          }
+        ]
+      }
     }
   ],
   "phases": [],

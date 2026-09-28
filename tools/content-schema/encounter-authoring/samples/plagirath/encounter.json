@@ -31,22 +31,52 @@
     {
       "key": "exit_teleporter",
       "kind": "point",
-      "description": "Boss-room teleporter; Canary (33174, 31511, 13)."
+      "description": "Boss-room teleporter; Canary (33174, 31511, 13).",
+      "location": {
+        "x": 33174,
+        "y": 31511,
+        "floor": 13
+      }
     },
     {
       "key": "godbreaker",
       "kind": "point",
-      "description": "Godbreaker destination; Canary (33204, 31510, 13)."
+      "description": "Godbreaker destination; Canary (33204, 31510, 13).",
+      "location": {
+        "x": 33204,
+        "y": 31510,
+        "floor": 13
+      }
     },
     {
       "key": "ascendant_exit",
       "kind": "point",
-      "description": "Default teleporter destination; Canary (33319, 32318, 13)."
+      "description": "Default teleporter destination; Canary (33319, 32318, 13).",
+      "location": {
+        "x": 33319,
+        "y": 32318,
+        "floor": 13
+      }
     },
     {
       "key": "plagirath_room",
       "kind": "area",
-      "description": "Every tile from Canary (33163, 31497, 13) to (33180, 31506, 13)."
+      "description": "Every tile from Canary (33163, 31497, 13) to (33180, 31506, 13).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33163,
+              33180
+            ],
+            "y": [
+              31497,
+              31506
+            ],
+            "floor": 13
+          }
+        ]
+      }
     }
   ],
   "phases": [],

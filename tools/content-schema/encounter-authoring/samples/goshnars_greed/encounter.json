@@ -61,27 +61,52 @@
     {
       "key": "greedbeast_return",
       "kind": "point",
-      "description": "Canary (33744, 31666, 14)."
+      "description": "Canary (33744, 31666, 14).",
+      "location": {
+        "x": 33744,
+        "y": 31666,
+        "floor": 14
+      }
     },
     {
       "key": "soulsnatcher_return",
       "kind": "point",
-      "description": "Canary (33747, 31668, 14)."
+      "description": "Canary (33747, 31668, 14).",
+      "location": {
+        "x": 33747,
+        "y": 31668,
+        "floor": 14
+      }
     },
     {
       "key": "weak_soul_return",
       "kind": "point",
-      "description": "Canary (33750, 31666, 14)."
+      "description": "Canary (33750, 31666, 14).",
+      "location": {
+        "x": 33750,
+        "y": 31666,
+        "floor": 14
+      }
     },
     {
       "key": "strong_soul_return",
       "kind": "point",
-      "description": "Canary (33750, 31666, 14)."
+      "description": "Canary (33750, 31666, 14).",
+      "location": {
+        "x": 33750,
+        "y": 31666,
+        "floor": 14
+      }
     },
     {
       "key": "powerful_soul_return",
       "kind": "point",
-      "description": "Canary (33750, 31666, 14)."
+      "description": "Canary (33750, 31666, 14).",
+      "location": {
+        "x": 33750,
+        "y": 31666,
+        "floor": 14
+      }
     }
   ],
   "phases": [],

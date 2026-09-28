@@ -41,37 +41,82 @@
     {
       "key": "arena",
       "kind": "area",
-      "description": "Every tile from Canary (32197, 31236, 14) to (32220, 31260, 14)."
+      "description": "Every tile from Canary (32197, 31236, 14) to (32220, 31260, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32197,
+              32220
+            ],
+            "y": [
+              31236,
+              31260
+            ],
+            "floor": 14
+          }
+        ]
+      }
     },
     {
       "key": "exit_vortex",
       "kind": "point",
-      "description": "Canary (32199, 31248, 14), the vortex of the room."
+      "description": "Canary (32199, 31248, 14), the vortex of the room.",
+      "location": {
+        "x": 32199,
+        "y": 31248,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_1",
       "kind": "point",
-      "description": "Canary (32203, 31246, 14)."
+      "description": "Canary (32203, 31246, 14).",
+      "location": {
+        "x": 32203,
+        "y": 31246,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_2",
       "kind": "point",
-      "description": "Canary (32205, 31251, 14)."
+      "description": "Canary (32205, 31251, 14).",
+      "location": {
+        "x": 32205,
+        "y": 31251,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_3",
       "kind": "point",
-      "description": "Canary (32210, 31251, 14)."
+      "description": "Canary (32210, 31251, 14).",
+      "location": {
+        "x": 32210,
+        "y": 31251,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_4",
       "kind": "point",
-      "description": "Canary (32212, 31246, 14)."
+      "description": "Canary (32212, 31246, 14).",
+      "location": {
+        "x": 32212,
+        "y": 31246,
+        "floor": 14
+      }
     },
     {
       "key": "shock_spot",
       "kind": "point",
-      "description": "Canary (32208, 31248, 14)."
+      "description": "Canary (32208, 31248, 14).",
+      "location": {
+        "x": 32208,
+        "y": 31248,
+        "floor": 14
+      }
     }
   ],
   "phases": [],

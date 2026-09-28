@@ -31,17 +31,32 @@
     {
       "key": "exit_teleporter",
       "kind": "point",
-      "description": "Boss-room teleporter; Canary (33650, 32312, 15)."
+      "description": "Boss-room teleporter; Canary (33650, 32312, 15).",
+      "location": {
+        "x": 33650,
+        "y": 32312,
+        "floor": 15
+      }
     },
     {
       "key": "reward_destination",
       "kind": "point",
-      "description": "Destination while open; Canary (33668, 32301, 15)."
+      "description": "Destination while open; Canary (33668, 32301, 15).",
+      "location": {
+        "x": 33668,
+        "y": 32301,
+        "floor": 15
+      }
     },
     {
       "key": "warzone_exit",
       "kind": "point",
-      "description": "Destination after the revert; Canary (33462, 32267, 15)."
+      "description": "Destination after the revert; Canary (33462, 32267, 15).",
+      "location": {
+        "x": 33462,
+        "y": 32267,
+        "floor": 15
+      }
     }
   ],
   "phases": [],

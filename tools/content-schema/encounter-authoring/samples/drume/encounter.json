@@ -41,22 +41,52 @@
     {
       "key": "kesar_spawn",
       "kind": "point",
-      "description": "Canary (32444, 32515, 7)."
+      "description": "Canary (32444, 32515, 7).",
+      "location": {
+        "x": 32444,
+        "y": 32515,
+        "floor": 7
+      }
     },
     {
       "key": "drume_spawn",
       "kind": "point",
-      "description": "Canary (32444, 32516, 7)."
+      "description": "Canary (32444, 32516, 7).",
+      "location": {
+        "x": 32444,
+        "y": 32516,
+        "floor": 7
+      }
     },
     {
       "key": "skirmish",
       "kind": "area",
-      "description": "Canary x 32417-32461, y 32507-32539, z 7 (22 and 16 tiles around (32439, 32523, 7))."
+      "description": "Canary x 32417-32461, y 32507-32539, z 7 (22 and 16 tiles around (32439, 32523, 7)).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32417,
+              32461
+            ],
+            "y": [
+              32507,
+              32539
+            ],
+            "floor": 7
+          }
+        ]
+      }
     },
     {
       "key": "skirmish_exit",
       "kind": "point",
-      "description": "Canary (32453, 32503, 7)."
+      "description": "Canary (32453, 32503, 7).",
+      "location": {
+        "x": 32453,
+        "y": 32503,
+        "floor": 7
+      }
     }
   ],
   "phases": [],

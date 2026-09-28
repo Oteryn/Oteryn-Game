@@ -21,22 +21,52 @@
     {
       "key": "exit_teleporter",
       "kind": "point",
-      "description": "Boss-room teleporter; Canary (33486, 32796, 13)."
+      "description": "Boss-room teleporter; Canary (33486, 32796, 13).",
+      "location": {
+        "x": 33486,
+        "y": 32796,
+        "floor": 13
+      }
     },
     {
       "key": "godbreaker",
       "kind": "point",
-      "description": "Godbreaker destination; Canary (33459, 32820, 14)."
+      "description": "Godbreaker destination; Canary (33459, 32820, 14).",
+      "location": {
+        "x": 33459,
+        "y": 32820,
+        "floor": 14
+      }
     },
     {
       "key": "ascendant_exit",
       "kind": "point",
-      "description": "Default teleporter destination; Canary (33319, 32318, 13)."
+      "description": "Default teleporter destination; Canary (33319, 32318, 13).",
+      "location": {
+        "x": 33319,
+        "y": 32318,
+        "floor": 13
+      }
     },
     {
       "key": "shulgrax_arena",
       "kind": "area",
-      "description": "Every tile from Canary (33478, 32781, 13) to (33491, 32793, 13)."
+      "description": "Every tile from Canary (33478, 32781, 13) to (33491, 32793, 13).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33478,
+              33491
+            ],
+            "y": [
+              32781,
+              32793
+            ],
+            "floor": 13
+          }
+        ]
+      }
     }
   ],
   "phases": [],

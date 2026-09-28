@@ -26,32 +26,72 @@
     {
       "key": "arena",
       "kind": "area",
-      "description": "Every tile from Canary (32297, 31272, 14) to (32321, 31296, 14)."
+      "description": "Every tile from Canary (32297, 31272, 14) to (32321, 31296, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32297,
+              32321
+            ],
+            "y": [
+              31272,
+              31296
+            ],
+            "floor": 14
+          }
+        ]
+      }
     },
     {
       "key": "exit_vortex",
       "kind": "point",
-      "description": "Canary (32318, 31284, 14), the vortex of the room."
+      "description": "Canary (32318, 31284, 14), the vortex of the room.",
+      "location": {
+        "x": 32318,
+        "y": 31284,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_1",
       "kind": "point",
-      "description": "Canary (32304, 31282, 14)."
+      "description": "Canary (32304, 31282, 14).",
+      "location": {
+        "x": 32304,
+        "y": 31282,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_2",
       "kind": "point",
-      "description": "Canary (32305, 31287, 14)."
+      "description": "Canary (32305, 31287, 14).",
+      "location": {
+        "x": 32305,
+        "y": 31287,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_3",
       "kind": "point",
-      "description": "Canary (32312, 31287, 14)."
+      "description": "Canary (32312, 31287, 14).",
+      "location": {
+        "x": 32312,
+        "y": 31287,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_4",
       "kind": "point",
-      "description": "Canary (32314, 31282, 14)."
+      "description": "Canary (32314, 31282, 14).",
+      "location": {
+        "x": 32314,
+        "y": 31282,
+        "floor": 14
+      }
     }
   ],
   "phases": [],

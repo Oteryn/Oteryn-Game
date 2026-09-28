@@ -106,17 +106,52 @@
     {
       "key": "knights_hall",
       "kind": "area",
-      "description": "Canary (33414, 31520, 13) to (33474, 31574, 13): the four knight rooms and the room of King Zelos."
+      "description": "Canary (33414, 31520, 13) to (33474, 31574, 13): the four knight rooms and the room of King Zelos.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33414,
+              33474
+            ],
+            "y": [
+              31520,
+              31574
+            ],
+            "floor": 13
+          }
+        ]
+      }
     },
     {
       "key": "rewar_room",
       "kind": "area",
-      "description": "Canary (33458, 31556, 13) to (33467, 31566, 13), where the fetters appear."
+      "description": "Canary (33458, 31556, 13) to (33467, 31566, 13), where the fetters appear.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33458,
+              33467
+            ],
+            "y": [
+              31556,
+              31566
+            ],
+            "floor": 13
+          }
+        ]
+      }
     },
     {
       "key": "nargol_post",
       "kind": "point",
-      "description": "Canary (33423, 31529, 13), where Nargol the Impaler and his regenerating mass appear."
+      "description": "Canary (33423, 31529, 13), where Nargol the Impaler and his regenerating mass appear.",
+      "location": {
+        "x": 33423,
+        "y": 31529,
+        "floor": 13
+      }
     }
   ],
   "phases": [],

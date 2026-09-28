@@ -26,12 +26,32 @@
     {
       "key": "azerus_escape",
       "kind": "point",
-      "description": "Teleporter destination; Canary (32780, 31168, 14)."
+      "description": "Teleporter destination; Canary (32780, 31168, 14).",
+      "location": {
+        "x": 32780,
+        "y": 31168,
+        "floor": 14
+      }
     },
     {
       "key": "arena",
       "kind": "area",
-      "description": "Tiles within 10 of Canary (32783, 31166, 10) on that floor."
+      "description": "Tiles within 10 of Canary (32783, 31166, 10) on that floor.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32773,
+              32793
+            ],
+            "y": [
+              31156,
+              31176
+            ],
+            "floor": 10
+          }
+        ]
+      }
     }
   ],
   "phases": [],

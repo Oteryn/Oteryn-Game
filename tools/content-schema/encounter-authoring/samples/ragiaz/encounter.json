@@ -31,17 +31,32 @@
     {
       "key": "exit_teleporter",
       "kind": "point",
-      "description": "Boss-room teleporter; Canary (33482, 32345, 13)."
+      "description": "Boss-room teleporter; Canary (33482, 32345, 13).",
+      "location": {
+        "x": 33482,
+        "y": 32345,
+        "floor": 13
+      }
     },
     {
       "key": "godbreaker",
       "kind": "point",
-      "description": "Godbreaker destination; Canary (33466, 32392, 13)."
+      "description": "Godbreaker destination; Canary (33466, 32392, 13).",
+      "location": {
+        "x": 33466,
+        "y": 32392,
+        "floor": 13
+      }
     },
     {
       "key": "ascendant_exit",
       "kind": "point",
-      "description": "Default teleporter destination; Canary (33319, 32318, 13)."
+      "description": "Default teleporter destination; Canary (33319, 32318, 13).",
+      "location": {
+        "x": 33319,
+        "y": 32318,
+        "floor": 13
+      }
     }
   ],
   "phases": [],

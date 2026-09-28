@@ -31,27 +31,72 @@
     {
       "key": "exit_teleporter",
       "kind": "point",
-      "description": "Boss-room teleporter; Canary (33749, 31952, 14)."
+      "description": "Boss-room teleporter; Canary (33749, 31952, 14).",
+      "location": {
+        "x": 33749,
+        "y": 31952,
+        "floor": 14
+      }
     },
     {
       "key": "next_destination",
       "kind": "point",
-      "description": "Destination while open; Canary (33740, 31940, 15)."
+      "description": "Destination while open; Canary (33740, 31940, 15).",
+      "location": {
+        "x": 33740,
+        "y": 31940,
+        "floor": 15
+      }
     },
     {
       "key": "tentacle_room",
       "kind": "area",
-      "description": "Every tile within 13 tiles of Canary (33740, 31953, 14) on that floor."
+      "description": "Every tile within 13 tiles of Canary (33740, 31953, 14) on that floor.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33727,
+              33753
+            ],
+            "y": [
+              31940,
+              31966
+            ],
+            "floor": 14
+          }
+        ]
+      }
     },
     {
       "key": "tentacle_spawns",
       "kind": "area",
-      "description": "Canary x 33736-33746, y 31948-31957, z 14."
+      "description": "Canary x 33736-33746, y 31948-31957, z 14.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33736,
+              33746
+            ],
+            "y": [
+              31948,
+              31957
+            ],
+            "floor": 14
+          }
+        ]
+      }
     },
     {
       "key": "deep_terror_spawn",
       "kind": "point",
-      "description": "Canary (33741, 31953, 14)."
+      "description": "Canary (33741, 31953, 14).",
+      "location": {
+        "x": 33741,
+        "y": 31953,
+        "floor": 14
+      }
     }
   ],
   "phases": [],

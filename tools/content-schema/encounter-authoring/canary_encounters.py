@@ -44,6 +44,41 @@ def blob_id(data):
     return hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
 
 
+# E2: anchors without a location of their own. The Soul War zones subtract safe areas and include the Goshnar boss
+# rooms, which the zone box vocabulary does not express yet; the encounter stays unadmitted until they are located.
+UNLOCATED = {('soul_war_taint_zones', 'soul_war_taint_zones')}
+POSITION = r'\((\d+), (\d+), (\d+)\)'
+
+
+def box(x, y, floor):
+    return {'x': [min(x), max(x)], 'y': [min(y), max(y)], 'floor': floor}
+
+
+def locate(anchor):
+    """E2: read an anchor's Canary coordinates from its description; any other form fails."""
+    text, kind = anchor['description'], anchor['kind']
+    points = [tuple(map(int, p)) for p in re.findall(POSITION, text)]
+    if kind == 'point' and len(points) == 1:
+        x, y, floor = points[0]
+        return {'x': x, 'y': y, 'floor': floor}
+    if kind == 'area':
+        match = re.search(r'Canary x (\d+)-(\d+), y (\d+)-(\d+), z (\d+)', text)
+        if match:
+            x0, x1, y0, y1, floor = map(int, match.groups())
+            return {'boxes': [box((x0, x1), (y0, y1), floor)]}
+        match = re.search(r'within (\d+) (?:tiles )?of Canary ' + POSITION, text)
+        if match:
+            radius, x, y, floor = map(int, match.groups())
+            return {'boxes': [box((x - radius, x + radius), (y - radius, y + radius), floor)]}
+        match = re.search(POSITION + r' to ' + POSITION, text)
+        if match and len(points) == 2 and points[0][2] == points[1][2]:
+            (ax, ay, floor), (bx, by, _) = points
+            return {'boxes': [box((ax, bx), (ay, by), floor)]}
+        if text.startswith('Exactly') and points:
+            return {'boxes': [box((x, x), (y, y), floor) for x, y, floor in points]}
+    raise SystemExit(f"anchor {anchor['key']!r}: no location in {text!r}")
+
+
 class Encounters:
     def __init__(self, canary):
         self.canary = canary
@@ -132,6 +167,10 @@ class Encounters:
         return f'/encounter/rules/{len(item["encounter"]["rules"]) - 1}'
 
     def write(self):
+        for name, item in self.items.items():
+            for anchor in item['encounter']['anchors']:
+                if 'location' not in anchor and (name, anchor['key']) not in UNLOCATED:
+                    anchor['location'] = locate(anchor)
         out = ROOT / 'samples'
         if out.exists():
             shutil.rmtree(out)
@@ -500,8 +539,11 @@ def cults_of_tibia(build):
         build.participant(essence, stop_role, stop)
         build.participant(essence, guardian_role, guardian, 'EssenceOfMaliceSpawnsDeath')
         anchor = f'{guardian_role}_spot'
+        source = (build.canary / CULTS_LEVERS).read_text(encoding='utf-8').splitlines()[stop_line - 1]
+        x, y, floor = map(int, re.search(r'Position\((\d+), (\d+), (\d+)\)', source).groups())
         malice['anchors'].append({'key': anchor, 'kind': 'point',
-                                  'description': f'The tile of {stop} next to {pillar}; see {CULTS_LEVERS} line {stop_line}.'})
+                                  'description': f'The tile of {stop} next to {pillar}; see {CULTS_LEVERS} line {stop_line}.',
+                                  'location': {'x': x, 'y': y, 'floor': floor}})
         path = build.rule(essence, {
             'key': f'{role}_destroyed', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
             'actions': [{'kind': 'remove', 'role': stop_role},

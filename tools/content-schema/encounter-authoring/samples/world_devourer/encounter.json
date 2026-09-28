@@ -101,22 +101,52 @@
     {
       "key": "arena",
       "kind": "area",
-      "description": "Every tile from Canary (32260, 31336, 14) to (32283, 31360, 14)."
+      "description": "Every tile from Canary (32260, 31336, 14) to (32283, 31360, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32260,
+              32283
+            ],
+            "y": [
+              31336,
+              31360
+            ],
+            "floor": 14
+          }
+        ]
+      }
     },
     {
       "key": "exit_vortex",
       "kind": "point",
-      "description": "Canary (32281, 31348, 14), the vortex of the room."
+      "description": "Canary (32281, 31348, 14), the vortex of the room.",
+      "location": {
+        "x": 32281,
+        "y": 31348,
+        "floor": 14
+      }
     },
     {
       "key": "hunger_vortex",
       "kind": "point",
-      "description": "Canary (32244, 31371, 14)."
+      "description": "Canary (32244, 31371, 14).",
+      "location": {
+        "x": 32244,
+        "y": 31371,
+        "floor": 14
+      }
     },
     {
       "key": "devourer_vortex",
       "kind": "point",
-      "description": "Canary (32271, 31346, 14)."
+      "description": "Canary (32271, 31346, 14).",
+      "location": {
+        "x": 32271,
+        "y": 31346,
+        "floor": 14
+      }
     }
   ],
   "phases": [],

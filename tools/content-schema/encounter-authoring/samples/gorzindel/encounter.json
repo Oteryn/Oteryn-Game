@@ -91,7 +91,22 @@
     {
       "key": "knowledge_range",
       "kind": "area",
-      "description": "Tiles within 12 of Canary (32687, 32719, 10) on that floor: the main room and the five knowledge rooms."
+      "description": "Tiles within 12 of Canary (32687, 32719, 10) on that floor: the main room and the five knowledge rooms.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32675,
+              32699
+            ],
+            "y": [
+              32707,
+              32731
+            ],
+            "floor": 10
+          }
+        ]
+      }
     }
   ],
   "phases": [],

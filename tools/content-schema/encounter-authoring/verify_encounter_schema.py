@@ -268,6 +268,24 @@ case('remembered health accepted', rule([{**add(), 'role': 'boss', 'health': 're
 case('remembered health needs a role', rule([{**add(), 'health': 'remembered'}], trigger=died))
 case('transform cannot remember health', rule([{'kind': 'transform', 'role': 'boss', 'into': ref('Creature', 'add'), 'health': 'remembered'}], trigger=died))
 
+
+def locate(key, location):
+    def mutate(e, c):
+        next(a for a in e['anchors'] if a['key'] == key)['location'] = location
+    return mutate
+
+
+BOX = {'x': [100, 110], 'y': [200, 210], 'floor': 7}
+case('point location accepted (E2)', locate('exit', {'x': 100, 'y': 200, 'floor': 7}), True)
+case('area boxes accepted (E2)', locate('arena', {'boxes': [BOX, {**BOX, 'floor': 8}]}), True)
+case('a box is on one floor', locate('arena', {'boxes': [{**BOX, 'floor': [7, 8]}]}))
+case('a point takes a point location', locate('exit', {'boxes': [BOX]}))
+case('an area takes boxes', locate('arena', {'x': 100, 'y': 200, 'floor': 7}))
+case('a box does not start after it ends', locate('arena', {'boxes': [{**BOX, 'x': [110, 100]}]}))
+case('a box floor stays on the map', locate('arena', {'boxes': [{**BOX, 'floor': 16}]}))
+case('an area needs a box', locate('arena', {'boxes': []}))
+case('a point needs its floor', locate('exit', {'x': 100, 'y': 200}))
+
 if __name__ == '__main__':
     report = {'scope': 'Encounter schema and semantic validator, synthetic fixtures only; no Lua or Oteryn runtime executed',
               'checks': len(results), 'passed': sum(r['passed'] for r in results),
