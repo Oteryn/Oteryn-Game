@@ -5,7 +5,8 @@ changed, admitted or held by this report.
 
 Per admitted NPC (the NPC declarations of the pinned admission evidence), matched to a BR page by name
 (case-insensitive page title, then the infobox `name`; a name variant such as `Name (1)`, `Name (Day)` or
-`Name Init` falls back to its base name's page, and a plain name also matches a BR page whose title or
+`Name Init` falls back to its base name's page, unless that page is not placed near the variant and a
+close-name page is (see below), and a plain name also matches a BR page whose title or
 name carries a qualifier, such as `Name (NPC)`, when exactly one does). A name that still has no page
 matches an alias only when exactly one BR page is both a close name (an article dropped, at most
 ALIAS_EDITS character edits, or one name a whole-word prefix of the other) and placed within CLOSE_TILES
@@ -92,21 +93,21 @@ def close_names(a, b):
     return min(len(a), len(b)) >= 8 and edit_distance(a, b) <= ALIAS_EDITS
 
 
+def placed_near(page, placements):
+    return any(placement['position']['z'] == z
+               and max(abs(placement['position']['x'] - x), abs(placement['position']['y'] - y)) <= CLOSE_TILES
+               for placement in placements for x, y, z in page['positions'])
+
+
 def alias_page(name, placements, facts):
     key = normalize(name)
-    matches = []
-    for page in facts['pages']:
-        if not any(close_names(key, normalize(label)) for label in {page['title'], page['name']}):
-            continue
-        near = any(placement['position']['z'] == z
-                   and max(abs(placement['position']['x'] - x), abs(placement['position']['y'] - y)) <= CLOSE_TILES
-                   for placement in placements for x, y, z in page['positions'])
-        if near:
-            matches.append(page)
+    matches = [page for page in facts['pages']
+               if any(close_names(key, normalize(label)) for label in {page['title'], page['name']})
+               and placed_near(page, placements)]
     return matches[0] if len(matches) == 1 else None
 
 
-def find_page(name, index):
+def find_page(name, index, placements=(), facts=None):
     by_title, by_name, by_base = index
     key = normalize(name)
     if key in by_title:
@@ -116,7 +117,14 @@ def find_page(name, index):
         return pages[0]
     variant = VARIANT.match(name)
     if variant:
-        return find_page(variant.group(1), index)
+        base = find_page(variant.group(1), index)
+        # the base name can be a different NPC (`John (Bounac)` is not `John`): a page of a close name placed at
+        # the variant's own placement wins over a base page placed elsewhere
+        if facts is not None and (base is None or not placed_near(base, placements)):
+            alias = alias_page(variant.group(1), placements, facts)
+            if alias is not None:
+                return alias
+        return base
     return by_base.get(key)
 
 
@@ -261,8 +269,11 @@ def crosscheck(facts, candidates, dialogues, admission, names):
         key, name = candidate['identity']['key'], candidate['name']
         if key not in admitted:
             continue
-        page = find_page(name, index)
+        page = find_page(name, index, candidate['placements'], facts)
         row = {'npc': key, 'name': name}
+        if page is not None and page is not find_page(name, index):
+            row['match'] = 'POSITION_ALIAS'
+            totals['matched_by_position_alias'] += 1
         if page is None:
             page = alias_page(name, candidate['placements'], facts)
             if page is not None:

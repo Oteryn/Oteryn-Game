@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "49734a5f580c45e5e1603ae2cbb04e321cf0f33fe5953ddedebfa33e5ac6050f",
+  "facts_sha256": "81d334eff822b95b9b6cb804796b6f47c0a5f8fe6bbe27d1756a9786b1172843",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -15945,46 +15945,21 @@
   },
   {
    "br": {
-    "pageid": 11858,
-    "revid": 352612,
-    "title": "John"
+    "pageid": 52150,
+    "revid": 433554,
+    "title": "John The Carpenter"
    },
+   "match": "POSITION_ALIAS",
    "name": "John (Bounac)",
    "npc": "oteryn:npc.john_bounac",
    "position": {
-    "br": [
-     32138,
-     32904,
-     7
-    ],
-    "ours": [
-     32443,
-     32487,
-     3
-    ],
-    "status": "MISMATCH"
+    "status": "MATCH"
    },
    "trade": {
-    "matched": 0,
+    "matched": 6,
     "only_br": [
-     "SellToPlayer:camouflage backpack",
-     "SellToPlayer:camouflage bag",
-     "SellToPlayer:fishing rod",
-     "SellToPlayer:pick",
-     "SellToPlayer:rope",
-     "SellToPlayer:shovel",
-     "SellToPlayer:torch",
-     "SellToPlayer:treasure map (falso)",
-     "SellToPlayer:very noble-looking watch",
-     "SellToPlayer:worm"
-    ],
-    "only_ours": [
-     "SellToPlayer:folded artefact carpet i",
-     "SellToPlayer:folded artefact carpet ii",
-     "SellToPlayer:folded artefact carpet iii",
-     "SellToPlayer:folded artefact carpet iv",
-     "SellToPlayer:folded artefact carpet v",
-     "SellToPlayer:folded artefact carpet vi"
+     "SellToPlayer:folded artefact carpet vii",
+     "SellToPlayer:folded artefact carpet viii"
     ],
     "status": "DIFFER"
    }
@@ -31068,12 +31043,12 @@
   "dialogue:no_br_transcript_texts": 2699,
   "dialogue:no_text_matched": 65,
   "dialogue:texts": 5851,
-  "matched_by_position_alias": 7,
+  "matched_by_position_alias": 8,
   "no_br_page": 14,
   "npcs": 1093,
   "position:CLOSE": 98,
-  "position:MATCH": 229,
-  "position:MISMATCH": 42,
+  "position:MATCH": 230,
+  "position:MISMATCH": 41,
   "position:NEAR": 680,
   "position:NO_BR_POSITION": 1,
   "position:NO_PLACEMENT": 2,

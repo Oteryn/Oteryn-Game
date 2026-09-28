@@ -14041,7 +14041,7 @@
    "name": "An Old Dragonlord",
    "npc_lines": [
     "AHHH MUSHRRROOOMSSS! NOW MY PAIN WILL BE EASSSED FOR A WHILE! TAKE THISS AND LEAVE THE DRAGONSSS' CEMETERY AT ONCE!",
-    "LEAVE THE DRAGONS' CEMETERY AT ONCE! <após entregar white mushroom e usar o teleporte>",
+    "LEAVE THE DRAGONS' CEMETERY AT ONCE!",
     "You dare to approach me, tiny mortal?",
     "You will find him in Yalahar. And now get lost!",
     "He who you call the first is not unknown to me. He is still alive and at a remote place, far away from humanity. But I won't talk about him with the likes of you. Perhaps Tamoril will be more kind. ...",
@@ -50628,7 +50628,7 @@
     "We oversee the treading of winterberries in all of Tibia. The processed berries will be used to refine magical potions such as health or mana potions.",
     "Name's Gruffy, I'm a proud *sigh* representative of the... etcetera, etcetera... Combiwintersociety etcetera. You get the idea. ...",
     "As you probably already know, we have a mission for you - and, based on your presence here, I assume you recently accepted to help us.",
-    "Alright, so you want to return to Thais. Are you ready to leave? <dependendo da sua resposta você é transportado de volta a thais>",
+    "Alright, so you want to return to Thais. Are you ready to leave?",
     "The Combined Magical Winterberry Society and its members try to ensure the harvesting and processing of winterberries to all sorts of useful, magical fluids.",
     "We oversee the treading of winterberries in all of Tibia. The processed berries will be used to refine magical potions such as health or mana potions.",
     "Well it's the Annual Autumn Vintage. We should try to gather and process as much winterberries as possible this year.",
