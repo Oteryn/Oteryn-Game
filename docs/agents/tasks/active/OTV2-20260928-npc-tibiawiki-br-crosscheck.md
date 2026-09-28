@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-npc-tibiawiki-br-crosscheck
 title: NPC TibiaWiki BR facts and cross-check - replace the raw BR capture with compared facts and report every admitted NPC against them
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 1107
 jira: KAN-16
 base_sha: d17a38266d7197b807ff4d68c064eb1394849e2b
 head_sha: null
