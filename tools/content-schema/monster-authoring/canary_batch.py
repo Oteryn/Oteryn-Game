@@ -92,7 +92,7 @@ RULES = {
 WIKI_API = 'https://tibia.fandom.com/api.php'
 WIKI_REFERENCE = 'wiki-2026-09-27.json'
 BEHAVIOUR_PATTERNS = 'p4-behaviour-patterns-canary-47dfd51f.json'
-PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls', 'path_trail_missile')
+PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls', 'path_trail_missile', 'area_damage_named_target')
 PATH_TRAIL = (r'local target = Creature\(var\.number\) if not target then return false end local creaturePos = creature:getPosition\(\) '
               r'local path = creaturePos:getPathTo\(target:getPosition\(\), 0, 0, true, (true|false), (\d+)\) if not path or #path == 0 '
               r'then return false end for i = 1, #path do creaturePos:getNextPosition\(path\[i\], 1\) '
@@ -1246,6 +1246,8 @@ class Converter:
                     self.path_trail(probe, key, geometry, range_tiles, scratch, asset, notes)
                 elif pattern == 'heal_allies_in_area':
                     self.probe_callbacks(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes)
+                elif pattern == 'area_damage_named_target':
+                    self.probe_callbacks(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes, tile_damage=True)
                 else:
                     self.probe_remove_items(probe, lua_spell, key, scratch, asset, notes)
             except SpellUnresolved as exc:
@@ -1338,7 +1340,7 @@ class Converter:
             raise SpellUnresolved('the executed combat has Lua callbacks')
         self.combat_ability(key, combat, geometry, range_tiles, deps, asset, notes, extra=[('-summon', body)])
 
-    def probe_callbacks(self, probe, lua_spell, key, geometry, range_tiles, deps, asset, notes):
+    def probe_callbacks(self, probe, lua_spell, key, geometry, range_tiles, deps, asset, notes, tile_damage=False):
         runs = self.cast_runs(probe, lua_spell)
         if any(log for log, _ in runs.values()):
             raise SpellUnresolved('onCastSpell does more than execute its combat')
@@ -1352,6 +1354,8 @@ class Converter:
             function = probe.lua.globals()[function_name]
             if callback == 'CALLBACK_PARAM_TARGETCREATURE':
                 extra += self.probe_target_creature(probe, function, key, len(extra), aggressive, deps)
+            elif callback == 'CALLBACK_PARAM_TARGETTILE' and tile_damage:
+                extra += self.probe_tile_damage(probe, function, key, len(extra), deps)
             elif callback == 'CALLBACK_PARAM_TARGETTILE':
                 extra += self.probe_target_tile(probe, function, key, len(extra), deps)
             else:
@@ -1435,6 +1439,70 @@ class Converter:
             affects['creatures'].append(ref('Creature', creature))
         return [(f'-callback-{offset + 1}', self.health_body('COMBAT_HEALING', min(low, high), max(low, high), affects,
                                                             f'{key}/formula-callback-{offset + 1}', deps))]
+
+    def probe_tile_damage(self, probe, function, key, offset, deps):
+        """D18 `area_damage_named_target`: on each tile of the ability area the top creature, when it is a player or a monster
+        named in the script, loses a fixed or rolled amount of health through Creature:addHealth (untyped: no resistance,
+        mitigation or element applies). One untyped damage effect per distinct target group and amount."""
+        text = probe.source
+        names = sorted({s.lower() for s in re.findall(r'"([^"\n]+)"', text)})
+        position = probe.lua.eval('Position(1001, 1000, 7)')
+        caster = probe.make('monster', 'caster')
+        probe.creatures['caster'] = caster
+
+        def amounts(top, me=None):
+            per_mode = {}
+            for mode in ('low', 'high'):
+                probe.world['top'] = top
+                ok, log = probe.run(function, me or caster, position, random=mode)
+                if not ok or any(e[0] not in ('tile', 'random', 'addHealth') for e in log):
+                    raise SpellUnresolved('the tile callback does more than change health')
+                changes = [e[2] for e in log if e[0] == 'addHealth']
+                if len(changes) > 1 or any(c > 0 for c in changes):
+                    raise SpellUnresolved('the tile callback heals or changes health more than once')
+                per_mode[mode] = -changes[0] if changes else None
+            if (per_mode['low'] is None) != (per_mode['high'] is None):
+                raise SpellUnresolved('whether the tile callback hits depends on a random roll')
+            return None if per_mode['low'] is None else (min(per_mode.values()), max(per_mode.values()))
+
+        if amounts(probe.make('monster', 'zz unnamed monster')) is not None:
+            raise SpellUnresolved('the tile callback also hits unnamed monsters')
+        owner = probe.make('player', 'player')
+        if amounts(probe.make('monster', 'zz player summon', owner)) is not None:
+            raise SpellUnresolved('the tile callback also hits player summons, which no players-only effect covers')
+        groups = {}
+        player = amounts(owner)
+        if player is not None:
+            groups.setdefault(player, {'players': True, 'names': []})
+        for name in names:
+            hit = amounts(probe.make('monster', name))
+            if hit is not None:
+                groups.setdefault(hit, {'players': False, 'names': []})['names'].append(name)
+        if not groups:
+            raise SpellUnresolved('the tile callback hits nothing')
+        extra = []
+        for (low, high), group in sorted(groups.items()):
+            for kind, members in (('players', ['player'] if group['players'] else []), ('named_creatures', group['names'])):
+                if not members:
+                    continue
+                n = offset + len(extra) + 1
+                affects = {'kind': kind, 'top_creature_only': True, 'excludes_caster_name': False, 'includes_caster': False}
+                if kind == 'named_creatures':
+                    me = probe.make('monster', members[0])
+                    probe.creatures['caster'] = me
+                    affects['includes_caster'] = amounts(me, me) is not None
+                    affects['excludes_caster_name'] = amounts(probe.make('monster', members[0]), me) is None
+                    probe.creatures['caster'] = caster
+                    affects['creatures'] = []
+                    for name in members:
+                        creature = f'canary:creature/{slug(name)}'
+                        self.pending_definitions.add(('Creature', creature))
+                        affects['creatures'].append(ref('Creature', creature))
+                formula_key = f'{key}/formula-callback-{n}'
+                deps['formulas'].append({'identity': ident(formula_key), 'kind': 'range', 'magnitude': {'minimum': low, 'maximum': high}})
+                extra.append((f'-callback-{n}', {'operation': 'damage', 'damage_type': 'untyped', 'formula': ref('Formula', formula_key),
+                                                 'affects': affects}))
+        return extra
 
     def path_trail(self, probe, key, geometry, range_tiles, deps, asset, notes):
         """The Canary single-target 'chain' template: a path trail effect, then one combat on the target."""

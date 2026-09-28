@@ -317,6 +317,24 @@ player in a protection zone (`combat.cpp` `canDoCombat`), so the only effect of 
 chain skips other creatures, such as player summons. Any other picker body stays unresolved. This
 resolves Quara Looter, Rootthing Bug Tracker, Mould Phantom and Rotten Golem.
 
+`area_damage_named_target` is probed like `heal_allies_in_area`. A `CALLBACK_PARAM_TARGETTILE` callback that, on each
+tile of the ability area, takes a fixed or rolled amount of health from the top creature through `Creature:addHealth`
+is authored as an extra `damage` effect of damage type `untyped`:
+- the damage bypasses every resistance, mitigation and element, as `addHealth` does in Canary;
+- it affects `players` (players only, not their summons) or `named_creatures` (the monsters the script names), with
+  `top_creature_only`;
+- there is one effect per target group and amount, next to the ability's own combat.
+
+A callback that heals, changes health more than once, hits unnamed monsters, or hits depending on a roll stays
+unresolved. This resolves:
+- Freed Soul;
+- Ravenous Lava Lurker;
+- The Corruptor of Souls;
+- The Remorseless Corruptor;
+- The Source of Corruption.
+
+For example, `remorseless wave` takes 0-600 health from players and 700-1,500 from a stolen soul.
+
 ### 8.7 Owner decisions D21-D25 in the converter
 
 - D21: the 393 random variants of `ghastly dragon curse` collapse into one `geometric` damage over
@@ -340,12 +358,12 @@ resolves Quara Looter, Rootthing Bug Tracker, Mould Phantom and Rotten Golem.
 
 `population_census.py` converts every Canary `47dfd51f` monster file in memory, applies the D15
 wiki values of §9.1 and records the result in `samples/population-canary-47dfd51f.json`: of 1,656
-files, 1,543 convert, validate and resolve every manifest row (1,103 before registered spells were
+files, 1,548 convert, validate and resolve every manifest row (1,103 before registered spells were
 converted, 1,315 before wiki adoption, 1,298 before D19, 1,308 before the probed D18 patterns, 1,329
 before the two rules below, 1,345 before `path_requirement`, 1,350 before D21-D25, 1,377 before the first Encounter, 1,383 before the Dream Courts, Forgotten Knowledge and Ferumbras
 Ascension encounters, 1,389 before the Cults of Tibia, Wrath of the Emperor, Rathleton and other
-encounters, 1,427 before the fourth encounter slice, 1,442 before the callback rule below, 1,453 before the D29 encounter slice, 1,463 before the sixth encounter slice, 1,478 before the seventh, 1,486 before the eighth, 1,490 before the ninth, 1,498 before the tenth, 1,505 before the eleventh, 1,511 before the twelfth, 1,517 before the thirteenth, 1,523 before the fourteenth, 1,533 before the fifteenth, 1,539 before the players-only chain picker below);
-107 are blocked; 6 do not convert (five Soul War bosses
+encounters, 1,427 before the fourth encounter slice, 1,442 before the callback rule below, 1,453 before the D29 encounter slice, 1,463 before the sixth encounter slice, 1,478 before the seventh, 1,486 before the eighth, 1,490 before the ninth, 1,498 before the tenth, 1,505 before the eleventh, 1,511 before the twelfth, 1,517 before the thirteenth, 1,523 before the fourteenth, 1,533 before the fifteenth, 1,539 before the players-only chain picker below, 1,543 before the tile damage below);
+102 are blocked; 6 do not convert (five Soul War bosses
 need quest configuration at load and one file is a helper library, not a monster). No bundle fails
 structure validation.
 
@@ -421,7 +439,7 @@ Bestiary class and summon/convince costs are not adopted. Every adopted value ke
 Canary row as an `approved_omission` and adds a MediaWiki-sourced row. Wiki loot missing in Canary
 is added only when its name resolves to one item: by name, by the item page `itemid`, or by
 dropping the equipped state of an `items.xml` `transformEquipTo` pair. Over all converted
-monsters 748 mitigations and 12,722 loot rows (probabilities, counts and added items) are adopted; 1,179 of
+monsters 748 mitigations and 12,722 loot rows (probabilities, counts and added items) are adopted; 1,181 of
 the fully resolved monsters carry at least one adopted value. Under D43, TibiaWiki BR gives the health of 65
 and the experience of 37 fully resolved monsters whose Fandom value is missing or uncertain; 124 monsters have a BR
 fill in `wiki-br-fill-2026-09-27.json`; the other fills equal Canary or belong to monsters that are not fully resolved.

@@ -666,6 +666,8 @@ pub enum ProjectV2AffectsKind {
     MasterlessMonsters,
     NonPlayerSide,
     PlayerSide,
+    /// Players only, not their summons (a tile callback that checks `isPlayer`).
+    Players,
     NamedCreatures,
 }
 
