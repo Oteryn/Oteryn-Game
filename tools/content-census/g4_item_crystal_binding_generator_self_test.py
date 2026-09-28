@@ -43,27 +43,45 @@ def epoch2_alias_gate_and_allocation() -> None:
     assert gate([])[:2] == ("NO_MATCH", "NO_SAME_NAME_BASE_ITEM")
     assert gate([candidate(1, ["article_plural"], ["attributes"])])[0] == "NO_MATCH"
     assert gate([candidate(1, [], both)])[0] == "NO_MATCH"
-    # A different visual object is eliminated even when everything else agrees.
+    assert MODULE.counterpart(candidate(1, both, ["visual"]))
+    assert not MODULE.counterpart(candidate(1, ["visual", "attributes"], ["article_plural"]))
+    # Presentation is never an identity signal: a candidate that agrees on article/plural
+    # and the full attribute set but differs only in sprite is held, not minted (a sprite
+    # change never remints an identity). Its differing sprite is not evidence of a distinct
+    # identity, so it is neither NO_MATCH nor an alias.
     assert gate([candidate(1, both, ["visual"])])[:2] == (
-        "NO_MATCH",
-        "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+        "PROBABLE_MATCH",
+        "SPRITE_ONLY_DIFFERENCE_HELD",
     )
+    assert gate([candidate(1, both, ["visual"]), candidate(2, both, ["visual"])])[0] == (
+        "AMBIGUOUS"
+    )
+    # Only non-presentation contradictions leave NO_MATCH, whatever the sprite says.
+    assert gate([candidate(1, ["article_plural"], ["attributes", "visual"])])[:2] == (
+        "NO_MATCH",
+        "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
+    )
+    assert gate([candidate(1, ["visual", "attributes"], ["article_plural"])])[0] == (
+        "CONFLICT"
+    )
+    assert gate(
+        [candidate(1, ["article_plural"], ["attributes", "visual"]), candidate(2, both, ["visual"])]
+    )[0] == "PROBABLE_MATCH"
     # Proven counterpart: all three non-name signals agree, and it is unique.
     assert gate([candidate(1, full, [])])[0] == "ACCEPTED_ALIAS"
     assert (
-        gate([candidate(1, full, []), candidate(2, both, ["visual"])])[0]
+        gate([candidate(1, full, []), candidate(2, ["article_plural"], ["attributes", "visual"])])[0]
         == "ACCEPTED_ALIAS"
+    )
+    # A second counterpart that differs only in sprite competes with the alias target.
+    assert (
+        gate([candidate(1, full, []), candidate(2, both, ["visual"])])[0] == "AMBIGUOUS"
     )
     # Two counterparts cannot both be the alias target.
     assert gate([candidate(1, full, []), candidate(2, full, [])])[0] == "AMBIGUOUS"
     # No visual signal: two agreeing signals are only a probable match, never a binding.
     assert gate([candidate(1, both, [])])[0] == "PROBABLE_MATCH"
     assert gate([candidate(1, both, []), candidate(2, both, [])])[0] == "AMBIGUOUS"
-    # The same visual object with contradictory facts is a conflict.
-    assert (
-        gate([candidate(1, ["visual", "attributes"], ["article_plural"])])[0]
-        == "CONFLICT"
-    )
 
     signals = {"article": "a", "plural": None, "attrs": {"weight": "1"}, "visual": "v"}
     assert MODULE.compare_alias_signals(signals, dict(signals)) == (
@@ -173,9 +191,33 @@ def epoch2_committed_output() -> None:
         f"oteryn:item.registry.i{sequence:08d}"
         for sequence in range(38_094, 38_094 + len(allocations))
     ]
-    assert len(allocations) == 412
+    # Eight sprite-only same-name donors are held (no key, no alias, no binding), so 404 of
+    # the 412 census ids mint: the range is derived as 38,094 .. 38,497.
+    held = sorted(
+        row["source_item_id"] for row in crosswalk["rows"] if row["state"] != "NO_MATCH"
+    )
+    assert held == [35500, 53380, 54609, 54610, 54613, 54614, 54615, 54616]
+    by_id = {row["source_item_id"]: row for row in crosswalk["rows"]}
+    assert by_id[35500]["state"] == "PROBABLE_MATCH"
+    assert by_id[35500]["reason"] == "SPRITE_ONLY_DIFFERENCE_HELD"
+    assert by_id[54610]["state"] == "PROBABLE_MATCH"
+    assert all(by_id[i]["state"] == "AMBIGUOUS" for i in held if i not in (35500, 54610))
+    sprite_only = [
+        c
+        for c in by_id[35500]["same_name_base_items"]
+        if c["base_source_item_id"] == 35502
+    ]
+    assert sprite_only == [
+        {
+            "base_source_item_id": 35502,
+            "matched": ["article_plural", "attributes"],
+            "contradicted": ["visual"],
+        }
+    ]
+    assert len(allocations) == 404 == len(ids) - len(held)
+    assert not {source_id for source_id, _ in allocations} & set(held)
     assert allocations[0][1].endswith("i00038094")
-    assert allocations[-1][1].endswith("i00038505")
+    assert allocations[-1][1].endswith("i00038497")
     # One crosswalk row per census id; nothing minted twice.
     assert len(crosswalk["rows"]) == len(ids)
     assert len({key for _, key in allocations}) == len(allocations)
@@ -218,6 +260,7 @@ def epoch2_committed_output() -> None:
     assert [row["external_id"] for row in epoch2] == [
         str(source_id) for source_id, _ in allocations
     ]
+    assert not {row["external_id"] for row in bindings} & {str(i) for i in held}
     for row, (source_id, key) in zip(epoch2, allocations):
         assert row == {
             "disposition": "EXACT",

@@ -1341,16 +1341,16 @@ pub const CW2_B1_DONOR_EPOCH2_CENSUS_BYTES: usize = 66_770;
 pub const CW2_B1_DONOR_EPOCH2_CENSUS_SHA256: &str =
     "60808a671734c9ef9e6488438bbf61326c3d5b9c9b8ac71e6db246e6361c14ab";
 pub const CW2_B1_DONOR_EPOCH2_CENSUS_ID_COUNT: usize = 412;
-pub const CW2_B1_DONOR_EPOCH2_CROSSWALK_BYTES: usize = 360_894;
+pub const CW2_B1_DONOR_EPOCH2_CROSSWALK_BYTES: usize = 361_185;
 pub const CW2_B1_DONOR_EPOCH2_CROSSWALK_SHA256: &str =
-    "2f5f4c10d1a7e3e73157209eff6222a6202ab39abe22c4aeeb32e65c559f012a";
-pub const CW2_B1_DONOR_EPOCH2_MINTED_COUNT: usize = 412;
+    "82530255b2f03e14012fd06caac00cd89cf5c4438fce3dfd3291e377201c2831";
+pub const CW2_B1_DONOR_EPOCH2_MINTED_COUNT: usize = 404;
 /// Epoch 2 continues after the highest sequence of every earlier epoch (38,093).
 pub const CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE: usize = CW2_B1_OPAQUE_ITEM_COUNT + 1;
 pub const CW2_B1_DONOR_EPOCH2_LAST_SEQUENCE: usize =
     CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE + CW2_B1_DONOR_EPOCH2_MINTED_COUNT - 1;
 pub const CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256: &str =
-    "2f57badfab5809addc8378845bbcddd3f9565e88915eaf33540ef1d2e9a78c1c";
+    "c9bd33992d40c0ac36405b3a0b429485905add8f54460cccec9e1e7790569d3c";
 pub const CW2_B1_DONOR_EPOCH2_REVISION: &str = "definition-r1";
 
 const DONOR_EPOCH2_AUTHORSHIP: &str = "OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_2";
@@ -2890,6 +2890,10 @@ mod donor_identity_epoch_2_tests {
     const FROZEN_FULL_FAMILY_ALLOCATION_DIGEST: &str =
         "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 
+    /// Donor ids held by the alias gate: 35500 and 54610 are `PROBABLE_MATCH` (a unique
+    /// counterpart differing only in sprite), the other six are `AMBIGUOUS` (several).
+    const HELD_DONOR_IDS: [u64; 8] = [35500, 53380, 54609, 54610, 54613, 54614, 54615, 54616];
+
     fn epoch2() -> ProtectedCw2B1DonorIdentityEpoch2Import {
         protected_cw2_b1_donor_identity_epoch_2_import(B1_EVIDENCE, DONOR_CENSUS, ALIAS_CROSSWALK)
             .expect("donor identity epoch 2")
@@ -2933,16 +2937,16 @@ mod donor_identity_epoch_2_tests {
     fn epoch_2_mints_exactly_the_pinned_range_in_ascending_source_id_order() {
         let imported = epoch2();
         assert_eq!(imported.records.len(), CW2_B1_DONOR_EPOCH2_MINTED_COUNT);
-        assert_eq!(imported.records.len(), 412);
+        assert_eq!(imported.records.len(), 404);
         assert_eq!(CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE, 38_094);
-        assert_eq!(CW2_B1_DONOR_EPOCH2_LAST_SEQUENCE, 38_505);
+        assert_eq!(CW2_B1_DONOR_EPOCH2_LAST_SEQUENCE, 38_497);
         assert_eq!(
             imported.allocation_digest_sha256,
             CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256
         );
 
         let minted = minted(&imported);
-        assert_eq!(minted.len(), 412);
+        assert_eq!(minted.len(), 404);
         for (rank, (_, key)) in minted.iter().enumerate() {
             assert_eq!(
                 key,
@@ -2952,7 +2956,7 @@ mod donor_identity_epoch_2_tests {
         }
         assert!(minted.windows(2).all(|pair| pair[0].0 < pair[1].0));
         assert_eq!(minted[0].1, "oteryn:item.registry.i00038094");
-        assert_eq!(minted[411].1, "oteryn:item.registry.i00038505");
+        assert_eq!(minted[403].1, "oteryn:item.registry.i00038497");
 
         let mut record_keys = imported.records.iter().map(record_key).collect::<Vec<_>>();
         let batch_keys = minted
@@ -2972,7 +2976,16 @@ mod donor_identity_epoch_2_tests {
             }
         )));
         assert!(imported.alias_bindings.is_empty());
-        assert!(imported.unbound_source_item_ids.is_empty());
+        // Eight same-name donors match an existing Item on article/plural and the full
+        // attribute set and differ at most in sprite: held, with neither a key nor an alias.
+        assert_eq!(
+            imported.unbound_source_item_ids,
+            HELD_DONOR_IDS.to_vec(),
+            "sprite-only differences are held, never minted"
+        );
+        let minted_ids = minted.iter().map(|(id, _)| *id).collect::<BTreeSet<_>>();
+        assert!(HELD_DONOR_IDS.iter().all(|id| !minted_ids.contains(id)));
+        assert_eq!(minted.len() + HELD_DONOR_IDS.len(), 412);
         assert!(imported.batch.candidates.iter().all(|candidate| {
             candidate.normalized_fields.iter().any(|field| {
                 field.field_path == "source.native-key-authorship"
@@ -3186,23 +3199,28 @@ mod donor_identity_epoch_2_tests {
     #[test]
     fn only_no_match_rows_mint_and_aliases_bind_to_existing_keys() {
         let baseline = minted(&epoch2());
-        // Rows 1 (alias), 2 (ambiguous) and 3 (conflict) mint nothing; every later rank shifts
-        // down, so the key is the rank among the minted ids and not the census position.
+        // Minted ids 1 (alias), 2 (ambiguous) and 3 (conflict) mint nothing; every later rank
+        // shifts down, so the key is the rank among the minted ids and not the census position.
         let expected = std::iter::once(baseline[0].clone())
             .chain(baseline[4..].iter().enumerate().map(|(offset, (id, _))| {
                 (*id, opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT + 2 + offset))
             }))
             .collect::<Vec<_>>();
-        let alias_source_id = baseline[1].0;
+        let (alias_id, ambiguous_id, conflict_id) = (baseline[1].0, baseline[2].0, baseline[3].0);
         let imported = admit_modified(
             |rows| {
-                set_state(
-                    &mut rows[1],
-                    "ACCEPTED_ALIAS",
-                    Some("oteryn:item.registry.i00000001"),
-                );
-                set_state(&mut rows[2], "AMBIGUOUS", None);
-                set_state(&mut rows[3], "CONFLICT", None);
+                for row in rows.iter_mut() {
+                    match row["source_item_id"].as_u64() {
+                        Some(id) if id == alias_id => set_state(
+                            row,
+                            "ACCEPTED_ALIAS",
+                            Some("oteryn:item.registry.i00000001"),
+                        ),
+                        Some(id) if id == ambiguous_id => set_state(row, "AMBIGUOUS", None),
+                        Some(id) if id == conflict_id => set_state(row, "CONFLICT", None),
+                        _ => {}
+                    }
+                }
             },
             expected.len(),
             &expected,
@@ -3211,16 +3229,16 @@ mod donor_identity_epoch_2_tests {
         assert_eq!(minted(&imported), expected);
         assert_eq!(
             imported.alias_bindings,
-            vec![(alias_source_id, "oteryn:item.registry.i00000001".to_owned())]
+            vec![(alias_id, "oteryn:item.registry.i00000001".to_owned())]
         );
-        assert_eq!(
-            imported.unbound_source_item_ids,
-            vec![baseline[2].0, baseline[3].0]
-        );
+        let mut unbound = HELD_DONOR_IDS.to_vec();
+        unbound.extend([ambiguous_id, conflict_id]);
+        unbound.sort_unstable();
+        assert_eq!(imported.unbound_source_item_ids, unbound);
         assert_eq!(imported.records.len(), expected.len());
         assert_eq!(
             imported.records.last().map(record_key),
-            Some("oteryn:item.registry.i00038502")
+            Some("oteryn:item.registry.i00038494")
         );
 
         // The gold coin's retired key is not an alias target; its promoted key is.

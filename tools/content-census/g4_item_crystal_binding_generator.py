@@ -45,9 +45,11 @@ appended after it, so the epoch-1 bytes stay a strict prefix of the file.
 
 The alias gate (`A8-ALIAS-GATE-V1`, `resolve_alias_gate`) is the G4 promotion
 discipline applied to a donor id against the existing Items: names only discover
-candidates (G4 rule 9); a candidate counts only through non-name signals
-(article/plural, the full items.xml attribute set, the appearance sprite
-signature). Its result is committed as crosswalk evidence, and the default and
+candidates (G4 rule 9); identity rests on non-name, non-presentation signals
+(article/plural and the full items.xml attribute set). The appearance sprite
+signature is presentation: it can corroborate an alias, but a sprite-only
+difference never proves a distinct identity, so such an id is held (no key, no
+alias) instead of minted. Its result is committed as crosswalk evidence, and the default and
 `--check` paths consume that evidence offline. `--build-alias-crosswalk` and
 `--verify-alias-crosswalk` recompute it from local checkouts of the two pinned
 Crystal revisions.
@@ -427,8 +429,12 @@ def compare_alias_signals(
     return matched, contradicted
 
 
+IDENTITY_SIGNALS = ("article_plural", "attributes")
+
+
 def counterpart(row: dict[str, Any]) -> bool:
-    return len(row["matched"]) >= 2 and not row["contradicted"]
+    """Both non-presentation signals agree. Presentation (`visual`) is never an identity signal."""
+    return all(signal in row["matched"] for signal in IDENTITY_SIGNALS)
 
 
 def resolve_alias_gate(
@@ -441,10 +447,17 @@ def resolve_alias_gate(
     `matched` and `contradicted` from `compare_alias_signals`. Returns
     `(state, reason, evidence_rows)`.
 
-    A candidate whose visual signature differs is a distinct visual object and is
-    eliminated. A remaining candidate is a counterpart when at least two non-name
-    signals agree and none contradicts; one that shares the visual signature but
-    contradicts another signal is a conflicting counterpart.
+    Identity rests on non-presentation facts only (`IDENTITY_SIGNALS`). A sprite or
+    appearance change never remints an Item identity (G4 decision, identity layers), so
+    a differing sprite signature is never evidence of a distinct identity:
+    - a candidate whose article/plural and full attribute set agree is a counterpart;
+    - a unique counterpart is `ACCEPTED_ALIAS` only when the visual signature also
+      agrees, and otherwise a held `PROBABLE_MATCH` (no key, no binding);
+    - several counterparts are `AMBIGUOUS`;
+    - a candidate that shares the visual signature but contradicts a non-presentation
+      signal is a conflicting counterpart (`CONFLICT` when alone);
+    - only a candidate contradicted by non-presentation facts, or no candidate at all,
+      leaves `NO_MATCH`.
     """
     rows = [
         {
@@ -456,25 +469,28 @@ def resolve_alias_gate(
     ]
     if not rows:
         return "NO_MATCH", "NO_SAME_NAME_BASE_ITEM", rows
-    remaining = [row for row in rows if "visual" not in row["contradicted"]]
-    if not remaining:
-        return "NO_MATCH", "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS", rows
-    counterparts = [row for row in remaining if counterpart(row)]
+    counterparts = [row for row in rows if counterpart(row)]
     conflicting = [
-        row for row in remaining if "visual" in row["matched"] and row["contradicted"]
+        row for row in rows if not counterpart(row) and "visual" in row["matched"]
     ]
-    if conflicting and not counterparts:
-        return "CONFLICT", "SAME_VISUAL_OBJECT_CONTRADICTORY_FACTS", rows
     if not counterparts:
-        return "NO_MATCH", "NAME_ONLY_OR_INSUFFICIENT_NON_NAME_AGREEMENT", rows
+        if conflicting:
+            return "CONFLICT", "SAME_VISUAL_OBJECT_CONTRADICTORY_FACTS", rows
+        return (
+            "NO_MATCH",
+            "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
+            rows,
+        )
     if len(counterparts) > 1 or conflicting:
         return "AMBIGUOUS", "MULTIPLE_COUNTERPART_CANDIDATES", rows
     if "visual" in counterparts[0]["matched"]:
         return (
             "ACCEPTED_ALIAS",
-            "UNIQUE_COUNTERPART_ARTICLE_ATTRIBUTES_AND_VISUAL_AGREE",
+            "UNIQUE_COUNTERPART_NON_PRESENTATION_FACTS_AND_VISUAL_AGREE",
             rows,
         )
+    if "visual" in counterparts[0]["contradicted"]:
+        return "PROBABLE_MATCH", "SPRITE_ONLY_DIFFERENCE_HELD", rows
     return "PROBABLE_MATCH", "UNIQUE_COUNTERPART_WITHOUT_VISUAL_SIGNAL", rows
 
 
@@ -670,17 +686,17 @@ def build_alias_crosswalk(
         "gate": {
             "rule": EPOCH2_GATE_RULE,
             "signals": {
-                "article_plural": "article and plural attributes equal",
-                "attributes": "the complete items.xml attribute set equal",
+                "article_plural": "identity signal: article and plural attributes equal",
+                "attributes": "identity signal: the complete items.xml attribute set equal",
                 "name": "discovery only, never counted as agreement (G4 rule 9)",
-                "visual": "sprite ids and geometry of every appearance frame group equal",
+                "visual": "presentation, never an identity signal: it can corroborate an alias but a difference never proves a distinct identity",
             },
             "states": {
-                "ACCEPTED_ALIAS": "unique counterpart; article/plural, attributes and visual all agree; binds to the existing key and mints nothing",
-                "AMBIGUOUS": "several counterparts; mints and binds nothing",
-                "CONFLICT": "same visual object with contradictory facts; mints and binds nothing",
-                "NO_MATCH": "no counterpart; the only state that mints",
-                "PROBABLE_MATCH": "unique counterpart without a visual signal; mints and binds nothing",
+                "ACCEPTED_ALIAS": "unique counterpart; article/plural and attributes agree and the visual signature agrees; binds to the existing key and mints nothing",
+                "AMBIGUOUS": "several counterparts; held: mints and binds nothing",
+                "CONFLICT": "same visual object with contradictory non-presentation facts; held: mints and binds nothing",
+                "NO_MATCH": "no same-name item, or every same-name item contradicted by non-presentation facts; the only state that mints",
+                "PROBABLE_MATCH": "unique counterpart on non-presentation facts whose visual signature differs or is absent; held: mints and binds nothing until non-presentation evidence proves a distinct identity or an alias",
             },
         },
         "rows": rows,

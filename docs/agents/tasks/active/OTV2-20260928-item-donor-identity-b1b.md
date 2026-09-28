@@ -44,31 +44,36 @@ Decision `A8-DONOR-ITEM-IDENTITY-EPOCH-V1` (owner decisions D96 and D97) is impl
 - **Alias gate.** Every one of the 412 donor ids has a crosswalk state in the pinned evidence
   `docs/agents/evidence/OTV2-20260928-item-donor-identity-b1b-alias-crosswalk.json`. The gate is `A8-ALIAS-GATE-V1`:
   - Names only discover candidates (G4 rule 9).
-  - The agreement signals are article/plural, the complete `items.xml` attribute set and the appearance sprite
-    signature.
-  - A candidate with a different sprite signature is a distinct visual object and is eliminated.
-  - `ACCEPTED_ALIAS` needs a unique counterpart on all three signals. `PROBABLE_MATCH`, `AMBIGUOUS` and `CONFLICT` mint
-    and bind nothing.
-- **Result.** 16 donor ids share a name with an existing base Item. All 16 differ in sprite signature, so every
-  candidate is eliminated. All 412 ids are `NO_MATCH`.
+  - Identity signals are non-presentation only: article/plural and the complete `items.xml` attribute set. A sprite or
+    appearance change never remints an Item identity (G4 decision, identity layers), so the appearance sprite signature
+    is presentation: it can corroborate an alias, and a difference never proves a distinct identity.
+  - A candidate agreeing on both identity signals is a counterpart. A unique counterpart with the same sprite is
+    `ACCEPTED_ALIAS`; with a different or absent sprite it is a held `PROBABLE_MATCH`; several counterparts are
+    `AMBIGUOUS`. Held ids get no key and no binding until non-presentation evidence resolves them.
+  - Only no same-name item, or every same-name item contradicted by non-presentation facts, leaves `NO_MATCH`.
+- **Result.** 16 donor ids share a name with an existing base Item. 8 of them agree on article/plural and the full
+  attribute set and differ at most in sprite, so they are held: `PROBABLE_MATCH` 35500 (against 35502) and 54610
+  (against 34017); `AMBIGUOUS` 53380, 54609, 54613, 54614, 54615 and 54616 (several same-fact base items). The other 8
+  (cookbook, two stone stairs, five pedestals) are contradicted by attributes and stay `NO_MATCH`. No id outside the 16
+  is affected.
 
   | State | Ids |
   | --- | --- |
-  | `NO_MATCH` (minted) | 412 |
+  | `NO_MATCH` (minted) | 404 |
   | `ACCEPTED_ALIAS` and `EXACT` | 0 |
-  | `PROBABLE_MATCH`, `AMBIGUOUS` and `CONFLICT` | 0 |
+  | Held: `PROBABLE_MATCH` 2, `AMBIGUOUS` 6, `CONFLICT` 0 | 8 |
   | Epoch-1 bindings, unchanged | 38,157 |
 
-- **Allocation.** The 412 `NO_MATCH` ids get `oteryn:item.registry.i00038094` to `i00038505` in ascending donor source
-  id. Their allocation digest is `2f57badfab5809addc8378845bbcddd3f9565e88915eaf33540ef1d2e9a78c1c`, built as the
-  frozen import builds its own.
+- **Allocation.** The decision derives the range (rank among the minted ids after 38,093), so 404 `NO_MATCH` ids get
+  `oteryn:item.registry.i00038094` to `i00038497` in ascending donor source id. Their allocation digest is
+  `c9bd33992d40c0ac36405b3a0b429485905add8f54460cccec9e1e7790569d3c`, built as the frozen import builds its own.
 - **Function.** `protected_cw2_b1_donor_identity_epoch_2_import` sits beside the frozen import, with its own
-  `CW2_B1_DONOR_EPOCH2_*` constants. It returns 412 Item pointers with `materializable: false`, stack class `Unknown` and
+  `CW2_B1_DONOR_EPOCH2_*` constants. It returns 404 Item pointers with `materializable: false`, stack class `Unknown` and
   authorship `OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_2`, plus an import batch. The frozen function, its constants,
   its evidence pin and its allocation digest are untouched (no deleted or modified line).
 - **Bindings.** `imports/crystalserver/bindings/items.json` is generated. Epoch 1 is unchanged, and its canonical
-  bytes are a strict prefix of the file. The 412 epoch-2 `EXACT` bindings (`00ce02a5…`, `ots/item_server_id`,
-  `definition-r1`) follow in ascending source id, for 38,569 in all.
+  bytes are a strict prefix of the file. The 404 epoch-2 `EXACT` bindings (`00ce02a5…`, `ots/item_server_id`,
+  `definition-r1`) follow in ascending source id, for 38,561 in all.
 - **Generator.** Epoch 1 is regenerated as before and pinned by digest. Epoch 2 is derived from the pinned census and the
   pinned crosswalk. `--build-alias-crosswalk` and `--verify-alias-crosswalk` recompute the gate from local checkouts
   of the two pinned Crystal revisions; the default and `--check` paths are offline.
@@ -78,8 +83,8 @@ Decision `A8-DONOR-ITEM-IDENTITY-EPOCH-V1` (owner decisions D96 and D97) is impl
 - `PROVEN`: the decision, the frozen CW2-B1 allocator, the donor census bytes and the two pinned Crystal
   revisions (`items.xml` and `appearances.dat` digests verified before use).
 - `NOT DECIDED HERE`: the alias-gate signal set. The decision requires "multi-signal evidence" without naming the
-  signals, so `A8-ALIAS-GATE-V1` is B1b's own evidence and the independent identity review must accept it. A stricter
-  gate that leaves a same-name id unminted would shift every later key.
+  signals, so `A8-ALIAS-GATE-V1` is B1b's own evidence and the independent identity review must accept it. A held id
+  that later resolves as distinct enters a later epoch, and one that proves an alias binds `ACCEPTED_ALIAS`.
 - Deliberately not done: no `content/**` Item records (SHARED_LEASE_REQUIRED: `content/**` regeneration), no
   `.github/**` or `tools/repository/**` change, no facts, promotion, Presentation, runtime or wire ids.
 
@@ -91,7 +96,7 @@ authority is the merged decision #1163. No production, credential or cross-repos
 ## Acceptance criteria
 
 - [ ] Every donor id has a crosswalk state; only `NO_MATCH` ids mint.
-- [ ] Keys are 38,094 to 38,505 in ascending source id, with no source id or key collision.
+- [ ] Keys are 38,094 to 38,497 in ascending source id, with no source id or key collision.
 - [ ] The epoch-1 import, its 38,157 keys and its digest are byte-identical; 2,921 stays retired.
 - [ ] Each minted id has exactly one `EXACT` binding at `00ce02a5`; base bindings are unchanged.
 - [ ] The validation below passes on the frozen final head of the PR.

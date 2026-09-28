@@ -13,14 +13,14 @@
   "counts": {
     "by_state": {
       "ACCEPTED_ALIAS": 0,
-      "AMBIGUOUS": 0,
+      "AMBIGUOUS": 6,
       "CONFLICT": 0,
       "EXACT": 0,
-      "NO_MATCH": 412,
-      "PROBABLE_MATCH": 0
+      "NO_MATCH": 404,
+      "PROBABLE_MATCH": 2
     },
     "census_ids": 412,
-    "minted": 412
+    "minted": 404
   },
   "decision": "A8-DONOR-ITEM-IDENTITY-EPOCH-V1",
   "donor": {
@@ -31,25 +31,25 @@
     "repository": "zimbadev/crystalserver"
   },
   "epoch_2": {
-    "allocation_digest_sha256": "2f57badfab5809addc8378845bbcddd3f9565e88915eaf33540ef1d2e9a78c1c",
+    "allocation_digest_sha256": "c9bd33992d40c0ac36405b3a0b429485905add8f54460cccec9e1e7790569d3c",
     "first_sequence": 38094,
-    "last_sequence": 38505,
+    "last_sequence": 38497,
     "namespace": "oteryn:item.registry"
   },
   "gate": {
     "rule": "A8-ALIAS-GATE-V1",
     "signals": {
-      "article_plural": "article and plural attributes equal",
-      "attributes": "the complete items.xml attribute set equal",
+      "article_plural": "identity signal: article and plural attributes equal",
+      "attributes": "identity signal: the complete items.xml attribute set equal",
       "name": "discovery only, never counted as agreement (G4 rule 9)",
-      "visual": "sprite ids and geometry of every appearance frame group equal"
+      "visual": "presentation, never an identity signal: it can corroborate an alias but a difference never proves a distinct identity"
     },
     "states": {
-      "ACCEPTED_ALIAS": "unique counterpart; article/plural, attributes and visual all agree; binds to the existing key and mints nothing",
-      "AMBIGUOUS": "several counterparts; mints and binds nothing",
-      "CONFLICT": "same visual object with contradictory facts; mints and binds nothing",
-      "NO_MATCH": "no counterpart; the only state that mints",
-      "PROBABLE_MATCH": "unique counterpart without a visual signal; mints and binds nothing"
+      "ACCEPTED_ALIAS": "unique counterpart; article/plural and attributes agree and the visual signature agrees; binds to the existing key and mints nothing",
+      "AMBIGUOUS": "several counterparts; held: mints and binds nothing",
+      "CONFLICT": "same visual object with contradictory non-presentation facts; held: mints and binds nothing",
+      "NO_MATCH": "no same-name item, or every same-name item contradicted by non-presentation facts; the only state that mints",
+      "PROBABLE_MATCH": "unique counterpart on non-presentation facts whose visual signature differs or is absent; held: mints and binds nothing until non-presentation evidence proves a distinct identity or an alias"
     }
   },
   "rows": [
@@ -61,7 +61,7 @@
     },
     {
       "name": "magic portal",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "SPRITE_ONLY_DIFFERENCE_HELD",
       "same_name_base_items": [
         {
           "base_source_item_id": 11553,
@@ -115,7 +115,7 @@
         }
       ],
       "source_item_id": 35500,
-      "state": "NO_MATCH"
+      "state": "PROBABLE_MATCH"
     },
     {
       "name": "rotten feather",
@@ -1085,7 +1085,7 @@
     },
     {
       "name": "cookbook",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
       "same_name_base_items": [
         {
           "base_source_item_id": 3234,
@@ -1289,7 +1289,7 @@
     },
     {
       "name": "closed door",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "MULTIPLE_COUNTERPART_CANDIDATES",
       "same_name_base_items": [
         {
           "base_source_item_id": 1628,
@@ -4363,11 +4363,11 @@
         }
       ],
       "source_item_id": 53380,
-      "state": "NO_MATCH"
+      "state": "AMBIGUOUS"
     },
     {
       "name": "stone stairs",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
       "same_name_base_items": [
         {
           "base_source_item_id": 855,
@@ -4434,7 +4434,7 @@
     },
     {
       "name": "stone stairs",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
       "same_name_base_items": [
         {
           "base_source_item_id": 855,
@@ -5203,7 +5203,7 @@
     },
     {
       "name": "knight pedestal",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
       "same_name_base_items": [
         {
           "base_source_item_id": 44638,
@@ -5221,7 +5221,7 @@
     },
     {
       "name": "paladin pedestal",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
       "same_name_base_items": [
         {
           "base_source_item_id": 44639,
@@ -5239,7 +5239,7 @@
     },
     {
       "name": "sorcerer pedestal",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
       "same_name_base_items": [
         {
           "base_source_item_id": 44640,
@@ -5257,7 +5257,7 @@
     },
     {
       "name": "druid pedestal",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
       "same_name_base_items": [
         {
           "base_source_item_id": 44641,
@@ -5275,7 +5275,7 @@
     },
     {
       "name": "monk pedestal",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
       "same_name_base_items": [
         {
           "base_source_item_id": 50308,
@@ -5651,7 +5651,7 @@
     },
     {
       "name": "torch",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "MULTIPLE_COUNTERPART_CANDIDATES",
       "same_name_base_items": [
         {
           "base_source_item_id": 2920,
@@ -5805,11 +5805,11 @@
         }
       ],
       "source_item_id": 54609,
-      "state": "NO_MATCH"
+      "state": "AMBIGUOUS"
     },
     {
       "name": "lit torch",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "SPRITE_ONLY_DIFFERENCE_HELD",
       "same_name_base_items": [
         {
           "base_source_item_id": 2921,
@@ -5863,7 +5863,7 @@
         }
       ],
       "source_item_id": 54610,
-      "state": "NO_MATCH"
+      "state": "PROBABLE_MATCH"
     },
     {
       "name": "frozen peacock feather",
@@ -5873,7 +5873,7 @@
     },
     {
       "name": "closed door",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "MULTIPLE_COUNTERPART_CANDIDATES",
       "same_name_base_items": [
         {
           "base_source_item_id": 1628,
@@ -8947,11 +8947,11 @@
         }
       ],
       "source_item_id": 54613,
-      "state": "NO_MATCH"
+      "state": "AMBIGUOUS"
     },
     {
       "name": "closed door",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "MULTIPLE_COUNTERPART_CANDIDATES",
       "same_name_base_items": [
         {
           "base_source_item_id": 1628,
@@ -12025,11 +12025,11 @@
         }
       ],
       "source_item_id": 54614,
-      "state": "NO_MATCH"
+      "state": "AMBIGUOUS"
     },
     {
       "name": "open door",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "MULTIPLE_COUNTERPART_CANDIDATES",
       "same_name_base_items": [
         {
           "base_source_item_id": 1630,
@@ -14189,11 +14189,11 @@
         }
       ],
       "source_item_id": 54615,
-      "state": "NO_MATCH"
+      "state": "AMBIGUOUS"
     },
     {
       "name": "open door",
-      "reason": "SAME_NAME_CANDIDATES_ARE_DISTINCT_VISUAL_OBJECTS",
+      "reason": "MULTIPLE_COUNTERPART_CANDIDATES",
       "same_name_base_items": [
         {
           "base_source_item_id": 1630,
@@ -16353,7 +16353,7 @@
         }
       ],
       "source_item_id": 54616,
-      "state": "NO_MATCH"
+      "state": "AMBIGUOUS"
     },
     {
       "name": "jaracal soul core",
