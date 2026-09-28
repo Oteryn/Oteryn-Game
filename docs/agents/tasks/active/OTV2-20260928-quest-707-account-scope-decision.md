@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-quest-707-account-scope-decision
 title: "#707 disposition and account-scoped progress decision (D44-D49)"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 707
-pr: null
+pr: 1102
 base_sha: 800e3eb6ad410442c5ec9f7c9fd2c361201d10cf
 head_sha: null
 final_head_sha: null
@@ -126,11 +126,11 @@ finding_dispositions:
 ## Context checkpoint
 
 ```yaml
-last_progress: prepared
-status: implementing
+last_progress: authored; PR #1102 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1102
 owner_action_required: null
 blocker: null
-next_action: apply after the spell-decision PR merges; validate; open PR; request review
+next_action: exact-head review and Merge Queue integration of #1102
 ```
