@@ -1995,11 +1995,11 @@ impl ChannelActorCarrier {
         let projected = receipt.projection;
         // Bounded FIFO retention (`MAX_RETAINED_CORPSE_PROJECTIONS`): a retained projection
         // deliberately outlives its actor's slot (lost-response replay, above), so this Vec is
-        // not otherwise pruned; evict the oldest entry rather than grow without bound.
-        if self.corpse_projections.len() >= MAX_RETAINED_CORPSE_PROJECTIONS {
-            self.corpse_projections.remove(0);
-        }
-        self.corpse_projections.push(projected);
+        // not otherwise pruned; evict the oldest entry rather than grow without bound. The
+        // evicted death's memoized reward occurrence goes with it: a reward occurrence never
+        // outlives, and is never evicted independently of, its projection, so a retained
+        // projection can never re-mint a second occurrence for the same death.
+        self.retain_corpse_projection(projected);
         if fail_after_write {
             return Err(CarrierError::InjectedCorpseResponseFailure);
         }
@@ -2023,6 +2023,15 @@ impl ChannelActorCarrier {
         } else {
             Err(CarrierError::CorpseProjectionConflict)
         }
+    }
+
+    fn retain_corpse_projection(&mut self, projected: RuntimeCorpseProjection) {
+        if self.corpse_projections.len() >= MAX_RETAINED_CORPSE_PROJECTIONS {
+            let evicted = self.corpse_projections.remove(0).occurrence.actor.0;
+            self.death_reward_occurrences
+                .retain(|reward| reward.actor != evicted);
+        }
+        self.corpse_projections.push(projected);
     }
 
     /// D2b: the memoized XP reward occurrence of this generation's committed
@@ -2064,9 +2073,7 @@ impl ChannelActorCarrier {
             };
         }
         let occurrence = mint_reward_occurrence_bytes(actor_ref, character);
-        if self.death_reward_occurrences.len() >= MAX_RETAINED_CORPSE_PROJECTIONS {
-            self.death_reward_occurrences.remove(0);
-        }
+        // Bounded by `corpse_projections`: at most one entry per retained projection.
         self.death_reward_occurrences.push(DeathRewardOccurrence {
             actor: actor_ref,
             character,
@@ -3491,6 +3498,68 @@ mod tests {
             map_revision_marker: 1,
             content_generation_marker: 1,
         }
+    }
+
+    #[test]
+    fn evicting_a_corpse_projection_evicts_its_reward_occurrence() {
+        let (continuity, mut carrier) = carrier(4);
+        let context = spawn_position_context(&continuity);
+        let actor = |local: u32| ActorRef {
+            world_id: continuity.world_id,
+            channel_id: continuity.channel_id,
+            scope_generation: continuity.current_generation,
+            actor_local_id: ActorLocalId(local),
+            actor_local_generation: ActorLocalGeneration(1),
+        };
+        let projection = |local: u32| RuntimeCorpseProjection {
+            occurrence: CreatureDeathOccurrenceRef {
+                actor: ExactActorRef(actor(local)),
+                commit_binding: Box::new([]),
+                damage: 1,
+                health_before: 1,
+            },
+            position: VersionedPosition {
+                actor_local_id: ActorLocalId(local),
+                actor_local_generation: ActorLocalGeneration(1),
+                context,
+                position: LocalPosition {
+                    x: 0,
+                    y: 0,
+                    floor: 7,
+                },
+                revision: 1,
+            },
+        };
+        for local in 0..2 {
+            carrier.retain_corpse_projection(projection(local));
+            carrier
+                .death_reward_occurrences
+                .push(DeathRewardOccurrence {
+                    actor: actor(local),
+                    character: [1; 16],
+                    occurrence: [2; 16],
+                });
+        }
+        let max = u32::try_from(MAX_RETAINED_CORPSE_PROJECTIONS).expect("bounded");
+        for local in 2..=max {
+            carrier.retain_corpse_projection(projection(local));
+        }
+        assert_eq!(
+            carrier.corpse_projections.len(),
+            MAX_RETAINED_CORPSE_PROJECTIONS
+        );
+        assert!(
+            carrier
+                .death_reward_occurrences
+                .iter()
+                .all(|reward| reward.actor != actor(0))
+        );
+        assert!(
+            carrier
+                .death_reward_occurrences
+                .iter()
+                .any(|reward| reward.actor == actor(1))
+        );
     }
 
     /// D115/D116: one spawn, two placement cells, population 2, 60 s respawn / 5 s retry.
