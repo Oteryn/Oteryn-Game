@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-world-metadata-authoring
 title: Populate world metadata families (City Area, House, teleport Transition) from CrystalServer
 mode: MIGRATE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/blissful-turing-oca168
 issue: 162
-pr: null
+pr: 1160
 base_sha: 7d1134f
 head_sha: null
 owner: owner-launched Claude Code session
