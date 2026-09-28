@@ -1,9 +1,9 @@
 """Validate an OTERYN_NPC_PROMOTION_CANDIDATES/v1 report (promotion_candidates.py output) against the
-schema doc (OTERYN_NPC_AUTHORING_SCHEMA_V1.md §3 D4-D7, §8).
+schema doc (OTERYN_NPC_AUTHORING_SCHEMA_V1.md §3 D4-D8, §8).
 
 Semantic rules:
 - schema == 'OTERYN_NPC_PROMOTION_CANDIDATES/v1', evidence == 'OTS_HYPOTHESIS_ONLY',
-  decisions == ['D4', 'D5', 'D6', 'D7'], snapshot_sha256 and item_map_sha256 are 64 hex chars;
+  decisions == ['D4', 'D5', 'D6', 'D7', 'D8'], snapshot_sha256 and item_map_sha256 are 64 hex chars;
 - each candidate identity is family NPC, key `oteryn:npc.<slug>` (D4) and revision 'definition-r1';
   the key suffix equals the slug of `name` (same slug() as promotion_candidates.py);
 - candidate keys are unique and the candidates list is sorted by key;
@@ -19,12 +19,21 @@ Semantic rules:
   (source_item_id, count, sub_type, direction) is unique within a candidate; a source_item_id maps
   to exactly one item key across the whole report (cross-candidate consistency);
 - every candidate has >=1 placement, with an in-range position, a compass direction
-  (NORTH/EAST/SOUTH/WEST) and spawn_interval_s in 1..86400;
+  (NORTH/EAST/SOUTH/WEST) and spawn_interval_s in 1..86400; a D8 wiki-origin placement
+  (`origin: 'wiki'`) instead has direction and spawn_interval_s both null (unknown from the wiki),
+  and `origin`, where present, is null or 'wiki'; an empty `placements` list is allowed only when
+  a D8 WIKI_CONFIRMED arbitration row is present (a wiki-confirmed NPC with no wiki position);
 - provenance has 1 or 2 of canary/crystal, each with a key namespaced to that source
   (`<source>:npc/...`) and a 64-hex sha256; a single-source candidate must carry a non-null `wiki`
   confirmation (D6: single-source NPCs need wiki confirmation);
-- arbitration rows all have rule 'WIKI_ARBITER', `chosen` in canary/crystal, and `chosen` is one of
-  the candidate's provenance sources (a fact may be `travel.<id>...` or `trade.<id>...`);
+- arbitration rows have rule 'WIKI_ARBITER' with `chosen` in canary/crystal and one of the
+  candidate's provenance sources (a fact may be `travel.<id>...` or `trade.<id>...`); or (D8)
+  rule 'WIKI_POSITION' with `chosen` == 'wiki', `fact` == 'placements' and exactly one placement
+  with `origin` == 'wiki' (and, conversely, any such placement requires this row); or rule
+  'WIKI_CONFIRMED' with `chosen` == 'wiki', `fact` == 'placements', an empty `placements` list
+  (and, conversely, an empty `placements` list requires either this row or the candidate is
+  otherwise invalid) and a non-null `wiki`; or rule 'WIKI_BASE_NAME'/'WIKI_SPELLING' with
+  `chosen` == 'wiki', `fact` == 'identity', a single-source candidate and a non-null `wiki`;
 - left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED /
   GATED_OFFER / OFFER_UNCONFIRMED / OFFER_CONFLICT_WIKI_UNDECIDED / ITEM_NOT_REGISTERED /
   CURRENCY_CONFLICT; trade facts start with `trade.`, route facts with `travel.`; no left_out
@@ -48,7 +57,7 @@ from promotion_candidates import slug
 
 SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
 EVIDENCE = 'OTS_HYPOTHESIS_ONLY'
-DECISIONS = ['D4', 'D5', 'D6', 'D7']
+DECISIONS = ['D4', 'D5', 'D6', 'D7', 'D8']
 KEY_RE = re.compile(r'^oteryn:npc\.[a-z0-9]+(_[a-z0-9]+)*$')
 ITEM_KEY_RE = re.compile(r'^oteryn:item\.[a-z0-9_.]+$')
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
@@ -119,18 +128,39 @@ def candidate_errors(candidate, index):
     expected_key = f'oteryn:npc.{name_slug}' if name_slug is not None else None
     errs += identity_errors(candidate.get('identity'), label, 'NPC', KEY_RE, expected_key)
 
+    arbitration_rows = candidate.get('arbitration') or []
+    wiki_confirmed = any(row.get('rule') == 'WIKI_CONFIRMED' for row in arbitration_rows)
+
     placements = candidate.get('placements') or []
-    if not placements:
+    if not placements and not wiki_confirmed:
         errs.append(f'{label}: no placements')
+    wiki_placements = [p for p in placements if isinstance(p, dict) and p.get('origin') == 'wiki']
     for i, placement in enumerate(placements):
         plabel = f'{label}.placements[{i}]'
         if not in_range_point(placement.get('position')):
             errs.append(f"{plabel}: position {placement.get('position')!r} out of range or malformed")
-        if placement.get('direction') not in DIRECTIONS:
-            errs.append(f"{plabel}: direction {placement.get('direction')!r} not in {sorted(DIRECTIONS)}")
+        origin = placement.get('origin')
+        if origin is not None and origin != 'wiki':
+            errs.append(f"{plabel}: origin {origin!r} not null or 'wiki'")
+        wiki_origin = origin == 'wiki'
+        direction = placement.get('direction')
+        if wiki_origin:
+            if direction is not None:
+                errs.append(f'{plabel}: wiki-origin placement direction must be null, got {direction!r}')
+        elif direction not in DIRECTIONS:
+            errs.append(f'{plabel}: direction {direction!r} not in {sorted(DIRECTIONS)}')
         interval = placement.get('spawn_interval_s')
-        if not _is_int(interval) or not (1 <= interval <= 86400):
+        if wiki_origin:
+            if interval is not None:
+                errs.append(f'{plabel}: wiki-origin placement spawn_interval_s must be null, got {interval!r}')
+        elif not _is_int(interval) or not (1 <= interval <= 86400):
             errs.append(f'{plabel}: spawn_interval_s {interval!r} not an int in 1..86400')
+        radius = placement.get('spawn_radius')
+        if wiki_origin:
+            if radius is not None:
+                errs.append(f'{plabel}: wiki-origin placement spawn_radius must be null, got {radius!r}')
+        elif not _is_int(radius) or radius < 0:
+            errs.append(f'{plabel}: spawn_radius {radius!r} not a non-negative int')
 
     provenance = candidate.get('provenance') or {}
     if not isinstance(provenance, dict) or not (1 <= len(provenance) <= 2) \
@@ -206,15 +236,53 @@ def candidate_errors(candidate, index):
                 errs.append(f'{olabel}: duplicate offer tuple {offer_tuple!r} within candidate')
             offer_tuples.add(offer_tuple)
 
-    for i, row in enumerate(candidate.get('arbitration') or []):
+    for i, row in enumerate(arbitration_rows):
         alabel = f'{label}.arbitration[{i}]'
-        if row.get('rule') != 'WIKI_ARBITER':
-            errs.append(f"{alabel}: rule {row.get('rule')!r} != 'WIKI_ARBITER'")
+        rule = row.get('rule')
         chosen = row.get('chosen')
-        if chosen not in ('canary', 'crystal'):
-            errs.append(f'{alabel}: chosen {chosen!r} not in canary/crystal')
-        elif chosen not in provenance:
-            errs.append(f'{alabel}: chosen {chosen!r} is not one of this candidate\'s provenance sources')
+        fact = row.get('fact')
+        if rule == 'WIKI_ARBITER':
+            if chosen not in ('canary', 'crystal'):
+                errs.append(f'{alabel}: chosen {chosen!r} not in canary/crystal')
+            elif chosen not in provenance:
+                errs.append(f'{alabel}: chosen {chosen!r} is not one of this candidate\'s provenance sources')
+        elif rule == 'WIKI_POSITION':
+            if chosen != 'wiki':
+                errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")
+            if fact != 'placements':
+                errs.append(f"{alabel}: fact {fact!r} != 'placements' for rule {rule!r}")
+            if len(wiki_placements) != 1:
+                errs.append(f"{alabel}: rule 'WIKI_POSITION' requires exactly one wiki-origin "
+                             f"placement, found {len(wiki_placements)}")
+            if candidate.get('wiki') is None:
+                errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
+        elif rule == 'WIKI_CONFIRMED':
+            if chosen != 'wiki':
+                errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")
+            if fact != 'placements':
+                errs.append(f"{alabel}: fact {fact!r} != 'placements' for rule {rule!r}")
+            if placements:
+                errs.append(f"{alabel}: rule 'WIKI_CONFIRMED' requires an empty placements list, "
+                             f"found {len(placements)}")
+            if candidate.get('wiki') is None:
+                errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
+        elif rule in ('WIKI_BASE_NAME', 'WIKI_SPELLING'):
+            if chosen != 'wiki':
+                errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")
+            if fact != 'identity':
+                errs.append(f"{alabel}: fact {fact!r} != 'identity' for rule {rule!r}")
+            if len(provenance) != 1:
+                errs.append(f"{alabel}: rule {rule!r} requires a single-source candidate, "
+                             f"provenance has {sorted(provenance)}")
+            if candidate.get('wiki') is None:
+                errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
+        else:
+            errs.append(f"{alabel}: rule {rule!r} not in "
+                         f"['WIKI_ARBITER', 'WIKI_BASE_NAME', 'WIKI_CONFIRMED', 'WIKI_POSITION', "
+                         f"'WIKI_SPELLING']")
+
+    if wiki_placements and not any(row.get('rule') == 'WIKI_POSITION' for row in arbitration_rows):
+        errs.append(f'{label}: wiki-origin placement present without a WIKI_POSITION arbitration row')
 
     left_out_keywords = set()
     for i, row in enumerate(candidate.get('left_out') or []):

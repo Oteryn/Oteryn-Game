@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/intense_healing",
+      "revision": "spell-p2-r1"
+    },
+    "name": "Intense Healing",
+    "carrier": "instant",
+    "words": "exura gran",
+    "reference_spell_id": 2,
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "exalted_monk",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 20,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 70,
+      "soul": 0
+    },
+    "cooldown_ms": 1000,
+    "groups": [
+      {
+        "group": "healing",
+        "cooldown_ms": 1000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "base_power": 120,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/intense_healing",
+        "revision": "spell-p2-r1"
+      }
+    }
+  }
+}

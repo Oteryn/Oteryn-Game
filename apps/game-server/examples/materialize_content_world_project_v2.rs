@@ -73,21 +73,21 @@ const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "9e46c99a1875338fb83468c517261751e08ec437ac097ebf994d1070436b8766";
+const NPC_STAGED_SHA256: &str = "13e37595332b466e0b0dcda0a1648aeda010d3453b937522b70b5704da077bf4";
 const NPC_STAGE_TOOL_SHA256: &str =
-    "547378f64d9d266c42ce2b0aa32706b0259e4d6e268834e4b2c20a0e7f75b61c";
+    "8c519ad2b42fb7bdcffb70f1652f30a3a14bcba89e8319e89d4aa4d9775c8d87";
 const NPC_CANDIDATES_SHA256: &str =
-    "a45b016e050f21eab69972ca2c17f90b632713ec866657b930ef9103d4663e63";
+    "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2";
 const NPC_WIKI_SNAPSHOT_SHA256: &str =
-    "e8a040340f66036578cf275a37cd799ed11edb6e44fbadac2ddc20bdb8a9fb6f";
+    "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42";
 const NPC_ITEM_MAP_SHA256: &str =
     "83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a";
-const NPC_WIKI_REVISION: &str = "tibiawiki-npc-e8a040340f660365";
+const NPC_WIKI_REVISION: &str = "tibiawiki-npc-52f87d29eddd1a4e";
 const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
-const NPC_COUNT: usize = 983;
-const NPC_RECORDS: usize = 1966;
-const NPC_DECLARATIONS: usize = 1325;
-const NPC_BINDINGS: usize = 2035;
+const NPC_COUNT: usize = 1093;
+const NPC_RECORDS: usize = 2186;
+const NPC_DECLARATIONS: usize = 1456;
+const NPC_BINDINGS: usize = 2281;
 const CREATURE_COUNT: usize = 1318;
 const CREATURE_RECORDS: usize = 18336;
 const CREATURE_PROFILES: usize = 17369;
@@ -1167,7 +1167,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         return Err("staged NPC admission counts drifted".into());
     }
     let import = ImportBatch {
-        batch_id: "g4-npc-wave-a-tibiawiki-r1".to_owned(),
+        batch_id: "g4-npc-wave-a-tibiawiki-r2".to_owned(),
         source_repository: "tibia.fandom.com".to_owned(),
         source_revision: NPC_WIKI_REVISION.to_owned(),
         source_artifact_sha256: NPC_WIKI_SNAPSHOT_SHA256.to_owned(),
@@ -1175,7 +1175,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         source_generation_profile: "OTERYN_NPC_FANDOM_SNAPSHOT/v1".to_owned(),
         importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
         mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
-        mapper_revision: "npc-admission-r1".to_owned(),
+        mapper_revision: "npc-admission-r2".to_owned(),
         mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
         reimport_states: Vec::new(),
@@ -1270,7 +1270,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-npc-wave-a-r1".to_owned(),
+                project_revision: "g4-npc-wave-a-r2".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),
