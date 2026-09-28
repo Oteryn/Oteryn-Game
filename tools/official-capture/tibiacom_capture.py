@@ -11,14 +11,14 @@ facts (a section, a heading/anchor reference, a fact key and a value of at most 
 kept only when it carries a factual signal -- a number, a key/value pattern or a named control
 key -- and capped per section).
 
-    python3 tibiacom_capture.py fetch --out imports/official/tibia-com/2026-09-28
+    python3 tibiacom_capture.py fetch --out imports/official/tibia-com
     python3 tibiacom_capture.py verify imports/official/tibia-com/2026-09-28
     python3 tibiacom_capture.py verify-root imports/official/tibia-com
     python3 tibiacom_capture.py check-immutability --base <sha> --head <sha>
     python3 tibiacom_capture.py self-test
 
-Manual sections captured (docs.tibia.com/gameguides/?subtopic=manual&section=<name>):
-controls, characters, combat, world, controls_trading, starting. Only an HTTP 200 response is
+Manual sections captured (www.tibia.com/gameguides/?subtopic=manual&section=<name>):
+all sections linked from the manual's Contents page, in its displayed order. Only an HTTP 200 response is
 accepted for any page; anything else aborts the whole `fetch` run before writing output.
 
 Spell library (S15, #1077): if `tools/content-schema/spell-authoring/tibiacom_spells.py` exists on
@@ -46,7 +46,13 @@ from pathlib import Path
 SNAPSHOT_PREFIX = 'imports/official/tibia-com/'
 
 MANUAL_URL = 'https://www.tibia.com/gameguides/?subtopic=manual&section={section}'
-MANUAL_SECTIONS = ('controls', 'characters', 'combat', 'world', 'controls_trading', 'starting')
+MANUAL_SECTIONS = (
+    'introduction', 'starting', 'interface', 'controls', 'controls_communication',
+    'controls_trading', 'characters', 'world', 'combat', 'magic', 'quests',
+    'achievements', 'houses', 'guilds', 'store', 'products', 'accounts', 'support',
+    'forum',
+)
+MANUAL_SECTIONS_V1 = ('controls', 'characters', 'combat', 'world', 'controls_trading', 'starting')
 SPELL_LIBRARY_URL = 'https://www.tibia.com/library/?subtopic=spells'
 SPELL_MODULE_PATH = Path(__file__).resolve().parents[2] / 'tools/content-schema/spell-authoring/tibiacom_spells.py'
 SPELL_PENDING = 'PENDING_1077'
@@ -55,8 +61,10 @@ USER_AGENT = 'OterynContentResearch/1.0 (+https://github.com/Oteryn/Oteryn-Game)
 REQUEST_DELAY_SECONDS = 2
 REQUEST_TIMEOUT_SECONDS = 30
 
-MANIFEST_SCHEMA = 'OTERYN_TIBIACOM_CAPTURE_MANIFEST/v1'
-FACTS_SCHEMA = 'OTERYN_TIBIACOM_CAPTURE_FACTS/v1'
+MANIFEST_SCHEMA_V1 = 'OTERYN_TIBIACOM_CAPTURE_MANIFEST/v1'
+FACTS_SCHEMA_V1 = 'OTERYN_TIBIACOM_CAPTURE_FACTS/v1'
+MANIFEST_SCHEMA = 'OTERYN_TIBIACOM_CAPTURE_MANIFEST/v2'
+FACTS_SCHEMA = 'OTERYN_TIBIACOM_CAPTURE_FACTS/v2'
 MANIFEST_KEYS = {'schema', 'captured_at', 'pages', 'spells'}
 MANIFEST_PAGE_KEYS = {'section', 'url', 'fetched_at', 'http_status', 'sha256', 'visible_text_chars'}
 FACTS_DOC_KEYS = {'schema', 'captured_at', 'facts'}
@@ -85,7 +93,7 @@ PER_FACT_JSON_OVERHEAD_BYTES = 64
 # Absolute bounds that do not depend on the snapshot's own self-reported visible_text_chars
 # (P2 r4121271445): inflating that claim must not be able to widen the ratio-based allowance
 # without limit. A per-page cap, plus a fixed budget sized off the real fact caps (not off
-# anything the snapshot itself asserts): 6 manual sections * 40 facts/section * ~400 B/fact, and a
+# anything the snapshot itself asserts): all manual sections * 40 facts/section * ~400 B/fact, and a
 # separate spell-library allowance of 600 facts * ~400 B/fact, only counted when spells=="captured".
 MAX_VISIBLE_TEXT_CHARS_PER_PAGE = 200_000
 ABSOLUTE_FACT_SIZE_ESTIMATE_BYTES = 400
@@ -95,6 +103,8 @@ SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
 ACCEPTED_HTTP_STATUS = 200
 # Strict match on what utc_now() produces (P2 r4120883679): an ISO-8601 UTC timestamp ending in Z.
 TIMESTAMP_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
+SNAPSHOT_DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+SNAPSHOT_RUN_RE = re.compile(r'^\d{4}-\d{2}-\d{2}-\d{6}Z$')
 MAX_FETCH_RUN_SECONDS = 3600
 SYMLINK_MODE = '120000'
 
@@ -153,6 +163,22 @@ def parse_utc_timestamp(value):
         return datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
     except ValueError:
         return None
+
+
+def parse_snapshot_directory_name(name):
+    """Accept a legacy date or a unique UTC capture-run timestamp."""
+    if SNAPSHOT_DATE_RE.fullmatch(name):
+        try:
+            return date.fromisoformat(name), None
+        except ValueError:
+            pass
+    if SNAPSHOT_RUN_RE.fullmatch(name):
+        try:
+            run = datetime.strptime(name, '%Y-%m-%d-%H%M%SZ').replace(tzinfo=timezone.utc)
+            return run.date(), run
+        except ValueError:
+            pass
+    return None, None
 
 
 def _reject_duplicate_keys(pairs):
@@ -335,6 +361,17 @@ def extract_facts(section, body):
     return facts
 
 
+def fit_facts_to_page(facts, visible_chars):
+    """Keep the ordered extraction inside verify's per-page 25% text bound."""
+    kept = list(facts)
+    budget = visible_chars * FACT_TO_VISIBLE_TEXT_RATIO_LIMIT
+    field_chars = lambda fact: len(fact['value']) + len(fact['key']) + len(fact['anchor'])
+    total = sum(field_chars(fact) for fact in kept)
+    while kept and total > budget:
+        total -= field_chars(kept.pop())
+    return kept
+
+
 def fetch_url(url):
     """Return (status, raw_bytes, final_url) -- the exact response body, undecoded
     (P2 r4120758054), and the URL the response actually came from. `urlopen` follows redirects
@@ -391,6 +428,12 @@ def cmd_fetch(out_dir):
     # Stamped once, before any request, so every page's fetched_at is >= captured_at
     # (P2 r4120883679) -- this run takes seconds, nowhere near MAX_FETCH_RUN_SECONDS.
     captured_at = utc_now()
+    if out_dir.name == 'tibia-com':
+        out_dir = out_dir / captured_at.replace('T', '-').replace(':', '')
+    if out_dir.exists():
+        print(f'tibiacom_capture: output directory {out_dir} already exists; snapshots are '
+              'immutable, so choose a fresh capture-run directory.', file=sys.stderr)
+        return 2
     pages = []
     facts = []
     for index, section in enumerate(MANUAL_SECTIONS):
@@ -401,10 +444,16 @@ def cmd_fetch(out_dir):
         if result is None:
             return 2
         status, raw, body = result
+        visible_chars = visible_text_length(body)
         pages.append({'section': section, 'url': url, 'fetched_at': utc_now(), 'http_status': status,
                       'sha256': hashlib.sha256(raw).hexdigest(),
-                      'visible_text_chars': visible_text_length(body)})
-        facts.extend(extract_facts(section, body))
+                      'visible_text_chars': visible_chars})
+        page_facts = fit_facts_to_page(extract_facts(section, body), visible_chars)
+        if not page_facts:
+            print(f'tibiacom_capture: manual section {section!r} has no facts within the '
+                  'per-page text bound; aborting without writing output.', file=sys.stderr)
+            return 2
+        facts.extend(page_facts)
 
     spell_module = load_spell_module()
     if spell_module is None:
@@ -438,7 +487,7 @@ def cmd_fetch(out_dir):
                 spell_facts += 1
             spells = 'captured'
 
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=False)
 
     manifest = {'schema': MANIFEST_SCHEMA, 'captured_at': captured_at, 'pages': pages, 'spells': spells}
     facts_doc = {'schema': FACTS_SCHEMA, 'captured_at': captured_at, 'facts': facts}
@@ -478,15 +527,12 @@ def verify_snapshot(directory):
         errors.append(f'{directory}: snapshot directory must contain exactly {sorted(SNAPSHOT_FILENAMES)}, '
                       f'found extra: {extra_files}')
 
-    # The directory name is the snapshot's provenance date: a real calendar date, equal to
-    # captured_at's date part (P2 r4121095570). Checked before JSON parsing so it applies even to
-    # an otherwise-malformed snapshot.
-    dir_date = None
-    try:
-        dir_date = date.fromisoformat(directory.name)
-    except ValueError:
+    # Legacy snapshots use their UTC date; later runs on the same date use the exact UTC
+    # capture timestamp so an already-committed date directory remains immutable.
+    dir_date, dir_run = parse_snapshot_directory_name(directory.name)
+    if dir_date is None:
         errors.append(f'{directory}: directory name {directory.name!r} must be a real YYYY-MM-DD '
-                      f'calendar date')
+                      'calendar date or YYYY-MM-DD-HHMMSSZ UTC capture timestamp')
 
     try:
         manifest = load_json_no_duplicates(manifest_path.read_text(encoding='utf-8'))
@@ -511,8 +557,16 @@ def verify_snapshot(directory):
     if extra_facts_doc_keys:
         errors.append(f'{directory}: facts.json has unexpected top-level key(s) {sorted(extra_facts_doc_keys)}')
 
-    if manifest.get('schema') != MANIFEST_SCHEMA:
-        errors.append(f'{directory}: manifest.json schema must be {MANIFEST_SCHEMA!r}')
+    manifest_schema = manifest.get('schema')
+    if manifest_schema == MANIFEST_SCHEMA_V1:
+        required_sections = MANUAL_SECTIONS_V1
+        expected_facts_schema = FACTS_SCHEMA_V1
+    else:
+        required_sections = MANUAL_SECTIONS
+        expected_facts_schema = FACTS_SCHEMA
+        if manifest_schema != MANIFEST_SCHEMA:
+            errors.append(f'{directory}: manifest.json schema must be {MANIFEST_SCHEMA_V1!r} '
+                          f'or {MANIFEST_SCHEMA!r}')
     spells = manifest.get('spells')
     if spells not in (SPELL_PENDING, 'captured'):
         errors.append(f'{directory}: manifest.json "spells" must be {SPELL_PENDING!r} or "captured", got {spells!r}')
@@ -534,6 +588,9 @@ def verify_snapshot(directory):
     if dir_date is not None and captured_dt is not None and dir_date.isoformat() != manifest_captured_at[:10]:
         errors.append(f'{directory}: directory name {directory.name!r} must equal the date part '
                       f'of captured_at {manifest_captured_at!r}')
+    if dir_run is not None and captured_dt is not None and dir_run != captured_dt:
+        errors.append(f'{directory}: directory name {directory.name!r} must equal the UTC '
+                      f'captured_at timestamp {manifest_captured_at!r}')
 
     pages = manifest.get('pages')
     pages_by_section = {}
@@ -586,7 +643,7 @@ def verify_snapshot(directory):
         seen_urls.add(page.get('url'))
 
     # Completeness (P2 r4120578800): every required manual section, at its exact URL, HTTP 200.
-    for section in MANUAL_SECTIONS:
+    for section in required_sections:
         page = pages_by_section.get(section)
         if page is None:
             errors.append(f'{directory}: manifest.json is missing required manual section {section!r}')
@@ -594,7 +651,7 @@ def verify_snapshot(directory):
         expected_url = MANUAL_URL.format(section=section)
         if page.get('url') != expected_url:
             errors.append(f'{directory}: manifest page {section!r} url is {page.get("url")!r}, expected {expected_url!r}')
-    extra_manual_like = set(pages_by_section) - set(MANUAL_SECTIONS) - {'spells'}
+    extra_manual_like = set(pages_by_section) - set(required_sections) - {'spells'}
     if extra_manual_like:
         errors.append(f'{directory}: manifest.json has unexpected page section(s) {sorted(extra_manual_like)}')
     if spells == 'captured':
@@ -607,8 +664,8 @@ def verify_snapshot(directory):
     elif 'spells' in pages_by_section:
         errors.append(f'{directory}: manifest.json has a "spells" page but "spells" is {spells!r}, not "captured"')
 
-    if facts_doc.get('schema') != FACTS_SCHEMA:
-        errors.append(f'{directory}: facts.json schema must be {FACTS_SCHEMA!r}')
+    if facts_doc.get('schema') != expected_facts_schema:
+        errors.append(f'{directory}: facts.json schema must be {expected_facts_schema!r}')
     facts = facts_doc.get('facts')
     if not isinstance(facts, list):
         errors.append(f'{directory}: facts.json "facts" must be a list')
@@ -675,7 +732,7 @@ def verify_snapshot(directory):
 
     # Every required manual section (and a "captured" spell library) needs at least one fact
     # (P2 r4120578800).
-    for section in MANUAL_SECTIONS:
+    for section in required_sections:
         if section in pages_by_section and fact_count_by_section.get(section, 0) < 1:
             errors.append(f'{directory}: manual section {section!r} has zero facts')
     if spells == 'captured' and fact_count_by_section.get('spells', 0) < 1:
@@ -733,7 +790,7 @@ def verify_snapshot(directory):
     # on visible_text_chars or any other number the snapshot itself asserts, so inflating that
     # claim cannot widen it. Sized off the real fact caps (FACTS_PER_SECTION_CAP/SPELL_RECORDS_CAP)
     # and a realistic per-fact JSON size, not off anything self-reported.
-    absolute_budget_bytes = ABSOLUTE_MANUAL_FACTS_BUDGET_BYTES
+    absolute_budget_bytes = len(required_sections) * FACTS_PER_SECTION_CAP * ABSOLUTE_FACT_SIZE_ESTIMATE_BYTES
     if spells == 'captured':
         absolute_budget_bytes += ABSOLUTE_SPELL_FACTS_BUDGET_BYTES
     if raw_facts_bytes > absolute_budget_bytes:
@@ -757,8 +814,8 @@ def cmd_verify(directories):
 
 
 def verify_snapshot_root(root_dir):
-    """Every entry directly under the tibia-com snapshot root is README.md or a dated directory
-    (a real YYYY-MM-DD calendar date name) -- P2 r4121271454. The "Verify every committed snapshot
+    """Every entry directly under the tibia-com snapshot root is README.md or a capture directory
+    (a real YYYY-MM-DD date or YYYY-MM-DD-HHMMSSZ UTC run) -- P2 r4121271454. The "Verify every committed snapshot
     directory" step only globs directories, so this is what actually rejects a stray root-level
     file like raw.html; `check-immutability` also rejects one, but only within the current PR's
     diff, not the full committed state.
@@ -768,8 +825,9 @@ def verify_snapshot_root(root_dir):
         return errors  # no snapshots committed yet; nothing to check
     for entry in sorted(root_dir.iterdir()):
         if entry.is_dir():
-            if not is_real_calendar_date(entry.name):
-                errors.append(f'{root_dir}: directory {entry.name!r} must be a real YYYY-MM-DD calendar date')
+            if not is_valid_snapshot_directory(entry.name):
+                errors.append(f'{root_dir}: directory {entry.name!r} must be a real YYYY-MM-DD calendar date '
+                              'or YYYY-MM-DD-HHMMSSZ UTC capture timestamp')
         elif entry.name not in ROOT_ALLOWED_FILENAMES:
             errors.append(f'{root_dir}: unexpected entry {entry.name!r} directly under the snapshot '
                           f'root (only {sorted(ROOT_ALLOWED_FILENAMES)} or a dated directory allowed)')
@@ -801,12 +859,8 @@ def classify_snapshot_path(path):
     return ('dated', f'{SNAPSHOT_PREFIX}{dir_name}', dir_name)
 
 
-def is_real_calendar_date(name):
-    try:
-        date.fromisoformat(name)
-        return True
-    except ValueError:
-        return False
+def is_valid_snapshot_directory(name):
+    return parse_snapshot_directory_name(name)[0] is not None
 
 
 def parse_raw_diff_line(line):
@@ -836,11 +890,11 @@ def find_immutability_violations(diff_lines, exists_at_base):
     the base commit. Returns one violation string per offending line: a symlink mode (120000) on
     either side of the change; a root-level path (directly under `SNAPSHOT_PREFIX`, no
     subdirectory) whose filename is not in `ROOT_ALLOWED_FILENAMES`; a path inside a subdirectory
-    whose name is not a real calendar date; any `A`, `M`, `D`, `R` or `C` whose affected path's
+    whose name is not a valid capture date/run; any `A`, `M`, `D`, `R` or `C` whose affected path's
     dated directory already existed at base -- including an `A` that only adds a new file inside
     an already-committed directory; or whose filename is not in `SNAPSHOT_FILENAMES`, even inside
     a brand-new dated directory. Only `manifest.json`/`facts.json`, as regular files, inside a
-    brand-new, real-calendar-date-named dated directory are allowed (plus README.md at the root).
+    brand-new, valid capture-date/run directory are allowed (plus README.md at the root).
     """
     violations = []
     for line in diff_lines:
@@ -866,9 +920,9 @@ def find_immutability_violations(diff_lines, exists_at_base):
                     break
                 continue  # README.md may change freely; it isn't a dated snapshot
             _, dated_dir, dir_name = classified
-            if not is_real_calendar_date(dir_name):
+            if not is_valid_snapshot_directory(dir_name):
                 violations.append(f'{status}\t{path} (directory name {dir_name!r} must be a real '
-                                  f'YYYY-MM-DD calendar date)')
+                                  f'YYYY-MM-DD calendar date or YYYY-MM-DD-HHMMSSZ UTC capture timestamp)')
                 break
             if exists_at_base(dated_dir):
                 violations.append(f'{status}\t{path} (dated directory {dated_dir}/ exists at the PR base)')
@@ -920,7 +974,7 @@ or key names in it at all, and must not be copied into a fact.</p>
 
 
 def _valid_snapshot_documents():
-    """A manifest/facts pair with all six manual sections, each with one qualifying fact."""
+    """A manifest/facts pair with all manual sections, each with one qualifying fact."""
     pages = []
     facts = []
     # One shared timestamp for captured_at and every page's fetched_at (P2 r4120883679): fetched_at
@@ -970,6 +1024,8 @@ def self_test():
     truncated = extract_facts('world', long_html)
     assert len(truncated) == 2, truncated  # heading + the one over-long fragment
     assert len(truncated[-1]['value']) == FACT_VALUE_LIMIT
+    assert fit_facts_to_page(truncated, 100) == truncated[:1]
+    assert fit_facts_to_page(truncated, 1) == []
 
     assert extract_facts('world', '<p>orphan block mentions Ctrl to confirm.</p>')[0]['anchor'] == 'root'
     assert extract_facts('world', '<p>ordinary sentence with no signal at all</p>') == []
@@ -1075,6 +1131,9 @@ def self_test():
     exists_at_base = lambda dated_dir: dated_dir in existing_at_base
     assert find_immutability_violations(
         [_raw('A', f'{SNAPSHOT_PREFIX}2026-10-05/manifest.json', old_mode='000000')], exists_at_base) == []
+    assert find_immutability_violations(
+        [_raw('A', f'{SNAPSHOT_PREFIX}2026-10-05-123456Z/manifest.json', old_mode='000000')],
+        exists_at_base) == []
     assert len(find_immutability_violations(
         [_raw('A', f'{SNAPSHOT_PREFIX}2026-09-28/extra.json', old_mode='000000')], exists_at_base)) == 1
     assert len(find_immutability_violations(
@@ -1108,9 +1167,11 @@ def self_test():
     assert classify_snapshot_path(f'{SNAPSHOT_PREFIX}2026-09-28/manifest.json') == (
         'dated', f'{SNAPSHOT_PREFIX}2026-09-28', '2026-09-28')
     assert classify_snapshot_path('unrelated/path.txt') is None
-    assert is_real_calendar_date('2026-09-28')
-    assert not is_real_calendar_date('not-a-date')
-    assert not is_real_calendar_date('2026-02-30')
+    assert is_valid_snapshot_directory('2026-09-28')
+    assert is_valid_snapshot_directory('2026-09-28-160207Z')
+    assert not is_valid_snapshot_directory('not-a-date')
+    assert not is_valid_snapshot_directory('2026-02-30')
+    assert not is_valid_snapshot_directory('2026-09-28-250207Z')
     assert find_immutability_violations(
         [_raw('M', f'{SNAPSHOT_PREFIX}README.md')], exists_at_base) == []
     assert len(find_immutability_violations(
@@ -1155,7 +1216,7 @@ def self_test():
         errors = verify_snapshot(directory)
         assert any('http_status' in e and '200' in e for e in errors), errors
 
-        # Completeness: all six sections required, at their exact URL (P2 r4120578800).
+        # Completeness: all manual sections required, at their exact URL (P2 r4120578800).
         manifest = copy.deepcopy(base_manifest)
         manifest['pages'].pop()
         _write_snapshot(directory, manifest, base_facts)
@@ -1471,7 +1532,7 @@ def self_test():
         _write_snapshot(directory, base_manifest, base_facts)
         assert verify_snapshot(directory) == [], verify_snapshot(directory)
 
-        # The directory name must be a real calendar date matching captured_at (P2 r4121095570).
+        # Legacy date and exact UTC run names must match captured_at (P2 r4121095570).
         not_a_date_dir = Path(tmp) / 'not-a-date'
         not_a_date_dir.mkdir()
         _write_snapshot(not_a_date_dir, base_manifest, base_facts)
@@ -1489,6 +1550,20 @@ def self_test():
         _write_snapshot(mismatched_date_dir, base_manifest, base_facts)  # captured_at is today
         errors = verify_snapshot(mismatched_date_dir)
         assert any('must equal the date part of captured_at' in e for e in errors), errors
+
+        run_name = base_manifest['captured_at'].replace('T', '-').replace(':', '')
+        run_dir = Path(tmp) / run_name
+        run_dir.mkdir()
+        _write_snapshot(run_dir, base_manifest, base_facts)
+        assert verify_snapshot(run_dir) == [], verify_snapshot(run_dir)
+        assert cmd_fetch(run_dir) == 2  # never overwrite an existing snapshot
+
+        next_second = parse_utc_timestamp(base_manifest['captured_at']) + timedelta(seconds=1)
+        wrong_run_dir = Path(tmp) / next_second.strftime('%Y-%m-%d-%H%M%SZ')
+        wrong_run_dir.mkdir()
+        _write_snapshot(wrong_run_dir, base_manifest, base_facts)
+        errors = verify_snapshot(wrong_run_dir)
+        assert any('must equal the UTC captured_at timestamp' in e for e in errors), errors
 
         # Generic no-smuggled-text guard: verify checks facts.json's RAW byte size on disk, not
         # the parsed form -- padding that appears in no field must still fail.
