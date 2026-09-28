@@ -1,0 +1,86 @@
+# OTV2-20260928-reference-first-player-death-decision
+
+```yaml
+task_id: OTV2-20260928-reference-first-player-death-decision
+title: "Reference first player death decision (D58-D68)"
+mode: CONTRACT
+status: implementing
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/gifted-rubin-a0axzx
+issue: 162
+pr: null
+base_sha: 0a3d795992a68f57c595baf3f5ced87d1224a60c
+head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
+owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
+created_at: 2026-09-28
+updated_at: 2026-09-28
+execution_policy: continuous_progress
+owned_paths:
+  - docs/architecture/reviews/OTERYN_GAME_REFERENCE_FIRST_PLAYER_DEATH_DECISION_2026-09-28.md
+  - docs/architecture/OTERYN_REFERENCE_DEATH_XP_SPAN_OWNER_BASELINE_2026-09-09.md   # amendment pointer only
+  - docs/agents/tasks/active/OTV2-20260928-reference-first-player-death-decision.md
+  - docs/agents/tasks/active/OTV2-20260928-vsl-combat-resource-rows-decision.md   # archive move after #1123
+  - docs/agents/tasks/archive/OTV2-20260928-vsl-combat-resource-rows-decision.md
+public_contracts: []
+depends_on: []
+blocks: []
+cross_repository_coordination_id: null
+external_repositories: []
+```
+
+## Outcome
+
+This task records the durable text for the Reference first player death decision: owner decisions
+D58-D60 and D62-D68 (#162 comments 5871032954 and 5871151324), updated for Premium D76 (#1118). It
+defines the trigger, the death occurrence, one Character death transaction (XP loss, blessings,
+Amulet of Loss, lost-item set, respawn position), per-item DUR-03 drops, respawn and the delivery
+children DEATH-1 to DEATH-4. It amends difference 1 of the 2026-09-09 death XP baseline; difference
+2 stays.
+
+No runtime, migration, protocol or registry change.
+
+## Architecture and source of truth
+
+- `PROVEN`:
+  - `OTERYN_REFERENCE_DEATH_XP_SPAN_OWNER_BASELINE_2026-09-09.md`;
+  - `domain/progression.rs` `ApplyDeathExperienceLoss`;
+  - the Premium activation decision (#1118) and the GAME-AI first creature slice (#1110, D54);
+  - the Global sources in #162 5871032954 and the tibia.com snapshot (#1125).
+- `UNKNOWN`: the Newhaven low-level exemption at the target date; temple positions (content).
+
+## High-risk authority/recovery qualification
+
+Not applicable. This decision selects gameplay rules and routes the durable parts to existing
+Character (P03 session-generation fence) and DUR-03 TRANSFER paths; each DEATH child carries its
+own qualification when allocated. The death occurrence is the idempotency key, and the restart rule
+never duplicates or doubly loses an item.
+
+## Acceptance criteria
+
+- [ ] The decision document is on an exact frozen head with passing validators.
+- [ ] Independent exact-head review.
+- [ ] Protected Merge Queue integration.
+
+## Excluded scope
+
+- Runtime code, the calculator change, blessing prices, PvP death, Death Redemption, charms.
+
+## Validation
+
+- `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
+- `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
+
+## Context checkpoint
+
+```yaml
+last_progress: authored
+status: implementing
+branch: claude/gifted-rubin-a0axzx
+pr: null
+owner_action_required: null
+blocker: null
+next_action: open the PR, bind this record to it, freeze and route one external review
+```
