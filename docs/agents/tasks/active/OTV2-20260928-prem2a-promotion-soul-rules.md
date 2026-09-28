@@ -11,7 +11,7 @@ pr: 1171
 allocation_comment: "#162 5878791533 (request), owner-authorized in this window (2026-09-28)"
 base_branch: main
 branch: claude/prem2a-promotion-soul
-base_sha: ccad3111148b2ba3e2be87fb09dc35a160fd4faf  # stacked on PR 1154 (DEATH-1a)
+base_sha: df2dd464ceb97287fea0bdcc717911c4c8ef182c  # main after PR 1154 (DEATH-1a) integrated
 head_sha: null
 owner: "Oteryn: impl domains" (Claude Code)
 created_at: 2026-09-28T21:00:00Z
@@ -21,8 +21,9 @@ owned_paths:
   - apps/game-server/src/domain/premium.rs
   - apps/game-server/src/domain/mod.rs  # one line: pub mod premium;
   - docs/agents/tasks/active/OTV2-20260928-prem2a-promotion-soul-rules.md
+  - docs/agents/tasks/{active -> archive}/OTV2-20260928-death1a-outcome-calculator.md  # closeout of PR 1154
 public_contracts: []
-depends_on: [OTV2-20260928-death1a-outcome-calculator]
+depends_on: []
 blocks: [PREM-2]
 cross_repository_coordination_id: null
 external_repositories: []
