@@ -248,7 +248,7 @@ fn keyword_owned(
     }
 }
 
-/// Sorted (by key) so the base draft already matches the canonical rewrite.
+/// Authored sibling order is matching precedence: the fallback comes last.
 fn dialogue_keywords() -> Vec<ProjectV2DialogueKeyword> {
     vec![
         keyword(
@@ -256,11 +256,6 @@ fn dialogue_keywords() -> Vec<ProjectV2DialogueKeyword> {
             &["cargo", "hold"],
             "We carry crates of spice and cloth.",
             vec![
-                ProjectV2DialogueKeyword {
-                    fallback: true,
-                    reset: true,
-                    ..keyword("other", &[], "I only deal in cargo.", vec![])
-                },
                 ProjectV2DialogueKeyword {
                     only_focus: true,
                     reset: true,
@@ -271,6 +266,11 @@ fn dialogue_keywords() -> Vec<ProjectV2DialogueKeyword> {
                         "Ask about one good for its price.",
                         vec![],
                     )
+                },
+                ProjectV2DialogueKeyword {
+                    fallback: true,
+                    reset: true,
+                    ..keyword("other", &[], "I only deal in cargo.", vec![])
                 },
             ],
         ),
@@ -505,8 +505,8 @@ fn npc_services_round_trip_and_stay_declarative() {
         keywords.iter().map(|k| k.key.as_str()).collect::<Vec<_>>(),
         ["cargo", "trade"]
     );
-    assert!(keywords[0].children[0].fallback && keywords[0].children[0].triggers.is_empty());
-    assert_eq!(keywords[0].children[1].key, "price");
+    assert_eq!(keywords[0].children[0].key, "price");
+    assert!(keywords[0].children[1].fallback && keywords[0].children[1].triggers.is_empty());
     let voices = voices.as_ref().expect("voices");
     assert_eq!(voices.entries.len(), 2);
     assert_eq!(voices.entries[1].mode, ProjectV2SpeechMode::Yell);
@@ -547,10 +547,9 @@ fn offers_and_routes_are_canonicalized() {
 }
 
 #[test]
-fn dialogue_keywords_are_canonicalized() {
+fn dialogue_triggers_are_canonicalized_and_sibling_order_is_kept() {
     let mut changed = draft();
     if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(&mut changed) {
-        keywords.reverse();
         for keyword in keywords.iter_mut() {
             keyword.triggers.reverse();
             for child in keyword.children.iter_mut() {
@@ -558,21 +557,28 @@ fn dialogue_keywords_are_canonicalized() {
             }
         }
     }
-    let reordered = admit(changed).expect("admit reordered dialogue");
+    let reordered = admit(changed).expect("admit reordered triggers");
     let original = admit(draft()).expect("admit dialogue");
     assert_eq!(dialogue(&reordered), dialogue(&original));
-    let (_, keywords, _) = dialogue_fields(&reordered);
+
+    let mut swapped = draft();
+    if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(&mut swapped) {
+        keywords.reverse();
+    }
+    let swapped = admit(swapped).expect("admit swapped siblings");
+    let (_, keywords, _) = dialogue_fields(&swapped);
     assert_eq!(
         keywords.iter().map(|k| k.key.as_str()).collect::<Vec<_>>(),
-        ["cargo", "trade"]
+        ["trade", "cargo"]
     );
+    let (_, keywords, _) = dialogue_fields(&original);
     assert_eq!(
         keywords[0]
             .children
             .iter()
             .map(|child| child.key.as_str())
             .collect::<Vec<_>>(),
-        ["other", "price"]
+        ["price", "other"]
     );
 }
 
@@ -596,7 +602,7 @@ fn dialogue_keywords_admit_the_maximum_depth() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 27] = [
+    let cases: [(&str, &str, Mutation); 28] = [
         (
             "wander without walking",
             "v2 wander requires a walking creature and a positive interval",
@@ -705,7 +711,7 @@ fn each_broken_invariant_is_rejected() {
         ),
         (
             "duplicate dialogue keyword sibling key",
-            "v2 Dialogue keywords are not key sorted and unique",
+            "v2 Dialogue keyword keys are not unique",
             |draft| {
                 if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
                     keywords[1].key = keywords[0].key.clone();
@@ -813,6 +819,15 @@ fn each_broken_invariant_is_rejected() {
                         keyword.triggers.clear();
                         keyword.fallback = true;
                     }
+                }
+            },
+        ),
+        (
+            "top-level dialogue keyword moving up two levels",
+            "v2 Dialogue keyword move_up is out of range",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].move_up = Some(2);
                 }
             },
         ),

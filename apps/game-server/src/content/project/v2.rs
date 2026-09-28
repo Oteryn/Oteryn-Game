@@ -509,8 +509,9 @@ impl ProjectV2Declaration {
     }
 }
 
+/// Sibling order is authored matching precedence (the first matching sibling answers), so only
+/// each node's all-of trigger set is sorted.
 fn canonicalize_v2_dialogue_keywords(keywords: &mut [ProjectV2DialogueKeyword]) {
-    keywords.sort_by(|left, right| left.key.cmp(&right.key));
     for keyword in keywords.iter_mut() {
         keyword.triggers.sort();
         canonicalize_v2_dialogue_keywords(&mut keyword.children);
@@ -1203,7 +1204,8 @@ pub struct ProjectV2DialogueKeyword {
     /// Ends the conversation after replying.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub ungreet: bool,
-    /// Moves the conversation this many keyword levels up after replying.
+    /// Moves the conversation this many keyword levels up after replying; at most the node's
+    /// depth (1 for a top-level keyword).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub move_up: Option<u8>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -1896,9 +1898,13 @@ fn validate_v2_dialogue_keywords(
             "v2 Dialogue keywords have more than one fallback",
         ));
     }
-    if keywords.windows(2).any(|pair| pair[0].key >= pair[1].key) {
+    let mut keys = BTreeSet::new();
+    if !keywords
+        .iter()
+        .all(|keyword| keys.insert(keyword.key.as_str()))
+    {
         return Err(ProjectError::InvalidProject(
-            "v2 Dialogue keywords are not key sorted and unique",
+            "v2 Dialogue keyword keys are not unique",
         ));
     }
     for keyword in keywords {
@@ -1954,7 +1960,7 @@ fn validate_v2_dialogue_keywords(
         }
         if keyword
             .move_up
-            .is_some_and(|levels| levels == 0 || usize::from(levels) > V2_DIALOGUE_MAX_DEPTH)
+            .is_some_and(|levels| levels == 0 || usize::from(levels) > depth)
         {
             return Err(ProjectError::InvalidProject(
                 "v2 Dialogue keyword move_up is out of range",
