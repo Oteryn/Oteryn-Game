@@ -218,6 +218,15 @@ accept_input` is called, because `accept_input` itself tracks no timer identity.
 is bounded per owner cycle under FND-03 §7/§14, the same shape `MovementOwnerTurn` already uses for
 a different input source.
 
+Round 5 correction (owner-authorized): a scheduled revert previously retained only fencing/deadline/
+ordering data, but firing still has to call `prepare`, which needs a concrete *bound* `TransitionKey`
+(evidence below) — nothing said which one restores the object, especially for an arbitrary
+`TRANSFORM`/`RETAG`. Fixed by requiring, fail-closed, that `revert_after_ms` is admissible only on a
+bound transition whose *inverse* is itself authored and bound for the same placement definition, and
+by having the staged commit store that inverse key with the exact expected post-operation state and
+revision `prepare` already computes — so firing never guesses a delta, it replays a specific,
+pre-validated one.
+
 ### Problem
 
 `revert_after` needs *some* value that advances on its own, independent of whether a player ever
@@ -310,6 +319,16 @@ today.
   above): the codebase already has exactly this pattern for a different input source — a bounded
   `max_inputs` batch per invocation, with the caller deciding what to offer next turn — a direct
   precedent for bounding due-timer admission the same way.
+- PROVEN (`apps/game-server/src/world_runtime.rs` `LocalObjectCommand` ~412-419,
+  `LocalObjectOperation` ~397, `transition_for` ~787-796, `prepare` ~973-1055): every prepared
+  mutation is keyed by a concrete, already-*bound* `TransitionKey` — `transition_for` looks it up in
+  `self.transitions` (the map `bind` populated from the `transition_keys` this instance was bound
+  with) and fails the whole binding if it is absent. Firing a revert therefore cannot invoke "the
+  opposite of whatever happened"; it must name one specific bound `TransitionKey` up front.
+  `TransitionBinding` (`apps/game-server/src/content/reference_playable.rs` ~1334-1342) has `key`,
+  `source_state`, `target_state`, `normalized_intent_family` and no `revert_after_ms` field today —
+  nothing currently associates a transition with an inverse, and CW4 shipped without `revert_after`
+  (§4), so this is unimplemented, not merely unbound.
 
 ### Options (minimum real set)
 
@@ -319,8 +338,13 @@ today.
    `excluded_scope` (Foundation/runtime/protocol/registry) and disproportionate to one `revert_after`
    field.
 2. **An FND-03 §10 authoritative timer bound to a monotonic `Deadline` computed from the authored
-   duration (RECOMMENDED).** At commit time — as part of the *same* staged commit as the original
-   `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4, below) — compute `Deadline::after(clock,
+   duration (RECOMMENDED).** `revert_after_ms` is admissible only on a bound transition whose
+   *inverse* — a transition bound on the same runtime instance whose `source_state`/`target_state`
+   are this transition's swapped — is itself authored and bound for the same placement definition;
+   `bind` rejects (`InvalidBinding`) a `revert_after_ms`-carrying transition with no such inverse, so
+   firing never has to guess which delta restores the object (evidence above). At commit time — as
+   part of the *same* staged commit as the original `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03
+   §15.4, below) — compute `Deadline::after(clock,
    Duration::from_millis(revert_after_ms))` from the one clock instance the scope owns (evidence
    above) and register it under an FND-03 §10.1 scheduling key: World/Channel/InstanceId,
    `scope_generation`, the anchor's overlay revision captured now, the `Deadline`, and §10.1's own
@@ -380,13 +404,16 @@ today.
    capacity contract, never a client `LocalObjectCommand` — vs. the record of why 1, 3 and 4 are
    rejected/superseded), including its equal-deadline tie-break (§10.1's own ordinal-plus-sequence,
    not the revert's derived child identity), its atomic pending-removal-before-`accept_input`
-   de-duplication, and bounded per-cycle due-work admission (§7/§14) — all three are bound to
-   existing FND-03 sections, not open design questions. `NO` for the driver's exact wake mechanism,
-   whether `ScopeRuntimeFence` is promoted to a scope-wide instance or a new scope-owned ordinal
-   issuer is introduced, the exact pending-set storage representation, and the concrete
-   timer-capacity/due-batch numeric bounds (FND-03 §14.1: "Concrete numeric limits gate
-   implementation, not this architecture decision" — they belong in
-   `RESOURCE_LIMITS_REGISTRY.json`). Those belong to the owning lane's implementation.
+   de-duplication, bounded per-cycle due-work admission (§7/§14), and the fail-closed bound-inverse
+   precondition on `revert_after_ms` itself (missing inverse ⇒ `InvalidBinding`, never a guessed
+   delta) — all four are bound to existing FND-03 sections or the merged CW4 bind-time model, not
+   open design questions. `NO` for the driver's exact wake mechanism, whether `ScopeRuntimeFence` is
+   promoted to a scope-wide instance or a new scope-owned ordinal issuer is introduced, the exact
+   pending-set storage representation, the exact field/encoding of `revert_after_ms` on
+   `TransitionBinding` or its content source, and the concrete timer-capacity/due-batch numeric
+   bounds (FND-03 §14.1: "Concrete numeric limits gate implementation, not this architecture
+   decision" — they belong in `RESOURCE_LIMITS_REGISTRY.json`). Those belong to the owning lane's
+   implementation.
 2. **What is blocked?** CW4 cannot ship `revert_after` at all (coordinator direction in §4 already
    withholds it) until some owner, input shape and commit path is named; naming nothing leaves the
    `EVIDENCE_GAP` open indefinitely, and building an ad hoc timer without the FND-03 binding would
@@ -402,9 +429,10 @@ today.
    which §4 already excludes).
 5. **What is deliberately not decided?** The exact wake mechanism inside the scope's step driver, the
    exact way `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` is made scope-wide, the exact storage
-   representation of the pending-timer set, and the concrete timer-capacity and per-cycle due-batch
-   numeric bounds in `RESOURCE_LIMITS_REGISTRY.json`. Those belong to the owning lane's
-   implementation, not this architecture delta.
+   representation of the pending-timer set, the exact field/encoding of `revert_after_ms` on
+   `TransitionBinding` or its content-authoring source, and the concrete timer-capacity and
+   per-cycle due-batch numeric bounds in `RESOURCE_LIMITS_REGISTRY.json`. Those belong to the owning
+   lane's implementation, not this architecture delta.
 
 ### Exact delta the owning lane must provide
 
@@ -413,6 +441,17 @@ Owner: the scope-runtime/Foundation carrier lane behind `ChannelRuntimeV1`/`Inst
 lane (`apps/game-server/src/world_runtime.rs`) that owns `LocalObjectRuntime`. This document does
 not implement it; it is CANDIDATE and not owner-accepted.
 
+- Add `revert_after_ms` as an optional field on the authored transition (`TransitionBinding` or its
+  content-authoring source, evidence above), and validate it fail-closed inside `bind`
+  (`apps/game-server/src/world_runtime.rs` ~590-750): for every bound transition that carries
+  `revert_after_ms`, require that `self.transitions` also contains another bound transition for the
+  same `definition` whose `source_state` equals this one's `target_state` and whose `target_state`
+  equals this one's `source_state` (the general "inverse" — this covers TRANSFORM a→b needing bound
+  b→a, CREATE needing the bound REMOVE of the same anchor/def, REMOVE needing the bound CREATE, and
+  RETAG needing the reverse RETAG, without a new per-operation-kind check, since RETAG's own
+  same-collision-class constraint is already enforced elsewhere in CW3's linker). If no such inverse
+  is bound, reject the whole binding with `WorldRuntimeError::InvalidBinding` — never fall back to a
+  guessed or absent revert.
 - Introduce the scope owner's own step driver: one per scope owner (`ChannelRuntimeV1`/
   `InstanceRuntime`), never a per-object or per-revert timer, that wakes at the earliest pending
   `Deadline` and drives that scope's own due reverts forward. Whether it piggybacks on a cadence the
@@ -447,19 +486,28 @@ not implement it; it is CANDIDATE and not owner-accepted.
   anchor, the `Deadline`, and the equal-deadline tie-break — the *scheduling* resolution's own
   `RuntimeExecutionOrdinal` plus a deterministic within-that-resolution sequence, retained in this
   same key (§10.1; not the revert's derived child identity, which stays a separate fire-once/
-  de-duplication identity, as in §3/§4). This state is `scope_generation`-scoped, owned by the same
-  `ChannelRuntimeV1`/`InstanceRuntime` instance as the rest of the overlay; a scope restart is a new
-  instance (corrected evidence above), so it is dropped with no separate cleanup path. Map the
-  capacity failure to `CAPACITY_EXCEEDED` (FND-03 §28) and register the concrete numeric bound in
-  `RESOURCE_LIMITS_REGISTRY.json` per FND-03 §14.1 — that number is not decided here.
+  de-duplication identity, as in §3/§4). Store alongside it the exact inverse `TransitionKey` the
+  bind-time check above already validated, plus the expected post-operation state and overlay
+  revision — `transition.target_state` and `next_revision`, both already computed by this same
+  `prepare` call for the original operation (`apps/game-server/src/world_runtime.rs` ~1040-1054) —
+  so nothing about the revert is derived later, only replayed. This state is
+  `scope_generation`-scoped, owned by the same `ChannelRuntimeV1`/`InstanceRuntime` instance as the
+  rest of the overlay; a scope restart is a new instance (corrected evidence above), so it is
+  dropped with no separate cleanup path. Map the capacity failure to `CAPACITY_EXCEEDED` (FND-03
+  §28) and register the concrete numeric bound in `RESOURCE_LIMITS_REGISTRY.json` per FND-03
+  §14.1 — that number is not decided here.
 - On each driver wake, present admitted due entries (bounded above) as normalized FND-03 §10.2
   authoritative inputs, in their stored (deadline, scheduling ordinal, within-resolution sequence)
   tie-break order: run the pending-removal-before-`accept_input` de-duplication step above, mint the
-  surviving entries' `RuntimeExecutionOrdinal`s via the scope's ordinal issuer, reuse `prepare`'s
-  pure state/footprint-transition logic for each delta, and commit through a scope-authority path
-  (`PreparedMutation::Publish`/`TerminalSemanticOutcome`, `apps/game-server/src/world_runtime.rs`
-  ~1040-1054) — never `apply`/`resume_pending`/`CommandIngress`, which require a live
-  `GameSessionAuthoritySnapshot` this timer does not have (P1, evidence above).
+  surviving entries' `RuntimeExecutionOrdinal`s via the scope's ordinal issuer, then call `prepare`
+  with the entry's stored inverse `TransitionKey` and its stored expected revision as
+  `expected_revision` — reusing `prepare`'s existing stale-precondition checks
+  (`DISPOSITION_STALE_STATE`, `apps/game-server/src/world_runtime.rs` ~988-1013) exactly as they
+  already work for any command, so an object the entry's own fences did not already catch (changed
+  again after this revert was scheduled) is rejected there, never guessed at. Commit through the
+  same scope-authority path (`PreparedMutation::Publish`/`TerminalSemanticOutcome`, ~1040-1054) —
+  never `apply`/`resume_pending`/`CommandIngress`, which require a live `GameSessionAuthoritySnapshot`
+  this timer does not have (P1, evidence above).
 - Cancellation follows FND-03 §10.3 exactly: `scope_generation` changed, the anchor's overlay
   revision no longer matches what was captured at scheduling, or explicit invalidation each discard
   the pending entry without mutating.
@@ -495,6 +543,19 @@ not implement it; it is CANDIDATE and not owner-accepted.
   other overlay operation (the existing `PreparedMutation::Publish` path); this is exactly the C3
   fixed-footprint boundary in §4 — only the anchor's pre-authored, bind-time-reserved footprint is
   ever touched, never a partially materialized one.
+- **Missing inverse is rejected at bind (P1, fail-closed).** Binding a `revert_after_ms`-carrying
+  transition whose target/source states have no matching bound inverse transition
+  (Exact delta above) must fail the whole `bind` call with `InvalidBinding` — there is no partial
+  binding that accepts the forward operation and silently drops its revert.
+- **Revert restores exactly the pre-operation state (P1).** Firing a scheduled revert whose fences
+  and expected revision still hold must land the object back in precisely the state it was in
+  immediately before the original operation committed — the same `source_state`/`target_state` pair
+  the bind-time inverse check validated, not an approximation.
+- **Intervening change yields STALE_STATE, no mutation (P1).** If the object was changed again after
+  the revert was scheduled (a later operation on the same anchor moved it away from the state the
+  revert's stored expected revision names), firing must hit `prepare`'s existing
+  `DISPOSITION_STALE_STATE` path (evidence above) and commit nothing — the revert never overwrites
+  whatever the object has become in the meantime.
 - **Occupied target cells refuse deterministically (decided, not deferred).**
   `apps/game-server/src/world_runtime.rs` `terminalize_current` (~875-888) commits and terminalizes
   every prepared outcome in the same call, and `resume_pending`'s

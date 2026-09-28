@@ -84,6 +84,9 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
   `foundation/{mod,admission,runtime_actor_carrier}.rs`, `connection.rs`, `movement.rs` or
   `crates/foundation/src/time.rs`; only `world_runtime.rs` and the encounter doc's line numbers
   shifted.
+- `world_runtime.rs` `LocalObjectCommand`/`transition_for` (~397-419, ~787-796),
+  `TransitionBinding` (`content/reference_playable.rs` ~1334-1342) — PROVEN: every mutation needs a
+  bound `TransitionKey`; `TransitionBinding` has no `revert_after_ms` field yet.
 
 ## High-risk authority/recovery qualification
 
@@ -117,35 +120,29 @@ reason: >
 
 Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3 in §4/§5/§8 without designing them.
 
-Round 1 (coordinator): fixed §-numbering; CW3 (not CW4) attribution; §7 option 2 made honest (no
-proven scope cadence).
+Round 1 (coordinator): fixed §-numbering; CW3 attribution; §7 option 2 made honest (no proven
+scope cadence). Round 2 (Codex, bbb3b4cd): added `Deadline` option as the recommendation; corrected
+`advance_owner` to production-only evidence; decided occupied-revert refuses permanently. Round 3
+(Codex, 350dca59): rebound §7 to an FND-03 §10 authoritative timer (own `RuntimeExecutionOrdinal`,
+not `apply`/`resume_pending`/`CommandIngress`); staged timer-capacity atomicity; equal-deadline
+tie-break; one shared clock instance per scope. Round 4 (owner-authorized, c76bf9b9): merged
+`origin/main` (clean) picking up PR #1055 (CW4 runtime) and PR #1046 (CW3 1a/1b/1c), so §4/§8 cite
+the merged state; re-verified every `world_runtime.rs` line citation; resolved 3 Codex P2s on FND-03
+timer internals (ordinal-based equal-deadline tie-break in the timer key, not derived identity;
+atomic pending-removal *before* `accept_input` since it tracks no timer identity; bounded due-work
+admission per FND-03 §7/§14, mirroring `movement.rs`'s `MovementOwnerTurn`).
 
-Round 2 (Codex, bbb3b4cd): added `Deadline` option, made it the recommendation over the round-1 step
-counter; corrected `advance_owner` to production-only evidence; decided occupied-revert refuses
-permanently.
-
-Round 3 (Codex, 350dca59): rebound §7 to an FND-03 §10 authoritative timer — due timer mints its own
-`RuntimeExecutionOrdinal` via a scope-wide ordinal issuer instead of `apply`/`resume_pending`/
-`CommandIngress`; staged timer-capacity atomicity (§15.4/§28); equal-deadline tie-break; one shared
-clock instance per scope.
-
-Round 4 (owner-authorized, on c76bf9b9): merged `origin/main` (merge commit, clean, no conflicts —
-`git merge origin/main`) picking up PR #1055 (CW4 runtime generalized off Open/Close) and PR #1046
-(CW3 1a/1b/1c), so §4/§8 now cite the merged state instead of "pending"; re-verified and updated
-every stale `world_runtime.rs` line-number citation in §7 against the new file. Resolved 3 Codex P2s
-on FND-03 timer internals by binding tighter to FND-03, not re-designing it:
-- Equal-deadline tie-break is §10.1's own — the *scheduling* resolution's `RuntimeExecutionOrdinal`
-  plus its within-resolution sequence, retained in the timer key — not the revert's derived child
-  identity (that stays the separate fire-once/dedup identity). Added a "replays in scheduling order"
-  obligation.
-- `ScopeRuntimeFence::accept_input` (`foundation/mod.rs` ~1040-1050, verified) tracks no timer
-  identity by itself. Fixed: an atomic pending→removed/in-flight transition must happen *before*
-  `accept_input` is called; a re-presented already-fired entry is a no-op that never reaches
-  `accept_input`. Added a "double presentation mints exactly one ordinal" obligation.
-- Bounded due work per FND-03 §7 (cross-source arbitration) and §14 (item 4, timer population/
-  catch-up work): the driver admits at most a registered max due batch per owner cycle, mirroring
-  `movement.rs`'s `MovementOwnerTurn`/`max_inputs` precedent (verified), yielding the remainder to
-  later-cycle owner arbitration. Added a "burst does not starve other inputs" obligation.
+Round 5 (owner-authorized, cf3dd8e6, merged `origin/main` again — clean, no relevant file changed):
+verified a new P1 — firing a revert calls `prepare`, which needs a concrete *bound* `TransitionKey`
+(`LocalObjectCommand` ~412-419, `transition_for` ~787-796); nothing said which key restores an
+arbitrary `TRANSFORM`/`RETAG`. Fixed, fail-closed, reusing the merged CW4 model: `revert_after_ms`
+is admissible only on a transition whose *inverse* (a bound transition with swapped source/target
+states for the same definition — covers TRANSFORM/CREATE/REMOVE/RETAG uniformly) is itself bound;
+`bind` rejects (`InvalidBinding`) otherwise. The staged commit stores that inverse `TransitionKey`
+plus the expected post-operation state/revision `prepare` already computes; firing calls `prepare`
+with that key and expected revision, so an intervening change hits the existing `STALE_STATE` path
+instead of a guess. Added 3 test obligations: missing inverse rejected at bind; revert restores
+exactly the pre-operation state; intervening change ⇒ STALE_STATE, no mutation.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -155,14 +152,14 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-4; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-5; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 46 workflows)." (round 4, after merging origin/main; workflow count
-  rose from 45 with the merge, unrelated to this task's own doc-only changes)
+  validation passed (23 files, 47 workflows)." (round 5, after merging origin/main again; workflow
+  count rose from 46 with the merge, unrelated to this task's own doc-only changes)
 
 ### E2E
 
@@ -207,11 +204,10 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 4 (owner-authorized): merged origin/main (PR #1055 CW4 runtime, #1046
-  CW3 content model), updated §4/§8 to cite the merged state, re-verified every world_runtime.rs
-  citation against new line numbers, and resolved 3 Codex P2s on FND-03 timer internals (ordinal
-  tie-break, pending-removal-before-accept dedup, bounded due-work admission); both validators
-  re-run and still pass.
+  PR #1045 pre-freeze round 5 (owner-authorized): merged origin/main again (clean); fixed a P1 —
+  revert_after_ms now requires a bound inverse transition (fail-closed InvalidBinding at bind time),
+  with the staged commit storing that inverse key plus the expected post-op state/revision so
+  firing replays a validated delta instead of guessing; both validators re-run and still pass.
 status: implementing
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
