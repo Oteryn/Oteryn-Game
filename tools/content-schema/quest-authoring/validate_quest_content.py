@@ -32,8 +32,13 @@ BLOCKED_SCHEDULED_REVERT_DELAY = 'scheduled revert (addEvent) has a non-literal 
 # (from an earlier one, in source order) never overwrites it -- the operation's actual revert delay
 # cannot be inferred from two conflicting schedules -- so it stays its own blocked WorldObject child too.
 BLOCKED_DUPLICATE_SCHEDULED_REVERT = 'a second scheduled revert names the same already-reverted operation; revert_after_ms is not overwritten'
+# a call whose argument list never closes on its own source line (a multi-line call) is never parsed
+# for typed fields -- the converter reads one line at a time, so partial argument text would otherwise
+# either look complete by accident or drop trailing arguments -- it stays its own blocked child instead.
+BLOCKED_INCOMPLETE_CALL = 'the operation call spans more than one source line; its argument list is not read as complete'
 BLOCKED_REASONS = {'Movement': {BLOCKED['Movement']},
-                   'WorldObject': {BLOCKED['WorldObject'], BLOCKED_SCHEDULED_REVERT_DELAY, BLOCKED_DUPLICATE_SCHEDULED_REVERT}}
+                   'WorldObject': {BLOCKED['WorldObject'], BLOCKED_SCHEDULED_REVERT_DELAY,
+                                   BLOCKED_DUPLICATE_SCHEDULED_REVERT, BLOCKED_INCOMPLETE_CALL}}
 
 
 def refs(value):

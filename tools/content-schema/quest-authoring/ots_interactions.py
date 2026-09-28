@@ -39,7 +39,7 @@ import lua_tables
 from lua_writers import REGISTRATION, argument, expand_aliases, storage_aliases, strip_code
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
 from ots_questlog import norm, script_of, track_of
-from validate_quest_content import BLOCKED, BLOCKED_DUPLICATE_SCHEDULED_REVERT, BLOCKED_SCHEDULED_REVERT_DELAY
+from validate_quest_content import BLOCKED, BLOCKED_DUPLICATE_SCHEDULED_REVERT, BLOCKED_INCOMPLETE_CALL, BLOCKED_SCHEDULED_REVERT_DELAY
 
 # Curated per-interaction, per-line replacements for a condition ots_interactions.py cannot read statically (a
 # sibling lib/quests/*.lua table indexed by a role field or a world state): interaction key -> source line -> the
@@ -83,7 +83,7 @@ KV_WRITE = re.compile(r':kv\(\)|(?:^|[^.\w])kv:(?:set|remove)\(')
 # for it (`local X = Game.createItem(id)`, never one later customized with its own text, which stays unresolved).
 CONTAINER_FILL = re.compile(r'^(\w+):addItem\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\)$')
 CONTAINER_FILL_EX = re.compile(r'^(\w+):addItemEx\(\s*(\w+)\s*\)$')
-CREATE_ITEM = re.compile(r'^local\s+(\w+)\s*=\s*Game\.createItem\(\s*(\d+)\s*\)$')
+CREATE_ITEM = re.compile(r'^local\s+(\w+)\s*=\s*Game\.createItem\(')
 TEXTED_ITEM = re.compile(r'(\w+):setAttribute\(\s*ITEM_ATTRIBUTE_TEXT\b')
 BLOCKED_MOVEMENT = BLOCKED['Movement']
 BLOCKED_WORLD_OBJECT = BLOCKED['WorldObject']
@@ -102,6 +102,9 @@ TELEPORT_CALL = re.compile(r'teleportTo\(')
 TRANSFORM_CALL = re.compile(r'(\w+)[:.](transform|transformItem)\(')
 CREATE_CALL = re.compile(r'(\w+)[:.]createItem\(')
 RETAG_CALL = re.compile(r'(\w+)[:.]setActionId\(')
+# code-gate for a removal call, checked against string-stripped `code` before the receiver-capturing
+# form below is ever searched in `raw` (never a look-alike inside a string literal).
+REMOVE_METHOD = re.compile(r':(remove|removeItem)\(')
 ASSIGNED_LOCAL = re.compile(r'^local\s+(\w+)\s*=')
 # a bare `X:revertItem(...)`/`X:decay()` method call names its own receiver; `addEvent`/`stopEvent`
 # scheduling `Position.revertItem` and a direct `Position.revertItem(...)` call have no receiver at all
@@ -114,27 +117,38 @@ REVERT_METHOD = re.compile(r'(\w+)[:.](revertItem|decay)\(')
 ADD_STOP_EVENT = re.compile(r'\b(?:add|stop)Event\(')
 
 
-def parse_revert(raw):
+def parse_revert(code, raw):
     """Whether `raw` is a revert call, and what it provably reverts: (is_revert, receiver, literal
-    position groups, literal delay in ms, scheduled). Each call's own argument list is split with
+    position groups, literal delay in ms, scheduled, incomplete). Each form is gated on a match in
+    `code` (comments/string contents stripped, so a look-alike inside a string literal such as
+    `player:say("item:decay()")` never matches) before `raw` is ever searched, and `raw` is searched
+    only to parse the call `code` already confirmed. Each call's own argument list is split with
     `split_args` (bracket-nesting aware) and only the specific position argument itself -- never the
     argument list searched as a whole, which would also match a look-alike literal buried in an
     unrelated expression such as `toPosition + Position(1,2,7)` -- is checked for a complete literal
     match. `scheduled` is true only for the addEvent/stopEvent form, the one form whose revert is timed
     by a delay argument rather than being immediate: a non-literal delay there must fail closed (D38
     §4's `revert_after_ms` is never recorded without a literal duration), never merge silently without
-    one the way an inherently undelayed `:decay()`/`:revertItem(...)` call is allowed to."""
-    if (m := POSITION_REVERT_ITEM.search(raw)):
-        args = split_args(argument(raw, m.end()))
+    one the way an inherently undelayed `:decay()`/`:revertItem(...)` call is allowed to. `incomplete`
+    is true only when a form that parses an argument list has one that never closes on this line (a
+    multi-line call): its own fields are never read from that partial text."""
+    if POSITION_REVERT_ITEM.search(code) and (m := POSITION_REVERT_ITEM.search(raw)):
+        args_text = call_complete(raw, m.end())
+        if args_text is None:
+            return True, None, None, None, False, True
+        args = split_args(args_text)
         target = args[0] if args else None
         pos = POSITION.fullmatch(target) if target else None
-        return True, None, (pos.groups() if pos else None), None, False
-    if (m := REVERT_METHOD.search(raw)):
-        return True, m.group(1), None, None, False
-    if (m := ADD_STOP_EVENT.search(raw)):
-        args = split_args(argument(raw, m.end()))
+        return True, None, (pos.groups() if pos else None), None, False, False
+    if REVERT_METHOD.search(code) and (m := REVERT_METHOD.search(raw)):
+        return True, m.group(1), None, None, False, False
+    if ADD_STOP_EVENT.search(code) and (m := ADD_STOP_EVENT.search(raw)):
+        args_text = call_complete(raw, m.end())
+        if args_text is None:
+            return True, None, None, None, True, True
+        args = split_args(args_text)
         if not args or args[0] != 'Position.revertItem':
-            return False, None, None, None, False
+            return False, None, None, None, False, False
         # addEvent(Position.revertItem, delay, position, ...): the scheduler's own two fixed arguments,
         # then whatever Position.revertItem itself is invoked with; a position is conventionally its
         # first argument (the third argument to addEvent overall). A non-positive literal delay (schema
@@ -144,8 +158,28 @@ def parse_revert(raw):
         delay = literal_delay if literal_delay and literal_delay >= 1 else None
         target = args[2] if len(args) > 2 else None
         pos = POSITION.fullmatch(target) if target else None
-        return True, None, (pos.groups() if pos else None), delay, True
-    return False, None, None, None, False
+        return True, None, (pos.groups() if pos else None), delay, True, False
+    return False, None, None, None, False, False
+
+
+def call_complete(text, start):
+    """The rest of a call's argument list from `start`, up to its own closing parenthesis -- or `None`
+    when that closing parenthesis is not on this line at all (a multi-line call): `lua_writers.argument`
+    is read one physical line at a time, so a call whose argument list is still open at end of line would
+    otherwise be handed to `split_args` as if it were complete, silently dropping or misreading whatever
+    the next line(s) actually contribute. A D38 operation is typed only from a call this confirms closed;
+    otherwise its child stays blocked with `BLOCKED_INCOMPLETE_CALL`, never guessed from partial text."""
+    depth, i = 0, start
+    while i < len(text):
+        c = text[i]
+        if c in '({[':
+            depth += 1
+        elif c in ')}]':
+            if depth == 0:
+                return text[start:i]
+            depth -= 1
+        i += 1
+    return None
 
 
 def split_args(text):
@@ -205,9 +239,24 @@ class Script:
         self.tables = self.discover_tables()
         # a plain item created for a reward container, by the local that holds it; excluded once it is customized
         # with its own text (LICENSE-ASSETS.md), so that text is never even indirectly implied by a content list.
+        # Any assigned, positionless `Game.createItem(...)` constructor is a reward item, of any arity (a bare
+        # id, or the engine's `itemId, count/subtype` form): never a world CREATE, even when its item id is not
+        # itself a literal. A literal Position among its arguments makes it a world placement instead (D38), and
+        # an incomplete (multi-line) call is never guessed either way.
         texted = {m.group(1) for line in self.lines if (m := TEXTED_ITEM.search(line))}
-        self.created_items = {m.group(1): m.group(2) for line in self.lines
-                              if (m := CREATE_ITEM.match(strip_code(line).strip())) and m.group(1) not in texted}
+        self.created_items = {}
+        for line in self.lines:
+            code = strip_code(line).strip()
+            m = CREATE_ITEM.match(code)
+            if not m or m.group(1) in texted:
+                continue
+            args_text = call_complete(code, m.end())
+            if args_text is None:
+                continue
+            args = split_args(args_text)
+            if any(POSITION.fullmatch(a) for a in args):
+                continue
+            self.created_items[m.group(1)] = args[0] if args and re.fullmatch(r'\d+', args[0]) else None
 
     def bind(self, number, callback):
         """Name the callback parameters by their role and note the locals that hold the acting player."""
@@ -413,7 +462,16 @@ class Script:
                 # position variable itself as its own complete argument): stays blocked until its
                 # definition can name an anchor, or a DUR-04 component proposes the target.
                 found.append({'owner': 'Movement', 'status': 'blocked', 'reason': BLOCKED_MOVEMENT, 'to_source_line': number})
-        removal = re.search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(([^()]*)\)', raw)
+        # D38 invariant: an operation is typed only when its call is recognized EXACTLY -- the keyword
+        # itself confirmed in `code` (never a string literal), its own argument list confirmed complete
+        # on this line, and the specific typed field itself a fully-delimited literal (never a
+        # substring, a list-order guess, or a partial/computed expression). Anything short of that
+        # stays its own blocked WorldObject child with an explicit reason; nothing is ever guessed.
+        # Every operation below is gated on a match in `code` (comments/string contents stripped)
+        # before `raw` is ever searched for it, so a look-alike inside a string literal (e.g.
+        # `player:say("Game.createItem(2793)")`) is never mistaken for the real call; `raw` is then
+        # searched only to parse the call `code` already confirmed is really there.
+        removal = REMOVE_METHOD.search(code) and re.search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(([^()]*)\)', raw)
         consumed = removal and self.consumed(removal, number)
         if consumed:
             found.append(consumed)
@@ -421,54 +479,74 @@ class Script:
             self.unresolved.append({'line': number, 'reason': 'creature removal without an accepted owner'})
             return found
         elif removal:
-            # D38: removing a non-value-bearing map object (a wall, a stone, a barrier), never a carried
-            # item (that stayed DUR-03 consumption above) or a creature (that stays unresolved, C4).
-            found.append({'owner': 'WorldObject', 'operation': 'REMOVE', 'value_source_line': number,
-                         '_identity': removal.group(1)})
-        elif (m := TRANSFORM_CALL.search(raw)):
+            receiver = removal.group(1)
+            literal_pos = POSITION.fullmatch(receiver) if '(' in receiver else None
+            if '(' in receiver and not literal_pos:
+                # a computed receiver (a call whose own result is not itself a fully-delimited literal
+                # position, e.g. a tile lookup): its identity cannot be proven, so it stays blocked
+                # rather than typed against an unprovable target (invariant: not recognized exactly).
+                found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
+            else:
+                # D38: removing a non-value-bearing map object (a wall, a stone, a barrier), never a
+                # carried item (DUR-03 consumption above) or a creature (unresolved, C4). A receiver
+                # that is itself a fully-delimited literal position binds a pre-authored anchor.
+                child = {'owner': 'WorldObject', 'operation': 'REMOVE', 'value_source_line': number, '_identity': receiver}
+                if literal_pos:
+                    child['anchor'] = self.anchor(literal_pos.groups())
+                found.append(child)
+        elif TRANSFORM_CALL.search(code) and (m := TRANSFORM_CALL.search(raw)):
             # from/to are rarely both literal in one call (the current id is usually implicit, read from
             # the object the script already holds), so this stays with its source line rather than guessed.
             found.append({'owner': 'WorldObject', 'operation': 'TRANSFORM', 'value_source_line': number,
                          '_identity': m.group(1)})
-        elif (m := CREATE_CALL.search(raw)):
+        elif CREATE_CALL.search(code) and (m := CREATE_CALL.search(raw)):
             constructor = CREATE_ITEM.match(code)
-            args = split_args(argument(raw, m.end()))
-            item_id = args[0] if args and re.fullmatch(r'\d+', args[0]) else None
-            extra = args[1:]
-            # engine signature `createItem(itemId, count/subtype, position)`: a bare integer among the
-            # extra arguments is the count/subtype, never a placement; a literal Position is the anchor;
-            # anything else could be a placement expression (C3: no dynamic geometry), so it stays blocked.
-            literal_pos = next((a for a in extra if POSITION.fullmatch(a)), None)
-            ambiguous = any(not re.fullmatch(r'\d+', a) and not POSITION.fullmatch(a) for a in extra)
-            literal = {'def': ref('Item', f'{self.namespace}:item/{item_id}')} if item_id else {'value_source_line': number}
-            identity = (assigned := ASSIGNED_LOCAL.match(code)) and assigned.group(1)
+            args_text = call_complete(raw, m.end())
             if constructor and constructor.group(1) in self.created_items:
                 # a reward-container constructor (this local is a hand-out/contents item, DUR-03), never
                 # a world placement, even though the call itself is `Game.createItem(...)`.
                 pass
-            elif ambiguous:
-                found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
-            elif literal_pos:
-                # C3: CREATE only binds a pre-authored anchor with a fixed footprint; a literal position
-                # argument names one.
-                child = {'owner': 'WorldObject', 'operation': 'CREATE', 'anchor': self.anchor(POSITION.fullmatch(literal_pos).groups()),
-                         **literal}
-                if identity:
-                    child['_identity'] = identity
-                found.append(child)
+            elif args_text is None:
+                # the call's argument list never closes on this line (a multi-line call): never typed
+                # from partial args (invariant: not recognized exactly stays blocked, never guessed).
+                found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_INCOMPLETE_CALL, 'source_line': number})
             else:
-                child = {'owner': 'WorldObject', 'operation': 'CREATE', **literal}
-                if identity:
-                    child['_identity'] = identity
-                found.append(child)
-        elif (m := RETAG_CALL.search(raw)):
+                args = split_args(args_text)
+                item_id = args[0] if args and re.fullmatch(r'\d+', args[0]) else None
+                extra = args[1:]
+                # engine signature `createItem(itemId, count/subtype, position)`: a bare integer among
+                # the extra arguments is the count/subtype, never a placement; a literal Position is the
+                # anchor; anything else could be a placement expression (C3: no dynamic geometry), so it
+                # stays blocked.
+                literal_pos = next((a for a in extra if POSITION.fullmatch(a)), None)
+                ambiguous = any(not re.fullmatch(r'\d+', a) and not POSITION.fullmatch(a) for a in extra)
+                literal = {'def': ref('Item', f'{self.namespace}:item/{item_id}')} if item_id else {'value_source_line': number}
+                identity = (assigned := ASSIGNED_LOCAL.match(code)) and assigned.group(1)
+                if ambiguous:
+                    found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
+                elif literal_pos:
+                    # C3: CREATE only binds a pre-authored anchor with a fixed footprint; a literal
+                    # position argument names one.
+                    child = {'owner': 'WorldObject', 'operation': 'CREATE',
+                             'anchor': self.anchor(POSITION.fullmatch(literal_pos).groups()), **literal}
+                    if identity:
+                        child['_identity'] = identity
+                    found.append(child)
+                else:
+                    child = {'owner': 'WorldObject', 'operation': 'CREATE', **literal}
+                    if identity:
+                        child['_identity'] = identity
+                    found.append(child)
+        elif RETAG_CALL.search(code) and (m := RETAG_CALL.search(raw)):
             # D38/coordinator decision 1c: a transition between two states of the same collision class;
             # the action id itself is not modeled as data.
             found.append({'owner': 'WorldObject', 'operation': 'RETAG', 'value_source_line': number,
                          '_identity': m.group(1)})
         else:
-            is_revert, receiver, pos, delay, scheduled = parse_revert(raw)
-            if is_revert:
+            is_revert, receiver, pos, delay, scheduled, incomplete = parse_revert(code, raw)
+            if incomplete:
+                found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_INCOMPLETE_CALL, 'source_line': number})
+            elif is_revert:
                 # never its own child (D38 §4): `convert()` attaches it to the operation it provably
                 # reverts (the preceding typed operation in this same statement list with the same
                 # receiver/anchor identity), or leaves it blocked when none matches deterministically,
@@ -482,9 +560,13 @@ class Script:
                 {'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'), 'count': int(m.group(3) or 1)})
             return found
         if (m := CONTAINER_FILL_EX.match(raw)) and m.group(1) in self.containers:
-            if m.group(2) in self.created_items:
+            # membership alone only proves this local is a positionless reward constructor (never a
+            # world CREATE, see self.created_items above); its item id is resolvable here only when
+            # that constructor's own id argument was itself a literal.
+            item_id = self.created_items.get(m.group(2))
+            if item_id:
                 self.containers[m.group(1)].setdefault('contents', []).append(
-                    {'item': ref('Item', f'{self.namespace}:item/{self.created_items[m.group(2)]}'), 'count': 1})
+                    {'item': ref('Item', f'{self.namespace}:item/{item_id}'), 'count': 1})
             else:
                 self.unresolved.append({'line': number, 'reason': 'container reward item is not a plain literal item type'})
             return found

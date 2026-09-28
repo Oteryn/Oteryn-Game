@@ -6,7 +6,7 @@ from pathlib import Path
 
 import ots_interactions as oi
 from ots_chests import parse_level, parse_premium, requirements_of
-from validate_quest_content import BLOCKED, BLOCKED_DUPLICATE_SCHEDULED_REVERT, BLOCKED_SCHEDULED_REVERT_DELAY, validate, validate_gates, validate_interactions, validate_storylines
+from validate_quest_content import BLOCKED, BLOCKED_DUPLICATE_SCHEDULED_REVERT, BLOCKED_INCOMPLETE_CALL, BLOCKED_SCHEDULED_REVERT_DELAY, validate, validate_gates, validate_interactions, validate_storylines
 
 
 def ref(family, name):
@@ -703,6 +703,58 @@ converter_case(
     ['Game.createItem(2793, Position(100, 200, 7))',
      'addEvent(Position.revertItem, 1, Position(100, 200, 7), 2772)'],
     lambda c, a: (len(c) == 1 and c[0]['operation'] == 'CREATE' and c[0].get('revert_after_ms') == 1, c))
+
+# Round 6, Finding 1 (P2, comment 4120202014): every D38 matcher is gated on a match in the
+# string-stripped `code` before `raw` is ever searched, so a look-alike inside a string literal is
+# never mistaken for the real call.
+converter_case(
+    'the exact Codex example: a string literal containing Game.createItem(...) is never typed',
+    ['player:say("Game.createItem(2793)")'],
+    lambda c, a: (c == [{'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': 2}], c))
+converter_case(
+    'negative control: the same call outside a string is still typed',
+    ['Game.createItem(2793)'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE', c))
+
+# Round 6, Finding 2 (P2, comment 4120202000): a call whose argument list never closes on its own
+# source line (a multi-line call) is never parsed for typed fields -- it stays blocked with a new
+# explicit BLOCKED_INCOMPLETE_CALL reason instead of emitting an unanchored typed op from partial args.
+converter_case(
+    'the exact Codex example: a multi-line createItem call stays blocked, never an unanchored CREATE',
+    ['Game.createItem(', '2793', ')'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and c[0]['reason'] == BLOCKED_INCOMPLETE_CALL
+                 and 'operation' not in c[0], c))
+converter_case(
+    'negative control: the same call complete on one line is still typed',
+    ['Game.createItem(2793)'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE', c))
+
+# Round 6, Finding 3 (P2, comment 4120202007): any assigned, positionless `Game.createItem(...)`
+# constructor is a reward item, of any arity (not only the bare single-id form) -- never a world
+# CREATE, and its addItemEx fill resolves when its own id argument was itself a literal.
+converter_case(
+    'the exact Codex example: the count/subtype constructor form is a reward item, not a world CREATE',
+    ['local reward = Game.createItem(2793, 5)', 'local backpack = player:addItem(2000, 1)', 'backpack:addItemEx(reward)'],
+    lambda c, a: (len(c) == 1 and c[0]['owner'] == 'Item' and c[0]['request'] == 'hand_out'
+                 and c[0].get('contents') == [{'item': {'family': 'Item', 'key': 'canary:item/2793',
+                                                        'revision': oi.REVISION}, 'count': 1}], c))
+converter_case(
+    'negative control: the same constructor form with a literal position is still a world CREATE',
+    ['local wall = Game.createItem(2793, Position(1, 2, 7))'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1', c))
+
+# Round 6, Finding 4 (P2, comment 4120202022): a REMOVE receiver that is itself a fully-delimited
+# literal Position(x,y,z) binds that position via self.anchor(); a computed receiver (a call whose own
+# result is not itself a literal position) stays blocked instead of typed against an unprovable target.
+converter_case(
+    'the exact Codex example: a literal-position REMOVE receiver binds its own anchor',
+    ['Position(100, 200, 7):removeItem(2793)'],
+    lambda c, a: (len(c) == 1 and c[0]['operation'] == 'REMOVE' and c[0].get('anchor') == 'p1'
+                 and a == [{'key': 'p1', 'source_position': {'x': 100, 'y': 200, 'z': 7}}], (c, a)))
+converter_case(
+    'negative control: a computed REMOVE receiver stays blocked, never typed against an unprovable target',
+    ['getTile(1, 2, 7):removeItem(2793)'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and 'operation' not in c[0], c))
 
 
 # ots_interactions.py's curated interaction_overrides.json mechanism (D36 exception), on synthetic rule trees so
