@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/combat-d2a-loot-plan
 issue: 162
-pr: null
+pr: 1161
 allocation: "#162 comment 5876068445 (Combat D2a, VSL-COMBAT-01 child of D2)"
 base_sha: 7d1134f090ac249f964fede017efabba91e22b90
 head_sha: pending (frozen at push)
@@ -208,7 +208,7 @@ last_progress: implementation complete; all listed validation green; pushed, not
 status: waiting
 branch: claude/combat-d2a-loot-plan
 head_sha: pending (see push result)
-pr: null
+pr: 1161
 final_head_sha: null
 final_head_frozen_at: null
 ci_checks_for_current_head: 0
