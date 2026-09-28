@@ -4,10 +4,10 @@
 task_id: OTV2-20260928-prem2a-promotion-soul-rules
 title: PREM-2a - pure promotion-benefit and soul-maximum rules
 mode: IMPLEMENT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1171
 allocation_comment: "#162 5878791533 (request), owner-authorized in this window (2026-09-28)"
 base_branch: main
 branch: claude/prem2a-promotion-soul
