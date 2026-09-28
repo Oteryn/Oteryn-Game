@@ -12,10 +12,10 @@ allocation_comment: 5875272684 (allocation); coordinator resume 5875470550 (owne
 base_branch: main
 branch: claude/dev-client-join-c1b
 base_sha: 8e2e474a3d82a6bfbc21be409f444cfd64d42961
-head_sha: 97c4641e52f3ca4f11eeb28a80fa69a856352396
+head_sha: 965682618ddf3cd9d9fed14c6efeff70c5bb7c6d
 owner: "Oteryn: impl interaction" (Claude Code)
 created_at: 2026-09-28T00:00:00Z
-updated_at: 2026-09-28T00:00:00Z
+updated_at: 2026-09-28T00:00:01Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/dev-client/**
@@ -195,7 +195,7 @@ reason: >
 last_progress: fix round 3 pushed (assemble-before-decode/validate/zero-id); replied on 3 threads
 status: ready
 branch: claude/dev-client-join-c1b
-head_sha: 97c4641e52f3ca4f11eeb28a80fa69a856352396
+head_sha: 965682618ddf3cd9d9fed14c6efeff70c5bb7c6d
 pr: 1147
 final_head_sha: the frozen final head of PR #1147 (supersedes all prior CI runs)
 final_head_frozen_at: 2026-09-28T00:00:00Z
