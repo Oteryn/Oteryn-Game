@@ -3,6 +3,7 @@ mutated copies of it.
 
 Usage: python -m unittest test_promotion.py
 """
+import hashlib
 import json
 import unittest
 from pathlib import Path
@@ -47,6 +48,79 @@ class PromotionValidatorTests(unittest.TestCase):
         self.assertEqual(validate_promotion.errors(report), [])
         # a punctuation-only name ('...') has no slug and is held, never keyed 'oteryn:npc.'
         self.assertIn('...', {h['name'] for h in report['held'] if h['reason'] == 'EMPTY_SLUG'})
+
+    def test_wiki_price_requires_br_facts(self):
+        report = load_sample()
+        del report['br_facts_sha256']
+        report['decisions'] = validate_promotion.DECISIONS
+        errs = validate_promotion.errors(report)
+        self.assertIn('WIKI_PRICE arbitration without br_facts_sha256 (D12)', errs)
+
+    def test_wiki_price_must_name_its_offer(self):
+        report = load_sample()
+        ahmet = find_candidate(report, 'Ahmet')
+        row = next(r for r in ahmet['arbitration'] if r['rule'] == 'WIKI_PRICE')
+        row['fact'] = 'trade.999999.SellToPlayer'
+        self.assertTrue(any('names no admitted offer' in e for e in validate_promotion.errors(report)))
+
+    def test_wiki_price_fact_names_the_exact_offer_variant(self):
+        report = load_sample()
+        ahmet = find_candidate(report, 'Ahmet')
+        row = next(r for r in ahmet['arbitration'] if r['rule'] == 'WIKI_PRICE')
+        item, direction = row['fact'].split('.')[1], row['fact'].rsplit('.', 1)[1]
+        row['fact'] = f'trade.{item}x999.{direction}'  # no count-999 variant is admitted
+        self.assertTrue(any('names no admitted offer' in e for e in validate_promotion.errors(report)))
+
+    def test_wiki_price_must_match_the_offer_price(self):
+        report = load_sample()
+        ahmet = find_candidate(report, 'Ahmet')
+        row = next(r for r in ahmet['arbitration'] if r['rule'] == 'WIKI_PRICE')
+        source_item_id = int(row['fact'].split('.')[1])
+        offer = next(o for o in ahmet['trade_service']['offers']
+                     if o['source_item_id'] == source_item_id and o['direction'] == 'SellToPlayer')
+        offer['unit_price'] = 999999
+        self.assertTrue(any('!= WIKI_PRICE price' in e for e in validate_promotion.errors(report)))
+
+    def test_wiki_price_item_name_is_the_offer_item(self):
+        report = load_sample()
+        names = validate_promotion.registry_item_names()
+        self.assertEqual(validate_promotion.item_name_errors(report, names), [])
+        ahmet = find_candidate(report, 'Ahmet')
+        row = next(r for r in ahmet['arbitration'] if r['rule'] == 'WIKI_PRICE' and r['item_name'] == 'fishing rod')
+        row['item_name'] = 'shovel'  # another item's wiki price must not justify this offer
+        self.assertTrue(any('is not the offer\'s registered item' in e
+                            for e in validate_promotion.item_name_errors(report, names)))
+
+    def test_wiki_price_matches_both_pinned_wikis(self):
+        snapshot = json.dumps({'npcs': [], 'trade': {'ahmet': [
+            {'item': 'Fishing Rod', 'buy_price': 150, 'sell_price': None}]}}).encode()
+        br_facts = json.dumps({'pages': [{'title': 'Ahmet', 'name': 'Ahmet', 'trades': {
+            'SellToPlayer': {'Fishing Rod': [150]}, 'BuyFromPlayer': {}}}]}).encode()
+        def report(price):
+            return {'snapshot_sha256': hashlib.sha256(snapshot).hexdigest(),
+                    'br_facts_sha256': hashlib.sha256(br_facts).hexdigest(),
+                    'candidates': [{'name': 'Ahmet', 'arbitration': [
+                        {'fact': 'trade.3483.SellToPlayer', 'rule': 'WIKI_PRICE', 'chosen': 'wiki',
+                         'item_name': 'fishing rod', 'price': price}]}]}
+        names = {'oteryn:item.test.fishing_rod': 'fishing rod'}
+        def offered(price):  # the admitted offer the row names, at `price`
+            built = report(150)
+            built['candidates'][0]['trade_service'] = {'offers': [
+                {'item': {'key': 'oteryn:item.test.fishing_rod'}, 'source_item_id': 3483,
+                 'direction': 'SellToPlayer', 'unit_price': price}]}
+            return built
+        check = validate_promotion.wiki_price_errors
+        self.assertEqual(check(offered(150), snapshot, br_facts, names), [])
+        self.assertTrue(check(report(999999), snapshot, br_facts, names))
+        self.assertEqual(check(report(150), b'{}', br_facts, names), ['--snapshot does not match snapshot_sha256'])
+        # an omitted override: the offer keeps a source price although both wikis state another one
+        omitted = offered(40)
+        omitted['candidates'][0]['arbitration'] = []
+        self.assertTrue(any('!= the price both wikis state (150)' in e for e in check(omitted, snapshot, br_facts, names)))
+        # a malformed WIKI_PRICE row is reported by errors(), never a traceback here
+        malformed = offered(150)
+        del malformed['candidates'][0]['arbitration'][0]['fact']
+        self.assertEqual(check(malformed, snapshot, br_facts, names), [])
 
     def test_bad_key_format_fails(self):
         report = load_sample()
@@ -399,6 +473,53 @@ class PromotionValidatorTests(unittest.TestCase):
         held = builder.held[-1]
         self.assertEqual(held['reason'], 'OWNER_REJECTED')
         self.assertEqual(held['detail'], 'server-only NPC, owner decision 2026-09-27')
+
+
+    # -- D11: NPCs removed from Tibia Global -----------------------------------------------------
+
+    def test_removed_from_game_npcs_stay_held(self):
+        report = load_sample()
+        names = ('Brom', 'Brutus', 'Roughington', 'Shadowpunch', 'Victor')
+        for name in names:
+            held = find_held(report, name)
+            self.assertEqual(held['reason'], 'REMOVED_FROM_GAME')
+        self.assertFalse(set(names) & {c['name'] for c in report['candidates']})
+
+    def test_removed_from_game_bypasses_wiki_matching(self):
+        builder = make_builder([{'pageid': 1, 'title': 'Brom', 'name': 'Brom', 'actualname': None,
+                                  'position': {'x': 1, 'y': 1, 'z': 1}}])
+        result = builder.candidate({'crystal': make_bundle('Brom', 'crystal')})
+        self.assertIsNone(result)
+        self.assertEqual(builder.held[-1]['reason'], 'REMOVED_FROM_GAME')
+
+
+    # -- D12: a price both wikis agree on replaces the source price -----------------------------
+
+    def price_builder(self, fandom_buy, br_prices):
+        builder = promotion_candidates.Builder(
+            {'npcs': [], 'trade': {'ahmet': [{'item': 'Fishing Rod', 'buy_price': fandom_buy, 'sell_price': None}]}},
+            {'records': [{'source_item_id': 3483, 'native_key': 'oteryn:item.registry.i1', 'native_revision': 'r1'}]},
+            {'pages': [{'title': 'Ahmet', 'name': 'Ahmet',
+                        'trades': {'SellToPlayer': {'Fishing Rod': br_prices}, 'BuyFromPlayer': {}}}]})
+        bundle = make_bundle('Ahmet')
+        bundle['services']['trade'] = {'currency': 'GOLD', 'offers': [
+            {'client_id': 3483, 'server_item_id': None, 'count': None, 'sub_type': None, 'item_name': 'fishing rod',
+             'buy_price': 40, 'sell_price': None, 'stock_gate': None}]}
+        arbitration = []
+        offers = builder.merge_offers({'crystal': bundle}, 'Ahmet', arbitration, [])
+        return offers, arbitration
+
+    def test_wiki_price_needs_both_wikis_to_agree(self):
+        for br in ([150], [150, 150]):
+            offers, arbitration = self.price_builder(150, br)
+            self.assertEqual(offers[0]['unit_price'], 150)
+            self.assertEqual(arbitration, [{'fact': 'trade.3483.SellToPlayer', 'rule': 'WIKI_PRICE', 'chosen': 'wiki',
+                                            'item_name': 'fishing rod', 'price': 150}])
+        # BR must state one explicit price in every row of the offer
+        for fandom, br in ((150, [120]), (150, [None]), (None, [150]), (150, [150, 120]), (150, [150, None]), (150, [])):
+            offers, arbitration = self.price_builder(fandom, br)
+            self.assertEqual(offers[0]['unit_price'], 40)
+            self.assertEqual(arbitration, [])
 
 
 if __name__ == '__main__':

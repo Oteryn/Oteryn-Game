@@ -37,6 +37,8 @@ protected Item identity map for Item references.
 | Travel services | 53, with 189 ungated routes |
 | Placements admitted | 0 (§5) |
 | Dialogue records admitted | 0 in the first wave; 701 later (§7 slices 4b and 4c) |
+| NPCs removed from Tibia Global | 5 held later (§7 slice 4d) |
+| Offer prices from both wikis | 21 later (§7 slice 4d) |
 
 Held back and reported in the candidates: 145 NPCs (91 unplaced in both sources, 32 single-source
 NPCs the wiki does not know, 7 outfit/movement conflicts, 6 placement conflicts the wiki cannot
@@ -187,6 +189,12 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    the decision, its scores and the transcript used are recorded (`resolved`, `source.transcripts_digest`).
    84 conflicts are resolved (75 Canary, 9 Crystal). 45 stay held: 44 whose transcript matches neither
    side better and one without a transcript. 701 Dialogue declarations (6,313 keyword nodes) are admitted.
+4d. Removed NPCs (D11): `OTV2-20260928-npc-removed-from-game`. The five Duelling Arena supervisors that both
+   TibiaWiki BR and Fandom record as removed in 13.12 are held `REMOVED_FROM_GAME`, with Victor's trade
+   Service. Under D12, 21 offers of 13 NPCs take the price TibiaWiki Fandom and TibiaWiki BR both state
+   (`WIKI_PRICE`), which adds their wiki page bindings. The BR facts are recorded as their own import
+   (`g4-npc-prices-tibiawiki-br-r1`, `tibiawiki.com.br`, the facts file's SHA-256). Wave A is then 1,088 NPCs, with 307 trade and 55
+   travel Services and 2,282 bindings; the 701 Dialogues are unchanged (none of the five had one).
 5. Later:
    - placements after World admission;
    - conditional dialogue and dialogue conflicts;

@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "524fa0ea2b57f44b403c77df109750d582d633d1860d197801bc4c03521ca5e6",
+        "a1f00899c38d65e8ebb4ecac658d7c155d8b48b0e0bee1004865879e5960af97",
     ),
     (
         "definitions/declarations.json",
-        13_544_048,
-        "39e7b48a9e7ad548797590e1b189fdcaaf5c9540f79608ba229e23687e84a219",
+        13_535_559,
+        "9784e8ee8a258634e6c607a21553edb19a07b4b20ef8a85f5866695beabcdfcb",
     ),
     (
         "definitions/reference.json",
-        21_708_581,
-        "68c6bcd1178e668b8966c99c9d5b72548daf0b50489bf01a1fa4c0754ceea364",
+        21_707_055,
+        "4fa2a4381bc8f5b252da14ace76b2b502408d56998acc1736b2b7a6f10883073",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1936,
-        "809de01045588e1734508560fd183b9bfd1584c178c46a1754ec3bf3b3e129a0",
+        "209ac34455ede9f4236126e3467fa63702e8d7a5c3a55f9c798531fb986aa9c0",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "af64281f892d9e8a22eec4e53b616c80a3ba26d416b0338534426ca19e4642c6",
+        "5d3a8949e91dc4c7daf99df2c948c1d0f6fddc9bc9568161d52fad8af702e363",
     ),
     (
         "provenance/imports.json",
-        4442,
-        "5066a0116321f86fb4881333beb3aa0370d900a415925802a2c45f94812f4cdd",
+        5012,
+        "e10959729e3663b31e92adb3bc5bafd23ffa97e724ef16c9b7a145d18173130d",
     ),
     (
         "provenance/sources.json",
-        1_213_904,
-        "0a03d7acdef8d09b017b0a79d64614bd8edbadb6237d84ce1e74aafc9f92adea",
+        1_214_222,
+        "18cf99fa5c3ed7c886b3b0e887a26a92a808d00d0faeffd2c1819f4426c0e63f",
     ),
     (
         "worlds/world.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "a19660a202dbfa10d56803b21d98e23a03e6d63a1fc2a89c6a5d882eb940164a";
+const TREE_SHA256: &str = "fad31eabc9b2472a9ea1dc436f5b2cc8462934ddf199c2a875e96dda66c0f3eb";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -92,11 +92,11 @@ const CREATURES: usize = 1319;
 const CREATURE_RECORDS: usize = 18348;
 const CREATURE_PROFILES: usize = 17381;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1093;
-const NPC_RECORDS: usize = 2186;
-const NPC_DECLARATIONS: usize = 2157;
+const NPCS: usize = 1088;
+const NPC_RECORDS: usize = 2176;
+const NPC_DECLARATIONS: usize = 2151;
 const NPC_DIALOGUES: usize = 701;
-const NPC_BINDINGS: usize = 2281;
+const NPC_BINDINGS: usize = 2282;
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -117,7 +117,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 7,
+        max_import_records: 8,
         max_reimport_states: 1,
     }
 }
@@ -274,8 +274,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-wave-a-r3");
-    assert_eq!(project.imports().len(), 7);
+    assert_eq!(project.project_revision(), "g4-npc-wave-a-r4");
+    assert_eq!(project.imports().len(), 8);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
@@ -436,7 +436,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 7);
+    assert_eq!(v2.sources.len(), 8);
     assert_eq!(v2.sources[0].key, "oteryn:source.canary");
     assert_eq!(v2.sources[0].import_batch_id, creature_import.batch_id);
     assert_eq!(v2.sources[0].revision, creature_import.source_revision);
@@ -453,40 +453,54 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         v2.sources[1].evidence,
         ProjectV2EvidenceClass::OtsHypothesisOnly
     );
-    assert_eq!(v2.sources[2].key, "oteryn:source.tibiawiki");
-    assert_eq!(v2.sources[2].import_batch_id, wiki.batch_id);
-    assert_eq!(v2.sources[2].revision, wiki.source_revision);
-    assert_eq!(v2.sources[2].sha256, wiki.source_artifact_sha256);
-    assert_eq!(v2.sources[2].evidence, ProjectV2EvidenceClass::Derived);
-    assert_eq!(v2.sources[3].key, v2.sources[2].key);
-    assert_eq!(v2.sources[3].import_batch_id, wave1_import.batch_id);
-    assert_eq!(v2.sources[3].revision, wave1_import.source_revision);
-    assert_eq!(v2.sources[3].sha256, wave1_import.source_artifact_sha256);
+    assert_eq!(v2.sources[3].key, "oteryn:source.tibiawiki");
+    assert_eq!(v2.sources[3].import_batch_id, wiki.batch_id);
+    assert_eq!(v2.sources[3].revision, wiki.source_revision);
+    assert_eq!(v2.sources[3].sha256, wiki.source_artifact_sha256);
     assert_eq!(v2.sources[3].evidence, ProjectV2EvidenceClass::Derived);
-    assert_eq!(v2.sources[4].key, v2.sources[2].key);
-    assert_eq!(v2.sources[4].import_batch_id, mount_import.batch_id);
-    assert_eq!(v2.sources[4].revision, mount_import.source_revision);
-    assert_eq!(v2.sources[4].sha256, mount_import.source_artifact_sha256);
+    assert_eq!(v2.sources[4].key, v2.sources[3].key);
+    assert_eq!(v2.sources[4].import_batch_id, wave1_import.batch_id);
+    assert_eq!(v2.sources[4].revision, wave1_import.source_revision);
+    assert_eq!(v2.sources[4].sha256, wave1_import.source_artifact_sha256);
     assert_eq!(v2.sources[4].evidence, ProjectV2EvidenceClass::Derived);
-    let npc_import = &project.imports()[5];
-    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r3");
-    assert!(npc_import.candidates.is_empty());
-    assert_eq!(v2.sources[5].key, v2.sources[2].key);
-    assert_eq!(v2.sources[5].import_batch_id, npc_import.batch_id);
-    assert_eq!(v2.sources[5].revision, npc_import.source_revision);
+    assert_eq!(v2.sources[5].key, v2.sources[3].key);
+    assert_eq!(v2.sources[5].import_batch_id, mount_import.batch_id);
+    assert_eq!(v2.sources[5].revision, mount_import.source_revision);
+    assert_eq!(v2.sources[5].sha256, mount_import.source_artifact_sha256);
     assert_eq!(v2.sources[5].evidence, ProjectV2EvidenceClass::Derived);
+    // D12: offer prices both wikis agree on also come from the committed TibiaWiki BR facts.
+    let npc_br_import = &project.imports()[5];
+    assert_eq!(npc_br_import.batch_id, "g4-npc-prices-tibiawiki-br-r1");
+    assert_eq!(npc_br_import.source_repository, "tibiawiki.com.br");
+    assert_eq!(
+        npc_br_import.source_artifact_sha256,
+        "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+    );
+    assert!(npc_br_import.candidates.is_empty());
+    assert_eq!(v2.sources[2].key, "oteryn:source.tibiawiki");
+    assert_eq!(v2.sources[2].import_batch_id, npc_br_import.batch_id);
+    assert_eq!(v2.sources[2].revision, npc_br_import.source_revision);
+    assert_eq!(v2.sources[2].sha256, npc_br_import.source_artifact_sha256);
+    assert_eq!(v2.sources[2].evidence, ProjectV2EvidenceClass::Derived);
+    let npc_import = &project.imports()[6];
+    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r4");
+    assert!(npc_import.candidates.is_empty());
+    assert_eq!(v2.sources[6].key, v2.sources[3].key);
+    assert_eq!(v2.sources[6].import_batch_id, npc_import.batch_id);
+    assert_eq!(v2.sources[6].revision, npc_import.source_revision);
+    assert_eq!(v2.sources[6].evidence, ProjectV2EvidenceClass::Derived);
     // D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki.
-    let wiki_creature_import = &project.imports()[6];
+    let wiki_creature_import = &project.imports()[7];
     assert_eq!(
         wiki_creature_import.batch_id,
         "g4-wiki-authored-creature-d44-r1"
     );
     assert_eq!(wiki_creature_import.source_repository, "tibia.fandom.com");
     assert!(wiki_creature_import.candidates.is_empty());
-    assert_eq!(v2.sources[6].key, "oteryn:source.tibiawiki");
-    assert_eq!(v2.sources[6].import_batch_id, wiki_creature_import.batch_id);
-    assert_eq!(v2.sources[6].revision, wiki_creature_import.source_revision);
-    assert_eq!(v2.sources[6].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(v2.sources[7].key, "oteryn:source.tibiawiki");
+    assert_eq!(v2.sources[7].import_batch_id, wiki_creature_import.batch_id);
+    assert_eq!(v2.sources[7].revision, wiki_creature_import.source_revision);
+    assert_eq!(v2.sources[7].evidence, ProjectV2EvidenceClass::Derived);
     assert_eq!(
         v2.source_identity_bindings
             .iter()
@@ -523,7 +537,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         if binding.target.family == ProjectV2Family::Creature {
             if binding.source_key == "oteryn:source.tibiawiki" {
                 // D44 wiki-authored creature, checked above.
-                assert_eq!(binding.source_revision, v2.sources[6].revision);
+                assert_eq!(binding.source_revision, v2.sources[7].revision);
                 assert!(binding.target.key.starts_with("oteryn:creature."));
                 continue;
             }
@@ -556,16 +570,16 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         );
         match binding.target.family {
             ProjectV2Family::Item => {
-                assert_eq!(binding.source_revision, v2.sources[2].revision);
+                assert_eq!(binding.source_revision, v2.sources[3].revision);
                 assert!(item_ids.insert(&binding.external_id));
             }
             ProjectV2Family::Outfit => {
-                assert_eq!(binding.source_revision, v2.sources[4].revision);
+                assert_eq!(binding.source_revision, v2.sources[5].revision);
                 assert!(binding.target.key.starts_with("oteryn:content.outfit."));
                 assert!(outfit_ids.insert(&binding.external_id));
             }
             ProjectV2Family::Mount => {
-                assert_eq!(binding.source_revision, v2.sources[4].revision);
+                assert_eq!(binding.source_revision, v2.sources[5].revision);
                 assert!(binding.target.key.starts_with("oteryn:content.mount."));
                 assert!(mount_ids.insert(&binding.external_id));
             }

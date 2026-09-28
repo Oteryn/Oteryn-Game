@@ -3,7 +3,9 @@ schema doc (OTERYN_NPC_AUTHORING_SCHEMA_V1.md §3 D4-D8, §8).
 
 Semantic rules:
 - schema == 'OTERYN_NPC_PROMOTION_CANDIDATES/v1', evidence == 'OTS_HYPOTHESIS_ONLY',
-  decisions == ['D4', 'D5', 'D6', 'D7', 'D8'], snapshot_sha256 and item_map_sha256 are 64 hex chars;
+  decisions == ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'], plus 'D12' exactly when br_facts_sha256 is
+  present, and a WIKI_PRICE row requires br_facts_sha256; snapshot_sha256, item_map_sha256 and
+  br_facts_sha256 are 64 hex chars;
 - each candidate identity is family NPC, key `oteryn:npc.<slug>` (D4) and revision 'definition-r1';
   the key suffix equals the slug of `name` (same slug() as promotion_candidates.py);
 - candidate keys are unique and the candidates list is sorted by key;
@@ -32,7 +34,12 @@ Semantic rules:
   with `origin` == 'wiki' (and, conversely, any such placement requires this row); or rule
   'WIKI_CONFIRMED' with `chosen` == 'wiki', `fact` == 'placements', an empty `placements` list
   (and, conversely, an empty `placements` list requires either this row or the candidate is
-  otherwise invalid) and a non-null `wiki`; or rule 'WIKI_BASE_NAME'/'WIKI_SPELLING' with
+  otherwise invalid) and a non-null `wiki`; or rule 'WIKI_PRICE' (D12) with `chosen` == 'wiki', an
+  `item_name`, a `price` equal to the unit_price of the admitted offer its fact names (with `--snapshot`
+  and `--br-facts`, also the price both pinned wikis state; every admitted offer whose registered item
+  both wikis price must then carry that price) and an `item_name` that is the registered
+  name of that offer's Item (committed `content/items/definitions`), a
+  `trade.<item>.<direction>` fact and a non-null `wiki`; or rule 'WIKI_BASE_NAME'/'WIKI_SPELLING' with
   `chosen` == 'wiki', `fact` == 'identity', a single-source candidate and a non-null `wiki`;
 - left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED /
   GATED_OFFER / OFFER_UNCONFIRMED / OFFER_CONFLICT_WIKI_UNDECIDED / ITEM_NOT_REGISTERED /
@@ -48,16 +55,29 @@ Semantic rules:
 Usage: python validate_promotion.py <report.json>
 """
 import argparse
+import hashlib
 import json
 import re
 import sys
 from pathlib import Path
 
+import promotion_candidates
 from promotion_candidates import slug
 
 SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
 EVIDENCE = 'OTS_HYPOTHESIS_ONLY'
-DECISIONS = ['D4', 'D5', 'D6', 'D7', 'D8']
+DECISIONS = ['D4', 'D5', 'D6', 'D7', 'D8', 'D11']
+# `trade.<source item id>[x<count>][s<sub type>].<direction>`, as promotion_candidates labels an offer
+WIKI_PRICE_FACT = re.compile(r'trade\.(\d+)(?:x(\d+))?(?:s(-?\d+))?\.(SellToPlayer|BuyFromPlayer)')
+
+
+def named_offers(candidate, match):
+    """The admitted offers a WIKI_PRICE fact names: the exact (item, count, sub type, direction) tuple."""
+    source_item_id, count, sub_type, direction = match.groups()
+    return [offer for offer in (candidate.get('trade_service') or {}).get('offers') or []
+            if offer.get('source_item_id') == int(source_item_id) and offer.get('direction') == direction
+            and (offer.get('count') or None) == (int(count) if count else None)
+            and offer.get('sub_type') == (int(sub_type) if sub_type is not None else None)]
 KEY_RE = re.compile(r'^oteryn:npc\.[a-z0-9]+(_[a-z0-9]+)*$')
 ITEM_KEY_RE = re.compile(r'^oteryn:item\.[a-z0-9_.]+$')
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
@@ -276,10 +296,31 @@ def candidate_errors(candidate, index):
                              f"provenance has {sorted(provenance)}")
             if candidate.get('wiki') is None:
                 errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
+        elif rule == 'WIKI_PRICE':
+            if chosen != 'wiki':
+                errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")
+            if not isinstance(row.get('item_name'), str) or not row['item_name']:
+                errs.append(f"{alabel}: item_name {row.get('item_name')!r} is not a non-empty string")
+            price = row.get('price')
+            if not _is_int(price) or price < 0:
+                errs.append(f"{alabel}: price {price!r} is not a non-negative integer")
+            match = WIKI_PRICE_FACT.fullmatch(fact) if isinstance(fact, str) else None
+            if match is None:
+                errs.append(f"{alabel}: fact {fact!r} is not a trade offer direction for rule {rule!r}")
+            else:
+                # the fact names an admitted offer, and that offer carries the wiki price
+                named = named_offers(candidate, match)
+                if not named:
+                    errs.append(f"{alabel}: fact {fact!r} names no admitted offer")
+                elif any(offer.get('unit_price') != price for offer in named):
+                    errs.append(f"{alabel}: offer unit_price {[o.get('unit_price') for o in named]!r} != "
+                                f"WIKI_PRICE price {price!r}")
+            if candidate.get('wiki') is None:
+                errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
         else:
             errs.append(f"{alabel}: rule {rule!r} not in "
                          f"['WIKI_ARBITER', 'WIKI_BASE_NAME', 'WIKI_CONFIRMED', 'WIKI_POSITION', "
-                         f"'WIKI_SPELLING']")
+                         f"'WIKI_PRICE', 'WIKI_SPELLING']")
 
     if wiki_placements and not any(row.get('rule') == 'WIKI_POSITION' for row in arbitration_rows):
         errs.append(f'{label}: wiki-origin placement present without a WIKI_POSITION arbitration row')
@@ -319,8 +360,15 @@ def errors(report):
         errs.append(f"schema {report.get('schema')!r} != {SCHEMA!r}")
     if report.get('evidence') != EVIDENCE:
         errs.append(f"evidence {report.get('evidence')!r} != {EVIDENCE!r}")
-    if report.get('decisions') != DECISIONS:
-        errs.append(f"decisions {report.get('decisions')!r} != {DECISIONS!r}")
+    expected = DECISIONS + (['D12'] if 'br_facts_sha256' in report else [])
+    if report.get('decisions') != expected:
+        errs.append(f"decisions {report.get('decisions')!r} != {expected!r}")
+    if 'br_facts_sha256' in report and not re.fullmatch(r'[0-9a-f]{64}', str(report['br_facts_sha256'])):
+        errs.append('br_facts_sha256 is not 64 hex chars')
+    # a WIKI_PRICE row is only valid with the BR facts it was decided from (D12)
+    if 'br_facts_sha256' not in report and any(row.get('rule') == 'WIKI_PRICE' for candidate in
+                                               report.get('candidates') or [] for row in candidate.get('arbitration') or []):
+        errs.append('WIKI_PRICE arbitration without br_facts_sha256 (D12)')
     snapshot_sha = report.get('snapshot_sha256')
     if not isinstance(snapshot_sha, str) or not SHA256_RE.match(snapshot_sha):
         errs.append(f'snapshot_sha256 {snapshot_sha!r} is not 64 hex chars')
@@ -372,12 +420,82 @@ def errors(report):
     return errs
 
 
+def registry_item_names():
+    """Folded registered names of the committed Item definitions, by Item key."""
+    names = {}
+    for path in sorted((Path(__file__).resolve().parents[3] / 'content/items/definitions').glob('items-*.json')):
+        for record in json.loads(path.read_text(encoding='utf-8'))['records']:
+            definition = record['definition']
+            presentation = definition.get('semantics', {}).get('presentation', {})
+            if presentation.get('state') == 'KNOWN' and presentation['value']['name'].get('state') == 'KNOWN':
+                names[definition['identity']['key']] = promotion_candidates.fold(presentation['value']['name']['value'])
+    return names
+
+
+def item_name_errors(report, registry_names):
+    """Every WIKI_PRICE row's item_name is the registered name of the offer its fact names, so one item's
+    wiki price can never justify another item's offer. `registry_names` maps Item keys to folded names."""
+    errs = []
+    for index, candidate in enumerate(report.get('candidates') or []):
+        for row in candidate.get('arbitration') or []:
+            match = WIKI_PRICE_FACT.fullmatch(row.get('fact') or '') if row.get('rule') == 'WIKI_PRICE' else None
+            if match is None:
+                continue
+            named = {registry_names.get((offer.get('item') or {}).get('key')) for offer in named_offers(candidate, match)}
+            if named != {promotion_candidates.fold(str(row.get('item_name')))}:
+                errs.append(f"candidates[{index}]: WIKI_PRICE {row['fact']} item_name {row.get('item_name')!r} "
+                            f"is not the offer's registered item {sorted(n for n in named if n)!r}")
+    return errs
+
+
+def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names):
+    """With the pinned inputs at hand (D12), using the same lookup the candidates were built with: every
+    WIKI_PRICE row is the price both wikis state, and every admitted offer whose registered item both wikis
+    price for that NPC and direction carries that price, so an omitted override cannot pass."""
+    errs = []
+    if hashlib.sha256(snapshot_bytes).hexdigest() != report.get('snapshot_sha256'):
+        errs.append('--snapshot does not match snapshot_sha256')
+    if hashlib.sha256(br_facts_bytes).hexdigest() != report.get('br_facts_sha256'):
+        errs.append('--br-facts does not match br_facts_sha256')
+    if errs:
+        return errs
+    builder = promotion_candidates.Builder(json.loads(snapshot_bytes), {'records': []}, json.loads(br_facts_bytes))
+    for index, candidate in enumerate(report.get('candidates') or []):
+        name = candidate.get('name')
+        if not isinstance(name, str):
+            continue  # reported by errors()
+        fandom = {row['item'].lower(): row
+                  for row in builder.wiki_trade.get(promotion_candidates.normalize_name(name), [])}
+        for row in candidate.get('arbitration') or []:
+            match = WIKI_PRICE_FACT.fullmatch(row.get('fact') or '') if row.get('rule') == 'WIKI_PRICE' else None
+            if match is None:
+                continue  # not a WIKI_PRICE row, or a malformed one errors() reports
+            stated = builder.wiki_price(name, match.group(4), row.get('item_name'), fandom)
+            if stated != row.get('price'):
+                errs.append(f"candidates[{index}]: WIKI_PRICE {row['fact']} price {row.get('price')!r} != "
+                            f"the price both wikis state ({stated!r})")
+        for offer in (candidate.get('trade_service') or {}).get('offers') or []:
+            item_name = registry_names.get((offer.get('item') or {}).get('key'))
+            stated = builder.wiki_price(name, offer.get('direction'), item_name, fandom) if item_name else None
+            if stated is not None and offer.get('unit_price') != stated:
+                errs.append(f"candidates[{index}]: offer {item_name!r} {offer.get('direction')} unit_price "
+                            f"{offer.get('unit_price')!r} != the price both wikis state ({stated!r})")
+    return errs
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('report')
+    parser.add_argument('--snapshot', type=Path, help='the pinned Fandom snapshot; checks every WIKI_PRICE row')
+    parser.add_argument('--br-facts', type=Path, help='the pinned TibiaWiki BR facts; checks every WIKI_PRICE row')
     args = parser.parse_args()
+    if bool(args.snapshot) != bool(args.br_facts):
+        parser.error('--snapshot and --br-facts check the WIKI_PRICE evidence together; pass both or neither')
     report = json.loads(Path(args.report).read_text(encoding='utf-8'))
-    all_errors = errors(report)
+    registry_names = registry_item_names()
+    all_errors = errors(report) + item_name_errors(report, registry_names)
+    if args.snapshot and args.br_facts:
+        all_errors += wiki_price_errors(report, args.snapshot.read_bytes(), args.br_facts.read_bytes(), registry_names)
 
     candidates = report.get('candidates') or []
     total = len(candidates)

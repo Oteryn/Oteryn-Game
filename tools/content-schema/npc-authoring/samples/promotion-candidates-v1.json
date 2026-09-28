@@ -1,4 +1,5 @@
 {
+ "br_facts_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
  "candidates": [
   {
    "arbitration": [],
@@ -2813,7 +2814,22 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3457.SellToPlayer",
+     "item_name": "shovel",
+     "price": 50,
+     "rule": "WIKI_PRICE"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3483.SellToPlayer",
+     "item_name": "fishing rod",
+     "price": 150,
+     "rule": "WIKI_PRICE"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.ahmet",
@@ -3251,7 +3267,7 @@
       },
       "source_item_id": 3457,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 50
      },
      {
       "count": null,
@@ -3311,7 +3327,7 @@
       },
       "source_item_id": 3483,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 150
      },
      {
       "count": null,
@@ -9487,7 +9503,22 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3600.SellToPlayer",
+     "item_name": "bread",
+     "price": 4,
+     "rule": "WIKI_PRICE"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3607.SellToPlayer",
+     "item_name": "cheese",
+     "price": 6,
+     "rule": "WIKI_PRICE"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.armenius",
@@ -9625,7 +9656,7 @@
       },
       "source_item_id": 3600,
       "sub_type": null,
-      "unit_price": 3
+      "unit_price": 4
      },
      {
       "count": null,
@@ -9649,7 +9680,7 @@
       },
       "source_item_id": 3607,
       "sub_type": null,
-      "unit_price": 5
+      "unit_price": 6
      }
     ]
    },
@@ -20647,7 +20678,22 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3457.SellToPlayer",
+     "item_name": "shovel",
+     "price": 50,
+     "rule": "WIKI_PRICE"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3483.SellToPlayer",
+     "item_name": "fishing rod",
+     "price": 150,
+     "rule": "WIKI_PRICE"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.bezil",
@@ -21073,7 +21119,7 @@
       },
       "source_item_id": 3457,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 50
      },
      {
       "count": null,
@@ -21133,7 +21179,7 @@
       },
       "source_item_id": 3483,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 150
      },
      {
       "count": null,
@@ -23629,7 +23675,15 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3607.SellToPlayer",
+     "item_name": "cheese",
+     "price": 6,
+     "rule": "WIKI_PRICE"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.bolfona",
@@ -23743,7 +23797,7 @@
       },
       "source_item_id": 3607,
       "sub_type": null,
-      "unit_price": 4
+      "unit_price": 6
      }
     ]
    },
@@ -28294,62 +28348,6 @@
    "arbitration": [],
    "identity": {
     "family": "NPC",
-    "key": "oteryn:npc.brom",
-    "revision": "definition-r1"
-   },
-   "left_out": [],
-   "movement": {
-    "floor_change": false,
-    "walk_interval_ms": 2000,
-    "walk_radius": 2
-   },
-   "name": "Brom",
-   "placements": [
-    {
-     "direction": "NORTH",
-     "position": {
-      "x": 32703,
-      "y": 31832,
-      "z": 12
-     },
-     "spawn_interval_s": 60,
-     "spawn_radius": 1
-    }
-   ],
-   "presentation": {
-    "outfit": {
-     "addons": 0,
-     "body": 0,
-     "feet": 0,
-     "head": 0,
-     "legs": 0,
-     "look_type": 69,
-     "mount": null
-    },
-    "speech_bubble": "NORMAL"
-   },
-   "profession": "normal",
-   "provenance": {
-    "canary": {
-     "key": "canary:npc/brom",
-     "sha256": "92340513d9f867f3f5c1023fd3ffb604a9e7f9a8a2a0b58d0c7404c4f46dfbe4"
-    },
-    "crystal": {
-     "key": "crystal:npc/brom",
-     "sha256": "f3fa08318f891a2f3431d347bede4eaafdda2299747c13e0ee32d234ed5122e3"
-    }
-   },
-   "trade_service": null,
-   "travel_service": null,
-   "wiki": {
-    "pageid": 77098,
-    "revid": 1073486
-   }
-  },
-  {
-   "arbitration": [],
-   "identity": {
-    "family": "NPC",
     "key": "oteryn:npc.bron",
     "revision": "definition-r1"
    },
@@ -28512,62 +28510,6 @@
    "wiki": {
     "pageid": 5362,
     "revid": 1054616
-   }
-  },
-  {
-   "arbitration": [],
-   "identity": {
-    "family": "NPC",
-    "key": "oteryn:npc.brutus",
-    "revision": "definition-r1"
-   },
-   "left_out": [],
-   "movement": {
-    "floor_change": false,
-    "walk_interval_ms": 2000,
-    "walk_radius": 2
-   },
-   "name": "Brutus",
-   "placements": [
-    {
-     "direction": "NORTH",
-     "position": {
-      "x": 33153,
-      "y": 32984,
-      "z": 8
-     },
-     "spawn_interval_s": 60,
-     "spawn_radius": 1
-    }
-   ],
-   "presentation": {
-    "outfit": {
-     "addons": 3,
-     "body": 77,
-     "feet": 116,
-     "head": 97,
-     "legs": 78,
-     "look_type": 143,
-     "mount": null
-    },
-    "speech_bubble": "NORMAL"
-   },
-   "profession": "normal",
-   "provenance": {
-    "canary": {
-     "key": "canary:npc/brutus",
-     "sha256": "1a8daf45dc1d9771a0d9de21e312139bd2dea901f07af40e6cc7e4a21017e331"
-    },
-    "crystal": {
-     "key": "crystal:npc/brutus",
-     "sha256": "a4dd011a5812877dc822968a95d414305ae5b7ffb4795cf70cf3b3894f76ae93"
-    }
-   },
-   "trade_service": null,
-   "travel_service": null,
-   "wiki": {
-    "pageid": 63275,
-    "revid": 1073488
    }
   },
   {
@@ -38685,7 +38627,22 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3600.SellToPlayer",
+     "item_name": "bread",
+     "price": 4,
+     "rule": "WIKI_PRICE"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3607.SellToPlayer",
+     "item_name": "cheese",
+     "price": 6,
+     "rule": "WIKI_PRICE"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.clyde",
@@ -38847,7 +38804,7 @@
       },
       "source_item_id": 3600,
       "sub_type": null,
-      "unit_price": 3
+      "unit_price": 4
      },
      {
       "count": null,
@@ -38871,7 +38828,7 @@
       },
       "source_item_id": 3607,
       "sub_type": null,
-      "unit_price": 5
+      "unit_price": 6
      }
     ]
    },
@@ -75514,7 +75471,22 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3457.SellToPlayer",
+     "item_name": "shovel",
+     "price": 50,
+     "rule": "WIKI_PRICE"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3483.SellToPlayer",
+     "item_name": "fishing rod",
+     "price": 150,
+     "rule": "WIKI_PRICE"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.gree_dee",
@@ -75940,7 +75912,7 @@
       },
       "source_item_id": 3457,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 50
      },
      {
       "count": null,
@@ -76000,7 +75972,7 @@
       },
       "source_item_id": 3483,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 150
      },
      {
       "count": null,
@@ -81840,7 +81812,22 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3457.SellToPlayer",
+     "item_name": "shovel",
+     "price": 50,
+     "rule": "WIKI_PRICE"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3483.SellToPlayer",
+     "item_name": "fishing rod",
+     "price": 150,
+     "rule": "WIKI_PRICE"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.halif",
@@ -82288,7 +82275,7 @@
       },
       "source_item_id": 3457,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 50
      },
      {
       "count": null,
@@ -82348,7 +82335,7 @@
       },
       "source_item_id": 3483,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 150
      },
      {
       "count": null,
@@ -91887,7 +91874,15 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.2853.SellToPlayer",
+     "item_name": "bag",
+     "price": 5,
+     "rule": "WIKI_PRICE"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.iriana",
@@ -91953,7 +91948,7 @@
       },
       "source_item_id": 2853,
       "sub_type": null,
-      "unit_price": 4
+      "unit_price": 5
      },
      {
       "count": null,
@@ -106246,7 +106241,15 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3378.BuyFromPlayer",
+     "item_name": "studded armor",
+     "price": 25,
+     "rule": "WIKI_PRICE"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.lee_delle",
@@ -106792,7 +106795,7 @@
       },
       "source_item_id": 3378,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 25
      },
      {
       "count": null,
@@ -120538,7 +120541,22 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3577.SellToPlayer",
+     "item_name": "meat",
+     "price": 7,
+     "rule": "WIKI_PRICE"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3582.SellToPlayer",
+     "item_name": "ham",
+     "price": 10,
+     "rule": "WIKI_PRICE"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.mugluf",
@@ -120626,7 +120644,7 @@
       },
       "source_item_id": 3577,
       "sub_type": null,
-      "unit_price": 5
+      "unit_price": 7
      },
      {
       "count": null,
@@ -120650,7 +120668,7 @@
       },
       "source_item_id": 3582,
       "sub_type": null,
-      "unit_price": 8
+      "unit_price": 10
      }
     ]
    },
@@ -123418,7 +123436,22 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3457.SellToPlayer",
+     "item_name": "shovel",
+     "price": 50,
+     "rule": "WIKI_PRICE"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3483.SellToPlayer",
+     "item_name": "fishing rod",
+     "price": 150,
+     "rule": "WIKI_PRICE"
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.nezil",
@@ -123844,7 +123877,7 @@
       },
       "source_item_id": 3457,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 50
      },
      {
       "count": null,
@@ -123904,7 +123937,7 @@
       },
       "source_item_id": 3483,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 150
      },
      {
       "count": null,
@@ -136248,6 +136281,13 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.3349.BuyFromPlayer",
+     "item_name": "crossbow",
+     "price": 120,
+     "rule": "WIKI_PRICE"
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.3350",
      "rule": "WIKI_ARBITER"
@@ -136786,7 +136826,7 @@
       },
       "source_item_id": 3349,
       "sub_type": null,
-      "unit_price": 500
+      "unit_price": 120
      },
      {
       "count": null,
@@ -152050,62 +152090,6 @@
    }
   },
   {
-   "arbitration": [],
-   "identity": {
-    "family": "NPC",
-    "key": "oteryn:npc.roughington",
-    "revision": "definition-r1"
-   },
-   "left_out": [],
-   "movement": {
-    "floor_change": false,
-    "walk_interval_ms": 2000,
-    "walk_radius": 2
-   },
-   "name": "Roughington",
-   "placements": [
-    {
-     "direction": "NORTH",
-     "position": {
-      "x": 33535,
-      "y": 31832,
-      "z": 9
-     },
-     "spawn_interval_s": 60,
-     "spawn_radius": 1
-    }
-   ],
-   "presentation": {
-    "outfit": {
-     "addons": 1,
-     "body": 57,
-     "feet": 57,
-     "head": 21,
-     "legs": 99,
-     "look_type": 132,
-     "mount": null
-    },
-    "speech_bubble": "NORMAL"
-   },
-   "profession": "normal",
-   "provenance": {
-    "canary": {
-     "key": "canary:npc/roughington",
-     "sha256": "2dd929d5ff477e7cdb99cdeefdf33a45d00b443854a0a582f949800bc39a984a"
-    },
-    "crystal": {
-     "key": "crystal:npc/roughington",
-     "sha256": "7354649a4e88dd4344a6fc74a4a94539a003c50d6c9d30b9b0a934bfaec40f7f"
-    }
-   },
-   "trade_service": null,
-   "travel_service": null,
-   "wiki": {
-    "pageid": 77095,
-    "revid": 1073484
-   }
-  },
-  {
    "arbitration": [
     {
      "chosen": "crystal",
@@ -158219,62 +158203,6 @@
    "wiki": {
     "pageid": 1683,
     "revid": 1113791
-   }
-  },
-  {
-   "arbitration": [],
-   "identity": {
-    "family": "NPC",
-    "key": "oteryn:npc.shadowpunch",
-    "revision": "definition-r1"
-   },
-   "left_out": [],
-   "movement": {
-    "floor_change": false,
-    "walk_interval_ms": 2000,
-    "walk_radius": 2
-   },
-   "name": "Shadowpunch",
-   "placements": [
-    {
-     "direction": "NORTH",
-     "position": {
-      "x": 33377,
-      "y": 31832,
-      "z": 9
-     },
-     "spawn_interval_s": 60,
-     "spawn_radius": 1
-    }
-   ],
-   "presentation": {
-    "outfit": {
-     "addons": 1,
-     "body": 91,
-     "feet": 91,
-     "head": 91,
-     "legs": 93,
-     "look_type": 152,
-     "mount": null
-    },
-    "speech_bubble": "NORMAL"
-   },
-   "profession": "normal",
-   "provenance": {
-    "canary": {
-     "key": "canary:npc/shadowpunch",
-     "sha256": "366a60153a092cf27596d332bf31fb9da68f2d5ff17a3088dfa4ba913c69b42b"
-    },
-    "crystal": {
-     "key": "crystal:npc/shadowpunch",
-     "sha256": "ed0cf26d620cc9228b1afea41ddc6e4859fdb1b42da2da443885187a71ccfcb9"
-    }
-   },
-   "trade_service": null,
-   "travel_service": null,
-   "wiki": {
-    "pageid": 77091,
-    "revid": 1073487
    }
   },
   {
@@ -187714,119 +187642,6 @@
    "arbitration": [],
    "identity": {
     "family": "NPC",
-    "key": "oteryn:npc.victor",
-    "revision": "definition-r1"
-   },
-   "left_out": [],
-   "movement": {
-    "floor_change": false,
-    "walk_interval_ms": 2000,
-    "walk_radius": 2
-   },
-   "name": "Victor",
-   "placements": [
-    {
-     "direction": "NORTH",
-     "position": {
-      "x": 32255,
-      "y": 32216,
-      "z": 8
-     },
-     "spawn_interval_s": 60,
-     "spawn_radius": 1
-    }
-   ],
-   "presentation": {
-    "outfit": {
-     "addons": 3,
-     "body": 78,
-     "feet": 95,
-     "head": 21,
-     "legs": 38,
-     "look_type": 134,
-     "mount": null
-    },
-    "speech_bubble": "TRADE"
-   },
-   "profession": "trader",
-   "provenance": {
-    "canary": {
-     "key": "canary:npc/victor",
-     "sha256": "b3b0ea35c7df9017d08f5a12725a33ea2d1f6d05648e05d7a446fe65d7eecd27"
-    },
-    "crystal": {
-     "key": "crystal:npc/victor",
-     "sha256": "f3f20421193d046e6034d8e021ae6b8b26f199e244ffd9db4fd219d4b1303a0a"
-    }
-   },
-   "trade_service": {
-    "currency": null,
-    "identity": {
-     "family": "Service",
-     "key": "oteryn:service.trade.victor",
-     "revision": "definition-r1"
-    },
-    "offers": [
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00000157",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 236,
-      "sub_type": null,
-      "unit_price": 150
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.consumable.potion.great_health",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 239,
-      "sub_type": null,
-      "unit_price": 300
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.consumable.potion.health",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 266,
-      "sub_type": null,
-      "unit_price": 75
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00007457",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 7643,
-      "sub_type": null,
-      "unit_price": 500
-     }
-    ]
-   },
-   "travel_service": null,
-   "wiki": {
-    "pageid": 77051,
-    "revid": 1073485
-   }
-  },
-  {
-   "arbitration": [],
-   "identity": {
-    "family": "NPC",
     "key": "oteryn:npc.vigintius",
     "revision": "definition-r1"
    },
@@ -191962,6 +191777,13 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.3279.BuyFromPlayer",
+     "item_name": "war hammer",
+     "price": 470,
+     "rule": "WIKI_PRICE"
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.50181",
      "rule": "WIKI_ARBITER"
@@ -192500,7 +192322,7 @@
       },
       "source_item_id": 3279,
       "sub_type": null,
-      "unit_price": 450
+      "unit_price": 470
      },
      {
       "count": null,
@@ -210560,7 +210382,9 @@
   "D5",
   "D6",
   "D7",
-  "D8"
+  "D8",
+  "D11",
+  "D12"
  ],
  "evidence": "OTS_HYPOTHESIS_ONLY",
  "held": [
@@ -210695,6 +210519,51 @@
    "sources": {
     "canary": "canary:npc/captain_haba_open_sea",
     "crystal": "crystal:npc/captain_haba_open_sea"
+   }
+  },
+  {
+   "detail": "Duelling Arena supervisor, removed in 13.12 (TibiaWiki BR removed, Fandom deprecated)",
+   "name": "Brom",
+   "reason": "REMOVED_FROM_GAME",
+   "sources": {
+    "canary": "canary:npc/brom",
+    "crystal": "crystal:npc/brom"
+   }
+  },
+  {
+   "detail": "Duelling Arena supervisor, removed in 13.12 (TibiaWiki BR removed, Fandom deprecated)",
+   "name": "Brutus",
+   "reason": "REMOVED_FROM_GAME",
+   "sources": {
+    "canary": "canary:npc/brutus",
+    "crystal": "crystal:npc/brutus"
+   }
+  },
+  {
+   "detail": "Duelling Arena supervisor, removed in 13.12 (TibiaWiki BR removed, Fandom deprecated)",
+   "name": "Roughington",
+   "reason": "REMOVED_FROM_GAME",
+   "sources": {
+    "canary": "canary:npc/roughington",
+    "crystal": "crystal:npc/roughington"
+   }
+  },
+  {
+   "detail": "Duelling Arena supervisor, removed in 13.12 (TibiaWiki BR removed, Fandom deprecated)",
+   "name": "Shadowpunch",
+   "reason": "REMOVED_FROM_GAME",
+   "sources": {
+    "canary": "canary:npc/shadowpunch",
+    "crystal": "crystal:npc/shadowpunch"
+   }
+  },
+  {
+   "detail": "Duelling Arena supervisor, removed in 13.12 (TibiaWiki BR removed, Fandom deprecated)",
+   "name": "Victor",
+   "reason": "REMOVED_FROM_GAME",
+   "sources": {
+    "canary": "canary:npc/victor",
+    "crystal": "crystal:npc/victor"
    }
   },
   {
@@ -210837,21 +210706,22 @@
  "schema": "OTERYN_NPC_PROMOTION_CANDIDATES/v1",
  "snapshot_sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42",
  "totals": {
-  "arbitrated_facts": 282,
-  "candidates": 1094,
+  "arbitrated_facts": 303,
+  "candidates": 1089,
   "held:DEFINITION_CONFLICT": 9,
   "held:EMPTY_SLUG": 1,
   "held:KEY_COLLISION": 2,
   "held:NOT_LOADABLE": 3,
   "held:OWNER_REJECTED": 2,
   "held:PLACEMENT_CONFLICT_NO_WIKI_POSITION": 1,
+  "held:REMOVED_FROM_GAME": 5,
   "held:SINGLE_SOURCE_NOT_ON_WIKI": 9,
   "held:UNPLACED": 7,
   "left_out_offers": 219,
   "left_out_routes": 68,
-  "offers": 11736,
+  "offers": 11732,
   "routes": 197,
-  "with_trade": 308,
+  "with_trade": 307,
   "with_travel": 55
  }
 }
