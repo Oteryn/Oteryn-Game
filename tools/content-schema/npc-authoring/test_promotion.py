@@ -711,5 +711,34 @@ class PromotionValidatorTests(unittest.TestCase):
                          ['--item-map does not match item_map_sha256'])
 
 
+    def test_wiki_offers_never_at_held_or_non_gold_shops(self):
+        report = self.majority_report(150)
+        ahmet = find_candidate(report, 'Ahmet')
+        row = ahmet['arbitration'].pop()
+        ahmet['arbitration'].append({**row, 'rule': 'WIKI_OFFER', 'wikis': ['br', 'fandom']})
+        source_item_id, direction = row['fact'].split('.')[1], row['fact'].split('.')[2]
+        next(o for o in ahmet['trade_service']['offers']
+             if o['source_item_id'] == int(source_item_id) and o['direction'] == direction)['origin'] = 'wiki'
+        self.assertEqual(validate_promotion.errors(report), [])
+        ahmet['name'] = 'Cillia'
+        self.assertTrue(any('wiki offers at a held or non-gold shop' in e for e in validate_promotion.errors(report)))
+        ahmet['name'] = 'Ahmet'
+        ahmet['trade_service']['currency'] = {'family': 'Item', 'key': 'oteryn:item.test.token', 'revision': 'definition-r1'}
+        self.assertTrue(any('wiki offers at a held or non-gold shop' in e for e in validate_promotion.errors(report)))
+
+    def test_rebuild_compares_the_whole_report(self):
+        from unittest import mock
+        report = load_sample()
+        with mock.patch.object(promotion_candidates, 'build_report', return_value=load_sample()):
+            self.assertEqual(validate_promotion.rebuild_errors(report, 'c', 'x', b'', b'', b'', b''), [])
+            # an offer stripped of both its origin and its WIKI_OFFER row is still caught against the rebuild
+            ahmet = find_candidate(report, 'Ahmet')
+            ahmet['arbitration'] = [r for r in ahmet['arbitration'] if r['rule'] != 'WIKI_OFFER']
+            for offer in ahmet['trade_service']['offers']:
+                offer.pop('origin', None)
+            self.assertEqual(validate_promotion.rebuild_errors(report, 'c', 'x', b'', b'', b'', b''),
+                             ["the report is not what the pinned inputs build (differing candidates: ['Ahmet'])"])
+
+
 if __name__ == '__main__':
     unittest.main()

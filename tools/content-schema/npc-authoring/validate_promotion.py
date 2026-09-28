@@ -354,6 +354,10 @@ def candidate_errors(candidate, index):
     offer_rows = sorted(row.get('fact') for row in arbitration_rows if row.get('rule') == 'WIKI_OFFER')
     if wiki_offer_facts != offer_rows:
         errs.append(f'{label}: wiki-origin offers {wiki_offer_facts} do not match the WIKI_OFFER rows {offer_rows}')
+    # held quest/event/token shops and non-gold shops never take wiki offers
+    if (offer_rows or wiki_offer_facts) and (candidate.get('name') in promotion_candidates.WIKI_SHOP_HELD
+                                             or (candidate.get('trade_service') or {}).get('currency') is not None):
+        errs.append(f'{label}: wiki offers at a held or non-gold shop')
     if wiki_placements and not any(row.get('rule') == 'WIKI_POSITION' for row in arbitration_rows):
         errs.append(f'{label}: wiki-origin placement present without a WIKI_POSITION arbitration row')
 
@@ -547,11 +551,26 @@ def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names, ti
     return errs
 
 
+def rebuild_errors(report, canary, crystal, snapshot_bytes, item_map_bytes, br_facts_bytes, tibiopedia_bytes):
+    """With the source bundles as well, the report must be exactly what promotion_candidates builds from the pinned
+    inputs, so no source offer, wiki offer or provenance row can be added, dropped or relabelled."""
+    rebuilt = promotion_candidates.build_report(canary, crystal, snapshot_bytes, item_map_bytes, br_facts_bytes,
+                                                tibiopedia_bytes)
+    if json.dumps(rebuilt, sort_keys=True) == json.dumps(report, sort_keys=True):
+        return []
+    theirs = {c.get('name'): json.dumps(c, sort_keys=True) for c in report.get('candidates') or []}
+    ours = {c['name']: json.dumps(c, sort_keys=True) for c in rebuilt['candidates']}
+    differing = sorted(name for name in set(theirs) | set(ours) if theirs.get(name) != ours.get(name))
+    return [f'the report is not what the pinned inputs build (differing candidates: {differing[:10]})']
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('report')
     parser.add_argument('--snapshot', type=Path, help='the pinned Fandom snapshot; checks every WIKI_PRICE row')
     parser.add_argument('--br-facts', type=Path, help='the pinned TibiaWiki BR facts; checks every WIKI_PRICE row')
+    parser.add_argument('--canary', type=Path, help='Canary bundles; with --crystal and every pinned input, rebuild')
+    parser.add_argument('--crystal', type=Path, help='Crystal bundles; with --canary and every pinned input, rebuild')
     parser.add_argument('--item-map', type=Path, help='the pinned item map; checks every WIKI_OFFER row (D13 offers)')
     parser.add_argument('--tibiopedia-facts', type=Path,
                         help='the pinned Tibiopedia facts; checks every WIKI_MAJORITY_PRICE row (with the two above)')
@@ -563,6 +582,8 @@ def main():
         parser.error('--tibiopedia-facts checks the D13 evidence with --snapshot and --br-facts')
     if parser_item_map and not args.tibiopedia_facts:
         parser.error('--item-map checks the D13 wiki offers with --tibiopedia-facts')
+    if (args.canary or args.crystal) and not (args.canary and args.crystal and args.item_map):
+        parser.error('--canary and --crystal rebuild the report with every pinned input, --item-map included')
     report = json.loads(Path(args.report).read_text(encoding='utf-8'))
     registry_names = registry_item_names()
     all_errors = errors(report) + item_name_errors(report, registry_names)
@@ -570,6 +591,10 @@ def main():
         all_errors += wiki_price_errors(report, args.snapshot.read_bytes(), args.br_facts.read_bytes(), registry_names,
                                         args.tibiopedia_facts.read_bytes() if args.tibiopedia_facts else None,
                                         args.item_map.read_bytes() if args.item_map else None)
+    if args.canary:
+        all_errors += rebuild_errors(report, args.canary, args.crystal, args.snapshot.read_bytes(),
+                                     args.item_map.read_bytes(), args.br_facts.read_bytes(),
+                                     args.tibiopedia_facts.read_bytes())
 
     candidates = report.get('candidates') or []
     total = len(candidates)

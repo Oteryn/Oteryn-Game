@@ -578,29 +578,15 @@ class Builder:
         return record
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--canary', required=True)
-    parser.add_argument('--crystal', required=True)
-    parser.add_argument('--snapshot', required=True)
-    parser.add_argument('--item-map', required=True, help='export_reference_item_identity_map output')
-    parser.add_argument('--br-facts', help='committed TibiaWiki BR NPC facts (D12 wiki prices)')
-    parser.add_argument('--tibiopedia-facts', help='committed Tibiopedia NPC facts (D13 majority prices; needs --br-facts)')
-    parser.add_argument('--out', required=True)
-    args = parser.parse_args()
-    snapshot_bytes = Path(args.snapshot).read_bytes()
-    item_map_bytes = Path(args.item_map).read_bytes()
+def build_report(canary_dir, crystal_dir, snapshot_bytes, item_map_bytes, br_facts_bytes=None, tibiopedia_bytes=None):
+    """The whole candidates report from the pinned inputs (validate_promotion rebuilds it to compare)."""
     item_map = json.loads(item_map_bytes)
     if item_map['schema'] != 'OTERYN_PROTECTED_ITEM_IDENTITY_MAP_EXPORT/v1':
         raise SystemExit('unexpected item map schema')
-    br_facts_bytes = Path(args.br_facts).read_bytes() if args.br_facts else None
-    if args.tibiopedia_facts and not br_facts_bytes:
-        parser.error('--tibiopedia-facts (D13) needs --br-facts (D12)')
-    tibiopedia_bytes = Path(args.tibiopedia_facts).read_bytes() if args.tibiopedia_facts else None
     builder = Builder(json.loads(snapshot_bytes), item_map, json.loads(br_facts_bytes) if br_facts_bytes else None,
                       json.loads(tibiopedia_bytes) if tibiopedia_bytes else None,
                       registry_item_names() if tibiopedia_bytes else None)
-    canary, crystal = source_diff.load(args.canary), source_diff.load(args.crystal)
+    canary, crystal = source_diff.load(canary_dir), source_diff.load(crystal_dir)
     records = []
     for left, right in source_diff.pair(canary, crystal):
         bundles = {s: b for s, b in (('canary', canary.get(left) if left else None),
@@ -642,6 +628,26 @@ def main():
         'candidates': promoted,
         'held': sorted(builder.held, key=lambda h: (h['reason'], h['name'])),
     }
+    return report
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--canary', required=True)
+    parser.add_argument('--crystal', required=True)
+    parser.add_argument('--snapshot', required=True)
+    parser.add_argument('--item-map', required=True, help='export_reference_item_identity_map output')
+    parser.add_argument('--br-facts', help='committed TibiaWiki BR NPC facts (D12 wiki prices)')
+    parser.add_argument('--tibiopedia-facts', help='committed Tibiopedia NPC facts (D13 majority prices; needs --br-facts)')
+    parser.add_argument('--out', required=True)
+    args = parser.parse_args()
+    snapshot_bytes = Path(args.snapshot).read_bytes()
+    item_map_bytes = Path(args.item_map).read_bytes()
+    br_facts_bytes = Path(args.br_facts).read_bytes() if args.br_facts else None
+    if args.tibiopedia_facts and not br_facts_bytes:
+        parser.error('--tibiopedia-facts (D13) needs --br-facts (D12)')
+    tibiopedia_bytes = Path(args.tibiopedia_facts).read_bytes() if args.tibiopedia_facts else None
+    report = build_report(args.canary, args.crystal, snapshot_bytes, item_map_bytes, br_facts_bytes, tibiopedia_bytes)
     Path(args.out).write_text(json.dumps(report, indent=1, sort_keys=True) + '\n', encoding='utf-8')
     print(json.dumps(report['totals'], indent=1))
 
