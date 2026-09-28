@@ -3572,8 +3572,9 @@
       "rules": [
         {
           "owner": "WorldObject",
-          "operation": "REMOVE",
-          "value_source_line": 13,
+          "status": "blocked",
+          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+          "source_line": 13,
           "repeated": true
         },
         {
@@ -3630,8 +3631,9 @@
                   "then": [
                     {
                       "owner": "WorldObject",
-                      "operation": "TRANSFORM",
-                      "value_source_line": 16
+                      "status": "blocked",
+                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                      "source_line": 16
                     },
                     {
                       "owner": "Presentation",
@@ -4962,12 +4964,6 @@
           ],
           "otherwise": [
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-              "source_line": 15
-            },
-            {
               "branch": [
                 {
                   "when": {
@@ -4996,6 +4992,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 15,
+          "reason": "statement outside the transcribed vocabulary"
+        },
         {
           "line": 19,
           "reason": "delayed callback (addEvent) without a scheduler owner"
@@ -5604,8 +5604,9 @@
                         },
                         {
                           "owner": "WorldObject",
-                          "operation": "REMOVE",
-                          "value_source_line": 10
+                          "status": "blocked",
+                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                          "source_line": 10
                         },
                         {
                           "owner": "Presentation",
@@ -5665,8 +5666,9 @@
                         },
                         {
                           "owner": "WorldObject",
-                          "operation": "REMOVE",
-                          "value_source_line": 21
+                          "status": "blocked",
+                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                          "source_line": 21
                         },
                         {
                           "owner": "Presentation",
@@ -5952,6 +5954,13 @@
                   "to": 1
                 },
                 {
+                  "owner": "WorldObject",
+                  "status": "blocked",
+                  "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+                  "source_line": 39,
+                  "repeated": true
+                },
+                {
                   "owner": "Presentation",
                   "effect": "magic_effect",
                   "authoritative": false,
@@ -5970,10 +5979,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 39,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
         {
           "line": 40,
           "reason": "statement outside the transcribed vocabulary"
@@ -6154,8 +6159,9 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 50,
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 50,
                               "repeated": true
                             },
                             {
@@ -6176,8 +6182,9 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 59,
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 59,
                               "repeated": true
                             }
                           ]
@@ -6257,12 +6264,6 @@
               ]
             }
           ]
-        },
-        {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-          "source_line": 28
         },
         {
           "branch": [
@@ -8842,6 +8843,13 @@
               "effect": "magic_effect",
               "authoritative": false,
               "repeated": true
+            },
+            {
+              "owner": "WorldObject",
+              "status": "blocked",
+              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+              "source_line": 63,
+              "repeated": true
             }
           ]
         }
@@ -8875,10 +8883,6 @@
         {
           "line": 62,
           "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 63,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
           "line": 64,
@@ -10398,13 +10402,6 @@
         "target_registrations": []
       },
       "rules": [
-        {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-          "source_line": 135,
-          "repeated": true
-        },
         {
           "owner": "WorldObject",
           "status": "blocked",
@@ -13502,8 +13499,9 @@
                   "then": [
                     {
                       "owner": "WorldObject",
-                      "operation": "REMOVE",
-                      "value_source_line": 43,
+                      "status": "blocked",
+                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                      "source_line": 43,
                       "repeated": true
                     },
                     {
@@ -14403,12 +14401,6 @@
                       "to": 1
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                      "source_line": 57
-                    },
-                    {
                       "branch": [
                         {
                           "when": {
@@ -14504,6 +14496,10 @@
         {
           "line": 56,
           "reason": "condition without an accepted owner"
+        },
+        {
+          "line": 57,
+          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 61,
@@ -17149,12 +17145,6 @@
                           },
                           "then": [
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                              "source_line": 135
-                            },
-                            {
                               "owner": "Quest",
                               "request": "set_progress",
                               "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/barrel_timer",
@@ -17981,18 +17971,17 @@
       "rules": [
         {
           "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-          "source_line": 71
-        },
-        {
-          "owner": "WorldObject",
           "operation": "RETAG",
           "value_source_line": 72
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 71,
+          "reason": "statement outside the transcribed vocabulary"
+        }
+      ]
     },
     {
       "identity": {
@@ -19527,12 +19516,6 @@
           "authoritative": false
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-          "source_line": 23
-        },
-        {
           "branch": [
             {
               "when": {
@@ -19981,11 +19964,6 @@
                         }
                       ],
                       "otherwise": [
-                        {
-                          "owner": "WorldObject",
-                          "operation": "CREATE",
-                          "value_source_line": 96
-                        },
                         {
                           "owner": "WorldObject",
                           "operation": "CREATE",
@@ -20890,12 +20868,6 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                  "source_line": 8
-                },
-                {
                   "branch": [
                     {
                       "when": {
@@ -20915,8 +20887,9 @@
                 },
                 {
                   "owner": "WorldObject",
-                  "operation": "REMOVE",
-                  "value_source_line": 14
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 14
                 },
                 {
                   "owner": "WorldObject",
@@ -20942,8 +20915,9 @@
               "then": [
                 {
                   "owner": "WorldObject",
-                  "operation": "REMOVE",
-                  "value_source_line": 18
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 18
                 },
                 {
                   "owner": "Presentation",
@@ -22035,8 +22009,9 @@
               "then": [
                 {
                   "owner": "WorldObject",
-                  "operation": "REMOVE",
-                  "value_source_line": 6
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 6
                 },
                 {
                   "owner": "WorldObject",
@@ -22111,8 +22086,9 @@
               "then": [
                 {
                   "owner": "WorldObject",
-                  "operation": "REMOVE",
-                  "value_source_line": 23
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 23
                 },
                 {
                   "owner": "WorldObject",
@@ -23335,12 +23311,6 @@
                               },
                               "then": [
                                 {
-                                  "owner": "WorldObject",
-                                  "status": "blocked",
-                                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                                  "source_line": 67
-                                },
-                                {
                                   "branch": [
                                     {
                                       "when": {
@@ -23524,12 +23494,6 @@
                               "owner": "WorldObject",
                               "operation": "REMOVE",
                               "value_source_line": 43
-                            },
-                            {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                              "source_line": 45
                             },
                             {
                               "branch": [
@@ -25693,12 +25657,6 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                          "source_line": 24
-                        },
-                        {
                           "branch": [
                             {
                               "when": {
@@ -26727,6 +26685,13 @@
               "effect": "magic_effect",
               "authoritative": false,
               "repeated": true
+            },
+            {
+              "owner": "WorldObject",
+              "status": "blocked",
+              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+              "source_line": 102,
+              "repeated": true
             }
           ]
         }
@@ -26760,10 +26725,6 @@
         {
           "line": 101,
           "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 102,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
           "line": 103,
@@ -33078,12 +33039,6 @@
               ]
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-              "source_line": 56
-            },
-            {
               "branch": [
                 {
                   "when": {
@@ -33120,6 +33075,10 @@
         {
           "line": 23,
           "reason": "loop with its own control flow"
+        },
+        {
+          "line": 56,
+          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 58,
@@ -40587,8 +40546,9 @@
               "then": [
                 {
                   "owner": "WorldObject",
-                  "operation": "REMOVE",
-                  "value_source_line": 8
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 8
                 },
                 {
                   "owner": "WorldObject",
@@ -42842,6 +42802,13 @@
               "effect": "magic_effect",
               "authoritative": false,
               "repeated": true
+            },
+            {
+              "owner": "WorldObject",
+              "status": "blocked",
+              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+              "source_line": 119,
+              "repeated": true
             }
           ]
         }
@@ -42871,10 +42838,6 @@
         {
           "line": 118,
           "reason": "boss cooldown without an accepted owner"
-        },
-        {
-          "line": 119,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
           "line": 120,
@@ -42993,6 +42956,13 @@
               "effect": "magic_effect",
               "authoritative": false,
               "repeated": true
+            },
+            {
+              "owner": "WorldObject",
+              "status": "blocked",
+              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+              "source_line": 127,
+              "repeated": true
             }
           ]
         }
@@ -43026,10 +42996,6 @@
         {
           "line": 126,
           "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 127,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
           "line": 128,
@@ -50641,12 +50607,6 @@
           "authoritative": false
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-          "source_line": 13
-        },
-        {
           "branch": [
             {
               "when": {
@@ -52905,6 +52865,13 @@
               "effect": "magic_effect",
               "authoritative": false,
               "repeated": true
+            },
+            {
+              "owner": "WorldObject",
+              "status": "blocked",
+              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+              "source_line": 101,
+              "repeated": true
             }
           ]
         }
@@ -52934,10 +52901,6 @@
         {
           "line": 100,
           "reason": "boss cooldown without an accepted owner"
-        },
-        {
-          "line": 101,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
           "line": 102,
@@ -55123,6 +55086,13 @@
               "effect": "magic_effect",
               "authoritative": false,
               "repeated": true
+            },
+            {
+              "owner": "WorldObject",
+              "status": "blocked",
+              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+              "source_line": 101,
+              "repeated": true
             }
           ]
         }
@@ -55152,10 +55122,6 @@
         {
           "line": 100,
           "reason": "boss cooldown without an accepted owner"
-        },
-        {
-          "line": 101,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
           "line": 102,
@@ -57621,12 +57587,6 @@
                               "owner": "WorldObject",
                               "status": "blocked",
                               "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                              "source_line": 318
-                            },
-                            {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
                               "source_line": 319
                             }
                           ]
@@ -57933,8 +57893,9 @@
         },
         {
           "owner": "WorldObject",
-          "operation": "REMOVE",
-          "value_source_line": 13,
+          "status": "blocked",
+          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+          "source_line": 13,
           "repeated": true
         }
       ],
@@ -58670,9 +58631,23 @@
           "repeated": true
         },
         {
+          "owner": "WorldObject",
+          "status": "blocked",
+          "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+          "source_line": 39,
+          "repeated": true
+        },
+        {
           "owner": "Presentation",
           "effect": "magic_effect",
           "authoritative": false,
+          "repeated": true
+        },
+        {
+          "owner": "WorldObject",
+          "status": "blocked",
+          "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+          "source_line": 44,
           "repeated": true
         },
         {
@@ -58690,14 +58665,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 39,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
-        {
-          "line": 44,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
         {
           "line": 47,
           "reason": "creature removal without an accepted owner"
@@ -61239,12 +61206,6 @@
                   ]
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                  "source_line": 128
-                },
-                {
                   "branch": [
                     {
                       "when": {
@@ -61772,12 +61733,6 @@
                       "owner": "Presentation",
                       "effect": "magic_effect",
                       "authoritative": false
-                    },
-                    {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                      "source_line": 230
                     },
                     {
                       "owner": "WorldObject",
@@ -64428,12 +64383,6 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                  "source_line": 54
-                },
-                {
                   "branch": [
                     {
                       "when": {
@@ -64684,10 +64633,24 @@
               "repeated": true
             },
             {
+              "owner": "WorldObject",
+              "status": "blocked",
+              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+              "source_line": 96,
+              "repeated": true
+            },
+            {
               "owner": "Presentation",
               "effect": "message",
               "authoritative": false,
               "source_line": 123,
+              "repeated": true
+            },
+            {
+              "owner": "WorldObject",
+              "status": "blocked",
+              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+              "source_line": 126,
               "repeated": true
             },
             {
@@ -64741,16 +64704,8 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 96,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
-        {
           "line": 122,
           "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 126,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
           "line": 152,
@@ -70359,9 +70314,23 @@
                               "repeated": true
                             },
                             {
+                              "owner": "WorldObject",
+                              "status": "blocked",
+                              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+                              "source_line": 117,
+                              "repeated": true
+                            },
+                            {
                               "owner": "Presentation",
                               "effect": "magic_effect",
                               "authoritative": false,
+                              "repeated": true
+                            },
+                            {
+                              "owner": "WorldObject",
+                              "status": "blocked",
+                              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+                              "source_line": 128,
                               "repeated": true
                             }
                           ]
@@ -70440,14 +70409,6 @@
         {
           "line": 115,
           "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 117,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
-        {
-          "line": 128,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
           "line": 138,
@@ -71729,12 +71690,6 @@
                                           "value_source_line": 27
                                         },
                                         {
-                                          "owner": "WorldObject",
-                                          "status": "blocked",
-                                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                                          "source_line": 29
-                                        },
-                                        {
                                           "branch": [
                                             {
                                               "when": {
@@ -72318,12 +72273,6 @@
                   ],
                   "otherwise": [
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                      "source_line": 22
-                    },
-                    {
                       "branch": [
                         {
                           "when": {
@@ -72802,12 +72751,6 @@
                 }
               },
               "then": [
-                {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                  "source_line": 54
-                },
                 {
                   "branch": [
                     {
@@ -73679,8 +73622,9 @@
                       "then": [
                         {
                           "owner": "WorldObject",
-                          "operation": "TRANSFORM",
-                          "value_source_line": 8
+                          "status": "blocked",
+                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                          "source_line": 8
                         },
                         {
                           "owner": "WorldObject",
@@ -73693,8 +73637,9 @@
                   "otherwise": [
                     {
                       "owner": "WorldObject",
-                      "operation": "TRANSFORM",
-                      "value_source_line": 11
+                      "status": "blocked",
+                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                      "source_line": 11
                     },
                     {
                       "owner": "WorldObject",
@@ -73744,13 +73689,15 @@
                               "then": [
                                 {
                                   "owner": "WorldObject",
-                                  "operation": "REMOVE",
-                                  "value_source_line": 20
+                                  "status": "blocked",
+                                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                                  "source_line": 20
                                 },
                                 {
                                   "owner": "WorldObject",
-                                  "operation": "REMOVE",
-                                  "value_source_line": 21
+                                  "status": "blocked",
+                                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                                  "source_line": 21
                                 }
                               ]
                             }
@@ -73823,13 +73770,15 @@
                               "then": [
                                 {
                                   "owner": "WorldObject",
-                                  "operation": "REMOVE",
-                                  "value_source_line": 33
+                                  "status": "blocked",
+                                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                                  "source_line": 33
                                 },
                                 {
                                   "owner": "WorldObject",
-                                  "operation": "REMOVE",
-                                  "value_source_line": 34
+                                  "status": "blocked",
+                                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                                  "source_line": 34
                                 },
                                 {
                                   "owner": "WorldObject",
@@ -74750,8 +74699,9 @@
                     },
                     {
                       "owner": "WorldObject",
-                      "operation": "REMOVE",
-                      "value_source_line": 15
+                      "status": "blocked",
+                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                      "source_line": 15
                     }
                   ]
                 }
@@ -78952,12 +78902,6 @@
                       "value_source_line": 41
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                      "source_line": 42
-                    },
-                    {
                       "branch": [
                         {
                           "when": {
@@ -79094,6 +79038,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 42,
+          "reason": "statement outside the transcribed vocabulary"
+        },
         {
           "line": 46,
           "reason": "delayed callback (addEvent) without a scheduler owner"
@@ -82350,12 +82298,6 @@
                       "value_source_line": 41
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                      "source_line": 42
-                    },
-                    {
                       "branch": [
                         {
                           "when": {
@@ -82492,6 +82434,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 42,
+          "reason": "statement outside the transcribed vocabulary"
+        },
         {
           "line": 46,
           "reason": "delayed callback (addEvent) without a scheduler owner"
@@ -86658,11 +86604,6 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "operation": "CREATE",
-                          "value_source_line": 53
-                        },
-                        {
                           "branch": [
                             {
                               "when": {
@@ -88375,13 +88316,15 @@
                         },
                         {
                           "owner": "WorldObject",
-                          "operation": "REMOVE",
-                          "value_source_line": 9
+                          "status": "blocked",
+                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                          "source_line": 9
                         },
                         {
                           "owner": "WorldObject",
-                          "operation": "REMOVE",
-                          "value_source_line": 10
+                          "status": "blocked",
+                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                          "source_line": 10
                         },
                         {
                           "owner": "WorldObject",
@@ -89127,8 +89070,9 @@
                     },
                     {
                       "owner": "WorldObject",
-                      "operation": "TRANSFORM",
-                      "value_source_line": 10
+                      "status": "blocked",
+                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                      "source_line": 10
                     }
                   ]
                 }
@@ -90624,21 +90568,16 @@
       "rules": [
         {
           "owner": "WorldObject",
-          "operation": "TRANSFORM",
-          "value_source_line": 27,
-          "repeated": true
-        },
-        {
-          "owner": "WorldObject",
-          "operation": "TRANSFORM",
-          "value_source_line": 31,
+          "status": "blocked",
+          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+          "source_line": 27,
           "repeated": true
         },
         {
           "owner": "WorldObject",
           "status": "blocked",
           "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-          "source_line": 46,
+          "source_line": 31,
           "repeated": true
         },
         {
@@ -90744,8 +90683,9 @@
         },
         {
           "owner": "WorldObject",
-          "operation": "TRANSFORM",
-          "value_source_line": 120,
+          "status": "blocked",
+          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+          "source_line": 120,
           "repeated": true
         },
         {
@@ -91567,12 +91507,6 @@
                           "status": "blocked",
                           "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
                           "source_line": 34
-                        },
-                        {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                          "source_line": 35
                         },
                         {
                           "branch": [
@@ -97882,18 +97816,21 @@
               "then": [
                 {
                   "owner": "WorldObject",
-                  "operation": "TRANSFORM",
-                  "value_source_line": 10
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 10
                 },
                 {
                   "owner": "WorldObject",
-                  "operation": "REMOVE",
-                  "value_source_line": 11
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 11
                 },
                 {
                   "owner": "WorldObject",
-                  "operation": "TRANSFORM",
-                  "value_source_line": 12
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 12
                 },
                 {
                   "owner": "WorldObject",
@@ -97938,8 +97875,9 @@
               "then": [
                 {
                   "owner": "WorldObject",
-                  "operation": "REMOVE",
-                  "value_source_line": 10
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 10
                 },
                 {
                   "owner": "Presentation",
@@ -98120,18 +98058,21 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 21
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 21
                             },
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 22
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 22
                             },
                             {
                               "owner": "WorldObject",
-                              "operation": "CREATE",
-                              "value_source_line": 24
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 24
                             },
                             {
                               "owner": "WorldObject",
@@ -98177,8 +98118,9 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 33
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 33
                             }
                           ]
                         }
@@ -98251,38 +98193,45 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 25
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 25
                             },
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 26
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 26
                             },
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 27
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 27
                             },
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 28
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 28
                             },
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 29
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 29
                             },
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 30
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 30
                             },
                             {
                               "owner": "WorldObject",
-                              "operation": "CREATE",
-                              "value_source_line": 32
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 32
                             },
                             {
                               "owner": "WorldObject",
@@ -98328,8 +98277,9 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 41
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 41
                             }
                           ]
                         }
@@ -98402,8 +98352,9 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "CREATE",
-                              "value_source_line": 27
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 27
                             },
                             {
                               "owner": "WorldObject",
@@ -98449,8 +98400,9 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 34
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 34
                             }
                           ]
                         }
@@ -98655,8 +98607,9 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "TRANSFORM",
-                              "value_source_line": 29
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 29
                             }
                           ]
                         }
@@ -98682,8 +98635,9 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "TRANSFORM",
-                              "value_source_line": 35
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 35
                             }
                           ]
                         }
@@ -98950,12 +98904,9 @@
                         },
                         {
                           "owner": "WorldObject",
-                          "operation": "CREATE",
-                          "def": {
-                            "family": "Item",
-                            "key": "canary:item/1948",
-                            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-                          }
+                          "status": "blocked",
+                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                          "source_line": 11
                         },
                         {
                           "owner": "Presentation",
@@ -99017,8 +98968,9 @@
                         },
                         {
                           "owner": "WorldObject",
-                          "operation": "REMOVE",
-                          "value_source_line": 29
+                          "status": "blocked",
+                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                          "source_line": 29
                         },
                         {
                           "owner": "Presentation",
@@ -101442,17 +101394,15 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 11
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 11
                             },
                             {
                               "owner": "WorldObject",
-                              "operation": "CREATE",
-                              "def": {
-                                "family": "Item",
-                                "key": "canary:item/369",
-                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-                              }
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 12
                             },
                             {
                               "owner": "WorldObject",
@@ -101478,17 +101428,15 @@
                           "then": [
                             {
                               "owner": "WorldObject",
-                              "operation": "REMOVE",
-                              "value_source_line": 16
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 16
                             },
                             {
                               "owner": "WorldObject",
-                              "operation": "CREATE",
-                              "def": {
-                                "family": "Item",
-                                "key": "canary:item/2129",
-                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-                              }
+                              "status": "blocked",
+                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                              "source_line": 17
                             },
                             {
                               "owner": "WorldObject",
@@ -101522,8 +101470,9 @@
                       "then": [
                         {
                           "owner": "WorldObject",
-                          "operation": "REMOVE",
-                          "value_source_line": 25
+                          "status": "blocked",
+                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                          "source_line": 25
                         },
                         {
                           "branch": [
@@ -101787,18 +101736,16 @@
                                           "then": [
                                             {
                                               "owner": "WorldObject",
-                                              "operation": "REMOVE",
-                                              "value_source_line": 33,
+                                              "status": "blocked",
+                                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                                              "source_line": 33,
                                               "repeated": true
                                             },
                                             {
                                               "owner": "WorldObject",
-                                              "operation": "CREATE",
-                                              "def": {
-                                                "family": "Item",
-                                                "key": "canary:item/2113",
-                                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-                                              },
+                                              "status": "blocked",
+                                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                                              "source_line": 34,
                                               "repeated": true
                                             }
                                           ]
@@ -102135,8 +102082,9 @@
           "otherwise": [
             {
               "owner": "WorldObject",
-              "operation": "REMOVE",
-              "value_source_line": 49
+              "status": "blocked",
+              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+              "source_line": 49
             },
             {
               "owner": "WorldObject",
@@ -102695,14 +102643,16 @@
               "otherwise": [
                 {
                   "owner": "WorldObject",
-                  "operation": "TRANSFORM",
-                  "value_source_line": 17,
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 17,
                   "repeated": true
                 },
                 {
                   "owner": "WorldObject",
-                  "operation": "TRANSFORM",
-                  "value_source_line": 22,
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 22,
                   "repeated": true
                 },
                 {
@@ -104667,15 +104617,6 @@
                           },
                           "then": [
                             {
-                              "owner": "WorldObject",
-                              "operation": "CREATE",
-                              "def": {
-                                "family": "Item",
-                                "key": "canary:item/12672",
-                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-                              }
-                            },
-                            {
                               "owner": "Presentation",
                               "effect": "message",
                               "authoritative": false,
@@ -104925,15 +104866,6 @@
                     "negate": false
                   },
                   "then": [
-                    {
-                      "owner": "WorldObject",
-                      "operation": "CREATE",
-                      "def": {
-                        "family": "Item",
-                        "key": "canary:item/7876",
-                        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-                      }
-                    },
                     {
                       "owner": "Presentation",
                       "effect": "message",
@@ -105600,15 +105532,6 @@
                           },
                           "then": [
                             {
-                              "owner": "WorldObject",
-                              "operation": "CREATE",
-                              "def": {
-                                "family": "Item",
-                                "key": "canary:item/12675",
-                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-                              }
-                            },
-                            {
                               "owner": "Presentation",
                               "effect": "message",
                               "authoritative": false,
@@ -105825,11 +105748,6 @@
                             }
                           },
                           "then": [
-                            {
-                              "owner": "WorldObject",
-                              "operation": "CREATE",
-                              "value_source_line": 117
-                            },
                             {
                               "owner": "Presentation",
                               "effect": "message",
@@ -106085,15 +106003,6 @@
                           },
                           "then": [
                             {
-                              "owner": "WorldObject",
-                              "operation": "CREATE",
-                              "def": {
-                                "family": "Item",
-                                "key": "canary:item/12674",
-                                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
-                              }
-                            },
-                            {
                               "owner": "Presentation",
                               "effect": "message",
                               "authoritative": false,
@@ -106169,12 +106078,6 @@
                     }
                   },
                   "then": [
-                    {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                      "source_line": 140
-                    },
                     {
                       "branch": [
                         {
@@ -106498,12 +106401,6 @@
                             }
                           },
                           "then": [
-                            {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                              "source_line": 688
-                            },
                             {
                               "branch": [
                                 {
@@ -107597,12 +107494,6 @@
                   },
                   "then": [
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                      "source_line": 780
-                    },
-                    {
                       "branch": [
                         {
                           "when": {
@@ -107986,11 +107877,6 @@
                             }
                           },
                           "then": [
-                            {
-                              "owner": "WorldObject",
-                              "operation": "CREATE",
-                              "value_source_line": 174
-                            },
                             {
                               "owner": "Presentation",
                               "effect": "message",
@@ -109604,12 +109490,6 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                  "source_line": 39
-                },
-                {
                   "branch": [
                     {
                       "when": {
@@ -109663,14 +109543,7 @@
                   "line": 7
                 }
               },
-              "then": [
-                {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                  "source_line": 8
-                }
-              ]
+              "then": []
             }
           ]
         }
@@ -109698,12 +109571,6 @@
                 }
               },
               "then": [
-                {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
-                  "source_line": 9
-                },
                 {
                   "branch": [
                     {
@@ -109767,6 +109634,13 @@
               "repeated": true
             },
             {
+              "owner": "WorldObject",
+              "status": "blocked",
+              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+              "source_line": 24,
+              "repeated": true
+            },
+            {
               "owner": "Movement",
               "status": "blocked",
               "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
@@ -109781,10 +109655,6 @@
         {
           "line": 23,
           "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 24,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
           "line": 28,
@@ -111806,6 +111676,13 @@
             },
             {
               "owner": "WorldObject",
+              "status": "blocked",
+              "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+              "source_line": 196,
+              "repeated": true
+            },
+            {
+              "owner": "WorldObject",
               "operation": "TRANSFORM",
               "value_source_line": 201,
               "repeated": true
@@ -111843,10 +111720,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 196,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
         {
           "line": 184,
           "reason": "loop with its own control flow"
@@ -112380,14 +112253,16 @@
               "otherwise": [
                 {
                   "owner": "WorldObject",
-                  "operation": "REMOVE",
-                  "value_source_line": 34,
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 34,
                   "repeated": true
                 },
                 {
                   "owner": "WorldObject",
-                  "operation": "REMOVE",
-                  "value_source_line": 37,
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 37,
                   "repeated": true
                 },
                 {
@@ -113604,6 +113479,13 @@
         },
         {
           "owner": "WorldObject",
+          "status": "blocked",
+          "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+          "source_line": 37,
+          "repeated": true
+        },
+        {
+          "owner": "WorldObject",
           "operation": "TRANSFORM",
           "value_source_line": 38,
           "repeated": true
@@ -113638,10 +113520,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 37,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
         {
           "line": 48,
           "reason": "statement outside the transcribed vocabulary"
@@ -113679,6 +113557,13 @@
         },
         {
           "owner": "WorldObject",
+          "status": "blocked",
+          "reason": "the operation call spans more than one source line; its argument list is not read as complete",
+          "source_line": 15,
+          "repeated": true
+        },
+        {
+          "owner": "WorldObject",
           "operation": "TRANSFORM",
           "value_source_line": 16,
           "repeated": true
@@ -113706,10 +113591,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 15,
-          "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
         {
           "line": 24,
           "reason": "statement outside the transcribed vocabulary"
@@ -118514,8 +118395,9 @@
                       "then": [
                         {
                           "owner": "WorldObject",
-                          "operation": "REMOVE",
-                          "value_source_line": 6
+                          "status": "blocked",
+                          "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                          "source_line": 6
                         },
                         {
                           "owner": "WorldObject",
@@ -120339,8 +120221,9 @@
                 },
                 {
                   "owner": "WorldObject",
-                  "operation": "TRANSFORM",
-                  "value_source_line": 50,
+                  "status": "blocked",
+                  "reason": "world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)",
+                  "source_line": 50,
                   "repeated": true
                 }
               ]

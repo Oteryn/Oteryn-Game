@@ -23,11 +23,22 @@ MANIFEST_STATUS = ('mapped', 'conflict', 'approved_omission', 'unresolved_semant
 # WorldObject child whose source call the converter has not yet classified into a D38 operation kind.
 BLOCKED = {'Movement': 'computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)',
            'WorldObject': 'world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)'}
-# a scheduled revert (addEvent(Position.revertItem, delay, ...)) whose delay is not itself a literal
-# fails closed: it never merges silently into the operation it would revert without a recorded
-# revert_after_ms, so it stays its own blocked WorldObject child with this distinct reason.
+# a scheduled revert (addEvent(Position.revertItem, delay, ...)) whose delay is not itself a positive
+# literal (non-literal, or a literal <= 0 -- the schema requires revert_after_ms >= 1) fails closed: it
+# never merges silently into the operation it would revert without a recorded revert_after_ms, so it
+# stays its own blocked WorldObject child with this distinct reason.
 BLOCKED_SCHEDULED_REVERT_DELAY = 'scheduled revert (addEvent) has a non-literal delay; revert_after_ms cannot be recorded without one'
-BLOCKED_REASONS = {'Movement': {BLOCKED['Movement']}, 'WorldObject': {BLOCKED['WorldObject'], BLOCKED_SCHEDULED_REVERT_DELAY}}
+# a second scheduled revert that provably targets an operation which already carries a revert_after_ms
+# (from an earlier one, in source order) never overwrites it -- the operation's actual revert delay
+# cannot be inferred from two conflicting schedules -- so it stays its own blocked WorldObject child too.
+BLOCKED_DUPLICATE_SCHEDULED_REVERT = 'a second scheduled revert names the same already-reverted operation; revert_after_ms is not overwritten'
+# a call whose argument list never closes on its own source line (a multi-line call) is never parsed
+# for typed fields -- the converter reads one line at a time, so partial argument text would otherwise
+# either look complete by accident or drop trailing arguments -- it stays its own blocked child instead.
+BLOCKED_INCOMPLETE_CALL = 'the operation call spans more than one source line; its argument list is not read as complete'
+BLOCKED_REASONS = {'Movement': {BLOCKED['Movement']},
+                   'WorldObject': {BLOCKED['WorldObject'], BLOCKED_SCHEDULED_REVERT_DELAY,
+                                   BLOCKED_DUPLICATE_SCHEDULED_REVERT, BLOCKED_INCOMPLETE_CALL}}
 
 
 def refs(value):

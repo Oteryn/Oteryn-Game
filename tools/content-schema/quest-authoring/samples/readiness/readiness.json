@@ -47,13 +47,13 @@
    "outfit": 6,
    "quest_state": 97,
    "reward_claim": 135,
-   "scheduler": 48,
+   "scheduler": 44,
    "summon": 35,
    "teleport": 76,
    "trigger_kill": 48,
    "trigger_step": 74,
    "trigger_use": 188,
-   "world_object": 75
+   "world_object": 77
   },
   "quests_without_data_gaps": 111,
   "interactions_joined": 1192,
@@ -455,7 +455,7 @@
    "interactions": 30,
    "data_gaps": {
     "interactions_with_gaps": 25,
-    "unresolved_items": 69
+    "unresolved_items": 70
    }
   },
   {
@@ -633,7 +633,7 @@
    "interactions": 38,
    "data_gaps": {
     "interactions_with_gaps": 31,
-    "unresolved_items": 202
+    "unresolved_items": 203
    }
   },
   {
@@ -657,8 +657,8 @@
    ],
    "interactions": 25,
    "data_gaps": {
-    "interactions_with_gaps": 20,
-    "unresolved_items": 90
+    "interactions_with_gaps": 21,
+    "unresolved_items": 91
    }
   },
   {
@@ -1081,7 +1081,7 @@
    "interactions": 61,
    "data_gaps": {
     "interactions_with_gaps": 55,
-    "unresolved_items": 171
+    "unresolved_items": 172
    }
   },
   {
@@ -1261,7 +1261,6 @@
     "item_consume",
     "item_hand_out",
     "quest_state",
-    "scheduler",
     "summon",
     "teleport",
     "trigger_kill",
@@ -1522,11 +1521,11 @@
     "item_hand_out",
     "npc_dialogue",
     "quest_state",
-    "scheduler",
     "teleport",
     "trigger_kill",
     "trigger_step",
-    "trigger_use"
+    "trigger_use",
+    "world_object"
    ],
    "interactions": 35,
    "data_gaps": {
@@ -1944,11 +1943,11 @@
     "achievement",
     "boss_cooldown",
     "quest_state",
-    "scheduler",
     "teleport",
     "trigger_kill",
     "trigger_step",
-    "trigger_use"
+    "trigger_use",
+    "world_object"
    ],
    "interactions": 10,
    "data_gaps": {
@@ -2551,7 +2550,7 @@
    "interactions": 57,
    "data_gaps": {
     "interactions_with_gaps": 52,
-    "unresolved_items": 149
+    "unresolved_items": 151
    }
   },
   {
@@ -3014,7 +3013,6 @@
     "kv_state",
     "npc_dialogue",
     "quest_state",
-    "scheduler",
     "teleport",
     "trigger_use",
     "world_object"
