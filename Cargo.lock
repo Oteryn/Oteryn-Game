@@ -2053,10 +2053,16 @@ version = "0.1.0"
 dependencies = [
  "oteryn-client-domain",
  "oteryn-client-simulation",
+ "oteryn-dev-client",
  "oteryn-foundation",
  "oteryn-input-actions",
+ "oteryn-protocol-oteryn",
  "oteryn-renderer",
  "oteryn-synthetic-assets",
+ "rcgen",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]
