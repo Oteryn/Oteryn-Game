@@ -962,9 +962,9 @@ until every later Character destination question is settled. The first preserves
 the already selected MINT-first staging without weakening any MINT invariant;
 the second unnecessarily couples a Character-independent creation to pickup.
 **Recommendation:** use the complete generic native bindings above for later
-MINT qualification, while leaving TRANSFER closed until Character position and
-capacity are resolved by their owners; the global-revision composition follows
-`CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1`. The main
+MINT qualification, while leaving TRANSFER closed until Character position,
+capacity and TRANSFER admission are accepted and proven by their owners; the
+global-revision composition follows `CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1`. The main
 risk is that a weak or expiring source-cause record could permit a repeated mint;
 late changes to definition/source semantics would require retained evidence and
 receipt interpretation to migrate. No broad new identity, receipt, or authority
