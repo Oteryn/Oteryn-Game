@@ -37,14 +37,12 @@ still `DecisionStatus: CANDIDATE` for the new part:
 
 1. A new §7 answers, for `revert_after` only, which existing owner supplies a scope-owned logical
    progression input, bound to the existing FND-03 §10 authoritative-timer contract rather than a
-   client command: the minimum real options grounded in code facts (no existing Foundation/global
-   tick; an FND-03 timer over a monotonic `Deadline` from the authored `revert_after_ms`, RECOMMENDED;
-   a synthetic scope-owned step counter, considered and superseded; a purely reactive re-evaluation,
-   rejected), the must-decide-now test, the exact delta the owning lane (the scope-runtime/Foundation
-   carrier lane behind `ChannelRuntimeV1`/`InstanceRuntime`, not this documentation task) must
-   supply, and exact test obligations covering firing, fencing, capacity atomicity, equal-deadline
-   ordering, clock-origin safety and occupied-target-cell handling (decided, not deferred). The owner
-   question itself (who accepts this decision) is left explicit and unresolved by this task.
+   client command: minimum real options grounded in code facts (an FND-03 timer over a monotonic
+   `Deadline` from authored `revert_after_ms`, RECOMMENDED; a step counter, superseded; reactive
+   re-evaluation, rejected), the must-decide-now test, the exact delta the owning lane (the
+   scope-runtime/Foundation carrier lane behind `ChannelRuntimeV1`/`InstanceRuntime`, not this task)
+   must supply — including a canonical complete pending-entry field list (Round 11) — and exact test
+   obligations. The owner question itself (who accepts this decision) stays explicit and unresolved.
 2. §4/§5 record, without designing it, the CW3 Content-model worker's delta (allocation
    `OTV2-20260928-cw3-local-object-state-model`: 1a per-state collision presence, 1b authored
    initial state validated fail-closed, 1c RETAG decision) and the C3 hardening clarification
@@ -63,29 +61,28 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
 
 - `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md` — PROVEN, read in full.
 - `world_runtime.rs` `bind`/`prepare` (~590-1055), `apply`/`resume_pending`/`terminalize_current`
-  (~817-888), `LocalObjectCommand`/`transition_for` (~397-419/~787-796) — PROVEN, post-#1055-merge
-  line numbers: no tick/time parameter; every mutation needs a bound `TransitionKey` plus
-  `placement`/`incarnation`/`content_generation`; `prepare`'s first check (~978-987) rejects a
-  mismatch on any of those three with `DISPOSITION_BINDING_MISMATCH`, distinct from
-  `DISPOSITION_STALE_STATE`; every prepared outcome terminalizes immediately and replays on retry;
-  collision no longer hard-wired to Open/Close.
+  (~817-888), `LocalObjectCommand`/`transition_for` (~397-419/~787-796) — PROVEN: no tick/time
+  parameter; every mutation needs a bound `TransitionKey` plus `placement`/`incarnation`/
+  `content_generation`; `prepare`'s first check (~978-987) rejects a mismatch with
+  `DISPOSITION_BINDING_MISMATCH`, distinct from `DISPOSITION_STALE_STATE`; every prepared outcome
+  terminalizes immediately and replays on retry.
 - `foundation/runtime_actor_carrier.rs` `from_committed_assignment` (~702-750) — PROVEN,
-  production-only: pins `scope_generation` once; `advance_owner` (~2169-2176) is test-only.
-- `gameplay_transport/connection.rs` `Liveness::tick`, `content/project/v2/creature.rs`
-  `tick_profile`, SIM-DETERMINISM-01 lines 224/419 — PROVEN: no scope/global clock. Bounded grep
-  (`tokio::time::interval|sleep|select!\{|loop \{`) — PROVEN: every `ChannelRuntimeV1` call reactive.
+  production-only: pins `scope_generation` once. No scope/global clock (`gameplay_transport/
+  connection.rs`, `content/project/v2/creature.rs`, SIM-DETERMINISM-01 224/419; bounded grep for
+  interval/sleep/select!/loop) — PROVEN.
 - `crates/foundation/src/time.rs` `Deadline`/`MonotonicClock`/`ManualClock`/`SystemClock::new()`
   (~50-166) — PROVEN: tested, unused in `apps/game-server/src`, fresh incomparable origin per call.
-  `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144 (was 143) — PROVEN: authors `revert_after_ms`.
+  `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144 — PROVEN: authors `revert_after_ms`.
 - `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §7/§9/§10/§14/§15.4/§28 — PROVEN: binds `revert_after`.
   `foundation/mod.rs` `ScopeRuntimeFence::accept_input` (~1040-1050) — PROVEN: mints an ordinal per
-  generation only, tracks no timer identity. `movement.rs` `MovementOwnerTurn` (~201-249) — PROVEN:
-  existing bounded `max_inputs` precedent.
-- `TransitionBinding` (`content/reference_playable.rs` ~1334-1342) — PROVEN: no `revert_after_ms`
-  field yet; only `LOCAL_OBJECT_RETAG_INTENT_FAMILY` (~1195/~1646) is a named intent family today.
-- PR #1055 (merged, `070d119`) generalized `LocalObjectRuntime` off Open/Close per D38; PR #1046
-  (merged) shipped 1a/1b/1c. `git diff ac8395b8 origin/main` — PROVEN: only `world_runtime.rs` and
-  the encounter doc's line numbers shifted; all other cited files are untouched.
+  generation only, tracks no timer identity. `movement.rs` `MovementOwnerTurn` (~201-249) — bounded
+  `max_inputs` precedent.
+- `TransitionBinding` (`content/reference_playable.rs` ~1334-1342) — no `revert_after_ms` field yet.
+- `GAME-INTERACTION-01_SUCCESSOR_CHILD_IDENTITY_RETRY_CONTRACT_CANDIDATE.md` §4.1/§4.4/§5.1/§5.8 and
+  `interaction/identity.rs` `RootSourceOccurrenceRef`/`ChildOccurrenceRef` (~15-157) — PROVEN, read
+  for round 11: nested-cascade child identity; ordinal is authority-fence evidence, not identity.
+- PR #1055/#1046 (merged) generalized `LocalObjectRuntime`, shipped 1a/1b/1c. `git diff ac8395b8
+  origin/main` — only `world_runtime.rs`/encounter doc line numbers shifted.
 
 ## High-risk authority/recovery qualification
 
@@ -117,30 +114,33 @@ reason: >
 
 ## Implementation / findings
 
-Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Round 1: §-numbering/CW3 attribution
-fixed. Round 2 (Codex, bbb3b4cd): `Deadline` option recommended. Round 3 (Codex, 350dca59): rebound
-§7 to an FND-03 §10 authoritative timer; staged capacity atomicity; equal-deadline tie-break; one
-clock per scope. Round 4 (c76bf9b9): merged `origin/main` (PR #1055 CW4, #1046 CW3), §4/§8 cite the
-merged state. Round 5 (cf3dd8e6): `revert_after_ms` admissible only on a transition with a bound
-inverse; staged commit stores the inverse key plus expected state/revision. Round 6 (f3d05f1f):
-inverse rule tightened to exactly one match; pre-`prepare` discard restricted to
-`scope_generation`/`content_generation` changing. Round 7 (53c46f0d, Codex 4119354894): a mutually
-timed pair would ping-pong; fixed — timer-origin execution never re-arms; wording said "only
-player/command," too narrow. Round 8 (9ec951d3, Codex 4119401513): the encounter-originated
-`DepthWarzoneBossDeath` teleporter transform would have been starved by round 7's wording; restated
-as an origin test. Round 9 (ec9ffe74, Codex 4119452692): pending entry lacked the target's
-`PlacementKey`/`incarnation`/`content_generation` (`LocalObjectCommand` requires all three, `prepare`
-rejects a mismatch with `DISPOSITION_BINDING_MISMATCH`); fixed — entry retains exact target identity,
-captured at scheduling; a changed `incarnation` joins `scope_generation`/`content_generation` as a
-pre-`prepare` discard fence.
+Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Rounds 1-2: numbering/CW3 attribution;
+`Deadline` option recommended. Round 3: rebound §7 to an FND-03 §10 authoritative timer; staged
+capacity atomicity; equal-deadline tie-break; one clock per scope. Round 4: merged `origin/main` (PR
+#1055 CW4, #1046 CW3). Round 5: `revert_after_ms` admissible only with a bound inverse; staged commit
+stores inverse key + expected state/revision. Round 6: inverse rule tightened to exactly one match;
+pre-`prepare` discard restricted to `scope_generation`/`content_generation`. Round 7 (Codex
+4119354894): a mutually timed pair would ping-pong; fixed — timer-origin execution never re-arms.
+Round 8 (Codex 4119401513): round 7's wording would have starved the encounter-originated
+`DepthWarzoneBossDeath` teleporter revert; restated as an origin test. Round 9 (Codex 4119452692):
+pending entry lacked the target's `PlacementKey`/`incarnation`/`content_generation`; fixed — entry
+retains exact target identity captured at scheduling; changed `incarnation` joins the pre-`prepare`
+discard fences. Round 10 (Codex 4119516262, main→`74bb3fd3`, unrelated): Option 2's summary sentence
+still said only `scope_generation`/`content_generation` invalidate the timer, contradicting round 9's
+`incarnation` fence; fixed there and in the round-6 narrative after a whole-document grep.
 
-Round 10 (5cb1efa8, Codex 4119516262, main moved to `74bb3fd3` — merged, no relevant file changed):
-verified — Option 2's summary sentence (recommended-option text) still said only
-`scope_generation`/`content_generation` invalidate the timer and every due revert "always reaches
-`prepare`," contradicting round 9's `incarnation` discard elsewhere in §7. Fixed: added `incarnation`
-to that sentence's discard list, qualified "always reaches `prepare`" to same-incarnation objects.
-Grepped the *whole* document for every such statement — found and fixed one more in the round-6
-historical narrative; confirmed no other section mentions `prepare` in this context.
+Round 11 (Codex 4119565077, on frozen head `87b974b1`, main unmoved): every round asserted the
+revert's own "derived child identity" (GAME-INTERACTION-01 §5.1 nested-cascade, implemented in
+`interaction/identity.rs`) but never stored it, and it must never derive from the scheduling
+`RuntimeExecutionOrdinal` (§4.4/§5.8: authority-fence evidence, not logical identity) — the fourth
+one-field-per-round gap. Fixed structurally per coordinator instruction: one canonical "Pending
+entry: complete field list" table (10 rows + sourcing) atop "Exact delta" covers every firing-path
+input (addressing, fencing, ordering, `LocalObjectCommand` fields, terminal identity, replay/dedup;
+capacity release needs no separate field); Option 2, Must-decide-now item 1, and the staging/firing/
+occupancy/"Fenced, one path" text now reference it instead of re-enumerating fields. Firing
+terminalizes every disposition under the entry's stored `InteractionChildOccurrenceRef`. Added the
+redelivery-replays/distinct-occurrence-distinct-identity test obligation. Verified against
+GAME-INTERACTION-01 §4.1/§4.4/§5.1/§5.8 and `interaction/identity.rs` directly before writing.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -150,13 +150,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-10; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-11; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 10, after merging origin/main; unchanged)
+  validation passed (23 files, 47 workflows)." (round 11, main unmoved since round 10; unchanged)
 
 ### E2E
 
@@ -181,8 +181,8 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ## Independent review
 
-- required: YES — the coordination allocation routes this through the same independent-review path
-  as the rest of the proposal; this task does not itself accept anything.
+- required: YES — routed through the same independent-review path as the rest of the proposal; this
+  task does not itself accept anything.
 - exact head: pending
 - method/auditor: pending
 - material findings: pending
@@ -201,11 +201,12 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 10 (Codex 4119516262): merged origin/main (74bb3fd3, unrelated). Option
-  2's summary sentence contradicted round 9's incarnation discard, still saying only scope/content
-  generation invalidate the timer and every due revert always reaches prepare. Fixed that sentence
-  plus one more instance in the round-6 narrative; grepped the whole doc, confirmed no others;
-  validators pass.
+  PR #1045 pre-freeze round 11 (Codex 4119565077 on frozen head 87b974b1): pending entry never stored
+  the revert's own derived InteractionChildOccurrenceRef. Fixed structurally: one canonical "Pending
+  entry: complete field list" table in Exact delta that every other place in §7 now references;
+  firing terminalizes every disposition under the entry's stored identity, never the scheduling
+  ordinal; added redelivery-replays/distinct-occurrence test obligation. Verified against
+  GAME-INTERACTION-01 §4.1/§4.4/§5.1/§5.8 and interaction/identity.rs directly; validators pass.
 status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
