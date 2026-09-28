@@ -168,10 +168,13 @@ def check_position(placements, positions):
         ours = placement['position']
         for x, y, z in positions:
             distance = max(abs(ours['x'] - x), abs(ours['y'] - y))
-            rank = (abs(ours['z'] - z), distance)
+            floors = abs(ours['z'] - z)
+            # the best marker is a close one on the same floor, then a close one on another floor, then any
+            tier = 0 if floors == 0 and distance <= CLOSE_TILES else 1 if distance <= CLOSE_TILES else 2
+            rank = (tier, distance, floors)
             if best is None or rank < best[0]:
                 best = (rank, [ours['x'], ours['y'], ours['z']], [x, y, z])
-    (floors, distance), ours, theirs = best
+    (_, distance, floors), ours, theirs = best
     if floors == 0 and distance <= CLOSE_TILES:
         status = 'MATCH' if distance == 0 else 'NEAR' if distance <= NEAR_TILES else 'CLOSE'
     else:

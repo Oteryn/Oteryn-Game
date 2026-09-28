@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "e15580a11cf6b285c6cf4e777193ef8e687f4f160179e3bdaedc440eb3b719d9",
+  "facts_sha256": "cc0e758f504877e98cc970b3ae01fb16db08d28e79cfcd1fe73130e762aa6d1f",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -702,7 +702,7 @@
     "title": "A Prisoner"
    },
    "dialogue": {
-    "br_lines": 26,
+    "br_lines": 31,
     "matched": 19,
     "near": 4,
     "texts": 25
@@ -1710,7 +1710,7 @@
     "title": "Amarie"
    },
    "dialogue": {
-    "br_lines": 23,
+    "br_lines": 35,
     "matched": 1,
     "near": 0,
     "texts": 1
@@ -1987,9 +1987,9 @@
    "npc": "oteryn:npc.anaztassja_moroia_init",
    "position": {
     "br": [
-     32915,
-     31445,
-     6
+     32948,
+     31462,
+     15
     ],
     "ours": [
      33268,
@@ -2009,9 +2009,9 @@
    "npc": "oteryn:npc.anaztassja_moroia_vampires_lair",
    "position": {
     "br": [
-     32915,
-     31445,
-     6
+     32948,
+     31462,
+     15
     ],
     "ours": [
      33268,
@@ -3875,7 +3875,7 @@
     "title": "A Bloodshade"
    },
    "dialogue": {
-    "br_lines": 44,
+    "br_lines": 48,
     "matched": 1,
     "near": 0,
     "texts": 3
@@ -5031,7 +5031,7 @@
     "title": "Captain Cookie"
    },
    "dialogue": {
-    "br_lines": 34,
+    "br_lines": 35,
     "matched": 4,
     "near": 0,
     "texts": 11
@@ -5318,16 +5318,16 @@
    "npc": "oteryn:npc.captain_max_calassa",
    "position": {
     "br": [
-     32298,
-     32896,
-     6
+     31921,
+     32710,
+     7
     ],
     "ours": [
      31915,
      32710,
      6
     ],
-    "status": "MISMATCH"
+    "status": "OTHER_FLOOR"
    },
    "trade": {
     "matched": 0,
@@ -5867,7 +5867,7 @@
     "title": "Charos"
    },
    "dialogue": {
-    "br_lines": 14,
+    "br_lines": 21,
     "matched": 2,
     "near": 1,
     "texts": 6
@@ -6072,7 +6072,7 @@
     "title": "Chief Grarkharok"
    },
    "dialogue": {
-    "br_lines": 26,
+    "br_lines": 30,
     "matched": 31,
     "near": 3,
     "texts": 34
@@ -6100,7 +6100,7 @@
     "title": "Chondur"
    },
    "dialogue": {
-    "br_lines": 48,
+    "br_lines": 49,
     "matched": 1,
     "near": 0,
     "texts": 2
@@ -6262,7 +6262,7 @@
     "title": "Chuckles"
    },
    "dialogue": {
-    "br_lines": 29,
+    "br_lines": 31,
     "matched": 0,
     "near": 0,
     "texts": 1
@@ -7540,7 +7540,7 @@
     "title": "Donald McRonald"
    },
    "dialogue": {
-    "br_lines": 31,
+    "br_lines": 34,
     "matched": 24,
     "near": 0,
     "texts": 25
@@ -8771,7 +8771,7 @@
     "title": "Emael"
    },
    "dialogue": {
-    "br_lines": 7,
+    "br_lines": 8,
     "matched": 6,
     "near": 0,
     "texts": 7
@@ -10197,8 +10197,8 @@
     "title": "Frodo"
    },
    "dialogue": {
-    "br_lines": 71,
-    "matched": 46,
+    "br_lines": 79,
+    "matched": 50,
     "near": 2,
     "texts": 63
    },
@@ -11737,7 +11737,7 @@
     "title": "Golem Servant"
    },
    "dialogue": {
-    "br_lines": 9,
+    "br_lines": 11,
     "matched": 1,
     "near": 0,
     "texts": 3
@@ -12301,7 +12301,7 @@
     "title": "Guide Edna"
    },
    "dialogue": {
-    "br_lines": 53,
+    "br_lines": 55,
     "matched": 8,
     "near": 2,
     "texts": 12
@@ -14191,7 +14191,7 @@
     "title": "Ivalisse"
    },
    "dialogue": {
-    "br_lines": 24,
+    "br_lines": 31,
     "matched": 8,
     "near": 0,
     "texts": 12
@@ -16488,7 +16488,7 @@
     "title": "Lizzie"
    },
    "dialogue": {
-    "br_lines": 31,
+    "br_lines": 32,
     "matched": 18,
     "near": 1,
     "texts": 24
@@ -16813,7 +16813,7 @@
     "title": "Lugri"
    },
    "dialogue": {
-    "br_lines": 48,
+    "br_lines": 52,
     "matched": 41,
     "near": 0,
     "texts": 58
@@ -17633,7 +17633,7 @@
     "title": "Melchior"
    },
    "dialogue": {
-    "br_lines": 64,
+    "br_lines": 71,
     "matched": 2,
     "near": 0,
     "texts": 2
@@ -19790,7 +19790,7 @@
     "title": "Oldrak"
    },
    "dialogue": {
-    "br_lines": 29,
+    "br_lines": 32,
     "matched": 10,
     "near": 6,
     "texts": 30
@@ -20203,7 +20203,7 @@
     "title": "Ortheus"
    },
    "dialogue": {
-    "br_lines": 21,
+    "br_lines": 24,
     "matched": 18,
     "near": 0,
     "texts": 18
@@ -20839,7 +20839,7 @@
     "title": "Peter"
    },
    "dialogue": {
-    "br_lines": 19,
+    "br_lines": 21,
     "matched": 17,
     "near": 0,
     "texts": 17
@@ -21272,7 +21272,7 @@
     "title": "Pythius The Rotten"
    },
    "dialogue": {
-    "br_lines": 31,
+    "br_lines": 39,
     "matched": 6,
     "near": 1,
     "texts": 10
@@ -25547,7 +25547,7 @@
     "title": "The Dream Master"
    },
    "dialogue": {
-    "br_lines": 48,
+    "br_lines": 53,
     "matched": 2,
     "near": 0,
     "texts": 2
@@ -25974,7 +25974,7 @@
     "title": "Timothy"
    },
    "dialogue": {
-    "br_lines": 18,
+    "br_lines": 20,
     "matched": 1,
     "near": 0,
     "texts": 1
@@ -26375,7 +26375,7 @@
     "title": "Torkada"
    },
    "dialogue": {
-    "br_lines": 18,
+    "br_lines": 21,
     "matched": 1,
     "near": 0,
     "texts": 3
@@ -28183,7 +28183,7 @@
     "title": "Wyda"
    },
    "dialogue": {
-    "br_lines": 79,
+    "br_lines": 82,
     "matched": 1,
     "near": 0,
     "texts": 1
@@ -29346,7 +29346,7 @@
  "totals": {
   "dialogue:br_only": 179,
   "dialogue:checked": 367,
-  "dialogue:matched": 2816,
+  "dialogue:matched": 2820,
   "dialogue:near": 340,
   "dialogue:no_text_matched": 67,
   "dialogue:texts": 5848,
@@ -29355,11 +29355,11 @@
   "npcs": 1093,
   "position:CLOSE": 98,
   "position:MATCH": 229,
-  "position:MISMATCH": 43,
+  "position:MISMATCH": 42,
   "position:NEAR": 680,
   "position:NO_BR_POSITION": 1,
   "position:NO_PLACEMENT": 2,
-  "position:OTHER_FLOOR": 26,
+  "position:OTHER_FLOOR": 27,
   "removed_on_br": 5,
   "trade:AGREE": 93,
   "trade:BR_ONLY": 64,
