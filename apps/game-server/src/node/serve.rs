@@ -37,7 +37,9 @@ use crate::foundation::admission_authority_publication::{
     AdmissionPublicationPreconditionV1, AdmissionPublicationPurposeV1,
     AdmissionPublicationSourceV1,
 };
-use crate::foundation::{ChannelId, ChannelRuntimeV1, NodeId, RuntimeScopeRefV1, WorldId};
+use crate::foundation::{
+    ChannelId, ChannelRuntimeV1, NodeId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+};
 use crate::gameplay_transport::FreshEvidenceSource;
 use crate::native_admission_source::descriptor::ProducerDescriptor;
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
@@ -1062,7 +1064,30 @@ async fn boot_and_serve(
     // runtime pins exactly that generation.
     let (_active_content, content) =
         activate_content(root, material.world, material.channel).await?;
-    let (channel_pin, movement_cells) = content.into_channel_parts();
+    let (channel_pin, movement_cells, door_content) = content.into_channel_parts();
+    // #162 5868482467 (M2b): bind the entry room's one door `LocalObjectRuntime` once, at
+    // Channel activation, from this exact activated content — never from a value a later
+    // `USE_INTENT` is validating against it. `scope`/`generation` are this same activation's
+    // own committed scope and ownership generation (bound above, before the Channel runtime).
+    let door_scope_generation = ScopeOwnershipGeneration::new(assignment.ownership_generation)
+        .map_err(|_| BootError::Readiness("native entry door scope generation"))?;
+    let door_content_generation =
+        crate::world_runtime::ReferenceContentGeneration::from_content(&door_content)
+            .map_err(|_| BootError::Readiness("native entry door content generation"))?;
+    let door_fence = crate::world_runtime::ScopeContentGenerationFence::for_activation(
+        scope,
+        door_scope_generation,
+        door_content_generation,
+    );
+    let door = Mutex::new(
+        crate::world_runtime::bind_native_entry_door(
+            &door_content,
+            &door_fence,
+            scope,
+            door_scope_generation,
+        )
+        .map_err(|_| BootError::Readiness("native entry door runtime binding"))?,
+    );
     let runtime = Mutex::new(
         ChannelRuntimeV1::from_committed_assignment(
             material.world,
@@ -1141,6 +1166,7 @@ async fn boot_and_serve(
         channel_id: material.channel,
         runtime: &runtime,
         movement_cells: &movement_cells,
+        door: &door,
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(

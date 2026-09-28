@@ -326,13 +326,14 @@ impl NativeEntryProject {
 
     /// The qualified cells as a Movement lookup index bound to `server_generation`.
     ///
-    /// The door cell (#162 A4-a, P1 r4120672731) is deliberately excluded: it stays `Walkable` in
-    /// `source().cells` (so it is a genuine FirstProduction Terrain cell for the accepted-bindings
-    /// bijection and future presentation), but M2a composes no `LocalObjectRuntime` for it, so
-    /// nothing ever consults its declared closed/Present blocking state. Landing it in the active
-    /// movement index before that runtime blocker exists would let a player occupy the supposedly
-    /// closed door tile. M2b must add the door cell to movement together with the runtime
-    /// blocker, atomically. Until then this index is exactly the three room Terrain cells.
+    /// The door cell (#162 A4-a) is included as an ordinary `Walkable` Terrain cell (M2b,
+    /// 5868482467): the index only ever answers "is this cell's *terrain* walkable", exactly as
+    /// for any other cell in `source().cells`. It carries no LocalObject overlay state by
+    /// itself. Whether the door currently *blocks* movement is the door `LocalObjectRuntime`'s
+    /// own `blocking_cells()` (bound at Channel activation, see `activate_native_entry_room`),
+    /// which the seam's `ComposedFreshAdmission::step` consults in the same Channel-owner turn,
+    /// before this index's own terrain lookup ever runs. A closed door is Blocked and an open
+    /// door is walkable; no path may leave a closed door walkable through this index alone.
     fn movement_cells(
         &self,
         server_generation: [u8; 32],
@@ -355,7 +356,6 @@ impl NativeEntryProject {
             .source
             .cells
             .iter()
-            .filter(|cell| cell.key.as_str() != accepted::DOOR_CELL.0)
             .map(|cell| EngineeringStaticCellClaim {
                 scope: scope.clone(),
                 cell: crate::content::LogicalCell {
@@ -453,6 +453,11 @@ pub struct QualifiedNativeEntryRoom {
     entry_start: NativeEntryStart,
     map_revision_digest: [u8; 32],
     movement_cells: NativeEntryMovementCells,
+    /// The one door's own genuine Reference-profile content (M2b, 5868482467): the same
+    /// [`NativeEntryProject::door`] this room's qualification produced, carried through so the
+    /// Channel activation owner can bind its `LocalObjectRuntime` from the exact qualified
+    /// content, never a reconstruction of it.
+    door: CanonicalReferencePlayableContent,
 }
 
 /// The qualified room's cells as the Movement kernel's direct-lookup index, scoped to the exact
@@ -509,6 +514,12 @@ impl QualifiedNativeEntryRoom {
     pub const fn map_revision_digest(&self) -> [u8; 32] {
         self.map_revision_digest
     }
+
+    /// The one door's own genuine, fully linked Reference-profile content (M2b, 5868482467).
+    /// See [`NativeEntryProject::door`].
+    pub fn door(&self) -> &CanonicalReferencePlayableContent {
+        &self.door
+    }
 }
 
 /// Rebuilds the committed entry room for `world_id` from its genuine source: bind, re-admit through
@@ -533,6 +544,7 @@ pub fn qualify_native_entry_room(
         FirstProductionCompileTarget::OrdinaryRelease,
     )?;
     let movement_cells = project.movement_cells(compiled.server_digest())?;
+    let door = project.door().clone();
     Ok(QualifiedNativeEntryRoom {
         compiled,
         frame_binding: project.frame_binding(),
@@ -541,6 +553,7 @@ pub fn qualify_native_entry_room(
         map_revision_digest: crate::content::digest::sha256(
             project.source().revisions.map.as_str().as_bytes(),
         ),
+        door,
     })
 }
 
@@ -1341,6 +1354,15 @@ fn lower(
     else {
         return refuse("native entry door definition must be a LocalObject record");
     };
+    // #162 r4121206658: the door is a real admitted client interaction target (USE-WIRE-V1), so
+    // its client projection must be genuinely ClientSafe, not merely absent-of-ServerOnly. A
+    // ServerOnly door would link (the Reference profile does not require ClientSafe), but the
+    // client could never legitimately learn its state or states, so it is refused here before
+    // linking rather than left to a downstream consumer to notice.
+    pin(
+        *door_client_projection == ProjectionDocument::ClientSafe,
+        "native entry door client_projection must be ClientSafe",
+    )?;
     let door_ref = crate::content::TypedDefinitionRef::new(
         DefinitionFamily::LocalObject,
         ProductionKey::new(&door_definition_ref.key)?,
@@ -1547,7 +1569,6 @@ fn lower(
 mod tests {
     use super::*;
     use crate::content::LogicalCell;
-    use crate::content::static_cell_engine::StaticCellEngineError;
 
     fn test_world_id() -> crate::foundation::WorldId {
         let mut bytes = [0_u8; 16];
@@ -1558,13 +1579,13 @@ mod tests {
         crate::foundation::WorldId::decode(&bytes).expect("valid UUIDv7 WorldId")
     }
 
-    /// P1 r4120672731: the door cell stays a genuine, `Walkable` FirstProduction Terrain cell
-    /// (`source().cells`, needed for the accepted-bindings bijection), but the active Movement
-    /// index built by `movement_cells()` must not carry it until M2b composes the runtime
-    /// blocker for it — landing it in active movement first would let a player occupy the
-    /// supposedly closed door tile.
+    /// M2b (#162 5868482467): the door cell is a genuine, `Walkable` FirstProduction Terrain
+    /// cell (`source().cells`) *and* is now included in the active Movement index built by
+    /// `movement_cells()`, together with the door's own `LocalObjectRuntime` (bound at Channel
+    /// activation) — this index alone answers only "is this cell's terrain walkable", never
+    /// whether the door currently blocks it.
     #[test]
-    fn movement_cells_exclude_the_door_cell() {
+    fn movement_cells_include_the_door_cell_as_walkable_terrain() {
         let room = qualify_native_entry_room(test_world_id()).expect("qualified native entry room");
         let movement = room.movement_cells();
         let door_cell = LogicalCell {
@@ -1579,7 +1600,7 @@ mod tests {
         };
         assert!(matches!(
             movement.index().lookup(movement.scope(), door_cell),
-            Err(StaticCellEngineError::Absent)
+            Ok(crate::content::CollisionClass::Walkable)
         ));
         assert!(
             movement
@@ -1587,13 +1608,20 @@ mod tests {
                 .lookup(movement.scope(), start_cell)
                 .is_ok()
         );
-        // The door cell is still a genuine, Walkable FirstProduction Terrain cell — just not yet
-        // in the active movement index.
         assert!(
             room.compiled()
                 .server_digest()
                 .iter()
                 .any(|byte| *byte != 0)
+        );
+        // The door's own genuine, fully linked Reference-profile content is carried through
+        // qualification unchanged (M2b): exactly one LocalObject definition, ClientSafe (r4121206658),
+        // with no placements (DECISION_REQUIRED, r4120444680).
+        assert_eq!(room.door().definitions.len(), 1);
+        assert!(room.door().placements.is_empty());
+        assert_eq!(
+            room.door().definitions[0].client_projection,
+            crate::content::ClientProjectionClass::ClientSafe
         );
     }
 }

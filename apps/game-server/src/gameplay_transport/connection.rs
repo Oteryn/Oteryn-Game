@@ -11,6 +11,12 @@ use std::future::Future;
 use tokio::io::{AsyncRead, AsyncWrite};
 
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
+use super::world_object::{
+    COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
+    SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
+    WorldObjectOverlayEntry, decode_use_intent, encode_use_result,
+    encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
+};
 use super::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, DELTA_TYPE_WORLD_SPATIAL_V1,
     SNAPSHOT_TYPE_WORLD_SPATIAL_V1, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection,
@@ -175,6 +181,15 @@ pub(crate) trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// The Channel's current `WORLD_OBJECT_OVERLAY` for the join/resync snapshot (USE-WIRE-V1,
+    /// #162 5868482467), or `None` when this authority serves no gameplay (transport-only
+    /// fixtures).
+    fn observe_world_object_overlay(
+        &self,
+    ) -> impl Future<Output = Option<WorldObjectOverlayEntry>> {
+        async { None }
+    }
+
     /// One `WORLD_ACTOR_STEP_INTENT` for the admitted actor, applied by the Channel owner.
     fn step(
         &self,
@@ -182,6 +197,16 @@ pub(crate) trait FreshAdmissionAuthority {
         _direction: StepDirection,
     ) -> impl Future<Output = StepOutcome> {
         async { StepOutcome::rejected() }
+    }
+
+    /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
+    /// #162 5868482467), applied by the Channel owner.
+    fn use_object(
+        &self,
+        _actor: ExactActorRef,
+        _target: super::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = UseOutcome> {
+        async { UseOutcome::rejected() }
     }
 
     /// After `wait` without restored control, record authoritative unexpected control loss
@@ -225,6 +250,23 @@ impl StepOutcome {
         Self {
             disposition: StepDisposition::Rejected,
             moved_to: None,
+        }
+    }
+}
+
+/// The outcome of one `USE_INTENT`: its disposition and, only when it committed a transition,
+/// the resulting `WORLD_OBJECT_OVERLAY` delta entry (USE-WIRE-V1, #162 5868482467).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct UseOutcome {
+    pub(crate) disposition: super::world_object::UseDisposition,
+    pub(crate) committed: Option<super::world_object::WorldObjectOverlayEntry>,
+}
+
+impl UseOutcome {
+    pub(crate) const fn rejected() -> Self {
+        Self {
+            disposition: super::world_object::UseDisposition::Rejected,
+            committed: None,
         }
     }
 }
@@ -497,17 +539,31 @@ where
     };
     let mut revision = admitted.continuity.spatial_revision;
     let payload = encode_world_spatial(&baseline);
-    let snapshot = encode_single_chunk_snapshot(
-        generation,
-        1,
-        admitted.continuity.server_sequence,
-        &[DomainSnapshot {
-            domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            revision,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-            payload: &payload,
-        }],
-    );
+    let mut domains = vec![DomainSnapshot {
+        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+        revision,
+        snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+        payload: &payload,
+    }];
+    // USE-WIRE-V1 (#162 5868482467): the join/resync snapshot also carries the door's current
+    // `WORLD_OBJECT_OVERLAY`, the same code path a reconnect resumes through, so a resumed
+    // connection gets the door's current overlay exactly as a fresh join does.
+    let overlay = authority.observe_world_object_overlay().await;
+    let overlay_payload;
+    if let Some(entry) = &overlay {
+        let Ok(bytes) = encode_world_object_overlay_snapshot(std::slice::from_ref(entry)) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        overlay_payload = bytes;
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: entry.revision,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &overlay_payload,
+        });
+    }
+    let snapshot =
+        encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
     let Ok(snapshot) = snapshot else {
         return ConnectionEnd::AdmittedThenDisconnected(admitted);
     };
@@ -623,12 +679,29 @@ where
             };
             return ConnectionEnd::AdmittedThenClosed(admitted, error);
         }
-        // Unknown command types and malformed step payloads have no effect. The result payload
-        // belongs to the command type, so an unregistered type gets none.
-        let registered = command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT;
-        let outcome = match (registered, decode_step_intent(command.payload)) {
-            (true, Ok(direction)) => authority.step(actor, direction).await,
-            _ => StepOutcome::rejected(),
+        // Unknown command types and malformed payloads have no effect. The result payload
+        // belongs to the command type, so an unregistered type gets none. USE_INTENT (command
+        // type 2, USE-WIRE-V1 #162 5868482467) is dispatched under the same FND-02 CommandId
+        // sequencing this loop already enforces above for every command: a CommandId can be
+        // acted on at most once per connection generation, so a replay of the same CommandId
+        // never makes a second transition.
+        enum Dispatch {
+            Step(StepOutcome),
+            Use(UseOutcome),
+            Unregistered,
+        }
+        let dispatch = if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+            match decode_step_intent(command.payload) {
+                Ok(direction) => Dispatch::Step(authority.step(actor, direction).await),
+                Err(_) => Dispatch::Step(StepOutcome::rejected()),
+            }
+        } else if command.command_type == COMMAND_TYPE_USE_INTENT {
+            match decode_use_intent(command.payload) {
+                Ok(target) => Dispatch::Use(authority.use_object(actor, target).await),
+                Err(_) => Dispatch::Use(UseOutcome::rejected()),
+            }
+        } else {
+            Dispatch::Unregistered
         };
         let (Some(result_sequence), Some(following)) =
             (sequence.checked_add(1), next_command.checked_add(1))
@@ -639,51 +712,98 @@ where
         next_command = following;
         admitted.continuity.server_sequence = sequence;
         admitted.continuity.next_command_id = next_command;
-        let status = if outcome.disposition == StepDisposition::Rejected {
-            CommandStatus::Rejected
-        } else {
-            CommandStatus::Accepted
+        let (status, result_payload) = match &dispatch {
+            Dispatch::Step(outcome) => (
+                if outcome.disposition == StepDisposition::Rejected {
+                    CommandStatus::Rejected
+                } else {
+                    CommandStatus::Accepted
+                },
+                encode_step_result(outcome.disposition),
+            ),
+            Dispatch::Use(outcome) => (
+                if outcome.disposition == UseDisposition::Rejected {
+                    CommandStatus::Rejected
+                } else {
+                    CommandStatus::Accepted
+                },
+                encode_use_result(outcome.disposition),
+            ),
+            Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
         };
         let Ok(result) = encode_command_result(
             generation,
             sequence,
             command.command_id,
             status,
-            &if registered {
-                encode_step_result(outcome.disposition)
-            } else {
-                Vec::new()
-            },
+            &result_payload,
         ) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
         if write_frame(stream, &result).await.is_err() {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
-        if let Some(observation) = outcome.moved_to {
-            let (Some(delta_sequence), Some(new_revision)) =
-                (sequence.checked_add(1), revision.checked_add(1))
-            else {
-                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-            };
-            let Ok(delta) = encode_state_delta(
-                generation,
-                delta_sequence,
-                STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                revision,
-                new_revision,
-                DELTA_TYPE_WORLD_SPATIAL_V1,
-                &encode_world_spatial(&observation),
-            ) else {
-                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-            };
-            sequence = delta_sequence;
-            revision = new_revision;
-            admitted.continuity.server_sequence = sequence;
-            admitted.continuity.spatial_revision = revision;
-            if write_frame(stream, &delta).await.is_err() {
-                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        match dispatch {
+            Dispatch::Step(outcome) => {
+                if let Some(observation) = outcome.moved_to {
+                    let (Some(delta_sequence), Some(new_revision)) =
+                        (sequence.checked_add(1), revision.checked_add(1))
+                    else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    let Ok(delta) = encode_state_delta(
+                        generation,
+                        delta_sequence,
+                        STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        revision,
+                        new_revision,
+                        DELTA_TYPE_WORLD_SPATIAL_V1,
+                        &encode_world_spatial(&observation),
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    revision = new_revision;
+                    admitted.continuity.server_sequence = sequence;
+                    admitted.continuity.spatial_revision = revision;
+                    if write_frame(stream, &delta).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
             }
+            Dispatch::Use(outcome) => {
+                // WORLD_OBJECT_OVERLAY (domain 2, delta type 1) is Channel-global, not
+                // per-connection: its "from" revision is always the committed entry's own
+                // revision minus one, since `LocalObjectRuntime::attempt_use` only ever commits
+                // by advancing its revision by exactly one.
+                if let Some(entry) = outcome.committed {
+                    let (Some(delta_sequence), Some(prior_revision)) =
+                        (sequence.checked_add(1), entry.revision.checked_sub(1))
+                    else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    let Ok(payload) = encode_world_object_overlay_delta(&entry) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    let Ok(delta) = encode_state_delta(
+                        generation,
+                        delta_sequence,
+                        STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                        prior_revision,
+                        entry.revision,
+                        DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                        &payload,
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    if write_frame(stream, &delta).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+            }
+            Dispatch::Unregistered => {}
         }
     }
 }
@@ -929,9 +1049,64 @@ mod tests {
         envelope(7, generation, &payload)
     }
 
+    /// A fixture authority for USE_INTENT dispatch (USE-WIRE-V1, #162 5868482467): every call is
+    /// recorded and answered with one canned `UseOutcome`, independent of `target`.
+    struct UseAuthority {
+        uses: RefCell<Vec<super::super::world_object::WorldObjectTarget>>,
+        overlay: Option<WorldObjectOverlayEntry>,
+        outcome: UseOutcome,
+    }
+
+    impl FreshAdmissionAuthority for UseAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+
+        async fn observe_world_object_overlay(&self) -> Option<WorldObjectOverlayEntry> {
+            self.overlay.clone()
+        }
+
+        async fn use_object(
+            &self,
+            _actor: ExactActorRef,
+            target: super::super::world_object::WorldObjectTarget,
+        ) -> UseOutcome {
+            self.uses.borrow_mut().push(target);
+            self.outcome.clone()
+        }
+    }
+
+    fn use_command(
+        generation: u64,
+        id: u64,
+        command_type: u64,
+        placement: &[u8],
+        expected_revision: u64,
+    ) -> Vec<u8> {
+        let mut payload = Vec::new();
+        scalar(&mut payload, 1, id);
+        scalar(&mut payload, 2, command_type);
+        let intent = super::super::world_object::encode_use_intent(
+            &super::super::world_object::WorldObjectTarget {
+                placement: placement.to_vec(),
+                expected_revision,
+            },
+        )
+        .expect("encode use intent");
+        bytes(&mut payload, 4, &intent);
+        envelope(7, generation, &payload)
+    }
+
     /// Serve one positioned admitted session over the given client frames.
-    async fn drive_admitted(
-        authority: &StepAuthority,
+    async fn drive_admitted<A: FreshAdmissionAuthority>(
+        authority: &A,
         client_frames: &[Vec<u8>],
     ) -> Result<(ConnectionEnd, Vec<Vec<u8>>), Box<dyn Error>> {
         let world_id = WorldId::decode(&WORLD)?;
@@ -1475,6 +1650,148 @@ mod tests {
                 assert_eq!(frames.len(), 2);
                 assert_eq!(frames[1], error_frame(error, ADMITTED_GENERATION));
             }
+            Ok(())
+        })
+    }
+
+    /// USE-WIRE-V1 (#162 5868482467): the join snapshot carries `WORLD_OBJECT_OVERLAY` (domain
+    /// 2, snapshot type 1) alongside `WORLD_SPATIAL_VISIBILITY`, and a COMMITTED `USE_INTENT`
+    /// gets a `CommandResult` followed by a sequenced `WORLD_OBJECT_OVERLAY` delta (domain 2,
+    /// delta type 1) whose `from`/`to` revision matches the committed entry's own revision.
+    #[test]
+    fn admitted_use_commits_and_the_join_snapshot_carries_the_door_overlay()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let overlay = WorldObjectOverlayEntry {
+                content_generation: [0x11; 32],
+                placement: b"oteryn:cell/entry-door".to_vec(),
+                state: b"oteryn:reference.state.closed".to_vec(),
+                revision: 0,
+            };
+            let committed = WorldObjectOverlayEntry {
+                content_generation: [0x11; 32],
+                placement: b"oteryn:cell/entry-door".to_vec(),
+                state: b"oteryn:reference.state.open".to_vec(),
+                revision: 1,
+            };
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                overlay: Some(overlay.clone()),
+                outcome: UseOutcome {
+                    disposition: UseDisposition::Committed,
+                    committed: Some(committed.clone()),
+                },
+            };
+            let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
+            let (end, frames) = drive_admitted(
+                &authority,
+                &[use_command(1, 1, use_type, b"oteryn:cell/entry-door", 0)],
+            )
+            .await?;
+            let mut expected: Vec<Vec<u8>> = encode_single_chunk_snapshot(
+                ADMITTED_GENERATION,
+                1,
+                0,
+                &[
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        revision: 1,
+                        snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                        payload: &encode_world_spatial(&at(0)),
+                    },
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                        revision: 0,
+                        snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                        payload: &encode_world_object_overlay_snapshot(&[overlay])
+                            .expect("encode overlay snapshot"),
+                    },
+                ],
+            )?
+            .into();
+            expected.extend([
+                encode_command_result(
+                    1,
+                    1,
+                    1,
+                    CommandStatus::Accepted,
+                    &encode_use_result(UseDisposition::Committed),
+                )?,
+                encode_state_delta(
+                    1,
+                    2,
+                    STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    0,
+                    1,
+                    DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                    &encode_world_object_overlay_delta(&committed).expect("encode delta"),
+                )?,
+            ]);
+            assert_eq!(frames, expected);
+            assert_eq!(authority.uses.borrow().len(), 1);
+            assert_eq!(
+                authority.uses.borrow()[0],
+                super::super::world_object::WorldObjectTarget {
+                    placement: b"oteryn:cell/entry-door".to_vec(),
+                    expected_revision: 0,
+                }
+            );
+            let ConnectionEnd::AdmittedThenDisconnected(_) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            Ok(())
+        })
+    }
+
+    /// A non-committing `USE_INTENT` disposition (here NOTHING_TO_USE) gets its own encoded
+    /// `CommandResult` and never a `WORLD_OBJECT_OVERLAY` delta, and an unregistered command
+    /// type still gets an empty result payload exactly as it does for STEP.
+    #[test]
+    fn admitted_use_non_committing_disposition_emits_no_delta_and_unregistered_type_is_empty()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                overlay: None,
+                outcome: UseOutcome {
+                    disposition: UseDisposition::NothingToUse,
+                    committed: None,
+                },
+            };
+            let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
+            let (_end, frames) = drive_admitted(
+                &authority,
+                &[
+                    use_command(1, 1, use_type, b"oteryn:cell/unknown", 0),
+                    use_command(1, 2, 0x7fff, b"oteryn:cell/entry-door", 0),
+                ],
+            )
+            .await?;
+            let mut expected: Vec<Vec<u8>> = encode_single_chunk_snapshot(
+                ADMITTED_GENERATION,
+                1,
+                0,
+                &[DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    revision: 1,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                    payload: &encode_world_spatial(&at(0)),
+                }],
+            )?
+            .into();
+            expected.extend([
+                encode_command_result(
+                    1,
+                    1,
+                    1,
+                    CommandStatus::Accepted,
+                    &encode_use_result(UseDisposition::NothingToUse),
+                )?,
+                encode_command_result(1, 2, 2, CommandStatus::Rejected, &[])?,
+            ]);
+            assert_eq!(frames, expected);
+            // The unregistered type never reached `use_object`.
+            assert_eq!(authority.uses.borrow().len(), 1);
             Ok(())
         })
     }

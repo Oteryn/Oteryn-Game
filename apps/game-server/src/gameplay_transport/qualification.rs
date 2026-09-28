@@ -670,7 +670,9 @@ fn client_command_at(generation: u64, id: u64, command_type: u64, payload: &[u8]
 }
 
 /// The exact frames after `ServerAccepted` for the first-control scenario, from the committed
-/// room of `world`: start (0,0,0), east (1,0,0) walkable, north blocked, south absent.
+/// room of `world`: start (0,0,0), east (1,0,0) walkable, north blocked, south absent. The join
+/// snapshot also carries the door's current (closed, revision 0) `WORLD_OBJECT_OVERLAY`
+/// (USE-WIRE-V1, #162 5868482467).
 fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
     let room = crate::content::qualify_native_entry_room(world)
         .map_err(|e| format!("native entry room: {e}"))?;
@@ -694,16 +696,38 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
             &at(x),
         )
     };
+    let door_overlay = crate::gameplay_transport::world_object::WorldObjectOverlayEntry {
+        content_generation: room.compiled().client_digest(),
+        placement: crate::content::accepted::DOOR_CELL.0.as_bytes().to_vec(),
+        state: crate::content::accepted::DOOR_CLOSED_STATE
+            .as_bytes()
+            .to_vec(),
+        revision: 0,
+    };
     let mut frames: Vec<Vec<u8>> = encode_single_chunk_snapshot(
         1,
         1,
         0,
-        &[DomainSnapshot {
-            domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            revision: 1,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-            payload: &at(0),
-        }],
+        &[
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 1,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &at(0),
+            },
+            DomainSnapshot {
+                domain_id:
+                    crate::gameplay_transport::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 0,
+                snapshot_type:
+                    crate::gameplay_transport::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload:
+                    &crate::gameplay_transport::world_object::encode_world_object_overlay_snapshot(
+                        &[door_overlay],
+                    )
+                    .map_err(|_| "encode door overlay snapshot")?,
+            },
+        ],
     )?
     .into();
     frames.extend([
@@ -717,6 +741,126 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
         encode_command_result(1, 7, 5, CommandStatus::Rejected, &[])?,
         // Command 7 after 5: a gap naming the offending and the expected ID.
         encode_command_protocol_error(FoundationProtocolError::CommandSequenceGap, 1, 7, 6)?,
+    ]);
+    Ok(frames)
+}
+
+/// The exact frames after `ServerAccepted` for the USE-WIRE-V1 scenario (#162 5868482467,
+/// M2b): the door starts closed at revision 0 (join snapshot). Adjacent USE opens it
+/// (COMMITTED, revision 1); stepping north now moves through the open doorway; USE while
+/// standing in the doorway is OCCUPIED (no mutation); stepping south vacates it; USE now
+/// COMMITs the close (revision 2); stepping north again is Blocked by the closed door; a
+/// stale-revision USE is STALE_STATE; an unknown placement is NOTHING_TO_USE; and replaying the
+/// already-consumed CommandId 6 expires and closes the connection — the same FND-02 CommandId
+/// discipline a replayed STEP CommandId gets, so it can never make a second transition. Every
+/// accepted cell in the qualified room is within Chebyshev distance 1 of the door (#935/#937),
+/// so a genuine TOO_FAR case cannot be exercised through real movement here; it is covered by
+/// `gameplay_transport::tests::use_object_reachable_is_chebyshev_one_same_floor_only` instead.
+fn use_wire_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
+    use crate::gameplay_transport::world_object::{
+        DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+        STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, WorldObjectOverlayEntry,
+        encode_use_result, encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
+    };
+    let room = crate::content::qualify_native_entry_room(world)
+        .map_err(|e| format!("native entry room: {e}"))?;
+    let content_generation = room.compiled().client_digest();
+    let door_key = crate::content::accepted::DOOR_CELL.0.as_bytes();
+    let spatial_at = |x, y| {
+        encode_world_spatial(&WorldSpatialObservation {
+            content_generation,
+            actor_position: ActorPosition { x, y, floor: 0 },
+        })
+    };
+    let overlay_entry = |state: &str, revision: u64| WorldObjectOverlayEntry {
+        content_generation,
+        placement: door_key.to_vec(),
+        state: state.as_bytes().to_vec(),
+        revision,
+    };
+    let step_result = |sequence, id, disposition| {
+        encode_command_result(
+            1,
+            sequence,
+            id,
+            CommandStatus::Accepted,
+            &encode_step_result(disposition),
+        )
+    };
+    let spatial_delta = |sequence, from, x, y| {
+        encode_state_delta(
+            1,
+            sequence,
+            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            from,
+            from + 1,
+            DELTA_TYPE_WORLD_SPATIAL_V1,
+            &spatial_at(x, y),
+        )
+    };
+    let use_result = |sequence, id, disposition| {
+        encode_command_result(
+            1,
+            sequence,
+            id,
+            CommandStatus::Accepted,
+            &encode_use_result(disposition),
+        )
+    };
+    let overlay_delta = |sequence, from, state: &str, to| -> TestResult<Vec<u8>> {
+        let payload = encode_world_object_overlay_delta(&overlay_entry(state, to))
+            .map_err(|_| "encode overlay delta")?;
+        Ok(encode_state_delta(
+            1,
+            sequence,
+            STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            from,
+            to,
+            DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            &payload,
+        )?)
+    };
+    let mut frames: Vec<Vec<u8>> = encode_single_chunk_snapshot(
+        1,
+        1,
+        0,
+        &[
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 1,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &spatial_at(0, 0),
+            },
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 0,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload: &encode_world_object_overlay_snapshot(&[overlay_entry(
+                    crate::content::accepted::DOOR_CLOSED_STATE,
+                    0,
+                )])
+                .map_err(|_| "encode overlay snapshot")?,
+            },
+        ],
+    )?
+    .into();
+    frames.extend([
+        step_result(1, 1, StepDisposition::Moved)?, // cmd1: east (0,0)->(1,0)
+        spatial_delta(2, 1, 1, 0)?,
+        use_result(3, 2, UseDisposition::Committed)?, // cmd2: use open, adjacent
+        overlay_delta(4, 0, crate::content::accepted::DOOR_OPEN_STATE, 1)?,
+        step_result(5, 3, StepDisposition::Moved)?, // cmd3: north (1,0)->(1,-1), door open
+        spatial_delta(6, 2, 1, -1)?,
+        use_result(7, 4, UseDisposition::Occupied)?, // cmd4: use close, standing in the doorway
+        step_result(8, 5, StepDisposition::Moved)?,  // cmd5: south (1,-1)->(1,0), vacates
+        spatial_delta(9, 3, 1, 0)?,
+        use_result(10, 6, UseDisposition::Committed)?, // cmd6: use close, now unoccupied
+        overlay_delta(11, 1, crate::content::accepted::DOOR_CLOSED_STATE, 2)?,
+        step_result(12, 7, StepDisposition::Blocked)?, // cmd7: north again, door now closed
+        use_result(13, 8, UseDisposition::StaleState)?, // cmd8: use open, expected_revision=0 (stale)
+        use_result(14, 9, UseDisposition::NothingToUse)?, // cmd9: use, unknown placement
+        // cmd6 replayed: already consumed, expires and closes (same FND-02 discipline as STEP).
+        encode_command_protocol_error(FoundationProtocolError::CommandOutcomeExpired, 1, 6, 0)?,
     ]);
     Ok(frames)
 }
@@ -938,7 +1082,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         frame_binding_digest: room.frame_binding().digest(),
     };
     let mut content_controller = crate::content::ContentActivationController::new();
-    let (channel_pin, movement_cells) = crate::content::activate_native_entry_room(
+    let (channel_pin, movement_cells, door_content) = crate::content::activate_native_entry_room(
         &mut content_controller,
         &crate::content::NodeBootQuiescence::before_channel_runtime(),
         world,
@@ -946,6 +1090,29 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     )
     .map_err(|e| format!("native entry activation: {e}"))?
     .into_channel_parts();
+    // #162 5868482467 (M2b): the same door-binding the production boot sequence performs, from
+    // the same committed scope and ownership generation this Channel runtime is composed with
+    // below.
+    let door_scope_generation =
+        crate::foundation::ScopeOwnershipGeneration::new(assigned.assignment.ownership_generation)
+            .map_err(|e| format!("native entry door scope generation: {e:?}"))?;
+    let door_content_generation =
+        crate::world_runtime::ReferenceContentGeneration::from_content(&door_content)
+            .map_err(|e| format!("native entry door content generation: {e:?}"))?;
+    let door_fence = crate::world_runtime::ScopeContentGenerationFence::for_activation(
+        scope,
+        door_scope_generation,
+        door_content_generation,
+    );
+    let door = tokio::sync::Mutex::new(
+        crate::world_runtime::bind_native_entry_door(
+            &door_content,
+            &door_fence,
+            scope,
+            door_scope_generation,
+        )
+        .map_err(|e| format!("native entry door runtime: {e:?}"))?,
+    );
     // KAN-26: the Channel runtime is composed from this exact committed
     // assignment before readiness, as `serve` does.
     let runtime = tokio::sync::Mutex::new(
@@ -1050,6 +1217,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             channel_id: channel,
             runtime: &runtime,
             movement_cells: &movement_cells,
+            door: &door,
         },
         &shutdown,
     );
@@ -1244,16 +1412,41 @@ fn resume_frames(
             selected_capabilities: &[],
         },
     )?];
+    // USE-WIRE-V1 (#162 5868482467): the resync join snapshot also carries the door's current
+    // `WORLD_OBJECT_OVERLAY`; nothing in this scenario touches the door, so it is still closed
+    // at revision 0.
+    let door_overlay = crate::gameplay_transport::world_object::WorldObjectOverlayEntry {
+        content_generation: room.compiled().client_digest(),
+        placement: crate::content::accepted::DOOR_CELL.0.as_bytes().to_vec(),
+        state: crate::content::accepted::DOOR_CLOSED_STATE
+            .as_bytes()
+            .to_vec(),
+        revision: 0,
+    };
     frames.extend(encode_single_chunk_snapshot(
         generation,
         1,
         sequence,
-        &[DomainSnapshot {
-            domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            revision,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-            payload: &at(x),
-        }],
+        &[
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &at(x),
+            },
+            DomainSnapshot {
+                domain_id:
+                    crate::gameplay_transport::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 0,
+                snapshot_type:
+                    crate::gameplay_transport::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload:
+                    &crate::gameplay_transport::world_object::encode_world_object_overlay_snapshot(
+                        &[door_overlay],
+                    )
+                    .map_err(|_| "encode door overlay snapshot")?,
+            },
+        ],
     )?);
     frames.extend([
         encode_command_result(
@@ -1802,6 +1995,73 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     }
     evidence(
         "grace_expiry closed=terminal silent=terminal readmitted_after_release=1 admissions=3",
+    );
+
+    evidence("stage=use_wire");
+    // USE-WIRE-V1 (#162 5868482467, M2b): the released character[1] is admitted fresh, then
+    // drives the full door interaction in one batch (see `use_wire_frames` for the exact
+    // expected disposition of each command).
+    {
+        use crate::gameplay_transport::world_object::{
+            COMMAND_TYPE_USE_INTENT, WorldObjectTarget, encode_use_intent,
+        };
+        let door_key = crate::content::accepted::DOOR_CELL.0;
+        let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
+        let step_type = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+        let use_frame = |id: u64, placement: &str, expected_revision: u64| -> TestResult<Vec<u8>> {
+            let payload = encode_use_intent(&WorldObjectTarget {
+                placement: placement.as_bytes().to_vec(),
+                expected_revision,
+            })
+            .map_err(|_| "encode use intent")?;
+            Ok(client_command(id, use_type, &payload))
+        };
+        let step_frame = |id: u64, direction: StepDirection| {
+            client_command(id, step_type, &encode_step_intent(direction))
+        };
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+        loop {
+            let generation = platform_generation(descriptor, &accounts[1]).await?;
+            let again = next_grant(&accounts[1], characters[1], generation);
+            let token = sign_grant(&again.borrowed(), now_seconds()?);
+            let mut raw = framed(&bootstrap(1, 1, &characters[1], &token));
+            for frame in [
+                step_frame(1, StepDirection::East),
+                use_frame(2, door_key, 0)?,
+                step_frame(3, StepDirection::North),
+                use_frame(4, door_key, 1)?,
+                step_frame(5, StepDirection::South),
+                use_frame(6, door_key, 1)?,
+                step_frame(7, StepDirection::North),
+                use_frame(8, door_key, 0)?,
+                use_frame(9, "oteryn:cell/unknown", 2)?,
+                // Replays the already-consumed CommandId 6.
+                use_frame(6, door_key, 1)?,
+            ] {
+                raw.extend_from_slice(&framed(&frame));
+            }
+            let reply = exchange_must_close(address, &exact, &raw).await?;
+            if accepted_session(&reply).is_some() {
+                let Reply::Frames(frames) = &reply else {
+                    return Err("missing frames".into());
+                };
+                let expected = use_wire_frames(WorldId::decode(&world)?)?;
+                if frames.get(1..) != Some(expected.as_slice()) {
+                    return Err(format!("use-wire scenario diverged: {reply:?}").into());
+                }
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("use-wire character was not admitted again: {reply:?}").into());
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+    }
+    if committed_admissions(url).await? != 4 {
+        return Err("use-wire admission did not commit exactly one GameSession".into());
+    }
+    evidence(
+        "use_wire door_open=committed step_through=moved use_in_doorway=occupied step_out=moved door_close=committed step_blocked=blocked stale_revision=stale_state unknown_placement=nothing_to_use replayed_command_id=expired admissions=4",
     );
     Ok(())
 }

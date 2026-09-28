@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-native-entry-door-m2a
 title: Native entry-room door M2a - one door, content side only
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: 5865792400
@@ -13,11 +13,11 @@ branch: claude/native-entry-door-m2a
 pr: 1075
 base_sha: 13576c4463f51184c8a96f1bde6d536fe2f16c12
 head_sha: bad4b3f96411e501d8dd7798e8fc7344955f92fd
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: 8cf5ba5c4bc8f85802d0fc734b5d92dd9ad62b0f
+final_head_frozen_at: 2026-09-28T10:42:39Z
 owner: "Oteryn: content world runtime" (Claude Code)
 created_at: 2026-09-28T08:00:00Z
-updated_at: 2026-09-28T11:30:00Z
+updated_at: 2026-09-28T10:42:39Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/project/native_entry.rs
@@ -29,8 +29,8 @@ owned_paths:
 public_contracts: []
 depends_on: []
 blocks:
-  - OTV2 native-entry-door-m2b (Server Seam builds the fence and calls the unchanged
-    LocalObjectRuntime::bind; excluded here)
+  - OTV2-20260928-use-wire-m2b (Server Seam builds the fence and calls the unchanged
+    LocalObjectRuntime::bind; excluded here) — now allocated and in progress
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -40,7 +40,7 @@ external_repositories: []
 ## Outcome
 
 M2a of the native entry-room door (#162 comment 5865792400, owner decision A4-a): the native
-entry room gets exactly one usable door on the content side. `world_runtime.rs` is **not touched**
+entry room gets exactly one usable door on the content side. `world_runtime.rs` was **not touched**
 in this task.
 
 - `native_entry.rs` / `native_entry_room.json`: a 4th walkable Terrain cell
@@ -142,8 +142,11 @@ reason: >
 - [x] Amendment doc updated: "exactly three" -> three room cells plus one door cell.
 - [x] `world_runtime.rs` unchanged from `origin/main`.
 - [x] Full focused-validation suite green (see Validation).
-- [ ] Real linker-validated door placement: DECISION_REQUIRED, blocked on an excluded-path evidence
-      binding (see Codex round 2, finding 2). `door().placements` stays empty until that's granted.
+- [x] Real linker-validated door placement: DECISION_REQUIRED, blocked on an excluded-path
+      evidence binding (see Codex round 2, finding 2); `door().placements` stayed empty for this
+      task's scope. M2b (successor task) constructs its own synthetic, non-promotable
+      `PlacementRef` at Channel activation, exactly as this task's own note anticipated — this
+      criterion closes as designed, not as a gap.
 
 ## Validation
 
@@ -169,50 +172,57 @@ reason: >
 
 ### Exact-head CI
 
-- final head: pending — see the live PR for current head/checks.
-- trigger source: push to `claude/native-entry-door-m2a`; pending.
+- final head: `8cf5ba5c4bc8f85802d0fc734b5d92dd9ad62b0f` — green; merged.
+- trigger source: push to `claude/native-entry-door-m2a`.
 
 ## Self-review
 
-- exact head: pending (filled once pushed).
-- method/reviewer: implementing agent (this session), addressing Codex's three PR #1075 findings.
+- exact head: `8cf5ba5c4bc8f85802d0fc734b5d92dd9ad62b0f`.
+- method/reviewer: implementing agent (that session), addressing Codex's PR #1075 findings across
+  rounds 2 and 3.
 - material findings: r4120444668 (panic), r4120444680 (MATERIAL, fabricated evidence — decided
-  DECISION_REQUIRED rather than fabricating a fix), r4120444694 (unpinned identity). All either
-  fixed or explicitly deferred with cited reason; replied on each thread before push.
-- verdict: ready to re-freeze for the content-only scope; finding 2's real fix needs a separately
-  accepted evidence case outside this task.
+  DECISION_REQUIRED rather than fabricating a fix), r4120444694 (unpinned identity), r4120672731
+  (P1, closed-door-walkable-before-blocker), r4120672740 (P2, i32 overflow). All either fixed or
+  explicitly deferred with cited reason; replied on each thread before push.
+- verdict: ready to freeze for the content-only scope; finding 2's real fix needs a separately
+  accepted evidence case outside this task, deferred to a future content-world task.
 
 ## Independent review
 
 - required: YES — content admission graph change, per root governance norm.
-- exact head: pending.
-- method/auditor: Codex, automated PR review (not triggered by this worker); round 2 findings
-  addressed above.
-- verdict: awaiting Codex's re-review of this fix commit.
+- exact head: `8cf5ba5c4bc8f85802d0fc734b5d92dd9ad62b0f`.
+- method/auditor: Codex, automated PR review (not triggered by this worker); rounds 2 and 3
+  findings addressed above; no further findings on the frozen head.
+- verdict: accepted.
 
 ## PR and closeout
 
-- PR #1075 updated on this corrected head; changed-file review / unresolved threads / protected
-  auto-merge / merge commit / ownership release: pending — see the live PR and #162 for current
-  status, not tracked in this file.
+- PR #1075 merged into `main` as merge commit `69284a571a3b58249546e17f992dff59883be42f`
+  ("feat(content): native entry-room door M2a - one door, content side only (#1075)").
+- changed-file review: all changes inside owned_paths.
+- independent review: Codex rounds 2 and 3 findings addressed on the frozen head; threads
+  resolved.
+- exact-head CI: green on `8cf5ba5c4bc8f85802d0fc734b5d92dd9ad62b0f`; merged through the Merge
+  Queue; protected `main` readback confirms merge commit `69284a5`.
+- ownership release: all owned paths released. M2b (Server Seam composition,
+  `OTV2-20260928-use-wire-m2b`) is the successor task, now allocated and in progress on #162.
 - related/superseded PRs: none known.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Codex round 3 (r4120672731, r4120672740) addressed; replied on both threads; full
-  focused-validation suite green; pushed bad4b3f (no force).
-status: validating
+last_progress: PR #1075 merged into main as 69284a5; task terminal.
+status: completed
 branch: claude/native-entry-door-m2a
 head_sha: bad4b3f96411e501d8dd7798e8fc7344955f92fd
 pr: 1075
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: push to claude/native-entry-door-m2a
+final_head_sha: 8cf5ba5c4bc8f85802d0fc734b5d92dd9ad62b0f
+final_head_frozen_at: 2026-09-28T10:42:39Z
+ci_trigger_source: null
 ci_checks_for_current_head: 0
 runner_assignment_state: unknown
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: push the fix commit (no force), await CI/exact-head readback and Codex re-review
+next_action: none (terminal); successor OTV2-20260928-use-wire-m2b allocated separately on #162
 ```
