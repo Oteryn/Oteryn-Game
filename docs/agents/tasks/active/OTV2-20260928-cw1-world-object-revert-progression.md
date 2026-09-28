@@ -114,32 +114,34 @@ reason: >
 
 ## Implementation / findings
 
-Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3 in §4/§5/§8 without designing them.
-Round 1: §-numbering/CW3 attribution fixed; §7 option 2 made honest. Round 2 (Codex, bbb3b4cd):
-`Deadline` option recommended over a step counter; `advance_owner` evidence corrected;
-occupied-revert refuses permanently. Round 3 (Codex, 350dca59): rebound §7 to an FND-03 §10
-authoritative timer, not `apply`/`resume_pending`/`CommandIngress`; staged capacity atomicity;
-equal-deadline tie-break; one clock per scope. Round 4 (owner-authorized, c76bf9b9): merged
-`origin/main` (PR #1055 CW4, #1046 CW3), §4/§8 cite the merged state; line citations re-verified; 3
-Codex P2s on FND-03 timer internals resolved. Round 5 (owner-authorized, cf3dd8e6): `revert_after_ms`
-made admissible only on a transition with a bound inverse (swapped states, same definition); `bind`
-rejects (`InvalidBinding`) otherwise; staged commit stores the inverse key plus expected
-state/revision so firing replays instead of guessing. Round 6 (owner-authorized, f3d05f1f): the
-inverse rule tightened to exactly one match (plus matching intent family, TRANSFORM↔TRANSFORM/
-CREATE↔REMOVE/RETAG↔RETAG/OPEN↔CLOSE — only `LOCAL_OBJECT_RETAG_INTENT_FAMILY` exists today), zero
-or 2+ ⇒ `InvalidBinding`; pre-`prepare` discard restricted to `scope_generation`/`content_generation`
-changing, so a changed object always resolves via `prepare`'s own `DISPOSITION_STALE_STATE`, one path.
+Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3 in §4/§5/§8. Round 1: §-numbering/CW3
+attribution fixed; §7 option 2 made honest. Round 2 (Codex, bbb3b4cd): `Deadline` option recommended
+over a step counter; occupied-revert refuses permanently. Round 3 (Codex, 350dca59): rebound §7 to
+an FND-03 §10 authoritative timer, not `apply`/`resume_pending`/`CommandIngress`; staged capacity
+atomicity; equal-deadline tie-break; one clock per scope. Round 4 (owner-authorized, c76bf9b9):
+merged `origin/main` (PR #1055 CW4, #1046 CW3), §4/§8 cite the merged state; line citations
+re-verified. Round 5 (owner-authorized, cf3dd8e6): `revert_after_ms` admissible only on a transition
+with a bound inverse (swapped states, same definition); staged commit stores the inverse key plus
+expected state/revision so firing replays instead of guessing. Round 6 (owner-authorized, f3d05f1f):
+inverse rule tightened to exactly one match (plus matching intent family); pre-`prepare` discard
+restricted to `scope_generation`/`content_generation` changing, so a changed object always resolves
+via `prepare`'s `DISPOSITION_STALE_STATE`, one path.
 
-Round 7 (owner-authorized, 53c46f0d, Codex review comment 4119354894, no new upstream commits):
-verified the finding — if both a transition and its bound inverse carry `revert_after_ms` (a
-mutually timed pair), firing one timer executes the inverse, and the "on any revert_after-carrying
-operation, stage a new timer" wording in Exact delta/Option 2 did not distinguish that commit from a
-player-initiated one, so the pair would ping-pong forever. Fixed, minimal, one-shot: a timer-origin
-execution never registers a new timer for itself, even when its own transition carries
-`revert_after_ms`; only a player/command-initiated execution schedules one. No periodic/repeating
-timer semantics added. Re-checked §7 for other "any operation" wording and fixed §4's "Timed revert"
-bullet and the "Timer-capacity atomicity" test obligation to match. Added the "mutually timed pair
-fires once and stops" test obligation (one ordinal, one inverse execution, zero new timers).
+Round 7 (owner-authorized, 53c46f0d, Codex 4119354894): a mutually timed pair (both a transition and
+its inverse carrying `revert_after_ms`) would ping-pong forever, since firing one timer's inverse
+also staged a new timer. Fixed: a timer-origin execution never registers a new timer for itself.
+Added the "fires once and stops" test obligation. This round's fix wording said "only player/command
+... schedules," which round 8 found too narrow.
+
+Round 8 (owner-authorized, 9ec951d3, Codex 4119401513, no new upstream commits): verified —
+`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md:171-172`'s `DepthWarzoneBossDeath` `creature_died(boss)` →
+`map_item(transform teleporter, revert_after_ms 1200000)` is encounter-originated, never
+`apply`/`resume_pending`, so round 7's wording would have left it transformed forever. Fixed: restated
+as an origin test ("is this the firing of a pending revert timer?"), not an allow-list — every
+non-timer-origin execution (player/command, encounter/server-event, or otherwise) registers its
+revert. Fixed the same wording in §4, Option 2, both Exact-delta bullets, Must-decide-now item 1 and
+the timer-capacity obligation. Added the "encounter-originated timed transform registers and fires"
+test obligation, citing lines 171-172 directly.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -149,13 +151,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-7; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-8; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 7, unchanged — no new upstream commits)
+  validation passed (23 files, 47 workflows)." (round 8, unchanged — no new upstream commits)
 
 ### E2E
 
@@ -200,10 +202,10 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 7 (owner-authorized, Codex comment 4119354894): fixed a mutually-timed-
-  pair ping-pong — a timer-origin execution never registers a new timer for itself even when its own
-  transition carries revert_after_ms, only a player/command-initiated execution schedules one; no
-  periodic semantics added; both validators re-run and still pass. Reporting READY_FOR_INTEGRATION.
+  PR #1045 pre-freeze round 8 (Codex 4119401513): round 7's "player/command-only" wording was too
+  narrow (the encounter-originated DepthWarzoneBossDeath teleporter transform never registered).
+  Restated as an origin test: suppress only for the firing of a pending revert timer; every other
+  origin registers its revert; fixed the same wording everywhere in §7; validators pass.
 status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
