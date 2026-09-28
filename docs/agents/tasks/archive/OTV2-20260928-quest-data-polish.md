@@ -4,22 +4,22 @@
 task_id: OTV2-20260928-quest-data-polish
 title: Quest format - typed wiki requirements, chest quest links, runtime-map trigger ids, Banshee data gaps
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: 1067
 base_sha: ec70ca9e17548c3ab2e0597b4762169b4cac2c3e
-head_sha: null
-final_head_sha: null
+head_sha: 3d8189cdaaa79665ce0e25da65956df8038becb8
+final_head_sha: 3d8189cdaaa79665ce0e25da65956df8038becb8
 final_head_frozen_at: null
 owner: claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk
 created_at: 2026-09-28
 updated_at: 2026-09-28
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260928-quest-data-polish.md
+  - docs/agents/tasks/archive/OTV2-20260928-quest-data-polish.md
   - docs/agents/tasks/archive/OTV2-20260927-quest-readiness-and-gaps.md
   - docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md
   - tools/content-schema/quest-authoring/**
