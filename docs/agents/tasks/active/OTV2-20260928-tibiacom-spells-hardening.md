@@ -4,10 +4,10 @@
 task_id: OTV2-20260928-tibiacom-spells-hardening
 title: tibia.com capture - spell library through the real #1077 parser, literal YYYY-MM-DD hardening
 mode: IMPLEMENT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1181
 allocation_comment: "#162, owner decision D100"
 base_branch: main
 branch: claude/tibiacom-spells-hardening
@@ -135,12 +135,12 @@ snapshot directory, `tools/content-schema/spell-authoring/**`: unchanged. No new
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation and local validation complete; PR to be opened
-status: implementing
+last_progress: implementation and local validation complete; PR 1181 open
+status: ready
 branch: claude/tibiacom-spells-hardening
-pr: null
+pr: 1181
 final_head_sha: the frozen final head of the PR
 owner_action_required: run the spells capture command from imports/official/tibia-com/README.md after merge
 blocker: null
-next_action: open the PR, bind its number here, freeze the head and await checks and review
+next_action: await required checks and independent review on PR 1181
 ```
