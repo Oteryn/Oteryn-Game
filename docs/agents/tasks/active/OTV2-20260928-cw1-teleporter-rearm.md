@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-cw1-teleporter-rearm
 title: D90 teleporter re-arm - lower the post-revert re-arm forward and select the forward by state
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-teleporter-rearm
-pr: null
+pr: 1164
 base_sha: 4e65a5e450f7f6f301abbd45fa2457d56a628ba5
 head_sha: null
 final_head_sha: null
@@ -92,5 +92,5 @@ smallest slice, and closes out task B:
 
 ## Context checkpoint
 
-last_progress: D90 re-arm implemented and validated locally; PR opened for CI and review
+last_progress: D90 re-arm implemented and validated locally (code head 17d58265); PR #1164 opened for CI and review
 jira: pending (no mapped Story resolved in this worker session)
