@@ -131,6 +131,20 @@ CREATE TABLE game_item_transfer_receipts (
     END)
 );
 
+-- Guarded per-transaction evidence of the actual OLD.quantity of every item
+-- row a TRANSFER touches, captured by the item UPDATE trigger below from the
+-- real row, never from a client-supplied value. Append-only: a later
+-- TRANSFER of the same item records a new row under its own transaction. The
+-- deferred conservation guard below binds the receipt's self-reported
+-- *_quantity_before to this evidence, so a runtime transaction can no longer
+-- claim a fictitious before-quantity for either participant.
+CREATE TABLE game_item_transfer_quantity_evidence (
+    item_instance_id UUID NOT NULL REFERENCES game_item_instances (item_instance_id),
+    transaction_id UUID NOT NULL CHECK (game_character_is_uuid_v7(transaction_id)),
+    quantity_before BIGINT NOT NULL CHECK (quantity_before BETWEEN 1 AND 4294967295),
+    PRIMARY KEY (item_instance_id, transaction_id)
+);
+
 CREATE FUNCTION game_item_transfer_reservation_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -145,15 +159,23 @@ $$;
 
 -- A live item may change only its quantity, lifecycle and last transaction,
 -- and only to a new transaction; a retired item is terminal. The deferred
--- guard below proves a TRANSFER receipt of that transaction names it.
+-- guard below proves a TRANSFER receipt of that transaction names it. Before
+-- allowing the change, this trigger itself captures OLD.quantity -- the real
+-- row's prior value, never anything a caller supplies -- as guarded evidence
+-- for that (item, transaction) pair. It is SECURITY DEFINER so the evidence
+-- table needs no write grant to the runtime role: nothing but this trigger,
+-- reading the genuine OLD row, can ever populate it.
 CREATE FUNCTION game_item_instance_guard() RETURNS trigger
-LANGUAGE plpgsql AS $$
+LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
     IF TG_OP = 'UPDATE' AND OLD.lifecycle = 1
        AND NEW.last_transaction_id IS NOT NULL
        AND NEW.last_transaction_id IS DISTINCT FROM OLD.last_transaction_id
        AND (to_jsonb(NEW) - 'quantity' - 'lifecycle' - 'last_transaction_id')
          = (to_jsonb(OLD) - 'quantity' - 'lifecycle' - 'last_transaction_id') THEN
+        INSERT INTO game_item_transfer_quantity_evidence
+            (item_instance_id, transaction_id, quantity_before)
+        VALUES (OLD.item_instance_id, NEW.last_transaction_id, OLD.quantity);
         RETURN NEW;
     END IF;
     RAISE EXCEPTION 'DUR-03 item record changes only through a TRANSFER'
@@ -252,6 +274,11 @@ BEGIN
               AND a.item_instance_id = NEW.source_item_instance_id
               AND a.occurred_at = NEW.occurred_at
               AND a.envelope_sha256 = NEW.envelope_sha256)
+       OR NOT EXISTS (
+           SELECT 1 FROM game_item_transfer_quantity_evidence ev
+            WHERE ev.item_instance_id = NEW.source_item_instance_id
+              AND ev.transaction_id = NEW.transaction_id
+              AND ev.quantity_before = NEW.source_quantity_before)
        OR src.last_transaction_id IS DISTINCT FROM NEW.transaction_id
        OR src.quantity <> NEW.source_quantity_after
        OR src.lifecycle <> (CASE WHEN NEW.source_quantity_after = 0 THEN 2 ELSE 1 END)
@@ -286,7 +313,12 @@ BEGIN
                SELECT 1 FROM game_item_container_entries e
                 WHERE e.item_instance_id = rcv.item_instance_id
                   AND e.character_id = NEW.character_id
-                  AND e.parent_item_instance_id = slot_item) THEN
+                  AND e.parent_item_instance_id = slot_item)
+           OR NOT EXISTS (
+               SELECT 1 FROM game_item_transfer_quantity_evidence ev
+                WHERE ev.item_instance_id = rcv.item_instance_id
+                  AND ev.transaction_id = NEW.transaction_id
+                  AND ev.quantity_before = NEW.receiver_quantity_before) THEN
             RAISE EXCEPTION 'item TRANSFER receiver must be a compatible stack in the main backpack'
                 USING ERRCODE = '23514';
         END IF;
@@ -333,6 +365,8 @@ CREATE TRIGGER game_item_transfer_receipt_immutable BEFORE UPDATE OR DELETE
 CREATE TRIGGER game_item_transfer_reservation_guard BEFORE UPDATE OR DELETE
     ON game_item_transfer_reservations FOR EACH ROW
     EXECUTE FUNCTION game_item_transfer_reservation_guard();
+CREATE TRIGGER game_item_transfer_quantity_evidence_immutable BEFORE UPDATE OR DELETE
+    ON game_item_transfer_quantity_evidence FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
 
 CREATE TRIGGER game_item_container_slots_no_truncate BEFORE TRUNCATE
     ON game_item_container_slots
@@ -345,6 +379,9 @@ CREATE TRIGGER game_item_transfer_receipts_no_truncate BEFORE TRUNCATE
     FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
 CREATE TRIGGER game_item_transfer_reservations_no_truncate BEFORE TRUNCATE
     ON game_item_transfer_reservations
+    FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
+CREATE TRIGGER game_item_transfer_quantity_evidence_no_truncate BEFORE TRUNCATE
+    ON game_item_transfer_quantity_evidence
     FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
 
 DO $$ BEGIN
@@ -360,7 +397,8 @@ REVOKE ALL ON
     game_item_container_slots,
     game_item_container_entries,
     game_item_transfer_reservations,
-    game_item_transfer_receipts
+    game_item_transfer_receipts,
+    game_item_transfer_quantity_evidence
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_item_transfer_reservation_guard(),
@@ -380,9 +418,14 @@ GRANT UPDATE (quantity, lifecycle, last_transaction_id) ON game_item_instances
     TO oteryn_game_runtime;
 GRANT DELETE ON game_item_ground_locations TO oteryn_game_runtime;
 GRANT UPDATE (work_units_used) ON game_item_transfer_reservations TO oteryn_game_runtime;
+-- No INSERT/UPDATE/DELETE grant here: only the SECURITY DEFINER
+-- game_item_instance_guard() trigger, reading the real OLD row, ever
+-- populates this evidence, regardless of who performs the item UPDATE.
+GRANT SELECT ON game_item_transfer_quantity_evidence TO oteryn_game_runtime;
 GRANT SELECT ON
     game_item_container_slots,
     game_item_container_entries,
     game_item_transfer_reservations,
-    game_item_transfer_receipts
+    game_item_transfer_receipts,
+    game_item_transfer_quantity_evidence
 TO oteryn_game_control;

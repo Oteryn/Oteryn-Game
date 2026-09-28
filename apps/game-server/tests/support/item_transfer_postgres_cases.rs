@@ -1555,12 +1555,127 @@ fn database_rejects_unproven_item_and_location_changes() -> TestResult {
                NOT has_column_privilege('oteryn_game_runtime','game_item_transfer_reservations',\
                  'transaction_id','UPDATE'),\
                has_table_privilege('oteryn_game_control','game_item_transfer_receipts','SELECT'),\
-               NOT has_table_privilege('oteryn_game_control','game_item_transfer_receipts','INSERT')])",
+               NOT has_table_privilege('oteryn_game_control','game_item_transfer_receipts','INSERT'),\
+               has_table_privilege('oteryn_game_runtime','game_item_transfer_quantity_evidence',\
+                 'SELECT'),\
+               NOT has_table_privilege('oteryn_game_runtime',\
+                 'game_item_transfer_quantity_evidence','INSERT'),\
+               NOT has_table_privilege('oteryn_game_runtime',\
+                 'game_item_transfer_quantity_evidence','UPDATE'),\
+               NOT has_table_privilege('oteryn_game_runtime',\
+                 'game_item_transfer_quantity_evidence','DELETE'),\
+               has_table_privilege('oteryn_game_control','game_item_transfer_quantity_evidence',\
+                 'SELECT')])",
         )
         .fetch_all(&harness.pool)
         .await?;
-        assert_eq!(grants.len(), 16);
+        assert_eq!(grants.len(), 21);
         assert!(grants.iter().all(|granted| *granted), "{grants:?}");
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// P1 (comment 4126035286): a runtime-role SQL transaction that fabricates
+/// the receipt's own `source_quantity_before` -- while the real source item
+/// truly holds only 2 units -- must be rejected at COMMIT, not merely by the
+/// receipt's self-consistent arithmetic. The deferred conservation guard
+/// binds `source_quantity_before`/`receiver_quantity_before` to the guarded
+/// `game_item_transfer_quantity_evidence` captured from the real OLD.quantity
+/// of every item row a TRANSFER touches, so the receipt can no longer claim a
+/// fictitious before-quantity for either participant.
+#[test]
+fn full_merge_cannot_claim_a_fictitious_source_quantity_before() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "qtyevidence").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let coin = || facts(COIN, STACKABLE);
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness
+            .committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+            .await?;
+        // The receiver genuinely holds 1 unit in the backpack.
+        let receiver = harness.mint(&authority, COIN, 1).await?;
+        harness
+            .committed(&authority, to_backpack(command(2)?, receiver, coin()))
+            .await?;
+        // The source genuinely holds only 2 units, still on Ground.
+        let source = harness.mint(&authority, COIN, 2).await?;
+
+        let uuid = uuid_text;
+        let session = uuid(id(SESSION));
+        let character = uuid(id(CHARACTER));
+        let world = uuid(id(WORLD));
+        let channel = uuid(id(CHANNEL));
+        let source_text = uuid(source);
+        let receiver_text = uuid(receiver);
+        let tx_id = uuid(id(220));
+        let event_id = uuid(id(221));
+        // A forged runtime-role commit: the item rows genuinely end up with
+        // the claimed *_after values, but `source_quantity_before` (99) is a
+        // fiction -- the source truly held 2. Every statement below is one a
+        // real TRANSFER commit would issue; only the deferred conservation
+        // guard, bound to the captured evidence, can catch the lie.
+        let statements = [
+            format!(
+                "INSERT INTO game_item_transfer_reservations VALUES \
+                 ('{session}', 99, '{character}', '{world}', '{channel}', '{source_text}', 2, \
+                   decode(repeat('ab',33),'hex'), '{tx_id}', '{event_id}', 1000, 1, 900)"
+            ),
+            format!(
+                "INSERT INTO game_item_audit_outbox VALUES \
+                 ('{event_id}', '{tx_id}', 1, 1, 2, 1, \
+                   'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', '{source_text}', 1000, \
+                   7776001000, decode(repeat('ab',16),'hex'), \
+                   sha256(decode(repeat('ab',16),'hex')), 1, NULL)"
+            ),
+            format!(
+                "UPDATE game_item_instances SET quantity = 0, lifecycle = 2, \
+                   last_transaction_id = '{tx_id}' WHERE item_instance_id = '{source_text}'"
+            ),
+            format!(
+                "DELETE FROM game_item_ground_locations WHERE item_instance_id = '{source_text}'"
+            ),
+            format!(
+                "UPDATE game_item_instances SET quantity = 100, last_transaction_id = '{tx_id}' \
+                   WHERE item_instance_id = '{receiver_text}'"
+            ),
+            format!(
+                "INSERT INTO game_item_transfer_receipts VALUES \
+                 ('{session}', 99, '{character}', decode(repeat('ab',33),'hex'), '{tx_id}', \
+                   '{event_id}', 3, '{source_text}', 99, 0, '{receiver_text}', 1, 100, NULL, \
+                   NULL, 1000, sha256(decode(repeat('ab',16),'hex')), 1000)"
+            ),
+        ];
+        let mut tx = harness.pool.begin().await?;
+        let applied: TestResult = async {
+            for statement in &statements {
+                sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
+                    .execute(&mut *tx)
+                    .await?;
+            }
+            tx.commit().await?;
+            Ok(())
+        }
+        .await;
+        assert!(
+            applied.is_err(),
+            "a fictitious 99-unit source_quantity_before was accepted"
+        );
+        // Nothing moved: the real quantities and Ground custody are untouched.
+        assert_eq!(harness.item_state(source).await?, (2, 1));
+        assert!(harness.on_ground(source).await?);
+        assert_eq!(harness.item_state(receiver).await?, (1, 1));
 
         drop(authority);
         drop(seal);

@@ -407,8 +407,14 @@ pub(crate) fn plan_transfer(
     }
     match input.destination {
         ItemTransferDestination::ContainerSlot => {
-            if !input.item.container_slot_equip_pattern || input.item.container_capacity.is_none() {
+            let Some(capacity) = input.item.container_capacity else {
                 return Err(Refusal::NotContainerSlotEquippable);
+            };
+            if !input.item.container_slot_equip_pattern {
+                return Err(Refusal::NotContainerSlotEquippable);
+            }
+            if capacity == 0 || capacity > GAMEITEM01_CONTAINER_ENTRIES_MAX {
+                return Err(Refusal::UnsupportedContainerCapacity);
             }
             if input.slot.is_some() {
                 return Err(Refusal::ContainerSlotOccupied);
@@ -1937,6 +1943,28 @@ mod tests {
         assert_eq!(
             slot_plan(&pattern, None, true),
             Err(ItemTransferRefusal::ContainerNotEmpty)
+        );
+        // A container-slot destination applies the same capacity bounds as
+        // the main backpack: capacity 0 and 21 refused, 1 and 20 accepted.
+        let zero_capacity = backpack_facts(0);
+        assert_eq!(
+            slot_plan(&zero_capacity, None, false),
+            Err(ItemTransferRefusal::UnsupportedContainerCapacity)
+        );
+        let above_max_capacity = backpack_facts(21);
+        assert_eq!(
+            slot_plan(&above_max_capacity, None, false),
+            Err(ItemTransferRefusal::UnsupportedContainerCapacity)
+        );
+        let min_capacity = backpack_facts(1);
+        assert_eq!(
+            slot_plan(&min_capacity, None, false),
+            Ok(TransferPlan::ContainerSlot)
+        );
+        let max_capacity = backpack_facts(20);
+        assert_eq!(
+            slot_plan(&max_capacity, None, false),
+            Ok(TransferPlan::ContainerSlot)
         );
         pattern.container_slot_equip_pattern = false;
         assert_eq!(

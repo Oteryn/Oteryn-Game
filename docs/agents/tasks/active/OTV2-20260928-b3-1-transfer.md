@@ -69,7 +69,12 @@ ItemDefinitionFacts, revisions }`. Migration 0011 adds:
 - `game_item_transfer_reservations` and `game_item_transfer_receipts`.
 
 Deferred guards prove every item update, Ground removal and placement through that transaction's
-receipt, reservation and audit event.
+receipt, reservation and audit event. The item UPDATE trigger also captures each row's real
+`OLD.quantity` as guarded per-transaction evidence (`game_item_transfer_quantity_evidence`, written
+only by that `SECURITY DEFINER` trigger); the deferred conservation guard binds the receipt's
+self-reported `source_quantity_before`/`receiver_quantity_before` to that evidence, so a runtime
+transaction can no longer claim a fictitious before-quantity for either participant (repair
+generation 1, comment 4126035286).
 
 ## Architecture and source of truth
 
@@ -116,7 +121,7 @@ mutation_operators:
 one_invariant_per_negative_case: yes
 record_derived_matching_helper: not used
 evidence: apps/game-server/tests/support/item_transfer_postgres_cases.rs (every operator at freeze and at commit)
-finding_dispositions: {p0_p1_accepted_and_repaired: [], p0_p1_rejected_with_exact_evidence: [], p2_fixed_accepted_or_deferred: []}
+finding_dispositions: {p0_p1_accepted_and_repaired: [comment 4126035286 (P1, conservation checks unbound from the real OLD.quantity)], p0_p1_rejected_with_exact_evidence: [], p2_fixed_accepted_or_deferred: [comment 4126035318 (P2, ContainerSlot capacity bounds not applied)]}
 ```
 
 ## Acceptance criteria
@@ -143,8 +148,8 @@ client, content data.
 
 - `cargo fmt --all --check`: pass.
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass.
-- `--test item_transfer_postgres`: 454 passed, including the 6 TRANSFER PostgreSQL cases, on local
-  PostgreSQL 17.11.
+- `--test item_transfer_postgres`: 455 passed, including the 7 TRANSFER PostgreSQL cases (the new P1
+  tamper case), on local PostgreSQL 17.11.
 - `item_mint_postgres`: 460 passed. `character_progression_postgres`: 452 passed.
   `character_authority_postgres`: 479 passed. These ran with the 17.6 assertion relaxed locally and
   restored before commit.
@@ -152,6 +157,23 @@ client, content data.
 - Governance, repository-policy and semantic-audit validators: see the handback.
 - Exact-head CI and independent review: pending. The control plane publishes on
   `claude/b3-1-transfer`.
+
+### Repair generation 1 (Codex findings on 0acdf06)
+
+- P1 (comment 4126035286): the deferred conservation checks compared only the receipt's self-reported
+  `source_quantity_before`/`receiver_quantity_before`, never binding them to the real `OLD.quantity`.
+  Fixed with `game_item_transfer_quantity_evidence` (migration 0011): the `SECURITY DEFINER`
+  `game_item_instance_guard()` item UPDATE trigger captures the genuine `OLD.quantity` per (item,
+  transaction), and `game_item_transfer_consistency_guard()` now requires the receipt's `*_before`
+  values to match that evidence. Runtime has `SELECT` only on the evidence table; no role has
+  `INSERT`/`UPDATE`/`DELETE`. New PG case
+  `full_merge_cannot_claim_a_fictitious_source_quantity_before` proves a forged runtime transaction
+  claiming a fictitious 99-unit source (real: 2) is rejected at COMMIT, with nothing moved.
+- P2 (comment 4126035318): `ContainerSlot` accepted any registered capacity, including 0 and above the
+  GAMEITEM01-CONTAINER-ENTRIES-MAX of 20, since `plan_transfer` only checked `is_some()`. Fixed by
+  applying the same `1..=20` bound already used for `MainBackpack`, refusing with the existing
+  `UnsupportedContainerCapacity`. New unit assertions in `container_slot_and_backpack_refusals` cover
+  capacity 0 and 21 refused, 1 and 20 accepted.
 
 ## Open follow-ups
 
