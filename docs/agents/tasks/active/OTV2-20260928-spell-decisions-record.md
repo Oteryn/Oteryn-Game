@@ -81,6 +81,10 @@ complete this qualification itself.
 
 - `20d700f`: Codex P2 4120912901 (stale "S1–S10 not decided" in schema §7 and "S6–S10 still
   proposed" in wire §6) and P2 4120912911 (the decision tally read 3 + 4). Both accepted and fixed.
+- `9ee220d`: Codex P2 4120953430 (the vitals rule could refill on FND-04B §21 new-session
+  recovery) and P2 4120953421 (no shared index mapping). Both accepted. These are architect
+  clarifications within the accepted verdicts: maximum only for a new actor, and a canonical
+  `ProductionKey`-ordered index per content generation.
 - The successor head needs a fresh exact-head review.
 
 ## Context checkpoint

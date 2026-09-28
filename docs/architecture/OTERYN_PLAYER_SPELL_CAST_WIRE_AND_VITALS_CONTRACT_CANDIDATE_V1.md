@@ -128,8 +128,13 @@ Why these choices:
 - **An index, not spoken words.** The reference servers cast through talk, which Oteryn has no
   command for. The spoken-word lookup stays on the server for a later talk command. A typed index
   keeps the payload bounded and parse-free.
-- **The index is revision-local (SPELL-D1).** It is resolved only against the admitted session's
-  content generation; a stale or unknown index is `REJECTED`. It is never persisted or logged as
+- **The index is revision-local and canonical (SPELL-D1).** It is the 1-based position of the spell
+  in the spell book of one content generation, ordered by `ProductionKey` in ascending UTF-8 byte
+  order. Both peers derive it from the same content-generation artifact, which the client
+  identifies by the 32-byte `content_generation` carried in its `WORLD_SPATIAL_VISIBILITY` snapshot.
+  A client that does not hold that exact generation sends no spell intent. The server resolves the
+  index only against the admitted session's content generation; a stale or unknown index is
+  `REJECTED`. It is never persisted or logged as
   spell identity: audit and logs use the spell's `ProductionKey`. Zero or unknown enum values and
   unknown fields fail closed.
 - **No parameter field in V1.** Parameter spells (`exura sio "name"`, `utevo res "creature"`)
@@ -144,7 +149,7 @@ Why these choices:
 | Vocation, level | GAME-CHAR (R7 P03 progression) | Read from the admitted Character; never from the client. |
 | Magic level, skills | GAME-CHAR progression | Needs the same Character-owned initialization/readiness gate as VSL-COMBAT-01 §24.1. Until it passes, casting stays gated. |
 | Learned spells, premium | GAME-CHAR and Platform entitlements | V1 serves spells without `learning_required`; premium follows PROD-ENTITLEMENTS-01. |
-| HP, mana, soul (current and max) | Current ChannelRuntime (runtime actor owner, as VSL-COMBAT-01 §6 for creatures) | Session-local and non-surviving, stated explicitly as the cooldown baseline allows (SPELL-D2). On admission the vitals start at the current maximum; a same-GameSession reconnect (FND-04B) keeps the live value, and a fresh admission restarts at the maximum. Durable vitals through DUR-02 are required before any external or production evaluation. Max values per vocation and level follow SPELL-D5: the official tibia.com library, then the wikis decide where they state the per-vocation base and per-level gains (S15, S3, S11, S13, S14), Canary/Crystal fill only what they do not state (S4), every value keeps its provenance, and a remaining conflict goes to the owner. |
+| HP, mana, soul (current and max) | Current ChannelRuntime (runtime actor owner, as VSL-COMBAT-01 §6 for creatures) | Session-local and non-surviving, stated explicitly as the cooldown baseline allows (SPELL-D2). Vitals start at the current maximum only when a new runtime actor is created (the actor was absent). Any session that attaches to an existing present actor keeps its vitals exactly: a same-GameSession reconnect, and the post-grace new-GameSession recovery of FND-04B §21 ("no heal, refill"). A fresh admission after the actor is gone restarts at the maximum. Durable vitals through DUR-02 are required before any external or production evaluation. Max values per vocation and level follow SPELL-D5: the official tibia.com library, then the wikis decide where they state the per-vocation base and per-level gains (S15, S3, S11, S13, S14), Canary/Crystal fill only what they do not state (S4), every value keeps its provenance, and a remaining conflict goes to the owner. |
 | Cooldowns | Current ChannelRuntime, keyed by (actor, spell) and (actor, group) | Session-local; `SemanticTimeMicros` from the owner clock. |
 | Damage and heal draw | SIM determinism: RNG stream bound to the occurrence | `uniform_draw` over the owner stream; retry never redraws. |
 
@@ -196,8 +201,8 @@ SPELL-D1 to SPELL-D6, because D1-D52 are already used in the owner-decision regi
 
 | # | Decision | Verdict and change |
 |---|---|---|
-| SPELL-D1 | Typed spell-index intent with the target-intent enum, not a free-text talk command, for V1. | **Accepted with change.** The protocol owner assigns the command type (type 2 is `USE_INTENT`; next free is 3). The index is revision-local, resolved against the admitted session's content generation, `REJECTED` when stale or unknown, and never persisted or logged as identity (`ProductionKey` is). Unknown enum values and fields fail closed. |
-| SPELL-D2 | `ACTOR_VITALS` own-actor state domain; runtime HP, mana and soul session-local and non-surviving in V1. | **Accepted with change.** The protocol owner assigns the domain (domain 2 is `WORLD_OBJECT_OVERLAY`; next free is 3). Vitals start at the maximum on admission; a same-GameSession reconnect keeps them; a fresh admission restarts at the maximum (declared V1 limitation). Durable vitals under DUR-02 are required before external or production evaluation. |
+| SPELL-D1 | Typed spell-index intent with the target-intent enum, not a free-text talk command, for V1. | **Accepted with change.** The protocol owner assigns the command type (type 2 is `USE_INTENT`; next free is 3). The index is canonical per content generation: the 1-based position in `ProductionKey` ascending UTF-8 byte order, derived by both peers from the generation named by the snapshot's `content_generation`. It is `REJECTED` when stale or unknown, and never persisted or logged as identity (`ProductionKey` is). Unknown enum values and fields fail closed. |
+| SPELL-D2 | `ACTOR_VITALS` own-actor state domain; runtime HP, mana and soul session-local and non-surviving in V1. | **Accepted with change.** The protocol owner assigns the domain (domain 2 is `WORLD_OBJECT_OVERLAY`; next free is 3). Vitals start at the maximum only when a new runtime actor is created. Any session attaching to an existing present actor keeps them exactly: a same-GameSession reconnect, and FND-04B §21 post-grace recovery with a new GameSessionId. A fresh admission after the actor is gone restarts at the maximum (declared V1 limitation). Durable vitals under DUR-02 are required before external or production evaluation. |
 | SPELL-D3 | Costs and cooldowns paid at PRIMARY COMMIT in the same owner mutation as the Effect Plan; nothing paid on failure (§5). | **Accepted.** A retry with the same FND-02 CommandId returns the original result with no second payment. |
 | SPELL-D4 | Self heal is the first connected spell child (§6). | **Accepted.** Composition (§9 step 2) stays behind the Character progression initialization/readiness gate (VSL-COMBAT-01 §24.1); registries and codecs (§9 step 1) do not. |
 | SPELL-D5 | Product source for max HP, mana and soul per vocation and level. | **Accepted with change.** The same source rule as spells: the official tibia.com library, then the wikis decide where they state the values (S15, S3, S11, S13, S14); Canary/Crystal `vocations.xml` fills only what they do not state (S4); provenance is kept; a conflict goes to the owner. These become the V1 product input for vitals only (VSL-COMBAT-01 §24.5). |
