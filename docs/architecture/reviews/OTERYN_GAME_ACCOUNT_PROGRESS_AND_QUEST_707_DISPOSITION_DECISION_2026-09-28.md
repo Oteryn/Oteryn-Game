@@ -154,8 +154,12 @@ implementation it applies to.
 
 ### 4.3 Account cosmetic unlocks (D47, D49)
 
-- Outfits, outfit addons, mounts and Store cosmetic unlocks are
-  `AccountUnlock(account_id, unlock_key)` facts: write-once, never revoked by character deletion.
+- Outfits, outfit addons and mounts earned in gameplay are `AccountUnlock(account_id, unlock_key)`
+  facts: write-once, never revoked by character deletion.
+- Store cosmetic unlocks share this account scope and portability (D47, D49), but not this fact
+  model. Their delivery, usability, refund, revocation and expiry follow the Platform-owned
+  entitlement lifecycle (`PROD-ENTITLEMENTS-01` consumer contract §2.1) and the open §32 decision
+  (§4.5).
 - They apply on every world of the account, in both profiles. This decision is the dedicated
   permission ADR-0010 §6 requires for cosmetics.
 - Portability covers the appearance only. Any gameplay effect of a cosmetic (for example a mount
@@ -186,7 +190,10 @@ delivery across the Game/Platform boundary. That ownership, entitlement identity
 idempotent delivery across a boundary failure stay open under gap register §32, as
 `OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md` §1 and §3 record.
 
-- A Store unlock is an account-scoped, portable unlock (§4.3) once delivered.
+- A Store cosmetic unlock is account-scoped and portable like §4.3 while its entitlement is
+  usable. Whether Game keeps a delivery record, and how refund, revocation and expiry gate it, is
+  for the §32 lifecycle decision. A Game record is evidence about Platform authority, never a second
+  commercial authority (`PROD-ENTITLEMENTS-01` consumer contract §2.1).
 - A purchased Store item or consumable waits in one account inbox, bound to the profile family it
   was bought for. The inbox holds no `ItemInstance`, so no new DUR-03 location family is
   introduced. Whether the inbox line is a Game record or a Platform entitlement line that Game
@@ -195,14 +202,17 @@ idempotent delivery across a boundary failure stay open under gap register §32,
   line, the item enters the world only as a DUR-03 MINT into that character's
   `CharacterInventory`, with the line as source cause: idempotent per line and unit, fenced like
   the reward claim (#1033). After the claim the item is an ordinary world-scoped item.
+- Refund, revocation or expiry of an unclaimed line, and any correction after a claim, follow the
+  §32 lifecycle decision.
 - Activation waits for an explicit product decision that authorizes entitlement delivery under
   `PROD-ENTITLEMENTS-01`; accepting that contract alone does not.
 
 ### 4.6 Fencing and concurrency
 
-- Every account fact (§4.2-§4.4) is inserted inside the DUR transaction of the triggering character
-  event, under that character's full session-generation fence. No account fact is written without a
-  character event.
+- Every account fact earned by character gameplay (§4.2-§4.4: quest completions, gameplay cosmetic
+  unlocks, achievements) is inserted inside the DUR transaction of the triggering character event,
+  under that character's full session-generation fence. No such fact is written without a character
+  event. Store delivery is outside this rule and waits for §32 (§4.5).
 - The facts are append-only sets with a unique key. A duplicate insert changes nothing, so a replay
   or two concurrent inserts leave one row, and the first commit records the earner.
 - In the current topology the account guard allows one present character per account
@@ -212,8 +222,8 @@ idempotent delivery across a boundary failure stay open under gap register §32,
 ### 4.7 Scope matrix
 
 `MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md` gains rows for account quest completion, account cosmetic
-unlocks, account achievements and the Store delivery inbox (this pull request). The quest progress
-row stays Character.
+unlocks earned in gameplay, account achievements and Store delivery (this pull request). The quest
+progress row stays Character.
 
 ## 5. Rejected options
 
@@ -259,7 +269,7 @@ follow_up_owners:
   - "Quest authoring format: account_completion declaration, D46 default and validator rule"
   - "Achievement owner contract: AccountAchievement catalogue and grant path"
   - "Character appearance owner: AccountUnlock for outfits, addons, mounts"
-  - "Gap register §32 delivery decision: Game/Platform ownership of the Store inbox line and cross-boundary idempotency, then an explicit product activation decision under PROD-ENTITLEMENTS-01"
+  - "Gap register §32 delivery decision: Game/Platform ownership of Store inbox lines and cosmetic unlocks, their refund, revocation and expiry, and cross-boundary idempotency, then an explicit product activation decision under PROD-ENTITLEMENTS-01"
   - "Reference parity manifest: record the D45, D47, D48 declared differences"
 required_revalidation:
   - "the first account-fact migration proves: fact inserted only inside a fenced character event; duplicate insert leaves one row and keeps the first earner; a stale character fence writes no fact; a condition reads character-or-account completion; level and item requirements are still checked per character; an exclusive-choice quest cannot grant account completion; an existing fact does not satisfy a condition when the quest now declares none or the world disables the policy"

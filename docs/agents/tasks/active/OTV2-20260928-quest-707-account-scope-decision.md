@@ -60,7 +60,7 @@ insert. The negative cases below bind the first implementing allocation.
 applicable: true
 model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
 authority_invariants:
-  - K1 an account fact is inserted only inside the DUR transaction of a fenced character event (full session-generation fence)
+  - K1 an account fact earned by gameplay is inserted only inside the DUR transaction of a fenced character event (full session-generation fence)
   - K2 an account fact is write-once; a duplicate insert changes nothing and keeps the first earner
   - K3 a condition accepts character completion or the account fact of the world's profile family, never another family
   - K4 per-character requirements (level, vocation, premium, items) are still checked for the acting character
@@ -106,6 +106,7 @@ finding_family_sweep:
 finding_dispositions:
   p0_p1_accepted_and_repaired:
     - "Codex P1 4121971783 (4b67b20): §4.5 and the scope matrix made the Store inbox Game-owned, contradicting the Store catalog owner decision §1/§3. Repaired: delivery ownership stays open under gap register §32; D47/D49 fix scope and portability only; the item still enters the world only through a DUR-03 MINT"
+    - "Codex P1 4122013017 and 4122012997 (0f588f3): Store cosmetic unlocks sat inside the write-once, character-event fact model, preselecting delivery and revocation. Repaired: that model covers gameplay-earned facts only; Store unlocks keep account scope and portability, with delivery and lifecycle under §32 and PROD-ENTITLEMENTS-01 §2.1"
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - "Codex P2 4121915460 (d7f8834): an opt-out did not stop old facts from satisfying conditions. Fixed: readers apply the current world and quest policy (§4.2); K6 added."
