@@ -1191,6 +1191,7 @@ mod tests {
             runtime.content_generation().clone(),
             LocalObjectOperation::new(TransitionKey::new(FORWARD)?),
             runtime.revision(),
+            TransitionEventOwner::new(DUKE_KEY)?,
         );
         assert!(matches!(
             runtime.apply_scope_operation(
@@ -1267,6 +1268,7 @@ mod tests {
             runtime.content_generation().clone(),
             LocalObjectOperation::new(revert.clone()),
             runtime.revision(),
+            TransitionEventOwner::new(DUKE_KEY)?,
         );
         let reverted = runtime.apply_scope_operation(
             scope,
@@ -1380,6 +1382,65 @@ mod tests {
                 ContentError::MissingReference { .. }
             ))
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn the_event_origin_table_is_part_of_the_binding_identity() -> TestResult {
+        // Owner decision D91 (#1187 P2): the same content with a different PLAYER_USE/EVENT
+        // split, or another owner, binds under a different generation; an empty table leaves the
+        // content generation's bytes unchanged.
+        let player_use = with_revert(plain_content(None, None)?, &[])?;
+        let base = ReferenceContentGeneration::from_content(&player_use)?;
+        let with_owner = |owner: &str| -> TestResult<CanonicalReferencePlayableContent> {
+            let mut content = player_use.clone();
+            content.placements[0].local_object_event_transitions.insert(
+                TransitionKey::new(FORWARD)?,
+                TransitionEventOwner::new(owner)?,
+            );
+            Ok(content)
+        };
+        let event = with_owner(EVENT_OWNER)?;
+        let other_owner = with_owner("oteryn:encounter/elsewhere")?;
+        // Placements are outside the Content generation itself, so its bytes and locks do not move.
+        assert_eq!(ReferenceContentGeneration::from_content(&event)?, base);
+
+        let keys = [FORWARD, PLAIN_INVERSE];
+        let player_use_runtime = bind(&player_use, PLACEMENT_A, &keys)?;
+        let mut event_runtime = bind(&event, PLACEMENT_A, &keys)?;
+        let other_runtime = bind(&other_owner, PLACEMENT_A, &keys)?;
+        assert_eq!(player_use_runtime.content_generation(), &base);
+        assert_ne!(event_runtime.content_generation(), &base);
+        assert_ne!(
+            other_runtime.content_generation(),
+            event_runtime.content_generation()
+        );
+        assert_eq!(
+            bind(&event, PLACEMENT_A, &keys)?.content_generation(),
+            event_runtime.content_generation()
+        );
+
+        // An operation fenced on another origin binding is a BINDING_MISMATCH, not a commit.
+        let (_, _, scope) = authority(10)?;
+        let generation = ScopeOwnershipGeneration::new(1).map_err(fixture)?;
+        let stale = crate::world_runtime::ScopeLocalObjectOperation::new(
+            event_runtime.placement_key().clone(),
+            event_runtime.incarnation(),
+            other_runtime.content_generation().clone(),
+            LocalObjectOperation::new(TransitionKey::new(FORWARD)?),
+            event_runtime.revision(),
+            TransitionEventOwner::new(EVENT_OWNER)?,
+        );
+        let outcome = event_runtime.apply_scope_operation(
+            scope,
+            generation,
+            &stale,
+            &BTreeSet::new(),
+            None,
+            |_| Ok::<(), std::convert::Infallible>(()),
+        )?;
+        assert!(matches!(outcome, Ok(outcome) if outcome.disposition() == "BINDING_MISMATCH"));
+        assert_eq!(event_runtime.revision(), 0);
         Ok(())
     }
 

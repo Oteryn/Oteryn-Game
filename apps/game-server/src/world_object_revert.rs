@@ -7,7 +7,8 @@
 //! `TERMINAL`. A record is created only in the same staged commit as a non-timer-origin forward
 //! operation whose `prepare` returned `Publish`, and capacity for it is checked only then. The
 //! driver fires due records through `LocalObjectRuntime::apply_scope_operation` with the bound
-//! inverse; a timer-origin firing never schedules another record (§7 Rounds 7/8).
+//! inverse, on behalf of the forward's own event owner (owner decision D91); a timer-origin
+//! firing never schedules another record (§7 Rounds 7/8).
 //!
 //! Lane resolutions of §7's open decisions (recorded at those entries in the proposal):
 //! - 1 and 5: `TERMINAL` records are kept for the whole scope generation, which is the
@@ -22,7 +23,8 @@
 //! Scope-ephemeral (§7 C2): nothing here is persisted; a scope restart builds a new driver.
 
 use crate::content::{
-    LogicalCell, LoweredActionId, PlacementKey, ProductionKey, TransitionBinding, TransitionKey,
+    LogicalCell, LoweredActionId, PlacementKey, ProductionKey, TransitionBinding,
+    TransitionEventOwner, TransitionKey,
 };
 use crate::foundation::{
     GenerationError, RuntimeExecutionOrdinal, RuntimeScopeRefV1, ScopeOwnershipGeneration,
@@ -153,6 +155,9 @@ pub(crate) struct PendingRevert {
     inverse: TransitionKey,
     expected_state: ProductionKey,
     expected_revision: u64,
+    // Owner decision D91: the forward operation's own event owner. The timer-origin inverse
+    // executes on that same owner's behalf; `bind` requires the inverse to be bound to it.
+    owner: TransitionEventOwner,
 }
 
 impl PendingRevert {
@@ -419,6 +424,10 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
         if self.scope_terminal {
             return Err(RevertError::ScopeTerminal);
         }
+        // D91: another owner's (or a player-use) edge is refused before any ordinal is minted.
+        runtime
+            .check_scope_owner(operation)
+            .map_err(RevertError::Runtime)?;
         let transition = operation.transition_key();
         let placement = runtime.placement_key().clone();
         let timed = match runtime.revert_after_ms(transition, action) {
@@ -444,6 +453,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
         let scheduling_ordinal = self.accept(generation)?;
         let incarnation = runtime.incarnation();
         let content_generation = runtime.content_generation().clone();
+        let owner = operation.owner().clone();
         let scope = self.scope;
         let (records, due, clock, capacity, capability) = (
             &mut self.records,
@@ -484,6 +494,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
                     inverse,
                     expected_state: publish.next_state.clone(),
                     expected_revision: publish.next_revision,
+                    owner,
                 };
                 due.insert(pending.due_key(&id));
                 records.insert(id.clone(), RevertLifecycle::Pending(pending));
@@ -588,6 +599,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
             pending.content_generation.clone(),
             LocalObjectOperation::new(pending.inverse.clone()),
             pending.expected_revision,
+            pending.owner.clone(),
         );
         // Timer origin: never stages a new record, even for a timed inverse (§7 Rounds 7/8).
         let result = runtime.apply_scope_operation(
@@ -1092,10 +1104,31 @@ mod tests {
         ))
     }
 
+    /// A scope operation executed by the fixture event that owns `transition`: the timed
+    /// wall's owner for CRACK/MEND, the duke encounter for every other edge.
     fn operation(
         runtime: &LocalObjectRuntime,
         transition: &str,
         expected_revision: u64,
+    ) -> TestResult<ScopeLocalObjectOperation> {
+        let owner = if transition == CRACK || transition == MEND {
+            WALL_OWNER
+        } else {
+            DUKE_KEY
+        };
+        operation_owned(
+            runtime,
+            transition,
+            expected_revision,
+            &TransitionEventOwner::new(owner)?,
+        )
+    }
+
+    fn operation_owned(
+        runtime: &LocalObjectRuntime,
+        transition: &str,
+        expected_revision: u64,
+        owner: &TransitionEventOwner,
     ) -> TestResult<ScopeLocalObjectOperation> {
         Ok(ScopeLocalObjectOperation::new(
             runtime.placement_key().clone(),
@@ -1103,6 +1136,7 @@ mod tests {
             runtime.content_generation().clone(),
             LocalObjectOperation::new(TransitionKey::new(transition)?),
             expected_revision,
+            owner.clone(),
         ))
     }
 
@@ -2007,6 +2041,95 @@ mod tests {
             destination_of(runtime),
             Some(duke_destination("warzone_exit")?.as_str())
         );
+        Ok(())
+    }
+
+    #[test]
+    fn scope_operations_commit_only_their_own_owners_event_edges() -> TestResult {
+        // Owner decision D91 (#1187 P1): the executing event names its owner; another owner's
+        // forward or inverse is refused before any ordinal, record or mutation.
+        let (content, revert) = duke_content(DUKE)?;
+        let anchor = duke_anchor()?;
+        let mut runtimes = BTreeMap::from([(
+            anchor.clone(),
+            bind_at(
+                &content,
+                &anchor,
+                &[OPEN_TELEPORTER, &duke_rearm(), revert.as_str()],
+                1,
+            )?,
+        )]);
+        let clock = ManualClock::new(Moment::ZERO);
+        let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+        let foreign = TransitionEventOwner::new("oteryn:encounter/another-boss")?;
+
+        // A foreign-owner forward.
+        let runtime = runtimes.get_mut(&anchor).ok_or(fixture("runtime"))?;
+        let foreign_forward = operation_owned(runtime, OPEN_TELEPORTER, 0, &foreign)?;
+        let refused = driver.apply_forward(
+            runtime,
+            &forward_child(DUKE_DEATH, None)?,
+            &revisions()?,
+            &LoweredActionId::new(DUKE_ACTION)?,
+            &foreign_forward,
+            &BTreeSet::new(),
+        );
+        assert!(matches!(
+            refused,
+            Err(RevertError::Runtime(WorldRuntimeError::EventOwnerMismatch))
+        ));
+        assert!(matches!(
+            runtime.apply_scope_operation(
+                scope()?,
+                generation(1)?,
+                &foreign_forward,
+                &BTreeSet::new(),
+                None,
+                |_| Ok::<(), Infallible>(()),
+            ),
+            Err(WorldRuntimeError::EventOwnerMismatch)
+        ));
+        assert_eq!(driver.issuer().minted, 0);
+        assert_eq!(driver.record_count(), 0);
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(SEALED_ITEM, 0));
+
+        // The correct owner commits the forward and schedules its revert.
+        let id = scheduled(forward(
+            &mut driver,
+            &mut runtimes,
+            anchor.as_str(),
+            DUKE_DEATH,
+            DUKE_ACTION,
+            OPEN_TELEPORTER,
+        )?)?;
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 1));
+
+        // A foreign-owner inverse.
+        let runtime = runtimes.get_mut(&anchor).ok_or(fixture("runtime"))?;
+        let foreign_inverse = operation_owned(runtime, revert.as_str(), 1, &foreign)?;
+        assert!(matches!(
+            runtime.apply_scope_operation(
+                scope()?,
+                generation(1)?,
+                &foreign_inverse,
+                &BTreeSet::new(),
+                None,
+                |_| Ok::<(), Infallible>(()),
+            ),
+            Err(WorldRuntimeError::EventOwnerMismatch)
+        ));
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 1));
+
+        // The driver fires the inverse on the forward's own owner, and it commits.
+        clock.advance(millis(1_200_000))?;
+        let report = driver.wake(&mut runtimes, &BTreeSet::new())?;
+        let [(fired, outcome)] = report.fired.as_slice() else {
+            return Err("expected one fired revert".into());
+        };
+        assert_eq!(fired, &id);
+        assert_eq!(disposition(outcome), Some("COMMITTED"));
+        let post_revert = format!("{DUKE_ACTION}/post-revert");
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(&post_revert, 2));
         Ok(())
     }
 

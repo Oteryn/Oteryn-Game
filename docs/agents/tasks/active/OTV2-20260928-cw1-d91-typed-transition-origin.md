@@ -22,7 +22,7 @@ owned_paths:
   - apps/game-server/src/world_runtime.rs
   - apps/game-server/src/content/reference_playable.rs
   - apps/game-server/src/content/encounter_map_item.rs
-  - apps/game-server/src/world_object_revert.rs (tests and fixtures only; allocation amendment)
+  - apps/game-server/src/world_object_revert.rs (tests and fixtures; round 2 amendment adds the production owner carry)
   - apps/game-server/tests/content_reference_playable.rs (literal additions only; amendment)
   - apps/game-server/tests/content_native_entry.rs (literal additions only; amendment)
   - docs/agents/tasks/active/OTV2-20260928-cw1-d91-typed-transition-origin.md
@@ -91,16 +91,34 @@ smallest slice. It closes the gap where USE on an open timed teleporter could se
 
 ## Excluded scope and open points
 
-- **Owner check:** `apply_scope_operation` does not yet check the owner the caller names.
-  `ScopeLocalObjectOperation` carries none, and adding one needs production edits in
-  `world_object_revert.rs`, which is outside this allocation.
-- **Binding identity:** the origin is fixed per bound runtime at `bind`. It is not added to
-  `ReferenceContentGeneration` or `RetainedBindingIdentity`. Session commands only ever reach
-  `PlayerUse` edges.
+- **Review round 2 (#1187, on 975838d7):**
+  - **P1 4127644491, accepted and repaired.** `ScopeLocalObjectOperation` now carries the
+    executing event's `TransitionEventOwner` as trusted execution evidence.
+    `LocalObjectRuntime::check_scope_owner` refuses a player-use edge, and another owner's edge
+    with the named `WorldRuntimeError::EventOwnerMismatch`. It runs in `apply_scope_operation`
+    before `prepare`, and in `ScopeRevertDriver::apply_forward` before any ordinal is minted.
+    `PendingRevert` records the forward's owner, and the timer-origin inverse executes on that
+    owner.
+  - **P2 4127644498, accepted and repaired.** `bind` validates the unextended
+    `ReferenceContentGeneration` against the activation fence. It then extends the runtime's
+    generation with a domain-separated digest of the placement's complete event-origin table.
+    Every scope operation, session command, `RetainedBindingIdentity` and revert record fences
+    on that generation, so a PLAYER_USE/EVENT or owner change is a different binding identity.
+    An empty table leaves the generation unchanged, so the door's bytes and all content locks
+    are unchanged. The Content generation itself never includes placements.
 - **Open PR #1165:** its boot binding of the duke teleporter copies the lowered state and revert
   tables. It must also copy `tables.event_transitions`, or its `bind` fails closed ("not
   event-owned").
 - **§10 absent-state design** (PR #1182): not considered here.
+
+- **Round 2 tests:**
+  - `world_object_revert::tests::scope_operations_commit_only_their_own_owners_event_edges`:
+    a foreign-owner forward is refused before any ordinal or record, and a foreign-owner inverse
+    is refused. The correct owner commits, and the driver fires the inverse on the same owner.
+  - `encounter_map_item::tests::the_event_origin_table_is_part_of_the_binding_identity`:
+    origin-differing and owner-differing content binds under different generations, while the
+    Content generation is unchanged. An empty table equals the base, and an operation fenced on
+    the other binding is `BINDING_MISMATCH`.
 
 ## Validation
 

@@ -29,6 +29,7 @@ const DISPOSITION_REVISION_EXHAUSTED: &str = "REVISION_EXHAUSTED";
 const LOCAL_OBJECT_TRANSITION_CAPABILITY: &str =
     "oteryn:runtime.capability.local-object-transition";
 const REFERENCE_CONTENT_GENERATION_DOMAIN: &[u8] = b"OTERYN/CW4/REFERENCE_CONTENT_GENERATION/v1";
+const EVENT_ORIGIN_BINDING_DOMAIN: &[u8] = b"OTERYN/CW4/D91_EVENT_ORIGIN_BINDING/v1";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ReferenceContentGeneration {
@@ -69,6 +70,35 @@ impl ReferenceContentGeneration {
             content.coordinate_frame.as_str().as_bytes(),
         )?;
 
+        Ok(Self {
+            semantic_identity: encode_reference_generation_digest(sha256_reference_generation(
+                &preimage,
+            )),
+        })
+    }
+
+    /// Owner decision D91: the origin is part of the binding's identity. A placement that
+    /// names event-origin transitions binds under this generation extended by its complete
+    /// origin table, so the same content re-lowered with a different PLAYER_USE/EVENT split, or
+    /// another owner, is a different generation for every operation, command, retained binding
+    /// identity and revert record fenced on it. An empty table (every placement no encounter
+    /// lowering targets, such as the native entry door) returns `self` unchanged, so no existing
+    /// generation bytes move. `bind` validates the unextended generation against the scope's
+    /// activation fence first.
+    fn with_event_origins(
+        &self,
+        event_transitions: &BTreeMap<TransitionKey, TransitionEventOwner>,
+    ) -> Result<Self, WorldRuntimeError> {
+        if event_transitions.is_empty() {
+            return Ok(self.clone());
+        }
+        let mut preimage = Vec::new();
+        append_reference_generation_component(&mut preimage, EVENT_ORIGIN_BINDING_DOMAIN)?;
+        append_reference_generation_component(&mut preimage, self.semantic_identity.as_bytes())?;
+        for (transition, owner) in event_transitions {
+            append_reference_generation_component(&mut preimage, transition.as_str().as_bytes())?;
+            append_reference_generation_component(&mut preimage, owner.as_str().as_bytes())?;
+        }
         Ok(Self {
             semantic_identity: encode_reference_generation_digest(sha256_reference_generation(
                 &preimage,
@@ -585,6 +615,10 @@ pub(crate) struct ScopeLocalObjectOperation {
     content_generation: ReferenceContentGeneration,
     operation: LocalObjectOperation,
     expected_revision: u64,
+    // Owner decision D91: the executing event's own owner, trusted execution evidence set by
+    // the owning event's execution path (never client input); `apply_scope_operation` commits
+    // only an event-origin transition bound to exactly this owner.
+    owner: TransitionEventOwner,
 }
 
 impl ScopeLocalObjectOperation {
@@ -595,6 +629,7 @@ impl ScopeLocalObjectOperation {
         content_generation: ReferenceContentGeneration,
         operation: LocalObjectOperation,
         expected_revision: u64,
+        owner: TransitionEventOwner,
     ) -> Self {
         Self {
             placement,
@@ -602,12 +637,18 @@ impl ScopeLocalObjectOperation {
             content_generation,
             operation,
             expected_revision,
+            owner,
         }
     }
 
     #[must_use]
     pub(crate) fn transition_key(&self) -> &TransitionKey {
         self.operation.transition_key()
+    }
+
+    #[must_use]
+    pub(crate) fn owner(&self) -> &TransitionEventOwner {
+        &self.owner
     }
 }
 
@@ -669,8 +710,15 @@ pub(crate) enum WorldRuntimeError {
     StaleConnectionGeneration,
     StaleRuntimeScope,
     StaleScopeOwnershipGeneration,
-    IngressSequenceGap { expected: CommandId },
-    IngressCapacityExceeded { expected: CommandId },
+    /// Owner decision D91: a scope operation's trusted owner is not the bound owner of the
+    /// event-origin transition it names. Refused before `prepare`; nothing mutates.
+    EventOwnerMismatch,
+    IngressSequenceGap {
+        expected: CommandId,
+    },
+    IngressCapacityExceeded {
+        expected: CommandId,
+    },
     CommandSpaceExhausted,
     PendingOriginal,
     ConflictChangedInput,
@@ -694,6 +742,8 @@ impl Display for WorldRuntimeError {
                 formatter.write_str("connection generation is stale")
             }
             Self::StaleRuntimeScope => formatter.write_str("runtime scope is stale"),
+            Self::EventOwnerMismatch => formatter
+                .write_str("scope operation owner does not own the event-origin transition"),
             Self::StaleScopeOwnershipGeneration => {
                 formatter.write_str("runtime scope ownership generation is stale")
             }
@@ -795,8 +845,8 @@ impl LocalObjectRuntime {
                 "runtime scope world differs from Content world",
             ));
         }
-        let content_generation = ReferenceContentGeneration::from_content(content)?;
-        active_content.validate_candidate(scope, scope_generation, &content_generation)?;
+        let base_generation = ReferenceContentGeneration::from_content(content)?;
+        active_content.validate_candidate(scope, scope_generation, &base_generation)?;
 
         let mut placements = content
             .placements
@@ -818,6 +868,9 @@ impl LocalObjectRuntime {
             ));
         }
         validate_synthetic_placement_evidence(placement)?;
+        // Owner decision D91: this binding's identity includes its event-origin table.
+        let content_generation =
+            base_generation.with_event_origins(&placement.local_object_event_transitions)?;
         if placement.definition.family() != DefinitionFamily::LocalObject {
             return Err(WorldRuntimeError::InvalidBinding(
                 "placement definition is not a local object",
@@ -1056,6 +1109,22 @@ impl LocalObjectRuntime {
             .map_or(TransitionOrigin::PlayerUse, |owner| {
                 TransitionOrigin::Event(owner.clone())
             })
+    }
+
+    /// Owner decision D91: a scope operation may name only an event-origin transition bound to
+    /// its own owner. Reads only; `apply_scope_operation` runs it before `prepare`, and the §7
+    /// driver runs it before it mints an ordinal.
+    pub(crate) fn check_scope_owner(
+        &self,
+        operation: &ScopeLocalObjectOperation,
+    ) -> Result<(), WorldRuntimeError> {
+        match self.event_transitions.get(operation.transition_key()) {
+            None => Err(WorldRuntimeError::InvalidBinding(
+                "player-use transition is not a scope operation",
+            )),
+            Some(bound) if bound != operation.owner() => Err(WorldRuntimeError::EventOwnerMismatch),
+            Some(_) => Ok(()),
+        }
     }
 
     fn is_player_use(&self, transition: &TransitionKey) -> bool {
@@ -1408,8 +1477,9 @@ impl LocalObjectRuntime {
     /// from it fails the whole operation with nothing committed (§7 Round 21: capacity is
     /// reserved only after `Publish`, in the same staged commit).
     ///
-    /// Owner decision D91: only an event-owned transition is accepted; a `PlayerUse` edge is
-    /// refused before any mutation. A transition carrying `revert_after_ms` at this placement is
+    /// Owner decision D91: only an event-owned transition bound to the operation's own owner is
+    /// accepted. A `PlayerUse` edge, or another owner's edge (`EventOwnerMismatch`), is refused
+    /// before `prepare` and any mutation. A transition carrying `revert_after_ms` at this placement is
     /// also refused, before any mutation, unless `capability` is presented (#1144 review). Only
     /// the §7 revert driver can construct one, so a timed transition never commits without its
     /// lifecycle record.
@@ -1428,11 +1498,7 @@ impl LocalObjectRuntime {
         if scope_generation != self.scope_generation {
             return Err(WorldRuntimeError::StaleScopeOwnershipGeneration);
         }
-        if self.is_player_use(operation.transition_key()) {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "player-use transition is not a scope operation",
-            ));
-        }
+        self.check_scope_owner(operation)?;
         if capability.is_none() && self.carries_revert(operation.transition_key()) {
             return Err(WorldRuntimeError::InvalidBinding(
                 "timed transition commits only through the revert scheduler",
@@ -3423,6 +3489,7 @@ mod tests {
             door.content_generation().clone(),
             LocalObjectOperation::new(open),
             door.revision(),
+            TransitionEventOwner::new("oteryn:encounter/any-event")?,
         );
         assert!(matches!(
             door.apply_scope_operation(
