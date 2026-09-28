@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-cw1-object-state-attributes-impl
 title: Implement §9 attribute-bearing local-object state and map_item transform lowering (task A of 2)
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-object-state-attributes-impl
 pr: 1133
 base_sha: 0a3d795992a68f57c595baf3f5ced87d1224a60c
-head_sha: null
-final_head_sha: null
+head_sha: 5046cd743010dcc1992d6a3d8f54a6770482b259
+final_head_sha: 5046cd743010dcc1992d6a3d8f54a6770482b259
 final_head_frozen_at: null
 owner: Oteryn: content world runtime
 created_at: 2026-09-28T00:00:00Z
-updated_at: 2026-09-28T00:00:00Z
+updated_at: 2026-09-28T17:53:51Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/reference_playable.rs
@@ -27,7 +27,7 @@ owned_paths:
   - apps/game-server/tests/content_reference_playable.rs
   - apps/game-server/tests/content_native_entry.rs
   - docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md
-  - docs/agents/tasks/active/OTV2-20260928-cw1-object-state-attributes-impl.md
+  - docs/agents/tasks/archive/OTV2-20260928-cw1-object-state-attributes-impl.md
 public_contracts: []
 depends_on:
   - "owner acceptance of §9, issue #162 issuecomment-5873353684 (2026-09-28)"
@@ -98,5 +98,26 @@ Implements the owner-accepted §9 of
 
 ## Context checkpoint
 
-last_progress: implementation and focused validation complete; PR #1133 opened, awaiting CI and review
+last_progress: terminal integration recorded; PR #1133 merged on protected main as f11058ec; record archived
 jira: pending (no mapped Story resolved in this worker session)
+
+## Terminal integration
+
+This section supersedes the `validating` metadata and checkpoint above; the record above stays as
+historical evidence. The closeout makes no code, schema or architecture change. It moves this record
+to `docs/agents/tasks/archive/` and binds the terminal lifecycle fields. Coordination: issue #162.
+
+PR #1133 merged through the Merge Queue on protected `main` as squash commit
+`f11058ecdb82e3256ae3d8857fe650ca2bd1943d` (2026-09-28T17:15:46Z). The final head was
+`5046cd743010dcc1992d6a3d8f54a6770482b259`. Ownership of the owned paths is released.
+
+Carry-overs from the #1133 review, moved to task B (`OTV2-20260928-cw1-timed-revert-runtime`):
+
+- (a) A destination must resolve to exactly one placement in the bound scope's world and coordinate
+  frame before it is exposed or consumed; anything else fails closed.
+- (b) USE selection can reach the bound inverse from the forward target state. Task B decides and
+  tests the handling.
+- (c) Two `revert_destination` occurrences on one forward transition stay rejected fail-closed as an
+  ambiguous inverse. Task B confirms this with a test.
+- The §7 lifecycle record and driver, `apply_scope_operation`, the resource bounds and the timed
+  end-to-end test (the "blocks" entry above).

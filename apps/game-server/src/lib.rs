@@ -38,6 +38,17 @@ pub use gameplay_transport::{
     serve_gameplay,
 };
 
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "GAME-INTERACTION identity; the §7 revert driver is its first library consumer"
+)]
+mod interaction;
+#[allow(
+    dead_code,
+    reason = "§7 timed-revert driver awaits its live Channel/Instance scope owner"
+)]
+mod world_object_revert;
 #[allow(dead_code)]
 pub(crate) mod world_runtime;
 
