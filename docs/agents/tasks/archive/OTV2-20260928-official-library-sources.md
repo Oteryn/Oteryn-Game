@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-official-library-sources
 title: Tibia.com library as a monster source and wiki summon/convince costs (owner decision D47)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,15 +12,15 @@ issue: 162
 pr: 1175
 jira: KAN-16
 base_sha: 39d5681e
-head_sha: null
-final_head_sha: null
+head_sha: 4e5b48e8bcd4ab08f1c44df4f86b50ba315152ed
+final_head_sha: 4e5b48e8bcd4ab08f1c44df4f86b50ba315152ed
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-28
 updated_at: 2026-09-28
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260928-official-library-sources.md
+  - docs/agents/tasks/archive/OTV2-20260928-official-library-sources.md
   - docs/agents/tasks/active/OTV2-20260928-encounter-admission-wave.md
   - docs/agents/tasks/archive/OTV2-20260928-encounter-admission-wave.md
   - docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md
@@ -55,3 +55,10 @@ Owner decision D47 (2026-09-28) sets the source order for the reference-date mon
 
 - The census, the staging, the materializer, the tree validators and the Rust tests pass.
 - Exact-head review before the Merge Queue, because `content/world` changes.
+
+## PR and closeout
+
+- Merged through Merge Queue as PR #1175, squash commit `12699b9c7dbecebe99ac80a1c67ba0f399a2f1c3`;
+  final head `4e5b48e8bcd4ab08f1c44df4f86b50ba315152ed`. The main merge before it (NPC offer prices #1159 and others) was
+  resolved by regenerating; Codex found no issues on the final head. Among admitted creatures the change touched Sabretooth
+  experience and the summon/convince costs of 11 creatures; ownership released.
