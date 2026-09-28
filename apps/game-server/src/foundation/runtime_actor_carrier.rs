@@ -770,6 +770,36 @@ impl ChannelRuntimeV1 {
         MovementPositionContext(self.pinned_position_context())
     }
 
+    /// Current-owner census (#162 5868482467, shared-lease P1 repair r4121956127): the local
+    /// positions of every committed, currently-present player actor under this runtime's pinned
+    /// Movement context — the same per-slot position this type's own `read()` reads for one
+    /// actor, read here for all of them in one Channel-owner work item. No parallel tracking of
+    /// actor positions is introduced: this reads the existing `slots` store directly, exactly as
+    /// the existing test-only census methods below do, and reveals no slot index or generation to
+    /// its caller. A world-object occupancy check intersects these positions' cells with a
+    /// LocalObject's own collision footprint; it must read them under the same runtime lock and
+    /// the same work item as the transition it gates, so the check is TOCTOU-free.
+    pub(crate) fn committed_player_positions(&self) -> Vec<MovementLocalPosition> {
+        let context = self.pinned_position_context();
+        self.carrier
+            .slots
+            .iter()
+            .filter_map(|slot| match slot {
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    position: Some(version),
+                    ..
+                } if version.context == context => Some(MovementLocalPosition {
+                    x: version.position.x,
+                    y: version.position.y,
+                    floor: version.position.floor,
+                }),
+                _ => None,
+            })
+            .collect()
+    }
+
     /// Unactivated Combat proof: one exclusive borrow of the physical Channel
     /// owner. It grants no scheduler, production activation or corpse lifetime.
     pub(crate) fn borrow_combat_death(&mut self) -> CurrentOwnerCombatDeath<'_> {

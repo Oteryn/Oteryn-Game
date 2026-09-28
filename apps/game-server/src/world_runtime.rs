@@ -938,14 +938,21 @@ impl LocalObjectRuntime {
         expected_revision: u64,
         occupied_cells: &BTreeSet<LogicalCell>,
     ) -> Result<LocalObjectUseOutcome, WorldRuntimeError> {
+        // Codex 5869579920: a stale caller's `expected_revision` is checked against the
+        // current revision before selection ever runs. Selection reads the runtime's
+        // *current* state (a different state than the one the stale caller last saw), so
+        // running it first can report NOTHING_TO_USE/REJECTED/OCCUPIED computed from a state
+        // the caller does not know about, instead of the STALE_STATE its evidence actually
+        // calls for. A stale caller must always get STALE_STATE, regardless of what the
+        // current state's own transition topology looks like.
+        if expected_revision != self.revision {
+            return Ok(LocalObjectUseOutcome::StaleState);
+        }
         let transition_key = match self.select_use_transition() {
             Ok(key) => key,
             Err(UseSelectionError::NoCandidate) => return Ok(LocalObjectUseOutcome::NothingToUse),
             Err(UseSelectionError::Ambiguous) => return Ok(LocalObjectUseOutcome::Rejected),
         };
-        if expected_revision != self.revision {
-            return Ok(LocalObjectUseOutcome::StaleState);
-        }
         let transition =
             self.transitions
                 .get(&transition_key)
@@ -2959,6 +2966,70 @@ mod tests {
         assert_eq!(
             runtime.attempt_use(0, &empty)?,
             LocalObjectUseOutcome::NothingToUse
+        );
+        assert_eq!(runtime.revision(), 0);
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.world-object-dormant"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn stale_revision_wins_over_an_ambiguous_current_state() -> Result<(), WorldRuntimeError> {
+        let content = world_object_overlay_content("wo-r1")?;
+        let (_authority, _session, scope) = authority(93, 21, 1, 1)?;
+        let mut runtime =
+            world_object_runtime_for(&content, scope, 1, &world_object_all_transitions()?)?;
+        let empty = BTreeSet::new();
+
+        // Reach "present" (revision 1), which binds two outgoing transitions (REMOVE, RETAG):
+        // selecting from here alone would be Ambiguous/Rejected.
+        assert_eq!(
+            runtime.attempt_use(0, &empty)?,
+            LocalObjectUseOutcome::Committed {
+                state: ProductionKey::new("oteryn:reference.state.world-object-present")?,
+                revision: 1,
+            }
+        );
+
+        // Codex 5869579920: a stale `expected_revision` (the caller's last-known revision 0,
+        // now behind the current revision 1) must report STALE_STATE, never the Rejected an
+        // ambiguous *current* state would otherwise produce, and must not mutate.
+        assert_eq!(
+            runtime.attempt_use(0, &empty)?,
+            LocalObjectUseOutcome::StaleState
+        );
+        assert_eq!(runtime.revision(), 1);
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.world-object-present"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn stale_revision_wins_over_a_terminal_current_state() -> Result<(), WorldRuntimeError> {
+        let mut content = world_object_overlay_content("wo-r1")?;
+        let placement = content
+            .placements
+            .iter_mut()
+            .find(|placement| placement.key.as_str() == WORLD_OBJECT_PLACEMENT)
+            .ok_or(fixture_error("world object placement"))?;
+        placement.local_object_initial_state = Some(ProductionKey::new(
+            "oteryn:reference.state.world-object-dormant",
+        )?);
+        let (_authority, _session, scope) = authority(94, 22, 1, 1)?;
+        let mut runtime =
+            world_object_runtime_for(&content, scope, 1, &world_object_all_transitions()?)?;
+        let empty = BTreeSet::new();
+
+        // Codex 5869579920: "dormant" binds no outgoing transition (would select NothingToUse),
+        // but a stale `expected_revision` (7, never reached: the runtime starts and stays at 0)
+        // must still report STALE_STATE, never NothingToUse, and must not mutate.
+        assert_eq!(
+            runtime.attempt_use(7, &empty)?,
+            LocalObjectUseOutcome::StaleState
         );
         assert_eq!(runtime.revision(), 0);
         assert_eq!(

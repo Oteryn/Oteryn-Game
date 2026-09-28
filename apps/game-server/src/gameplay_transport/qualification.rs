@@ -1266,18 +1266,21 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     // KAN-26: every committed fresh admission holds exactly one player actor;
     // refused, replayed and losing attempts leave no reservation behind; and
     // ordinary disconnect (every client has closed by now) removes nothing.
-    // #822: the two lost actors were removed only by a durable terminal release: the
-    // silent one after grace, the resumed one when its recovered connection ended again.
-    // The re-admitted character holds the one remaining actor, and a plain disconnect
-    // removed nothing (its loss window was cut by shutdown).
+    // #822: three lost actors were removed only by a durable terminal release: the silent
+    // (concurrent[0]) one after grace, the resumed (session) one when its recovered connection
+    // ended again, and the use-wire (#162 5868482467) one after its own grace. The re-admitted
+    // character[0] holds the one remaining actor, and a plain disconnect removed nothing (its
+    // loss window was cut by shutdown). `committed_admissions` is a durable receipt count that
+    // never decreases, so it reflects all four admissions made (fresh, concurrent-winner,
+    // grace-expiry re-admission, use-wire re-admission), not the one actor still committed.
     let (committed_players, pending) = runtime.lock().await.player_slot_counts();
-    if committed_players != 1 || pending != 0 || committed_admissions(&url).await? != 3 {
+    if committed_players != 1 || pending != 0 || committed_admissions(&url).await? != 4 {
         return Err(
             format!("channel runtime committed={committed_players} pending={pending}").into(),
         );
     }
     evidence(
-        "channel_runtime committed_players=1 pending_reservations=0 released_after_grace=2 disconnect_removed=0",
+        "channel_runtime committed_players=1 pending_reservations=0 released_after_grace=3 disconnect_removed=0",
     );
     // #935: the remaining committed actor was positioned once, by the Channel
     // owner, at the pinned generation's start cell under the pinned context,
@@ -1998,10 +2001,15 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     );
 
     evidence("stage=use_wire");
-    // USE-WIRE-V1 (#162 5868482467, M2b): the released character[1] is admitted fresh, then
+    // USE-WIRE-V1 (#162 5868482467, M2b): the released character[1] is admitted fresh (a 4th
+    // durable admission — the receipt count never decreases, see `committed_admissions`), then
     // drives the full door interaction in one batch (see `use_wire_frames` for the exact
-    // expected disposition of each command).
-    {
+    // expected disposition of each command). The connection ends the same way the "admission"
+    // stage's own `session` does (a command replay closes it): the resulting durable GameSession
+    // becomes RECONNECTABLE and is then released after its own grace, exactly like `session`/
+    // `concurrent[0]` above, so this stage leaves the Channel runtime with no extra committed
+    // player before `seam_flow`'s final invariant check.
+    let use_session = {
         use crate::gameplay_transport::world_object::{
             COMMAND_TYPE_USE_INTENT, WorldObjectTarget, encode_use_intent,
         };
@@ -2041,7 +2049,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
                 raw.extend_from_slice(&framed(&frame));
             }
             let reply = exchange_must_close(address, &exact, &raw).await?;
-            if accepted_session(&reply).is_some() {
+            if let Some(session) = accepted_session(&reply) {
                 let Reply::Frames(frames) = &reply else {
                     return Err("missing frames".into());
                 };
@@ -2049,20 +2057,45 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
                 if frames.get(1..) != Some(expected.as_slice()) {
                     return Err(format!("use-wire scenario diverged: {reply:?}").into());
                 }
-                break;
+                break session;
             }
             if tokio::time::Instant::now() >= deadline {
                 return Err(format!("use-wire character was not admitted again: {reply:?}").into());
             }
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
-    }
+    };
     if committed_admissions(url).await? != 4 {
         return Err("use-wire admission did not commit exactly one GameSession".into());
     }
     evidence(
         "use_wire door_open=committed step_through=moved use_in_doorway=occupied step_out=moved door_close=committed step_blocked=blocked stale_revision=stale_state unknown_placement=nothing_to_use replayed_command_id=expired admissions=4",
     );
+
+    // Release the use-wire actor the same way the "closed" transport above is released:
+    // control loss (RECONNECTABLE, epoch 1) after the missed-liveness window, then terminal
+    // release after its own grace. No resume is attempted for it.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    loop {
+        if let Some((1, epoch, grace)) = session_loss_row(url, use_session).await? {
+            if epoch != "1" || !(58..=62).contains(&grace) {
+                return Err(format!("use-wire loss epoch={epoch} grace={grace}").into());
+            }
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("use-wire session never became reconnectable".into());
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
+    while !matches!(session_loss_row(url, use_session).await?, Some((3, _, _))) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("use-wire session was not released after grace".into());
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    evidence("use_wire released=terminal admissions=4");
     Ok(())
 }
 
