@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-cw1-world-object-revert-progression
 title: World-object revert_after progression owner and D38 follow-up model deltas
 mode: CONTRACT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
@@ -207,8 +207,8 @@ last_progress: >
   design — the inverse-transition check now requires exactly one match (family-paired, not just
   swapped states); a due revert's changed-object case is now handled by a single path through
   prepare's STALE_STATE, with pre-prepare discard reserved only for scope/content-generation
-  changes; both validators re-run and still pass.
-status: implementing
+  changes; both validators re-run and still pass. Reporting READY_FOR_INTEGRATION.
+status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
 pr: 1045
@@ -229,5 +229,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: coordinator freeze + independent review
+next_action: coordinator freeze at the reported head + independent review
 ```
