@@ -13,7 +13,7 @@ pr: 1046
 base_sha: dd209a1264e98f3d1f0f167ec3320124a071db53
 head_sha: 975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03
 final_head_sha: 975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03
-final_head_frozen_at: 2026-09-28T00:39Z
+final_head_frozen_at: 2026-09-27T23:22:24Z
 owner: Oteryn: content world build (session_01LphUANMfC2q2WKdfEb39eC)
 created_at: 2026-09-27T22:30:02Z
 updated_at: 2026-09-28T00:39Z
@@ -211,7 +211,7 @@ branch: claude/cw3-local-object-state-model
 head_sha: 975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03
 pr: 1046
 final_head_sha: 975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03
-final_head_frozen_at: 2026-09-28T00:39Z
+final_head_frozen_at: 2026-09-27T23:22:24Z
 ci_trigger_source: merge_group
 ci_check_generation: final
 ci_checks_for_current_head: 1
@@ -240,8 +240,9 @@ only moves this record from `docs/agents/tasks/active/` to
 `docs/agents/tasks/archive/` and binds terminal lifecycle fields. Coordination:
 issue #162 comment "terminal integration" (control plane).
 
-PR #1046 merged via Merge Queue as commit `832320a` on protected `main` at
-2026-09-28T00:39Z, final head `975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03`. Codex
+Candidate head `975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03` was frozen at
+2026-09-27T23:22:24Z (issue #162 FREEZE_SHA comment 5860784616). PR #1046 merged
+via Merge Queue as commit `832320a` on protected `main` at 2026-09-28T00:39Z. Codex
 review ran 2 repair rounds (see Implementation/findings above for both); the final
 remaining P2 (legacy bare-string v1 `LocalObject` rejected at parse) was
 dispositioned by owner decision as a deliberate explicit rejection, since no

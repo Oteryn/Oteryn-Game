@@ -13,7 +13,7 @@ pr: 1048
 base_sha: dd209a1264e98f3d1f0f167ec3320124a071db53
 head_sha: 4d892c57f9aa755ca2360d3f5a5bb4c65f63f947
 final_head_sha: 4d892c57f9aa755ca2360d3f5a5bb4c65f63f947
-final_head_frozen_at: 2026-09-28T00:40Z
+final_head_frozen_at: 2026-09-27T23:08:03Z
 owner: Oteryn: content world import (Claude Code worker)
 created_at: 2026-09-27T22:00:00Z
 updated_at: 2026-09-28T00:40Z
@@ -203,7 +203,7 @@ branch: claude/cw2-item-promotion-lowering-wire
 head_sha: 4d892c57f9aa755ca2360d3f5a5bb4c65f63f947
 pr: 1048
 final_head_sha: 4d892c57f9aa755ca2360d3f5a5bb4c65f63f947
-final_head_frozen_at: 2026-09-28T00:40Z
+final_head_frozen_at: 2026-09-27T23:08:03Z
 ci_trigger_source: merge_group
 ci_check_generation: final
 ci_checks_for_current_head: 1
@@ -232,8 +232,10 @@ content mutation of its own; it only moves this record from
 lifecycle fields. Coordination: issue #162 comment "terminal integration" (control
 plane).
 
-PR #1048 merged via Merge Queue as commit `3426839` on protected `main` at
-2026-09-28T00:40Z. Independent review (`@codex review`) found no major issues on
+Candidate head `4d892c57f9aa755ca2360d3f5a5bb4c65f63f947` was frozen at
+2026-09-27T23:08:03Z (issue #162 FREEZE_SHA comment 5860688973). PR #1048 merged
+via Merge Queue as commit `3426839` on protected `main` at 2026-09-28T00:40Z.
+Independent review (`@codex review`) found no major issues on
 exact head `7a0012d364364f3dfa9668d6949084e3044a7315`; the only later change before
 the frozen final head was this task record's own metadata (bounding size, binding
 `pr:`) — no code/test/evidence change. Protected-main readback: `cw2_b1_import.rs`,
