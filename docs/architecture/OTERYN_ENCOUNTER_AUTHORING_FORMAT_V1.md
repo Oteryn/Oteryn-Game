@@ -109,7 +109,7 @@ Encounter
 | `counter_reached(counter, value)` | global kill/stage counters |
 | `area_entered(anchor, role or player)` / `area_left` | zone crossing (`izcandarThink`) |
 | `phase_entered(phase)` | stage bosses |
-| `item_used(role, ItemRef)` | an `Action` whose `onUse` targets a creature of the role; the item is used up (D34) |
+| `item_used(role, ItemRef)` | an `Action` whose `onUse` targets a creature of the role; the item is used up (D34); an optional `base_vocation` lets only a player of that base vocation use it (a promoted vocation counts as its base) |
 | `encounter_started` / `encounter_reset` | lifecycle |
 
 ## 5. Conditions
@@ -133,6 +133,7 @@ rules.
 | Action | Parameters |
 |---|---|
 | `spawn` | role or CreatureRef, count, at (`death_position`, `subject_position`, anchor, `random_in(anchor)`, `offset_tiles(n)`: a random free tile within n tiles of the subject, or `role_position(role)` optionally `otherwise: death_position` (D31)), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent, or `remembered`: the health the spawned role had when it last left the fight, full the first time (D31)) |
+| `spawn_per_player` | `players_in(anchor)`, `by_base_vocation` (a CreatureRef for each base vocation that gets one: knight, paladin, sorcerer, druid, monk), at, owner, health; each player in the area gets one creature of its base vocation, players of a vocation without an entry get none, and an optional `counter` is raised by the number spawned (D34) |
 | `remove` | role, `all_in(anchor)` (monsters only; players are never removed; `keep_summons` spares monsters with a master), or `triggering`: only the creature that fired the rule (D31) |
 | `transform` | role -> next stage, CreatureRef or `random_of` several CreatureRefs (uniform); health `keep_percent`/`keep_absolute`/`full` |
 | `heal` | role, amount, range (may start at 0, D31) or `full` |
@@ -223,7 +224,7 @@ rules.
 | D29 | Vocabulary extensions: `creature_spawned` and `ability_cast` triggers; the `world_state` read-only condition; fractional or absolute health thresholds; `creature_present` near a role; `{min, max}` ranges; a `damage` action; `component: primary`; `map_item.interaction`. Acting on whatever stands on a fixed tile is not added: each case names its role from wiki or map evidence. Scripted movement is deferred. State shared by all parties belongs to the quest domain, which the encounter reads through `world_state`. | Owner accepted the proposal ("kontynuuj tak jak uważasz za optymalne", 2026-09-27). |
 | D30 | Crystal Server (`zimbadev/crystalserver`, a Canary fork) is consulted as a second donor wherever a Canary script is broken, ambiguous or unresolved. It is evidence only: Canary stays the transcription source and the reference-date wiki still decides (D25). | Owner request 2026-09-27 ("sprawdzać też crystal jako donor"). |
 | D31 | Vocabulary additions, each added only for an event that needs it: `heal_received`; `message` to the players in an area; `remove triggering` and `keep_summons`; weighted `one_of` branches; `role_position` (with an optional `otherwise: death_position`); a `spawned` speaker; the `party` credit; circular `near` areas; heal ranges from 0; the untyped `none` damage; `remembered` spawn health (a boss that returns with the health it left with: Foreshock, Aftershock, Outburst); in a `heal_received` rule a `this_hit` `damage_modifier` scales that heal (`HealthForgotten` doubles heals as well as damage); a `non_player` source for `damage_taken` and `heal_received` (a change by another creature; one without an attacker is not included); an optional `slot` for `attacker_wears`, which with `killer_progress` also reads the healer in a `heal_received` rule (`AsurasMechanic`). Boss attribute changes and a stepped-on trigger are not added yet. | Owner consent 2026-09-27 ("jeśli kończenie zadania tego wymaga i wiesz co robisz, to masz zgodę"). |
-| D34 | Seven more vocabulary additions, each added with the first event that needs it: a boss attribute change (the Hatred damage multiplier); damage scaled by elapsed time (King Zelos); shared life (the Magnor shards); a death explosion as an authored ability; a summon chosen by the vocation of the player; `move_lock`; and `chance_from_amount`. The fourteenth slice adds five of them: the time scaling, shared life, authored abilities, `move_lock` and `chance_from_amount`; it also fixes when `damage_accumulated` fires. The fifteenth adds the boss attribute change with the `item_used` trigger and the timer `add` it needs (the Sorrow of Burning Hatred). The per-vocation summon (Count Vlarkorth) follows with its event. | Owner answer 2026-09-27 ("Wszystkie 7"). |
+| D34 | Seven more vocabulary additions, each added with the first event that needs it: a boss attribute change (the Hatred damage multiplier); damage scaled by elapsed time (King Zelos); shared life (the Magnor shards); a death explosion as an authored ability; a summon chosen by the vocation of the player; `move_lock`; and `chance_from_amount`. The fourteenth slice adds five of them: the time scaling, shared life, authored abilities, `move_lock` and `chance_from_amount`; it also fixes when `damage_accumulated` fires. The fifteenth adds the boss attribute change with the `item_used` trigger and the timer `add` it needs (the Sorrow of Burning Hatred). The seventeenth adds the per-vocation summon (`spawn_per_player` and the `item_used` `base_vocation`) with Count Vlarkorth. | Owner answer 2026-09-27 ("Wszystkie 7"). |
 | D45 | A monster spell whose Canary script summons creatures stays an ability of the monster, but the ability points to an encounter (`encounter`) instead of listing effects. The encounter's `ability_cast` rule does the summon, with the counters, flags and timers the script keeps. The `summon_count` condition is added for it. | Owner answer 2026-09-28 ("Tak, przez encountery"). |
 
 Instance admission, party size and readiness are consumed from the shared activity-instance
@@ -453,3 +454,12 @@ The Hunger (a counter the vortex lowers when Greed steps on it) and the Glooth G
 per-creature 14 s timer) stay unresolved. 82 encounters validate, 77 manifests resolve fully,
 `verify_encounter_schema.py` 116/116; the census rises from 1,548 to 1,552. Like the other encounter-covered monsters,
 the four wait in the creature staging until encounters are admitted.
+
+A seventeenth slice uses the last D34 addition, the per-vocation summon:
+
+| Event | Encounter | Covered monsters | Notes |
+|---|---|---:|---|
+| `count_vlarkorth_transform`, the Good Remains actions | `count_vlarkorth` | 1 | Every 11,250 damage (15% of the boss's health) each player in the room gets one dark creature of its base vocation, raising a shield; each good remains used on the boss by that vocation lowers it. The reference-date wiki (Fandom rev 1140872) decides where Canary differs (D25): two waves, no damage while the shield holds (Canary only stops counting), and a Dark Merudri with its remains (item 50311) for a Monk, which Canary lacks (D44). |
+
+83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 124/124; the census rises from 1,552 to
+1,553. Count Vlarkorth waits in the creature staging like the other encounter-covered monsters.

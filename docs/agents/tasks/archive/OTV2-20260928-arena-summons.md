@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-arena-summons
 title: Arena summon spells through encounters (owner decision D45)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1111
 jira: KAN-16
 base_sha: 7c6b0df97832b363a9fd40dd4d3bac282db53fe1
-head_sha: null
-final_head_sha: null
+head_sha: 7d537c8e4ccb6f53d6cfbbe7f09ca8751f1b611e
+final_head_sha: 7d537c8e4ccb6f53d6cfbbe7f09ca8751f1b611e
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-28
@@ -74,3 +74,11 @@ Dark Merudri task record of #1082.
 - The census, the staging, the tree regeneration and its validators pass.
 - The Rust tests pass.
 - Exact-head review before the Merge Queue because `content/world` changes.
+
+## Completion
+
+Merged as PR #1111 (`b6c75634c8e53a26f6f3ef3a3bfa80a00e1e9c44`) from final head `7d537c8`; required checks passed on that
+head and the exact-head Codex review found no issues. The review round restricted encounter-backed abilities to spells.
+The census is at 1,552 fully resolved monsters; the four arena bosses wait in the creature staging with the other
+encounter-covered monsters (159). Count Vlarkorth, The Hunger and the Glooth Generator remain follow-ups.
+Owner released.

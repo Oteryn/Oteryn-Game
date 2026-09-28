@@ -216,6 +216,18 @@ case('encounter ability creatures are catalogued',
                    rule([{'kind': 'cast', 'encounter_ability': 'explosion', 'at': 'death_position'}], trigger=died)(e, c)))
 case('item use accepted', rule(trigger={'kind': 'item_used', 'role': 'boss', 'item': ref('Item', 'vortex')}), True)
 case('item use needs a catalogued item', rule(trigger={'kind': 'item_used', 'role': 'boss', 'item': ref('Item', 'stranger')}))
+case('item use by one base vocation accepted', rule(trigger={'kind': 'item_used', 'role': 'boss', 'item': ref('Item', 'vortex'),
+                                                          'base_vocation': 'monk'}), True)
+case('item use vocation must be a base vocation', rule(trigger={'kind': 'item_used', 'role': 'boss', 'item': ref('Item', 'vortex'),
+                                                             'base_vocation': 'elite_knight'}))
+PER_PLAYER = {'kind': 'spawn_per_player', 'players_in': 'arena', 'by_base_vocation': {'knight': ref('Creature', 'add')},
+              'at': {'offset_tiles': 1}, 'owner': 'none', 'health': 'full', 'counter': 'adds_killed'}
+case('per-player spawn accepted', rule([PER_PLAYER]), True)
+case('per-player spawn needs an area', rule([{**PER_PLAYER, 'players_in': 'exit'}]))
+case('per-player spawn needs a declared counter', rule([{**PER_PLAYER, 'counter': 'nothing'}]))
+case('per-player spawn needs a vocation entry', rule([{**PER_PLAYER, 'by_base_vocation': {}}]))
+case('per-player spawn creatures are catalogued', rule([{**PER_PLAYER, 'by_base_vocation': {'monk': ref('Creature', 'stranger')}}]))
+case('per-player spawn takes base vocations', rule([{**PER_PLAYER, 'by_base_vocation': {'royal_paladin': ref('Creature', 'add')}}]))
 case('timer add accepted', rule([{'kind': 'timer', 'timer': 'enrage', 'operation': 'add', 'ms': 10000}]), True)
 case('timer add needs its ms', rule([{'kind': 'timer', 'timer': 'enrage', 'operation': 'add'}]))
 case('timer start takes no ms', rule([{'kind': 'timer', 'timer': 'enrage', 'operation': 'start', 'ms': 10000}]))

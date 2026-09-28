@@ -177,6 +177,10 @@ def semantic(e, catalog):
                 errors.append(f'{at}: remembered health needs a spawn into a named role')
             if ak == 'message':
                 need_area(action['to']['players_in'], at)
+            if ak == 'spawn_per_player':
+                need_area(action['players_in'], at)
+                if 'counter' in action:
+                    need('counter', action['counter'], counters, at)
             if ak == 'remove' and 'all_in' in action:
                 need_area(action['all_in'], at)
             if ak == 'teleport':

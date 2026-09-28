@@ -454,6 +454,15 @@
         }
       ]
     },
+    "baseVocation": {
+      "enum": [
+        "knight",
+        "paladin",
+        "sorcerer",
+        "druid",
+        "monk"
+      ]
+    },
     "position": {
       "oneOf": [
         {
@@ -817,6 +826,9 @@
             },
             "item": {
               "$ref": "#/$defs/ItemRef"
+            },
+            "base_vocation": {
+              "$ref": "#/$defs/baseVocation"
             }
           },
           "required": [
@@ -1276,6 +1288,66 @@
             "kind",
             "creature",
             "count",
+            "at",
+            "owner",
+            "health"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "spawn_per_player"
+            },
+            "players_in": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "by_base_vocation": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "knight": {
+                  "$ref": "#/$defs/CreatureRef"
+                },
+                "paladin": {
+                  "$ref": "#/$defs/CreatureRef"
+                },
+                "sorcerer": {
+                  "$ref": "#/$defs/CreatureRef"
+                },
+                "druid": {
+                  "$ref": "#/$defs/CreatureRef"
+                },
+                "monk": {
+                  "$ref": "#/$defs/CreatureRef"
+                }
+              },
+              "required": [],
+              "minProperties": 1
+            },
+            "at": {
+              "$ref": "#/$defs/position"
+            },
+            "owner": {
+              "enum": [
+                "none",
+                "subject"
+              ]
+            },
+            "health": {
+              "$ref": "#/$defs/health"
+            },
+            "counter": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "kind",
+            "players_in",
+            "by_base_vocation",
             "at",
             "owner",
             "health"
