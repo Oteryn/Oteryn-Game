@@ -17,6 +17,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import canary_batch as cb
+import wiki_authored
 import validate_monster as vm
 
 ROOT = Path(__file__).resolve().parent
@@ -107,9 +108,27 @@ def main():
                 for name, text in zip(BUNDLE_FILES, texts):
                     (target / name).write_text(text, encoding='utf-8', newline='\n')
 
+    # D44: monsters Tibia has at the target and Canary lacks, authored from the wiki (wiki_authored.py).
+    authored_text = wiki_authored.SAMPLE.read_text(encoding='utf-8')
+    for slug, monster, deps, catalog, manifest, binding in wiki_authored.bundles(converter):
+        errors = vm.validate(monster, deps, catalog, None)
+        if errors or any(e['status'] in OPEN for e in manifest['entries']):
+            raise SystemExit(f'wiki-authored {slug} does not validate: {errors[:3]}')
+        outcome['wiki_authored'] += 1
+        resolved.append(slug)
+        texts = [dump(v) for v in (monster, deps, catalog, manifest)]
+        digests[slug] = {'file': f'wiki-authored/{slug}', 'sha256': bundle_digest(texts), 'binding': binding}
+        if args.bundles:
+            target = args.bundles / slug
+            target.mkdir(parents=True, exist_ok=True)
+            for name, text in zip(BUNDLE_FILES, texts):
+                (target / name).write_text(text, encoding='utf-8', newline='\n')
+
     report = {'source': {'repository': cb.REPOSITORY, 'revision': cb.REVISION, 'monster_dir': cb.MONSTER_DIR},
               'wiki_reference': {'file': str(WIKI.relative_to(ROOT)), 'sha256': hashlib.sha256(wiki_text.encode('utf-8')).hexdigest()},
               'br_fill_reference': {'file': str(BR_FILL.relative_to(ROOT)), 'sha256': hashlib.sha256(br_text.encode('utf-8')).hexdigest()},
+              'wiki_authored_reference': {'file': str(wiki_authored.SAMPLE.relative_to(ROOT)),
+                                          'sha256': hashlib.sha256(authored_text.encode('utf-8')).hexdigest()},
               'scope': 'In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills '
                        'applied; structure validation '
                        'plus open manifest rows. Not runtime qualification.',
