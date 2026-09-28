@@ -107,15 +107,17 @@ class References:
                     runes.setdefault(ws.plain(fields.get('name', page['title'])).lower(), page)
             self.spells[name], self.runes[name] = spells, runes
 
-    def spell_pages(self, words):
+    def spell_pages(self, words, name):
+        """Pages by spoken words; words plus a parameter ("utevo res <name>") only when unambiguous or named."""
         found = {}
-        for name, pages in self.spells.items():
-            pairs = ws.join_words(pages, {words: None})
-            match = [left for left, right in pairs.items() if right == words]
-            if words in match:
-                found[name] = pages[words]
-            elif match:
-                found[name] = pages[sorted(match)[0]]
+        for ref, pages in self.spells.items():
+            if words in pages:
+                found[ref] = pages[words]
+                continue
+            match = [key for key in pages if key.startswith(words + ' ')]
+            named = [key for key in match if ws.plain(pages[key]['fields'].get('name', pages[key]['title'])).lower() == name]
+            if len(named) == 1 or len(match) == 1:
+                found[ref] = pages[(named or match)[0]]
         return found
 
     def rune_pages(self, name):
@@ -149,7 +151,7 @@ def verify(bundles, references, readiness, official):
         if carrier == 'rune':
             pages, ours, fields = references.rune_pages(name), our_rune_values(spell), RUNE_FIELDS
         else:
-            pages = references.spell_pages(ws.words_key(spell.get('words', '')))
+            pages = references.spell_pages(ws.words_key(spell.get('words', '')), name)
             ours, fields = our_spell_values(spell), SPELL_FIELDS
         if not pages:
             unmatched.append({'spell_type': spell_type, 'name': name, 'words': spell.get('words')})

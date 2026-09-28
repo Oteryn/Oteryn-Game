@@ -2,7 +2,7 @@
 
 - Date: 2026-09-27
 - Status: CANDIDATE / authoring schema with executable validation and source evidence; S1–S5, S11 and S12
-  decided by the owner on 2026-09-27, S6–S10 and S13 PROPOSED; no runtime, WorldProject storage or `content/` change
+  decided by the owner on 2026-09-27, S13 on 2026-09-28, S6–S10 PROPOSED; no runtime, WorldProject storage or `content/` change
 - Request: owner request of 2026-09-27 (schema and implementation plan for player spells, as for monsters);
   programme story KAN-16; no GitHub task allocation yet
 - Machine artifacts: `tools/content-schema/spell-authoring/`
@@ -218,14 +218,16 @@ BR and tibiopedia.pl field by field (`samples/spell-verify-3-sources-2026-09-28.
 - **no ready spell has a value on which all references agree against us**; the 7 such fields are in
   blocked spells (party spell mana stated as varying, two training runes' conjure amount on BR,
   Virtue of Sustain base power), which the S7 native behaviours will carry;
-- the references disagree on 53 fields; our value follows at least one reference in 52 of them (the
-  other is the blocked Summon Creature mana: BR "varies", Fandom and tibiopedia.pl 100);
-- **9 fields of ready spells follow one reference while the other two agree** (`minority` in the report):
-  the conjuring spells of Cure Poison, Intense Healing and Ultimate Healing Rune (cooldown and group
+- before S13, 9 fields of 6 ready spells followed one reference while the other two agreed: the
+  conjuring spells of Cure Poison, Intense Healing and Ultimate Healing Rune (cooldown and group
   cooldown: BR 1 s, Fandom, tibiopedia.pl, Canary and Crystal 2 s), Paralyse Rune (cooldown: BR 6 s,
   the others 2 s), Wound Cleansing (cooldown: BR 2 s, Fandom, tibiopedia.pl, Canary and Crystal 1 s) and
-  Bruise Bane (cooldown: Fandom and Canary 1 s, BR and tibiopedia.pl 2 s). S11 took the newer wiki
-  revision (BR) for the first five; proposal S13 below would take the two-reference majority.
+  Bruise Bane (cooldown: Fandom and Canary 1 s, BR and tibiopedia.pl 2 s); S11 had taken the newer
+  revision;
+- **after S13 (conversion `spell-p2-r2`) no field follows one reference against the other two**; the
+  references still disagree on 51 fields, where our value follows at least one of them in 50 (the other is
+  the blocked Summon Creature mana: BR "varies", Fandom and tibiopedia.pl 100). Readiness is unchanged
+  (141 ready, 108 blocked).
 
 ## 5. Decisions
 
@@ -243,7 +245,7 @@ BR and tibiopedia.pl field by field (`samples/spell-verify-3-sources-2026-09-28.
 | S10 | Learning: the Spell holds `learning_required`; trainer NPCs and prices belong to NPC services (`acquisition_interactions`), not to the Spell. | v2 `ProjectV2AbilityAuthoring.acquisition_interactions`; NPC schema owns trade/teach services. |
 | S11 | **DECIDED (owner, 2026-09-27).** A value on which TibiaWiki BR and Fandom disagree is taken from the latest official news that changed it (tibia.com, read through its tibiopedia.pl mirror); without such a news item the wiki page with the newer revision wins. The losing value stays in the manifest. | §4.2 conflicts; §3 post-15.30 balancing (neither wiki is always the fresher one). |
 | S12 | **DECIDED (owner, 2026-09-27).** tibiopedia.pl is a third reference: its official news mirror is the S11 evidence and its spell pages may confirm single facts (base power, cooldowns, level, mana); only facts with their URL are recorded, never page text. | §3; tibiopedia.pl is "all rights reserved". |
-| S13 | PROPOSED. Without an official change (S11), a BR/Fandom conflict is decided by tibiopedia.pl when it agrees with one of them (two of three references); only when all three differ does the newer wiki revision decide. It would change 9 fields of 6 ready spells (§4.3). | §4.3: in 8 of the 9 fields the majority also matches Canary and Crystal. |
+| S13 | **DECIDED (owner, 2026-09-28).** Without an official change (S11), a BR/Fandom conflict is decided by tibiopedia.pl when it agrees with one of them (two of three references); only when all three differ does the newer wiki revision decide. tibiopedia.pl never supplies a value neither wiki states. Applied in `convert_spells.py` (`spell-p2-r2`); it changed 9 fields of 6 ready spells (§4.3). | §4.3: in 8 of the 9 fields the majority also matches Canary and Crystal. |
 
 ## 6. Mapping to WorldProject/v2
 

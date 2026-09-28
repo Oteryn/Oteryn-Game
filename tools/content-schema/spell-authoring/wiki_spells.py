@@ -418,6 +418,7 @@ BR_GROUP = {'ataque': 'Attack', 'cura': 'Healing', 'suporte': 'Support', 'suprim
 BR_PRIMARY_GROUP = {'Supply': 'Support', 'Summon': 'Support', 'Party': 'Support', 'Stance': 'Support'}
 BR_YES_NO = {'sim': 'yes', 'não': 'no', 'nao': 'no'}
 BR_DAMAGE = {'físico': 'Physical', 'fisico': 'Physical'}
+BR_WORDS = {'virtude': 'virtue'}  # Portuguese group names BR keeps as page categories
 
 
 def br_value(key, value):
@@ -547,6 +548,7 @@ def crosswalk_value(field, value):
     text = plain(value).lower().rstrip('.')
     if text in ('var', 'varies'):
         return 'varies'
+    text = BR_WORDS.get(text, text)
     return BR_YES_NO.get(text, text)
 
 
@@ -640,6 +642,7 @@ def self_test():
     assert wiki_number('1 800') == 1800 and wiki_number('1400 (a note)') == 1400 and wiki_number('12,5') is None
     assert wiki_seconds_ms('1 800') == 1800000
     assert crosswalk_value('mana', 'Varies.') == crosswalk_value('mana', 'var.') == 'varies'
+    assert crosswalk_value('secondarygroup', 'Virtude') == crosswalk_value('secondarygroup', 'Virtue') == 'virtue'
     assert join_words({'exura sio name': 1, 'exura': 2}, {'exura sio': 1, 'exura': 2}) == {'exura': 'exura', 'exura sio name': 'exura sio'}
     print('wiki_spells self-test: ok')
     return 0

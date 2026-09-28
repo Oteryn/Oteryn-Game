@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/energy_strike",
-      "revision": "spell-p2-r1"
+      "revision": "spell-p2-r2"
     },
     "name": "Energy Strike",
     "carrier": "instant",
@@ -49,7 +49,7 @@
       "ability": {
         "family": "Ability",
         "key": "candidate:ability/spell/energy_strike",
-        "revision": "spell-p2-r1"
+        "revision": "spell-p2-r2"
       }
     }
   }
