@@ -187,6 +187,12 @@ fn ability_effects(key: &str, dependencies: &Value) -> Result<Vec<SpellEffect>, 
             "{key} picks random variants, which this core does not resolve"
         ));
     }
+    // A chain would otherwise be cast on the first creature only (OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md).
+    if ability.get("chain").is_some() {
+        return fail(format!(
+            "{key} hits a chain of creatures, which this core does not resolve yet"
+        ));
+    }
     field(ability, "effects")?
         .as_array()
         .ok_or_else(|| AuthoringError("effects is not an array".into()))?

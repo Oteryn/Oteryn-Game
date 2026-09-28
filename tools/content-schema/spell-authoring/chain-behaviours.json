@@ -1,0 +1,38 @@
+{
+  "schema": "oteryn.spell-chain-behaviours.v1",
+  "note": "Accepted chain parameters of player spells (owner, 2026-09-28; OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md §4.1, §5). max_targets counts the further creatures after the first. Only spells whose combat is otherwise plain are listed; the other chain spells stay blocked by their own behaviours (§4.1, §4.2).",
+  "spells": {
+    "chained penance": {
+      "max_targets": 4,
+      "range_tiles": 4,
+      "backtracking": false,
+      "shape": "sequential",
+      "initial_range_tiles": 4,
+      "damage_step_percent": -5,
+      "sources": "S11: official 15.10.77ba00 (5 targets, jump bonus -5%), 15.25.3a4a52 (jump range +1, closest target), 15.25.bd5a04 (initial range radius 4); TibiaWiki BR jump distance 4; Canary 99902524 getChainValue (4, 4, false, false, 4, 5). Superseded: Fandom jump distance 2, range 3 and highest-HP priority (before 15.25), BR 6 creatures."
+    },
+    "forked glacier": {
+      "max_targets": 6,
+      "range_tiles": 4,
+      "backtracking": false,
+      "shape": "fork",
+      "initial_range_tiles": 7,
+      "sources": "S3: Fandom and TibiaWiki BR (the target and up to 6 nearby enemies; jump range 4 from the initial target); Canary 99902524 getForkedGlacierValues (7, 4, false, true, 7). Superseded: Crystal sequential chain."
+    },
+    "forked thorns": {
+      "max_targets": 5,
+      "range_tiles": 4,
+      "backtracking": false,
+      "shape": "fork",
+      "initial_range_tiles": 7,
+      "sources": "S3: Fandom and TibiaWiki BR (the target and up to 5 nearby enemies; jump range 4 from the initial target); Canary 99902524 getForkedThornsValues (6, 4, false, true, 7). Superseded: Crystal sequential chain with range 5."
+    },
+    "lightning": {
+      "max_targets": 2,
+      "range_tiles": 4,
+      "backtracking": false,
+      "shape": "sequential",
+      "sources": "S11: official 15.25.3a4a52 (chains to 2 additional targets); Fandom; Canary 99902524 getLightningChainValues (2, 4, false). Jump range 4: S21 (Canary; no wiki states it). A cast by direction hits the tile in front and does not chain (Canary lightning.lua). Superseded: Crystal (3, 5, false)."
+    }
+  }
+}

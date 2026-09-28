@@ -72,14 +72,28 @@ PLAYERS_ONLY_PICKER = ('if target:isPlayer() then if target:getPosition():isProt
                        'return true end return false')
 
 
-def players_only_chain_pickers(text):
-    """The CALLBACK_PARAM_CHAINPICKER functions of a script whose body is exactly the players-only template."""
+# The player chain picker bodies that keep every creature the caster may hit: not an NPC, not the caster, not in a
+# protection zone (chained_penance.lua, forked_*.lua, lightning.lua, spiritual_outburst.lua). combat.cpp canDoCombat
+# already rejects all three for an aggressive player cast, so the picker adds no filter.
+CASTER_MAY_HIT_PICKERS = (
+    'if target:isNpc() or creature == target or target:getTile():hasFlag(TILESTATE_PROTECTIONZONE) then return false '
+    'end return true',
+    'return not target:isNpc() and creature ~= target and not target:getTile():hasFlag(TILESTATE_PROTECTIONZONE)')
+
+
+def chain_pickers(text, templates):
+    """The CALLBACK_PARAM_CHAINPICKER functions of a script whose body is exactly one of the templates."""
     matched = set()
     for name in set(re.findall(r'setCallback\(\s*CALLBACK_PARAM_CHAINPICKER\s*,\s*"(\w+)"\s*\)', text)):
         body = re.search(r'function\s+' + name + r'\s*\(\s*\w+\s*,\s*target\s*\)(.*?)\nend\b', text, re.S)
-        if body and re.sub(r'\s+', ' ', body.group(1)).strip() == PLAYERS_ONLY_PICKER:
+        if body and re.sub(r'\s+', ' ', body.group(1)).strip() in templates:
             matched.add(name)
     return matched
+
+
+def players_only_chain_pickers(text):
+    """The CALLBACK_PARAM_CHAINPICKER functions of a script whose body is exactly the players-only template."""
+    return chain_pickers(text, (PLAYERS_ONLY_PICKER,))
 
 
 def body_tier(text, shared, callbacks):
@@ -177,8 +191,11 @@ def calls(obj):
 
 
 class SpellScripts:
-    def __init__(self, canary):
+    def __init__(self, canary, player_chains=False):
+        """player_chains (player spells): a caster-may-hit chain picker adds no filter, and the chain value callback,
+        which reads the player caster and its Wheel, is not called; the caller supplies the chain parameters."""
         self.canary = Path(canary)
+        self.player_chains = player_chains
         self.index = index_spells(self.canary)
         self.areas = area_constants(self.canary)
         self.enums = engine_enums(self.canary)
@@ -214,9 +231,10 @@ class SpellScripts:
         callbacks = {str(a[0]).lstrip('@') for c in combats for m, a in calls(c) if m == 'setCallback' and a}
         text = path.read_text(encoding='utf-8', errors='replace')
         players_only = players_only_chain_pickers(text)
+        neutral = chain_pickers(text, CASTER_MAY_HIT_PICKERS) if self.player_chains else set()
         pickers = {str(a[1]) for c in combats for m, a in calls(c)
                    if m == 'setCallback' and len(a) >= 2 and str(a[0]).lstrip('@') == 'CALLBACK_PARAM_CHAINPICKER'}
-        if pickers and pickers <= players_only:
+        if pickers and pickers <= players_only | neutral:
             # Every chain picker of the script is the players-only template; any other picker keeps the script P4.
             callbacks.discard('CALLBACK_PARAM_CHAINPICKER')
         result['tier'], result['tier_reasons'] = body_tier(text, result['shared'], callbacks)
@@ -255,6 +273,8 @@ class SpellScripts:
         for combat in result['combats'].values():
             if combat['callbacks'].get('CALLBACK_PARAM_CHAINPICKER') in players_only:
                 combat['chain_target_filter'] = 'players'
+            elif combat['callbacks'].get('CALLBACK_PARAM_CHAINPICKER') in neutral:
+                del combat['callbacks']['CALLBACK_PARAM_CHAINPICKER']
         return result
 
     def _combat(self, lua, combat):
@@ -268,7 +288,7 @@ class SpellScripts:
             elif method == 'setCallback' and len(args) >= 2:
                 callback = str(args[0]).lstrip('@')
                 data['callbacks'][callback] = args[1]
-                if callback == 'CALLBACK_PARAM_CHAINVALUE':
+                if callback == 'CALLBACK_PARAM_CHAINVALUE' and not self.player_chains:
                     function = lua.globals()[args[1]]
                     data['chain'] = list(function(None)) if function else None
             elif method == 'setFormula':
