@@ -130,7 +130,7 @@ pub enum OwnerTimerError {
     /// timer per creature). No caller argument can raise this above the constructed cap.
     PendingLimitReached,
     /// A `family_policies` entry passed to `for_generation` requested a pending cap above the
-    /// registered hard maximum supplied alongside it for that family (AI-RL-06 /
+    /// registered hard maximum of that family (`TimerFamily::registered_maximum`) (AI-RL-06 /
     /// `AI01_PENDING_TIMERS_PER_ACTOR`): construction is refused rather than silently clamped.
     FamilyCapExceedsRegisteredMaximum,
 }
@@ -153,9 +153,16 @@ impl std::error::Error for OwnerTimerError {}
 
 /// AI-RL-06 / `AI01-PENDING-TIMERS-PER-ACTOR` (`RESOURCE_LIMITS_REGISTRY.json`): at most one
 /// pending AI think timer per live creature actor. Registered by AI-1 (§4.9 of the decision);
-/// callers construct the AI think family's `FamilyPolicy` with this as `max_pending` and pass
-/// the same value (or higher, never lower) as `for_generation`'s registered maximum for it.
+/// the AI think family's `TimerFamily::registered_maximum` returns this value.
 pub const AI01_PENDING_TIMERS_PER_ACTOR: usize = 1;
+
+/// A timer family's registered hard maximum of pending timers per (family, target) key, taken
+/// from `RESOURCE_LIMITS_REGISTRY.json` by the family type itself, never from a caller: a lane's
+/// constructed per-family cap is checked against it, so no constructor argument can exceed the
+/// registered row (AI-RL-06: `AI01_PENDING_TIMERS_PER_ACTOR` for AI think timers).
+pub trait TimerFamily: Copy + Eq {
+    fn registered_maximum(self) -> usize;
+}
 
 /// A family's fixed catch-up behavior for a badly overdue timer (FND-03 §10.5 taxonomy; §4.9
 /// assigns `SKIP_TO_LATEST` to AI think and `DEADLINE_STATE` to respawn).
@@ -224,7 +231,7 @@ pub struct OwnerTimerLane<Family, Occurrence> {
 
 impl<Family, Occurrence> OwnerTimerLane<Family, Occurrence>
 where
-    Family: Copy + Eq,
+    Family: TimerFamily,
     Occurrence: Copy + Eq,
 {
     /// `scope` fixes the exact Channel/Instance identity this lane's authority proofs must be
@@ -235,17 +242,17 @@ where
     /// per-(family, target) pending cap and its catch-up policy (for the AI think family, the
     /// registered `AI01_PENDING_TIMERS_PER_ACTOR` and `CatchUpPolicy::SkipToLatest`). This is a
     /// policy decision for the lane's owner to make at construction, never a per-`schedule`-call
-    /// argument. Each entry's `registered_maximum` is the hard ceiling that family's
+    /// argument. Each family's `TimerFamily::registered_maximum` is the hard ceiling its
     /// `max_pending` is checked against; a requested cap above it is refused
     /// (`FamilyCapExceedsRegisteredMaximum`) rather than silently accepted or clamped.
     pub fn for_generation(
         scope: RuntimeScopeRefV1,
         generation: ScopeOwnershipGeneration,
-        family_policies: impl IntoIterator<Item = (Family, FamilyPolicy, usize)>,
+        family_policies: impl IntoIterator<Item = (Family, FamilyPolicy)>,
     ) -> Result<Self, OwnerTimerError> {
         let mut resolved: Vec<(Family, FamilyPolicy)> = Vec::new();
-        for (family, policy, registered_maximum) in family_policies {
-            if policy.max_pending > registered_maximum {
+        for (family, policy) in family_policies {
+            if policy.max_pending > family.registered_maximum() {
                 return Err(OwnerTimerError::FamilyCapExceedsRegisteredMaximum);
             }
             resolved.push((family, policy));
@@ -467,6 +474,16 @@ mod tests {
         Respawn,
     }
 
+    impl TimerFamily for TestFamily {
+        fn registered_maximum(self) -> usize {
+            match self {
+                Self::AiThink => AI01_PENDING_TIMERS_PER_ACTOR,
+                // No registered row in this slice; a generous test-only ceiling.
+                Self::Respawn => 16,
+            }
+        }
+    }
+
     #[allow(clippy::expect_used)]
     fn generation(value: u64) -> ScopeOwnershipGeneration {
         ScopeOwnershipGeneration::new(value).expect("nonzero generation")
@@ -540,7 +557,6 @@ mod tests {
                         max_pending: AI01_PENDING_TIMERS_PER_ACTOR,
                         catch_up: CatchUpPolicy::SkipToLatest,
                     },
-                    AI01_PENDING_TIMERS_PER_ACTOR,
                 ),
                 (
                     TestFamily::Respawn,
@@ -548,7 +564,6 @@ mod tests {
                         max_pending: 10,
                         catch_up: CatchUpPolicy::DeadlineState,
                     },
-                    10,
                 ),
             ],
         )
@@ -691,7 +706,6 @@ mod tests {
                     max_pending: AI01_PENDING_TIMERS_PER_ACTOR,
                     catch_up: CatchUpPolicy::SkipToLatest,
                 },
-                AI01_PENDING_TIMERS_PER_ACTOR,
             )],
         )
         .expect("cap within registered maximum");
@@ -755,7 +769,6 @@ mod tests {
                     max_pending: AI01_PENDING_TIMERS_PER_ACTOR,
                     catch_up: CatchUpPolicy::SkipToLatest,
                 },
-                AI01_PENDING_TIMERS_PER_ACTOR,
             )],
         )
         .expect("cap within registered maximum");
@@ -803,7 +816,6 @@ mod tests {
                         max_pending: 2,
                         catch_up: CatchUpPolicy::SkipToLatest,
                     },
-                    AI01_PENDING_TIMERS_PER_ACTOR,
                 )],
             );
         assert_eq!(
@@ -827,7 +839,6 @@ mod tests {
                     max_pending: 10,
                     catch_up: CatchUpPolicy::DeadlineState,
                 },
-                10,
             )],
         )
         .expect("cap within registered maximum");
@@ -1139,12 +1150,11 @@ mod tests {
             scope,
             gen1,
             [(
-                TestFamily::AiThink,
+                TestFamily::Respawn,
                 FamilyPolicy {
                     max_pending: 2,
                     catch_up: CatchUpPolicy::SkipToLatest,
                 },
-                2,
             )],
         )
         .expect("cap within the supplied registered maximum");
@@ -1157,7 +1167,7 @@ mod tests {
         lane.schedule(
             &owner_fence,
             stamp_a,
-            TestFamily::AiThink,
+            TestFamily::Respawn,
             1,
             Some(creature),
             earlier_due,
@@ -1167,7 +1177,7 @@ mod tests {
         lane.schedule(
             &owner_fence,
             stamp_b,
-            TestFamily::AiThink,
+            TestFamily::Respawn,
             2,
             Some(creature),
             later_due,

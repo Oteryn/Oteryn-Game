@@ -81,111 +81,25 @@ adoption, `ai/**` compilation, Ability wiring (all AI-2/AI-3/AI-4). No wiring of
 
 ## Implementation / findings
 
-- `apps/game-server/src/foundation/owner_timer.rs` (new): `SemanticTimeMicros`, `OwnerClock`
-  trait, `VirtualOwnerClock`, `OwnerTimerError`, `OwnerTimerLane<Family, Occurrence>` with
-  `schedule`, `cancel`, `pending_for_key`, `pending_len`, `drain_due`; `AI01_PENDING_TIMERS_PER_ACTOR`
-  constant (= 1) mirroring the registry row.
-- `apps/game-server/src/foundation/mod.rs`: one `#[allow(dead_code)] mod owner_timer;`
-  declaration (module not yet consumed outside its own tests; no public re-export added, kept
-  to the "short lease" the allocation asked for).
-- `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`: added `AI01-PENDING-TIMERS-PER-ACTOR`
-  (hard_maximum 1, `owner_contract` pointing at this decision's §4.9), the only AI-1-owned row;
-  the four `AI01-SPAWN-*` rows are left for AI-2, which owns spawn realization.
-
-### Repair generation 1 (Codex findings on `0d296c0`)
-
-Three Codex findings against `0d296c0` were repaired in owner_timer.rs (no forbidden path
-touched):
-
-- **P1** (`drain_due` only compared the lane's stored generation with a caller-supplied
-  generation value, both fixed at construction/call time, so a real handoff could never be
-  detected): `schedule` and `drain_due` now take `owner_fence: &foundation::ScopeRuntimeFence`
-  instead of a raw `ScopeOwnershipGeneration`. `ScopeRuntimeFence` is the existing FND-03
-  §10/§8 single-owner, mutated-in-place owner-cycle authority already used for
-  `RuntimeExecutionOrdinal` issuance; `mod.rs` gained one minimal public accessor,
-  `ScopeRuntimeFence::is_current(generation)`. A superseded owner still holding this lane and a
-  reference to the same fence now observes a real handoff (`apply_external_grant`) and is
-  refused, rather than draining/scheduling against a generation that merely still equals the
-  lane's own stored field.
-- **P2** (`max_pending_for_key` was a per-call argument, so a caller could pass a value above
-  the registered `AI01-PENDING-TIMERS-PER-ACTOR` hard maximum of 1): the cap is now a
-  `family_caps: Vec<(Family, usize)>` policy fixed once at `OwnerTimerLane::for_generation`
-  construction; `schedule` takes no cap argument at all, and an unregistered family fails
-  closed (cap 0). Registered rows (`docs/contracts/RESOURCE_LIMITS_REGISTRY.json`) are
-  unchanged; the fix makes the constructed lane structurally unable to exceed them from any
-  call site.
-- **P3** (a not-yet-due entry whose target had gone stale was never purged until its own
-  deadline): `drain_due`'s single retain pass now checks `target_is_current` for every pending
-  entry, due or not, and purges a stale-target entry immediately without returning it, so
-  death/respawn churn cannot accumulate stale entries ahead of their deadline.
-
-New/renamed tests (owner_timer.rs, all passing): `family_cap_is_fixed_at_construction_and_cannot_be_raised_per_call`,
-`family_without_a_constructed_cap_fails_closed`,
-`drain_due_requires_the_fence_to_still_be_current_after_a_real_handoff`,
-`drain_due_purges_not_yet_due_stale_target_without_returning_it`; the prior
-`schedule_rejects_stale_owner_generation`/`drain_due_fires_nothing_for_stale_lane_generation`
-were renamed to `..._a_fence_that_never_matched_this_lane` and kept as the simple
-never-matched-fence case alongside the new real-handoff test.
-
-### Repair generation 2 (Codex findings on `f335b73`, review 5343444021)
-
-Four Codex findings repaired in `owner_timer.rs` + a minimal `mod.rs` addition (no forbidden
-path touched):
-
-- **P1** (`OwnerTimerLane`/`ScopeRuntimeFence` carried only a generation, so Channel A's fence at
-  generation 1 could authorize Channel B's lane): `ScopeRuntimeFence` gained an additive
-  `scope: Option<RuntimeScopeRefV1>` field (`None` for every existing caller — `from_external_grant`
-  is unchanged, so `admission.rs`/`admission_recovery_inner.rs` are unaffected) and a
-  module-visible `with_scope` builder. `OwnerTimerLane` now takes `scope: RuntimeScopeRefV1` at
-  `for_generation` and stores it. `is_current` (used only by `owner_timer.rs`, confirmed by
-  repo-wide grep) was replaced by `ScopeRuntimeFence::is_current_for_scope(scope, generation)`,
-  which `schedule`/`drain_due` both call instead: a fence bound to a different `RuntimeScopeRefV1`
-  is refused even at a matching generation number. New tests:
-  `schedule_rejects_a_fence_bound_to_a_different_scope_at_the_same_generation`,
-  `drain_due_fires_nothing_for_a_fence_bound_to_a_different_scope`.
-- **P2** (the raw `RuntimeExecutionOrdinal` passed to `schedule` was caller-supplied and not
-  generation-bound): `schedule` now takes `scheduling_stamp: RuntimeWorkStamp` (already defined
-  in `mod.rs`, issued via the caller's own `owner_fence.accept_input` + `.stamp()`, "the same
-  fence issuance already uses" per this module's doc) and validates it with
-  `owner_fence.accepts_stamp(scheduling_stamp)` alongside the scope/generation check; a raw,
-  caller-fabricated ordinal can no longer stand in for a fence-issued one. All existing tests
-  were converted from synthetic `ordinal(N)` values to real stamps issued from a live fence
-  (`issue_stamp` test helper); the deliberately out-of-order tie-break test
-  (`equal_deadline_orders_by_scheduling_ordinal_then_sequence`) now pre-issues two stamps from
-  the same fence and applies them out of issuance order, which the fence's contract permits
-  (`accepts_stamp` checks liveness/generation, not usage order).
-- **P3** (`for_generation` accepted any per-family cap, so `[(AiThink, 2)]` bypassed the
-  registered `AI01_PENDING_TIMERS_PER_ACTOR` = 1 maximum): `for_generation` now takes
-  `(Family, FamilyPolicy, usize)` triples — the trailing `usize` is the registered hard maximum
-  for that family — and returns `Result<Self, OwnerTimerError>`, rejecting with the new
-  `FamilyCapExceedsRegisteredMaximum` variant when `policy.max_pending` exceeds it. New test:
-  `construction_rejects_a_family_cap_above_its_registered_maximum`.
-- **P4** (no catch-up policy was encoded): added `CatchUpPolicy` (`SkipToLatest` for AI think,
-  `DeadlineState` for respawn, matching §4.9's table exactly) as part of the new `FamilyPolicy`
-  struct, fixed at construction. `drain_due` now enforces it: for a `SkipToLatest` family it
-  collapses every (family, target) key with more than one due entry down to the single latest
-  one (earlier missed occurrences are dropped without being returned or mutated) and reports
-  `clock.now()` as the fired timer's `due` instead of the stale original deadline, so a caller
-  rescheduling relative to `due` cannot be driven to replay every missed interval.
-  `DeadlineState` (respawn) fires every due entry unchanged, matching "at most the spawn's
-  population pending". New tests:
-  `skip_to_latest_reports_now_instead_of_the_stale_deadline_after_a_long_delay`,
-  `skip_to_latest_collapses_multiple_due_occurrences_for_the_same_key_into_one_fire`.
-
-`mod.rs` change: `ScopeRuntimeFence` gained the `scope` field, `with_scope`, and
-`is_current_for_scope` (replacing `is_current`) as described above — additive/renamed, and the
-only two pre-existing callers of the renamed method were both in `owner_timer.rs`.
-
-### Spec gap / forbidden-path need
-
-§4.2 is delivered as a standalone, fully tested lane. Wiring `OwnerTimerLane` into
-`ChannelRuntimeV1`'s actual owner cycle (so a live Channel schedules/drains real think and
-respawn timers) requires adding fields/calls inside `runtime_actor_carrier.rs`, which is
-listed FORBIDDEN for this task (owned by AI-2/Combat D's exclusive lease). Per the
-minimum-sufficient instruction, I stopped short of that integration rather than touch the
-forbidden path. AI-2 (which already owns `runtime_actor_carrier.rs`) is the natural place to
-add a `ChannelRuntimeV1`-held `OwnerTimerLane<AiTimerFamily, AiOccurrence>` field and call
-`schedule`/`drain_due` from the owner cycle when it realizes spawns and thinks.
+- `foundation/owner_timer.rs` (new):
+  - `SemanticTimeMicros`, the `OwnerClock` trait and `VirtualOwnerClock`;
+  - the `TimerFamily` trait, whose `registered_maximum` is `AI01_PENDING_TIMERS_PER_ACTOR` = 1 for think timers;
+  - `FamilyPolicy` (cap plus `CatchUpPolicy`) and `OwnerTimerLane<Family, Occurrence>`.
+- `foundation/mod.rs` (minimal):
+  - `mod owner_timer;`;
+  - the additive `ScopeRuntimeFence::scope` field, with `with_scope` and `is_current_for_scope`.
+- `RESOURCE_LIMITS_REGISTRY.json`: `AI01-PENDING-TIMERS-PER-ACTOR` = 1, the only AI-1 row. The `AI01-SPAWN-*` rows belong to AI-2.
+- **Repair generation 1** (Codex on `0d296c0`):
+  - `schedule` and `drain_due` require the live `ScopeRuntimeFence`, so a handoff refuses the superseded owner.
+  - Per-family caps are fixed at construction.
+  - Stale-target entries are purged on every drain.
+- **Repair generation 2** (Codex on `f335b73`):
+  - The lane and the fence are bound to the exact `RuntimeScopeRefV1`, so a different Channel at the same generation is refused.
+  - `schedule` takes a fence-issued `RuntimeWorkStamp`, checked by `accepts_stamp`.
+  - Caps are checked against the family's own `TimerFamily::registered_maximum`, never a caller value; exceeding it gives `FamilyCapExceedsRegisteredMaximum`.
+  - `CatchUpPolicy` (`SkipToLatest` for think, `DeadlineState` for respawn, per §4.9) is fixed at construction. `SkipToLatest` fires at most once per key and reports `clock.now()` rather than the stale deadline.
+- **Tests:** 20 owner_timer tests cover ordering, determinism, caps, cross-scope and handoff refusal, stamps, stale purge and catch-up.
+- **Spec gap:** live wiring into `ChannelRuntimeV1`'s owner cycle needs `runtime_actor_carrier.rs`, which is forbidden here. AI-2 adds the lane field and the `schedule`/`drain_due` calls.
 
 ## Validation
 
