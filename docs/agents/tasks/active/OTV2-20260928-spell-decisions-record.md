@@ -1,0 +1,120 @@
+# OTV2-20260928-spell-decisions-record
+
+```yaml
+task_id: OTV2-20260928-spell-decisions-record
+title: Record the accepted spell decisions SPELL-D1 to D6 and S6 to S10
+mode: CONTRACT
+status: validating
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/gifted-rubin-a0axzx
+issue: 162
+pr: 1089
+base_sha: 0f80b8c1ca70d50551141d627e5223e28c3233ff
+head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
+owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
+created_at: 2026-09-28
+updated_at: 2026-09-28
+execution_policy: continuous_progress
+owned_paths:
+  - docs/architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md
+  - docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md
+  - docs/agents/tasks/active/OTV2-20260928-spell-decisions-record.md
+  - docs/agents/tasks/active/OTV2-20260928-dur03-maxima-death-identity-decision.md   # archive move after #1079
+  - docs/agents/tasks/archive/OTV2-20260928-dur03-maxima-death-identity-decision.md
+public_contracts:
+  - spell cast wire and own-actor vitals (candidate V1)
+depends_on: []
+blocks: []
+cross_repository_coordination_id: null
+external_repositories: []
+```
+
+## Outcome
+
+This task writes the owner-accepted verdicts from #162 comment 5867161696 into both spell documents.
+The owner asked the architect to record them ("tak", 2026-09-28).
+
+- The wire contract §8 records SPELL-D1 to SPELL-D6: two accepted as proposed and four accepted
+  with changes. The changes are:
+  - protocol IDs 3/3 proposed, assigned by the protocol owner;
+  - a revision-local spell index;
+  - the vitals initial value and production gate;
+  - the wiki-first source for maximum vitals;
+  - a measured SPELL-RL-04.
+- The authoring schema §5 marks S6 to S10 as decided, and S9 gets a closed cooldown-group catalogue.
+- After integration, #162 allocates spell plan step P3b-1 (registries and codecs) to the protocol owner.
+
+## Architecture and source of truth
+
+- `PROVEN`: `PROTOCOL_OTERYN_V1_REGISTRY.json` on `main@0f80b8c` (command 2 and domain 2 taken by
+  USE-WIRE-V1); VSL-COMBAT-01 §24.1, §24.3 row E and §24.5; spell schema S3, S4, S11 and S13-S15.
+- `DERIVED`: this edit records the accepted verdicts and adds no new rule.
+
+## High-risk authority/recovery qualification
+
+`NOT_APPLICABLE` to this recording task. It changes no protocol registry, state or code. The
+composition child (P3b-2) authorizes a COMMIT gated by session and runtime fences, so it must
+complete this qualification itself.
+
+## Acceptance criteria
+
+- [ ] Both documents record the verdicts exactly as in 5867161696.
+- [ ] Governance and repository-policy validators pass.
+- [ ] Independent exact-head review, because the protocol and state contract changes status.
+- [ ] Protected Merge Queue integration.
+
+## Excluded scope
+
+- Registries, the proto file, codecs, runtime and client (P3b-1 and later).
+- Product values beyond the vitals source rule.
+
+## Validation
+
+- `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
+- `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
+- The #1079 task record is archived with terminal integration evidence (`0f80b8c`).
+
+## Independent review
+
+- `20d700f`: Codex P2 4120912901 (stale "S1–S10 not decided" in schema §7 and "S6–S10 still
+  proposed" in wire §6) and P2 4120912911 (the decision tally read 3 + 4). Both accepted and fixed.
+- `9ee220d`: Codex P2 4120953430 (the vitals rule could refill on FND-04B §21 new-session
+  recovery) and P2 4120953421 (no shared index mapping). Both accepted. These are architect
+  clarifications within the accepted verdicts: maximum only for a new actor, and a canonical
+  `ProductionKey`-ordered index per content generation.
+- `bff9457`: Codex P2 4121150598 (vitals were still called session-local while a new session must
+  keep them). Accepted: vitals and cooldowns are runtime-actor-local and non-durable.
+- `78d046c`: Codex exact-head review found no issues (5868272609); all review threads resolved.
+- The `pull_request` workflows did not start for `78d046c` (only `pull_request_target` ran), so
+  this task-record update is the successor head that carries CI. Its only delta from `78d046c` is
+  this record.
+- Root cause of the missing CI: #1087 (S16 and the S9 catalogue) changed the schema status line on
+  main, so the PR conflicted. Main was merged in; the status line now reads S13–S16 plus S6–S10, and
+  the S1–S15 references read S1–S16.
+- Dequeued for a second conflict: #1093 (S17 and the SPELL-D5 owner sub-decisions D5a and D5b)
+  changed the status line again. Main was merged in; the status line reads S13–S17 plus S6–S10,
+  and the SPELL-D5 row records D5a and D5b with a pointer to the vitals sample.
+- `8a0f459`: Codex P2 4121543165 (D5a had no soul-maximum transition when premium changes).
+  Accepted: V1 has no active premium until the PROD-ENTITLEMENTS-01 consumer contract, so the soul
+  maximum is 100; that contract owns the re-evaluation point and the clamping rule.
+- `1686320`: Codex P2 4121579408 (PROD-ENTITLEMENTS-01 is already accepted, so it is not a gate).
+  Accepted: the gate is an explicit product-specific Premium activation or transition decision; the
+  V1 soul maximum stays 100.
+- `e40fff6`: Codex P2 4121626122 (every retry was said to return the original result, against
+  the FND-02 §13.2 bounded retention). Accepted: never executed or charged twice; the original
+  result while retained, then `COMMAND_OUTCOME_EXPIRED` with reconciliation.
+
+## Context checkpoint
+
+```yaml
+last_progress: Codex clean on 78d046c; CI rerouted to the successor head
+status: validating
+branch: claude/gifted-rubin-a0axzx
+pr: 1089
+owner_action_required: null
+blocker: null
+next_action: exact-head review and Merge Queue integration of #1089
+```

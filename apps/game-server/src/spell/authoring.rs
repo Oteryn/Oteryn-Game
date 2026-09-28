@@ -81,7 +81,7 @@ pub(crate) fn spell_from_bundle(
     let spell = field(bundle, "spell")?;
     let requirements = field(spell, "requirements")?;
     // S6/S16: a Wheel of Destiny revelation spell stays uncastable until a Wheel owner exists (fails closed).
-    if requirements.get("wheel_unlock").and_then(Value::as_bool) == Some(true) {
+    if requirements.get("wheel_unlock").is_some() && flag(requirements, "wheel_unlock")? {
         return fail("the spell is unlocked by the Wheel of Destiny, which has no owner yet");
     }
     let costs = field(spell, "costs")?;
