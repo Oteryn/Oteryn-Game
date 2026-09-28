@@ -296,7 +296,7 @@ def derived_values(sources):
     values['res_life_drain'] = resistance(fandom['hpDrainDmgMod']['value'])
     values['res_drown'] = resistance(fandom['drownDmgMod']['value'])
     # Canary has no healing modifier: only the default 100% (no change) can be authored.
-    if resistance(br['healDmgMod']['value']) or resistance(fandom['healMod']['value']):
+    if br['healDmgMod']['value'].strip() != '100%' or fandom['healMod']['value'].strip() != '100%':
         raise ValueError('a healing modifier other than 100% cannot be authored in the Canary format')
     creature_class = br['creatureclass']['value'].strip()
     if creature_class not in CLASS_RACE:
@@ -306,6 +306,56 @@ def derived_values(sources):
     if f'[[{corpse}]]' not in fandom['notes']['value']:
         raise ValueError(f'the Fandom monster notes no longer name the corpse {corpse!r}')
     return values
+
+
+# The exact raw text of every cited fact that Dark Merudri was authored and reviewed against. The derivations above
+# check what they parse; this pin catches everything they do not (labels, shapes, uncertainty marks), so any refreshed
+# fact fails regeneration until the authoring is reviewed and the pin updated.
+AUTHORED_FOR = {
+    ('br.monster', 'creatureclass'): 'Humanos',
+    ('br.monster', 'deathDmgMod'): '100%',
+    ('br.monster', 'earthDmgMod'): '100%',
+    ('br.monster', 'energyDmgMod'): '100%',
+    ('br.monster', 'exp'): '0',
+    ('br.monster', 'fireDmgMod'): '100%',
+    ('br.monster', 'hab_energy'): '[[Melee|Exori 3x3]] (430-550), [[Magias de Criaturas|Ball 3x3]] (290-460).',
+    ('br.monster', 'hab_physical'): '[[Melee|Corpo a corpo]] (0-160).',
+    ('br.monster', 'healDmgMod'): '100%',
+    ('br.monster', 'holyDmgMod'): '100%',
+    ('br.monster', 'hp'): '6500',
+    ('br.monster', 'iceDmgMod'): '100%',
+    ('br.monster', 'ignoresfields'): 'Poison, Fire, Energy',
+    ('br.monster', 'immunities'): 'Invisibility, Paralysis',
+    ('br.monster', 'name'): 'Dark Merudri',
+    ('br.monster', 'physicalDmgMod'): '100%',
+    ('fandom.corpse', 'itemid'): '50311',
+    ('fandom.monster', 'actualname'): 'dark merudri',
+    ('fandom.monster', 'article'): 'a',
+    ('fandom.monster', 'convince'): '--',
+    ('fandom.monster', 'drownDmgMod'): '100%?',
+    ('fandom.monster', 'exp'): '0',
+    ('fandom.monster', 'healMod'): '100%',
+    ('fandom.monster', 'hp'): '6500',
+    ('fandom.monster', 'hpDrainDmgMod'): '100%?',
+    ('fandom.monster', 'illusionable'): 'no',
+    ('fandom.monster', 'isboss'): 'no',
+    ('fandom.monster', 'name'): 'Dark Merudri',
+    ('fandom.monster', 'notes'): 'It becomes [[Good Remains of a Merudri]] when it dies.',
+    ('fandom.monster', 'paraimmune'): 'yes',
+    ('fandom.monster', 'pushable'): 'no',
+    ('fandom.monster', 'pushobjects'): 'yes',
+    ('fandom.monster', 'senseinvis'): 'yes',
+    ('fandom.monster', 'summon'): '--',
+    ('fandom.outfit', 'male_id'): '1824',
+}
+
+
+def changed_authored_facts(sources):
+    """Cited facts whose pinned text differs from the one the authoring was reviewed against."""
+    missing = cited_facts() - set(AUTHORED_FOR)
+    if missing:
+        raise ValueError(f'cited facts with no AUTHORED_FOR pin: {sorted(missing)}')
+    return sorted(key for key, value in AUTHORED_FOR.items() if sources[key[0]]['facts'][key[1]]['value'] != value)
 
 
 # TibiaWiki BR creature class -> Canary race (the blood residue); only classes the authored monsters use.
@@ -451,6 +501,8 @@ def bundles(converter):
     result = manifest_for(sources, [dict(r) for r in manifest['entries']], template_rows)
     emitted = {row['source_field'] for row in manifest['entries']}
     missing = set(FIELDS) - emitted - set(IMPLICIT)
+    if changed_authored_facts(sources):
+        raise ValueError(f'cited wiki facts changed since the authoring was reviewed: {changed_authored_facts(sources)}')
     if unread_cited_facts(sources):
         raise ValueError(f'cited wiki facts the authoring does not read: {unread_cited_facts(sources)}')
     uncovered = uncovered_keys(text, emitted | set(IMPLICIT) | OMITTED_KEYS)
@@ -487,7 +539,12 @@ def self_test():
     else:
         raise AssertionError('disagreeing wiki pushable facts were accepted')
     assert unread_cited_facts(sample['sources']) == [], unread_cited_facts(sample['sources'])
-    for source_name, fact, value in (('br.monster', 'healDmgMod', '50%'), ('fandom.monster', 'healMod', '50%'),
+    assert changed_authored_facts(sample['sources']) == [], changed_authored_facts(sample['sources'])
+    relabelled = json.loads(json.dumps(sample['sources']))
+    relabelled['br.monster']['facts']['hab_energy']['value'] = '[[Melee|Exori 5x5]] (430-550), [[Magias de Criaturas|Beam]] (290-460).'
+    relabelled['fandom.monster']['facts']['healMod']['value'] = '100%?'
+    assert changed_authored_facts(relabelled) == [('br.monster', 'hab_energy'), ('fandom.monster', 'healMod')]
+    for source_name, fact, value in (('br.monster', 'healDmgMod', '50%'), ('fandom.monster', 'healMod', '100%?'),
                                      ('br.monster', 'creatureclass', 'Mortos-Vivos'), ('fandom.monster', 'notes', 'Unrelated.'),
                                      ('br.monster', 'exp', '100'), ('br.monster', 'immunities', 'Invisibility, Paralysis, Fire'),
                                      ('br.monster', 'hab_physical', '[[Melee|Corpo a corpo]] (0-???).')):
