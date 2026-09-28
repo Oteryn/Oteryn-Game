@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-wo0-world-object-terrain-format-decision
 title: "WO-0 WorldObject and Terrain authoring format decision (D93-D94)"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1157
 base_sha: 9961e4d4afc90d06a92ad7af59cfdbe6857e99b3
 head_sha: null
 final_head_sha: null
@@ -70,11 +70,11 @@ which mints identity, requires independent identity review when allocated.
 ## Context checkpoint
 
 ```yaml
-last_progress: authored
-status: implementing
+last_progress: authored; PR #1157 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1157
 owner_action_required: null
 blocker: null
-next_action: open the PR, bind this record to it, freeze and route one external review
+next_action: exact-head review and Merge Queue integration of #1157
 ```
