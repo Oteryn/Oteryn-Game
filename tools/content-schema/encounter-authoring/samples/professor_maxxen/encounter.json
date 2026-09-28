@@ -21,12 +21,22 @@
     {
       "key": "exit_teleporter",
       "kind": "point",
-      "description": "Boss-room teleporter; Canary (33718, 32047, 15)."
+      "description": "Boss-room teleporter; Canary (33718, 32047, 15).",
+      "location": {
+        "x": 33718,
+        "y": 32047,
+        "floor": 15
+      }
     },
     {
       "key": "next_destination",
       "kind": "point",
-      "description": "Destination while open; Canary (33707, 32107, 15)."
+      "description": "Destination while open; Canary (33707, 32107, 15).",
+      "location": {
+        "x": 33707,
+        "y": 32107,
+        "floor": 15
+      }
     }
   ],
   "phases": [],

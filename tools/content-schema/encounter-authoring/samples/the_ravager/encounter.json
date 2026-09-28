@@ -21,12 +21,22 @@
     {
       "key": "exit_teleporter",
       "kind": "point",
-      "description": "Canary (33496, 32070, 8)."
+      "description": "Canary (33496, 32070, 8).",
+      "location": {
+        "x": 33496,
+        "y": 32070,
+        "floor": 8
+      }
     },
     {
       "key": "ravager_exit",
       "kind": "point",
-      "description": "Canary (33459, 32083, 8)."
+      "description": "Canary (33459, 32083, 8).",
+      "location": {
+        "x": 33459,
+        "y": 32083,
+        "floor": 8
+      }
     }
   ],
   "phases": [],

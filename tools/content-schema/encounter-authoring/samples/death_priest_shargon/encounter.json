@@ -21,12 +21,22 @@
     {
       "key": "exit_teleporter",
       "kind": "point",
-      "description": "Canary (33487, 32101, 9)."
+      "description": "Canary (33487, 32101, 9).",
+      "location": {
+        "x": 33487,
+        "y": 32101,
+        "floor": 9
+      }
     },
     {
       "key": "shargon_exit",
       "kind": "point",
-      "description": "Canary (33489, 32088, 9)."
+      "description": "Canary (33489, 32088, 9).",
+      "location": {
+        "x": 33489,
+        "y": 32088,
+        "floor": 9
+      }
     }
   ],
   "phases": [],

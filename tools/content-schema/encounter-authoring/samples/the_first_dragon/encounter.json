@@ -31,17 +31,45 @@
     {
       "key": "lair_centre",
       "kind": "point",
-      "description": "Canary (33617, 31023, 14)."
+      "description": "Canary (33617, 31023, 14).",
+      "location": {
+        "x": 33617,
+        "y": 31023,
+        "floor": 14
+      }
     },
     {
       "key": "lair",
       "kind": "area",
-      "description": "Every tile within 14 tiles of Canary (33617, 31023, 14) on that floor."
+      "description": "Every tile within 14 tiles of Canary (33617, 31023, 14) on that floor.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33603,
+              33631
+            ],
+            "y": [
+              31009,
+              31037
+            ],
+            "floor": [
+              14,
+              14
+            ]
+          }
+        ]
+      }
     },
     {
       "key": "lair_exit",
       "kind": "point",
-      "description": "Canary (33617, 31020, 13)."
+      "description": "Canary (33617, 31020, 13).",
+      "location": {
+        "x": 33617,
+        "y": 31020,
+        "floor": 13
+      }
     }
   ],
   "phases": [],

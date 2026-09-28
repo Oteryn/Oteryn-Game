@@ -51,7 +51,12 @@
     {
       "key": "liquor_spirit_spawn",
       "kind": "point",
-      "description": "Canary (33160, 31945, 15)."
+      "description": "Canary (33160, 31945, 15).",
+      "location": {
+        "x": 33160,
+        "y": 31945,
+        "floor": 15
+      }
     }
   ],
   "phases": [],

@@ -171,32 +171,62 @@
     {
       "key": "essence_spawn",
       "kind": "point",
-      "description": "Canary (33098, 31920, 15)."
+      "description": "Canary (33098, 31920, 15).",
+      "location": {
+        "x": 33098,
+        "y": 31920,
+        "floor": 15
+      }
     },
     {
       "key": "eshtaba_the_conjurer_spot",
       "kind": "point",
-      "description": "The tile of Eshtaba The Conjurer Stop next to Pillar of Summoning; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 291."
+      "description": "The tile of Eshtaba The Conjurer Stop next to Pillar of Summoning; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 291.",
+      "location": {
+        "x": 33094,
+        "y": 31919,
+        "floor": 15
+      }
     },
     {
       "key": "malkhar_deathbringer_spot",
       "kind": "point",
-      "description": "The tile of Malkhar Deathbringer Stop next to Pillar of Death; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 294."
+      "description": "The tile of Malkhar Deathbringer Stop next to Pillar of Death; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 294.",
+      "location": {
+        "x": 33098,
+        "y": 31916,
+        "floor": 15
+      }
     },
     {
       "key": "eliz_the_unyielding_spot",
       "kind": "point",
-      "description": "The tile of Eliz The Unyielding Stop next to Pillar of Protection; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 292."
+      "description": "The tile of Eliz The Unyielding Stop next to Pillar of Protection; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 292.",
+      "location": {
+        "x": 33102,
+        "y": 31919,
+        "floor": 15
+      }
     },
     {
       "key": "mezlon_the_defiler_spot",
       "kind": "point",
-      "description": "The tile of Mezlon The Defiler Stop next to Pillar of Healing; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 293."
+      "description": "The tile of Mezlon The Defiler Stop next to Pillar of Healing; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 293.",
+      "location": {
+        "x": 33101,
+        "y": 31924,
+        "floor": 15
+      }
     },
     {
       "key": "dorokoll_the_mystic_spot",
       "kind": "point",
-      "description": "The tile of Dorokoll The Mystic Stop next to Pillar of Draining; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 290."
+      "description": "The tile of Dorokoll The Mystic Stop next to Pillar of Draining; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 290.",
+      "location": {
+        "x": 33095,
+        "y": 31924,
+        "floor": 15
+      }
     }
   ],
   "phases": [],

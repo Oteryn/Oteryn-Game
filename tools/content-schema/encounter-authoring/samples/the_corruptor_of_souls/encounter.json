@@ -41,7 +41,12 @@
     {
       "key": "source_of_corruption_spawn",
       "kind": "point",
-      "description": "The Source of Corruption appears here; Canary (33039, 31922, 15)."
+      "description": "The Source of Corruption appears here; Canary (33039, 31922, 15).",
+      "location": {
+        "x": 33039,
+        "y": 31922,
+        "floor": 15
+      }
     }
   ],
   "phases": [],

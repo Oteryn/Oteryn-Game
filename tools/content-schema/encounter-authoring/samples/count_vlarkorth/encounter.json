@@ -21,7 +21,25 @@
     {
       "key": "vlarkorth_room",
       "kind": "area",
-      "description": "Every tile within 10 of Canary (33456, 31437, 13): x 33446-33466, y 31427-31447."
+      "description": "Every tile within 10 of Canary (33456, 31437, 13): x 33446-33466, y 31427-31447.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33446,
+              33466
+            ],
+            "y": [
+              31427,
+              31447
+            ],
+            "floor": [
+              13,
+              13
+            ]
+          }
+        ]
+      }
     }
   ],
   "phases": [],

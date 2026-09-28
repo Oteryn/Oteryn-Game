@@ -163,8 +163,8 @@ monster of each profile shape.
    a skipped loot entry, and the four creatures the pilot monsters summon. The full wave then found
    two cases the pilot lacked: two addons sharing the attachment slot, and whitespace around texts.
 4. (Merged into slice 3.) D32 loot counts then admit Duke Krule as well: 1,316 monsters.
-5. Later: the 59 Item-blocked monsters after the Item domain registers the 68 items; the 101 encounter monsters with an Encounter runtime
-   slice; the 14 reference-blocked monsters as their references become admitted.
+5. Later: the 59 Item-blocked monsters after the Item domain registers the 68 items; the encounter monsters together with their encounters
+   (`OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1.md`, 2026-09-28); the 14 reference-blocked monsters as their references become admitted.
 
 Each slice runs the repository gates. A slice that changes `content/world/**` also gets one
 independent exact-head review before the Merge Queue (standing authorization in

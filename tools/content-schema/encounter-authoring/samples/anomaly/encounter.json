@@ -31,37 +31,85 @@
     {
       "key": "arena",
       "kind": "area",
-      "description": "Every tile from Canary (32258, 31237, 14) to (32284, 31262, 14)."
+      "description": "Every tile from Canary (32258, 31237, 14) to (32284, 31262, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32258,
+              32284
+            ],
+            "y": [
+              31237,
+              31262
+            ],
+            "floor": [
+              14,
+              14
+            ]
+          }
+        ]
+      }
     },
     {
       "key": "exit_vortex",
       "kind": "point",
-      "description": "Canary (32261, 31250, 14), the vortex of the room."
+      "description": "Canary (32261, 31250, 14), the vortex of the room.",
+      "location": {
+        "x": 32261,
+        "y": 31250,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_1",
       "kind": "point",
-      "description": "Canary (32267, 31253, 14)."
+      "description": "Canary (32267, 31253, 14).",
+      "location": {
+        "x": 32267,
+        "y": 31253,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_2",
       "kind": "point",
-      "description": "Canary (32274, 31255, 14)."
+      "description": "Canary (32274, 31255, 14).",
+      "location": {
+        "x": 32274,
+        "y": 31255,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_3",
       "kind": "point",
-      "description": "Canary (32274, 31249, 14)."
+      "description": "Canary (32274, 31249, 14).",
+      "location": {
+        "x": 32274,
+        "y": 31249,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_4",
       "kind": "point",
-      "description": "Canary (32267, 31249, 14)."
+      "description": "Canary (32267, 31249, 14).",
+      "location": {
+        "x": 32267,
+        "y": 31249,
+        "floor": 14
+      }
     },
     {
       "key": "boss_spot",
       "kind": "point",
-      "description": "Canary (32271, 31249, 14)."
+      "description": "Canary (32271, 31249, 14).",
+      "location": {
+        "x": 32271,
+        "y": 31249,
+        "floor": 14
+      }
     }
   ],
   "phases": [],

@@ -31,42 +31,95 @@
     {
       "key": "arena",
       "kind": "area",
-      "description": "Every tile from Canary (32223, 31273, 14) to (32246, 31297, 14)."
+      "description": "Every tile from Canary (32223, 31273, 14) to (32246, 31297, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32223,
+              32246
+            ],
+            "y": [
+              31273,
+              31297
+            ],
+            "floor": [
+              14,
+              14
+            ]
+          }
+        ]
+      }
     },
     {
       "key": "exit_vortex",
       "kind": "point",
-      "description": "Canary (32225, 31285, 14), the vortex of the room."
+      "description": "Canary (32225, 31285, 14), the vortex of the room.",
+      "location": {
+        "x": 32225,
+        "y": 31285,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_1",
       "kind": "point",
-      "description": "Canary (32229, 31282, 14)."
+      "description": "Canary (32229, 31282, 14).",
+      "location": {
+        "x": 32229,
+        "y": 31282,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_2",
       "kind": "point",
-      "description": "Canary (32230, 31287, 14)."
+      "description": "Canary (32230, 31287, 14).",
+      "location": {
+        "x": 32230,
+        "y": 31287,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_3",
       "kind": "point",
-      "description": "Canary (32237, 31287, 14)."
+      "description": "Canary (32237, 31287, 14).",
+      "location": {
+        "x": 32237,
+        "y": 31287,
+        "floor": 14
+      }
     },
     {
       "key": "spark_spot_4",
       "kind": "point",
-      "description": "Canary (32238, 31282, 14)."
+      "description": "Canary (32238, 31282, 14).",
+      "location": {
+        "x": 32238,
+        "y": 31282,
+        "floor": 14
+      }
     },
     {
       "key": "boss_spot",
       "kind": "point",
-      "description": "Canary (32234, 31284, 14)."
+      "description": "Canary (32234, 31284, 14).",
+      "location": {
+        "x": 32234,
+        "y": 31284,
+        "floor": 14
+      }
     },
     {
       "key": "outburst_return",
       "kind": "point",
-      "description": "Canary (32234, 31285, 14)."
+      "description": "Canary (32234, 31285, 14).",
+      "location": {
+        "x": 32234,
+        "y": 31285,
+        "floor": 14
+      }
     }
   ],
   "phases": [],

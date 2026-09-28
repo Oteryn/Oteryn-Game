@@ -52,6 +52,16 @@ def amount(minimum, range_minimum=None):
     return {'oneOf': [integer(minimum), obj({'min': integer(low), 'max': integer(low)}, ('min', 'max'))]}
 
 
+def span(maximum):
+    return {'type': 'array', 'items': integer(0, maximum), 'minItems': 2, 'maxItems': 2}
+
+
+# E2: an anchor's location in Canary map coordinates (the project frame on admission): a point, or boxes of whole tiles.
+LOCATION = {'oneOf': [obj({'x': integer(0, 65535), 'y': integer(0, 65535), 'floor': integer(0, 15)}, ('x', 'y', 'floor')),
+                      obj({'boxes': array(obj({'x': span(65535), 'y': span(65535), 'floor': span(15)}, ('x', 'y', 'floor')), 1)},
+                          ('boxes',))]}
+
+
 def kinded(kind, properties=None, required=()):
     return obj({'kind': const(kind), **(properties or {})}, ('kind', *required))
 
@@ -173,7 +183,8 @@ schema = obj({
     'display_name': TEXT,
     'scope': enum('instance_per_party', 'channel_shared'),
     'participants': array(obj({'role': NAME, 'creatures': array(use('CreatureRef'), 1, True)}, ('role', 'creatures')), 1),
-    'anchors': array(obj({'key': NAME, 'kind': enum('point', 'area'), 'description': TEXT}, ('key', 'kind', 'description'))),
+    'anchors': array(obj({'key': NAME, 'kind': enum('point', 'area'), 'description': TEXT, 'location': LOCATION},
+                         ('key', 'kind', 'description'))),
     'phases': array(NAME, 0, True),
     'state': obj({'counters': array(obj({'name': NAME, 'initial': {'type': 'integer'}}, ('name', 'initial'))),
                   'flags': array(obj({'name': NAME, 'initial': BOOL}, ('name', 'initial'))),

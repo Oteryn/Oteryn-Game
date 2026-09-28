@@ -101,37 +101,85 @@
     {
       "key": "lloyd_center",
       "kind": "point",
-      "description": "Canary (32799, 32826, 14), between the four prisms."
+      "description": "Canary (32799, 32826, 14), between the four prisms.",
+      "location": {
+        "x": 32799,
+        "y": 32826,
+        "floor": 14
+      }
     },
     {
       "key": "lloyd_center_tile",
       "kind": "area",
-      "description": "Exactly the one tile Canary (32799, 32826, 14)."
+      "description": "Exactly the one tile Canary (32799, 32826, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32799,
+              32799
+            ],
+            "y": [
+              32826,
+              32826
+            ],
+            "floor": [
+              14,
+              14
+            ]
+          }
+        ]
+      }
     },
     {
       "key": "lloyd_return",
       "kind": "point",
-      "description": "Canary (32799, 32829, 14)."
+      "description": "Canary (32799, 32829, 14).",
+      "location": {
+        "x": 32799,
+        "y": 32829,
+        "floor": 14
+      }
     },
     {
       "key": "prism_spot_a",
       "kind": "point",
-      "description": "Canary (32801, 32827, 14)."
+      "description": "Canary (32801, 32827, 14).",
+      "location": {
+        "x": 32801,
+        "y": 32827,
+        "floor": 14
+      }
     },
     {
       "key": "prism_spot_b",
       "kind": "point",
-      "description": "Canary (32798, 32827, 14)."
+      "description": "Canary (32798, 32827, 14).",
+      "location": {
+        "x": 32798,
+        "y": 32827,
+        "floor": 14
+      }
     },
     {
       "key": "prism_spot_c",
       "kind": "point",
-      "description": "Canary (32803, 32826, 14)."
+      "description": "Canary (32803, 32826, 14).",
+      "location": {
+        "x": 32803,
+        "y": 32826,
+        "floor": 14
+      }
     },
     {
       "key": "prism_spot_d",
       "kind": "point",
-      "description": "Canary (32796, 32826, 14)."
+      "description": "Canary (32796, 32826, 14).",
+      "location": {
+        "x": 32796,
+        "y": 32826,
+        "floor": 14
+      }
     }
   ],
   "phases": [],

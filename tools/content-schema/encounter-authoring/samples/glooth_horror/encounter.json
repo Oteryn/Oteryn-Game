@@ -61,17 +61,45 @@
     {
       "key": "horror_arena",
       "kind": "area",
-      "description": "Tiles within 13 of Canary (33555, 31956, 15) on that floor."
+      "description": "Tiles within 13 of Canary (33555, 31956, 15) on that floor.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33542,
+              33568
+            ],
+            "y": [
+              31943,
+              31969
+            ],
+            "floor": [
+              15,
+              15
+            ]
+          }
+        ]
+      }
     },
     {
       "key": "exit_teleporter",
       "kind": "point",
-      "description": "Boss-room teleporter; Canary (33545, 31955, 15)."
+      "description": "Boss-room teleporter; Canary (33545, 31955, 15).",
+      "location": {
+        "x": 33545,
+        "y": 31955,
+        "floor": 15
+      }
     },
     {
       "key": "next_destination",
       "kind": "point",
-      "description": "Destination while open; Canary (33534, 31955, 15)."
+      "description": "Destination while open; Canary (33534, 31955, 15).",
+      "location": {
+        "x": 33534,
+        "y": 31955,
+        "floor": 15
+      }
     }
   ],
   "phases": [],

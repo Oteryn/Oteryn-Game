@@ -78,7 +78,9 @@ Encounter
                                 shared activity-instance admission contract; not defined here)
   participants[]                role key -> CreatureRef
   phases[]                      ordered named phases; multi-form bosses move by `set_phase`
-  anchors[]                     named point or area (rectangle/zone) to be bound by the map project
+  anchors[]                     named point or area (rectangle/zone) to be bound by the map project;
+                                optional location (E2): a point {x, y, floor} or boxes of whole tiles
+                                {x: [min, max], y: [min, max], floor: [min, max]} in Canary map coordinates
   state
     counters[]                  name, initial integer
     flags[]                     name, initial boolean
@@ -212,8 +214,10 @@ rules.
    encounter instance, so a fight can be audited and replayed from its seed.
 4. Health carried by `transform`/`spawn` is explicit (`keep_percent`, `keep_absolute`, `full`,
    percent, or `remembered` for a spawn into a named role); nothing is implied.
-5. Anchors are typed (point or area) and must all be bound by the map project before admission;
-   an unbound anchor blocks the encounter, never falls back to raw coordinates.
+5. Anchors are typed (point or area) and must all be bound by the map project before the encounter is
+   activated by a runtime; an unbound anchor blocks activation, never falls back to raw coordinates. Content
+   admission into WorldProject/v2 takes the anchor's location in the project frame (E2,
+   `OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1.md`); an anchor without a location blocks admission.
 6. Validation mirrors the monster schema: JSON Schema plus a semantic validator and an import
    manifest in which every Canary event line is mapped, omitted with a reason, or unresolved.
 
@@ -491,3 +495,14 @@ A nineteenth slice adds D46:
 
 83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 139/139; the census rises from 1,555 to
 1,557 (The Hunger and Soulcatcher).
+
+A twentieth slice adds the anchor locations of E2 (`OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1.md`, owner answer
+2026-09-28 "tak"). A point is `{x, y, floor}` and an area is a list of boxes of whole tiles; the validator checks that a
+point has a point and an area has boxes, and that no box starts after it ends. `canary_encounters.py` reads each location
+from the Canary coordinates the anchor already describes: a point, a rectangle between two corners, a square of a
+radius around a tile, or a list of single tiles. It fails on any other form. The five Essence of Malice spots are read
+from the positions in the lever script. 141 of the 142 anchors are located. The Soul War taint zones stay without a
+location: they subtract safe areas and include the Goshnar boss rooms, so that encounter is not admitted yet.
+
+83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 147/147. No manifest changes, so the
+census is unchanged.

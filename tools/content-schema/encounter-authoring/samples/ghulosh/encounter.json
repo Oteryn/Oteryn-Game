@@ -31,7 +31,12 @@
     {
       "key": "book_of_death_spawn",
       "kind": "point",
-      "description": "Canary (32755, 32716, 10)."
+      "description": "Canary (32755, 32716, 10).",
+      "location": {
+        "x": 32755,
+        "y": 32716,
+        "floor": 10
+      }
     }
   ],
   "phases": [],

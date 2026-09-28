@@ -65,6 +65,15 @@ def semantic(e, catalog):
         duplicates = sorted({n for n in names if names.count(n) > 1})
         if duplicates:
             errors.append(f'duplicate {label} {duplicates}')
+    for anchor in e['anchors']:
+        location = anchor.get('location')
+        if location is None:
+            continue
+        if ('boxes' in location) != (anchor['kind'] == 'area'):
+            errors.append(f"anchor {anchor['key']!r}: a {anchor['kind']} needs a {'box' if anchor['kind'] == 'area' else 'point'} location")
+        for box in location.get('boxes', []):
+            if any(box[axis][0] > box[axis][1] for axis in ('x', 'y', 'floor')):
+                errors.append(f"anchor {anchor['key']!r}: a box starts after it ends")
     spawned = {a['role'] for r in e['rules'] for _, a in walk(r['actions'], '') if a['kind'] == 'spawn' and 'role' in a}
     known_roles = set(roles) | spawned
 

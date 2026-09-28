@@ -21,7 +21,12 @@
     {
       "key": "statue",
       "kind": "point",
-      "description": "Boss statue; Canary (33095, 31110, 15)."
+      "description": "Boss statue; Canary (33095, 31110, 15).",
+      "location": {
+        "x": 33095,
+        "y": 31110,
+        "floor": 15
+      }
     }
   ],
   "phases": [],
