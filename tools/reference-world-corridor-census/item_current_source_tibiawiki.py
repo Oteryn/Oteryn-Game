@@ -29,7 +29,7 @@ SOURCE_ROLE = "STRUCTURED_REFERENCE_DATA"
 SOURCE_ID = "TIBIAWIKI_STRUCTURED"
 API_BASE = "https://www.tibiawiki.com.br/api.php"
 USER_AGENT = "OterynEvidenceCollector/0.1 (+https://github.com/Oteryn/Oteryn-Game)"
-TARGET_CUT = "2026-07-28"
+TARGET_CUT = "2026-09-27"
 TARGET_COUNT = 38_157
 
 CROSSWALK_SCHEMA = "OTERYN_ITEM_CLASSIFICATION_CROSSWALK/v1"
@@ -248,7 +248,8 @@ def validate_api_query(value: Any) -> dict[str, Any]:
 
 
 def cache_path(cache_dir: Path, page_id: int, revision_id: int) -> Path:
-    return cache_dir / f"page-{page_id}-rev-{revision_id}.json"
+    # Namespaced by the target cut: a record normalized for another cut is never a cache hit.
+    return cache_dir / f"page-{page_id}-rev-{revision_id}-cut-{TARGET_CUT}.json"
 
 
 def load_cached_record(cache_dir: Path, page_id: int, revision_id: int) -> dict[str, Any] | None:
@@ -264,6 +265,8 @@ def load_cached_record(cache_dir: Path, page_id: int, revision_id: int) -> dict[
         raise CurrentSourceError("CACHE_JSON_INVALID") from exc
     if not isinstance(value, dict) or value.get("page_id") != page_id or value.get("revision_id") != revision_id:
         raise CurrentSourceError("CACHE_IDENTITY_MISMATCH")
+    if value.get("target_cut", TARGET_CUT) != TARGET_CUT:
+        raise CurrentSourceError("CACHE_TARGET_CUT_MISMATCH")
     return value
 
 

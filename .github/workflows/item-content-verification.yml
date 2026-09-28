@@ -7,7 +7,7 @@ on:
     paths:
       - tools/reference-world-corridor-census/item_field_verification.py
       - tools/reference-world-corridor-census/item_field_verification_self_test.py
-      - docs/agents/evidence/OTV2-20260922-content-world-item-field-verification.json
+      - docs/agents/evidence/OTV2-20260927-content-world-item-field-verification.json
       - docs/agents/tasks/active/OTV2-20260922-content-world-item-field-verification-504.md
       - .github/workflows/item-content-verification.yml
   workflow_dispatch:
@@ -71,8 +71,8 @@ jobs:
         run: |
           set -euo pipefail
           ROOT="$RUNNER_TEMP/item-field-verification"
-          PROTECTED_MANIFEST="docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json"
-          test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "ef160e7b76458029064d7f50d7808fa80add99da96d2a5ebacbbc7c6426ba748"
+          PROTECTED_MANIFEST="docs/agents/evidence/OTV2-20260927-content-world-item-current-source.json"
+          test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "0e23b3dd721cd054ef42d112df4bf848d73cd672b4ebd241a2a9de450f3f0fd5"
           python tools/reference-world-corridor-census/item_current_source_tibiawiki_self_test.py
           python tools/reference-world-corridor-census/item_current_source_tibiawiki.py \
             --game-root . \
@@ -91,7 +91,7 @@ jobs:
           observed = json.loads(observed_path.read_text(encoding="utf-8"))
           full_sha = hashlib.sha256(full_path.read_bytes()).hexdigest()
           assert protected["schema"] == observed["schema"]
-          assert protected["target_cut"] == observed["target_cut"] == "2026-07-28"
+          assert protected["target_cut"] == observed["target_cut"] == "2026-09-27"
           assert protected["source"] == observed["source"]
           assert protected["collector"] == observed["collector"]
           assert protected["counts"] == observed["counts"], (
@@ -118,14 +118,14 @@ jobs:
           python tools/reference-world-corridor-census/item_field_verification.py \
             --classification-crosswalk "$ROOT/crosswalk.json" \
             --current-source "$ROOT/current-source.json" \
-            --protected-current-source-manifest docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json \
+            --protected-current-source-manifest docs/agents/evidence/OTV2-20260927-content-world-item-current-source.json \
             --schema-readiness docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json \
             --output "$ROOT/field-verification.json" \
             --manifest-output "$ROOT/field-verification-manifest.json"
           python tools/reference-world-corridor-census/item_field_verification.py \
             --classification-crosswalk "$ROOT/crosswalk.json" \
             --current-source "$ROOT/current-source.json" \
-            --protected-current-source-manifest docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json \
+            --protected-current-source-manifest docs/agents/evidence/OTV2-20260927-content-world-item-current-source.json \
             --schema-readiness docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json \
             --output "$ROOT/field-verification-repeat.json" \
             --manifest-output "$ROOT/field-verification-manifest-repeat.json"
@@ -157,11 +157,12 @@ jobs:
           sha256sum "$ROOT/field-verification.json" "$ROOT/field-verification-manifest.json"
 
       - name: Upload compact field evidence
+        if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: item-field-verification-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             ${{ runner.temp }}/item-field-verification/current-source-manifest.json
             ${{ runner.temp }}/item-field-verification/field-verification-manifest.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14

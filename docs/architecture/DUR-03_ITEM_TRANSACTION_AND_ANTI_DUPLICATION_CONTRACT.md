@@ -858,8 +858,11 @@ Evidence classification for this specialization:
 - **DERIVED** — the native bindings and admission gates proposed below specialize
   those invariants for the allocated generic one-item path; they are not by
   themselves production admission or runtime permission.
-- **CONFLICT** — migration 0009 does not specify how a non-XP CharacterInventory
-  transfer participates in its global CharacterRevision/XP-receipt chain.
+- **RESOLVED (formerly CONFLICT)** — how a non-XP CharacterInventory transfer
+  relates to the migration 0009 global CharacterRevision/XP-receipt chain is
+  decided by `CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1`
+  (`docs/architecture/reviews/OTERYN_GAME_CHARACTER_REVISION_ITEM_TRANSACTION_COMPOSITION_DECISION_2026-09-27.md`,
+  protected on `main@74bb3fd`); see the composition paragraph below.
 - **UNKNOWN** — source-reference/receipt grammar, position/capacity policy,
   physical schema and runtime composition remain with their owning allocations.
 
@@ -934,24 +937,34 @@ owner route and fresh, separately allocated Character revision/policy binding.
 Migration `0009_character_progression.sql` is a
 conditional composition dependency: it permits bootstrap-only revision one,
 then requires every global CharacterRevision successor to match typed
-progression state and an immutable XP receipt. It does not specify how a
-non-XP inventory TRANSFER composes with that XP-only receipt chain. This is an
-explicit unresolved Character-owner conflict for destination mutation/readiness;
-this decision neither invents an XP receipt for inventory work nor joins XP and
-item transfer into one transaction. MINT does not touch Character state and is
-not blocked by this destination composition question.
+progression state and an immutable XP receipt. How a non-XP inventory TRANSFER
+composes with that XP-only receipt chain is decided by
+`CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1`: a DUR-03 transaction whose
+only Character effects are CharacterInventory item locations and DUR-03 cause
+records keyed by a Character does not advance CharacterRevision and writes no
+Character root, progression or XP-receipt row; it is fenced like
+`commit_character_experience` (recovery fence, admission-relation locks,
+reconnect-session row, runtime-scope assignment, admission guards, cause and
+source-scope binding) and serializes on the `character_root` row lock. No XP
+receipt is invented for inventory work, and 0009 is unchanged. That decision
+settles only the global-revision composition: destination position, capacity
+and TRANSFER admission stay with their owners, and TRANSFER remains closed until
+they are accepted and proven. MINT does not touch Character state and is not
+blocked by this destination question.
 
 **Decision test.** Must decide now: **YES** for definition/state, source, and
 actual Ground bindings, so native MINT cannot inherit synthetic fixture
-identity; **NO** for unresolved TRANSFER destination composition, which remains
-gated at the Character-owner boundary. The realistic alternatives for MINT are
+identity; **NO** for the unresolved TRANSFER destination position, capacity and
+admission, which remain gated at the Character-owner boundary (the global-revision
+composition is settled by `CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1`). The realistic alternatives for MINT are
 to admit only with the complete typed native bindings above, or keep MINT closed
 until every later Character destination question is settled. The first preserves
 the already selected MINT-first staging without weakening any MINT invariant;
 the second unnecessarily couples a Character-independent creation to pickup.
 **Recommendation:** use the complete generic native bindings above for later
 MINT qualification, while leaving TRANSFER closed until Character position,
-capacity and global-revision composition are resolved by their owners. The main
+capacity and TRANSFER admission are accepted and proven by their owners; the
+global-revision composition follows `CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1`. The main
 risk is that a weak or expiring source-cause record could permit a repeated mint;
 late changes to definition/source semantics would require retained evidence and
 receipt interpretation to migrate. No broad new identity, receipt, or authority
