@@ -33,6 +33,10 @@ ALTER TABLE game_item_instances
 -- (no wraparound) and is stable for the lifetime of one transaction.
 ALTER TABLE game_item_mint_receipts
     ADD COLUMN created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id();
+-- The same binding for audit events: a TRANSFER must be proven by an audit
+-- row its own physical transaction inserted, never by a historical MINT row.
+ALTER TABLE game_item_audit_outbox
+    ADD COLUMN created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id();
 
 -- CharacterEquipment slot `container` (Global's Container Slot): at most one
 -- item per character, and that item is the character's main backpack.
@@ -374,7 +378,12 @@ BEGIN
             WHERE a.event_id = NEW.event_id AND a.transaction_id = NEW.transaction_id
               AND a.item_instance_id = NEW.source_item_instance_id
               AND a.occurred_at = NEW.occurred_at
-              AND a.envelope_sha256 = NEW.envelope_sha256)
+              AND a.envelope_sha256 = NEW.envelope_sha256
+              AND a.created_xact_id = pg_current_xact_id())
+       -- The destination Character must be rooted in the source item's World.
+       OR NOT EXISTS (
+           SELECT 1 FROM game_character_roots cr
+            WHERE cr.character_id = NEW.character_id AND cr.world_id = src.world_id)
        OR NOT EXISTS (
            SELECT 1 FROM game_item_transfer_quantity_evidence ev
             WHERE ev.item_instance_id = NEW.source_item_instance_id
