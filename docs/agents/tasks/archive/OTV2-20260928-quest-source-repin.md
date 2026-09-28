@@ -4,22 +4,22 @@
 task_id: OTV2-20260928-quest-source-repin
 title: Quest format - re-pin the Canary and CrystalServer reference revisions to their main heads
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: 1081
 base_sha: 3b41c0f4c0b3d4480a392d1c0ea4c4b40f7c16ea
-head_sha: null
-final_head_sha: null
+head_sha: d07ab7be29e8968dd2e005915b18ac97919f3837
+final_head_sha: d07ab7be29e8968dd2e005915b18ac97919f3837
 final_head_frozen_at: null
 owner: claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk
 created_at: 2026-09-28
 updated_at: 2026-09-28
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260928-quest-source-repin.md
+  - docs/agents/tasks/archive/OTV2-20260928-quest-source-repin.md
   - docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md
   - tools/content-schema/quest-authoring/**
 public_contracts: []
