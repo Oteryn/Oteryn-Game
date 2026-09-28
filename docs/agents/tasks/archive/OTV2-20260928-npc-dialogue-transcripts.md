@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-npc-dialogue-transcripts
 title: NPC dialogue D10 - break Canary/Crystal dialogue conflicts with Tibia Global transcripts
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
@@ -13,7 +13,7 @@ pr: 1095
 jira: KAN-16
 base_sha: 737a2dbb7c0ef393988dbc24cf45f770afa1f330
 head_sha: null
-final_head_sha: null
+final_head_sha: 6c857fd9a97be1a7ca7ef9872a679fa499981592
 final_head_frozen_at: null
 owner: claude-code-session-01RTD1d7GsT7uFSBHg5syB4T
 created_at: 2026-09-28
