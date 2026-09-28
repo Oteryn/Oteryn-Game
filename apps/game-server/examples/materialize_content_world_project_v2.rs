@@ -73,9 +73,9 @@ const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "13e37595332b466e0b0dcda0a1648aeda010d3453b937522b70b5704da077bf4";
+const NPC_STAGED_SHA256: &str = "00495642303ddad45b1890e389add57c7054a262d7efeb3fc617a345858f6249";
 const NPC_STAGE_TOOL_SHA256: &str =
-    "8c519ad2b42fb7bdcffb70f1652f30a3a14bcba89e8319e89d4aa4d9775c8d87";
+    "ec23b6f42dd0551e701c72e51aaeda82e5d837efb685cda589efb59a4d57ccd0";
 const NPC_CANDIDATES_SHA256: &str =
     "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2";
 const NPC_WIKI_SNAPSHOT_SHA256: &str =
@@ -86,7 +86,11 @@ const NPC_WIKI_REVISION: &str = "tibiawiki-npc-52f87d29eddd1a4e";
 const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
 const NPC_COUNT: usize = 1093;
 const NPC_RECORDS: usize = 2186;
-const NPC_DECLARATIONS: usize = 1456;
+const NPC_DECLARATIONS: usize = 2066;
+const NPC_DIALOGUE_STAGED_SHA256: &str =
+    "453c21d701a0dadc1b13a101de49055943c7b0a5b002868c02f9958a18230cf9";
+const NPC_DIALOGUES: usize = 610;
+const NPC_DIALOGUE_NODES: usize = 4511;
 const NPC_BINDINGS: usize = 2281;
 const CREATURE_COUNT: usize = 1318;
 const CREATURE_RECORDS: usize = 18336;
@@ -1231,6 +1235,9 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         || counts["records"] != NPC_RECORDS
         || counts["declarations"] != NPC_DECLARATIONS
         || counts["bindings"] != NPC_BINDINGS
+        || source["dialogue_staged_sha256"] != NPC_DIALOGUE_STAGED_SHA256
+        || counts["dialogues"] != NPC_DIALOGUES
+        || counts["dialogue_nodes"] != NPC_DIALOGUE_NODES
     {
         return Err("staged NPC admission source identity drifted".into());
     }
@@ -1245,10 +1252,15 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         .iter()
         .filter(|declaration| matches!(declaration, ProjectV2Declaration::Npc { .. }))
         .count();
+    let dialogues = declarations
+        .iter()
+        .filter(|declaration| matches!(declaration, ProjectV2Declaration::Dialogue { .. }))
+        .count();
     if records.len() != NPC_RECORDS
         || profiles.len() != NPC_RECORDS
         || declarations.len() != NPC_DECLARATIONS
         || npcs != NPC_COUNT
+        || dialogues != NPC_DIALOGUES
         || bindings.len() != NPC_BINDINGS
         || bindings.iter().any(|binding| {
             binding.target.family != ProjectV2Family::Npc
@@ -1275,7 +1287,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         return Err("staged NPC admission counts drifted".into());
     }
     let import = ImportBatch {
-        batch_id: "g4-npc-wave-a-tibiawiki-r2".to_owned(),
+        batch_id: "g4-npc-wave-a-tibiawiki-r3".to_owned(),
         source_repository: "tibia.fandom.com".to_owned(),
         source_revision: NPC_WIKI_REVISION.to_owned(),
         source_artifact_sha256: NPC_WIKI_SNAPSHOT_SHA256.to_owned(),
@@ -1283,7 +1295,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         source_generation_profile: "OTERYN_NPC_FANDOM_SNAPSHOT/v1".to_owned(),
         importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
         mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
-        mapper_revision: "npc-admission-r2".to_owned(),
+        mapper_revision: "npc-admission-r3".to_owned(),
         mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
         reimport_states: Vec::new(),
@@ -1378,7 +1390,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-npc-wave-a-r2".to_owned(),
+                project_revision: "g4-npc-wave-a-r3".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),

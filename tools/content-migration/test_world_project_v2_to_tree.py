@@ -16,7 +16,7 @@ assert manifest["compatibility"] == {
 assert lock["family_counts"] == {
     "Item": 38157, "Mount": 252,
     "Creature": 1318, "Presentation": 2411, "Behavior": 2411, "Loot": 978, "Ability": 5254, "Effect": 3926, "Formula": 4224,
-    "NPC": 1093, "Service.Trade": 308, "Service.Travel": 55,
+    "NPC": 1093, "Dialogue": 610, "Service.Trade": 308, "Service.Travel": 55,
 }
 assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1318, "NPC": 2281}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
@@ -27,15 +27,17 @@ assert sum(path.startswith("content/items/definitions/items-") for path in paths
 assert any(path.startswith("content/cosmetics/mounts/mounts-") for path in paths)
 assert any(path.startswith("content/creatures/definitions/creatures-") for path in paths)
 assert any(path.startswith("content/npcs/definitions/npcs-") for path in paths)
+assert any(path.startswith("content/dialogues/definitions/dialogues-") for path in paths)
 assert any(path.startswith("content/services/trade/trade-") for path in paths)
 assert any(path.startswith("content/services/travel/travel-") for path in paths)
 assert "imports/canary/bindings/creatures.json" in paths
 assert all(not path.startswith("content/world/") for path in paths)
 
 assert manifest["families"]["NPC"] == {"records": 1093, "index": "content/npcs/definitions/index.json"}
+assert manifest["families"]["Dialogue"] == {"records": 610, "index": "content/dialogues/definitions/index.json"}
 assert manifest["families"]["Service.Trade"] == {"records": 308, "index": "content/services/trade/index.json"}
 assert manifest["families"]["Service.Travel"] == {"records": 55, "index": "content/services/travel/index.json"}
-assert "NPC" in project["migrated_families"] and "Service" in project["migrated_families"]
-assert "NPC" not in project["next_population_families"] and "Service" not in project["next_population_families"]
+assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated_families"] and "Service" in project["migrated_families"]
+assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
 
 print(f"PASS managed_files={len(paths)} item_shards=77")

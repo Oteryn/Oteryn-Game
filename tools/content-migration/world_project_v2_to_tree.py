@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 ITEM_SHARD_SIZE = 500
 ADMISSION_MAIN = "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c"
-REVISION = "tree-npc-wave-a-r1"
+REVISION = "tree-npc-dialogue-wave-a-r1"
 FIELD_CENSUS = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
 WAVE1_STAGED = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-item-enrichment-wave1-staged.json"
 # Creature admission families (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1): family -> (tree node, shard stem).
@@ -319,6 +319,38 @@ def main() -> int:
         "attached_source_bindings": sum(len(row.get("source_bindings", [])) for row in npc_rows),
     })
 
+    dialogue_declarations = [row for row in declarations["records"] if row.get("kind") == "Dialogue"]
+    if len(dialogue_declarations) != 610:
+        raise RuntimeError(f"DIALOGUE_SOURCE_COUNT_MISMATCH:{len(dialogue_declarations)}")
+
+    # No source bindings exist for Dialogue declarations (WorldProject/v2 NPC admission wave A).
+    dialogue_rows = [{"declaration": declaration} for declaration in dialogue_declarations]
+    dialogue_shards: list[str] = []
+    for start in range(0, len(dialogue_rows), ITEM_SHARD_SIZE):
+        rows = dialogue_rows[start:start + ITEM_SHARD_SIZE]
+        end = start + len(rows) - 1
+        relative = f"content/dialogues/definitions/dialogues-{start:05d}-{end:05d}.json"
+        dialogue_shards.append(relative)
+        write(relative, {
+            "schema": "OTERYN_DIALOGUE_AUTHORING_SHARD/v1",
+            "family": "Dialogue",
+            "source_legacy_role": "content/world/definitions/declarations.json",
+            "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
+            "records": rows,
+        })
+    write("content/dialogues/definitions/index.json", {
+        "schema": "OTERYN_FAMILY_INDEX/v1",
+        "family": "Dialogue",
+        "record_count": len(dialogue_rows),
+        "shard_size": ITEM_SHARD_SIZE,
+        "shards": dialogue_shards,
+        "legacy_source": {
+            "path": "content/world/definitions/declarations.json",
+            "git_blob_sha": declarations_blob_sha,
+            "schema": declarations["schema"],
+        },
+    })
+
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
     if len(service_records) != 363:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
@@ -362,6 +394,7 @@ def main() -> int:
     service_managed += [f"{node}index.json" for node, _, _ in SERVICE_FAMILIES.values()]
     managed = sorted([*item_shards, mount_relative, "content/items/index.json", "content/cosmetics/mounts/index.json",
                       *creature_managed, *npc_shards, "content/npcs/definitions/index.json",
+                      *dialogue_shards, "content/dialogues/definitions/index.json",
                       *service_managed, *outputs.keys()])
     write("content/manifest.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1",
@@ -374,6 +407,7 @@ def main() -> int:
             **{family: {"records": creature_counts[family], "index": f"{node}index.json"}
                for family, (node, _) in CREATURE_FAMILIES.items()},
             "NPC": {"records": len(npc_rows), "index": "content/npcs/definitions/index.json"},
+            "Dialogue": {"records": len(dialogue_rows), "index": "content/dialogues/definitions/index.json"},
             **{family: {"records": service_counts[family], "index": f"{node}index.json"}
                for family, (node, _, _) in SERVICE_FAMILIES.items()},
         },
@@ -391,7 +425,7 @@ def main() -> int:
             "imports": git_blob_sha(LEGACY / "provenance" / "imports.json"),
         },
         "family_counts": {"Item": len(item_records), "Mount": len(mount_rows), **creature_counts,
-                           "NPC": len(npc_rows), **service_counts},
+                           "NPC": len(npc_rows), "Dialogue": len(dialogue_rows), **service_counts},
         "item_authoring_counts": {"authoring": len(authoring_by_target), "taxonomy": len(taxonomy_rows), "relation_sources": len(relation_rows)},
         "source_binding_counts": {"Item": len(item_bindings), "Mount": len(mount_bindings), "Creature": len(creature_bindings),
                                    "NPC": len(npc_bindings)},
@@ -406,14 +440,14 @@ def main() -> int:
         "project_revision": REVISION,
         "manifest": "content/manifest.json",
         "content_lock": "content/content.lock.json",
-        "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES, "NPC", "Service"],
+        "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES, "NPC", "Dialogue", "Service"],
         "legacy_compatibility_root": "content/world",
         "runtime_source": "legacy_until_separately_qualified",
         "next_population_families": [
-            "Dialogue", "Quest", "Achievement", "Outfit", "Charm", "Encounter", "Area", "House", "WorldObject",
+            "Quest", "Achievement", "Outfit", "Charm", "Encounter", "Area", "House", "WorldObject",
         ],
     })
-    print(f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)} npcs={len(npc_rows)} npc_bindings={len(npc_bindings)} service_trade={service_counts['Service.Trade']} service_travel={service_counts['Service.Travel']}")
+    print(f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)} npcs={len(npc_rows)} npc_bindings={len(npc_bindings)} dialogues={len(dialogue_rows)} service_trade={service_counts['Service.Trade']} service_travel={service_counts['Service.Travel']}")
     return 0
 
 if __name__ == "__main__":
