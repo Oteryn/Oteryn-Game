@@ -4,17 +4,17 @@
 task_id: OTV2-20260928-combat-d1-death-mint-wireup
 title: Combat D1, test-only committed creature death -> one ItemMint wire-up
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: d1 (local; the control plane publishes to claude/oteryn-work-coordinator-jv59l0)
 issue: 162
-pr: null
+pr: 1128
 allocation: "#162 comment 5873329796 ('Allocation: Combat D1', owner split exception)"
 base_sha: e1ccfd40c08c39e968d7010589e3e31cbb5e3d71
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: ce1d3ab6f6b0021a2c6de2996f43d96e5e84c859
+final_head_sha: ce1d3ab6f6b0021a2c6de2996f43d96e5e84c859
+final_head_frozen_at: 2026-09-28
 owner: "Oteryn: sol combat lead (claude-code-session-01U1WRHgL9X8RbuiG1pwczrF)"
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -138,29 +138,29 @@ See `docs/agents/evidence/OTV2-20260928-combat-d1-death-mint-wireup.md`.
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: 8 owned paths; `item_mint.rs` constructor-only
+- unresolved review threads: none; Codex found no major issues on `ce1d3ab`
 - related/superseded PRs: none
-- protected auto-merge: pending
-- merge commit/result: pending
-- ownership release: pending
+- protected integration: Merge Queue (auto-merge at the owner's direction)
+- merge commit/result: `b58155c` on protected `main`; readback of all owned files byte-identical to `ce1d3ab`
+- ownership release: exclusive leases on `foundation/runtime_actor_carrier.rs` and `foundation/mod.rs` released at merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: local candidate committed on branch d1; all local validation green
-status: implementing
+last_progress: PR #1128 merged via Merge Queue as b58155c; protected-main readback matched ce1d3ab; record archived
+status: completed
 branch: d1
-head_sha: null
-pr: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: ce1d3ab6f6b0021a2c6de2996f43d96e5e84c859
+pr: 1128
+final_head_sha: ce1d3ab6f6b0021a2c6de2996f43d96e5e84c859
+final_head_frozen_at: 2026-09-28
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: completed
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -170,5 +170,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: control plane publishes the local d1 head, freezes it and triggers the required review
+next_action: none for D1; full D admission waits on the VSL §19 rows and the Character progression-readiness proof
 ```
