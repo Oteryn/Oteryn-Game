@@ -1765,6 +1765,18 @@ fn local_object_placement_attributes_fail_closed_before_evidence_promotion()
         Err(ContentError::MissingReference { .. })
     ));
 
+    // The encounter schema's `revert_after_ms` minimum is 1; a zero duration never links.
+    let mut zero_duration = source_with_target_claim(accepted_case_binding()?)?;
+    zero_duration.placements[0]
+        .local_object_revert_after_ms
+        .insert(revert_key("oteryn:reference.transition.open")?, 0);
+    assert!(matches!(
+        link_reference_playable(zero_duration),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable placement revert duration must be positive"
+        ))
+    ));
+
     let mut non_local_object = source_with_target_claim(accepted_case_binding()?)?;
     non_local_object.placements[0].definition = non_local_object.definitions[1].definition.clone();
     non_local_object.placements[0].local_object_initial_state = None;

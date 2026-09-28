@@ -2263,7 +2263,12 @@ pub(crate) fn validate_local_object_placement_attributes(
             });
         }
     }
-    for (transition_key, _action) in placement.local_object_revert_after_ms.keys() {
+    for ((transition_key, _action), revert_after_ms) in &placement.local_object_revert_after_ms {
+        if *revert_after_ms == 0 {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable placement revert duration must be positive",
+            ));
+        }
         let transition = transitions
             .iter()
             .find(|transition| &transition.key == transition_key)

@@ -1191,6 +1191,15 @@ mod tests {
                 ContentError::MissingReference { .. }
             ))
         ));
+
+        // A zero revert duration injected after linking is rejected by bind's re-validation.
+        let zero = with_revert(plain_content(None, None)?, &[(FORWARD, ACTION_A, 0)])?;
+        assert!(matches!(
+            bind(&zero, PLACEMENT_A, &[FORWARD, PLAIN_INVERSE]),
+            Err(WorldRuntimeError::Content(ContentError::InvalidArtifact(
+                "reference-playable placement revert duration must be positive"
+            )))
+        ));
         Ok(())
     }
 
