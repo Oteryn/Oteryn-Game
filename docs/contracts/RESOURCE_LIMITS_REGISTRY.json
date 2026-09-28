@@ -4876,6 +4876,72 @@
       "notes": "Accepted by the resource owner in #139 comment 5853424970. Other actors are not visible in the first child."
     },
     {
+      "id": "WOBJ-RL-01",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Use inputs applied for one actor in one Channel owner work cycle",
+      "unit": "use inputs per actor per work cycle",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one use input is applied per actor per Channel owner work cycle; further inputs remain outstanding FND-02 commands bounded by FND02-OUTSTANDING-COMMANDS, processed FIFO per session and round-robin across actors.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one use input for an actor is applied in a work cycle",
+        "max+1=2: a second use input for the same actor is not applied in the same work cycle; it stays outstanding and the 65th outstanding command is refused under the existing FND-02 rule"
+      ],
+      "consumers": [
+        "USE_INTENT command (USE-WIRE-V1)"
+      ],
+      "notes": "Accepted by the resource owner in #162 comment 5864914163 (USE-WIRE-V1). The server selects the unique bound transition; the client sends intent only. Occupancy, reach and stale-state disposition semantics are decided by USE-WIRE-V1; composition into the Server Seam is M2."
+    },
+    {
+      "id": "WOBJ-RL-02",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Overlay entries encoded in one WORLD_OBJECT_OVERLAY delta",
+      "unit": "overlay entries per delta",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One committed use transition changes exactly one world object; the delta carries that single overlay entry and a second entry is refused before encoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1: the one changed overlay entry is carried in a delta",
+        "max+1=2: a second entry cannot be encoded by the WORLD_OBJECT_OVERLAY_DELTA_V1 payload schema"
+      ],
+      "consumers": [
+        "WORLD_OBJECT_OVERLAY state domain 2, delta type 1"
+      ],
+      "notes": "Accepted by the resource owner in #162 comment 5864914163 (USE-WIRE-V1)."
+    },
+    {
+      "id": "WOBJ-RL-03",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Overlay entries encoded in one WORLD_OBJECT_OVERLAY snapshot",
+      "unit": "overlay entries per snapshot",
+      "hard_maximum": 486,
+      "configurable_range": {
+        "minimum": 486,
+        "maximum": 486
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Entry 487 is refused before encoding; the snapshot assembler never allocates for an unbounded overlay count.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=486: 486 overlay entries are carried in a snapshot within FND02-SNAPSHOT-CHUNK-BYTES",
+        "max+1=487: a 487th entry is refused before encoding"
+      ],
+      "consumers": [
+        "WORLD_OBJECT_OVERLAY state domain 2, snapshot type 1"
+      ],
+      "notes": "Accepted by the resource owner in #162 comment 5864914163 (USE-WIRE-V1). Derived from the existing single-chunk snapshot byte bound FND02-SNAPSHOT-CHUNK-BYTES = 524,288 bytes (apps/game-server/src/foundation/protocol.rs MAX_SNAPSHOT_CHUNK_BYTES, the same bound encode_single_chunk_snapshot enforces), divided by the maximum encoded WorldObjectOverlayEntryV1 size as an element of the repeated `entries` field. One entry-in-field is at most 1,078 bytes: outer repeated-field tag+length (1 + 2 = 3 bytes) wrapping an entry message of at most 1,075 bytes (content_generation: 1 tag + 1 length + 32 bytes = 34; placement: 1 tag + 2 length + 512 bytes = 515, using the existing accepted FIRST_PRODUCTION_MAX_KEY_BYTES = 512 from apps/game-server/src/content/production.rs; state key: 1 tag + 2 length + 512 bytes = 515, same key bound; revision: 1 tag + 10-byte u64 varint = 11; 34 + 515 + 515 + 11 = 1,075). floor(524,288 / 1,078) = 486 (486 * 1,078 = 523,908; remainder 380 bytes < 1,078). max_payload_bytes registered for WORLD_OBJECT_OVERLAY_SNAPSHOT_V1 is therefore 523,908 bytes, 380 bytes inside the FND02-SNAPSHOT-CHUNK-BYTES hard maximum."
+    },
+    {
       "id": "FND04B-LIVENESS-IDLE-PROBE-MS",
       "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
       "resource": "Out-of-combat LivenessProbe cadence of one admitted positioned connection",

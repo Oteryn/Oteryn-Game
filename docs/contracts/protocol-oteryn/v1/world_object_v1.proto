@@ -1,0 +1,65 @@
+// USE-WIRE-V1 (#162 owner acceptance 5864914163): typed payloads of command type 2
+// USE_INTENT and state domain 2 WORLD_OBJECT_OVERLAY (delta type 1, snapshot type 1).
+// The client sends intent only; the server selects the unique bound transition out of
+// the object's current state. Zero or more than one candidate transition fails closed;
+// replay is handled by the FND-02 CommandId and staleness by expected_revision. FND-02
+// envelopes own CommandRef, server sequence, domain ID and revisions; these payloads
+// never duplicate them. Unknown fields, zero and unknown enum values, and a
+// content_generation other than 32 bytes all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.world_object;
+
+// A world-object target: the placement key of the object and the overlay revision the
+// client last observed. Both are bounded by FIRST_PRODUCTION_MAX_KEY_BYTES / u64.
+message WorldObjectTargetV1 {
+  bytes placement = 1;
+  uint64 expected_revision = 2;
+}
+
+// ClientCommand.payload of command type 2. At most 529 encoded bytes. Only
+// world_object is registered; item-in-container, creature and use-with targets are
+// reserved fields that fail closed until their own decision (A1 Interaction / DUR-03).
+message UseIntentV1 {
+  oneof target {
+    WorldObjectTargetV1 world_object = 1;
+  }
+  reserved 2, 3, 4;
+}
+
+enum UseDispositionV1 {
+  USE_DISPOSITION_UNSPECIFIED = 0;
+  USE_DISPOSITION_COMMITTED = 1;
+  USE_DISPOSITION_NOTHING_TO_USE = 2;
+  USE_DISPOSITION_OCCUPIED = 3;
+  USE_DISPOSITION_STALE_STATE = 4;
+  USE_DISPOSITION_TOO_FAR = 5;
+  USE_DISPOSITION_REJECTED = 6;
+}
+
+// CommandResult.payload of command type 2: outcome only, never state. At most 4 bytes.
+message UseResultV1 {
+  UseDispositionV1 disposition = 1;
+}
+
+// One world-object overlay entry: the state is a state key, not an Open/Closed enum,
+// because CW4 (#1055) is N-state.
+message WorldObjectOverlayEntryV1 {
+  // The active client artifact digest. Applied only when equal to the loaded generation.
+  bytes content_generation = 1;
+  bytes placement = 2;
+  bytes state = 3;
+  uint64 revision = 4;
+}
+
+// StateDelta.payload of domain 2, delta type 1: exactly one changed overlay entry
+// (WOBJ-RL-02 = 1). At most 1,078 bytes.
+message WorldObjectOverlayDeltaV1 {
+  repeated WorldObjectOverlayEntryV1 entries = 1;
+}
+
+// StateDomainSnapshot.payload of domain 2, snapshot type 1: every changed overlay in
+// scope, bounded by WOBJ-RL-03. At most 523,908 bytes.
+message WorldObjectOverlaySnapshotV1 {
+  repeated WorldObjectOverlayEntryV1 entries = 1;
+}
