@@ -115,6 +115,8 @@ finding_dispositions:
     - "Codex P1 4122118645 (8af8e03): achievements were inserted directly in the earning transaction, overriding the reward chest grant-request handoff. Repaired: the event records a durable grant request; the Achievement owner derives the fact idempotently, possibly after the session; K1 extended"
     - "Codex P1 4122147295 (4c6e7dd): with later consumption the fact could not promise the earliest earner. Repaired: the fact records the provenance of the request it was derived from, not guaranteed earliest, and nothing may depend on it; K2 reworded"
     - "Codex P1 4122185020 (90634da): gap register §32 and the Store catalog decision §3 still listed Store scope as unresolved. Repaired: both records now note the scope portion as resolved by D47/D49, with delivery, identity, expiry, revocation and refunds still open"
+    - "Codex P1 4122231516 (d002a3f): the Store catalog decision §3 still listed scope as open above the new note. Repaired: the §3 list and lead-in no longer list scope"
+    - "Codex P1 4122231506 (d002a3f), rejected with evidence: a commit cannot contain its own SHA (ANTI_STALL_AND_EXECUTION_BUDGET.md:71,84); each frozen head and freeze time is recorded on #162 and the terminal archive records the final head"
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - "Codex P2 4121915460 (d7f8834): an opt-out did not stop old facts from satisfying conditions. Fixed: readers apply the current world and quest policy (§4.2); K6 added."

@@ -32,11 +32,11 @@ is not decided here.
 
 ## 3. Scope of this decision
 
-This **partially** resolves §32: only catalog authorship. Still open there, unchanged
-by this decision:
+This **partially** resolves §32: only catalog authorship. A later owner decision resolves
+purchase scope (see below). Still open there:
 
 - ownership of purchase delivery across the Game/Platform boundary;
-- entitlement identity, scope, expiry and revocation;
+- entitlement identity, expiry and revocation;
 - idempotent purchase delivery across a Game/Platform boundary failure;
 - refunds, chargebacks and fraud/audit/support correction.
 
