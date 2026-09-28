@@ -11,9 +11,9 @@ branch: claude/compassionate-albattani-s29syw
 issue: 162
 pr: 1073
 base_sha: 4add578a
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 3a11e3f8df392af6901986afd48e887b1405a489
+final_head_sha: 3a11e3f8df392af6901986afd48e887b1405a489
+final_head_frozen_at: 2026-09-28T08:44:50Z
 owner: owner-launched Claude Code session
 created_at: 2026-09-28T00:00:00Z
 updated_at: 2026-09-28T00:00:00Z
@@ -189,7 +189,7 @@ behaviour of exact id evidence overriding a same-page name match. Kraken Buoy La
 - unresolved review threads: none outstanding at merge
 - related/superseded PRs: #1063, #1068 (alias reverted here)
 - protected auto-merge: SQUASH via Merge Queue, enabled and completed on PR #1073
-- merge commit/result: PR #1073 merged via Merge Queue
+- merge commit/result: squash-merged via Merge Queue as `57a0fc76` (PR #1073)
 - ownership release: this record archived; owned paths released to the successor task
   `OTV2-20260928-item-wrap-target-corpses`
 
@@ -199,10 +199,10 @@ behaviour of exact id evidence overriding a same-page name match. Kraken Buoy La
 last_progress: PR #1073 (itemid join + status=event) merged via Merge Queue; record archived
 status: completed
 branch: claude/compassionate-albattani-s29syw
-head_sha: null
+head_sha: 3a11e3f8df392af6901986afd48e887b1405a489
 pr: 1073
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: 3a11e3f8df392af6901986afd48e887b1405a489
+final_head_frozen_at: 2026-09-28T08:44:50Z
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
