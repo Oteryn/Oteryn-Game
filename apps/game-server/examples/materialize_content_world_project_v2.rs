@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -73,7 +73,7 @@ const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "00495642303ddad45b1890e389add57c7054a262d7efeb3fc617a345858f6249";
+const NPC_STAGED_SHA256: &str = "2ade40fc3365bf8eda96f5a95e1568ebd177d99d1ed64c6465eabcba0c298535";
 const NPC_STAGE_TOOL_SHA256: &str =
     "ec23b6f42dd0551e701c72e51aaeda82e5d837efb685cda589efb59a4d57ccd0";
 const NPC_CANDIDATES_SHA256: &str =
@@ -86,11 +86,13 @@ const NPC_WIKI_REVISION: &str = "tibiawiki-npc-52f87d29eddd1a4e";
 const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
 const NPC_COUNT: usize = 1093;
 const NPC_RECORDS: usize = 2186;
-const NPC_DECLARATIONS: usize = 2066;
+const NPC_DECLARATIONS: usize = 2073;
+const NPC_DIALOGUE_STAGED: &[u8] =
+    include_bytes!("../../../docs/agents/evidence/OTV2-20260928-npc-dialogue-wave-a-staged.json");
 const NPC_DIALOGUE_STAGED_SHA256: &str =
-    "453c21d701a0dadc1b13a101de49055943c7b0a5b002868c02f9958a18230cf9";
-const NPC_DIALOGUES: usize = 610;
-const NPC_DIALOGUE_NODES: usize = 4511;
+    "03da346c4bfd9e8d804a6fedd4f085a3e8a0f022ee29da311936e7c934f6b5c6";
+const NPC_DIALOGUES: usize = 617;
+const NPC_DIALOGUE_NODES: usize = 4260;
 const NPC_BINDINGS: usize = 2281;
 const CREATURE_COUNT: usize = 1318;
 const CREATURE_RECORDS: usize = 18336;
@@ -1216,6 +1218,43 @@ struct NpcPopulation {
     bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 
+/// Every admitted Dialogue must be exactly the declaration in the pinned dialogue evidence.
+fn verify_npc_dialogues(
+    declarations: &[ProjectV2Declaration],
+) -> Result<(), Box<dyn std::error::Error>> {
+    if hex_sha256(NPC_DIALOGUE_STAGED) != NPC_DIALOGUE_STAGED_SHA256 {
+        return Err("staged NPC dialogue input digest drifted".into());
+    }
+    let packet: Value = serde_json::from_slice(NPC_DIALOGUE_STAGED)?;
+    if packet["schema"] != "OTERYN_NPC_DIALOGUE_STAGED/v1"
+        || packet["source"]["canary_revision"] != CANARY_REVISION
+        || packet["source"]["crystal_revision"] != CRYSTAL_REVISION
+        || packet["source"]["candidates_sha256"] != NPC_CANDIDATES_SHA256
+    {
+        return Err("staged NPC dialogue source identity drifted".into());
+    }
+    let mut staged = BTreeMap::new();
+    for entry in packet["dialogues"]
+        .as_array()
+        .ok_or("staged NPC dialogues missing")?
+    {
+        let declaration: ProjectV2Declaration =
+            serde_json::from_value(entry["declaration"].clone())?;
+        let ProjectV2Declaration::Dialogue { identity, .. } = &declaration else {
+            return Err("staged NPC dialogue is not a Dialogue".into());
+        };
+        staged.insert(identity.key.clone(), declaration);
+    }
+    for declaration in declarations {
+        if let ProjectV2Declaration::Dialogue { identity, .. } = declaration
+            && staged.get(&identity.key) != Some(declaration)
+        {
+            return Err("admitted NPC dialogue differs from the staged dialogue evidence".into());
+        }
+    }
+    Ok(())
+}
+
 fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
     if hex_sha256(NPC_STAGED) != NPC_STAGED_SHA256 {
         return Err("staged NPC admission input digest drifted".into());
@@ -1244,6 +1283,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
     let records: Vec<ProjectReferenceRecord> = serde_json::from_value(packet["records"].clone())?;
     let declarations: Vec<ProjectV2Declaration> =
         serde_json::from_value(packet["declarations"].clone())?;
+    verify_npc_dialogues(&declarations)?;
     let profiles: Vec<ProjectV2AuthoringProfile> =
         serde_json::from_value(packet["authoring_profiles"].clone())?;
     let bindings: Vec<ProjectV2SourceIdentityBinding> =

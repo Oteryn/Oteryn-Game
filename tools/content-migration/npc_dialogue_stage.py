@@ -102,13 +102,34 @@ def make_unique_key(base: str, used: set[str]) -> str:
         index += 1
 
 
+def keyword_words(node: dict) -> set[str]:
+    return {str(k).strip().lower() for k in (node.get('keywords') or [])}
+
+
+def shadowed_by_gated_sibling(node: dict, earlier: list) -> bool:
+    """The engine answers with the first matching sibling whose predicate passes, so an earlier gated
+    sibling that can match the same message makes this reply conditional (convert.py marks the same
+    shadowing for services). An empty keyword matches every message."""
+    words = keyword_words(node)
+    for previous in earlier:
+        if previous.get('gate') == 'NONE':
+            continue
+        other = keyword_words(previous)
+        if '' in words or '' in other or words & other:
+            return True
+    return False
+
+
 def build_keyword_nodes(nodes: list, depth: int, stats: dict) -> list[dict]:
     if depth > MAX_DEPTH or not nodes:
         return []
     prepared = []  # source order, one entry per node that survives per-node validation
-    for node in nodes:
+    for index, node in enumerate(nodes):
         if node.get('kind') != 'say' or node.get('gate') != 'NONE' or node.get('effect') != 'NONE':
             stats['dropped_non_say_gated'] += 1
+            continue
+        if shadowed_by_gated_sibling(node, nodes[:index]):
+            stats['dropped_shadowed_by_gated_sibling'] += 1
             continue
 
         reply = text_parts_cleaned(node.get('text'))
@@ -290,7 +311,7 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path) -> dict:
     stats = {
         'dropped_non_say_gated': 0, 'dropped_no_text': 0, 'dropped_no_triggers': 0, 'keyword_nodes': 0,
         'dropped_extra_fallback': 0, 'dropped_bad_move_up': 0, 'dropped_conflicting_focus_flags': 0,
-        'voices_dropped_no_cadence': 0, 'dropped_voice_lines_invalid': 0,
+        'voices_dropped_no_cadence': 0, 'dropped_voice_lines_invalid': 0, 'dropped_shadowed_by_gated_sibling': 0,
     }
     dialogues, held = [], []
     voice_line_total = greet_total = farewell_total = walkaway_total = send_trade_total = 0
@@ -304,7 +325,7 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path) -> dict:
                 continue
             bundle = load_bundle(bundles_dir, provenance[source]['key'])
             if bundle is None:
-                continue
+                raise StageError(f'missing {source} bundle for {npc_key}: {provenance[source]["key"]}')
             by_source[source] = build_dialogue(bundle, stats)
         if not by_source:
             continue
@@ -353,7 +374,8 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path) -> dict:
                    'dropped_bad_move_up_nodes': stats['dropped_bad_move_up'],
                    'dropped_conflicting_focus_flags_nodes': stats['dropped_conflicting_focus_flags'],
                    'voices_dropped_no_cadence': stats['voices_dropped_no_cadence'],
-                   'dropped_voice_lines_invalid': stats['dropped_voice_lines_invalid']},
+                   'dropped_voice_lines_invalid': stats['dropped_voice_lines_invalid'],
+                   'dropped_shadowed_by_gated_sibling_nodes': stats['dropped_shadowed_by_gated_sibling']},
         'dialogues': dialogues,
         'held': held,
     }

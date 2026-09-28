@@ -25,7 +25,7 @@ CREATURE_FAMILY_NODES = {
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
 NPC_COUNT = 1093
 NPC_BINDING_COUNT = 2281
-DIALOGUE_COUNT = 610
+DIALOGUE_COUNT = 617
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 308, "Service.Travel": 55}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
 

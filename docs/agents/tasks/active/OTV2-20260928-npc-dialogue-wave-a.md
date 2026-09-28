@@ -59,12 +59,12 @@ Wave A NPCs gain their static dialogue. `npc_dialogue_stage.py` reads the Canary
 - greet, farewell, walk-away and send-trade messages, as lists of parts;
 - ambient voices with their cadence and say/yell mode;
 - `say` keyword replies with no condition and no effect, in source sibling order, with their conversation
-  flags and fallback nodes.
+  flags and fallback nodes; a reply that an earlier gated sibling can shadow is left out.
 
-A dialogue is taken when both sources agree, or when only one source has the NPC. 137 NPCs whose sources
+A dialogue is taken when both sources agree, or when only one source has the NPC. 130 NPCs whose sources
 disagree are held with `DIALOGUE_CONFLICT`.
 
-`npc_admission_stage.py --dialogues` links 610 Dialogue declarations (4,511 keyword nodes) to their NPCs.
+`npc_admission_stage.py --dialogues` links 617 Dialogue declarations (4,260 keyword nodes) to their NPCs.
 The deferred Dragon Ancestor Spirit keeps none. The materializer pins both staged files, and the successor
 tree gains `content/dialogues/definitions`. Tibia NPC text is used as reference data under D9 and the
 repository's asset policy (#1050).
@@ -75,8 +75,8 @@ Authority: owner request in this session ("kontynuuj 1,2,3 i 4", points 2 and 4)
 
 - Both stage tools are deterministic: re-running them is byte-identical. Without `--dialogues`, the
   admission stage reproduces the previous wave A file byte for byte.
-- `materialize_content_world_project_v2` loads and validates all 2,066 NPC-side declarations, including
-  610 Dialogues.
+- `materialize_content_world_project_v2` loads and validates all 2,073 NPC-side declarations, including
+  617 Dialogues, each verified against the pinned dialogue evidence.
 - `content_world_project_repository` pins the new documents and the tree digest.
 - The tree generator, its validator and tests, `validate_materialized_game_tree`, governance and the
   repository policy all pass.

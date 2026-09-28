@@ -169,10 +169,13 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    - `say` keyword replies with no condition and no effect, in source sibling order, with their
      conversation flags and fallback nodes.
 
-   Conditional, scripted and action keywords (6,088 nodes) are left out. A voice profile without an interval
-   or chance is left out (21 NPCs). A dialogue is admitted when both sources agree, or when only one source
-   has the NPC. 137 NPCs whose sources disagree are held with `DIALOGUE_CONFLICT`. 610 Dialogue declarations
-   (4,511 keyword nodes) are admitted; the deferred Dragon Ancestor Spirit keeps none. The successor tree
+   Conditional, scripted and action keywords (5,947 nodes) are left out, and so is every reply that an earlier
+   gated sibling can shadow (751 nodes, the same rule `convert.py` applies to services). A voice profile
+   without an interval or chance is left out (21 NPCs). A dialogue is admitted when both sources agree, or
+   when only one source has the NPC; a source bundle named by a candidate must exist. 130 NPCs whose sources
+   disagree are held with `DIALOGUE_CONFLICT`. 617 Dialogue declarations (4,260 keyword nodes) are admitted;
+   the deferred Dragon Ancestor Spirit keeps none. The materializer verifies each admitted Dialogue against
+   the pinned dialogue evidence. The successor tree
    gains `content/dialogues/definitions`.
 5. Later:
    - placements after World admission;
