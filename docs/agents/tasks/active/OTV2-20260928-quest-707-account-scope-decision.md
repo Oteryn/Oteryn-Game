@@ -21,6 +21,8 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ACCOUNT_PROGRESS_AND_QUEST_707_DISPOSITION_DECISION_2026-09-28.md
   - docs/architecture/MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md
+  - docs/architecture/ARCHITECTURE_ANALYSIS_GAP_REGISTER.md   # §32 scope note only
+  - docs/architecture/OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md   # §3 scope note only
   - docs/agents/tasks/active/OTV2-20260928-quest-707-account-scope-decision.md
   - docs/agents/tasks/active/OTV2-20260928-spell-decisions-record.md   # archive move after #1089
   - docs/agents/tasks/archive/OTV2-20260928-spell-decisions-record.md
@@ -112,6 +114,7 @@ finding_dispositions:
     - "Codex P1 4122065062 (2234322): cross-world Store claims lacked item compatibility. Repaired: the line records item-definition provenance; the claim validates against the target world under DUR-03 §46 and fails closed, leaving the line claimable"
     - "Codex P1 4122118645 (8af8e03): achievements were inserted directly in the earning transaction, overriding the reward chest grant-request handoff. Repaired: the event records a durable grant request; the Achievement owner derives the fact idempotently, possibly after the session; K1 extended"
     - "Codex P1 4122147295 (4c6e7dd): with later consumption the fact could not promise the earliest earner. Repaired: the fact records the provenance of the request it was derived from, not guaranteed earliest, and nothing may depend on it; K2 reworded"
+    - "Codex P1 4122185020 (90634da): gap register §32 and the Store catalog decision §3 still listed Store scope as unresolved. Repaired: both records now note the scope portion as resolved by D47/D49, with delivery, identity, expiry, revocation and refunds still open"
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - "Codex P2 4121915460 (d7f8834): an opt-out did not stop old facts from satisfying conditions. Fixed: readers apply the current world and quest policy (§4.2); K6 added."

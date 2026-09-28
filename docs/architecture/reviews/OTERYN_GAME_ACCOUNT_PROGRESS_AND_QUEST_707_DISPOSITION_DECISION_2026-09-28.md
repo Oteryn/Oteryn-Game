@@ -198,7 +198,8 @@ implementation it applies to.
 This section fixes scope and portability only (D47, D49). It does **not** decide who owns purchase
 delivery across the Game/Platform boundary. That ownership, entitlement identity and lifecycle, and
 idempotent delivery across a boundary failure stay open under gap register §32, as
-`OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md` §1 and §3 record.
+`OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md` §1 and §3 record. This pull request records the
+scope portion as resolved in gap register §32 and in that decision's §3.
 
 - A Store cosmetic unlock is account-scoped and portable like §4.3 while its entitlement is
   usable. Whether Game keeps a delivery record, and how refund, revocation and expiry gate it, is
