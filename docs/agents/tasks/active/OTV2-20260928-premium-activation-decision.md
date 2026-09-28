@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-premium-activation-decision
 title: "Premium activation decision (D69-D75)"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1118
 base_sha: 117a89985c4f4d8af61fc018b542c745fc334d33
 head_sha: null
 final_head_sha: null
@@ -129,17 +129,17 @@ finding_dispositions:
 
 ## Validation
 
-- `python3 tools/agents/validate_governance.py`: pending.
-- `python3 tools/repository/validate_repository_policy.py`: pending.
+- `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
+- `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: decision drafted
-status: implementing
+last_progress: authored; PR #1118 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1118
 owner_action_required: null
 blocker: null
-next_action: validate, commit, open PR, freeze, one exact-head review
+next_action: exact-head review and Merge Queue integration of #1118
 ```
