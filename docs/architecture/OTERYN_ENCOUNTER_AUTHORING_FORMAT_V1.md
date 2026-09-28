@@ -135,7 +135,7 @@ rules.
 
 | Action | Parameters |
 |---|---|
-| `spawn` | role or CreatureRef, count, at (`death_position`, `subject_position`, anchor, `random_in(anchor)`, `offset_tiles(n)`: a random free tile within n tiles of the subject, `closest_free_tile`: the free tile nearest the subject (D34), `relative(x, y)`: the tile at that offset from the subject on its floor, used even when occupied (D46), or `role_position(role)` optionally `otherwise: death_position` (D31)), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent, or `remembered`: the health the spawned role had when it last left the fight, full the first time (D31)) |
+| `spawn` | role or CreatureRef, count, at (`death_position`, `subject_position`, anchor, `random_in(anchor)`, `offset_tiles(n)`: a random free tile within n tiles of the subject, `closest_free_tile`: the free tile nearest the subject (D34), `relative(x, y)`: the tile at that offset from the subject on its floor, used even when occupied (D46; like `subject_position`, `offset_tiles` and `closest_free_tile` it needs a trigger fired by one creature), or `role_position(role)` optionally `otherwise: death_position` (D31)), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent, or `remembered`: the health the spawned role had when it last left the fight, full the first time (D31)) |
 | `spawn_per_player` | `players_in(anchor)`, `by_base_vocation` (a CreatureRef for each base vocation that gets one: knight, paladin, sorcerer, druid, monk), at, owner, health; each player in the area gets one creature of its base vocation, players of a vocation without an entry get none, and an optional `counter` is raised by the number spawned (D34) |
 | `remove` | role, `all_in(anchor)` (monsters only; players are never removed; `keep_summons` spares monsters with a master), or `triggering`: only the creature that fired the rule (D31) |
 | `transform` | role -> next stage, CreatureRef or `random_of` several CreatureRefs (uniform); health `keep_percent`/`keep_absolute`/`full` |
@@ -489,5 +489,5 @@ A nineteenth slice adds D46:
 | `hunger summon`, `movements_vortex_hunger` | `world_devourer` | While fewer than three Greeds are out and 15 s after the last, The Hunger calls a Greed next to itself. The Hunger or the World Devourer stepping on a closed vortex opens its vortex tile (it stays open: the vortex has no decay); a Greed stepping on an open vortex disappears and lowers both summon counters. The wiki describes walking the boss over the teleport and then the Greed. |
 | `soulcatcher summon` | `soulcatcher` | While the Soulcatcher is poisoned or bleeding, a Corrupted Soul on the tile north of it. The wiki gives no abilities for the Soulcatcher: Canary evidence, to be verified. |
 
-83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 137/137; the census rises from 1,555 to
+83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 139/139; the census rises from 1,555 to
 1,557 (The Hunger and Soulcatcher).

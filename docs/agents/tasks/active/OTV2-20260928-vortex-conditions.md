@@ -63,7 +63,7 @@ Owner decision D46 ("tak", 2026-09-28): two vocabulary additions for the events 
 
 ## Acceptance and evidence
 
-- `verify_encounter_schema.py` 137/137; 83 encounters validate and 78 manifests resolve fully.
+- `verify_encounter_schema.py` 139/139; 83 encounters validate and 78 manifests resolve fully.
 - The census, the staging, the tree regeneration and its validators pass.
 - The Rust tests pass.
 - Exact-head review before the Merge Queue because staged creature evidence changes.

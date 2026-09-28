@@ -86,6 +86,11 @@ def semantic(e, catalog):
             errors.append(f'{where}: the killer exists only for death, lethal damage and damage triggers')
 
     def position(value, where, rule):
+        # D46: positions measured from the subject need a trigger fired by one creature.
+        relative_to_subject = value in ('subject_position', 'closest_free_tile') or (
+            isinstance(value, dict) and ('offset_tiles' in value or 'relative' in value))
+        if relative_to_subject and rule['trigger']['kind'] not in CREATURE_TRIGGERS:
+            errors.append(f'{where}: a position measured from the subject needs a trigger fired by one creature')
         if isinstance(value, dict):
             if 'anchor' in value:
                 need('anchor', value['anchor'], anchors, where)
