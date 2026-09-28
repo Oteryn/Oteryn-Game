@@ -55,6 +55,14 @@ pub(crate) enum CarrierError {
     /// D2b: `reward_occurrence` was asked for a different reward principal
     /// than the one already memoized for this committed death.
     RewardPrincipalConflict,
+    /// AI-2 (§4.3/§4.9): a `SpawnDefinition`'s population/placement-cells violates its own or
+    /// the registered AI01-SPAWN-* bound.
+    InvalidSpawnDefinition,
+    /// AI-2: `realize_spawn` named a `SpawnSourceId` this carrier already realized.
+    DuplicateSpawnSource,
+    /// AI-2: a respawn call named a `SpawnSourceId`/cell index this carrier never realized.
+    UnknownSpawnSource,
+    UnknownSpawnCell,
 }
 
 impl std::fmt::Display for CarrierError {
@@ -537,9 +545,9 @@ impl CurrentOwnerCombatDeath<'_> {
     ) -> Result<(CreatureDeathOccurrenceKey, MovementLocalPosition), CarrierError> {
         self.carrier.validate_ref(self.continuity, actor.0)?;
         self.carrier
-            .corpse_projection
-            .as_ref()
-            .filter(|projection| projection.occurrence.actor == actor)
+            .corpse_projections
+            .iter()
+            .find(|projection| projection.occurrence.actor == actor)
             .map(|projection| (projection.occurrence.death_key(), projection.position()))
             .ok_or(CarrierError::CommittedLethalUnavailable)
     }
@@ -676,14 +684,24 @@ struct ChannelActorCarrier {
     scope_generation: ScopeOwnershipGeneration,
     slots: Box<[Slot]>,
     free_head: Option<u32>,
-    has_creature: bool,
-    corpse_projection: Option<RuntimeCorpseProjection>,
-    /// D2b: the memoized XP reward occurrence of this generation's one
-    /// committed death, minted at most once (DUR-03 decision §4.2). A fresh
-    /// carrier is bootstrapped per ownership generation, so this is never
-    /// initialized from a prior generation: a scope move drops whatever was
-    /// pending here rather than reusing or duplicating it (D52).
-    death_reward_occurrence: Option<DeathRewardOccurrence>,
+    /// AI-2 (GAME-AI-01 §4.1: "the carrier's current one-creature limit ...
+    /// is lifted to this envelope in AI-2"): one committed death per creature
+    /// generation, keyed by that creature's own `ExactActorRef`. Bounded by
+    /// `slots.len()` itself -- no more than one dead-but-not-yet-removed
+    /// creature can exist per slot, so this can never exceed total capacity.
+    /// `remove` prunes an actor's entry so it never outlives its slot.
+    corpse_projections: Vec<RuntimeCorpseProjection>,
+    /// D2b: the memoized XP reward occurrence of each committed death, minted
+    /// at most once per actor (DUR-03 decision §4.2). AI-2 widens this from
+    /// its original one-creature-per-generation singleton to one entry per
+    /// dead creature actor, same bound and pruning as `corpse_projections`. A
+    /// fresh carrier is bootstrapped per ownership generation, so this is
+    /// never initialized from a prior generation: a scope move drops whatever
+    /// was pending here rather than reusing or duplicating it (D52).
+    death_reward_occurrences: Vec<DeathRewardOccurrence>,
+    /// AI-2 (§4.3, D116): realized spawn sources and their per-cell live/
+    /// pending/retry state for this carrier's ownership generation.
+    spawns: Vec<SpawnRealization>,
 }
 
 /// D2b: one memoized `(reward principal, ExperienceRewardOccurrence)` pair
@@ -695,6 +713,166 @@ struct DeathRewardOccurrence {
     actor: ActorRef,
     character: [u8; 16],
     occurrence: [u8; 16],
+}
+
+// AI-2 (GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.3, §4.9, D115/D116):
+// spawn realization and respawn. `RESOURCE_LIMITS_REGISTRY.json`'s AI01-SPAWN-* rows are the
+// source of truth for these ceilings; the constants below must equal the registered values.
+
+/// AI01-SPAWN-SOURCES-PER-SCOPE (AI-RL-11).
+pub(crate) const AI01_SPAWN_SOURCES_PER_SCOPE_MAX: usize = 16;
+/// AI01-SPAWN-POPULATION (AI-RL-11): live or pending creatures per source.
+pub(crate) const AI01_SPAWN_POPULATION_MAX: usize = 4;
+/// AI01-SPAWN-PLACEMENT-CELLS (AI-RL-12): declared cells per source, one per creature.
+pub(crate) const AI01_SPAWN_PLACEMENT_CELLS_MAX: usize = 4;
+/// AI01-SPAWN-OCCUPANCY-RETRIES (AI-RL-13): retries per creature per respawn window.
+pub(crate) const AI01_SPAWN_OCCUPANCY_RETRIES_MAX: u8 = 3;
+
+/// Bounded FIFO retention for `corpse_projections`/`death_reward_occurrences`, which
+/// deliberately outlive their actor's removed slot (lost-response replay). Matches the D57
+/// envelope's total creature count (`AI01_SPAWN_SOURCES_PER_SCOPE_MAX *
+/// AI01_SPAWN_POPULATION_MAX`), generously beyond D116's 2-creature content: eviction is a
+/// defensive bound against unbounded growth over a long-lived Channel's respawn cycles, not a
+/// dimension this slice's tests are expected to reach.
+const MAX_RETAINED_CORPSE_PROJECTIONS: usize =
+    AI01_SPAWN_SOURCES_PER_SCOPE_MAX * AI01_SPAWN_POPULATION_MAX;
+
+/// A content-authored spawn source's small stable ordinal within its scope (content input,
+/// §4.8; never decoded from a client handle).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct SpawnSourceId(pub(crate) u16);
+
+/// §4.3/§4.8: one spawn source's content-declared definition. Code never invents these
+/// values; a missing one is a content-validation failure at a higher layer, not here.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct SpawnDefinition {
+    /// One declared cell per creature (`placement_cells.len() <= AI01_SPAWN_PLACEMENT_CELLS_MAX`).
+    /// Placement never searches beyond these.
+    placement_cells: Vec<LocalPosition>,
+    /// `1..=population.min(placement_cells.len())`; `<= AI01_SPAWN_POPULATION_MAX`.
+    population: usize,
+    /// D115: 60,000,000 (60 s, in the owner clock's microsecond unit).
+    respawn_delay_micros: u64,
+    /// D115: 5,000,000 (5 s).
+    occupancy_retry_interval_micros: u64,
+    creature_target_identity: String,
+    creature_initial_health: i64,
+}
+
+impl SpawnDefinition {
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn new(
+        placement_cells: Vec<(i32, i32, i16)>,
+        population: usize,
+        respawn_delay_micros: u64,
+        occupancy_retry_interval_micros: u64,
+        creature_target_identity: String,
+        creature_initial_health: i64,
+    ) -> Result<Self, CarrierError> {
+        if placement_cells.is_empty() || placement_cells.len() > AI01_SPAWN_PLACEMENT_CELLS_MAX {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        if population == 0
+            || population > placement_cells.len()
+            || population > AI01_SPAWN_POPULATION_MAX
+        {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        if creature_initial_health <= 0 {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        Ok(Self {
+            placement_cells: placement_cells
+                .into_iter()
+                .map(|(x, y, floor)| LocalPosition { x, y, floor })
+                .collect(),
+            population,
+            respawn_delay_micros,
+            occupancy_retry_interval_micros,
+            creature_target_identity,
+            creature_initial_health,
+        })
+    }
+}
+
+/// One placement cell's live/pending bookkeeping within a realized spawn.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct SpawnCellState {
+    /// The live creature currently occupying this cell, if any.
+    live: Option<ExactActorRef>,
+    /// This cell's current respawn chain's attempt index (1-3), 0 before any attempt.
+    attempt: u8,
+    /// Bumped each time an occurrence chain ends `Skipped` and a fresh one starts (§4.3
+    /// "terminal disposition"): keeps every occurrence identity for this cell unique.
+    successor: u32,
+}
+
+/// One realized spawn source and its per-cell state, for this carrier's ownership
+/// generation (§4.3: `EphemeralScopeReset` -- a restart/scope-move realizes it again; nothing
+/// here is durable).
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SpawnRealization {
+    source: SpawnSourceId,
+    definition: SpawnDefinition,
+    /// Same order/length as `definition.placement_cells`.
+    cells: Vec<SpawnCellState>,
+}
+
+/// AI-RL for respawn timers (§4.2's table; no separate `RESOURCE_LIMITS_REGISTRY.json` row is
+/// named for it distinctly from AI01-PENDING-TIMERS-PER-ACTOR): at most one pending respawn
+/// timer per dead creature (`OwnerTimerLane`'s `target` key), which bounds the aggregate
+/// pending count for one spawn to its own population (§4.9's derived "at most the spawn's
+/// population pending").
+pub(crate) const AI01_PENDING_RESPAWN_TIMERS_PER_DEAD_ACTOR: usize = 1;
+
+/// AI-2's one timer family: respawn (§4.2's table: `DEADLINE_STATE`, distinct from AI-1's
+/// `SKIP_TO_LATEST` think family -- every due retry/successor must still fire, never collapsed).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RespawnFamily {
+    Respawn,
+}
+
+impl super::owner_timer::TimerFamily for RespawnFamily {
+    fn registered_maximum(self) -> usize {
+        match self {
+            Self::Respawn => AI01_PENDING_RESPAWN_TIMERS_PER_DEAD_ACTOR,
+        }
+    }
+}
+
+/// A respawn occurrence identity (§4.2: "(spawn source, cell, the dead actor's
+/// `ExactActorRef`), and each retry adds its attempt index 1 to 3"; §4.3's terminal
+/// disposition adds a successor index for the chain that follows a `Skipped` occurrence).
+/// Binding item (a) (bounded replay evidence, carried over from AI-1): `attempt` and
+/// `successor` only ever increase for a given `(source, cell_index, dead_actor)` (enforced by
+/// `resolve_respawn_timer`, the only place that mints one), so the full tuple can never repeat
+/// in a lane's lifetime -- bounded, O(1) state per cell (`SpawnCellState`), never an unbounded
+/// log.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct RespawnOccurrence {
+    pub(crate) source: SpawnSourceId,
+    pub(crate) cell_index: u8,
+    pub(crate) dead_actor: ExactActorRef,
+    pub(crate) successor: u32,
+    pub(crate) attempt: u8,
+}
+
+/// The result of applying one fired respawn timer (§4.3). This never mutates state itself
+/// beyond `ChannelActorCarrier::resolve_respawn_timer`'s own admission/bookkeeping; scheduling
+/// the next timer (if any) is the caller's job, exactly as `OwnerTimerLane` requires (binding
+/// item (b): the caller's own fence-issued `RuntimeWorkStamp`, never fabricated here).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RespawnResolution {
+    /// A new creature was admitted at the cell with a fresh actor-local generation (D52: the
+    /// dead actor's generation is never reused).
+    Admitted(ExactActorRef),
+    /// The cell was occupied; the caller schedules one fresh occurrence with `next_attempt`,
+    /// due `occupancy_retry_interval_micros` later.
+    Postponed { next_attempt: u8 },
+    /// The third retry also found the cell occupied: this chain ends `Skipped`, nothing
+    /// admitted. The caller schedules one new successor occurrence (`next_successor`, attempt
+    /// 1) due one full `respawn_delay_micros` later.
+    Skipped { next_successor: u32 },
 }
 
 /// D2b: mints a fresh v7-shaped `ExperienceRewardOccurrence` byte pattern
@@ -1280,9 +1458,9 @@ impl ChannelActorCarrier {
             scope_generation: continuity.current_generation,
             slots: slots.into_boxed_slice(),
             free_head: Some(0),
-            has_creature: false,
-            corpse_projection: None,
-            death_reward_occurrence: None,
+            corpse_projections: Vec::new(),
+            death_reward_occurrences: Vec::new(),
+            spawns: Vec::new(),
         })
     }
 
@@ -1294,7 +1472,11 @@ impl ChannelActorCarrier {
         self.admit_inner(continuity, actor, None, true, None, false)
     }
 
-    /// Explicit nonshipping HP fixture. Generic actor admission remains distinct.
+    /// AI-2 (GAME-AI-01 §4.1: "the carrier's current one-creature limit ... is lifted to this
+    /// envelope in AI-2"): more than one creature actor may be admitted per Channel
+    /// generation. The general slot-capacity check `admit_inner` already performs is this
+    /// method's only capacity gate; population/placement-cell ceilings are a spawn-realization
+    /// concern (`realize_spawn`), not this generic per-actor primitive.
     fn admit_creature(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -1306,9 +1488,6 @@ impl ChannelActorCarrier {
             return Err(CarrierError::InvalidCreatureHealth);
         }
         self.validate_current_continuity(continuity)?;
-        if self.has_creature || self.corpse_projection.is_some() {
-            return Err(CarrierError::CapacityExceeded);
-        }
         if target_identity.is_empty()
             || target_identity.len() > MAX_OWNER_COMMIT_BINDING_BYTES
             || !target_identity.bytes().all(|byte| {
@@ -1481,7 +1660,6 @@ impl ChannelActorCarrier {
         if fail_after_selection {
             return Err(CarrierError::InjectedAdmissionFailure);
         }
-        let is_creature = initial_health.is_some();
         self.slots[index] = if let Some((health, target_identity)) = initial_health {
             Slot::CreatureOccupied {
                 generation: next_generation,
@@ -1502,9 +1680,6 @@ impl ChannelActorCarrier {
             }
         };
         self.free_head = next_free;
-        if is_creature {
-            self.has_creature = true;
-        }
         Ok(actor_ref)
     }
 
@@ -1565,7 +1740,21 @@ impl ChannelActorCarrier {
         };
         self.free_head = Some(free_index);
         if removed_creature {
-            self.has_creature = false;
+            // A retained corpse projection / reward occurrence deliberately outlives this slot
+            // (existing Combat D1/D2 behavior: a lost-response retry must still reconcile after
+            // administrative removal, `projection_failures_preserve_retry_and_lost_response_idempotency`).
+            // `project_committed_lethal_inner`/`reward_occurrence_inner` bound those collections
+            // with FIFO eviction instead. Only this actor's *live spawn-cell occupancy* is
+            // cleared here, so a respawn's occupancy check does not see a removed actor as still
+            // present.
+            let removed_actor = ExactActorRef(actor_ref);
+            for spawn in &mut self.spawns {
+                for cell in &mut spawn.cells {
+                    if cell.live == Some(removed_actor) {
+                        cell.live = None;
+                    }
+                }
+            }
         }
         Ok(actor)
     }
@@ -1696,9 +1885,9 @@ impl ChannelActorCarrier {
     ) -> Result<CommittedLethalReceipt, CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
         if let Some(existing) = self
-            .corpse_projection
-            .as_ref()
-            .filter(|projection| projection.occurrence.actor == ExactActorRef(actor_ref))
+            .corpse_projections
+            .iter()
+            .find(|projection| projection.occurrence.actor == ExactActorRef(actor_ref))
         {
             return Ok(CommittedLethalReceipt {
                 projection: RuntimeCorpseProjection {
@@ -1781,6 +1970,8 @@ impl ChannelActorCarrier {
         Ok(())
     }
 
+    /// AI-2: per actor now, not a channel-wide singleton (§4.1 envelope). A different actor's
+    /// already-projected death never blocks or is disturbed by this call.
     fn project_committed_lethal_inner(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -1788,8 +1979,13 @@ impl ChannelActorCarrier {
         fail_before_write: bool,
         fail_after_write: bool,
     ) -> Result<&RuntimeCorpseProjection, CarrierError> {
-        self.validate_ref(continuity, receipt.projection.occurrence.actor.0)?;
-        if self.corpse_projection.is_some() {
+        let actor = receipt.projection.occurrence.actor;
+        self.validate_ref(continuity, actor.0)?;
+        if self
+            .corpse_projections
+            .iter()
+            .any(|projection| projection.occurrence.actor == actor)
+        {
             return self.existing_corpse_projection(&receipt);
         }
         self.validate_lethal_receipt(continuity, &receipt)?;
@@ -1797,12 +1993,18 @@ impl ChannelActorCarrier {
             return Err(CarrierError::InjectedCorpseProjectionFailure);
         }
         let projected = receipt.projection;
-        self.corpse_projection = Some(projected);
+        // Bounded FIFO retention (`MAX_RETAINED_CORPSE_PROJECTIONS`): a retained projection
+        // deliberately outlives its actor's slot (lost-response replay, above), so this Vec is
+        // not otherwise pruned; evict the oldest entry rather than grow without bound.
+        if self.corpse_projections.len() >= MAX_RETAINED_CORPSE_PROJECTIONS {
+            self.corpse_projections.remove(0);
+        }
+        self.corpse_projections.push(projected);
         if fail_after_write {
             return Err(CarrierError::InjectedCorpseResponseFailure);
         }
-        self.corpse_projection
-            .as_ref()
+        self.corpse_projections
+            .last()
             .ok_or(CarrierError::CorpseProjectionConflict)
     }
 
@@ -1810,9 +2012,11 @@ impl ChannelActorCarrier {
         &self,
         receipt: &CommittedLethalReceipt,
     ) -> Result<&RuntimeCorpseProjection, CarrierError> {
+        let actor = receipt.projection.occurrence.actor;
         let existing = self
-            .corpse_projection
-            .as_ref()
+            .corpse_projections
+            .iter()
+            .find(|projection| projection.occurrence.actor == actor)
             .ok_or(CarrierError::CorpseProjectionConflict)?;
         if existing == &receipt.projection {
             Ok(existing)
@@ -1842,22 +2046,28 @@ impl ChannelActorCarrier {
     ) -> Result<([u8; 16], bool), CarrierError> {
         self.validate_ref(continuity, actor_ref)?;
         let committed = self
-            .corpse_projection
-            .as_ref()
-            .filter(|projection| projection.occurrence.actor == ExactActorRef(actor_ref))
-            .is_some();
+            .corpse_projections
+            .iter()
+            .any(|projection| projection.occurrence.actor == ExactActorRef(actor_ref));
         if !committed {
             return Err(CarrierError::CommittedLethalUnavailable);
         }
-        if let Some(existing) = self.death_reward_occurrence {
-            return if existing.actor == actor_ref && existing.character == character {
+        if let Some(existing) = self
+            .death_reward_occurrences
+            .iter()
+            .find(|entry| entry.actor == actor_ref)
+        {
+            return if existing.character == character {
                 Ok((existing.occurrence, false))
             } else {
                 Err(CarrierError::RewardPrincipalConflict)
             };
         }
         let occurrence = mint_reward_occurrence_bytes(actor_ref, character);
-        self.death_reward_occurrence = Some(DeathRewardOccurrence {
+        if self.death_reward_occurrences.len() >= MAX_RETAINED_CORPSE_PROJECTIONS {
+            self.death_reward_occurrences.remove(0);
+        }
+        self.death_reward_occurrences.push(DeathRewardOccurrence {
             actor: actor_ref,
             character,
             occurrence,
@@ -2180,6 +2390,192 @@ impl ChannelActorCarrier {
             return Err(CarrierError::WrongScope);
         }
         Ok(())
+    }
+
+    // AI-2 (§4.3, §4.9, D116): spawn realization and respawn.
+
+    /// §4.3: realizes one spawn source at Channel activation: admits one creature per declared
+    /// placement cell, up to `definition.population`, each with a fresh actor-local
+    /// generation. Every fallible check (duplicate source, the registered
+    /// `AI01-SPAWN-SOURCES-PER-SCOPE` ceiling, general slot capacity) precedes any admission
+    /// (GAME-AI-01 §6: over budget means zero mutation).
+    fn realize_spawn(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        source: SpawnSourceId,
+        definition: SpawnDefinition,
+        position_context: PreProductionPositionContext,
+    ) -> Result<(), CarrierError> {
+        self.validate_current_continuity(continuity)?;
+        if self.spawns.iter().any(|spawn| spawn.source == source) {
+            return Err(CarrierError::DuplicateSpawnSource);
+        }
+        if self.spawns.len() >= AI01_SPAWN_SOURCES_PER_SCOPE_MAX {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        let free_slots = self
+            .slots
+            .iter()
+            .filter(|slot| matches!(slot, Slot::VacantReusable { .. }))
+            .count();
+        if free_slots < definition.population {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        let target_identity = definition.creature_target_identity.clone();
+        let initial_health = definition.creature_initial_health;
+        let mut cells = Vec::with_capacity(definition.placement_cells.len());
+        for (index, cell) in definition.placement_cells.iter().enumerate() {
+            if index < definition.population {
+                let actor = self.admit_creature(
+                    continuity,
+                    ActorState(0),
+                    &target_identity,
+                    initial_health,
+                )?;
+                self.initialize_position(continuity, actor, position_context, *cell)?;
+                cells.push(SpawnCellState {
+                    live: Some(ExactActorRef(actor)),
+                    attempt: 0,
+                    successor: 0,
+                });
+            } else {
+                cells.push(SpawnCellState {
+                    live: None,
+                    attempt: 0,
+                    successor: 0,
+                });
+            }
+        }
+        self.spawns.push(SpawnRealization {
+            source,
+            definition,
+            cells,
+        });
+        Ok(())
+    }
+
+    /// True when some other *live* actor (player or creature, `health > 0`) currently occupies
+    /// `cell` under `position_context` (§4.3: "if the cell is occupied when the timer is
+    /// due"). A dead creature's own corpse (`health == 0`) never counts.
+    fn cell_occupied(
+        &self,
+        position_context: PreProductionPositionContext,
+        cell: LocalPosition,
+    ) -> bool {
+        self.slots.iter().any(|slot| match slot {
+            Slot::Occupied {
+                committed: true,
+                position: Some(version),
+                ..
+            }
+            | Slot::CreatureOccupied {
+                position: Some(version),
+                health: 1..,
+                ..
+            } => version.context == position_context && version.position == cell,
+            _ => false,
+        })
+    }
+
+    /// The spawn source and cell index `actor` is (or, if now dead, was) admitted at, if any.
+    /// The caller uses this right after a death commits, to schedule that cell's first respawn
+    /// occurrence (attempt 1).
+    fn locate_spawn_cell(&self, actor: ExactActorRef) -> Option<(SpawnSourceId, usize)> {
+        self.spawns.iter().find_map(|spawn| {
+            spawn
+                .cells
+                .iter()
+                .position(|cell| cell.live == Some(actor))
+                .map(|cell_index| (spawn.source, cell_index))
+        })
+    }
+
+    /// This cell's current respawn-chain bookkeeping (attempt/successor and the actor, if any,
+    /// it currently names) -- read-only, for the caller to build the next `RespawnOccurrence`.
+    fn spawn_cell_state(
+        &self,
+        source: SpawnSourceId,
+        cell_index: usize,
+    ) -> Result<SpawnCellState, CarrierError> {
+        let spawn = self
+            .spawns
+            .iter()
+            .find(|spawn| spawn.source == source)
+            .ok_or(CarrierError::UnknownSpawnSource)?;
+        spawn
+            .cells
+            .get(cell_index)
+            .copied()
+            .ok_or(CarrierError::UnknownSpawnCell)
+    }
+
+    /// This spawn source's content-declared definition (respawn delay, occupancy retry
+    /// interval), for the caller to compute the next occurrence's `due` deadline.
+    fn spawn_definition(&self, source: SpawnSourceId) -> Result<&SpawnDefinition, CarrierError> {
+        self.spawns
+            .iter()
+            .find(|spawn| spawn.source == source)
+            .map(|spawn| &spawn.definition)
+            .ok_or(CarrierError::UnknownSpawnSource)
+    }
+
+    /// §4.3: applies one fired respawn timer for `(source, cell_index)`. If the cell is free,
+    /// admits a fresh creature there (D52: a new actor-local generation; the dead actor's
+    /// generation, if its slot still lingers, is retired first). If occupied, advances the
+    /// cell's retry/successor bookkeeping and reports what the caller should schedule next
+    /// (`RespawnResolution`); this method itself never calls `OwnerTimerLane::schedule` (that
+    /// needs the caller's own fence-issued `RuntimeWorkStamp`, binding item (b)).
+    fn resolve_respawn_timer(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        source: SpawnSourceId,
+        cell_index: usize,
+        position_context: PreProductionPositionContext,
+    ) -> Result<RespawnResolution, CarrierError> {
+        self.validate_current_continuity(continuity)?;
+        let spawn_index = self
+            .spawns
+            .iter()
+            .position(|spawn| spawn.source == source)
+            .ok_or(CarrierError::UnknownSpawnSource)?;
+        let cell = *self.spawns[spawn_index]
+            .definition
+            .placement_cells
+            .get(cell_index)
+            .ok_or(CarrierError::UnknownSpawnCell)?;
+        if self.cell_occupied(position_context, cell) {
+            let state = &mut self.spawns[spawn_index].cells[cell_index];
+            return Ok(if state.attempt >= AI01_SPAWN_OCCUPANCY_RETRIES_MAX {
+                // Terminal disposition (§4.3): this chain ends `Skipped`; a fresh successor
+                // chain starts at attempt 0/1 for the same cell, one full respawn delay later.
+                state.attempt = 0;
+                state.successor = state.successor.saturating_add(1);
+                RespawnResolution::Skipped {
+                    next_successor: state.successor,
+                }
+            } else {
+                state.attempt = state.attempt.saturating_add(1);
+                RespawnResolution::Postponed {
+                    next_attempt: state.attempt,
+                }
+            });
+        }
+        if let Some(dead_actor) = self.spawns[spawn_index].cells[cell_index].live {
+            // Best effort: an already-removed actor (e.g. a repeated call) is not an error here.
+            let _ = self.remove(continuity, dead_actor.0);
+        }
+        let target_identity = self.spawns[spawn_index]
+            .definition
+            .creature_target_identity
+            .clone();
+        let initial_health = self.spawns[spawn_index].definition.creature_initial_health;
+        let actor =
+            self.admit_creature(continuity, ActorState(0), &target_identity, initial_health)?;
+        self.initialize_position(continuity, actor, position_context, cell)?;
+        let state = &mut self.spawns[spawn_index].cells[cell_index];
+        state.live = Some(ExactActorRef(actor));
+        state.attempt = 0;
+        Ok(RespawnResolution::Admitted(ExactActorRef(actor)))
     }
 }
 
@@ -3054,25 +3450,440 @@ mod tests {
     }
 
     #[test]
-    fn one_creature_marker_tracks_successful_admit_and_remove_only() {
+    fn ai2_multiple_creatures_coexist_bounded_only_by_general_capacity() {
+        // AI-2 (GAME-AI-01 §4.1: the carrier's one-creature limit is lifted to the D57
+        // envelope): a second, distinct creature now admits successfully while the first is
+        // still live, bounded only by the carrier's own general slot capacity.
         let (continuity, mut carrier) = carrier(2);
-        assert!(!carrier.has_creature);
 
-        let creature = carrier
+        let first = carrier
             .admit_creature(&continuity, ActorState(1), "target:one", 20)
             .expect("first creature");
-        assert!(carrier.has_creature);
+        let second = carrier
+            .admit_creature(&continuity, ActorState(2), "target:two", 20)
+            .expect("second creature coexists with the first");
+        assert_ne!(first, second);
         assert_eq!(
-            carrier.admit_creature(&continuity, ActorState(2), "target:two", 20),
+            carrier.admit_creature(&continuity, ActorState(3), "target:three", 20),
+            Err(CarrierError::CapacityExceeded),
+            "capacity 2 is exhausted by two live creatures"
+        );
+
+        assert_eq!(carrier.remove(&continuity, first), Ok(ActorState(1)));
+        carrier
+            .admit_creature(&continuity, ActorState(4), "target:four", 20)
+            .expect("the freed slot is reusable while the other creature stays live");
+        assert!(
+            carrier
+                .current_owner_exact_lookup(&continuity)
+                .contains(ExactActorRef(second))
+        );
+    }
+
+    fn spawn_position_context(
+        continuity: &NamespaceContinuityGuard,
+    ) -> PreProductionPositionContext {
+        PreProductionPositionContext {
+            world_id: continuity.world_id,
+            channel_id: continuity.channel_id,
+            scope_generation: continuity.current_generation,
+            coordinate_frame_marker: 1,
+            map_revision_marker: 1,
+            content_generation_marker: 1,
+        }
+    }
+
+    /// D115/D116: one spawn, two placement cells, population 2, 60 s respawn / 5 s retry.
+    fn d116_definition() -> SpawnDefinition {
+        SpawnDefinition::new(
+            vec![(1, 0, 7), (2, 0, 7)],
+            2,
+            60_000_000,
+            5_000_000,
+            "oteryn:creature/rat".to_string(),
+            20,
+        )
+        .expect("D116 definition is within every AI01-SPAWN-* bound")
+    }
+
+    #[test]
+    fn realize_spawn_admits_population_creatures_at_declared_cells() {
+        let (continuity, mut carrier) = carrier(4);
+        let context = spawn_position_context(&continuity);
+        carrier
+            .realize_spawn(&continuity, SpawnSourceId(1), d116_definition(), context)
+            .expect("D116 realizes");
+
+        let state_0 = carrier
+            .spawn_cell_state(SpawnSourceId(1), 0)
+            .expect("cell 0 tracked");
+        let state_1 = carrier
+            .spawn_cell_state(SpawnSourceId(1), 1)
+            .expect("cell 1 tracked");
+        let (actor_0, actor_1) = (
+            state_0.live.expect("cell 0 has a live rat"),
+            state_1.live.expect("cell 1 has a live rat"),
+        );
+        assert_ne!(actor_0, actor_1);
+        assert!(
+            carrier
+                .current_owner_exact_lookup(&continuity)
+                .contains(actor_0)
+        );
+        assert!(
+            carrier
+                .current_owner_exact_lookup(&continuity)
+                .contains(actor_1)
+        );
+        assert_eq!(
+            carrier
+                .read_position(&continuity, actor_0.0)
+                .map(|snapshot| snapshot.version.position),
+            Ok(LocalPosition {
+                x: 1,
+                y: 0,
+                floor: 7
+            })
+        );
+    }
+
+    #[test]
+    fn realize_spawn_rejects_duplicate_source_without_mutation() {
+        let (continuity, mut carrier) = carrier(4);
+        let context = spawn_position_context(&continuity);
+        carrier
+            .realize_spawn(&continuity, SpawnSourceId(1), d116_definition(), context)
+            .expect("first realization");
+        let before = carrier.slots.clone();
+        assert_eq!(
+            carrier.realize_spawn(&continuity, SpawnSourceId(1), d116_definition(), context),
+            Err(CarrierError::DuplicateSpawnSource)
+        );
+        assert_eq!(carrier.slots, before);
+    }
+
+    #[test]
+    fn spawn_population_max_accepted_max_plus_one_rejected() {
+        assert!(
+            SpawnDefinition::new(
+                vec![(0, 0, 0), (1, 0, 0), (2, 0, 0), (3, 0, 0)],
+                AI01_SPAWN_POPULATION_MAX,
+                60_000_000,
+                5_000_000,
+                "oteryn:creature/rat".to_string(),
+                20,
+            )
+            .is_ok()
+        );
+        assert_eq!(
+            SpawnDefinition::new(
+                vec![(0, 0, 0), (1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 0)],
+                AI01_SPAWN_POPULATION_MAX + 1,
+                60_000_000,
+                5_000_000,
+                "oteryn:creature/rat".to_string(),
+                20,
+            ),
+            Err(CarrierError::InvalidSpawnDefinition)
+        );
+    }
+
+    #[test]
+    fn spawn_placement_cells_max_accepted_max_plus_one_rejected() {
+        let max_cells: Vec<(i32, i32, i16)> = (0..AI01_SPAWN_PLACEMENT_CELLS_MAX as i32)
+            .map(|x| (x, 0, 0))
+            .collect();
+        assert!(
+            SpawnDefinition::new(
+                max_cells,
+                1,
+                60_000_000,
+                5_000_000,
+                "oteryn:creature/rat".to_string(),
+                20,
+            )
+            .is_ok()
+        );
+        let over_cells: Vec<(i32, i32, i16)> = (0..=AI01_SPAWN_PLACEMENT_CELLS_MAX as i32)
+            .map(|x| (x, 0, 0))
+            .collect();
+        assert_eq!(
+            SpawnDefinition::new(
+                over_cells,
+                1,
+                60_000_000,
+                5_000_000,
+                "oteryn:creature/rat".to_string(),
+                20,
+            ),
+            Err(CarrierError::InvalidSpawnDefinition)
+        );
+    }
+
+    #[test]
+    fn spawn_sources_per_scope_max_accepted_max_plus_one_rejected() {
+        let (continuity, mut carrier) = carrier(AI01_SPAWN_SOURCES_PER_SCOPE_MAX + 1);
+        let context = spawn_position_context(&continuity);
+        let one_cell = |seed: i32| {
+            SpawnDefinition::new(
+                vec![(seed, 0, 0)],
+                1,
+                60_000_000,
+                5_000_000,
+                "oteryn:creature/rat".to_string(),
+                20,
+            )
+            .expect("valid one-cell definition")
+        };
+        for index in 0..AI01_SPAWN_SOURCES_PER_SCOPE_MAX {
+            carrier
+                .realize_spawn(
+                    &continuity,
+                    SpawnSourceId(index as u16),
+                    one_cell(index as i32),
+                    context,
+                )
+                .expect("within the registered ceiling");
+        }
+        assert_eq!(
+            carrier.realize_spawn(
+                &continuity,
+                SpawnSourceId(AI01_SPAWN_SOURCES_PER_SCOPE_MAX as u16),
+                one_cell(AI01_SPAWN_SOURCES_PER_SCOPE_MAX as i32),
+                context,
+            ),
             Err(CarrierError::CapacityExceeded)
         );
-        assert_eq!(carrier.remove(&continuity, creature), Ok(ActorState(1)));
-        assert!(!carrier.has_creature);
+    }
 
+    /// Kills the live creature at `cell_index` of `source` (a direct lethal commit through the
+    /// exact-actor commit path, mirroring `CombatDeathFixture::strike`), so its cell's respawn
+    /// can be exercised.
+    fn kill_spawn_cell(
+        continuity: &NamespaceContinuityGuard,
+        carrier: &mut ChannelActorCarrier,
+        source: SpawnSourceId,
+        cell_index: usize,
+    ) -> ExactActorRef {
+        let dead = carrier
+            .spawn_cell_state(source, cell_index)
+            .expect("cell tracked")
+            .live
+            .expect("cell has a live rat to kill");
         carrier
-            .admit_creature(&continuity, ActorState(3), "target:three", 20)
-            .expect("creature slot is reusable");
-        assert!(carrier.has_creature);
+            .current_owner_exact_commit(continuity)
+            .commit_damage(
+                dead,
+                OwnerDamageCommand {
+                    target: b"oteryn:creature/rat",
+                    occurrence: b"kill",
+                    binding: b"kill\0respawn-test.v1",
+                    damage: 20,
+                },
+            )
+            .expect("lethal strike");
+        dead
+    }
+
+    #[test]
+    fn respawn_admits_a_fresh_generation_when_the_cell_is_free() {
+        let (continuity, mut carrier) = carrier(4);
+        let context = spawn_position_context(&continuity);
+        carrier
+            .realize_spawn(&continuity, SpawnSourceId(1), d116_definition(), context)
+            .expect("D116 realizes");
+        let dead = kill_spawn_cell(&continuity, &mut carrier, SpawnSourceId(1), 0);
+
+        let resolution = carrier
+            .resolve_respawn_timer(&continuity, SpawnSourceId(1), 0, context)
+            .expect("resolves");
+        assert!(
+            matches!(resolution, RespawnResolution::Admitted(_)),
+            "expected an admission when the cell is free: {resolution:?}"
+        );
+        let RespawnResolution::Admitted(new_actor) = resolution else {
+            unreachable!("checked above");
+        };
+        assert_ne!(
+            new_actor.0.actor_local_generation, dead.0.actor_local_generation,
+            "D52: the dead actor's generation is never reused"
+        );
+        assert!(
+            carrier
+                .current_owner_exact_lookup(&continuity)
+                .contains(new_actor)
+        );
+        assert_eq!(
+            carrier
+                .spawn_cell_state(SpawnSourceId(1), 0)
+                .expect("cell tracked")
+                .live,
+            Some(new_actor)
+        );
+    }
+
+    #[test]
+    fn respawn_postpones_three_times_then_terminates_skipped_and_schedules_a_successor() {
+        let (continuity, mut carrier) = carrier(6);
+        let context = spawn_position_context(&continuity);
+        carrier
+            .realize_spawn(&continuity, SpawnSourceId(1), d116_definition(), context)
+            .expect("D116 realizes");
+        kill_spawn_cell(&continuity, &mut carrier, SpawnSourceId(1), 0);
+        // An unrelated live creature occupies cell 0's exact position, blocking respawn.
+        let blocker = carrier
+            .admit_creature(&continuity, ActorState(9), "oteryn:creature/blocker", 20)
+            .expect("blocker admits");
+        carrier
+            .initialize_position(
+                &continuity,
+                blocker,
+                context,
+                LocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 7,
+                },
+            )
+            .expect("blocker occupies cell 0");
+
+        for expected_attempt in 1..=AI01_SPAWN_OCCUPANCY_RETRIES_MAX {
+            assert_eq!(
+                carrier.resolve_respawn_timer(&continuity, SpawnSourceId(1), 0, context),
+                Ok(RespawnResolution::Postponed {
+                    next_attempt: expected_attempt
+                })
+            );
+        }
+        assert_eq!(
+            carrier.resolve_respawn_timer(&continuity, SpawnSourceId(1), 0, context),
+            Ok(RespawnResolution::Skipped { next_successor: 1 }),
+            "the third retry still finds the cell occupied: terminal SKIPPED"
+        );
+        let state = carrier
+            .spawn_cell_state(SpawnSourceId(1), 0)
+            .expect("cell tracked");
+        assert_eq!(
+            state.attempt, 0,
+            "a fresh successor chain starts at attempt 0"
+        );
+        assert_eq!(state.successor, 1);
+
+        // The blocker leaves; the successor chain's own respawn now succeeds.
+        carrier
+            .remove(&continuity, blocker)
+            .expect("blocker leaves");
+        let resolution = carrier
+            .resolve_respawn_timer(&continuity, SpawnSourceId(1), 0, context)
+            .expect("resolves once the cell is free");
+        assert!(matches!(resolution, RespawnResolution::Admitted(_)));
+    }
+
+    #[test]
+    fn respawn_timer_lane_binding_items_and_deadline_state_never_collapses_distinct_cells() {
+        // AI-1 binding items applied to respawn occurrences (carried over per the coordinator's
+        // instruction): (a) bounded replay evidence via `SpawnCellState.attempt`/`.successor`,
+        // which `resolve_respawn_timer` alone advances, so a `RespawnOccurrence` tuple can never
+        // repeat; (b) `schedule` itself only accepts a fence-issued `RuntimeWorkStamp` (AI-1's
+        // own enforcement, exercised here exactly as its own tests do).
+        let (continuity, mut carrier) = carrier(6);
+        let context = spawn_position_context(&continuity);
+        carrier
+            .realize_spawn(&continuity, SpawnSourceId(1), d116_definition(), context)
+            .expect("D116 realizes");
+        let dead_0 = kill_spawn_cell(&continuity, &mut carrier, SpawnSourceId(1), 0);
+        let dead_1 = kill_spawn_cell(&continuity, &mut carrier, SpawnSourceId(1), 1);
+
+        use crate::foundation::owner_timer::{
+            CatchUpPolicy, FamilyPolicy, OwnerTimerError, OwnerTimerLane, SemanticTimeMicros,
+            VirtualOwnerClock,
+        };
+        use crate::foundation::{RuntimeScopeRefV1, ScopeRuntimeFence};
+
+        let scope = RuntimeScopeRefV1::channel(continuity.world_id, continuity.channel_id);
+        let generation = continuity.current_generation;
+        let mut lane: OwnerTimerLane<RespawnFamily, RespawnOccurrence> =
+            OwnerTimerLane::for_generation(
+                scope,
+                generation,
+                [(
+                    RespawnFamily::Respawn,
+                    FamilyPolicy {
+                        max_pending: AI01_PENDING_RESPAWN_TIMERS_PER_DEAD_ACTOR,
+                        catch_up: CatchUpPolicy::DeadlineState,
+                    },
+                )],
+            )
+            .expect("cap within its registered maximum");
+        let mut owner_fence = ScopeRuntimeFence::from_external_grant(generation).with_scope(scope);
+        let due = SemanticTimeMicros::from_micros(60_000_000);
+
+        for (dead, index) in [(dead_0, 0_u8), (dead_1, 1_u8)] {
+            let ordinal = owner_fence
+                .accept_input(generation)
+                .expect("issue a live ordinal");
+            let stamp = owner_fence.stamp(ordinal);
+            lane.schedule(
+                &owner_fence,
+                stamp,
+                RespawnFamily::Respawn,
+                RespawnOccurrence {
+                    source: SpawnSourceId(1),
+                    cell_index: index,
+                    dead_actor: dead,
+                    successor: 0,
+                    attempt: 1,
+                },
+                Some(dead),
+                due,
+            )
+            .expect("schedule");
+        }
+        // Binding item (a): the exact same occurrence can never be scheduled twice.
+        let ordinal = owner_fence
+            .accept_input(generation)
+            .expect("issue a live ordinal");
+        let stamp = owner_fence.stamp(ordinal);
+        assert_eq!(
+            lane.schedule(
+                &owner_fence,
+                stamp,
+                RespawnFamily::Respawn,
+                RespawnOccurrence {
+                    source: SpawnSourceId(1),
+                    cell_index: 0,
+                    dead_actor: dead_0,
+                    successor: 0,
+                    attempt: 1,
+                },
+                Some(dead_0),
+                due,
+            ),
+            Err(OwnerTimerError::DuplicateOccurrence)
+        );
+
+        let clock = VirtualOwnerClock::new(due);
+        let fired = lane.drain_due(&clock, &owner_fence, |_| true);
+        // DeadlineState (distinct from AI-1's SkipToLatest): both distinct cells' occurrences
+        // fire, never collapsed into one.
+        assert_eq!(fired.len(), 2);
+        let occurrences: std::collections::HashSet<_> = fired
+            .iter()
+            .map(|timer| timer.occurrence.cell_index)
+            .collect();
+        assert_eq!(occurrences, std::collections::HashSet::from([0, 1]));
+
+        for fired_timer in &fired {
+            let resolution = carrier
+                .resolve_respawn_timer(
+                    &continuity,
+                    fired_timer.occurrence.source,
+                    fired_timer.occurrence.cell_index as usize,
+                    context,
+                )
+                .expect("resolves");
+            assert!(matches!(resolution, RespawnResolution::Admitted(_)));
+        }
     }
 
     #[test]

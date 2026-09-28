@@ -1271,6 +1271,82 @@
       ]
     },
     {
+      "id": "AI01-SPAWN-SOURCES-PER-SCOPE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+      "resource": "realized spawn sources per Channel ownership generation (AI-RL-11, D57)",
+      "unit": "spawn sources per scope",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
+    },
+    {
+      "id": "AI01-SPAWN-POPULATION",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+      "resource": "live or pending creatures per spawn source (AI-RL-11, D57)",
+      "unit": "creatures per spawn source",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
+    },
+    {
+      "id": "AI01-SPAWN-PLACEMENT-CELLS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+      "resource": "declared placement cells per spawn source, one per creature (AI-RL-12)",
+      "unit": "declared cells per spawn source",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
+    },
+    {
+      "id": "AI01-SPAWN-OCCUPANCY-RETRIES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+      "resource": "occupied-cell respawn retries per creature per respawn window (AI-RL-13, D115)",
+      "unit": "retries per respawn window",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 (the fourth retry) terminates the occurrence SKIPPED rather than exceeding the bound",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
+    },
+    {
       "id": "NET03-PREADMISSION-CONNECTIONS",
       "owner_contract": "FND-03_RUNTIME_EXECUTION_CONTRACT.md",
       "resource": "concurrent pre-admission TCP/TLS connections",

@@ -11,12 +11,6 @@ pub mod fnd04_verifier;
 // `ChannelRuntimeV1`'s owner cycle from their own owned paths.
 #[allow(dead_code)]
 mod owner_timer;
-// AI-2 (#162 issuecomment-5879863781, "AI-2 rat behaviour", D115 values): think -> perceive ->
-// decide -> act over AI-1's timer lane. Consumed by `movement.rs`'s own tests to demonstrate the
-// decide-then-step pipeline through the real (unmodified) Movement owner turn; `ai/**`/`lib.rs`
-// wiring into `ChannelRuntimeV1`'s live owner cycle stays AI-3's scope.
-#[allow(dead_code)]
-pub(crate) mod creature_think;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
