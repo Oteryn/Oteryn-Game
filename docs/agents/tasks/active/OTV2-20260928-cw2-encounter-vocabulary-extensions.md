@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-cw2-encounter-vocabulary-extensions
 title: CW2 encounter vocabulary extension candidates for the remaining unresolved_semantics rows
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw2-encounter-vocabulary-extensions
-pr: null
+pr: 1183
 base_sha: 3dcf3c82
 head_sha: null
 final_head_sha: null
@@ -65,5 +65,5 @@ wiki), Q2 Gorzindel room and return defects, Q3 Sandking brood spawn failure.
 
 ## Context checkpoint
 
-last_progress: §12 candidate design written; PR to be opened for review and owner acceptance
+last_progress: §12 candidate design written; PR #1183 open for review and owner acceptance
 jira: pending (no mapped Story resolved in this worker session)
