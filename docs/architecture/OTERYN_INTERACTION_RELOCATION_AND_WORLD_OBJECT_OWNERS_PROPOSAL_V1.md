@@ -104,23 +104,28 @@ keeps its lifetime and exclusions.
   | `REMOVE(def)` | walls, stones, barriers |
   | `RETAG` | the action-id change that re-arms a trigger |
 
-  The CW3 Content-model worker (allocation `OTV2-20260928-cw3-local-object-state-model`) is
-  implementing a `SHARED_LEASE_REQUIRED` delta this operation table depends on, recorded here
-  without being designed by this task:
+  The CW3 Content-model worker (allocation `OTV2-20260928-cw3-local-object-state-model`, PR #1046,
+  merged) and the CW4 runtime worker (PR #1055, merged 2026-09-28) already shipped the delta this
+  operation table depended on:
   - **1a.** Per-state collision presence on a `LocalObject` definition: each declared state is
-    `{key, collision: Present | Absent}`, replacing the current runtime's hard-wiring of collision
-    to only the Open/Close two-state pair (`apps/game-server/src/world_runtime.rs` `prepare`'s
-    `next_blocking` match on `LocalObjectOperation::Open`/`Close`).
-  - **1b.** An authored initial state on a `LocalObject` placement, validated fail-closed: binding
-    fails if the placement's authored initial state is absent from the definition's declared
-    states, rather than defaulting silently.
-  - **1c.** `RETAG` is the coordinator-decided transition between two states of the same collision
-    class that differ only in interaction binding (for example, re-arming which trigger fires),
-    under a `…local-object-retag` intent family, with no action-id field — distinct from
-    `TRANSFORM`, which may also change collision class.
+    `{key, collision: Present | Absent}`. `apps/game-server/src/world_runtime.rs`'s `prepare`
+    (~973-1055) now derives the next blocking footprint and the `OCCUPIED` check from the *target*
+    state's own authored collision presence (PROVEN, read directly), replacing the former
+    hard-wiring to the Open/Close two-state pair.
+  - **1b.** An authored initial state on a `LocalObject` placement, validated fail-closed:
+    `LocalObjectRuntime::bind` (~590-750) reads `placement.local_object_initial_state` and rejects
+    binding when it is absent from the definition's declared states (PROVEN, read directly), rather
+    than defaulting silently.
+  - **1c.** `RETAG` is the transition between two states of the same collision class that differ
+    only in interaction binding (for example, re-arming which trigger fires), under
+    `LOCAL_OBJECT_RETAG_INTENT_FAMILY`, with no action-id field — distinct from `TRANSFORM`, which
+    may also change collision class. `bind` now accepts an arbitrary, non-empty set of pre-authored
+    `TransitionKey`s over the definition's full state vocabulary; `LocalObjectOperation` (~397) is a
+    thin wrapper around one bound `TransitionKey`, so `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` share
+    one execution path instead of four Rust variants (PROVEN, read directly).
 
-  Coordinator direction: CW4 ships `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` now **without**
-  `revert_after`, until §7 below is accepted.
+  CW4 shipped (PR #1055, merged) `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` **without** `revert_after`,
+  per D38 W1; `revert_after` still awaits §7 below being accepted.
 
 - **Timed revert.** Every operation may carry `revert_after`, which covers `decay` and
   `revertItem`/`addEvent` reverts. The revert is the same owner's own later operation, with its
@@ -143,7 +148,7 @@ keeps its lifetime and exclusions.
   - **C3 (independent-review hardening).** The supported collision footprint is the anchor's own
     fixed, bind-time-reserved cells: `absolute_collision_cells(placement)` computes
     `collision_cells`/`blocking_cells` once at `LocalObjectRuntime::bind`
-    (`apps/game-server/src/world_runtime.rs` ~698) and every later `CREATE`/`REMOVE`/`TRANSFORM`/
+    (`apps/game-server/src/world_runtime.rs` ~716) and every later `CREATE`/`REMOVE`/`TRANSFORM`/
     `RETAG` on that anchor only toggles within that one fixed footprint. Dynamically materialized
     geometry — a `CREATE` that reserves cells not already known at bind time, or spans more than
     the one anchor's pre-authored footprint — stays out of scope; "multi-cell" here means only
@@ -161,10 +166,11 @@ keeps its lifetime and exclusions.
 - Quest-relevant memory stays with the quest domain.
 - Once accepted, the D36 definitions need no new data: the blocked children become executable
   after their anchors bind to world placements.
-- The 1a/1b/1c Content-model delta (§4) generalizes an existing hard-wired two-state runtime field
-  (collision presence) and an existing hard-wired binding default (initial state); it adds no new
-  owner, persistence or domain. C3 does not add multi-scope or dynamic geometry; it only names the
-  footprint boundary the runtime already enforces by computing collision cells once at bind time.
+- The 1a/1b/1c Content-model delta (§4, now merged) generalizes a formerly hard-wired two-state
+  runtime field (collision presence) and a formerly hard-wired binding default (initial state); it
+  added no new owner, persistence or domain. C3 does not add multi-scope or dynamic geometry; it
+  only names the footprint boundary the runtime already enforces by computing collision cells once
+  at bind time.
 - §7's recommended `revert_after` option adds exactly one new scope-owned step driver plus a
   pending-`Deadline` set, both owned by the same scope-runtime owner named in D38 — one mechanism
   per scope, never per object — and reuses the already-implemented `crates/foundation::time`
@@ -202,6 +208,16 @@ prior draft assumed. FND-03 already defines exactly the shape a scope-owned dead
 mutation-capable timer that is "an owner-scoped input, not a direct callback" (§10) — so this
 section binds `revert_after` to it rather than inventing parallel semantics.
 
+Round 4 correction (owner-authorized, after PR #1055/#1046 merged CW4's typed runtime and CW3's
+Content-model delta — §4/§8 below now cite the merged state): three remaining gaps were all in FND-03
+timer *internals*, resolved by binding tighter to FND-03 rather than by re-designing it. The
+equal-deadline tie-break is §10.1's own — the scheduling resolution's `RuntimeExecutionOrdinal` plus
+its within-resolution sequence, retained in the timer key — never the revert's derived child
+identity. De-duplication happens by an atomic pending-removal *before* `ScopeRuntimeFence::
+accept_input` is called, because `accept_input` itself tracks no timer identity. Due-work admission
+is bounded per owner cycle under FND-03 §7/§14, the same shape `MovementOwnerTurn` already uses for
+a different input source.
+
 ### Problem
 
 `revert_after` needs *some* value that advances on its own, independent of whether a player ever
@@ -212,10 +228,10 @@ today.
 
 ### Evidence
 
-- PROVEN (`apps/game-server/src/world_runtime.rs` `LocalObjectRuntime::bind` ~570-712 and
-  `::prepare` ~932-997): neither takes a tick, timestamp or step parameter; every fence is
-  placement/incarnation/content_generation/expected_revision, all of which only change when a
-  command targets that same anchor.
+- PROVEN (`apps/game-server/src/world_runtime.rs` `LocalObjectRuntime::bind` ~590-750 and
+  `::prepare` ~973-1055, current post-#1055-merge line numbers): neither takes a tick, timestamp or
+  step parameter; every fence is placement/incarnation/content_generation/expected_revision, all of
+  which only change when a command targets that same anchor.
 - PROVEN, production-only (`apps/game-server/src/foundation/runtime_actor_carrier.rs`
   `ChannelRuntimeV1::from_committed_assignment` ~702-750): production construction pins
   `scope_generation` once into `ChannelRuntimeAssignmentBinding` at construction (~727-728,
@@ -237,8 +253,8 @@ today.
 - PROVEN (`crates/foundation/src/time.rs` `Deadline`/`MonotonicClock`/`ManualClock` ~50-166, exported
   at `crates/foundation/src/lib.rs` line 5): an already-tested monotonic-deadline primitive, unused
   in `apps/game-server/src` today. PROVEN (`docs/architecture/OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md`
-  line 143): the map-object authoring format already names `revert_after_ms` (milliseconds), with a
-  concrete authored value at line 170 (`revert_after_ms 1200000`).
+  line 144): the map-object authoring format already names `revert_after_ms` (milliseconds), with a
+  concrete authored value at line 172 (`revert_after_ms 1200000`).
 - PROVEN (`docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md` §10, lines 391-436): "Mutation-
   capable timers are owner-scoped inputs, not direct callbacks." §10.1 binds a timer to semantic
   runtime scope, current ownership generation, target entity/local generation, monotonic due
@@ -264,13 +280,16 @@ today.
   need to re-derive it.
 - PROVEN (`apps/game-server/src/foundation/mod.rs` `RuntimeExecutionOrdinal`/`ScopeRuntimeFence`
   ~959-1058): the FND-03 §10.2 ordinal-on-accept mechanism is already implemented —
-  `ScopeRuntimeFence::accept_input(generation)` mints a new `RuntimeExecutionOrdinal` only for the
-  exact current `ScopeOwnershipGeneration`, rejecting a stale one, matching §10.3's generation-
-  changed cancellation exactly. It is currently instantiated per `GameSession`
+  `ScopeRuntimeFence::accept_input(generation)` (~1040-1050) mints a new `RuntimeExecutionOrdinal`
+  only for the exact current `ScopeOwnershipGeneration`, rejecting a stale one, matching §10.3's
+  generation-changed cancellation exactly. It is currently instantiated per `GameSession`
   (`apps/game-server/src/foundation/admission.rs` ~365-381, ~728), not yet as one scope-wide instance
-  consumed by `world_runtime.rs`.
-- PROVEN (`apps/game-server/src/world_runtime.rs` `apply`/`resume_pending` ~776-832,
-  `validate_current_authority` ~849-859): both require a live `GameSessionAuthoritySnapshot`
+  consumed by `world_runtime.rs`. `accept_input` takes only a `ScopeOwnershipGeneration`: it tracks
+  no timer/command identity and cannot by itself detect that a given due timer was already accepted
+  — a second call for the same already-fired entry would mint a second, distinct ordinal with
+  nothing to stop it.
+- PROVEN (`apps/game-server/src/world_runtime.rs` `apply`/`resume_pending` ~817-873,
+  `validate_current_authority` ~890-950): both require a live `GameSessionAuthoritySnapshot`
   (rejecting when `session_state() != Active` or the snapshot's `game_session_id` does not match the
   command's) and a per-session `CommandIngress` for duplicate detection. A scope-owned due timer has
   neither — the player who triggered the original operation may have disconnected by the time
@@ -282,6 +301,15 @@ today.
   stores only elapsed duration with no origin identity — two `Deadline`s produced from two different
   `SystemClock` instances are not meaningfully comparable; evaluating `has_elapsed`/`remaining`
   against the wrong clock instance would silently misfire.
+- PROVEN (FND-03 §7 "Cross-session and cross-source ordering", lines 322-341): "normalized ready
+  inputs from different sources are admitted through bounded arbitration"; "one continuously busy
+  session or timer/work source cannot monopolize the owner indefinitely"; "the current owner assigns
+  the resulting `RuntimeExecutionOrdinal`." FND-03 §14 item 4 (line ~515) separately lists "timer
+  population per scope and due/catch-up work" among the runtime classes §14.1 requires an explicit
+  bound for. PROVEN (`apps/game-server/src/movement.rs` `MovementOwnerTurn` ~201-249, already cited
+  above): the codebase already has exactly this pattern for a different input source — a bounded
+  `max_inputs` batch per invocation, with the caller deciding what to offer next turn — a direct
+  precedent for bounding due-timer admission the same way.
 
 ### Options (minimum real set)
 
@@ -295,21 +323,28 @@ today.
    `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4, below) — compute `Deadline::after(clock,
    Duration::from_millis(revert_after_ms))` from the one clock instance the scope owns (evidence
    above) and register it under an FND-03 §10.1 scheduling key: World/Channel/InstanceId,
-   `scope_generation`, the anchor's overlay revision captured now, the `Deadline`, and a
-   deterministic equal-deadline tie-break (deadline, then derived child identity — exactly the
-   "deterministic within-resolution sequence" §10.1 asks for). One scope-owned driver — one per
-   scope owner, never per object, never per pending revert — wakes at the earliest pending deadline;
-   each due entry becomes a normalized FND-03 authoritative input and mints a new
-   `RuntimeExecutionOrdinal` when the scope's own ordinal issuer accepts it for resolution (§10.2,
+   `scope_generation`, the anchor's overlay revision captured now, the `Deadline`, and §10.1's own
+   equal-deadline tie-break — the `RuntimeExecutionOrdinal` of the owner resolution that *scheduled*
+   the timer, plus a deterministic within-that-resolution sequence, both retained in the timer key
+   itself. The revert's own GAME-INTERACTION-style derived child identity stays separate: it is the
+   revert's fire-once/de-duplication identity (§3/§4), never an ordering key. One scope-owned
+   driver — one per scope owner, never per object, never per pending revert — wakes at the earliest
+   pending deadline and admits at most a registered bounded batch of due entries per cycle (FND-03
+   §7/§14, evidence above), yielding the remainder to a later cycle through the same owner
+   arbitration any other input source uses, so a same-deadline burst cannot starve unrelated scope
+   work. For each admitted entry, the driver first atomically transitions it out of the pending set
+   (removed/in-flight) and only then calls the scope's ordinal issuer's `accept_input` (§10.2,
    reusing `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` — evidence above — as one scope-wide
-   instance rather than per-`GameSession`). The revert's state/footprint delta reuses `prepare`'s
-   pure transition logic; committing it does **not** go through `apply`/`resume_pending`/
-   `CommandIngress`, because there is no live client command or session to replay (P1, evidence
-   above). Cancellation follows §10.3 exactly: the same fences §4 already requires. The driver and
-   the ordinal-issuer promotion are still one real new mechanism each, but the unit it stores and the
+   instance rather than per-`GameSession`) — `accept_input` itself tracks no timer identity (evidence
+   above), so this ordering is what makes a re-presented, already-fired entry a no-op instead of a
+   second ordinal. The revert's state/footprint delta reuses `prepare`'s pure transition logic;
+   committing it does **not** go through `apply`/`resume_pending`/`CommandIngress`, because there is
+   no live client command or session to replay (P1, evidence above). Cancellation follows §10.3
+   exactly: the same fences §4 already requires. The driver and the ordinal-issuer promotion are
+   still one real new mechanism each, but the unit it stores, the tie-break it uses and the
    ordinal/cancellation contract it follows are not invented: they are the authored `revert_after_ms`
-   field, the already-implemented `Deadline` primitive, and the already-accepted FND-03 §10 timer
-   contract.
+   field, the already-implemented `Deadline` primitive, and the already-accepted FND-03 §7/§10/§14
+   timer contract.
 3. **A new scope-owned monotonic logical step counter (considered, not recommended).** Round 1 of
    this review recommended a synthetic per-scope "step" incremented by the scope runtime's own
    cadence. Honest comparison against option 2:
@@ -343,10 +378,14 @@ today.
 1. **Must decide now?** `YES` for the *owner, input shape and FND-03 binding* (option 2: a scope-
    owned `Deadline` fired as an FND-03 §10 authoritative timer with its own ordinal/cancellation/
    capacity contract, never a client `LocalObjectCommand` — vs. the record of why 1, 3 and 4 are
-   rejected/superseded). `NO` for the driver's exact wake mechanism, whether `ScopeRuntimeFence` is
-   promoted to a scope-wide instance or a new scope-owned ordinal issuer is introduced, the exact
-   pending-set storage representation, and the concrete timer-capacity numeric bound (FND-03 §14.1:
-   "Concrete numeric limits gate implementation, not this architecture decision" — it belongs in
+   rejected/superseded), including its equal-deadline tie-break (§10.1's own ordinal-plus-sequence,
+   not the revert's derived child identity), its atomic pending-removal-before-`accept_input`
+   de-duplication, and bounded per-cycle due-work admission (§7/§14) — all three are bound to
+   existing FND-03 sections, not open design questions. `NO` for the driver's exact wake mechanism,
+   whether `ScopeRuntimeFence` is promoted to a scope-wide instance or a new scope-owned ordinal
+   issuer is introduced, the exact pending-set storage representation, and the concrete
+   timer-capacity/due-batch numeric bounds (FND-03 §14.1: "Concrete numeric limits gate
+   implementation, not this architecture decision" — they belong in
    `RESOURCE_LIMITS_REGISTRY.json`). Those belong to the owning lane's implementation.
 2. **What is blocked?** CW4 cannot ship `revert_after` at all (coordinator direction in §4 already
    withholds it) until some owner, input shape and commit path is named; naming nothing leaves the
@@ -363,9 +402,9 @@ today.
    which §4 already excludes).
 5. **What is deliberately not decided?** The exact wake mechanism inside the scope's step driver, the
    exact way `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` is made scope-wide, the exact storage
-   representation of the pending-timer set, and the concrete timer-capacity bound in
-   `RESOURCE_LIMITS_REGISTRY.json`. Those belong to the owning lane's implementation, not this
-   architecture delta.
+   representation of the pending-timer set, and the concrete timer-capacity and per-cycle due-batch
+   numeric bounds in `RESOURCE_LIMITS_REGISTRY.json`. Those belong to the owning lane's
+   implementation, not this architecture delta.
 
 ### Exact delta the owning lane must provide
 
@@ -376,15 +415,25 @@ not implement it; it is CANDIDATE and not owner-accepted.
 
 - Introduce the scope owner's own step driver: one per scope owner (`ChannelRuntimeV1`/
   `InstanceRuntime`), never a per-object or per-revert timer, that wakes at the earliest pending
-  `Deadline` and drives all of that scope's own due reverts forward in one pass. Whether it
-  piggybacks on a cadence the scope runtime is later shown to already have, or adds one new minimal
-  wake for exactly this purpose, is the owning lane's implementation choice — either way it is one
-  mechanism per scope, not new infrastructure per object.
+  `Deadline` and drives that scope's own due reverts forward. Whether it piggybacks on a cadence the
+  scope runtime is later shown to already have, or adds one new minimal wake for exactly this
+  purpose, is the owning lane's implementation choice — either way it is one mechanism per scope, not
+  new infrastructure per object.
+- Bound due-work admission per driver wake (FND-03 §7/§14, evidence above): admit at most a
+  registered maximum batch of due entries per owner cycle; a remainder above that bound is not
+  dropped, it yields back to the same owner arbitration every other input source goes through and is
+  presented again on a later cycle. This is the same shape `MovementOwnerTurn`'s bounded
+  `max_inputs` already uses for a different input source (evidence above), applied to due timers so
+  a same-deadline burst cannot monopolize the scope owner.
 - Provide one scope-wide instance of the FND-03 §10.2 ordinal issuer
   (`RuntimeExecutionOrdinal`/`ScopeRuntimeFence`, currently instantiated per `GameSession` in
-  `apps/game-server/src/foundation/admission.rs`), or an equivalent scope-owned issuer, so every
-  accepted due timer mints its ordinal through the same single-owner sequence as any other scope
-  mutation, per §10.2.
+  `apps/game-server/src/foundation/admission.rs`), or an equivalent scope-owned issuer. Because
+  `accept_input` tracks no timer identity by itself (evidence above), de-duplication is the driver's
+  responsibility, not the issuer's: for each admitted due entry, atomically transition it out of the
+  pending set (remove it, or mark it in-flight) *before* calling `accept_input`; only an entry that
+  was still pending at that moment proceeds to mint an ordinal and commit. A due entry presented a
+  second time (already removed/in-flight) finds nothing to transition and is a no-op — it never
+  reaches `accept_input`, so it never mints a second ordinal.
 - Provide one shared `MonotonicClock` instance per scope (constructed once, never `SystemClock::new()`
   called again per call site) and use it for every `Deadline::after` at commit time and every
   `has_elapsed`/`remaining` at wake time for that scope — never mix two clock instances (evidence
@@ -393,21 +442,24 @@ not implement it; it is CANDIDATE and not owner-accepted.
   original `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4): reserve safe bounded timer capacity
   first; if none is available, fail the *entire* original operation before anything commits — no
   object mutation and no partial timer entry survive. If capacity is available, compute
-  `Deadline::after(clock, Duration::from_millis(revert_after_ms))` and register the FND-03 §10.1
-  scheduling key (World/Channel/InstanceId, `scope_generation`, the overlay revision of the anchor,
-  the `Deadline`, and the (deadline, then derived child identity) tie-break) alongside the derived
-  child identity (as in §3/§4). This state is `scope_generation`-scoped, owned by the same
+  `Deadline::after(clock, Duration::from_millis(revert_after_ms))` and register it under the FND-03
+  §10.1 scheduling key: World/Channel/InstanceId, `scope_generation`, the overlay revision of the
+  anchor, the `Deadline`, and the equal-deadline tie-break — the *scheduling* resolution's own
+  `RuntimeExecutionOrdinal` plus a deterministic within-that-resolution sequence, retained in this
+  same key (§10.1; not the revert's derived child identity, which stays a separate fire-once/
+  de-duplication identity, as in §3/§4). This state is `scope_generation`-scoped, owned by the same
   `ChannelRuntimeV1`/`InstanceRuntime` instance as the rest of the overlay; a scope restart is a new
   instance (corrected evidence above), so it is dropped with no separate cleanup path. Map the
   capacity failure to `CAPACITY_EXCEEDED` (FND-03 §28) and register the concrete numeric bound in
   `RESOURCE_LIMITS_REGISTRY.json` per FND-03 §14.1 — that number is not decided here.
-- On each driver wake, present every due entry as a normalized FND-03 §10.2 authoritative input, in
-  the deterministic (deadline, then derived child identity) tie-break order when deadlines are
-  equal: mint its `RuntimeExecutionOrdinal` via the scope's ordinal issuer's `accept_input(current
-  scope_generation)`, reuse `prepare`'s pure state/footprint-transition logic for the delta, and
-  commit through a scope-authority path (`PreparedMutation::Publish`/`TerminalSemanticOutcome`,
-  `apps/game-server/src/world_runtime.rs` ~982-996) — never `apply`/`resume_pending`/`CommandIngress`,
-  which require a live `GameSessionAuthoritySnapshot` this timer does not have (P1, evidence above).
+- On each driver wake, present admitted due entries (bounded above) as normalized FND-03 §10.2
+  authoritative inputs, in their stored (deadline, scheduling ordinal, within-resolution sequence)
+  tie-break order: run the pending-removal-before-`accept_input` de-duplication step above, mint the
+  surviving entries' `RuntimeExecutionOrdinal`s via the scope's ordinal issuer, reuse `prepare`'s
+  pure state/footprint-transition logic for each delta, and commit through a scope-authority path
+  (`PreparedMutation::Publish`/`TerminalSemanticOutcome`, `apps/game-server/src/world_runtime.rs`
+  ~1040-1054) — never `apply`/`resume_pending`/`CommandIngress`, which require a live
+  `GameSessionAuthoritySnapshot` this timer does not have (P1, evidence above).
 - Cancellation follows FND-03 §10.3 exactly: `scope_generation` changed, the anchor's overlay
   revision no longer matches what was captured at scheduling, or explicit invalidation each discard
   the pending entry without mutating.
@@ -416,14 +468,18 @@ not implement it; it is CANDIDATE and not owner-accepted.
 
 ### Exact test obligations
 
-- **Fires once.** Once a due entry's `RuntimeExecutionOrdinal` is minted and its state/footprint
-  delta commits, the entry is removed from the pending set; the same physical timer entry cannot be
-  presented to `accept_input` a second time, so a later wake never refires it.
-- **Replay-safe.** A due entry re-presented before it is removed (for example a driver wake that
-  overlaps its own commit) must not mint a second `RuntimeExecutionOrdinal` or commit twice for the
-  same entry; the scope's ordinal issuer's single-owner, monotonic `accept_input` (evidence above)
-  and the pending-set removal together make a second acceptance for the same entry impossible, not
-  merely a deterministic no-op.
+- **Fires once, mints exactly one ordinal (P2, de-duplication).** The pending→removed/in-flight
+  transition happens *before* `accept_input` is ever called (Exact delta above); a test that
+  presents the same due entry twice — once normally, once as if a second driver pass or a crash-
+  recovery rescan re-observed it — must observe exactly one `RuntimeExecutionOrdinal` minted and
+  exactly one commit; the second presentation finds the entry no longer pending and returns without
+  calling `accept_input` at all. This is deliberately not "a deterministic no-op result from
+  `accept_input`": `accept_input` itself (evidence above) has no way to recognize a repeat, so the
+  guarantee lives entirely in the driver's atomic removal-before-accept ordering, and the test must
+  exercise that ordering directly, not just its usual-case effect.
+- **Replay-safe.** Re-evaluating "is this due" for an entry already committed and removed must be
+  side-effect free: with the entry gone from the pending set, there is nothing left to admit,
+  transition or mint an ordinal for.
 - **Fenced (FND-03 §10.1/§10.3).** The revert commits only under the same World/Channel/InstanceId,
   `scope_generation`, `content_generation` and overlay-revision-of-anchor fences as any other §4
   operation; per §10.3, a `scope_generation` change, a target overlay-revision mismatch, or explicit
@@ -440,13 +496,13 @@ not implement it; it is CANDIDATE and not owner-accepted.
   fixed-footprint boundary in §4 — only the anchor's pre-authored, bind-time-reserved footprint is
   ever touched, never a partially materialized one.
 - **Occupied target cells refuse deterministically (decided, not deferred).**
-  `apps/game-server/src/world_runtime.rs` `terminalize_current` (~834-846) commits and terminalizes
+  `apps/game-server/src/world_runtime.rs` `terminalize_current` (~875-888) commits and terminalizes
   every prepared outcome in the same call, and `resume_pending`'s
-  `DuplicateDisposition::ReplayRetainedOutcome` (~817-823) replays that same terminal outcome for
+  `DuplicateDisposition::ReplayRetainedOutcome` (~862-864) replays that same terminal outcome for
   any later submission with the same derived identity — it does not re-evaluate against later
   occupancy. Reusing this path therefore cannot implement "retry later" for a revert: a revert whose
   target state's footprint conflicts with currently occupied cells terminalizes as
-  `DISPOSITION_OCCUPIED` (`apps/game-server/src/world_runtime.rs` ~965-969) for that one derived
+  `DISPOSITION_OCCUPIED` (`apps/game-server/src/world_runtime.rs` ~1023-1027) for that one derived
   identity and is refused permanently — the same "no silent search for a free tile unless the
   definition names one" discipline §3 already applies to a blocked relocation. There is no retry:
   giving a revert a fresh identity per wake to work around the terminal/replay path would be new
@@ -459,11 +515,20 @@ not implement it; it is CANDIDATE and not owner-accepted.
   An already-accepted timer already in the pending set is never discarded merely because the due
   queue is congested (FND-03 §15.4, second sentence) — that pressure produces `CAPACITY_EXCEEDED` on
   the *next incoming* operation, not eviction of an existing entry.
-- **Equal-deadline determinism (FND-03 §10.1/§10.2).** Two or more due entries sharing the identical
-  `Deadline` resolve in the stable (deadline, then derived child identity) tie-break order, and each
-  mints its own new `RuntimeExecutionOrdinal` in that order; re-running the same set of due entries
-  against the same clock and `scope_generation` must always reproduce the same order and the same
-  ordinals (a determinism/replay test, per FND-03 §11's "multiple equal-deadline timers" case).
+- **Equal-deadline order replays scheduling order (P2, FND-03 §10.1).** Two timers scheduled in two
+  *different* owner resolutions (different `RuntimeExecutionOrdinal`s at scheduling time) that later
+  become due with the identical `Deadline` must fire in the order their scheduling resolutions
+  occurred — the earlier-scheduled timer first — not in an order derived from either timer's own
+  GAME-INTERACTION child identity, which §10.1 does not name as an ordering key. Re-running the same
+  due set against the same clock and `scope_generation` must always reproduce the same order and the
+  same newly minted ordinals (a determinism/replay test, per FND-03 §11's "multiple equal-deadline
+  timers" case).
+- **Bounded due work does not starve other inputs (P2, FND-03 §7/§14).** A burst of due entries above
+  the registered per-cycle batch bound does not get admitted in one pass: the driver processes at
+  most that bound, and the scope's other input sources (client commands, control/fencing input) still
+  get their own owner-arbitration turn before the remainder of the burst is retried — mirroring
+  `MovementOwnerTurn`'s bounded `max_inputs` for a different source (evidence above). The remainder
+  is retried on a later cycle, not dropped and not retried within the same cycle's bound.
 - **Single clock origin (detects cross-clock comparison).** A test constructs two independent
   `MonotonicClock` instances (for example two `SystemClock`s, or a `SystemClock` and a `ManualClock`),
   computes a `Deadline` under one, and asserts the implementation's design makes it impossible to
@@ -479,10 +544,12 @@ not implement it; it is CANDIDATE and not owner-accepted.
 2. Anchors bind to world placements.
 3. The GAME-INTERACTION-01 successor names these owners in §19.3.
 4. Independent review of the accepted text, then implementation in the scope runtime.
-5. **CW3 (Content model).** Implement the 1a/1b/1c delta in §4: per-state collision presence,
-   authored initial state validated fail-closed, and the `RETAG`/`…local-object-retag` decision.
-6. **CW4 (runtime).** Ship `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` without `revert_after`, per the
-   coordinator direction recorded in §4, until §7 is owner-accepted.
+5. **CW3 (Content model) — done.** Implemented the 1a/1b/1c delta in §4: per-state collision
+   presence, authored initial state validated fail-closed, and the `RETAG`/
+   `LOCAL_OBJECT_RETAG_INTENT_FAMILY` decision (PR #1046, merged).
+6. **CW4 (runtime) — done.** Shipped `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` without `revert_after`,
+   generalizing `LocalObjectRuntime` off the Open/Close two-state pair, per the coordinator
+   direction recorded in §4 (PR #1055, merged 2026-09-28); `revert_after` awaits §7 being accepted.
 7. **Scope-runtime / Foundation carrier lane (`ChannelRuntimeV1`/`InstanceRuntime`).** Own §7's
    decision: accept or supersede the recommended `revert_after` progression option and supply the
    exact delta §7 names — including, if no existing scope cadence is proven, the scope's own step

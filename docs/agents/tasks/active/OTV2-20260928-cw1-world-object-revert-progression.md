@@ -54,41 +54,36 @@ still `DecisionStatus: CANDIDATE` for the new part:
    Foundation carrier lane (owns §7's progression-input decision).
 
 No code, Foundation/runtime/protocol/registry, `content/**` or `tools/**` change. No claim that any
-of this is `ACCEPTED`. D37 relocation and `SCOPE_HANDOFF` are untouched.
+of this is `ACCEPTED`. D37 relocation and `SCOPE_HANDOFF` are untouched. §4/§8 now cite CW3 (PR
+#1046) and CW4 (PR #1055) as merged, not pending, after merging `origin/main`.
 
 ## Architecture and source of truth
 
 Full file:line evidence lives in §7 of the owned doc (Evidence subsection); this is the index.
 
 - `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md` — PROVEN, read in full.
-- `apps/game-server/src/world_runtime.rs` `LocalObjectRuntime::bind`/`::prepare` (~570-997),
-  `terminalize_current`/`resume_pending` (~806-846) — PROVEN: no tick/time parameter; collision
-  hard-wired to Open/Close; every prepared outcome (incl. `DISPOSITION_OCCUPIED`) terminalizes
-  immediately and replays on retry rather than re-evaluating (§7 test obligations).
-- `apps/game-server/src/foundation/runtime_actor_carrier.rs`
-  `ChannelRuntimeV1::from_committed_assignment` (~702-750) — PROVEN, production-only: construction
-  pins `scope_generation` once; no production method advances it in place. `advance_owner`
-  (~2169-2176) is test-only (`impl MovementActorFixture`, `#[cfg(test)]`) — round-1 evidence citing
-  it as production was corrected in round 2. Two production doc comments (~760-762, ~773-774)
-  independently say `ChannelRuntimeV1` grants no scheduler.
-- `apps/game-server/src/gameplay_transport/connection.rs` `Liveness::tick` (~296-320) and
-  `apps/game-server/src/content/project/v2/creature.rs` `tick_profile` (~571-604) — PROVEN:
-  transport keepalive and content-authoring data respectively, neither a scope simulation clock.
-- `docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md` lines 224/419 —
-  PROVEN: no committed Foundation/global simulation tick exists.
-- Bounded grep (`tokio::time::interval|sleep|select!\{|loop \{`) against every `ChannelRuntimeV1`
-  call site — PROVEN: every call is reactive; `movement.rs` ~197-200 names the missing "future
-  owner scheduler" itself. UNKNOWN beyond this bounded read tree.
-- `crates/foundation/src/time.rs` `Deadline`/`MonotonicClock`/`ManualClock` (~50-166, exported at
-  `crates/foundation/src/lib.rs` line 5) — PROVEN: an already-tested monotonic-deadline primitive,
-  unused in `apps/game-server/src` today. `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 143 —
-  PROVEN: authors `revert_after_ms` directly (milliseconds).
-- `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §9/§10/§15.4/§28 (lines 376-436, 560-564, 891) — PROVEN:
-  the timer scheduling/firing/cancellation/capacity/error-mapping contract §7 now binds
-  `revert_after` to. `foundation/mod.rs` `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` (~959-1058)
-  — PROVEN: already implements §10.2's ordinal-on-accept, currently per-`GameSession`
-  (`admission.rs` ~365-381/728). `world_runtime.rs` `apply`/`resume_pending` (~776-832) — PROVEN:
-  need a live `GameSessionAuthoritySnapshot`/`CommandIngress`, which a disconnected timer lacks.
+- `world_runtime.rs` `bind`/`prepare` (~590-1055), `apply`/`resume_pending`/`terminalize_current`
+  (~817-888) — PROVEN, post-#1055-merge line numbers: no tick/time parameter; every prepared outcome
+  terminalizes immediately and replays on retry; collision no longer hard-wired to Open/Close.
+- `foundation/runtime_actor_carrier.rs` `from_committed_assignment` (~702-750) — PROVEN,
+  production-only: pins `scope_generation` once; `advance_owner` (~2169-2176) is test-only.
+- `gameplay_transport/connection.rs` `Liveness::tick` (~296-320), `content/project/v2/creature.rs`
+  `tick_profile` (~571-604), SIM-DETERMINISM-01 lines 224/419 — PROVEN: no scope/global clock.
+  Bounded grep (`tokio::time::interval|sleep|select!\{|loop \{`) — PROVEN: every `ChannelRuntimeV1`
+  call is reactive.
+- `crates/foundation/src/time.rs` `Deadline`/`MonotonicClock`/`ManualClock`/`SystemClock::new()`
+  (~50-166) — PROVEN: tested, unused in `apps/game-server/src`, fresh incomparable origin per call.
+  `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144 (was 143) — PROVEN: authors `revert_after_ms`.
+- `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §7/§9/§10/§14/§15.4/§28 — PROVEN: the ordering/scheduling/
+  firing/cancellation/capacity/error-mapping contract §7 binds `revert_after` to. `foundation/mod.rs`
+  `ScopeRuntimeFence::accept_input` (~1040-1050) — PROVEN: mints an ordinal per generation only,
+  tracks no timer identity. `movement.rs` `MovementOwnerTurn` (~201-249) — PROVEN: existing bounded
+  `max_inputs` precedent for due-timer admission bounding.
+- PR #1055 (merged, `070d119`) generalized `LocalObjectRuntime` off Open/Close per D38; PR #1046
+  (merged) shipped 1a/1b/1c. `git diff ac8395b8 origin/main` — PROVEN: neither touches
+  `foundation/{mod,admission,runtime_actor_carrier}.rs`, `connection.rs`, `movement.rs` or
+  `crates/foundation/src/time.rs`; only `world_runtime.rs` and the encounter doc's line numbers
+  shifted.
 
 ## High-risk authority/recovery qualification
 
@@ -120,33 +115,37 @@ reason: >
 
 ## Implementation / findings
 
-Initial delta: added §7 (revert_after owner/options); recorded CW3's 1a/1b/1c delta and C3 in
-§4/§5/§8 without designing them.
+Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3 in §4/§5/§8 without designing them.
 
-Round 1 (coordinator): fixed §-numbering (decision §7, Follow-up §8); CW3 (not CW4) attribution;
-§8 item 7 renamed to the scope-runtime/Foundation carrier lane; §7 option 2 made honest (no proven
-scope cadence, grep evidence).
+Round 1 (coordinator): fixed §-numbering; CW3 (not CW4) attribution; §7 option 2 made honest (no
+proven scope cadence).
 
-Round 2 (Codex, bbb3b4cd): added `Deadline` option (`crates/foundation/src/time.rs`, unused in
-`apps/game-server/src`; `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md:143` authors `revert_after_ms`),
-made it the recommendation over the round-1 step counter; corrected `advance_owner` (test-only,
-~2169-2176) to production-only evidence (`from_committed_assignment` ~702-750); decided
-occupied-revert refuses permanently (`terminalize_current`/`resume_pending`, ~817-846).
+Round 2 (Codex, bbb3b4cd): added `Deadline` option, made it the recommendation over the round-1 step
+counter; corrected `advance_owner` to production-only evidence; decided occupied-revert refuses
+permanently.
 
-Round 3 (Codex, 350dca59, FINAL): all four findings trace to the existing FND-03 timer contract
-(§9/§10/§15.4/§28, read before writing). Rebound §7 to an FND-03 §10 authoritative timer:
-- P1 commit path: `apply`/`resume_pending` (~776-832) need a live `GameSessionAuthoritySnapshot`/
-  `CommandIngress` a disconnected player's timer lacks. Fixed: due timer is now a normalized §10.2
-  input minting its own `RuntimeExecutionOrdinal` via the scope's ordinal issuer
-  (`RuntimeExecutionOrdinal`/`ScopeRuntimeFence`, `foundation/mod.rs` ~959-1058, currently
-  per-`GameSession` in `admission.rs`), reusing only `prepare`'s pure delta logic.
-- P1 timer capacity: FND-03 §15.4 requires the original operation to fail before commit if timer
-  capacity is unavailable. Fixed: capacity reserved in the same staged commit; added the atomicity
-  obligation and `CAPACITY_EXCEEDED` mapping (§28; numeric bound left to `RESOURCE_LIMITS_REGISTRY.json`).
-- P2 equal-deadline: bound a stable (deadline, then derived identity) tie-break plus a new ordinal
-  per accepted due timer (§10.1/§10.2); added the determinism obligation.
-- P2 clock origin: `SystemClock::new()` (~98-104) starts a fresh, incomparable origin each call.
-  Fixed: one shared clock instance per scope for schedule and wake; added a cross-clock obligation.
+Round 3 (Codex, 350dca59): rebound §7 to an FND-03 §10 authoritative timer — due timer mints its own
+`RuntimeExecutionOrdinal` via a scope-wide ordinal issuer instead of `apply`/`resume_pending`/
+`CommandIngress`; staged timer-capacity atomicity (§15.4/§28); equal-deadline tie-break; one shared
+clock instance per scope.
+
+Round 4 (owner-authorized, on c76bf9b9): merged `origin/main` (merge commit, clean, no conflicts —
+`git merge origin/main`) picking up PR #1055 (CW4 runtime generalized off Open/Close) and PR #1046
+(CW3 1a/1b/1c), so §4/§8 now cite the merged state instead of "pending"; re-verified and updated
+every stale `world_runtime.rs` line-number citation in §7 against the new file. Resolved 3 Codex P2s
+on FND-03 timer internals by binding tighter to FND-03, not re-designing it:
+- Equal-deadline tie-break is §10.1's own — the *scheduling* resolution's `RuntimeExecutionOrdinal`
+  plus its within-resolution sequence, retained in the timer key — not the revert's derived child
+  identity (that stays the separate fire-once/dedup identity). Added a "replays in scheduling order"
+  obligation.
+- `ScopeRuntimeFence::accept_input` (`foundation/mod.rs` ~1040-1050, verified) tracks no timer
+  identity by itself. Fixed: an atomic pending→removed/in-flight transition must happen *before*
+  `accept_input` is called; a re-presented already-fired entry is a no-op that never reaches
+  `accept_input`. Added a "double presentation mints exactly one ordinal" obligation.
+- Bounded due work per FND-03 §7 (cross-source arbitration) and §14 (item 4, timer population/
+  catch-up work): the driver admits at most a registered max due batch per owner cycle, mirroring
+  `movement.rs`'s `MovementOwnerTurn`/`max_inputs` precedent (verified), yielding the remainder to
+  later-cycle owner arbitration. Added a "burst does not starve other inputs" obligation.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -156,14 +155,14 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-3; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-4; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 45 workflows)." (re-run after each pre-freeze fix commit, rounds 1-3;
-  unchanged)
+  validation passed (23 files, 46 workflows)." (round 4, after merging origin/main; workflow count
+  rose from 45 with the merge, unrelated to this task's own doc-only changes)
 
 ### E2E
 
@@ -208,10 +207,11 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 3 (FINAL, Codex review) rebound §7's revert_after recommendation to the
-  existing FND-03 §10 authoritative-timer contract: due-timer input (not a client command), staged
-  timer-capacity atomicity (§15.4), equal-deadline RuntimeExecutionOrdinal tie-break, one shared
-  clock instance per scope; both validators re-run and still pass.
+  PR #1045 pre-freeze round 4 (owner-authorized): merged origin/main (PR #1055 CW4 runtime, #1046
+  CW3 content model), updated §4/§8 to cite the merged state, re-verified every world_runtime.rs
+  citation against new line numbers, and resolved 3 Codex P2s on FND-03 timer internals (ordinal
+  tie-break, pending-removal-before-accept dedup, bounded due-work admission); both validators
+  re-run and still pass.
 status: implementing
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
