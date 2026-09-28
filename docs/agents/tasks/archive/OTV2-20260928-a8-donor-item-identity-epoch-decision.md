@@ -87,7 +87,7 @@ Codex review of `c97bd25`: one P1, ACCEPTED in repair generation 1 of 1 (#162 co
 - Protected-main readback: all four changed files on `9f98b067` are byte-identical to the frozen
   head `e4e447b`.
 - The PR body predates the repair (the alias gate); the documents are authoritative.
-- Archived under `OTV2-20260928-owner-decision-batch-d98-d108`.
+- Archived under `OTV2-20260928-owner-decision-batch-d118-d128`.
 
 ## Context checkpoint
 
