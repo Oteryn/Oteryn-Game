@@ -481,3 +481,14 @@ fn a_conjure_has_no_ability_effects() {
     assert_eq!(plan.effects, None);
     assert_eq!(plan.side_effects, cast.effects);
 }
+
+#[test]
+fn a_wheel_spell_is_not_admitted() {
+    let (spell, dependencies) = STARTER[0];
+    let mut spell: Value = serde_json::from_str(spell).expect("spell");
+    let dependencies: Value = serde_json::from_str(dependencies).expect("dependencies");
+    spell["spell"]["requirements"]["wheel_unlock"] = Value::Bool(true);
+    assert!(spell_from_bundle(&spell, &dependencies).is_err());
+    spell["spell"]["requirements"]["wheel_unlock"] = Value::Bool(false);
+    assert!(spell_from_bundle(&spell, &dependencies).is_ok());
+}

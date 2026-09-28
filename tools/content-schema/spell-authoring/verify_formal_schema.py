@@ -139,6 +139,25 @@ def case(base_name, where, path, value, expect):
     return mutate(base_name, change, expect)
 
 
+def condition_effect(condition, duration_ms=370000):
+    """light_healing with its second effect replaced by a condition effect (S17)."""
+    effect = {'identity': identity('oteryn:effect.spell.light_healing.cure_paralysis'), 'operation': 'condition',
+              'condition': condition}
+    if duration_ms is not None:
+        effect['duration_ms'] = duration_ms
+    return case('light_healing', 'deps', ('effects', 1), effect, None)
+
+
+LIGHT = {'type': 'light', 'lifetime': 'fixed_duration', 'light': {'level': 6, 'color': 215}}
+REGENERATION = {'type': 'regeneration', 'lifetime': 'fixed_duration', 'buff_spell': True,
+                'regeneration': {'health_gain': 20, 'health_interval_ms': 3000}}
+VALID_MUTATIONS = {'light condition': condition_effect(LIGHT), 'regeneration condition': condition_effect(REGENERATION)}
+
+
+def expecting(mutation, expect):
+    return (*mutation[:3], expect)
+
+
 NEGATIVE = {
     'instant without words': case('light_healing', 'spell', ('words',), DELETE, "'words' is a required property"),
     'instant with rune': case('light_healing', 'spell', ('rune',), SUDDEN_DEATH_RUNE['spell']['rune'], 'should not be valid'),
@@ -174,6 +193,16 @@ NEGATIVE = {
     'unreached extra formula': case('light_healing', 'deps', ('formulas', 1), {**LIGHT_HEALING_DEPS['formulas'][0], 'identity': identity('oteryn:formula.other')}, 'is not reached'),
     'unknown targeting parameter': case('light_healing', 'spell', ('targeting', 'parameter'), 'number', 'is not one of'),
     'extra spell field': case('light_healing', 'spell', ('price',), 170, 'Additional properties'),
+    'undeclared cooldown group': case('light_healing', 'spell', ('groups', 0, 'group'), 'mystery', 'not a declared primary cooldown group'),
+    'secondary group as primary': case('light_healing', 'spell', ('groups', 0, 'group'), 'ultimatestrikes', 'not a declared primary cooldown group'),
+    'light without level': expecting(condition_effect({**LIGHT, 'light': {'color': 215}}), "'level' is a required property"),
+    'light colour above 255': expecting(condition_effect({**LIGHT, 'light': {'level': 6, 'color': 256}}), 'greater than the maximum'),
+    'light block on another type': expecting(condition_effect({**LIGHT, 'type': 'haste'}), 'should not be valid'),
+    'regeneration gain without interval': expecting(condition_effect({**REGENERATION, 'regeneration': {'health_gain': 20}}),
+                                                    'is a dependency of'),
+    'regeneration type without block': expecting(condition_effect({'type': 'regeneration', 'lifetime': 'fixed_duration'}),
+                                                 "'regeneration' is a required property"),
+    'wheel_unlock not boolean': case('light_healing', 'spell', ('requirements', 'wheel_unlock'), 'yes', 'is not of type'),
 }
 
 
@@ -201,6 +230,11 @@ def main():
     write_fixtures()
     failures, report = [], []
     for name, (spell, deps) in POSITIVE.items():
+        errors = validate(spell, deps, CATALOG)
+        report.append({'case': 'valid ' + name, 'passed': not errors, 'errors': errors})
+        if errors:
+            failures.append(f'valid {name}: {errors}')
+    for name, (_, spell, deps, _) in VALID_MUTATIONS.items():
         errors = validate(spell, deps, CATALOG)
         report.append({'case': 'valid ' + name, 'passed': not errors, 'errors': errors})
         if errors:

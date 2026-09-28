@@ -1224,6 +1224,161 @@ def test_routed_non_item_unmove_map_geometry():
     check("family_profile_unresolved" in report["blockers"], report)
 
 
+def test_wrap_target_inheritance_resolves():
+    # Owner decision 2026-09-28: an unresolved item's own `wrapableto` names another
+    # items.xml id whose own `primarytype` resolves through `PRIMARYTYPE_PROFILE`.
+    item, _deps, report = convert(
+        {
+            460: {"attrs": {"wrapableto": "90001"}},
+            90001: {"attrs": {"primarytype": "furniture"}},
+        },
+        item_id=460,
+    )
+    check(item is not None, report)
+    check(item["family_profile"] == "decoration", item)
+    check(item["family_profile_basis"] == "engine_wrap_target", item)
+    check(
+        item["family_profile_evidence"]
+        == {"wrap_target_id": 90001, "wrap_target_primarytype": "furniture"},
+        item,
+    )
+    check(report["family_profile_basis"] == "engine_wrap_target", report)
+
+
+def test_wrap_target_inheritance_unresolved_target_stays_unresolved():
+    # wrapableto names an id absent from items.xml entirely.
+    item, _deps, report = convert(
+        {461: {"attrs": {"wrapableto": "90099"}}}, item_id=461
+    )
+    check(item is None, report)
+    check(report["converted"] is False, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+    # wrapableto names a real id whose own primarytype is not admitted.
+    item, _deps, report = convert(
+        {
+            462: {"attrs": {"wrapableto": "90002"}},
+            90002: {"attrs": {"primarytype": "others"}},
+        },
+        item_id=462,
+    )
+    check(item is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+    # wrapableto names a real id with no primarytype attribute at all.
+    item, _deps, report = convert(
+        {463: {"attrs": {"wrapableto": "90003"}}, 90003: {"attrs": {}}}, item_id=463
+    )
+    check(item is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_wrap_target_never_overrides_already_resolved_item():
+    # Engine-resolved (this item's own primarytype) wins even though its wrapableto also
+    # resolves through the target's primarytype.
+    item, _deps, report = convert(
+        {
+            464: {"attrs": {"primarytype": "valuables", "wrapableto": "90001"}},
+            90001: {"attrs": {"primarytype": "furniture"}},
+        },
+        item_id=464,
+    )
+    check(item["family_profile"] == "material_valuable", item)
+    check("family_profile_basis" not in item, item)
+    check("family_profile_basis" not in report, report)
+
+    # Wiki-evidence-resolved wins for the same reason: wrap-target inheritance is the
+    # lowest-priority resolution, below the wiki fallback.
+    key = engine_items.build_identity_index()[465][0]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "document", ["wiki wins over wrap"], field="primarytype", value="Books"
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {
+            465: {"name": "Wiki Wins Over Wrap", "attrs": {"wrapableto": "90001"}},
+            90001: {"attrs": {"primarytype": "furniture"}},
+        },
+        fallback,
+        item_id=465,
+    )
+    check(item["family_profile"] == "document", item)
+    check(item["family_profile_basis"] == "wiki_evidence_fallback", item)
+
+
+def test_corpse_decoration_routes_without_take():
+    # Owner decision 2026-09-28: an unresolved item named "dead ..." with no `flags.take`
+    # is a non-take-able map/quest decoration corpse, routed to WorldObject, never an Item.
+    item, _deps, report = convert(
+        {466: {"name": "dead dragon", "attrs": {}, "flags": {}}}, item_id=466
+    )
+    check(item is None, report)
+    check(report["converted"] is False, report)
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "corpse_decoration"},
+        report,
+    )
+    check(report["blockers"] == [], report)
+
+
+def test_corpse_with_take_in_owner_table():
+    # A take-able "dead ..." name in the explicit owner table resolves to its family.
+    item, _deps, report = convert(
+        {467: {"name": "dead rat", "attrs": {}, "flags": {"flags.take": True}}},
+        item_id=467,
+    )
+    check(item is not None, report)
+    check(item["family_profile"] == "material_valuable", item)
+    check(item["family_profile_basis"] == "owner_name_rule", item)
+    check(
+        item["family_profile_evidence"]
+        == {"rule": "take_able_dead_creature", "name": "dead rat"},
+        item,
+    )
+
+
+def test_corpse_takeable_unlisted_name_stays_unresolved():
+    # A take-able "dead ..." name absent from the owner table stays unresolved (fail
+    # closed) rather than guessed, and is never routed away as a non-Item.
+    item, _deps, report = convert(
+        {
+            468: {
+                "name": "dead unlisted creature",
+                "attrs": {},
+                "flags": {"flags.take": True},
+            }
+        },
+        item_id=468,
+    )
+    check(item is None, report)
+    check(report["converted"] is False, report)
+    check(report.get("routed_non_item") is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_real_corpse_flag_item_unchanged_by_dead_name_rule():
+    # An appearance-flagged corpse whose name also starts with "dead " is routed by the
+    # pre-existing flags.corpse rule in `non_item_route`, before family classification
+    # (and so before the new dead-name rule) ever runs; unchanged by this owner decision.
+    item, _deps, report = convert(
+        {
+            469: {
+                "name": "dead rat",
+                "attrs": {},
+                "flags": {"flags.corpse": True, "flags.take": True},
+            }
+        },
+        item_id=469,
+    )
+    check(item is None, report)
+    check(
+        report["routed_non_item"] == {"owner": "WorldObject", "reason": "corpse"},
+        report,
+    )
+
+
 def test_family_profile_fallbacks():
     # soul cores: a new PRIMARYTYPE_PROFILE entry.
     item, _deps, report = convert(
@@ -1552,6 +1707,20 @@ def test_family_profile_evidence_shapes_are_mutually_exclusive():
     for mixed in (mixed_direct, mixed_disambiguation):
         validators = sorted({error.validator for error in validator.iter_errors(mixed)})
         check(validators == ["not"], (mixed["resolution"], validators))
+
+    # The two new (owner decision 2026-09-28) evidence shapes validate on their own...
+    wrap_evidence = {"wrap_target_id": 23398, "wrap_target_primarytype": "furniture"}
+    owner_name_evidence = {"rule": "take_able_dead_creature", "name": "dead rat"}
+    for valid in (wrap_evidence, owner_name_evidence):
+        errors = list(validator.iter_errors(valid))
+        check(not errors, [error.message for error in errors])
+    # ...but mixing any two families' fields together is rejected, and an evidence value
+    # with none of the three families' fields is rejected too (never a silently-empty fact).
+    mixed_wrap_and_wiki = {**wrap_evidence, "resolution": direct["resolution"]}
+    mixed_owner_and_wrap = {**owner_name_evidence, **wrap_evidence}
+    empty_evidence = {}
+    for invalid in (mixed_wrap_and_wiki, mixed_owner_and_wrap, empty_evidence):
+        check(list(validator.iter_errors(invalid)), invalid)
 
 
 def test_wiki_fallback_loader_rejects_unadmitted_broad_bucket_value():
@@ -2567,6 +2736,13 @@ def main():
         test_fields_with_no_admitted_engine_data_stay_blocked,
         test_routed_non_item_corpse_and_placeholder_and_terrain,
         test_routed_non_item_unmove_map_geometry,
+        test_wrap_target_inheritance_resolves,
+        test_wrap_target_inheritance_unresolved_target_stays_unresolved,
+        test_wrap_target_never_overrides_already_resolved_item,
+        test_corpse_decoration_routes_without_take,
+        test_corpse_with_take_in_owner_table,
+        test_corpse_takeable_unlisted_name_stays_unresolved,
+        test_real_corpse_flag_item_unchanged_by_dead_name_rule,
         test_family_profile_fallbacks,
         test_wiki_fallback_direct_hit,
         test_wiki_fallback_name_mismatch_is_ignored,

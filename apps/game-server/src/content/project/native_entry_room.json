@@ -115,6 +115,25 @@
         "revision": "oteryn:rev/entry-r1"
       },
       "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "LocalObject",
+      "identity": {
+        "family": "LocalObject",
+        "key": "oteryn:local-object/entry-door",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "client_projection": "ClientSafe",
+      "states": [
+        {
+          "key": "oteryn:reference.state.closed",
+          "collision": "Present"
+        },
+        {
+          "key": "oteryn:reference.state.open",
+          "collision": "Absent"
+        }
+      ]
     }
   ],
   "declarations": [
@@ -212,6 +231,30 @@
         "order": 0
       },
       "disposition": "CandidateOnly"
+    },
+    {
+      "key": "oteryn:cell/entry-door",
+      "world": "oteryn:entry.world",
+      "map_revision": "oteryn:map/entry-r1",
+      "definition": {
+        "family": "Terrain",
+        "key": "oteryn:terrain/stone-floor",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "area": {
+        "family": "Area",
+        "key": "oteryn:area/entry-room",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "coordinate_frame": "oteryn:entry.frame",
+      "x": 1,
+      "y": -1,
+      "floor": 0,
+      "presentation_order": {
+        "plane": 0,
+        "order": 0
+      },
+      "disposition": "CandidateOnly"
     }
   ],
   "native_first_entry": {
@@ -257,6 +300,28 @@
         "placement_key": "oteryn:cell/entry-north",
         "region_key": "oteryn:region/entry",
         "collision": "Blocked"
+      }
+    ],
+    "doors": [
+      {
+        "cell": {
+          "placement_key": "oteryn:cell/entry-door",
+          "region_key": "oteryn:region/entry",
+          "collision": "Walkable"
+        },
+        "definition": {
+          "family": "LocalObject",
+          "key": "oteryn:local-object/entry-door",
+          "revision": "oteryn:rev/entry-r1"
+        },
+        "closed_state": "oteryn:reference.state.closed",
+        "open_state": "oteryn:reference.state.open",
+        "open_transition": {
+          "key": "oteryn:transition/entry-door-open"
+        },
+        "close_transition": {
+          "key": "oteryn:transition/entry-door-close"
+        }
       }
     ],
     "relocation": {

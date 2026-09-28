@@ -216,7 +216,9 @@ facing north with an optional north-west `diagonal`, rotated as `AreaCombat::get
 `fixed` DoT profile with explicit `fixed_ticks` and `first_tick` `immediate`/`after_interval`
 (`Condition:addDamage` and `CONDITION_PARAM_DELAYED`), `attribute_modifiers`
 (`percent_of_base`/`add`), `Ability.variants` (uniform pick), `Ability.chain`, the Formula kind
-`caster_magnitude` and the schedule fields `magnitude` and `range_tiles`.
+`caster_magnitude` and the schedule fields `magnitude` and `range_tiles`. Spell decision S17
+(`OTERYN_SPELL_AUTHORING_SCHEMA_V1.md` §5) adds the condition fields `light` (`level`, `color`), `regeneration`
+(`health_gain`/`health_interval_ms`, `mana_gain`/`mana_interval_ms`) and `buff_spell`.
 
 `spell_scripts.py` evaluates a registered spell in a stubbed sandbox, calls its `onCastSpell` with
 a stub caster and records which Combat ran; every value of a small `math.random` range is tried,

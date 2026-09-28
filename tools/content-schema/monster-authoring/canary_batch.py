@@ -1872,6 +1872,26 @@ class Converter:
                 'minimum_multiplier': ratio(low_a), 'minimum_offset': int(low_b),
                 'maximum_multiplier': ratio(high_a), 'maximum_offset': int(high_b)}})
             body['condition']['speed_formula'] = ref('Formula', formula_key)
+        elif kind == 'CONDITION_LIGHT' and not formula and set(params) == {'CONDITION_PARAM_LIGHT_LEVEL',
+                                                                          'CONDITION_PARAM_LIGHT_COLOR'}:
+            body['condition']['light'] = {'level': int(params['CONDITION_PARAM_LIGHT_LEVEL']),
+                                          'color': int(params['CONDITION_PARAM_LIGHT_COLOR'])}
+        elif kind == 'CONDITION_REGENERATION' and not formula and params:
+            regeneration = {}
+            for resource in ('health', 'mana'):
+                gain = params.pop(f'CONDITION_PARAM_{resource.upper()}GAIN', None)
+                interval = params.pop(f'CONDITION_PARAM_{resource.upper()}TICKS', None)
+                if (gain is None) != (interval is None):
+                    raise SpellUnresolved(f'condition {kind} sets only one of the {resource} gain and interval.')
+                if gain is not None:
+                    regeneration[f'{resource}_gain'] = int(gain)
+                    regeneration[f'{resource}_interval_ms'] = int(interval)
+            buff = params.pop('CONDITION_PARAM_BUFF_SPELL', None)
+            if params or not regeneration:
+                raise SpellUnresolved(f'condition {kind} parameters {sorted(params)} have no authoring field.')
+            body['condition']['regeneration'] = regeneration
+            if buff is not None:
+                body['condition']['buff_spell'] = bool(buff)
         elif params or formula:
             raise SpellUnresolved(f'condition {kind} parameters {sorted(params)} have no authoring field.')
         return body
