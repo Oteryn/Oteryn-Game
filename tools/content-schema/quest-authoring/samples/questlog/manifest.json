@@ -415,7 +415,8 @@
     "transitions_in_both_servers": 1371,
     "storyline_quests_linked_to_wiki": 52,
     "reward_only_quests_absorbed": 21,
-    "catalogue_quests": 157,
+    "script_only_quests": 35,
+    "catalogue_quests": 192,
     "by_status": {
       "mapped": 529
     }

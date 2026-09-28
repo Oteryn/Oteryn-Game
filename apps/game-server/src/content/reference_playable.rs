@@ -793,6 +793,32 @@ pub struct ReferenceLootDefinition {
     pub entries: Vec<ReferenceLootEntry>,
 }
 
+/// D38 W1a: whether a `LocalObject` state occupies its placement's collision footprint. This is
+/// a distinct vocabulary from `CollisionClass` (static-cell walkability with engineering
+/// provenance, see `content/model.rs`): it describes the overlay state itself, not a map cell.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum LocalObjectCollisionPresence {
+    Present,
+    Absent,
+}
+
+/// D38 W1a: one entry of a `LocalObject` definition's finite state vocabulary. List order carries
+/// no meaning (see `validate_definition_shape`'s duplicate-by-key check); each state independently
+/// declares whether it is collision-`Present` or collision-`Absent` so a future overlay runtime
+/// can read that fact instead of deriving it from an Open/Close intent pair.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct LocalObjectStateDefinition {
+    pub key: ProductionKey,
+    pub collision: LocalObjectCollisionPresence,
+}
+
+/// D38 W1c (coordinator decision, allocation 1c): RETAG is a transition between two states of the
+/// same `LocalObjectCollisionPresence` that differ only in interaction binding (the action-id
+/// rearm). It adds no action-id field anywhere in this model; `TransitionBinding::key`,
+/// `source_state` and `target_state` already carry the identity change, and this intent family is
+/// the only new vocabulary `validate_transition` recognizes for it.
+pub const LOCAL_OBJECT_RETAG_INTENT_FAMILY: &str = "oteryn:reference.intent.local-object-retag";
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[expect(
     clippy::large_enum_variant,
@@ -806,7 +832,7 @@ pub enum ReferenceDefinitionKind {
     Item(ReferenceItemDefinition),
     Creature(ReferenceCreatureDefinition),
     Loot(ReferenceLootDefinition),
-    LocalObjectStates(Vec<ProductionKey>),
+    LocalObjectStates(Vec<LocalObjectStateDefinition>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1272,6 +1298,11 @@ pub struct PlacementRef {
     pub address: SpatialAddress,
     pub presentation_footprint: FootprintRelation,
     pub collision_footprint: FootprintRelation,
+    /// D38 W1b: the authored starting state for a `LocalObject` placement, validated fail-closed
+    /// against that definition's declared state vocabulary (`validate_local_object_placement_state`).
+    /// `None` for any placement whose definition is not `LocalObject`; a `LocalObject` placement
+    /// with `None` here, or a key outside the vocabulary, is rejected at link time.
+    pub local_object_initial_state: Option<ProductionKey>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1341,7 +1372,7 @@ pub enum ClientSafeDefinitionKind {
     Effect(ReferenceEffectFamily),
     Item(ClientSafeItemDefinition),
     Creature(ClientSafeCreatureDefinition),
-    LocalObjectStates(Vec<ProductionKey>),
+    LocalObjectStates(Vec<LocalObjectStateDefinition>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1910,8 +1941,8 @@ fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), Con
             }
             let mut unique = BTreeSet::new();
             for state in states {
-                if !unique.insert(state.clone()) {
-                    return Err(ContentError::DuplicateKey(state.as_str().to_owned()));
+                if !unique.insert(state.key.clone()) {
+                    return Err(ContentError::DuplicateKey(state.key.as_str().to_owned()));
                 }
             }
             Ok(())
@@ -2059,12 +2090,46 @@ fn validate_definition_references(
     }
 }
 
+/// D38 W1b: fail-closed both directions. A `LocalObject` placement must carry an authored
+/// initial state that names a key from the definition's declared vocabulary (missing or unknown
+/// is rejected); a placement whose definition is not `LocalObject` must not carry one.
+fn validate_local_object_placement_state(
+    placement: &PlacementRef,
+    definition: &ReferenceDefinition,
+) -> Result<(), ContentError> {
+    match &definition.kind {
+        ReferenceDefinitionKind::LocalObjectStates(states) => {
+            let initial = placement.local_object_initial_state.as_ref().ok_or(
+                ContentError::InvalidArtifact(
+                    "reference-playable local object placement requires an authored initial state",
+                ),
+            )?;
+            if !states.iter().any(|state| &state.key == initial) {
+                return Err(ContentError::MissingReference {
+                    owner: placement.key.as_str().to_owned(),
+                    target: initial.as_str().to_owned(),
+                });
+            }
+            Ok(())
+        }
+        _ => {
+            if placement.local_object_initial_state.is_some() {
+                return Err(ContentError::InvalidArtifact(
+                    "reference-playable placement declares a local object initial state for a non-local-object definition",
+                ));
+            }
+            Ok(())
+        }
+    }
+}
+
 fn validate_placement(
     source: &ReferencePlayableContentSource,
     placement: &PlacementRef,
     authority: &ReferenceEvidenceAuthority,
 ) -> Result<(), ContentError> {
-    resolve_definition(&source.definitions, &placement.definition)?;
+    let definition = resolve_definition(&source.definitions, &placement.definition)?;
+    validate_local_object_placement_state(placement, definition)?;
     if placement.address.world_id != source.world_id {
         return Err(ContentError::InvalidArtifact(
             "reference-playable placement WorldId mismatch",
@@ -2134,11 +2199,24 @@ fn validate_transition(
         ));
     };
     for state in [&transition.source_state, &transition.target_state] {
-        if !states.contains(state) {
+        if !states.iter().any(|declared| &declared.key == state) {
             return Err(ContentError::MissingReference {
                 owner: transition.key.as_str().to_owned(),
                 target: state.as_str().to_owned(),
             });
+        }
+    }
+    if transition.normalized_intent_family.as_str() == LOCAL_OBJECT_RETAG_INTENT_FAMILY {
+        let collision_of = |key: &ProductionKey| {
+            states
+                .iter()
+                .find(|declared| &declared.key == key)
+                .map(|declared| declared.collision)
+        };
+        if collision_of(&transition.source_state) != collision_of(&transition.target_state) {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable RETAG transition must preserve local-object collision class",
+            ));
         }
     }
     Ok(())

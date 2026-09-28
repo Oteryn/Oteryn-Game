@@ -353,8 +353,14 @@ fn project_keeps_terrain_world_objects_and_loot_typed_and_client_safe() {
             identity: identity("LocalObject", "oteryn:reference.object.project-door"),
             client_projection: ProjectionDocument::ClientSafe,
             states: vec![
-                "oteryn:reference.state.closed".to_owned(),
-                "oteryn:reference.state.open".to_owned(),
+                LocalObjectStateEntryDocument::Typed(LocalObjectStateDocument {
+                    key: "oteryn:reference.state.closed".to_owned(),
+                    collision: LocalObjectCollisionDocument::Present,
+                }),
+                LocalObjectStateEntryDocument::Typed(LocalObjectStateDocument {
+                    key: "oteryn:reference.state.open".to_owned(),
+                    collision: LocalObjectCollisionDocument::Absent,
+                }),
             ],
         },
         ProjectReferenceRecord::Loot {

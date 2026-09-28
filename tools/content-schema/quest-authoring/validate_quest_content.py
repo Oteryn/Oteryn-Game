@@ -128,8 +128,8 @@ def validate_gates(gates_doc, claims_doc, manifest=None):
         keys.add(key)
         if (gate['quest'] is None) != (gate['quest_link_basis'] is None):
             errors.append(f'{key}: quest and quest_link_basis must be set together')
-        if (gate['state'] == 'shared_lock') != (condition['kind'] == 'door_key'):
-            errors.append(f'{key}: only a key door has a shared lock')
+        if (gate['state'] == 'shared_lock') != (condition['kind'] in ('door_key', 'lever')):
+            errors.append(f'{key}: only a key or lever door has a shared lock')
         for placement in gate['placements']:
             position = tuple(placement['position'].values())
             if position in positions:

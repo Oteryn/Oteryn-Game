@@ -1,0 +1,3392 @@
+{
+ "classification": "DERIVED from committed samples; no runtime authority",
+ "features": {
+  "quest_state": "quest-state store (D35)",
+  "npc_dialogue": "NPC dialogue runtime",
+  "reward_claim": "DUR-03 inventory mint and RewardClaim (D39-D42)",
+  "door_key": "door gate: key item",
+  "door_level": "door gate: level",
+  "door_progress": "door gate: quest progress",
+  "trigger_use": "GAME-INTERACTION-01 USE edge",
+  "trigger_step": "GAME-INTERACTION-01 step edges",
+  "trigger_kill": "GAME-INTERACTION-01 death/kill edges",
+  "teleport": "relocation owner (D37)",
+  "world_object": "world-object overlay (D38)",
+  "summon": "GAME-AI-01 spawn",
+  "item_hand_out": "DUR-03 inventory mint",
+  "item_consume": "DUR-03 consumption",
+  "achievement": "Achievement owner",
+  "outfit": "Outfit grant owner",
+  "mount": "Mount grant owner",
+  "experience": "Character XP award from an interaction",
+  "kv_state": "owner for key-value writes (none yet)",
+  "condition": "owner for player conditions (none yet)",
+  "boss_cooldown": "boss cooldown owner (none yet)",
+  "creature_removal": "owner for creature removal (none yet)",
+  "scheduler": "owner for delayed callbacks (none yet)"
+ },
+ "counts": {
+  "quests": 192,
+  "by_kind": {
+   "reward_only": 99,
+   "script_only": 35,
+   "storyline": 58
+  },
+  "quests_needing_feature": {
+   "achievement": 23,
+   "boss_cooldown": 11,
+   "condition": 18,
+   "creature_removal": 17,
+   "door_progress": 51,
+   "experience": 2,
+   "item_consume": 58,
+   "item_hand_out": 45,
+   "kv_state": 8,
+   "mount": 4,
+   "npc_dialogue": 67,
+   "outfit": 6,
+   "quest_state": 96,
+   "reward_claim": 120,
+   "scheduler": 48,
+   "summon": 35,
+   "teleport": 76,
+   "trigger_kill": 48,
+   "trigger_step": 74,
+   "trigger_use": 175,
+   "world_object": 76
+  },
+  "quests_without_data_gaps": 99,
+  "interactions_joined": 1192,
+  "interactions_unlinked": 29
+ },
+ "unlock_order": [
+  {
+   "feature": "trigger_use",
+   "owner": "GAME-INTERACTION-01 USE edge",
+   "quests_complete_on_engine_side": 1,
+   "of_which_without_data_gaps": 1
+  },
+  {
+   "feature": "reward_claim",
+   "owner": "DUR-03 inventory mint and RewardClaim (D39-D42)",
+   "quests_complete_on_engine_side": 75,
+   "of_which_without_data_gaps": 75
+  },
+  {
+   "feature": "world_object",
+   "owner": "world-object overlay (D38)",
+   "quests_complete_on_engine_side": 78,
+   "of_which_without_data_gaps": 75
+  },
+  {
+   "feature": "teleport",
+   "owner": "relocation owner (D37)",
+   "quests_complete_on_engine_side": 81,
+   "of_which_without_data_gaps": 76
+  },
+  {
+   "feature": "trigger_step",
+   "owner": "GAME-INTERACTION-01 step edges",
+   "quests_complete_on_engine_side": 88,
+   "of_which_without_data_gaps": 76
+  },
+  {
+   "feature": "item_consume",
+   "owner": "DUR-03 consumption",
+   "quests_complete_on_engine_side": 91,
+   "of_which_without_data_gaps": 77
+  },
+  {
+   "feature": "trigger_kill",
+   "owner": "GAME-INTERACTION-01 death/kill edges",
+   "quests_complete_on_engine_side": 94,
+   "of_which_without_data_gaps": 78
+  },
+  {
+   "feature": "quest_state",
+   "owner": "quest-state store (D35)",
+   "quests_complete_on_engine_side": 95,
+   "of_which_without_data_gaps": 78
+  },
+  {
+   "feature": "npc_dialogue",
+   "owner": "NPC dialogue runtime",
+   "quests_complete_on_engine_side": 106,
+   "of_which_without_data_gaps": 86
+  },
+  {
+   "feature": "door_progress",
+   "owner": "door gate: quest progress",
+   "quests_complete_on_engine_side": 121,
+   "of_which_without_data_gaps": 98
+  },
+  {
+   "feature": "scheduler",
+   "owner": "owner for delayed callbacks (none yet)",
+   "quests_complete_on_engine_side": 127,
+   "of_which_without_data_gaps": 98
+  },
+  {
+   "feature": "item_hand_out",
+   "owner": "DUR-03 inventory mint",
+   "quests_complete_on_engine_side": 135,
+   "of_which_without_data_gaps": 99
+  },
+  {
+   "feature": "summon",
+   "owner": "GAME-AI-01 spawn",
+   "quests_complete_on_engine_side": 144,
+   "of_which_without_data_gaps": 99
+  },
+  {
+   "feature": "achievement",
+   "owner": "Achievement owner",
+   "quests_complete_on_engine_side": 149,
+   "of_which_without_data_gaps": 99
+  },
+  {
+   "feature": "condition",
+   "owner": "owner for player conditions (none yet)",
+   "quests_complete_on_engine_side": 158,
+   "of_which_without_data_gaps": 99
+  },
+  {
+   "feature": "creature_removal",
+   "owner": "owner for creature removal (none yet)",
+   "quests_complete_on_engine_side": 164,
+   "of_which_without_data_gaps": 99
+  },
+  {
+   "feature": "boss_cooldown",
+   "owner": "boss cooldown owner (none yet)",
+   "quests_complete_on_engine_side": 175,
+   "of_which_without_data_gaps": 99
+  },
+  {
+   "feature": "kv_state",
+   "owner": "owner for key-value writes (none yet)",
+   "quests_complete_on_engine_side": 182,
+   "of_which_without_data_gaps": 99
+  },
+  {
+   "feature": "outfit",
+   "owner": "Outfit grant owner",
+   "quests_complete_on_engine_side": 186,
+   "of_which_without_data_gaps": 99
+  },
+  {
+   "feature": "mount",
+   "owner": "Mount grant owner",
+   "quests_complete_on_engine_side": 190,
+   "of_which_without_data_gaps": 99
+  },
+  {
+   "feature": "experience",
+   "owner": "Character XP award from an interaction",
+   "quests_complete_on_engine_side": 192,
+   "of_which_without_data_gaps": 99
+  }
+ ],
+ "quests": [
+  {
+   "quest": "canary:quest/a_father_s_burden_quest",
+   "kind": "storyline",
+   "features": [
+    "door_progress",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "trigger_use"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 3
+   }
+  },
+  {
+   "quest": "canary:quest/a_pirates_tail",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "item_consume",
+    "mount",
+    "outfit",
+    "quest_state",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 27,
+   "data_gaps": {
+    "interactions_with_gaps": 26,
+    "unresolved_items": 128
+   }
+  },
+  {
+   "quest": "canary:quest/adorned_uh_rune_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/adventurers_guild",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 5,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 5
+   }
+  },
+  {
+   "quest": "canary:quest/adventures_of_galthen_quest",
+   "kind": "script_only",
+   "features": [
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "kv_state",
+    "quest_state",
+    "teleport",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 8,
+   "data_gaps": {
+    "interactions_with_gaps": 7,
+    "unresolved_items": 11
+   }
+  },
+  {
+   "quest": "canary:quest/alawar_s_vault_quest",
+   "kind": "reward_only",
+   "features": [
+    "item_consume",
+    "reward_claim",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "canary:quest/an_interest_in_botany_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "quest_state",
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/an_uneasy_alliance_quest",
+   "kind": "script_only",
+   "features": [
+    "door_progress",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "trigger_kill",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 2,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 2
+   }
+  },
+  {
+   "quest": "canary:quest/assassin_outfit",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_step"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "canary:quest/barbarian_arena_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "quest_state",
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/barbarian_axe_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/battle_axe_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/bear_room_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/behemoth_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "canary:quest/berserker_treasure_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/bigfoot_s_burden_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "boss_cooldown",
+    "condition",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 30,
+   "data_gaps": {
+    "interactions_with_gaps": 27,
+    "unresolved_items": 73
+   }
+  },
+  {
+   "quest": "canary:quest/black_knight_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/blood_brothers_quest",
+   "kind": "storyline",
+   "features": [
+    "creature_removal",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 13,
+   "data_gaps": {
+    "interactions_with_gaps": 10,
+    "unresolved_items": 49
+   }
+  },
+  {
+   "quest": "canary:quest/blood_herb_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/captain_iglues_treasure_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/children_of_the_revolution_quest",
+   "kind": "storyline",
+   "features": [
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 10,
+   "data_gaps": {
+    "interactions_with_gaps": 5,
+    "unresolved_items": 26
+   }
+  },
+  {
+   "quest": "canary:quest/circle_room_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/combat_knife_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/cradle_of_monsters",
+   "kind": "script_only",
+   "features": [
+    "trigger_kill",
+    "trigger_step",
+    "world_object"
+   ],
+   "interactions": 4,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 9
+   }
+  },
+  {
+   "quest": "canary:quest/crusader_helmet_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/crystal_wand_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/cults_of_tibia_quest",
+   "kind": "storyline",
+   "features": [
+    "boss_cooldown",
+    "condition",
+    "creature_removal",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 38,
+   "data_gaps": {
+    "interactions_with_gaps": 31,
+    "unresolved_items": 205
+   }
+  },
+  {
+   "quest": "canary:quest/dangerous_depths_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "boss_cooldown",
+    "creature_removal",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 25,
+   "data_gaps": {
+    "interactions_with_gaps": 20,
+    "unresolved_items": 92
+   }
+  },
+  {
+   "quest": "canary:quest/darashia_dragon_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/dark_armor_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/dark_trails_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "quest_state",
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/dawnport_quest",
+   "kind": "storyline",
+   "features": [
+    "item_consume",
+    "kv_state",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 7,
+   "data_gaps": {
+    "interactions_with_gaps": 6,
+    "unresolved_items": 17
+   }
+  },
+  {
+   "quest": "canary:quest/dead_archer_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/deeper_fibula_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "teleport",
+    "trigger_use"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/deeplings_worldchange",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "quest_state",
+    "summon",
+    "teleport",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 8,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 4
+   }
+  },
+  {
+   "quest": "canary:quest/demon_helmet_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 3,
+    "unresolved_items": 9
+   }
+  },
+  {
+   "quest": "canary:quest/demon_oak",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "summon",
+    "teleport",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 6,
+   "data_gaps": {
+    "interactions_with_gaps": 5,
+    "unresolved_items": 18
+   }
+  },
+  {
+   "quest": "canary:quest/demona_ring_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/desert_dungeon_quest",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 3
+   }
+  },
+  {
+   "quest": "canary:quest/devil_helmet_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 2,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 4
+   }
+  },
+  {
+   "quest": "canary:quest/double_hero_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/doublet_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/draconia_quest",
+   "kind": "reward_only",
+   "features": [
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 4,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 4
+   }
+  },
+  {
+   "quest": "canary:quest/dragon_corpse_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/dragon_tower_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/dreamer_s_challenge_quest",
+   "kind": "reward_only",
+   "features": [
+    "item_consume",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 22,
+   "data_gaps": {
+    "interactions_with_gaps": 17,
+    "unresolved_items": 89
+   }
+  },
+  {
+   "quest": "canary:quest/druid_outfits_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "quest_state",
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/edron_goblin_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/elemental_spheres_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 11,
+   "data_gaps": {
+    "interactions_with_gaps": 11,
+    "unresolved_items": 50
+   }
+  },
+  {
+   "quest": "canary:quest/elephant_tusk_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/emperor_s_cookies_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/explorer_brooch_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/factions",
+   "kind": "storyline",
+   "features": [
+    "npc_dialogue",
+    "quest_state"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/fanfare_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/feaster_of_souls_quest",
+   "kind": "script_only",
+   "features": [],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/ferumbras_ascension_quest",
+   "kind": "reward_only",
+   "features": [
+    "achievement",
+    "creature_removal",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "mount",
+    "npc_dialogue",
+    "outfit",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 61,
+   "data_gaps": {
+    "interactions_with_gaps": 55,
+    "unresolved_items": 171
+   }
+  },
+  {
+   "quest": "canary:quest/fire_axe_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/fishing_box_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/forgotten_knowledge_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "creature_removal",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 39,
+   "data_gaps": {
+    "interactions_with_gaps": 34,
+    "unresolved_items": 127
+   }
+  },
+  {
+   "quest": "canary:quest/formogar_mine_hoist",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_step"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 2
+   }
+  },
+  {
+   "quest": "canary:quest/friends_and_traders",
+   "kind": "storyline",
+   "features": [
+    "npc_dialogue",
+    "quest_state"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/geomancer_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/ghoul_room_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/giant_smithhammer_quest",
+   "kind": "script_only",
+   "features": [
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 2
+   }
+  },
+  {
+   "quest": "canary:quest/goblin_temple_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/grave_danger_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "boss_cooldown",
+    "condition",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 63,
+   "data_gaps": {
+    "interactions_with_gaps": 44,
+    "unresolved_items": 121
+   }
+  },
+  {
+   "quest": "canary:quest/griffin_shield_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/grimvale_mini_world_change",
+   "kind": "script_only",
+   "features": [
+    "boss_cooldown",
+    "condition",
+    "item_consume",
+    "item_hand_out",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 11,
+   "data_gaps": {
+    "interactions_with_gaps": 7,
+    "unresolved_items": 35
+   }
+  },
+  {
+   "quest": "canary:quest/grimvale_quest",
+   "kind": "script_only",
+   "features": [
+    "door_progress",
+    "quest_state"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/heart_of_destruction_quest",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "boss_cooldown",
+    "creature_removal",
+    "item_hand_out",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 24,
+   "data_gaps": {
+    "interactions_with_gaps": 19,
+    "unresolved_items": 161
+   }
+  },
+  {
+   "quest": "canary:quest/heaven_blossom_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/hero_of_rathleton_quest",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "item_consume",
+    "item_hand_out",
+    "mount",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 16,
+   "data_gaps": {
+    "interactions_with_gaps": 7,
+    "unresolved_items": 14
+   }
+  },
+  {
+   "quest": "canary:quest/hidden_threats_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "quest_state",
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/hot_cuisine_quest",
+   "kind": "storyline",
+   "features": [
+    "door_progress",
+    "npc_dialogue",
+    "quest_state",
+    "trigger_use"
+   ],
+   "interactions": 2,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 4
+   }
+  },
+  {
+   "quest": "canary:quest/hunter_outfits_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "item_consume",
+    "quest_state",
+    "reward_claim",
+    "teleport",
+    "trigger_use"
+   ],
+   "interactions": 2,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 3
+   }
+  },
+  {
+   "quest": "canary:quest/in_service_of_yalahar_quest",
+   "kind": "storyline",
+   "features": [
+    "creature_removal",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 19,
+   "data_gaps": {
+    "interactions_with_gaps": 15,
+    "unresolved_items": 35
+   }
+  },
+  {
+   "quest": "canary:quest/iron_hammer_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/iron_helmet_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/iron_ore_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/isle_of_the_mists_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/katana_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/killing_in_the_name_of_quest",
+   "kind": "storyline",
+   "features": [
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 3,
+    "unresolved_items": 7
+   }
+  },
+  {
+   "quest": "canary:quest/kilmaresh_quest",
+   "kind": "script_only",
+   "features": [
+    "boss_cooldown",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 35,
+   "data_gaps": {
+    "interactions_with_gaps": 18,
+    "unresolved_items": 49
+   }
+  },
+  {
+   "quest": "canary:quest/knight_outfits_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "quest_state",
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/koshei_the_deathless_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 9
+   }
+  },
+  {
+   "quest": "canary:quest/krailos_quest",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_step"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "canary:quest/life_ring_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/liquid_black_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 7,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 6
+   }
+  },
+  {
+   "quest": "canary:quest/lone_medusa_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/longsword_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/mad_mage_room_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/minotaur_hell_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/minotaur_leather_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/mintwallin_cyclops_quest",
+   "kind": "reward_only",
+   "features": [
+    "item_consume",
+    "reward_claim",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/naginata_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/nightmare_teddy_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/no_rest_for_the_wicked_quest",
+   "kind": "storyline",
+   "features": [
+    "creature_removal",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 5,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 14
+   }
+  },
+  {
+   "quest": "canary:quest/noble_armor_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/oramond_quest",
+   "kind": "storyline",
+   "features": [
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 12,
+   "data_gaps": {
+    "interactions_with_gaps": 10,
+    "unresolved_items": 35
+   }
+  },
+  {
+   "quest": "canary:quest/orc_fortress_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/orc_shaman_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/oriental_outfits_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "quest_state",
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/ornamented_shield_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/outfit_and_addon_quests",
+   "kind": "storyline",
+   "features": [
+    "npc_dialogue",
+    "quest_state",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 2,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/panpipe_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/parchment_room_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/plate_armor_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/poison_daggers_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/poltergeist_outfits_quest",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "boss_cooldown",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 10,
+   "data_gaps": {
+    "interactions_with_gaps": 10,
+    "unresolved_items": 33
+   }
+  },
+  {
+   "quest": "canary:quest/power_bolts_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/power_ring_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/present_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/primal_ordeal_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "outfit",
+    "quest_state",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 9,
+   "data_gaps": {
+    "interactions_with_gaps": 9,
+    "unresolved_items": 25
+   }
+  },
+  {
+   "quest": "canary:quest/purple_tome_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/ring_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/roshamuul_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 10,
+   "data_gaps": {
+    "interactions_with_gaps": 9,
+    "unresolved_items": 30
+   }
+  },
+  {
+   "quest": "canary:quest/rotten_blood_quest",
+   "kind": "script_only",
+   "features": [
+    "creature_removal",
+    "kv_state",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 23,
+   "data_gaps": {
+    "interactions_with_gaps": 19,
+    "unresolved_items": 67
+   }
+  },
+  {
+   "quest": "canary:quest/rottin_wood_and_the_married_men_quest",
+   "kind": "storyline",
+   "features": [
+    "creature_removal",
+    "item_consume",
+    "kv_state",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 4,
+   "data_gaps": {
+    "interactions_with_gaps": 3,
+    "unresolved_items": 7
+   }
+  },
+  {
+   "quest": "canary:quest/sam_s_old_backpack_quest",
+   "kind": "storyline",
+   "features": [
+    "door_progress",
+    "npc_dialogue",
+    "quest_state"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/scale_armor_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/sea_of_light_quest",
+   "kind": "storyline",
+   "features": [
+    "item_consume",
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 2,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "canary:quest/secret_service_quest",
+   "kind": "storyline",
+   "features": [
+    "condition",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 9,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 14
+   }
+  },
+  {
+   "quest": "canary:quest/serpentine_tower_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/shadows_of_yalahar_quest",
+   "kind": "storyline",
+   "features": [
+    "condition",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "kv_state",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "summon",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 14,
+   "data_gaps": {
+    "interactions_with_gaps": 13,
+    "unresolved_items": 39
+   }
+  },
+  {
+   "quest": "canary:quest/shaman_treasure_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/silver_amulet_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/silver_brooch_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/six_rubies_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/soul_war_quest",
+   "kind": "script_only",
+   "features": [
+    "condition",
+    "creature_removal",
+    "item_consume",
+    "item_hand_out",
+    "kv_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 36,
+   "data_gaps": {
+    "interactions_with_gaps": 36,
+    "unresolved_items": 106
+   }
+  },
+  {
+   "quest": "canary:quest/spike_sword_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/spike_task",
+   "kind": "storyline",
+   "features": [
+    "condition",
+    "item_consume",
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 12,
+   "data_gaps": {
+    "interactions_with_gaps": 12,
+    "unresolved_items": 52
+   }
+  },
+  {
+   "quest": "canary:quest/spirithunters_quest",
+   "kind": "storyline",
+   "features": [
+    "npc_dialogue",
+    "quest_state",
+    "summon",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 7
+   }
+  },
+  {
+   "quest": "canary:quest/stealth_ring_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/steel_helmet_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/strong_potions_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/thais_lighthouse_quest",
+   "kind": "script_only",
+   "features": [
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 3,
+    "unresolved_items": 7
+   }
+  },
+  {
+   "quest": "canary:quest/the_ancient_tombs_quest",
+   "kind": "storyline",
+   "features": [
+    "condition",
+    "door_progress",
+    "item_consume",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 24,
+   "data_gaps": {
+    "interactions_with_gaps": 9,
+    "unresolved_items": 36
+   }
+  },
+  {
+   "quest": "canary:quest/the_annihilator_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "quest_state",
+    "reward_claim",
+    "summon",
+    "teleport",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 2,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 7
+   }
+  },
+  {
+   "quest": "canary:quest/the_ape_city_quest",
+   "kind": "storyline",
+   "features": [
+    "door_progress",
+    "item_consume",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 5,
+   "data_gaps": {
+    "interactions_with_gaps": 3,
+    "unresolved_items": 13
+   }
+  },
+  {
+   "quest": "canary:quest/the_beginning_quest",
+   "kind": "storyline",
+   "features": [
+    "npc_dialogue",
+    "quest_state"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/the_djinn_war_efreet_faction",
+   "kind": "storyline",
+   "features": [
+    "npc_dialogue",
+    "quest_state",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/the_djinn_war_marid_faction",
+   "kind": "storyline",
+   "features": [
+    "npc_dialogue",
+    "quest_state"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/the_dream_courts_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "condition",
+    "creature_removal",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 57,
+   "data_gaps": {
+    "interactions_with_gaps": 52,
+    "unresolved_items": 163
+   }
+  },
+  {
+   "quest": "canary:quest/the_explorer_society_quest",
+   "kind": "storyline",
+   "features": [
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 12,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 11
+   }
+  },
+  {
+   "quest": "canary:quest/the_first_dragon_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "boss_cooldown",
+    "creature_removal",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 16,
+   "data_gaps": {
+    "interactions_with_gaps": 16,
+    "unresolved_items": 44
+   }
+  },
+  {
+   "quest": "canary:quest/the_gravedigger_of_drefia_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "quest_state",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 29,
+   "data_gaps": {
+    "interactions_with_gaps": 12,
+    "unresolved_items": 20
+   }
+  },
+  {
+   "quest": "canary:quest/the_hidden_city_of_beregar_quest",
+   "kind": "storyline",
+   "features": [
+    "creature_removal",
+    "door_progress",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 13,
+   "data_gaps": {
+    "interactions_with_gaps": 7,
+    "unresolved_items": 33
+   }
+  },
+  {
+   "quest": "canary:quest/the_ice_islands_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "condition",
+    "door_progress",
+    "item_consume",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 10,
+   "data_gaps": {
+    "interactions_with_gaps": 8,
+    "unresolved_items": 24
+   }
+  },
+  {
+   "quest": "canary:quest/the_inquisition_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "outfit",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 10,
+   "data_gaps": {
+    "interactions_with_gaps": 8,
+    "unresolved_items": 33
+   }
+  },
+  {
+   "quest": "canary:quest/the_isle_of_evil_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "door_progress",
+    "item_hand_out",
+    "kv_state",
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 6,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 11
+   }
+  },
+  {
+   "quest": "canary:quest/the_new_frontier_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "outfit",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 16,
+   "data_gaps": {
+    "interactions_with_gaps": 10,
+    "unresolved_items": 25
+   }
+  },
+  {
+   "quest": "canary:quest/the_order_of_the_lion_quest",
+   "kind": "storyline",
+   "features": [
+    "boss_cooldown",
+    "creature_removal",
+    "door_progress",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 21,
+   "data_gaps": {
+    "interactions_with_gaps": 16,
+    "unresolved_items": 63
+   }
+  },
+  {
+   "quest": "canary:quest/the_outlaw_camp_quest",
+   "kind": "storyline",
+   "features": [
+    "item_hand_out",
+    "quest_state",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 5,
+   "data_gaps": {
+    "interactions_with_gaps": 5,
+    "unresolved_items": 11
+   }
+  },
+  {
+   "quest": "canary:quest/the_paradox_tower_quest",
+   "kind": "storyline",
+   "features": [
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 12,
+   "data_gaps": {
+    "interactions_with_gaps": 11,
+    "unresolved_items": 22
+   }
+  },
+  {
+   "quest": "canary:quest/the_pits_of_inferno_quest",
+   "kind": "reward_only",
+   "features": [
+    "achievement",
+    "door_progress",
+    "item_consume",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 27,
+   "data_gaps": {
+    "interactions_with_gaps": 22,
+    "unresolved_items": 56
+   }
+  },
+  {
+   "quest": "canary:quest/the_postman_missions_quest",
+   "kind": "storyline",
+   "features": [
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/the_queen_of_the_banshees_quest",
+   "kind": "storyline",
+   "features": [
+    "door_progress",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 20,
+   "data_gaps": {
+    "interactions_with_gaps": 9,
+    "unresolved_items": 18
+   }
+  },
+  {
+   "quest": "canary:quest/the_rookie_guard_quest",
+   "kind": "storyline",
+   "features": [
+    "condition",
+    "creature_removal",
+    "door_progress",
+    "experience",
+    "item_consume",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 48,
+   "data_gaps": {
+    "interactions_with_gaps": 47,
+    "unresolved_items": 161
+   }
+  },
+  {
+   "quest": "canary:quest/the_secret_library_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "condition",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 37,
+   "data_gaps": {
+    "interactions_with_gaps": 32,
+    "unresolved_items": 112
+   }
+  },
+  {
+   "quest": "canary:quest/the_shattered_isles_quest",
+   "kind": "storyline",
+   "features": [
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 5,
+   "data_gaps": {
+    "interactions_with_gaps": 5,
+    "unresolved_items": 20
+   }
+  },
+  {
+   "quest": "canary:quest/the_tainted_soul",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "canary:quest/the_thieves_guild_quest",
+   "kind": "storyline",
+   "features": [
+    "condition",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 8,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 5
+   }
+  },
+  {
+   "quest": "canary:quest/the_travelling_trader_quest",
+   "kind": "storyline",
+   "features": [
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/the_ultimate_challenges",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "condition",
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "world_object"
+   ],
+   "interactions": 5,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 32
+   }
+  },
+  {
+   "quest": "canary:quest/the_way_of_the_monk_quest",
+   "kind": "storyline",
+   "features": [
+    "experience",
+    "item_hand_out",
+    "kv_state",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 6,
+   "data_gaps": {
+    "interactions_with_gaps": 6,
+    "unresolved_items": 24
+   }
+  },
+  {
+   "quest": "canary:quest/the_white_raven_monastery_quest",
+   "kind": "storyline",
+   "features": [
+    "door_progress",
+    "npc_dialogue",
+    "quest_state"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/their_masters_voice",
+   "kind": "script_only",
+   "features": [
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 4,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/threatened_dreams_quest",
+   "kind": "storyline",
+   "features": [
+    "boss_cooldown",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 29,
+   "data_gaps": {
+    "interactions_with_gaps": 19,
+    "unresolved_items": 92
+   }
+  },
+  {
+   "quest": "canary:quest/throwing_star_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/tibia_tales",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "condition",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 24,
+   "data_gaps": {
+    "interactions_with_gaps": 15,
+    "unresolved_items": 78
+   }
+  },
+  {
+   "quest": "canary:quest/time_ring_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/tinder_box_quest_chyllfroest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "mount",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 4,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 10
+   }
+  },
+  {
+   "quest": "canary:quest/to_blind_the_enemy_quest",
+   "kind": "reward_only",
+   "features": [
+    "item_consume",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "canary:quest/to_outfox_a_fox_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "quest_state",
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/tomes_of_knowledge_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/tower_defence_quest",
+   "kind": "script_only",
+   "features": [
+    "door_progress",
+    "npc_dialogue",
+    "quest_state",
+    "trigger_kill"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "canary:quest/triangle_tower_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
+   "quest": "canary:quest/troll_cave_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/troll_sabotage_quest",
+   "kind": "script_only",
+   "features": [
+    "quest_state",
+    "trigger_step"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 5
+   }
+  },
+  {
+   "quest": "canary:quest/unnatural_selection_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "door_progress",
+    "npc_dialogue",
+    "quest_state",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 7
+   }
+  },
+  {
+   "quest": "canary:quest/vampire_hunter_quest",
+   "kind": "reward_only",
+   "features": [
+    "door_progress",
+    "quest_state",
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/vampire_shield_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/waterfall_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "teleport",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 6
+   }
+  },
+  {
+   "quest": "canary:quest/wedding_ring_quest",
+   "kind": "reward_only",
+   "features": [
+    "reward_claim",
+    "trigger_use"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/what_a_foolish_quest",
+   "kind": "storyline",
+   "features": [
+    "condition",
+    "door_progress",
+    "item_consume",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 8,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 5
+   }
+  },
+  {
+   "quest": "canary:quest/wrath_of_the_emperor_quest",
+   "kind": "storyline",
+   "features": [
+    "condition",
+    "creature_removal",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "outfit",
+    "quest_state",
+    "reward_claim",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 22,
+   "data_gaps": {
+    "interactions_with_gaps": 15,
+    "unresolved_items": 59
+   }
+  },
+  {
+   "quest": "crystalserver:quest/25_years_of_tibia_quest",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_kill",
+    "trigger_use"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 3,
+    "unresolved_items": 8
+   }
+  },
+  {
+   "quest": "crystalserver:quest/a_piece_of_cake",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "item_consume",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 3,
+    "unresolved_items": 25
+   }
+  },
+  {
+   "quest": "crystalserver:quest/between_the_lines_quest",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_use"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 7
+   }
+  },
+  {
+   "quest": "crystalserver:quest/bloody_tusks_quest",
+   "kind": "storyline",
+   "features": [
+    "npc_dialogue",
+    "quest_state"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "crystalserver:quest/newhaven_quest",
+   "kind": "script_only",
+   "features": [
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 5,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 9
+   }
+  },
+  {
+   "quest": "crystalserver:quest/targuna_quest",
+   "kind": "storyline",
+   "features": [
+    "achievement",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "reward_claim",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 17,
+   "data_gaps": {
+    "interactions_with_gaps": 10,
+    "unresolved_items": 30
+   }
+  }
+ ],
+ "interactions_unlinked": [
+  "canary:interaction/chayenne_realm/actions_lever",
+  "canary:interaction/chayenne_realm/actions_reward",
+  "canary:interaction/chayenne_realm/movements_enter_realm",
+  "canary:interaction/edron_rope/movements_rope",
+  "canary:interaction/extension_mota/movements_extension_mota",
+  "canary:interaction/marapur/actions_boss_timira_fight_corrupted_water",
+  "canary:interaction/marapur/actions_boss_timira_fight_timira_bucket",
+  "canary:interaction/marapur/actions_boss_timira_fight_timira_chest",
+  "canary:interaction/marapur/actions_teleports_timira",
+  "canary:interaction/marapur/movements_ramp_to_north_temple",
+  "canary:interaction/mysterious_ornate/actions_mysterious_metal_egg",
+  "canary:interaction/others/actions_calassa_comb_door",
+  "canary:interaction/others/actions_gooey_mass",
+  "canary:interaction/others/actions_hellgate_lever",
+  "canary:interaction/others/actions_orc_edron_lever",
+  "canary:interaction/others/actions_serpentine_tower_lever",
+  "canary:interaction/others/actions_serpentine_tower_torch",
+  "canary:interaction/raging_mage_tower/creaturescripts_energized_raging_mage_kill",
+  "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_1",
+  "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_2",
+  "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_kill",
+  "canary:interaction/raging_mage_tower/creaturescripts_yielothax_kill",
+  "canary:interaction/soulpit/exalted_core",
+  "canary:interaction/soulpit/soul_prism",
+  "canary:interaction/soulpit/soulpit_fight",
+  "canary:interaction/thais_quest/actions_life_ring_lever",
+  "canary:interaction/white_pearl/movements_white_pearl",
+  "crystalserver:interaction/candia_bosses/sugar_daddy_teleports",
+  "crystalserver:interaction/rookgaard_quests/quiver"
+ ]
+}

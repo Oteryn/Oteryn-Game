@@ -2,15 +2,18 @@
 
 Evidence tooling only. TibiaWiki BR answers the build container with a Cloudflare bot check, so this runs on a
 hosted CI runner (.github/workflows/monster-wiki-capture.yml). For each title it reads the newest revision at or
-before the target cut and keeps the revision id, its timestamp and the top-level fields of the first infobox, each
-cut to 300 characters. Raw page text never leaves the runner.
+before the target cut and keeps the page id, the revision id, its timestamp, the SHA-256 of the revision text, and the
+top-level fields of the first infobox (each cut to 300 characters) with the line each field starts on. Raw page text
+never leaves the runner.
 
     python wiki_br_capture.py --out capture.json "Dark Merudri" "Count Vlarkorth"
     python wiki_br_capture.py --out population.json --titles-from samples/wiki-population-2026-09-27.json
     python wiki_br_capture.py self-test
 """
 import argparse
+import hashlib
 import json
+import re
 import sys
 import time
 import urllib.parse
@@ -65,6 +68,16 @@ def infobox(text):
     return name, {key: value[:FIELD_LIMIT] for key, value in fields.items() if key and value}
 
 
+def field_lines(text):
+    """The 1-based line of the first `| key =` of each field name."""
+    lines = {}
+    for number, line in enumerate(text.splitlines(), 1):
+        match = re.match(r'\s*\|\s*([^=|{}]+?)\s*=', line)
+        if match:
+            lines.setdefault(match.group(1).strip(), number)
+    return lines
+
+
 def revision_at_cut(title):
     query = {'action': 'query', 'format': 'json', 'formatversion': '2', 'prop': 'revisions', 'titles': title,
              'rvprop': 'ids|timestamp|content', 'rvslots': 'main', 'rvlimit': '1', 'rvstart': CUT_TIMESTAMP,
@@ -76,9 +89,12 @@ def revision_at_cut(title):
     if page.get('missing') or not page.get('revisions'):
         return {'title': title, 'missing': True}
     rev = page['revisions'][0]
-    name, fields = infobox(rev['slots']['main']['content'])
-    return {'title': title, 'page_title': page['title'], 'revision_id': rev['revid'], 'revision_timestamp': rev['timestamp'],
-            'infobox': name, 'fields': fields}
+    content = rev['slots']['main']['content']
+    name, fields = infobox(content)
+    lines = field_lines(content)
+    return {'title': title, 'page_title': page['title'], 'page_id': page['pageid'], 'revision_id': rev['revid'],
+            'revision_timestamp': rev['timestamp'], 'content_sha256': hashlib.sha256(content.encode('utf-8')).hexdigest(),
+            'infobox': name, 'fields': fields, 'field_lines': {key: lines[key] for key in fields if key in lines}}
 
 
 def self_test():
@@ -88,6 +104,7 @@ def self_test():
     assert infobox('{{Infobox X|a=|b=1}}')[1] == {'b': '1'}
     assert infobox('no box') == (None, {})
     assert len(infobox('{{Infobox X|a=' + 'z' * 400 + '}}')[1]['a']) == FIELD_LIMIT
+    assert field_lines('{{Infobox X\n| hp = 1\n| exp=2\n| hp = 3\n}}') == {'hp': 2, 'exp': 3}
     print('wiki_br_capture self-test: PASS')
 
 

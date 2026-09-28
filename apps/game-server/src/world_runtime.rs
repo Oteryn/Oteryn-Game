@@ -1,6 +1,7 @@
 use crate::content::{
     CanonicalReferencePlayableContent, ContentError, DefinitionFamily, FootprintRelation,
-    LogicalCell, NonAuthoritativeReferenceStage, PlacementKey, ProductionKey,
+    LocalObjectCollisionPresence, LocalObjectStateDefinition, LogicalCell,
+    NonAuthoritativeReferenceStage, PlacementKey, ProductionKey,
     REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
     ReferenceDefinitionKind, ReferencePlayableContentSource, ReferencePlayableGenerationIdentity,
     ReferenceServerItem, TransitionBinding, TransitionKey, TypedDefinitionRef,
@@ -658,8 +659,8 @@ impl LocalObjectRuntime {
                 "OPEN/CLOSE transitions are not an exact two-state inverse pair",
             ));
         }
-        if !states.contains(&open_transition.source_state)
-            || !states.contains(&open_transition.target_state)
+        if !local_object_states_contain(states, &open_transition.source_state)
+            || !local_object_states_contain(states, &open_transition.target_state)
         {
             return Err(WorldRuntimeError::InvalidBinding(
                 "OPEN/CLOSE transition states are not declared by the local object",
@@ -694,17 +695,54 @@ impl LocalObjectRuntime {
                 "first CW4 child cannot bypass unresolved policy guards",
             ));
         }
+        // `prepare()` hard-codes Open -> empty blocking and Close -> full-footprint blocking; the
+        // linker only constrains collision class equality for RETAG-family transitions, so nothing
+        // else stops a definition whose OPEN target is collision-Present or whose CLOSE target is
+        // collision-Absent from binding here and then behaving inconsistently with its own declared
+        // vocabulary. Reject that mismatch at bind time instead of changing `prepare()`. Checked
+        // last among the OPEN/CLOSE structural invariants so an already-invalid pair (wrong
+        // definition, wrong intent family, swapped keys, etc.) keeps surfacing its own specific
+        // error first.
+        if local_object_state_collision(states, &open_transition.source_state)
+            != Some(LocalObjectCollisionPresence::Present)
+            || local_object_state_collision(states, &open_transition.target_state)
+                != Some(LocalObjectCollisionPresence::Absent)
+        {
+            return Err(WorldRuntimeError::InvalidBinding(
+                "OPEN/CLOSE transition collision classes do not match runtime operations",
+            ));
+        }
 
         let collision_cells = absolute_collision_cells(placement)?;
+        // D38 W1b mechanical adaptation: the linker now requires every LocalObject placement to
+        // carry an authored initial state validated against this same `states` vocabulary, so the
+        // runtime reads it from the placement instead of deriving it from the OPEN transition.
+        let initial_state = placement.local_object_initial_state.clone().ok_or(
+            WorldRuntimeError::InvalidBinding(
+                "placement lacks authored local object initial state",
+            ),
+        )?;
+        // The initial state's own collision presence — not the OPEN/CLOSE operation identity —
+        // decides whether the object starts blocking: an authored Absent (e.g. "open") start must
+        // not block movement, and an authored Present (e.g. "closed") start must.
+        let initial_collision = local_object_state_collision(states, &initial_state).ok_or(
+            WorldRuntimeError::InvalidBinding(
+                "placement's authored local object initial state is not declared by the local object",
+            ),
+        )?;
+        let initial_blocking = match initial_collision {
+            LocalObjectCollisionPresence::Present => collision_cells.clone(),
+            LocalObjectCollisionPresence::Absent => BTreeSet::new(),
+        };
         Ok(Self {
             scope,
             scope_generation,
             content_generation,
             placement: placement.key.clone(),
             incarnation,
-            state: open_transition.source_state.clone(),
+            state: initial_state,
             revision: 0,
-            blocking_cells: collision_cells.clone(),
+            blocking_cells: initial_blocking,
             collision_cells,
             open_transition,
             close_transition,
@@ -1014,6 +1052,20 @@ fn unique_transition<'a>(
         ));
     }
     Ok(transition)
+}
+
+fn local_object_states_contain(states: &[LocalObjectStateDefinition], key: &ProductionKey) -> bool {
+    states.iter().any(|state| &state.key == key)
+}
+
+fn local_object_state_collision(
+    states: &[LocalObjectStateDefinition],
+    key: &ProductionKey,
+) -> Option<LocalObjectCollisionPresence> {
+    states
+        .iter()
+        .find(|state| &state.key == key)
+        .map(|state| state.collision)
 }
 
 fn absolute_collision_cells(
@@ -1335,8 +1387,14 @@ mod tests {
             definitions: vec![ReferenceDefinition {
                 definition: object_ref.clone(),
                 kind: ReferenceDefinitionKind::LocalObjectStates(vec![
-                    closed.clone(),
-                    open.clone(),
+                    LocalObjectStateDefinition {
+                        key: closed.clone(),
+                        collision: LocalObjectCollisionPresence::Present,
+                    },
+                    LocalObjectStateDefinition {
+                        key: open.clone(),
+                        collision: LocalObjectCollisionPresence::Absent,
+                    },
                 ]),
                 client_projection: ClientProjectionClass::ClientSafe,
             }],
@@ -1357,11 +1415,11 @@ mod tests {
                 TransitionBinding {
                     key: TransitionKey::new(CLOSE_TRANSITION)?,
                     definition: object_ref.clone(),
-                    source_state: open,
+                    source_state: open.clone(),
                     normalized_intent_family: ProductionKey::new(
                         "oteryn:reference.intent.local-object-close",
                     )?,
-                    target_state: closed,
+                    target_state: closed.clone(),
                     owner_capability: capability,
                     policy_guard_refs: vec![],
                 },
@@ -1412,6 +1470,10 @@ mod tests {
                     members: collision_members.clone(),
                     evidence: evidence.clone(),
                 },
+                // D38 W1b mechanical adaptation: both CW4 fixture placements author the same
+                // starting state the runtime previously derived from the OPEN transition, so
+                // existing CW4 test assertions (both instances start Closed) are unchanged.
+                local_object_initial_state: Some(closed.clone()),
             })
         };
         canonical.placements = vec![placement(PLACEMENT_A)?, placement(PLACEMENT_B)?];
@@ -1554,6 +1616,34 @@ mod tests {
     }
 
     #[test]
+    fn authored_open_initial_state_starts_unblocked_then_close_commits_and_blocks()
+    -> Result<(), WorldRuntimeError> {
+        let mut content = synthetic_content("package-r1")?;
+        let placement_a = content
+            .placements
+            .iter_mut()
+            .find(|placement| placement.key.as_str() == PLACEMENT_A)
+            .ok_or(fixture_error("placement a"))?;
+        placement_a.local_object_initial_state =
+            Some(ProductionKey::new("oteryn:reference.state.open")?);
+
+        let (authority, session, scope) = authority(40, 6, 1, 1)?;
+        let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
+        assert_eq!(runtime.state_key().as_str(), "oteryn:reference.state.open");
+        assert!(runtime.blocking_cells().is_empty());
+
+        let mut ingress = CommandIngress::new();
+        let empty = BTreeSet::new();
+        let close = command(&runtime, session, 1, 1, LocalObjectOperation::Close, 0)?;
+        let closed = runtime.apply(&authority, &close, &mut ingress, &empty)?;
+        assert_eq!(closed.disposition(), DISPOSITION_COMMITTED);
+        assert_eq!(closed.state(), "oteryn:reference.state.closed");
+        assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
+        assert!(!runtime.blocking_cells().is_empty());
+        Ok(())
+    }
+
+    #[test]
     fn later_command_cannot_commit_ahead_of_earlier_pending_across_objects()
     -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
@@ -1633,6 +1723,31 @@ mod tests {
             WorldRuntimeError::InvalidBinding(
                 "OPEN/CLOSE transition intent families do not match runtime operations"
             )
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn mismatched_open_close_collision_classes_reject_before_runtime_creation()
+    -> Result<(), WorldRuntimeError> {
+        let mut content = synthetic_content("package-r1")?;
+        let ReferenceDefinitionKind::LocalObjectStates(states) = &mut content.definitions[0].kind
+        else {
+            return Err(fixture_error("local object definition"));
+        };
+        for state in states.iter_mut() {
+            state.collision = match state.collision {
+                LocalObjectCollisionPresence::Present => LocalObjectCollisionPresence::Absent,
+                LocalObjectCollisionPresence::Absent => LocalObjectCollisionPresence::Present,
+            };
+        }
+
+        let (_authority, _session, scope) = authority(50, 7, 1, 1)?;
+        assert!(matches!(
+            runtime_for(&content, scope, PLACEMENT_A, 1),
+            Err(WorldRuntimeError::InvalidBinding(
+                "OPEN/CLOSE transition collision classes do not match runtime operations"
+            ))
         ));
         Ok(())
     }

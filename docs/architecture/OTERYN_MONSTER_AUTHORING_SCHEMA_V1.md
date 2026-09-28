@@ -92,6 +92,7 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D25 | A combat whose damage type is undefined in the source (`COMBAT_UNDEFINEDDAMAGE` from a missing or wrong constant) is a source data error; the reference-date wiki ability decides the element. More generally, wherever the source is uncertain, the reference-date wiki decides (extends D15). | Owner rule in this session. |
 | D32 | Loot counts follow the reference-date wiki too. When a Canary entry adopts the wiki probability (at least 10 drops), the count observed in Loot Statistics replaces the Canary min-max if it falls outside it; an observed range inside the Canary range is kept, since it is a sample. A Canary `minCount` of 0 (Canary draws the count from 0..max and drops nothing on 0) becomes count 1..max: the wiki estimate already counts only kills with a drop, and without wiki statistics the probability is scaled by max/(max+1), which is exactly what the engine does. Low-confidence entries and items split over several Canary entries keep the Canary counts. | Owner, 2026-09-27 ("używaj wiki do potwierdzania loota dla potworów i bossów"); extends D15. |
 | D33 | The reference date is the programme target date, which the owner moved from 2026-07-28 to 2026-09-27 ("na dzień dzisiejszy"); the owner may move it again. Every wiki value is read at that date and keeps its page revision. The population comparison, the batch comparison and the ability scenes are re-read at 2026-09-27. | Owner decision 2026-09-27, `docs/agents/programs/OTERYN_TARGET_DATE_20260927_DECISION.md`. |
+| D43 | TibiaWiki BR fills health and experience where the Fandom page at the target date is missing or gives no certain value (empty, `?`, `~` or unparsed). The owner's source order puts BR after Fandom, and BR is used for tables and cross-checks. The BR value must be a plain number. BR element modifiers are not used, because "100%" there is often the template default; BR speed and loot are not used either. `wiki_br_capture.py` reads the pages on a hosted runner (the build container gets a Cloudflare bot check). `wiki_br_fill.py` selects the fills into `samples/wiki-br-fill-2026-09-27.json`, and the converter applies them after the D15 values. | Owner answer 2026-09-27 ("Tylko HP i doświadczenie"), after BR gave Dark Knight 7,900 health where Fandom has "?" and Canary 1,800. |
 
 ## 4. Carried semantics
 
@@ -413,8 +414,10 @@ Bestiary class and summon/convince costs are not adopted. Every adopted value ke
 Canary row as an `approved_omission` and adds a MediaWiki-sourced row. Wiki loot missing in Canary
 is added only when its name resolves to one item: by name, by the item page `itemid`, or by
 dropping the equipped state of an `items.xml` `transformEquipTo` pair. Over all converted
-monsters 748 mitigations and 12,722 loot rows (probabilities, counts and added items) are adopted; 1,120 of
-the fully resolved monsters carry at least one adopted value.
+monsters 748 mitigations and 12,722 loot rows (probabilities, counts and added items) are adopted; 1,175 of
+the fully resolved monsters carry at least one adopted value. Under D43, TibiaWiki BR gives the health of 65
+and the experience of 37 fully resolved monsters whose Fandom value is missing or uncertain; 124 monsters have a BR
+fill in `wiki-br-fill-2026-09-27.json`; the other fills equal Canary or belong to monsters that are not fully resolved.
 Under D32, 971 loot count bounds (a minimum or a maximum) of 334 fully resolved monsters take the
 observed wiki range, and Duke Krule's twelve `minCount` 0 entries become count 1..max.
 
