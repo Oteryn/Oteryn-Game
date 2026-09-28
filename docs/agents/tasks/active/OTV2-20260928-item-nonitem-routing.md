@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-item-nonitem-routing
 title: Fluid/placeholder/appearance-title/actualname non-Item routing; availability
 mode: MIGRATE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: null
+pr: 1105
 base_sha: 800e3eb6
 head_sha: null
 final_head_sha: null
@@ -233,10 +233,10 @@ diffs. This directly caught and let us fix the "dead rat"/"dead goblin" collisio
 
 ```yaml
 last_progress: b/c/e/f/g/h implemented; fixed a name-join priority collision found via the invariant proof (dead rat/goblin); recapture, censuses, packet regenerated; full check list green; committed locally to item-nonitem-routing-v2 at 8deb61f0
-status: implementing
+status: validating
 branch: claude/compassionate-albattani-s29syw
 head_sha: null
-pr: null
+pr: 1105
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -254,5 +254,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish PR, enable auto-merge
+next_action: required checks, Merge Queue, archive record
 ```
