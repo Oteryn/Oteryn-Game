@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-item-clothing-accessories
 title: Old rag/ivory comb via wiki status=event + exact-id join (match_basis) for the wiki fallback
 mode: MIGRATE
-status: in_review
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
@@ -196,7 +196,7 @@ behaviour of exact id evidence overriding a same-page name match. Kraken Buoy La
 
 ```yaml
 last_progress: itemid join + status=event published as PR #1073
-status: in_review
+status: validating
 branch: claude/compassionate-albattani-s29syw
 head_sha: null
 pr: 1073
