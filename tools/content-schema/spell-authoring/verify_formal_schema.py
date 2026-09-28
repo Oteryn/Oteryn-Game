@@ -211,6 +211,8 @@ NEGATIVE = {
     'primary-only group as secondary': case('light_healing', 'spell', ('groups', 1), {'group': 'attack', 'cooldown_ms': 1000},
                                             'not a declared secondary cooldown group'),
     'learning required': case('light_healing', 'spell', ('requirements', 'learning_required'), True, 'no spell is taught (S16)'),
+    'conjure effect not a key': case('sudden_death_conjure', 'spell', ('execution', 'conjure', 'effect_asset_binding'),
+                                     'magic red', 'is not valid under any'),
     'wheel_unlock not boolean': case('light_healing', 'spell', ('requirements', 'wheel_unlock'), 'yes', 'is not of type'),
 }
 

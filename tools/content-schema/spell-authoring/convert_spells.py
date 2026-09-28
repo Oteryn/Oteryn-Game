@@ -26,6 +26,7 @@ import copy
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -46,7 +47,7 @@ FANDOM_FACTS = SAMPLES / 'wiki-spell-facts-fandom-2026-09-27.json'
 BR_FACTS = SAMPLES / 'wiki-spell-facts-br-2026-09-27.json'
 TIBIOPEDIA_FACTS = SAMPLES / 'tibiopedia-spell-facts-2026-09-28.json'
 OFFICIAL = ROOT / 'official-changes.json'
-REVISION = 'spell-p2-r3'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote)
+REVISION = 'spell-p2-r4'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
                       'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -247,6 +248,20 @@ def uses_base_power(formula):
 # Execution (S1/S2) through the monster converter
 # ------------------------------------------------------------------------------------------------
 
+SOUND_PREFIX = 'SOUND_EFFECT_TYPE_'
+RUNE_ITEM_IDS = set()  # S18: item ids some rune spell uses; filled from the census in main()
+LUA_ENUMS = 'src/lua/functions/core/game/lua_enums.cpp'
+
+
+def source_text(root, relative):
+    """A source file from the checkout, or from its HEAD commit when a sparse checkout leaves it out."""
+    path = Path(root) / relative
+    if path.exists():
+        return path.read_text(encoding='utf-8', errors='replace')
+    return subprocess.run(['git', '-C', str(root), 'show', f'HEAD:{relative}'], capture_output=True, text=True,
+                          check=True).stdout
+
+
 class Execution:
     def __init__(self, source, root):
         self.source, self.root = source, root
@@ -254,6 +269,31 @@ class Execution:
         self.converter.spell_scripts = spell_scripts.SpellScripts(root)
         self.converter.pending_definitions = set()
         self.tag = SOURCES[source]['tag']
+        self.canonical = self.converter  # S18: replaced by the Canary 15.30 tables once both sources exist
+        # Lua names SOUND_EFFECT_TYPE_<member> exist only for the SoundEffect_t members lua_enums.cpp registers.
+        self.sounds = set(re.findall(r'SoundEffect_t::([A-Z0-9_]+)', source_text(root, LUA_ENUMS)))
+
+    def sound(self, value):
+        """S18: the cue key of a castSound/impactSound constant, or None when Lua reads it as nil (silence)."""
+        if not isinstance(value, str) or not value.startswith(SOUND_PREFIX):
+            return None
+        member = value[len(SOUND_PREFIX):]
+        return f'canary.sound:{member.lower()}' if member in self.sounds else None
+
+    def canonical_visuals(self, text):
+        """S18: one appearance key per client effect/missile id, named by the Canary 15.30 enums, whichever source
+        converted the spell (the two engines name 47 of the same effect ids differently)."""
+        own, canon = self.converter, self.canonical
+
+        def rename(match):
+            kind, name = match.group(1), match.group(2)
+            prefix, table, names = (('CONST_ME_', own.magic_effects, canon.magic_effect_names) if kind == 'effect'
+                                    else ('CONST_ANI_', own.missiles, canon.missile_names))
+            number = int(name[3:]) if name.startswith('id-') else table[prefix + name.upper()]
+            canonical = names.get(number)
+            return (f'"canary.appearance:{kind}/' + (canonical[len(prefix):].lower() if canonical else f'id-{number}')
+                    + '"')
+        return re.sub(r'"canary\.appearance:(effect|missile)/([a-z0-9_-]+)"', rename, text)
 
     def ability(self, record, base_power, notes):
         """(ability key, dependencies, created item ids) for a plain/random combat spell of this source."""
@@ -315,7 +355,7 @@ class Execution:
             deps['abilities'].append({'identity': ident(key), 'kind': 'spell', 'range_tiles': range_tiles, **geometry,
                                       'variants': [ref('Ability', k) for k in keys]})
         deps['formulas'] = [f for f in deps['formulas'] if f['identity']['key'] != canary_batch.CASTER_MAGNITUDE]
-        text = json.dumps(deps).replace(canary_batch.REV, REVISION).replace('"canary.appearance:', f'"{self.source}.appearance:')
+        text = self.canonical_visuals(json.dumps(deps).replace(canary_batch.REV, REVISION))
         items = sorted(int(k.rsplit('/', 1)[1]) for f, k in self.converter.pending_definitions if f == 'Item')
         return key, json.loads(text.replace('canary:item/', 'candidate:item/')), items
 
@@ -412,6 +452,34 @@ class Bundle:
                      method='needLearn')
             return True
         return None
+
+    def sound_cues(self, base):
+        """S18: cast and impact sound cues. No wiki states them; a constant Lua reads as nil is silence."""
+        cues = {}
+        for method, field in (('castSound', 'cast_cue'), ('impactSound', 'impact_cue')):
+            keys = {}
+            for source, record in self.records.items():
+                value = record['registrar'].get(method)
+                if value is None:
+                    continue
+                key = self.executions[source].sound(value)
+                if key is None:
+                    self.row('approved_omission', method, resolution=f'S18: {value} is not a registered SoundEffect_t '
+                             'constant, so Lua reads nil and the engine plays no sound.', source=source, method=method)
+                else:
+                    keys[source] = key
+            if not keys:
+                continue
+            chosen = keys.get('canary', next(iter(keys.values())))
+            for source, key in keys.items():
+                if key == chosen:
+                    self.row('mapped', method, f'{base}/presentation/{field}', 'S18: sound cue named by its '
+                             'SoundEffect_t member.', source=source, method=method)
+                else:
+                    self.row('approved_omission', method, resolution=f'S18/S14: {key} differs; the Canary 15.30 '
+                             f'branch value {chosen} is kept.', source=source, method=method)
+            cues[field] = chosen
+        return cues
 
     def branch_vote(self, method):
         """The Canary (15.30 branch, S14) registrar value of a numeric field, in wiki units, as a tie vote."""
@@ -515,6 +583,9 @@ class Bundle:
         spell['targeting'] = self.targeting(spell_pages)
         spell['pz_locks_caster'] = bool(self.field(base + '/pz_locks_caster', None, 'setPzLocked', pages))
         spell['needs_weapon'] = bool(self.field(base + '/needs_weapon', None, 'needWeapon', pages))
+        presentation = self.sound_cues(base)
+        if presentation:
+            spell['presentation'] = presentation
         base_power = self.field(base + '/base_power', 'basepower', 'basePower', pages, required=False)
         if base_power:
             spell['base_power'] = base_power
@@ -654,6 +725,12 @@ class Bundle:
                 return {'conjure': {'result': ref('Item', 'candidate:item/0'), 'count': 1}}
             self.catalog.add(result)
             body = {'result': ref('Item', f'candidate:item/{result}'), 'count': count}
+            # S18: Player:conjureItem shows magic_red for a rune, else its optional effect argument (nil: none).
+            source = next(iter(self.records))
+            effect = 'CONST_ME_MAGIC_RED' if result in RUNE_ITEM_IDS else conjure.get('effect')
+            if isinstance(effect, str) and effect.startswith('CONST_ME_'):
+                body['effect_asset_binding'] = json.loads(self.executions[source].canonical_visuals(json.dumps(
+                    'canary.appearance:effect/' + effect[len('CONST_ME_'):].lower())))
             reagent = conjure.get('reagent_item_id')
             if isinstance(reagent, int) and reagent > 0:
                 self.catalog.add(reagent)
@@ -721,6 +798,10 @@ def run(args):
                   json.loads(TIBIOPEDIA_FACTS.read_text(encoding='utf-8')))
     roots = {'canary': args.canary, 'crystal': args.crystal}
     executions = {s: Execution(s, r) for s, r in roots.items()}
+    RUNE_ITEM_IDS.update(int(r['registrar']['runeId']) for s in ('canary', 'crystal') for r in census[s]
+                         if r['spell_type'] == 'rune' and isinstance(r['registrar'].get('runeId'), int))
+    for execution in executions.values():
+        execution.canonical = executions['canary'].converter
     groups = {}
     for source in ('canary', 'crystal'):
         for record in census[source]:
