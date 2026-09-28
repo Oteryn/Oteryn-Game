@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-npc-dialogue-schema
 title: NPC dialogue - typed WorldProject/v2 Dialogue declaration (greet, farewell, keyword tree, voices)
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 1062
 jira: KAN-16
 base_sha: 45b6cc73d8dbd2988ec0153cfa5ad03318367d51
 head_sha: null
