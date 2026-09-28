@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-move-rl11-visibility-decision
 title: "MOVE-RL-11 visibility decision (D84-D87)"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1141
 base_sha: 8e2e474a3d82a6bfbc21be409f444cfd64d42961
 head_sha: null
 final_head_sha: null
@@ -71,11 +71,11 @@ qualification when allocated.
 ## Context checkpoint
 
 ```yaml
-last_progress: authored
-status: implementing
+last_progress: authored; PR #1141 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1141
 owner_action_required: null
 blocker: null
-next_action: open the PR, bind this record to it, freeze and route one external review
+next_action: exact-head review and Merge Queue integration of #1141
 ```
