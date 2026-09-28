@@ -96,7 +96,7 @@ monster.voices = {{
 monster.loot = {{}}
 
 monster.attacks = {{
-	{{ name = "melee", interval = 2000, chance = 100, minDamage = 0, maxDamage = -{melee_max} }},
+	{{ name = "melee", interval = 2000, chance = 100, minDamage = {melee_min}, maxDamage = -{melee_max} }},
 	{{ name = "combat", interval = 2000, chance = 20, type = COMBAT_ENERGYDAMAGE, minDamage = -{exori_min}, maxDamage = -{exori_max}, radius = 1, effect = CONST_ME_ENERGYAREA, target = false }},
 	{{ name = "combat", interval = 2000, chance = 20, type = COMBAT_ENERGYDAMAGE, minDamage = -{ball_min}, maxDamage = -{ball_max}, range = 7, radius = 1, shootEffect = CONST_ANI_ENERGY, effect = CONST_ME_ENERGYAREA, target = true }},
 }}
@@ -169,9 +169,12 @@ FIELDS = {
                                                   'interval, chance and energy effects'),
     'voices': ([], 'a voice interval and chance without any voice text'),
 }
-OMITTED = [('br.monster', 'hab_earth', 'TibiaWiki BR lists an earth wave with unknown damage (0-???); it is left out until a '
-                                      'source gives its damage (NEEDS VERIFICATION, D44).'),
-           ('br.monster', 'loot', 'TibiaWiki BR gives no loot ("Nenhum"); the corpse is the only drop.')]
+# (source, fact, exact source text the omission is approved for, resolution). A changed fact fails regeneration.
+OMITTED = [('br.monster', 'hab_earth', '[[Magias de Criaturas#Wave|Wave costas]] (0-???).',
+            'TibiaWiki BR lists an earth wave with unknown damage (0-???); it is left out until a '
+            'source gives its damage (NEEDS VERIFICATION, D44).'),
+           ('br.monster', 'loot', 'Nenhum.', 'TibiaWiki BR gives no loot ("Nenhum"); the corpse is the only drop.'),
+           ('fandom.monster', 'loot', '{{Loot Table|}}', 'Fandom gives an empty loot table; the corpse is the only drop.')]
 
 
 def fetch_fandom(title, revision_id):
@@ -223,9 +226,20 @@ def fetch(br_capture):
 
 def number_range(raw):
     """(low, high) of the first `(a-b)` in a BR ability text."""
-    import re
     match = re.search(r'\((\d+)-(\d+)\)', raw)
+    if not match:
+        raise ValueError(f'no damage range in {raw!r}')
     return int(match.group(1)), int(match.group(2))
+
+
+def exact_ranges(raw, count):
+    """The `(a-b)` damage ranges of a BR ability text, which must have exactly `count` of them and no unknown range."""
+    if '?' in raw:
+        raise ValueError(f'unknown damage in {raw!r}')
+    found = [(int(low), int(high)) for low, high in re.findall(r'\((\d+)-(\d+)\)', raw)]
+    if len(found) != count or len(re.findall(r'\(', raw)) != count:
+        raise ValueError(f'expected {count} damage ranges in {raw!r}')
+    return found
 
 
 YES, NO = {'yes', 'sim'}, {'no', 'não', '--'}
@@ -264,6 +278,10 @@ def derived_values(sources):
         raise ValueError('a summonable or convinceable wiki-authored monster needs its mana cost authored')
     br_immune = {part.strip().lower() for part in br['immunities']['value'].split(',')}
     ignored = {part.strip().lower() for part in br['ignoresfields']['value'].split(',')}
+    if br_immune - {'paralysis', 'invisibility'}:
+        raise ValueError(f'unhandled TibiaWiki BR immunities: {sorted(br_immune - {"paralysis", "invisibility"})}')
+    if ignored - {'energy', 'fire', 'poison'}:
+        raise ValueError(f'unhandled TibiaWiki BR ignored fields: {sorted(ignored - {"energy", "fire", "poison"})}')
     values = {'summonable': lua(summonable), 'convinceable': lua(convinceable), 'mana_cost': 0,
               'pushable': lua(boolean(fandom['pushable']['value'], br['pushable']['value'])),
               'illusionable': lua(boolean(fandom['illusionable']['value'], br['illusionable']['value'])),
@@ -286,14 +304,17 @@ def lua_text(sources):
         raise ValueError('Fandom and TibiaWiki BR disagree on hp')
     if fandom['name']['value'] != br['name']['value']:
         raise ValueError('Fandom and TibiaWiki BR disagree on the name')
-    energy = br['hab_energy']['value']
-    exori, ball = energy.split('),')[0] + ')', energy.split('),')[1]
+    if fandom['exp']['value'] != br['exp']['value'] or not fandom['exp']['value'].isdigit():
+        raise ValueError('Fandom and TibiaWiki BR disagree on exp, or it is not a number')
+    if not fandom['hp']['value'].isdigit():
+        raise ValueError('hp is not a number')
+    (melee_min, melee_max), = exact_ranges(br['hab_physical']['value'], 1)
+    (exori_min, exori_max), (ball_min, ball_max) = exact_ranges(br['hab_energy']['value'], 2)
     values = {'name': fandom['name']['value'], 'article': fandom['article']['value'], 'actualname': fandom['actualname']['value'], 'exp': int(fandom['exp']['value']),
               'hp': int(fandom['hp']['value']), 'male_id': int(sources['fandom.outfit']['facts']['male_id']['value']),
               'itemid': int(sources['fandom.corpse']['facts']['itemid']['value']),
-              'melee_max': number_range(br['hab_physical']['value'])[1]}
-    values['exori_min'], values['exori_max'] = number_range(exori)
-    values['ball_min'], values['ball_max'] = number_range(ball)
+              'melee_min': -melee_min if melee_min else 0, 'melee_max': melee_max, 'exori_min': exori_min, 'exori_max': exori_max,
+              'ball_min': ball_min, 'ball_max': ball_max}
     values.update(derived_values(sources))
     return DARK_MERUDRI.format(**values)
 
@@ -355,8 +376,10 @@ def manifest_for(sources, rows, template_lines):
                         'status': 'mapped', 'destination': '/monster/creature/display_name',
                         'resolution': f'{meta["title"]} revision {meta["revision_id"]} name = "{meta["facts"]["name"]["value"]}" '
                                       f'({DECISION}). Original source text, unchanged.'})
-    for source_name, fact, text in OMITTED:
+    for source_name, fact, expected, text in OMITTED:
         meta = sources[source_name]
+        if meta['facts'][fact]['value'] != expected:
+            raise ValueError(f'{source_name} {fact} changed from the omitted value {expected!r}: re-author it')
         entries.append({'source_index': order.index(source_name), 'source_file': meta['title'],
                         'source_line': meta['facts'][fact]['line'], 'source_field': f'infobox.{fact}', 'kind': 'field',
                         'status': 'approved_omission', 'resolution': text})
@@ -421,6 +444,26 @@ def self_test():
         pass
     else:
         raise AssertionError('disagreeing wiki pushable facts were accepted')
+    for source_name, fact, value in (('br.monster', 'exp', '100'), ('br.monster', 'immunities', 'Invisibility, Paralysis, Fire'),
+                                     ('br.monster', 'hab_physical', '[[Melee|Corpo a corpo]] (0-???).')):
+        broken = json.loads(json.dumps(sample['sources']))
+        broken[source_name]['facts'][fact]['value'] = value
+        try:
+            lua_text(broken)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f'a changed {source_name} {fact} was accepted')
+    for source_name, fact, value in (('br.monster', 'hab_earth', '[[Magias de Criaturas#Wave|Wave costas]] (0-300).'),
+                                     ('br.monster', 'loot', 'Gold Coin (0-10).')):
+        broken = json.loads(json.dumps(sample['sources']))
+        broken[source_name]['facts'][fact]['value'] = value
+        try:
+            manifest_for(broken, [], {})
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f'a stale omission of {source_name} {fact} was approved')
     changed['fandom.monster']['facts']['summon']['value'] = '450'
     try:
         derived_values(changed)
