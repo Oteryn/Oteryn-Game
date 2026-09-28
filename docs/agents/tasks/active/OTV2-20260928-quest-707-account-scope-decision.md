@@ -60,7 +60,7 @@ insert. The negative cases below bind the first implementing allocation.
 applicable: true
 model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
 authority_invariants:
-  - K1 an account fact earned by gameplay is inserted only inside the DUR transaction of a fenced character event (full session-generation fence)
+  - K1 an account fact earned by gameplay is inserted only inside the DUR transaction of a fenced character event (full session-generation fence), or for an achievement derived only from a durable grant request committed in one
   - K2 an account fact is write-once; a duplicate insert changes nothing and keeps the first earner
   - K3 a condition accepts character completion or the account fact of the world's profile family, never another family
   - K4 per-character requirements (level, vocation, premium, items) are still checked for the acting character
@@ -81,7 +81,7 @@ mutation_operators:
     - "time: facts carry no time-based authority"
 one_invariant_per_negative_case: true
 negative_cases_required_of_implementation:
-  - K1 stale character fence -> no account fact written
+  - K1 stale character fence -> no account fact and no achievement grant request written
   - K2 duplicate insert -> one row, first earner kept
   - K3 fact of another profile family -> condition not satisfied
   - K4 account completion with the acting character below the level requirement -> condition not satisfied
@@ -110,6 +110,7 @@ finding_dispositions:
     - "Codex P1 4122013017 and 4122012997 (0f588f3): Store cosmetic unlocks sat inside the write-once, character-event fact model, preselecting delivery and revocation. Repaired: that model covers gameplay-earned facts only; Store unlocks keep account scope and portability, with delivery and lifecycle under §32 and PROD-ENTITLEMENTS-01 §2.1"
     - "Codex P1 4122065056 (2234322): the policy check used the active revision, ignoring P2 pinning. Repaired: the applicable revision is the character's pinned one while the quest is active; K6 extended"
     - "Codex P1 4122065062 (2234322): cross-world Store claims lacked item compatibility. Repaired: the line records item-definition provenance; the claim validates against the target world under DUR-03 §46 and fails closed, leaving the line claimable"
+    - "Codex P1 4122118645 (8af8e03): achievements were inserted directly in the earning transaction, overriding the reward chest grant-request handoff. Repaired: the event records a durable grant request; the Achievement owner derives the fact idempotently, possibly after the session; K1 extended"
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - "Codex P2 4121915460 (d7f8834): an opt-out did not stop old facts from satisfying conditions. Fixed: readers apply the current world and quest policy (§4.2); K6 added."
