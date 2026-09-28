@@ -303,7 +303,7 @@ GAP rows are added to v2 only when a spell in the current playable slice needs t
 
 This candidate does not change WorldProject/v2, the compiler, the runtime ability engine, protocol or
 persistence; does not populate `content/abilities/**` or mint native Spell keys; does not admit Lua;
-does not decide S1–S10; does not establish Tibia Global parity or asset/licensing rights. The wiki files
+records the owner decisions S1–S15 (§5) but is not their implementation; does not establish Tibia Global parity or asset/licensing rights. The wiki files
 keep only allowlisted short infobox values with page and revision ids, never article prose.
 
 ## 8. Validation

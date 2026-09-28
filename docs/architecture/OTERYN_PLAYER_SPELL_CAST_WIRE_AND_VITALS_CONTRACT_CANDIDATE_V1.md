@@ -171,7 +171,7 @@ Mana-spent progress (magic-level training) is a separate GAME-CHAR descendant an
 | Area damage | no | Same as above, plus area targeting |
 | Rune use (`sudden death`, `great fireball`) | no | A use-with command and GAME-ITEM inventory, plus a DUR-03 charge decrement |
 | Conjure (`adori gran mort`) | no | DUR-03 MINT, plus TRANSFER or consumption of the blank rune |
-| Party, summon, support with conditions | no | S6–S10 of the authoring schema are still proposed |
+| Party, summon, support with conditions | no | S6–S10 are decided (2026-09-28), but not implemented: each shared `native_behavior` key needs its owner and tests (S7), Wheel-gated spells need a Wheel owner (S6), summons need GAME-AI-01, party buffs need the party service, and conditions need their Effect operations |
 
 The first child is therefore **self heal**. It is the smallest real cast: it exercises the
 intent, the core check order, a formula draw, the Ability commit, the anchor, and vitals

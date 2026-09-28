@@ -37,7 +37,7 @@ external_repositories: []
 This task writes the owner-accepted verdicts from #162 comment 5867161696 into both spell documents.
 The owner asked the architect to record them ("tak", 2026-09-28).
 
-- The wire contract §8 records SPELL-D1 to SPELL-D6: three accepted as proposed and four accepted
+- The wire contract §8 records SPELL-D1 to SPELL-D6: two accepted as proposed and four accepted
   with changes. The changes are:
   - protocol IDs 3/3 proposed, assigned by the protocol owner;
   - a revision-local spell index;
@@ -76,6 +76,12 @@ complete this qualification itself.
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 - The #1079 task record is archived with terminal integration evidence (`0f80b8c`).
+
+## Independent review
+
+- `20d700f`: Codex P2 4120912901 (stale "S1–S10 not decided" in schema §7 and "S6–S10 still
+  proposed" in wire §6) and P2 4120912911 (the decision tally read 3 + 4). Both accepted and fixed.
+- The successor head needs a fresh exact-head review.
 
 ## Context checkpoint
 
