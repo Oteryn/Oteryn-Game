@@ -38,7 +38,7 @@ Two questions follow:
 | D46 | A quest grants its completion to the account by default. A quest may opt out. A quest whose unlock depends on an exclusive choice is opted out automatically. | "3. A" |
 | D47 | Outfits, outfit addons, mounts and Tibia Store purchases belong to the account, not the character (§4.3, §4.5). | "przypisane do konta nie postaci, tak samo rzeczy zakupione w tibia store" |
 | D48 | Achievements belong to the account; progress counters stay per character (§4.4). | Chosen option "Konto, liczniki per postać" |
-| D49 | Portability. Cosmetic unlocks, achievements and Store unlocks apply on every world of the account, in both profiles. Quest completions apply on every world of the same profile family. A Store item can be claimed on any world of the profile family it was bought for (§4.2-§4.5). | Chosen options "Wszystko na wszystkich", then "Kosmetyki wszędzie" and "Dowolny świat profilu" |
+| D49 | Portability. Cosmetic unlocks, achievements and Store unlocks apply on every world of the account, in both profiles. Quest completions apply on every world of the same profile family. A Store item can be claimed on any world of the profile family it was bought for, subject to item compatibility (§4.2-§4.5). | Chosen options "Wszystko na wszystkich", then "Kosmetyki wszędzie" and "Dowolny świat profilu" |
 
 ## 3. Facts
 
@@ -129,11 +129,14 @@ implementation it applies to.
 - **Current policy gates the fact.** A reader accepts the account fact only while both of these
   hold at evaluation time:
   - the world's active ruleset enables account quest completion;
-  - Q's active content revision declares `account_completion: grant`.
-  Otherwise only the character's own completion counts. When a quest switches from `grant` to
-  `none`, or a world disables the policy, existing facts stop satisfying conditions. They stay as
-  history and apply again if the policy is re-enabled. A fact is never rewritten or deleted to
-  change eligibility.
+  - the applicable revision of Q declares `account_completion: grant`.
+  The applicable revision is the acting character's pinned revision while Q is active for that
+  character (P2), and otherwise Q's active revision in the world's content generation. A policy
+  change reaches a character's active quest only through the explicit DUR-04 migration that P2
+  requires. Otherwise only the character's own completion counts. When a quest switches from
+  `grant` to `none`, or a world disables the policy, existing facts stop satisfying conditions.
+  They stay as history and apply again if the policy is re-enabled. A fact is never rewritten or
+  deleted to change eligibility.
 - **In-progress state stays per character** (D35 unchanged). Nothing is shared before completion.
 - **Limits.**
   1. The fact replaces only the "completed the quest" condition. Level, vocation, premium and item
@@ -198,10 +201,16 @@ idempotent delivery across a boundary failure stay open under gap register §32,
   was bought for. The inbox holds no `ItemInstance`, so no new DUR-03 location family is
   introduced. Whether the inbox line is a Game record or a Platform entitlement line that Game
   reads is for the §32 delivery decision.
-- A character of the account claims a line on any world of that profile family. Whoever owns the
-  line, the item enters the world only as a DUR-03 MINT into that character's
-  `CharacterInventory`, with the line as source cause: idempotent per line and unit, fenced like
-  the reward claim (#1033). After the claim the item is an ordinary world-scoped item.
+- A character of the account may claim a line on any world of that profile family whose content
+  is compatible with it. Whoever owns the line, the item enters the world only as a DUR-03 MINT
+  into that character's `CharacterInventory`, with the line as source cause: idempotent per line
+  and unit, fenced like the reward claim (#1033). After the claim the item is an ordinary
+  world-scoped item.
+- The line records the item-definition provenance it was sold under (item key and content
+  revision). The claim validates it against the target world's active content under DUR-03 §46.
+  If the definition is absent or incompatible there, the claim fails closed with nothing minted.
+  The line stays unclaimed and claimable on a compatible world or after an explicit migration. The
+  item is never silently reinterpreted.
 - Refund, revocation or expiry of an unclaimed line, and any correction after a claim, follow the
   §32 lifecycle decision.
 - Activation waits for an explicit product decision that authorizes entitlement delivery under
@@ -272,7 +281,7 @@ follow_up_owners:
   - "Gap register §32 delivery decision: Game/Platform ownership of Store inbox lines and cosmetic unlocks, their refund, revocation and expiry, and cross-boundary idempotency, then an explicit product activation decision under PROD-ENTITLEMENTS-01"
   - "Reference parity manifest: record the D45, D47, D48 declared differences"
 required_revalidation:
-  - "the first account-fact migration proves: fact inserted only inside a fenced character event; duplicate insert leaves one row and keeps the first earner; a stale character fence writes no fact; a condition reads character-or-account completion; level and item requirements are still checked per character; an exclusive-choice quest cannot grant account completion; an existing fact does not satisfy a condition when the quest now declares none or the world disables the policy"
+  - "the first account-fact migration proves: fact inserted only inside a fenced character event; duplicate insert leaves one row and keeps the first earner; a stale character fence writes no fact; a condition reads character-or-account completion; level and item requirements are still checked per character; an exclusive-choice quest cannot grant account completion; an existing fact does not satisfy a condition when the quest now declares none or the world disables the policy; a character with the quest active is evaluated against its pinned revision until migrated"
 remaining_unknowns:
   - Reference-target cosmetic gameplay effects
   - Achievement domain owner

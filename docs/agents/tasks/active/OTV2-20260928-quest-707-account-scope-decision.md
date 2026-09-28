@@ -65,7 +65,7 @@ authority_invariants:
   - K3 a condition accepts character completion or the account fact of the world's profile family, never another family
   - K4 per-character requirements (level, vocation, premium, items) are still checked for the acting character
   - K5 an exclusive-choice quest cannot grant account completion
-  - K6 a reader accepts an account fact only while the world's active ruleset enables the policy and the quest's active revision declares grant
+  - K6 a reader accepts an account fact only while the world's active ruleset enables the policy and the applicable quest revision (the acting character's pinned revision while the quest is active, else the active revision) declares grant
 consumer_boundaries:
   - quest completion commit
   - achievement grant
@@ -87,6 +87,7 @@ negative_cases_required_of_implementation:
   - K4 account completion with the acting character below the level requirement -> condition not satisfied
   - K5 exclusive-choice quest declaring account completion -> content compiler rejects
   - K6 existing fact after the quest switches to none, or on a world with the policy disabled -> condition not satisfied; the fact row is unchanged
+  - K6 character with the quest active under a pinned grant revision after the active revision switches to none -> still evaluated against the pinned revision until an explicit migration
 positive_cases_required_of_implementation:
   - a character completes a quest; a second character of the account passes its door
 independent_current_fact_sources:
@@ -107,6 +108,8 @@ finding_dispositions:
   p0_p1_accepted_and_repaired:
     - "Codex P1 4121971783 (4b67b20): §4.5 and the scope matrix made the Store inbox Game-owned, contradicting the Store catalog owner decision §1/§3. Repaired: delivery ownership stays open under gap register §32; D47/D49 fix scope and portability only; the item still enters the world only through a DUR-03 MINT"
     - "Codex P1 4122013017 and 4122012997 (0f588f3): Store cosmetic unlocks sat inside the write-once, character-event fact model, preselecting delivery and revocation. Repaired: that model covers gameplay-earned facts only; Store unlocks keep account scope and portability, with delivery and lifecycle under §32 and PROD-ENTITLEMENTS-01 §2.1"
+    - "Codex P1 4122065056 (2234322): the policy check used the active revision, ignoring P2 pinning. Repaired: the applicable revision is the character's pinned one while the quest is active; K6 extended"
+    - "Codex P1 4122065062 (2234322): cross-world Store claims lacked item compatibility. Repaired: the line records item-definition provenance; the claim validates against the target world under DUR-03 §46 and fails closed, leaving the line claimable"
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - "Codex P2 4121915460 (d7f8834): an opt-out did not stop old facts from satisfying conditions. Fixed: readers apply the current world and quest policy (§4.2); K6 added."
