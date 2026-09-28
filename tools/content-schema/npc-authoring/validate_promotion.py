@@ -4,7 +4,8 @@ schema doc (OTERYN_NPC_AUTHORING_SCHEMA_V1.md §3 D4-D8, §8).
 Semantic rules:
 - schema == 'OTERYN_NPC_PROMOTION_CANDIDATES/v1', evidence == 'OTS_HYPOTHESIS_ONLY',
   decisions == ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'], plus 'D12' exactly when br_facts_sha256 is
-  present; snapshot_sha256, item_map_sha256 and br_facts_sha256 are 64 hex chars;
+  present, and a WIKI_PRICE row requires br_facts_sha256; snapshot_sha256, item_map_sha256 and
+  br_facts_sha256 are 64 hex chars;
 - each candidate identity is family NPC, key `oteryn:npc.<slug>` (D4) and revision 'definition-r1';
   the key suffix equals the slug of `name` (same slug() as promotion_candidates.py);
 - candidate keys are unique and the candidates list is sorted by key;
@@ -333,6 +334,10 @@ def errors(report):
         errs.append(f"decisions {report.get('decisions')!r} != {expected!r}")
     if 'br_facts_sha256' in report and not re.fullmatch(r'[0-9a-f]{64}', str(report['br_facts_sha256'])):
         errs.append('br_facts_sha256 is not 64 hex chars')
+    # a WIKI_PRICE row is only valid with the BR facts it was decided from (D12)
+    if 'br_facts_sha256' not in report and any(row.get('rule') == 'WIKI_PRICE' for candidate in
+                                               report.get('candidates') or [] for row in candidate.get('arbitration') or []):
+        errs.append('WIKI_PRICE arbitration without br_facts_sha256 (D12)')
     snapshot_sha = report.get('snapshot_sha256')
     if not isinstance(snapshot_sha, str) or not SHA256_RE.match(snapshot_sha):
         errs.append(f'snapshot_sha256 {snapshot_sha!r} is not 64 hex chars')

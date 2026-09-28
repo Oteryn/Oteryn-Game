@@ -233,6 +233,9 @@ def stage(report: dict, registered: set[str], pilot_only: bool, dialogue_index: 
              'candidates_sha256': hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
              'item_map_sha256': ITEM_MAP_SHA256, 'wiki_snapshot_sha256': report['snapshot_sha256'],
              'wiki_revision': wiki_revision(report)}
+    if 'br_facts_sha256' in report:  # D12: prices both wikis agree on also come from the TibiaWiki BR facts
+        source['br_facts_sha256'] = report['br_facts_sha256']
+        source['br_revision'] = f'tibiawiki-br-npc-{report["br_facts_sha256"][:16]}'
     counts = {'npcs': len(candidates), 'records': len(records), 'profiles': len(profiles),
              'trade_services': sum(1 for d in services if 'offers' in d),
              'travel_services': sum(1 for d in services if 'routes' in d),

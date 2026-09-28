@@ -48,6 +48,13 @@ class PromotionValidatorTests(unittest.TestCase):
         # a punctuation-only name ('...') has no slug and is held, never keyed 'oteryn:npc.'
         self.assertIn('...', {h['name'] for h in report['held'] if h['reason'] == 'EMPTY_SLUG'})
 
+    def test_wiki_price_requires_br_facts(self):
+        report = load_sample()
+        del report['br_facts_sha256']
+        report['decisions'] = validate_promotion.DECISIONS
+        errs = validate_promotion.errors(report)
+        self.assertIn('WIKI_PRICE arbitration without br_facts_sha256 (D12)', errs)
+
     def test_bad_key_format_fails(self):
         report = load_sample()
         candidate = find_candidate(report, 'Anderson')

@@ -192,7 +192,8 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
 4d. Removed NPCs (D11): `OTV2-20260928-npc-removed-from-game`. The five Duelling Arena supervisors that both
    TibiaWiki BR and Fandom record as removed in 13.12 are held `REMOVED_FROM_GAME`, with Victor's trade
    Service. Under D12, 21 offers of 13 NPCs take the price TibiaWiki Fandom and TibiaWiki BR both state
-   (`WIKI_PRICE`), which adds their wiki page bindings. Wave A is then 1,088 NPCs, with 307 trade and 55
+   (`WIKI_PRICE`), which adds their wiki page bindings. The BR facts are recorded as their own import
+   (`g4-npc-prices-tibiawiki-br-r1`, `tibiawiki.com.br`, the facts file's SHA-256). Wave A is then 1,088 NPCs, with 307 trade and 55
    travel Services and 2,282 bindings; the 701 Dialogues are unchanged (none of the five had one).
 5. Later:
    - placements after World admission;

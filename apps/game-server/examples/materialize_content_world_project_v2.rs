@@ -80,9 +80,9 @@ const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "1439ebdb28dcae53f5b3fd9ef0254e2865628d55f8e17bae79006bec2ab7ebd9";
+const NPC_STAGED_SHA256: &str = "42fada3f40a61edfabe9681fc016716a561c819ccdf04c5c93dbe8473da4d708";
 const NPC_STAGE_TOOL_SHA256: &str =
-    "ec23b6f42dd0551e701c72e51aaeda82e5d837efb685cda589efb59a4d57ccd0";
+    "ddfe3e0844fe964bc4359f5f200835b80ab17c828fd6d9f14335e55e3c729101";
 const NPC_CANDIDATES_SHA256: &str =
     "90f68eeb689ea7907cdf24ec943e28ce0c9856f636aaead2917c17909687d765";
 const NPC_WIKI_SNAPSHOT_SHA256: &str =
@@ -90,6 +90,10 @@ const NPC_WIKI_SNAPSHOT_SHA256: &str =
 const NPC_ITEM_MAP_SHA256: &str =
     "83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a";
 const NPC_WIKI_REVISION: &str = "tibiawiki-npc-52f87d29eddd1a4e";
+/// D12: offer prices TibiaWiki Fandom and TibiaWiki BR agree on also come from the committed BR facts.
+const NPC_BR_FACTS_SHA256: &str =
+    "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a";
+const NPC_BR_REVISION: &str = "tibiawiki-br-npc-0773232ddd356be2";
 const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
 const NPC_COUNT: usize = 1088;
 const NPC_RECORDS: usize = 2176;
@@ -116,7 +120,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 7,
+        max_import_records: 8,
         max_reimport_states: 1,
     }
 }
@@ -1276,6 +1280,8 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
 struct NpcPopulation {
     import: ImportBatch,
     source: ProjectV2Source,
+    br_import: ImportBatch,
+    br_source: ProjectV2Source,
     records: Vec<ProjectReferenceRecord>,
     declarations: Vec<ProjectV2Declaration>,
     profiles: Vec<ProjectV2AuthoringProfile>,
@@ -1353,6 +1359,8 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         || source["item_map_sha256"] != NPC_ITEM_MAP_SHA256
         || source["wiki_snapshot_sha256"] != NPC_WIKI_SNAPSHOT_SHA256
         || source["wiki_revision"] != NPC_WIKI_REVISION
+        || source["br_facts_sha256"] != NPC_BR_FACTS_SHA256
+        || source["br_revision"] != NPC_BR_REVISION
         || counts["npcs"] != NPC_COUNT
         || counts["records"] != NPC_RECORDS
         || counts["declarations"] != NPC_DECLARATIONS
@@ -1418,7 +1426,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         source_generation_profile: "OTERYN_NPC_FANDOM_SNAPSHOT/v1".to_owned(),
         importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
         mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
-        mapper_revision: "npc-admission-r3".to_owned(),
+        mapper_revision: "npc-admission-r4".to_owned(),
         mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
         reimport_states: Vec::new(),
@@ -1430,9 +1438,32 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         sha256: import.source_artifact_sha256.clone(),
         evidence: ProjectV2EvidenceClass::Derived,
     };
+    let br_import = ImportBatch {
+        batch_id: "g4-npc-prices-tibiawiki-br-r1".to_owned(),
+        source_repository: "tibiawiki.com.br".to_owned(),
+        source_revision: NPC_BR_REVISION.to_owned(),
+        source_artifact_sha256: NPC_BR_FACTS_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_NPC_TIBIAWIKI_BR_FACTS/v1".to_owned(),
+        importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
+        mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "npc-admission-r4".to_owned(),
+        mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let br_source = ProjectV2Source {
+        key: "oteryn:source.tibiawiki".to_owned(),
+        import_batch_id: br_import.batch_id.clone(),
+        revision: br_import.source_revision.clone(),
+        sha256: br_import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::Derived,
+    };
     Ok(NpcPopulation {
         import,
         source,
+        br_import,
+        br_source,
         records,
         declarations,
         profiles,
@@ -1503,6 +1534,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let NpcPopulation {
         import: npc_import,
         source: npc_source,
+        br_import: npc_br_import,
+        br_source: npc_br_source,
         records: npc_records,
         declarations: npc_declarations,
         profiles: npc_profiles,
@@ -1530,6 +1563,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     creature_import,
                     creature_wiki_import,
                     npc_import,
+                    npc_br_import,
                 ],
                 metadata: Vec::new(),
             },
@@ -1542,6 +1576,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     creature_source,
                     creature_wiki_source,
                     npc_source,
+                    npc_br_source,
                 ],
                 declarations,
                 source_identity_bindings: bindings,
