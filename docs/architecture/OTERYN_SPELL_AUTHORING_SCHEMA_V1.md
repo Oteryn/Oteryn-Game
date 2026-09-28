@@ -252,7 +252,9 @@ With S14 the census reads that branch (`samples/spell-census-canary-99902524-cry
   the official news of 2026-07-07 changes only its mana).
 
 The official tibia.com spell library (S15) answers a Cloudflare browser check from the build container
-and is read by the `tibiacom` job of `spell-wiki-capture.yml` on a hosted runner (`tibiacom_spells.py`).
+and blocks GitHub-hosted runners outright ("Sorry, you have been blocked"). `tibiacom_spells.py fetch`
+therefore runs on an ordinary machine the site serves (no challenge bypass). S15 applies once such a
+capture is committed; until then the rules above decide.
 
 ## 5. Decisions
 
@@ -272,7 +274,7 @@ and is read by the `tibiacom` job of `spell-wiki-capture.yml` on a hosted runner
 | S12 | **DECIDED (owner, 2026-09-27).** tibiopedia.pl is a third reference: its official news mirror is the S11 evidence and its spell pages may confirm single facts (base power, cooldowns, level, mana); only facts with their URL are recorded, never page text. | §3; tibiopedia.pl is "all rights reserved". |
 | S13 | **DECIDED (owner, 2026-09-28).** Without an official change (S11), a BR/Fandom conflict is decided by tibiopedia.pl when it agrees with one of them (two of three references); only when all three differ does the newer wiki revision decide. tibiopedia.pl never supplies a value neither wiki states. Applied in `convert_spells.py` (`spell-p2-r2`); it changed 9 fields of 6 ready spells (§4.3). | §4.3: in 8 of the 9 fields the majority also matches Canary and Crystal. |
 | S14 | **DECIDED (owner, 2026-09-28).** The Canary source is the Tibia 15.30 branch `dudantas/fix-tibia-15-30-regressions` at `99902524` (not yet in Canary `main`): (a) in a BR/Fandom conflict without an official change, each wiki, tibiopedia.pl and the branch back one value, the most votes win and a tie goes to the branch; (b) formulas, effects and areas come from the branch instead of the older Canary pin, with Crystal still an equal source (S4, S5); (c) the single-target range stated by BR and tibiopedia.pl decides like other wiki fields; (d) its new and renamed spells join the census. Where all wikis agree, they decide even against the branch. | §4.4 |
-| S15 | **DECIDED (owner, 2026-09-28).** The official tibia.com spell library decides every field it states, ahead of the wikis, S11, S13 and S14; the wikis, tibiopedia.pl and the sources supply what it does not state. Captured on a hosted runner (`tibiacom_spells.py`); single facts with the page URL and page SHA-256 only. | §4.4; tibia.com is the game publisher's reference. |
+| S15 | **DECIDED (owner, 2026-09-28).** The official tibia.com spell library decides every field it states, ahead of the wikis, S11, S13 and S14; the wikis, tibiopedia.pl and the sources supply what it does not state. Captured by `tibiacom_spells.py fetch` on a machine tibia.com serves (it blocks hosted runners); single facts with the page URL and page SHA-256 only. Not yet applied: no capture exists. | §4.4; tibia.com is the game publisher's reference. |
 
 ## 6. Mapping to WorldProject/v2
 

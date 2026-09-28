@@ -1,13 +1,15 @@
 """Spell facts from the official tibia.com spell library (owner decision S15).
 
-Evidence tooling only. tibia.com answers a Cloudflare browser check from the build container, so the
-capture runs on a hosted runner in a real (headless) Chromium through Playwright, one page per second,
-with no user-agent spoofing or challenge bypass: if the site does not serve the page, the capture fails.
-The artifact keeps the table cells of each page (cut to 200 characters) with the page URL and the
-SHA-256 of the served HTML, never the raw page; `facts` maps the cells to Fandom field names.
+Evidence tooling only. tibia.com answers a Cloudflare browser check from the build container and blocks
+GitHub-hosted runners outright ("Sorry, you have been blocked", 2026-09-28), so `fetch` runs on an
+ordinary machine that the site serves (for example the owner's computer), in Chromium through Playwright,
+one page per second, with no user-agent spoofing or challenge bypass: if the site does not serve the
+page, the capture fails. The output keeps the table cells of each page (cut to 200 characters) with the
+page URL and the SHA-256 of the served HTML, never the raw page; `facts` maps the cells to Fandom field
+names and is the only step that runs in the repository.
 
-Usage (hosted runner; needs `pip install playwright` and `python -m playwright install chromium`):
-    python tibiacom_spells.py fetch --out <dir>/tibiacom-spell-tables.json
+Usage (needs `pip install playwright` and `python -m playwright install chromium`):
+    python tibiacom_spells.py fetch --out tibiacom-spell-tables.json [--headed]
     python tibiacom_spells.py facts --artifact tibiacom-spell-tables.json \
         --out samples/tibiacom-spell-facts-<date>.json
     python tibiacom_spells.py self-test
@@ -48,13 +50,13 @@ def cut_tables(tables):
     return [[[cell[:MAX_CELL] for cell in row] for row in table if any(row)] for table in tables]
 
 
-def fetch(out):
-    from playwright.sync_api import sync_playwright  # hosted runner only
+def fetch(out, headed=False):
+    from playwright.sync_api import sync_playwright  # capture machine only
 
     fetched = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     pages = []
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
+        browser = playwright.chromium.launch(headless=not headed)
         page = browser.new_page()
 
         def load(url):
@@ -208,11 +210,12 @@ def main(argv=None):
     parser.add_argument('command', choices=('fetch', 'facts', 'self-test'))
     parser.add_argument('--artifact', type=Path)
     parser.add_argument('--out', type=Path)
+    parser.add_argument('--headed', action='store_true', help='fetch: show the browser window')
     args = parser.parse_args(argv)
     if args.command == 'self-test':
         return self_test()
     if args.command == 'fetch':
-        fetch(args.out)
+        fetch(args.out, args.headed)
         return 0
     from wiki_spells import write_lines
     write_lines(args.out, facts(json.loads(args.artifact.read_text(encoding='utf-8'))), 'pages')
