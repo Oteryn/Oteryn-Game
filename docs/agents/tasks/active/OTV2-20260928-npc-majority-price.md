@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-npc-majority-price
 title: NPC D13 - Tibiopedia as the third wiki; offer prices two of three wikis agree on
 mode: IMPLEMENT
-status: in_progress
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
