@@ -11,7 +11,7 @@ pr: 1172
 allocation_comment: "#162 5878933966 (request), owner-authorized in this window (2026-09-28)"
 base_branch: main
 branch: claude/appa-appearance-validation
-base_sha: d7fee0e4587d7b458a4b3c88248f4fe133d80c8a  # stacked on PR 1171 (PREM-2a) and PR 1154
+base_sha: 51abd337c69b4040731a3c830fa538c32dfb2736  # stacked on PR 1171 (PREM-2a)
 head_sha: null
 owner: "Oteryn: impl domains" (Claude Code)
 created_at: 2026-09-28T21:00:00Z
