@@ -67,9 +67,12 @@ view, the 18 × 14 map area and the floor rule. The manual states only a charact
 
 ### 4.1 Interest area (D84, D86)
 
-- The observer's interest area is a rectangle of `width × height` tiles, placed as in Global:
-  8 columns to the west and 9 to the east, 6 rows to the north and 7 to the south of the observer
-  for the Reference 18 × 14.
+- The observer's interest area is a rectangle of `width × height` tiles that includes the
+  observer's tile, placed for every accepted size by one formula:
+  `west = floor((width − 1) / 2)`, `east = width − 1 − west`,
+  `north = floor((height − 1) / 2)`, `south = height − 1 − north`.
+  An even size therefore extends one tile further east and south, as in Global: the Reference
+  18 × 14 gives 8 west, 9 east, 6 north and 7 south; 15 × 11 gives 7, 7, 5 and 5.
 - Floors: above ground (observer floor ≤ 7) floors 7 down to 0; underground floors observer ± 2,
   clamped to the map's floors. Other floors are offset as Global offsets them (one tile diagonally
   per floor of distance).
@@ -85,15 +88,19 @@ view, the 18 × 14 map area and the floor rule. The manual states only a charact
 - Creatures and other players: identity (runtime actor id and generation), kind, position,
   direction, appearance reference and health percentage.
 - Corpses and ground items: identity, position and item definition reference; a stack shows its
-  quantity. The protocol lane may carry them in the object overlay domain or a new domain; the
-  ceiling below applies per carrying domain.
+  quantity.
+- All visible entities travel in the one new `WORLD_SPATIAL_VISIBILITY` revision (§4.5), so one
+  ceiling applies. They are not carried in `WORLD_OBJECT_OVERLAY`, whose registered
+  `WOBJ-RL-03` (486 entries) serves object state and stays unchanged.
 - The observer's own actor is always included.
 
 ### 4.3 Ceiling and degradation (D87)
 
-- At most 256 entities per snapshot or delta of a carrying domain, including the own actor.
-- If more entities are in the area, the snapshot carries the nearest: ordered by floor distance,
-  then Chebyshev distance, then entity identity. The rest enter as others leave. This is the
+- At most 256 entities per snapshot or delta, including the own actor.
+- **Canonical order:** floor distance, then Chebyshev distance on the observer's plane, then
+  entity identity (byte order). The interest index enumerates candidates in this order, ring by
+  ring outwards from the observer, so any cutoff keeps the nearest.
+- If more entities are in the area, the snapshot carries the first 256 in canonical order. The rest enter as others leave. This is the
   packet's "degrade" disposition; it never allocates beyond the ceiling and never fails the
   session.
 - A delta carries at most 256 enter, leave or update entries; a larger change is sent as a new
@@ -108,7 +115,7 @@ max+1 tests.
 |---|---|---|
 | `MOVE-RL-11` | **256** entities per snapshot or delta | re-decided from 1; beyond it, nearest first (§4.3) |
 | `MOVE-RL-08` | 256 enter/leave/update entries per delta | beyond it, a new snapshot |
-| `MOVE-RL-09` | 1,024 candidates per visibility query | the area's entity index; candidates beyond it are not examined, and the query takes the nearest per §4.3 |
+| `MOVE-RL-09` | 1,024 candidates per visibility query | enumerated in the §4.3 canonical order; the query stops at 256 results or 1,024 examined candidates, whichever comes first, so the selection is the same on every replay |
 | `MOVE-RL-10` | 256 results per query | equals `MOVE-RL-11` |
 | `MOVE-VIEW-WIDTH` | default 18, range 15..36 tiles | new, configurable (D84) |
 | `MOVE-VIEW-HEIGHT` | default 14, range 11..28 tiles | new, configurable (D84) |
@@ -117,16 +124,23 @@ max+1 tests.
 
 ### 4.5 Protocol
 
-`world_spatial_v1` stays as it is for existing clients of the first child. A new schema revision
-carries a repeated entity entry (§4.2) under the protocol registry lease and the protocol lane. It
-fails closed on unknown fields as today.
+- The new schema revision (a new snapshot and delta type of domain 1) carries a repeated entity
+  entry (§4.2) under the protocol registry lease and the protocol lane, and fails closed on
+  unknown fields as today.
+- It is gated by a new optional capability, `WORLD_SPATIAL_ENTITIES`, under the FND-02 capability
+  model (FND-02 §4 and §9): an older same-major client cannot read the new payload, so the server
+  sends the new types only to a session whose negotiation selected the capability. Other sessions
+  keep receiving `world_spatial_v1` with their own actor only.
+- VIS-2 adds cross-version fixtures: an old client against a new server receives only v1; a new
+  client against an old server falls back to v1; a selected capability the server does not know
+  fails closed.
 
 ## 5. Delivery (each child needs its own #162 allocation)
 
 | Child | Scope | Depends on |
 |---|---|---|
 | VIS-1 | Server interest set: area, floors, ceiling and ordering, settings; rows registered | this decision |
-| VIS-2 | The new `WORLD_SPATIAL` schema revision, codec and client decode; protocol registry entry | VIS-1; protocol lane |
+| VIS-2 | The new `WORLD_SPATIAL` schema revision, the `WORLD_SPATIAL_ENTITIES` capability, codec, client decode and cross-version fixtures; protocol registry entries | VIS-1; protocol lane |
 | E (Combat) and AI | Creature appear, move, disappear and corpse observation through VIS-2 | VIS-2 |
 
 ## 6. Rejected options
@@ -162,9 +176,9 @@ required_fresh_allocation: true
 required_independent_review: "exact-head independent review (visibility bounds, fairness, protocol revision)"
 implementation_lanes: [VIS-1, VIS-2]
 required_revalidation:
-  - "VIS-1: the 18 × 14 area and offsets; the floor rule above and below ground; 256 entities accepted and the 257th farthest left out by the §4.3 order; own actor always present; settings outside 15..36 × 11..28 rejected at startup; one value per Channel"
-  - "VIS-1: a delta with more than 256 changes becomes a snapshot; replay gives the same selection"
-  - "VIS-2: the new schema round-trips 256 maximum-size entries within 33,792 B; unknown fields fail closed; world_spatial_v1 clients unchanged"
+  - "VIS-1: the offset formula at 18 × 14, 15 × 11 and 36 × 28; the floor rule above and below ground; 256 entities accepted and the 257th farthest left out by the §4.3 order; own actor always present; settings outside 15..36 × 11..28 rejected at startup; one value per Channel"
+  - "VIS-1: a delta with more than 256 changes becomes a snapshot; with more than 1,024 candidates the selection is the canonical nearest and identical on replay, whatever the index insertion order"
+  - "VIS-2: the new schema round-trips 256 maximum-size entries within 33,792 B; unknown fields fail closed; only sessions that selected WORLD_SPATIAL_ENTITIES receive it; old and new peers interoperate through v1"
 remaining_unknowns:
   - players per Channel
   - dense-scene cost evidence

@@ -63,6 +63,19 @@ qualification when allocated.
 
 - Registry rows, protocol schema, runtime code, line of sight, invisibility, spectators.
 
+## Finding dispositions
+
+Codex review of `7fa5291`: three P1 and one P2, all ACCEPTED in repair generation 1 of 1 (#162
+convergence rule 5869165340). No owner decision changed.
+
+- 4125283382 (P1, overlay domain would exceed the ceiling under `WOBJ-RL-03` 486): all visible
+  entities travel in the new `WORLD_SPATIAL_VISIBILITY` revision; the overlay is not used.
+- 4125283422 (P2, placement for non-default sizes): one offset formula for every accepted size.
+- 4125283391 (P1, candidate subset before the cutoff): the index enumerates in the canonical order;
+  the query stops at 256 results or 1,024 examined candidates.
+- 4125283405 (P1, capability negotiation): the new revision is gated by the optional
+  `WORLD_SPATIAL_ENTITIES` capability with cross-version fixtures.
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
