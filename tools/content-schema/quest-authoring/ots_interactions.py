@@ -36,7 +36,7 @@ from pathlib import Path
 
 import lua_blocks
 import lua_tables
-from lua_writers import REGISTRATION, expand_aliases, storage_aliases, strip_code
+from lua_writers import REGISTRATION, argument, expand_aliases, storage_aliases, strip_code
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
 from ots_questlog import norm, script_of, track_of
 from validate_quest_content import BLOCKED
@@ -81,20 +81,81 @@ CREATE_ITEM = re.compile(r'^local\s+(\w+)\s*=\s*Game\.createItem\(\s*(\d+)\s*\)$
 TEXTED_ITEM = re.compile(r'(\w+):setAttribute\(\s*ITEM_ATTRIBUTE_TEXT\b')
 BLOCKED_MOVEMENT = BLOCKED['Movement']
 BLOCKED_WORLD_OBJECT = BLOCKED['WorldObject']
-# D38 world-object overlay operations: a call matched by one regex names its operation kind directly; a
-# bare `revertItem`/`decay`/`addEvent(Position.revertItem, ...)` schedules the same object's own later
-# transform (the proposal's "timed revert"), so it attaches as `revert_after_ms` to the operation it
-# reverts (the preceding typed operation in the same statement list) rather than becoming its own
-# child (D38 §4, "revert_after covers decay and revertItem/addEvent reverts").
-TRANSFORM_CALL = re.compile(r'[:.](transform|transformItem)\(')
-CREATE_CALL = re.compile(r'[:.]createItem\(\s*(\d+)?')
-RETAG_CALL = re.compile(r'[:.]setActionId\(')
-REVERT_CALL = re.compile(r'[:.](revertItem|decay)\(|\b(add|stop)Event\(\s*Position\.revertItem|\bPosition\.revertItem\(')
-# the literal delay of `addEvent(Position.revertItem, delay, ...)`, the one revert form whose delay is
-# at a fixed, well-known argument position across this codebase's scripts; the other forms (a bare
-# `:revertItem(...)`/`:decay()` method call, or a direct `Position.revertItem(...)` static call) have no
-# argument position known to be the delay without reading the exact call, so they never claim one.
-REVERT_DELAY = re.compile(r'\baddEvent\(\s*Position\.revertItem\s*,\s*(\d+)\s*[,)]')
+# D37: only a bare `teleportTo(fromPosition)` (the previous-position variable itself, at most followed
+# by other, non-positional arguments such as a `pushMove` flag) is a relocation to the previous tile.
+# An offset or lookup that merely mentions `fromPosition` (e.g. `Position(fromPosition.x + 1, ...)`)
+# does not fully-delimited-literal match this, so it stays a computed, blocked target.
+TELEPORT_PREVIOUS = re.compile(r'teleportTo\(\s*fromPosition\s*(?:,\s*[^()]*)?\)')
+# D38 world-object overlay operations: a call matched by one regex names its operation kind and, via its
+# own capture group, the receiver it acts on (the identity a later revert must match to attach, never by
+# list position alone). `Game.createItem(...)` has no such receiver; a `local X = Game.createItem(...)`
+# constructor's identity is `X`, the name a later revert would itself have to name to attach to it.
+TRANSFORM_CALL = re.compile(r'(\w+)[:.](transform|transformItem)\(')
+CREATE_CALL = re.compile(r'(\w+)[:.]createItem\(')
+RETAG_CALL = re.compile(r'(\w+)[:.]setActionId\(')
+ASSIGNED_LOCAL = re.compile(r'^local\s+(\w+)\s*=')
+# a bare `X:revertItem(...)`/`X:decay()` method call names its own receiver; `addEvent`/`stopEvent`
+# scheduling `Position.revertItem` and a direct `Position.revertItem(...)` call have no receiver at all
+# (revertItem is not a method call there), so only a literal position in their own argument list --
+# never a variable's name -- can prove they target the same object as a candidate operation.
+REVERT_METHOD = re.compile(r'(\w+)[:.](revertItem|decay)\(')
+ADD_STOP_EVENT = re.compile(r'\b(?:add|stop)Event\(')
+POSITION_REVERT_ITEM = re.compile(r'\bPosition\.revertItem\(')
+
+
+def parse_revert(raw):
+    """Whether `raw` is a revert call, and what it provably reverts: (is_revert, receiver, literal
+    position groups, literal delay in ms). `argument()` bounds each call's own argument list so a
+    literal position found there is that call's, never a look-alike elsewhere on the line."""
+    if (m := REVERT_METHOD.search(raw)):
+        return True, m.group(1), None, None
+    if (m := ADD_STOP_EVENT.search(raw)):
+        args = argument(raw, m.end())
+        if not re.match(r'\s*Position\.revertItem\b', args):
+            return False, None, None, None
+        delay = None
+        if (dm := re.match(r'\s*Position\.revertItem\s*,\s*(\d+)\s*(?:,|$)', args)):
+            delay = int(dm.group(1))
+        pos = POSITION.search(args)
+        return True, None, (pos.groups() if pos else None), delay
+    if (m := POSITION_REVERT_ITEM.search(raw)):
+        args = argument(raw, m.end())
+        pos = POSITION.search(args)
+        return True, None, (pos.groups() if pos else None), None
+    return False, None, None, None
+
+
+def split_args(text):
+    """The top-level, comma-separated arguments of a call's argument-list text (bracket-nesting aware,
+    so a literal `Position(x, y, z)` argument is not itself split on its own commas)."""
+    if not text.strip():
+        return []
+    parts, depth, current = [], 0, ''
+    for c in text:
+        if c in '({[':
+            depth += 1
+        elif c in ')}]':
+            depth -= 1
+        if c == ',' and depth == 0:
+            parts.append(current)
+            current = ''
+        else:
+            current += c
+    parts.append(current)
+    return [p.strip() for p in parts]
+
+
+def strip_internal(rules):
+    """Remove every converter-internal `_`-prefixed key (identity bookkeeping for revert association)
+    from a built rule tree, once the whole interaction is final; never reaches interactions.json."""
+    for rule in rules:
+        if 'branch' in rule:
+            for branch in rule['branch']:
+                strip_internal(branch['then'])
+            strip_internal(rule.get('otherwise', []))
+        else:
+            for key in [k for k in rule if k.startswith('_')]:
+                del rule[key]
 # a `Name = {` anywhere in the file, used to discover which names are worth asking lua_tables to parse.
 NAME_TABLE = re.compile(r'(\w+)\s*=\s*\{')
 # a literal `Storage.…` path, an array step kept only when its index is a literal digit (never a variable).
@@ -134,14 +195,32 @@ class Script:
             if actor and (m := re.match(rf'\s*local\s+(\w+)\s*=\s*{actor}:getPlayer\(\)', line)):
                 self.players.add(m.group(1))
 
+    @staticmethod
+    def xyz(match):
+        """A `POSITION` regex match's groups (from either its literal alternative) as (x, y, z) ints."""
+        return tuple(int(v) for v in (match[:3] if match[0] else match[3:]))
+
     def anchor(self, match):
-        x, y, z = [int(v) for v in (match[:3] if match[0] else match[3:])]
+        x, y, z = self.xyz(match)
         for a in self.anchors:
             if (a['source_position']['x'], a['source_position']['y'], a['source_position']['z']) == (x, y, z):
                 return a['key']
         key = f'p{len(self.anchors) + 1}'
         self.anchors.append({'key': key, 'source_position': {'x': x, 'y': y, 'z': z}})
         return key
+
+    def same_target(self, prior, receiver, pos):
+        """Whether a revert's own receiver or literal position provably names the same object as
+        `prior` (an already-emitted typed WorldObject operation): the same identity (a receiver name,
+        or a `local X = ...` constructor's own name), or the same literal position as `prior`'s already
+        pre-authored anchor. List position alone (being merely the nearest preceding operation) is
+        never sufficient by itself."""
+        if receiver and prior.get('_identity') == receiver:
+            return True
+        if pos and prior.get('anchor'):
+            registered = next((a['source_position'] for a in self.anchors if a['key'] == prior['anchor']), None)
+            return registered is not None and tuple(registered.values()) == self.xyz(pos)
+        return False
 
     def track(self, storage):
         """The catalogue's progress track for a storage, whichever server declared it (D33), else this server's."""
@@ -286,12 +365,13 @@ class Script:
                 # out of scope until that contract exists (proposal §3).
                 found.append({'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
                               'target': {'kind': 'anchor', 'anchor': self.anchor(pos.groups())}})
-            elif 'fromPosition' in raw:
+            elif TELEPORT_PREVIOUS.search(raw):
                 found.append({'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
                               'target': {'kind': 'previous_position'}})
             else:
-                # a computed target (a table lookup, an offset from another position): stays blocked
-                # until its definition can name an anchor, or a DUR-04 component proposes the target.
+                # a computed target (an offset, a table lookup, anything short of the bare previous-
+                # position variable itself): stays blocked until its definition can name an anchor, or a
+                # DUR-04 component proposes the target.
                 found.append({'owner': 'Movement', 'status': 'blocked', 'reason': BLOCKED_MOVEMENT, 'to_source_line': number})
         removal = re.search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(([^()]*)\)', raw)
         consumed = removal and self.consumed(removal, number)
@@ -303,39 +383,57 @@ class Script:
         elif removal:
             # D38: removing a non-value-bearing map object (a wall, a stone, a barrier), never a carried
             # item (that stayed DUR-03 consumption above) or a creature (that stays unresolved, C4).
-            found.append({'owner': 'WorldObject', 'operation': 'REMOVE', 'value_source_line': number})
-        elif TRANSFORM_CALL.search(raw):
+            found.append({'owner': 'WorldObject', 'operation': 'REMOVE', 'value_source_line': number,
+                         '_identity': removal.group(1)})
+        elif (m := TRANSFORM_CALL.search(raw)):
             # from/to are rarely both literal in one call (the current id is usually implicit, read from
             # the object the script already holds), so this stays with its source line rather than guessed.
-            found.append({'owner': 'WorldObject', 'operation': 'TRANSFORM', 'value_source_line': number})
+            found.append({'owner': 'WorldObject', 'operation': 'TRANSFORM', 'value_source_line': number,
+                         '_identity': m.group(1)})
         elif (m := CREATE_CALL.search(raw)):
             constructor = CREATE_ITEM.match(code)
-            tail = raw[m.end():]
-            pos = POSITION.search(tail)
-            literal = {'def': ref('Item', f'{self.namespace}:item/{m.group(1)}')} if m.group(1) else {'value_source_line': number}
+            args = split_args(argument(raw, m.end()))
+            item_id = args[0] if args and re.fullmatch(r'\d+', args[0]) else None
+            extra = args[1:]
+            # engine signature `createItem(itemId, count/subtype, position)`: a bare integer among the
+            # extra arguments is the count/subtype, never a placement; a literal Position is the anchor;
+            # anything else could be a placement expression (C3: no dynamic geometry), so it stays blocked.
+            literal_pos = next((a for a in extra if POSITION.fullmatch(a)), None)
+            ambiguous = any(not re.fullmatch(r'\d+', a) and not POSITION.fullmatch(a) for a in extra)
+            literal = {'def': ref('Item', f'{self.namespace}:item/{item_id}')} if item_id else {'value_source_line': number}
+            identity = (assigned := ASSIGNED_LOCAL.match(code)) and assigned.group(1)
             if constructor and constructor.group(1) in self.created_items:
                 # a reward-container constructor (this local is a hand-out/contents item, DUR-03), never
                 # a world placement, even though the call itself is `Game.createItem(...)`.
                 pass
-            elif pos:
+            elif ambiguous:
+                found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
+            elif literal_pos:
                 # C3: CREATE only binds a pre-authored anchor with a fixed footprint; a literal position
                 # argument names one.
-                found.append({'owner': 'WorldObject', 'operation': 'CREATE', 'anchor': self.anchor(pos.groups()), **literal})
-            elif re.search(r'(?i)position', tail):
-                # a computed placement (a variable/expression position, not a literal): dynamic geometry,
-                # which C3 does not allow CREATE to bind, so this stays blocked rather than unanchored.
-                found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
+                child = {'owner': 'WorldObject', 'operation': 'CREATE', 'anchor': self.anchor(POSITION.fullmatch(literal_pos).groups()),
+                         **literal}
+                if identity:
+                    child['_identity'] = identity
+                found.append(child)
             else:
-                found.append({'owner': 'WorldObject', 'operation': 'CREATE', **literal})
-        elif RETAG_CALL.search(raw):
+                child = {'owner': 'WorldObject', 'operation': 'CREATE', **literal}
+                if identity:
+                    child['_identity'] = identity
+                found.append(child)
+        elif (m := RETAG_CALL.search(raw)):
             # D38/coordinator decision 1c: a transition between two states of the same collision class;
             # the action id itself is not modeled as data.
-            found.append({'owner': 'WorldObject', 'operation': 'RETAG', 'value_source_line': number})
-        elif (m := REVERT_CALL.search(raw)):
-            # never its own child (D38 §4): `convert()` attaches it to the preceding typed operation in
-            # this same statement list, or leaves it blocked when none can be associated deterministically.
-            delay = int(dm.group(1)) if (dm := REVERT_DELAY.search(raw)) else None
-            found.append({'owner': 'WorldObject', '_revert': True, '_revert_delay_ms': delay, '_source_line': number})
+            found.append({'owner': 'WorldObject', 'operation': 'RETAG', 'value_source_line': number,
+                         '_identity': m.group(1)})
+        else:
+            is_revert, receiver, pos, delay = parse_revert(raw)
+            if is_revert:
+                # never its own child (D38 §4): `convert()` attaches it to the operation it provably
+                # reverts (the preceding typed operation in this same statement list with the same
+                # receiver/anchor identity), or leaves it blocked when none matches deterministically.
+                found.append({'owner': 'WorldObject', '_revert': True, '_revert_receiver': receiver,
+                              '_revert_position': pos, '_revert_delay_ms': delay, '_source_line': number})
         if (m := CONTAINER_FILL.match(raw)) and m.group(1) in self.containers:
             # a plain item added to a reward container built earlier in this same callback (DUR-03): its contents
             self.containers[m.group(1)].setdefault('contents', []).append(
@@ -425,12 +523,16 @@ class Script:
                 or re.search(r'(?i)creature|monster|boss|npc|summon|spectator', receiver) is not None)
 
     def revert(self, out, child):
-        """Attach a `_revert` sentinel (from `children()`) to the preceding typed WorldObject operation
-        in this same statement list (D38 §4: the revert is the same object's own later operation, so it
-        is transcribed as a field on the operation it reverts, never its own child). No operation to
-        attach to in this same list is not a deterministic association, so the revert stays blocked."""
+        """Attach a `_revert` sentinel (from `children()`) to the operation it provably reverts: the
+        nearest preceding typed WorldObject operation in this same statement list whose own identity
+        (receiver, or a `local X = ...` constructor's name) or pre-authored anchor the revert's own
+        receiver/literal position matches (D38 §4: the revert is the same object's own later operation,
+        so it is transcribed as a field on that operation, never its own child). List position alone,
+        with no matching identity, is never sufficient, so an unmatched or ambiguous revert stays
+        blocked instead."""
         prior = next((c for c in reversed(out) if c.get('owner') == 'WorldObject' and 'operation' in c), None)
-        if prior is None:
+        matched = prior is not None and self.same_target(prior, child['_revert_receiver'], child['_revert_position'])
+        if not matched:
             blocked = {'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT,
                       'source_line': child['_source_line']}
             if child.get('repeated'):
@@ -485,6 +587,7 @@ class Script:
             self.bind(number, m.group(2))
             nodes = lua_blocks.parse(self.lines, lua_blocks.function_body(self.lines, number))
             rules = self.convert(nodes)
+            strip_internal(rules)
             # several callbacks in one file are told apart by their script object, which both servers share even when
             # one of them adds or reorders callbacks; a repeated object name takes its occurrence number
             objects_before = [CALLBACK.match(self.lines[n - 1]).group(1) for n in starts[:index]]

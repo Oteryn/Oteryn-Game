@@ -467,6 +467,7 @@ def run_converter(lua_body, callback='onUse'):
         script.bind(1, callback)
         nodes = oi.lua_blocks.parse(script.lines, oi.lua_blocks.function_body(script.lines, 1))
         rules = script.convert(nodes)
+        oi.strip_internal(rules)  # exactly what interactions() does before a rule tree is ever committed
     return list(oi.walk(rules)), script.anchors
 
 
@@ -479,16 +480,10 @@ def converter_case(name, lua_body, check, callback='onUse', expected=True):
     results.append({'name': name, 'expected_valid': expected, 'passed': ok == expected, 'first_error': None if ok else detail})
 
 
-# Finding 1 (P2): a revert call (`decay`/`revertItem`/`addEvent(Position.revertItem, ...)`) must never
-# become its own WorldObject child; it attaches `revert_after_ms` to the preceding typed operation in
-# the same statement list, or stays blocked when none can be associated deterministically.
+# Round 1, Finding 1 (P2): a revert call (`decay`/`revertItem`/`addEvent(Position.revertItem, ...)`)
+# must never become its own WorldObject child.
 converter_case(
-    'a literal addEvent(Position.revertItem, delay, ...) attaches revert_after_ms to the preceding op',
-    ['item:transform(2773)', 'addEvent(Position.revertItem, 5000, item:getPosition(), 2772)'],
-    lambda c, a: (len(c) == 1 and c[0]['owner'] == 'WorldObject' and c[0]['operation'] == 'TRANSFORM'
-                 and c[0].get('revert_after_ms') == 5000, c))
-converter_case(
-    'a non-literal revert (bare decay) attaches with no revert_after_ms, never its own child',
+    'a same-receiver bare decay attaches with no revert_after_ms, never its own child',
     ['item:transform(2773)', 'item:decay()'],
     lambda c, a: (len(c) == 1 and c[0]['owner'] == 'WorldObject' and c[0]['operation'] == 'TRANSFORM'
                  and 'revert_after_ms' not in c[0], c))
@@ -504,7 +499,70 @@ converter_case(
     lambda c, a: (len([x for x in c if x.get('owner') == 'WorldObject' and x.get('status') == 'blocked']) == 1
                  and len([x for x in c if x.get('operation') == 'TRANSFORM']) == 1, c))
 
-# Finding 2 (P2): CREATE only binds a literal, pre-authored anchor; a computed position stays blocked.
+# Round 2, Finding 1 (P2): only a bare `teleportTo(fromPosition)` is a previous-tile relocation; an
+# offset or lookup that merely mentions `fromPosition` stays a computed, blocked target.
+converter_case(
+    'a bare teleportTo(fromPosition) is a previous-tile relocation',
+    ['creature:teleportTo(fromPosition)'],
+    lambda c, a: (c == [{'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
+                         'target': {'kind': 'previous_position'}}], c), callback='onStepIn')
+converter_case(
+    'a trailing non-positional argument does not disqualify the previous tile',
+    ['creature:teleportTo(fromPosition, true)'],
+    lambda c, a: (c[0].get('target', {}).get('kind') == 'previous_position', c), callback='onStepIn')
+converter_case(
+    'the exact Codex example: an offset that merely references fromPosition stays blocked',
+    ['creature:teleportTo(Position(fromPosition.x + 1, fromPosition.y, fromPosition.z))'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and 'target' not in c[0], c), callback='onStepIn')
+converter_case(
+    'a field access on fromPosition (not the bare variable) stays blocked',
+    ['creature:teleportTo(fromPosition.x)'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked', c), callback='onStepIn')
+
+# Round 2, Finding 2 (P2): a revert attaches only when its own receiver or literal position provably
+# names the same target as the candidate operation; never by list order alone.
+converter_case(
+    'a revert on a different receiver does not attach to an unrelated preceding operation',
+    ['wall1:transform(2773)', 'wall2:decay()'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'TRANSFORM']) == 1
+                 and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
+converter_case(
+    'the exact Codex example: addEvent(Position.revertItem, ...) with no provable same target stays blocked',
+    ['item:transform(2773)', 'addEvent(Position.revertItem, 5000, item:getPosition(), 2772)'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'TRANSFORM' and 'revert_after_ms' in x]) == 0
+                 and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
+converter_case(
+    'addEvent(Position.revertItem, ...) with a literal position matching the prior anchor attaches',
+    ['Game.createItem(2793, Position(100, 200, 7))',
+     'addEvent(Position.revertItem, 5000, Position(100, 200, 7), 2772)'],
+    lambda c, a: (len(c) == 1 and c[0]['operation'] == 'CREATE' and c[0].get('revert_after_ms') == 5000, c))
+converter_case(
+    'addEvent(Position.revertItem, ...) with a different literal position does not attach',
+    ['Game.createItem(2793, Position(100, 200, 7))',
+     'addEvent(Position.revertItem, 5000, Position(1, 1, 7), 2772)'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'CREATE' and 'revert_after_ms' in x]) == 0
+                 and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
+
+# Round 2, Finding 3 (P2): `def` only when the first argument is a complete literal integer.
+converter_case(
+    'the exact Codex example: createItem(2793 + offset, ...) keeps its source line, no def',
+    ['Game.createItem(2793 + offset)'],
+    lambda c, a: (len(c) == 1 and 'def' not in c[0] and c[0].get('value_source_line') is not None, c))
+
+# Round 2, Finding 4 (P2): CREATE decides its placement by argument structure (the engine signature
+# `createItem(itemId, count/subtype, position)`), never a substring/name heuristic.
+converter_case(
+    'the exact Codex example: createItem(id, count, destination) stays blocked, not typed without an anchor',
+    ['Game.createItem(2793, 1, destination)'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and 'operation' not in c[0], c))
+converter_case(
+    'createItem(id, count, literal position) binds the anchor, count is not mistaken for a placement',
+    ['Game.createItem(2793, 1, Position(1, 2, 7))'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1', c))
+converter_case(
+    'createItem(id, count) with no placement argument at all is the implicit target',
+    ['Game.createItem(2793, 1)'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and 'anchor' not in c[0], c))
 converter_case(
     'a literal position on createItem becomes a bound anchor',
     ['Game.createItem(2793, Position(100, 200, 7))'],
@@ -521,7 +579,8 @@ converter_case(
     ['Game.createItem(2793)'],
     lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and 'anchor' not in c[0], c))
 
-# Finding 3 (P2): a reward-container constructor (`self.created_items`) is never also a WorldObject CREATE.
+# a reward-container constructor (`self.created_items`) is never also a WorldObject CREATE (round 1,
+# Finding 3), re-verified with the internal `_identity` bookkeeping now in play.
 converter_case(
     'a bare reward constructor produces no WorldObject child by itself',
     ['local reward = Game.createItem(2793)'],
@@ -535,7 +594,8 @@ converter_case(
 converter_case(
     'createItem with a literal position is still a world CREATE even though it is assigned to a local',
     ['local wall = Game.createItem(2793, Position(1, 2, 7))'],
-    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1', c))
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1'
+                 and '_identity' not in c[0], c))
 
 failed = [r for r in results if not r['passed']]
 if '--verbose' in sys.argv:

@@ -109,7 +109,7 @@
          "required": ["request", "scope", "target"], "additionalProperties": false},
         {"properties": {"owner": {"const": "Movement"}, "status": {"const": "blocked"}, "reason": {"type": "string"},
                         "to_source_line": {"type": "integer"}, "repeated": {"const": true}},
-         "required": ["status", "reason", "to_source_line"], "additionalProperties": false},
+         "required": ["status", "reason"], "additionalProperties": false},
         {"properties": {"owner": {"const": "WorldObject"}, "operation": {"const": "TRANSFORM"},
                         "anchor": {"$ref": "#/$defs/anchor_key"},
                         "from": {"allOf": [{"$ref": "#/$defs/ref"}, {"properties": {"family": {"const": "Item"}}}]},

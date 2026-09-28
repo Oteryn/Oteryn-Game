@@ -365,7 +365,7 @@ joined by that key; `interaction.schema.json` and
 | Interactions | 1,221 |
 | Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 400 / 202 / 14 / 6 |
 | Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Outfit / Mount / Experience / Presentation / Movement / WorldObject | 947 / 208 / 343 (160, 183) / 36 / 14 / 5 / 9 / 2,679 / 800 / 891 |
-| D37 relocation children: to a named anchor / to the previous tile / blocked (computed target) | 219 / 209 / 372 |
+| D37 relocation children: to a named anchor / blocked (computed target, incl. an unproven previous-tile expression) | 219 / 581 |
 | D38 overlay operations: classified by kind (`TRANSFORM`/`CREATE`/`REMOVE`/`RETAG`) / still blocked pending call-type re-transcription from source | 0 / 891 |
 | Quest children naming a mission transition | 215 |
 | Unresolved statements / conditions | 1,908 / 1,916 |
@@ -385,20 +385,26 @@ Canary: the first seal lever's item ids (the wiki is silent) and the first seal'
 CrystalServer triggers elsewhere and closes late, against the wiki.
 
 The Queen of the Banshees is also the worked example for D37 and D38 (`ots_interactions.py`,
-`interaction.schema.json`). Its 20 interactions carry 19 Movement and 27 WorldObject children. Of the
-Movement children, the converter now names 9 relocations to a named anchor and 9 to the previous tile
-as typed D37 requests (`request: relocate`, `scope: in_scope`); the one remaining computed target (a
-sacrifice tile picked at runtime) stays blocked until it can name an anchor. Its 27 WorldObject
-children — the seal levers and the magic walls the two conflicts (§6.4) are about — are not yet
-classified into `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG`: the committed transcription never recorded which
-source call (`transform`, `createItem`, `remove`, `setActionId`, `decay`, `revertItem`) produced each
-one, only its source line, so turning them into typed D38 operations needs a fresh run of
-`ots_interactions.py` against the pinned Canary/CrystalServer checkouts (§5), which can then also fill
-`from`/`to`/`def` and `revert_after_ms` from the literal call arguments the converter now reads. The
-same gap holds for the rest of the corpus: the 891 WorldObject children stay blocked, with the reason
-naming the pending classification rather than a missing owner (D38 already names one), while all 428
-anchor-bound and previous-tile Movement children across the whole corpus (of 800; the other 372 are
-computed targets) are typed today, since their target was already on record.
+`interaction.schema.json`). Its 20 interactions carry 19 Movement and 27 WorldObject children. Only a
+`teleportTo(fromPosition)` call with no further argument (allowing a trailing non-positional one such
+as a `pushMove` flag) is a typed D37 relocation to the previous tile; an offset or lookup that merely
+mentions `fromPosition` (e.g. `Position(fromPosition.x + 1, ...)`) is not a fully-delimited literal
+match and stays blocked. The converter now names 9 of its Movement children as typed relocations to a
+named anchor (`request: relocate`, `scope: in_scope`); the other 10 (the seven seal flames' step-back
+teleports plus the two picked-at-runtime sacrifice/computed targets) stay blocked until each can name
+an anchor. Its 27 WorldObject children — the seal levers and the magic walls the two conflicts (§6.4)
+are about — are not yet classified into `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG`: the committed
+transcription never recorded which source call (`transform`, `createItem`, `remove`, `setActionId`,
+`decay`, `revertItem`) produced each one, only its source line, so turning them into typed D38
+operations needs a fresh run of `ots_interactions.py` against the pinned Canary/CrystalServer
+checkouts (§5). That run would classify each WorldObject call by its exact argument structure (a
+literal `Position(x,y,z)` names a pre-authored anchor; a `createItem` id is only literal when it is a
+complete, delimited integer; a revert attaches only when its own receiver or literal position provably
+names the same object as the operation it reverts), never by an identifier's name or its position in a
+list. The same evidence gap holds for the rest of the corpus: the 891 WorldObject children and 581 of
+the 800 Movement children (372 genuinely computed, 209 a `fromPosition`-referencing expression that is
+not itself provably the bare previous-tile relocation) stay blocked; the other 219 anchor-bound
+Movement children are typed today, since their target was already on record as a literal position.
 
 ### 6.4 Conflict decisions (D25)
 

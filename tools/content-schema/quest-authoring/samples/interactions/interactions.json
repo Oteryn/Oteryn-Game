@@ -631,11 +631,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -964,11 +961,8 @@
               "then": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 }
               ]
             }
@@ -983,11 +977,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -1197,11 +1188,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -3235,11 +3223,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -3458,11 +3443,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -3540,11 +3522,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -6350,11 +6329,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -6372,11 +6348,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -6394,11 +6367,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -6435,11 +6405,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -6457,11 +6424,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -6479,11 +6443,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -6501,11 +6462,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -6542,11 +6500,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -6703,11 +6658,8 @@
                             },
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             }
                           ]
                         },
@@ -6735,11 +6687,8 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             }
                           ]
                         }
@@ -6912,11 +6861,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -7317,11 +7263,8 @@
               "then": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 }
               ]
             }
@@ -7356,11 +7299,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -7387,11 +7327,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -7449,11 +7386,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -7471,11 +7405,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -7493,11 +7424,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -8385,11 +8313,8 @@
                 },
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 }
               ]
             }
@@ -8775,11 +8700,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -8797,11 +8719,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -8819,11 +8738,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -9287,11 +9203,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -10302,11 +10215,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              }
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
             },
             {
               "owner": "Presentation",
@@ -13829,11 +13739,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -13944,11 +13851,8 @@
               "then": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 }
               ]
             }
@@ -13992,11 +13896,8 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         },
                         {
                           "owner": "Presentation",
@@ -14044,11 +13945,8 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         },
                         {
                           "owner": "Presentation",
@@ -14082,11 +13980,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      },
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                       "repeated": true
                     }
                   ]
@@ -14479,11 +14374,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 }
               ]
             }
@@ -14591,11 +14483,8 @@
                               "otherwise": [
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 },
                                 {
                                   "owner": "Presentation",
@@ -14661,11 +14550,8 @@
                               "otherwise": [
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 },
                                 {
                                   "owner": "Presentation",
@@ -14731,11 +14617,8 @@
                               "otherwise": [
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 },
                                 {
                                   "owner": "Presentation",
@@ -14952,11 +14835,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -15098,11 +14978,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -18081,11 +17958,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -18194,11 +18068,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -18259,11 +18130,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -18324,11 +18192,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -18836,11 +18701,8 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             },
                             {
                               "owner": "Presentation",
@@ -18930,11 +18792,8 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             },
                             {
                               "owner": "Presentation",
@@ -19024,11 +18883,8 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             },
                             {
                               "owner": "Presentation",
@@ -20124,11 +19980,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -20789,11 +20642,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -23756,11 +23606,8 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 }
                               ]
                             }
@@ -23770,11 +23617,8 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -24319,11 +24163,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -24829,11 +24670,8 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 },
@@ -26010,11 +25848,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -26387,11 +26222,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -26654,11 +26486,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -26676,11 +26505,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -26698,11 +26524,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -26835,11 +26658,8 @@
                 },
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 }
               ]
             }
@@ -33519,11 +33339,8 @@
                       "then": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         },
                         {
                           "owner": "Presentation",
@@ -33545,11 +33362,8 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             },
                             {
                               "owner": "Presentation",
@@ -33673,11 +33487,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -39832,11 +39643,8 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             },
                             {
                               "owner": "Presentation",
@@ -40554,11 +40362,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -42238,11 +42043,8 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -42300,11 +42102,8 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     },
@@ -42431,11 +42230,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -42661,11 +42457,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -42741,11 +42534,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -42905,11 +42695,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -42927,11 +42714,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -42949,11 +42733,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -43078,11 +42859,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -43100,11 +42878,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -51002,11 +50777,8 @@
                       "then": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         },
                         {
                           "owner": "Presentation",
@@ -51154,11 +50926,8 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -51212,11 +50981,8 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -51395,11 +51161,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -51630,11 +51393,8 @@
           "otherwise": [
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -53011,11 +52771,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -53033,11 +52790,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -53055,11 +52809,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -55230,11 +54981,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -55252,11 +55000,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -55274,11 +55019,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -56881,11 +56623,8 @@
                 },
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -57465,11 +57204,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -57537,11 +57273,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -57615,11 +57348,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -58182,11 +57912,8 @@
           "otherwise": [
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              }
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
             },
             {
               "owner": "Presentation",
@@ -58732,11 +58459,8 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             },
                             {
                               "owner": "Presentation",
@@ -58755,11 +58479,8 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             },
                             {
                               "owner": "Presentation",
@@ -63448,11 +63169,8 @@
                             },
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             }
                           ]
                         }
@@ -64428,11 +64146,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -67365,11 +67080,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -67701,11 +67413,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -67791,11 +67500,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -67823,11 +67529,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         },
                         {
                           "owner": "Presentation",
@@ -67915,11 +67618,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -67947,11 +67647,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -68011,11 +67708,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -68553,11 +68247,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -69550,11 +69241,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -72042,11 +71730,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -72063,11 +71748,8 @@
                       "then": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -72090,11 +71772,8 @@
                             },
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             }
                           ]
                         }
@@ -72343,11 +72022,8 @@
                             },
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             }
                           ]
                         }
@@ -73114,11 +72790,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -73288,11 +72961,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -73362,11 +73032,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -75002,11 +74669,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -75087,11 +74751,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -75183,11 +74844,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -75256,11 +74914,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -75352,11 +75007,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -75448,11 +75100,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -75544,11 +75193,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -75640,11 +75286,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -75736,11 +75379,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -75879,11 +75519,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -75952,11 +75589,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -76048,11 +75682,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -76173,11 +75804,8 @@
           "otherwise": [
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              }
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
             },
             {
               "owner": "Presentation",
@@ -76257,11 +75885,8 @@
                       "then": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         },
                         {
                           "owner": "Presentation",
@@ -77179,11 +76804,8 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         },
                         {
                           "owner": "Presentation",
@@ -77209,11 +76831,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -80066,11 +79685,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -80101,11 +79717,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         },
                         {
                           "owner": "Presentation",
@@ -81127,11 +80740,8 @@
                             },
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             }
                           ]
                         }
@@ -81168,11 +80778,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -81200,11 +80807,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      },
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                       "repeated": true
                     },
                     {
@@ -81385,11 +80989,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -84379,11 +83980,8 @@
                                     },
                                     {
                                       "owner": "Movement",
-                                      "request": "relocate",
-                                      "scope": "in_scope",
-                                      "target": {
-                                        "kind": "previous_position"
-                                      }
+                                      "status": "blocked",
+                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                     }
                                   ]
                                 }
@@ -84412,11 +84010,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -84440,11 +84035,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -84484,11 +84076,8 @@
                             },
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              },
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                               "repeated": true
                             },
                             {
@@ -84507,11 +84096,8 @@
                       "otherwise": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -84683,11 +84269,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -86337,11 +85920,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -86444,11 +86024,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -86533,11 +86110,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -87417,11 +86991,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         },
                         {
                           "owner": "Presentation",
@@ -87454,11 +87025,8 @@
                             },
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             },
                             {
                               "owner": "Presentation",
@@ -87491,11 +87059,8 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 },
                                 {
                                   "owner": "Presentation",
@@ -87848,11 +87413,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -87900,11 +87462,8 @@
                   "otherwise": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -91630,11 +91189,8 @@
                           "then": [
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             },
                             {
                               "owner": "Presentation",
@@ -92310,11 +91866,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -92332,11 +91885,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -92354,11 +91904,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -93291,11 +92838,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             }
           ]
@@ -93895,11 +93439,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              }
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
             },
             {
               "owner": "Presentation",
@@ -94097,11 +93638,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -94663,11 +94201,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -95637,11 +95172,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -95716,11 +95248,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -95781,11 +95310,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -96047,11 +95573,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -96722,11 +96245,8 @@
               "then": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -97570,11 +97090,8 @@
               "then": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -97682,11 +97199,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -100266,11 +99780,8 @@
                       "then": [
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         },
                         {
                           "owner": "Presentation",
@@ -100546,11 +100057,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -100745,11 +100253,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -102331,11 +101836,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -102514,11 +102016,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
@@ -102581,11 +102080,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -102598,11 +102094,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  },
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                   "repeated": true
                 },
                 {
@@ -102697,11 +102190,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -102910,11 +102400,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -102940,11 +102427,8 @@
                               "then": [
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 },
                                 {
                                   "owner": "Presentation",
@@ -103332,11 +102816,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     },
                     {
                       "owner": "Presentation",
@@ -103349,11 +102830,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  },
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                   "repeated": true
                 },
                 {
@@ -104145,11 +103623,8 @@
                               "then": [
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 }
                               ]
                             }
@@ -104208,11 +103683,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -104283,11 +103755,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 },
@@ -104319,11 +103788,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -104839,11 +104305,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -105070,11 +104533,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -105625,11 +105085,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 },
@@ -105648,11 +105105,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -106279,11 +105733,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          },
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                           "repeated": true
                         },
                         {
@@ -106417,11 +105868,8 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 }
                               ]
                             }
@@ -106561,11 +106009,8 @@
                             },
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              },
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                               "repeated": true
                             },
                             {
@@ -108257,11 +107702,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      },
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                       "repeated": true
                     }
                   ]
@@ -108879,11 +108321,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     },
@@ -108950,11 +108389,8 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 }
                               ]
                             }
@@ -108970,11 +108406,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          }
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                         }
                       ]
                     }
@@ -109360,11 +108793,8 @@
             },
             {
               "owner": "Movement",
-              "request": "relocate",
-              "scope": "in_scope",
-              "target": {
-                "kind": "previous_position"
-              },
+              "status": "blocked",
+              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
               "repeated": true
             },
             {
@@ -109540,11 +108970,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      },
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                       "repeated": true
                     },
                     {
@@ -109556,11 +108983,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      },
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                       "repeated": true
                     },
                     {
@@ -109647,11 +109071,8 @@
                     },
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      },
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                       "repeated": true
                     },
                     {
@@ -110329,11 +109750,8 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 }
                               ]
                             },
@@ -110355,11 +109773,8 @@
                         },
                         {
                           "owner": "Movement",
-                          "request": "relocate",
-                          "scope": "in_scope",
-                          "target": {
-                            "kind": "previous_position"
-                          },
+                          "status": "blocked",
+                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                           "repeated": true
                         },
                         {
@@ -110913,11 +110328,8 @@
                                   "otherwise": [
                                     {
                                       "owner": "Movement",
-                                      "request": "relocate",
-                                      "scope": "in_scope",
-                                      "target": {
-                                        "kind": "previous_position"
-                                      }
+                                      "status": "blocked",
+                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                     },
                                     {
                                       "owner": "Presentation",
@@ -111428,11 +110840,8 @@
                                                 },
                                                 {
                                                   "owner": "Movement",
-                                                  "request": "relocate",
-                                                  "scope": "in_scope",
-                                                  "target": {
-                                                    "kind": "previous_position"
-                                                  }
+                                                  "status": "blocked",
+                                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                                 }
                                               ]
                                             }
@@ -111448,11 +110857,8 @@
                                         },
                                         {
                                           "owner": "Movement",
-                                          "request": "relocate",
-                                          "scope": "in_scope",
-                                          "target": {
-                                            "kind": "previous_position"
-                                          }
+                                          "status": "blocked",
+                                          "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                         }
                                       ]
                                     }
@@ -111476,11 +110882,8 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  },
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)",
                                   "repeated": true
                                 },
                                 {
@@ -111979,11 +111382,8 @@
                   "then": [
                     {
                       "owner": "Movement",
-                      "request": "relocate",
-                      "scope": "in_scope",
-                      "target": {
-                        "kind": "previous_position"
-                      }
+                      "status": "blocked",
+                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                     }
                   ]
                 }
@@ -112009,11 +111409,8 @@
                               "then": [
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 }
                               ]
                             }
@@ -114672,11 +114069,8 @@
                             },
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             },
                             {
                               "owner": "Presentation",
@@ -114709,11 +114103,8 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 },
                                 {
                                   "owner": "Presentation",
@@ -114746,11 +114137,8 @@
                                     },
                                     {
                                       "owner": "Movement",
-                                      "request": "relocate",
-                                      "scope": "in_scope",
-                                      "target": {
-                                        "kind": "previous_position"
-                                      }
+                                      "status": "blocked",
+                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                     },
                                     {
                                       "owner": "Presentation",
@@ -116978,11 +116366,8 @@
                             },
                             {
                               "owner": "Movement",
-                              "request": "relocate",
-                              "scope": "in_scope",
-                              "target": {
-                                "kind": "previous_position"
-                              }
+                              "status": "blocked",
+                              "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                             },
                             {
                               "owner": "Presentation",
@@ -117015,11 +116400,8 @@
                                 },
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 },
                                 {
                                   "owner": "Presentation",
@@ -117052,11 +116434,8 @@
                                     },
                                     {
                                       "owner": "Movement",
-                                      "request": "relocate",
-                                      "scope": "in_scope",
-                                      "target": {
-                                        "kind": "previous_position"
-                                      }
+                                      "status": "blocked",
+                                      "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                     },
                                     {
                                       "owner": "Presentation",
@@ -121187,11 +120566,8 @@
                               "then": [
                                 {
                                   "owner": "Movement",
-                                  "request": "relocate",
-                                  "scope": "in_scope",
-                                  "target": {
-                                    "kind": "previous_position"
-                                  }
+                                  "status": "blocked",
+                                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                                 },
                                 {
                                   "owner": "Presentation",
@@ -121555,11 +120931,8 @@
               "otherwise": [
                 {
                   "owner": "Movement",
-                  "request": "relocate",
-                  "scope": "in_scope",
-                  "target": {
-                    "kind": "previous_position"
-                  }
+                  "status": "blocked",
+                  "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)"
                 },
                 {
                   "owner": "Presentation",
