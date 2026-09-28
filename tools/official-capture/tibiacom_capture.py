@@ -31,13 +31,15 @@ import hashlib
 import html.parser
 import importlib.util
 import json
+import os
 import re
+import stat
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 SNAPSHOT_PREFIX = 'imports/official/tibia-com/'
@@ -73,11 +75,16 @@ FACTS_PER_SECTION_CAP = 40
 SPELL_RECORDS_CAP = 600
 FACT_TO_VISIBLE_TEXT_RATIO_LIMIT = 0.25
 TOTAL_FACT_VALUE_BYTES_LIMIT = 200_000
+# Closes the whole "smuggled text" class in one generic check, regardless of encoding trick: the
+# RAW bytes of facts.json on disk (not the parsed field lengths) must fit the same 25% ratio, plus
+# a fixed per-fact JSON-structure overhead allowance.
+PER_FACT_JSON_OVERHEAD_BYTES = 64
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
 ACCEPTED_HTTP_STATUS = 200
 # Strict match on what utc_now() produces (P2 r4120883679): an ISO-8601 UTC timestamp ending in Z.
 TIMESTAMP_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
 MAX_FETCH_RUN_SECONDS = 3600
+SYMLINK_MODE = '120000'
 
 CLOUDFLARE_MARKERS = (
     'Sorry, you have been blocked',
@@ -134,6 +141,24 @@ def parse_utc_timestamp(value):
         return datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
     except ValueError:
         return None
+
+
+def _reject_duplicate_keys(pairs):
+    """`object_pairs_hook` for `json.loads`: raise instead of silently keeping only the last of a
+    duplicate key (P2 r4121095556) -- applies at every nesting level, so a duplicate `value` inside
+    one fact object is caught exactly like a duplicate top-level key.
+    """
+    seen = {}
+    for key, value in pairs:
+        if key in seen:
+            raise ValueError(f'duplicate key {key!r}')
+        seen[key] = value
+    return seen
+
+
+def load_json_no_duplicates(text):
+    """`json.loads` with duplicate-key rejection; raises ValueError (JSONDecodeError included)."""
+    return json.loads(text, object_pairs_hook=_reject_duplicate_keys)
 
 
 def normalize_space(text):
@@ -411,6 +436,18 @@ def verify_snapshot(directory):
     if not facts_path.is_file():
         return [f'{directory}: missing facts.json']
 
+    # Both documents must be regular files, not symlinks (or anything else) -- Path.is_file()
+    # above follows a symlink to a regular file, so a committed symlink would otherwise pass
+    # (P2 r4121095564). os.lstat inspects the path itself, without following a final symlink.
+    for path in (manifest_path, facts_path):
+        try:
+            mode = os.lstat(path).st_mode
+        except OSError as error:
+            return errors + [f'{directory}: cannot lstat {path.name} ({error})']
+        if not stat.S_ISREG(mode):
+            return errors + [f'{directory}: {path.name} must be a regular file, not a symlink '
+                             f'or other special file']
+
     # Exactly manifest.json and facts.json -- no raw pages, scratch files or subdirectories
     # (P2 r4121003204, page-copy class): both required files exist, so directory is safe to list.
     extra_files = sorted(p.name for p in directory.iterdir() if p.name not in SNAPSHOT_FILENAMES)
@@ -418,13 +455,23 @@ def verify_snapshot(directory):
         errors.append(f'{directory}: snapshot directory must contain exactly {sorted(SNAPSHOT_FILENAMES)}, '
                       f'found extra: {extra_files}')
 
+    # The directory name is the snapshot's provenance date: a real calendar date, equal to
+    # captured_at's date part (P2 r4121095570). Checked before JSON parsing so it applies even to
+    # an otherwise-malformed snapshot.
+    dir_date = None
     try:
-        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-    except json.JSONDecodeError as error:
+        dir_date = date.fromisoformat(directory.name)
+    except ValueError:
+        errors.append(f'{directory}: directory name {directory.name!r} must be a real YYYY-MM-DD '
+                      f'calendar date')
+
+    try:
+        manifest = load_json_no_duplicates(manifest_path.read_text(encoding='utf-8'))
+    except ValueError as error:
         return errors + [f'{directory}: manifest.json is not valid JSON ({error})']
     try:
-        facts_doc = json.loads(facts_path.read_text(encoding='utf-8'))
-    except json.JSONDecodeError as error:
+        facts_doc = load_json_no_duplicates(facts_path.read_text(encoding='utf-8'))
+    except ValueError as error:
         return errors + [f'{directory}: facts.json is not valid JSON ({error})']
 
     # Closed schema (P2 r4121003195): both documents are objects with exactly their allowed
@@ -461,6 +508,9 @@ def verify_snapshot(directory):
     elif captured_dt is not None and manifest_captured_at != facts_captured_at:
         errors.append(f'{directory}: manifest.json and facts.json "captured_at" must be equal '
                       f'({manifest_captured_at!r} != {facts_captured_at!r})')
+    if dir_date is not None and captured_dt is not None and dir_date.isoformat() != manifest_captured_at[:10]:
+        errors.append(f'{directory}: directory name {directory.name!r} must equal the date part '
+                      f'of captured_at {manifest_captured_at!r}')
 
     pages = manifest.get('pages')
     pages_by_section = {}
@@ -631,6 +681,21 @@ def verify_snapshot(directory):
         errors.append(f'{directory}: total fact value bytes {total_value_bytes} exceeds the '
                       f'{TOTAL_FACT_VALUE_BYTES_LIMIT}-byte cap (looks like full page text, not facts)')
 
+    # Generic no-smuggled-text guard (closes the whole class in one place): the RAW bytes of
+    # facts.json on disk, not any parsed field, must fit the page-ratio budget plus a fixed
+    # per-fact JSON-structure allowance. Whitespace padding, an oversized field a field-level check
+    # missed, or any other encoding trick that inflates the file without inflating a parsed value
+    # still fails this.
+    total_visible_chars = sum(page['visible_text_chars'] for page in pages_by_section.values()
+                              if isinstance(page.get('visible_text_chars'), int))
+    allowed_raw_bytes = total_visible_chars * FACT_TO_VISIBLE_TEXT_RATIO_LIMIT + PER_FACT_JSON_OVERHEAD_BYTES * len(facts)
+    raw_facts_bytes = facts_path.stat().st_size
+    if raw_facts_bytes > allowed_raw_bytes + 1e-9:
+        errors.append(f'{directory}: facts.json is {raw_facts_bytes} bytes on disk, over the allowed '
+                      f'{allowed_raw_bytes:.0f} bytes ({FACT_TO_VISIBLE_TEXT_RATIO_LIMIT:.0%} of total '
+                      f'visible-text chars + {PER_FACT_JSON_OVERHEAD_BYTES} B/fact overhead) -- looks '
+                      f'like hidden text regardless of encoding')
+
     return errors
 
 
@@ -651,29 +716,48 @@ def dated_dir_for_path(path):
     return f'{SNAPSHOT_PREFIX}{match.group(1)}' if match else None
 
 
-def find_immutability_violations(diff_lines, exists_at_base):
-    """Dated snapshot directories are immutable once committed and hold exactly two files
-    (P2 r4120578808/r4120758029/r4121003204).
+def parse_raw_diff_line(line):
+    """Parse one `git diff --raw` line into (old_mode, new_mode, status, paths), or None if `line`
+    isn't a raw diff entry. Format: `:oldmode newmode oldsha newsha status<TAB>path[<TAB>path2]`
+    (a second path only for a rename/copy status)."""
+    line = line.rstrip('\n')
+    if not line.startswith(':'):
+        return None
+    meta, sep, rest = line.partition('\t')
+    if not sep:
+        return None
+    fields = meta[1:].split()
+    if len(fields) < 5:
+        return None
+    old_mode, new_mode, status = fields[0], fields[1], fields[4]
+    return old_mode, new_mode, status, rest.split('\t')
 
-    `diff_lines` are `git diff --name-status -M <base> <head> -- <SNAPSHOT_PREFIX>` lines (any
-    iterable of strings); `exists_at_base(dated_dir)` reports whether that dated directory already
-    existed at the base commit. Returns one violation string per offending line: any `A`, `M`, `D`,
-    `R` or `C` whose affected path's dated directory already existed at base -- including an `A`
-    that only adds a new file inside an already-committed directory -- or whose filename is not in
-    `SNAPSHOT_FILENAMES`, even inside a brand-new dated directory (a raw page dump would otherwise
-    slip past this check, which only `verify` would later catch). Only `manifest.json`/`facts.json`
-    inside a brand-new dated directory are allowed.
+
+def find_immutability_violations(diff_lines, exists_at_base):
+    """Dated snapshot directories are immutable once committed, hold exactly two files, and never
+    a symlink (P2 r4120578808/r4120758029/r4121003204/r4121095564).
+
+    `diff_lines` are `git diff --raw -M <base> <head> -- <SNAPSHOT_PREFIX>` lines (any iterable of
+    strings); `exists_at_base(dated_dir)` reports whether that dated directory already existed at
+    the base commit. Returns one violation string per offending line: a symlink mode (120000) on
+    either side of the change; any `A`, `M`, `D`, `R` or `C` whose affected path's dated directory
+    already existed at base -- including an `A` that only adds a new file inside an
+    already-committed directory; or whose filename is not in `SNAPSHOT_FILENAMES`, even inside a
+    brand-new dated directory. Only `manifest.json`/`facts.json`, as regular files, inside a
+    brand-new dated directory are allowed.
     """
     violations = []
     for line in diff_lines:
-        line = line.rstrip('\n')
-        if not line:
+        parsed = parse_raw_diff_line(line)
+        if parsed is None:
             continue
-        fields = line.split('\t')
-        status = fields[0]
+        old_mode, new_mode, status, paths = parsed
         if not status or status[0] not in ('A', 'M', 'D', 'R', 'C'):
             continue
-        paths = fields[1:] if status[0] in ('R', 'C') else fields[1:2]
+        if SYMLINK_MODE in (old_mode, new_mode):
+            violations.append(f'{status}\t{"->".join(paths)} (symlink mode {SYMLINK_MODE} not '
+                              f'allowed in a snapshot directory)')
+            continue
         for path in paths:
             dated_dir = dated_dir_for_path(path)
             if not dated_dir:
@@ -691,7 +775,7 @@ def find_immutability_violations(diff_lines, exists_at_base):
 def cmd_check_immutability(base, head):
     root = subprocess.run(['git', 'rev-parse', '--show-toplevel'], capture_output=True, text=True,
                           check=True).stdout.strip()
-    diff = subprocess.run(['git', 'diff', '--name-status', '-M', base, head, '--', SNAPSHOT_PREFIX],
+    diff = subprocess.run(['git', 'diff', '--raw', '-M', base, head, '--', SNAPSHOT_PREFIX],
                           capture_output=True, text=True, check=True, cwd=root).stdout
 
     def exists_at_base(dated_dir):
@@ -856,34 +940,52 @@ def self_test():
     assert hashlib.sha256(raw).hexdigest() != hashlib.sha256(body.encode('utf-8')).hexdigest()
 
     # Immutability (P2 r4120758029): only paths inside a brand-new dated directory are allowed --
-    # including an `A` that lands inside an already-committed one.
+    # including an `A` that lands inside an already-committed one. Lines are `git diff --raw`
+    # shaped (P2 r4121095564 moved the check off `--name-status` to see file modes).
+    def _raw(status, *paths, old_mode='100644', new_mode='100644'):
+        sha = 'a' * 40
+        return f':{old_mode} {new_mode} {sha} {sha} {status}\t' + '\t'.join(paths)
+
     existing_at_base = {SNAPSHOT_PREFIX + '2026-09-28'}
     exists_at_base = lambda dated_dir: dated_dir in existing_at_base
     assert find_immutability_violations(
-        [f'A\t{SNAPSHOT_PREFIX}2026-10-05/manifest.json'], exists_at_base) == []
+        [_raw('A', f'{SNAPSHOT_PREFIX}2026-10-05/manifest.json', old_mode='000000')], exists_at_base) == []
     assert len(find_immutability_violations(
-        [f'A\t{SNAPSHOT_PREFIX}2026-09-28/extra.json'], exists_at_base)) == 1
+        [_raw('A', f'{SNAPSHOT_PREFIX}2026-09-28/extra.json', old_mode='000000')], exists_at_base)) == 1
     assert len(find_immutability_violations(
-        [f'M\t{SNAPSHOT_PREFIX}2026-09-28/manifest.json'], exists_at_base)) == 1
+        [_raw('M', f'{SNAPSHOT_PREFIX}2026-09-28/manifest.json')], exists_at_base)) == 1
     assert len(find_immutability_violations(
-        [f'D\t{SNAPSHOT_PREFIX}2026-09-28/facts.json'], exists_at_base)) == 1
+        [_raw('D', f'{SNAPSHOT_PREFIX}2026-09-28/facts.json', new_mode='000000')], exists_at_base)) == 1
     assert len(find_immutability_violations(
-        [f'R100\t{SNAPSHOT_PREFIX}2026-09-28/facts.json\t{SNAPSHOT_PREFIX}2026-09-28/renamed.json'],
+        [_raw('R100', f'{SNAPSHOT_PREFIX}2026-09-28/facts.json', f'{SNAPSHOT_PREFIX}2026-09-28/renamed.json')],
         exists_at_base)) == 1
     assert find_immutability_violations(
-        [f'R100\t{SNAPSHOT_PREFIX}2026-10-05/manifest.json\t{SNAPSHOT_PREFIX}2026-10-05/facts.json'],
+        [_raw('R100', f'{SNAPSHOT_PREFIX}2026-10-05/manifest.json', f'{SNAPSHOT_PREFIX}2026-10-05/facts.json')],
         exists_at_base) == []
-    assert find_immutability_violations(['M\tREADME.md'], exists_at_base) == []
+    assert find_immutability_violations([_raw('M', 'README.md')], exists_at_base) == []
     # A brand-new dated directory may still hold only manifest.json/facts.json (P2 r4121003204):
     # a raw page dump added alongside them is rejected even though the directory itself is new.
     assert len(find_immutability_violations(
-        [f'A\t{SNAPSHOT_PREFIX}2026-10-05/raw.html'], exists_at_base)) == 1
+        [_raw('A', f'{SNAPSHOT_PREFIX}2026-10-05/raw.html', old_mode='000000')], exists_at_base)) == 1
+    # A symlink is rejected outright, mode 120000 on either side, new dir or not (P2 r4121095564).
+    assert len(find_immutability_violations(
+        [_raw('A', f'{SNAPSHOT_PREFIX}2026-10-05/manifest.json', old_mode='000000', new_mode='120000')],
+        exists_at_base)) == 1
+    assert len(find_immutability_violations(
+        [_raw('M', f'{SNAPSHOT_PREFIX}2026-09-28/manifest.json', old_mode='120000')],
+        exists_at_base)) == 1
+    assert parse_raw_diff_line('not a raw diff line') is None
+    assert parse_raw_diff_line('') is None
 
     import copy
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
-        directory = Path(tmp)
         base_manifest, base_facts = _valid_snapshot_documents()
+        # The directory name is now part of the schema (P2 r4121095570): it must be the real
+        # calendar date matching captured_at, so the fixture directory is named accordingly
+        # instead of using tmp's own (non-date-shaped) name.
+        directory = Path(tmp) / base_manifest['captured_at'][:10]
+        directory.mkdir()
         _write_snapshot(directory, base_manifest, base_facts)
         assert verify_snapshot(directory) == [], verify_snapshot(directory)
 
@@ -1085,7 +1187,9 @@ def self_test():
             # A separate temp dir, not nested under `directory` -- `directory` is reused below as
             # the exactly-two-files fixture, and a subdirectory would pollute that check.
             with tempfile.TemporaryDirectory() as fetch_tmp:
-                fetch_out = Path(fetch_tmp) / 'fetch-out'
+                # A valid-date directory name (P2 r4121095570): cmd_fetch stamps captured_at with
+                # today's date, so naming the output directory that way keeps verify_snapshot happy.
+                fetch_out = Path(fetch_tmp) / utc_now()[:10]
                 assert cmd_fetch(fetch_out) == 0
                 fetched_manifest = json.loads((fetch_out / 'manifest.json').read_text(encoding='utf-8'))
                 fetched_facts = json.loads((fetch_out / 'facts.json').read_text(encoding='utf-8'))
@@ -1135,6 +1239,67 @@ def self_test():
         _write_snapshot(directory, base_manifest, facts_doc)
         errors = verify_snapshot(directory)
         assert any('fact has unexpected key' in e for e in errors), errors
+
+        # Reject duplicate JSON keys before validation (P2 r4121095556): json.loads would
+        # otherwise silently keep only the last of a duplicate 'value', hiding full-page text.
+        assert load_json_no_duplicates('{"a": 1, "b": 2}') == {'a': 1, 'b': 2}
+        try:
+            load_json_no_duplicates('{"a": 1, "a": 2}')
+            assert False, 'expected duplicate-key rejection'
+        except ValueError as error:
+            assert 'duplicate key' in str(error), error
+        dup_key_facts_json = (
+            '{"schema": "' + FACTS_SCHEMA + '", "captured_at": "' + base_manifest['captured_at'] + '", '
+            '"facts": [{"section": "controls", "anchor": "root", "key": "controls.root.1", '
+            '"value": "short", "value": "z"}]}'
+        )
+        (directory / 'facts.json').write_text(dup_key_facts_json, encoding='utf-8')
+        errors = verify_snapshot(directory)
+        assert any('facts.json is not valid JSON' in e and 'duplicate key' in e for e in errors), errors
+        _write_snapshot(directory, base_manifest, base_facts)
+
+        # Both documents must be regular files, not symlinks (P2 r4121095564).
+        symlinked = directory / 'manifest.json'
+        saved_manifest_text = symlinked.read_text(encoding='utf-8')
+        symlinked.unlink()
+        symlink_target = Path(tmp) / 'symlink-target.json'
+        symlink_target.write_text(saved_manifest_text, encoding='utf-8')
+        os.symlink(symlink_target, symlinked)
+        errors = verify_snapshot(directory)
+        symlinked.unlink()
+        symlink_target.unlink()
+        assert any('must be a regular file' in e for e in errors), errors
+        _write_snapshot(directory, base_manifest, base_facts)
+        assert verify_snapshot(directory) == [], verify_snapshot(directory)
+
+        # The directory name must be a real calendar date matching captured_at (P2 r4121095570).
+        not_a_date_dir = Path(tmp) / 'not-a-date'
+        not_a_date_dir.mkdir()
+        _write_snapshot(not_a_date_dir, base_manifest, base_facts)
+        errors = verify_snapshot(not_a_date_dir)
+        assert any('calendar date' in e for e in errors), errors
+
+        not_a_real_date_dir = Path(tmp) / '2026-02-30'  # February has no 30th
+        not_a_real_date_dir.mkdir()
+        _write_snapshot(not_a_real_date_dir, base_manifest, base_facts)
+        errors = verify_snapshot(not_a_real_date_dir)
+        assert any('calendar date' in e for e in errors), errors
+
+        mismatched_date_dir = Path(tmp) / '2020-01-01'
+        mismatched_date_dir.mkdir()
+        _write_snapshot(mismatched_date_dir, base_manifest, base_facts)  # captured_at is today
+        errors = verify_snapshot(mismatched_date_dir)
+        assert any('must equal the date part of captured_at' in e for e in errors), errors
+
+        # Generic no-smuggled-text guard: verify checks facts.json's RAW byte size on disk, not
+        # the parsed form -- padding that appears in no field must still fail.
+        facts_file = directory / 'facts.json'
+        padded = facts_file.read_text(encoding='utf-8') + (' ' * 50_000)
+        facts_file.write_text(padded, encoding='utf-8')
+        errors = verify_snapshot(directory)
+        assert any('bytes on disk' in e for e in errors), errors
+        _write_snapshot(directory, base_manifest, base_facts)
+        assert verify_snapshot(directory) == [], verify_snapshot(directory)
 
         missing = Path(tmp) / 'missing'
         assert verify_snapshot(missing) == [f'{missing}: missing manifest.json']
