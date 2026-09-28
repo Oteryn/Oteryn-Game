@@ -91,12 +91,20 @@ This task adds a docs-only design as §10 of
   - `bind`'s inverse search requires the forward's own origin, so `/remove` stays the unique
     inverse.
   - Consumption still retires the object, and the later timer still fences to a no-op.
+- **Round 6** (Codex P1 4127619230 on `64e192aa`, accepted):
+  - The "no wire change" claim is removed.
+  - A typed dynamic-placement delivery (key, cell, footprint, definition reference, bounds) in
+    `docs/contracts/protocol-oteryn/v1/world_object_v1.proto` is recorded as a protocol-lane
+    prerequisite (§10.3 D2a, §10.8).
+  - OD8, `azerus` included, is gated fail-closed on it (`RuntimePlacementDeliveryUnavailable`).
+    OD9 is unaffected.
 - **Closeout** of `OTV2-20260928-cw1-teleporter-rearm`: archived as completed, merged `195ef53a`.
 
 ## Excluded scope
 
-- No code, schema, sample or registry change. `WOBJ-RL-08` and the `WOBJ-RL-04` note are named in
-  the text only.
+- No code, schema, sample or registry change. No protocol change: the dynamic-placement delivery OD8
+  needs is the protocol lane's prerequisite. `WOBJ-RL-08` and the `WOBJ-RL-04` note are named in the
+  text only.
 - Interaction consumers, the teleport consumer, encounter-trigger wiring and absent-state client
   rendering are out of scope. D91 enforcement is named as a precondition.
 
@@ -107,5 +115,5 @@ This task adds a docs-only design as §10 of
 
 ## Context checkpoint
 
-last_progress: Round 5 repair (Codex P1 4127573494) on PR #1182; new candidate head pending freeze
+last_progress: Round 6 repair (Codex P1 4127619230) on PR #1182; new candidate head pending freeze
 jira: pending (no mapped Story resolved in this worker session)

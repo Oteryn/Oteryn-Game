@@ -2368,6 +2368,42 @@ The template is ordinary immutable content (DUR-04). It carries no position.
   `cult_soul_remains` lowers to two templates (items 32414 and 32415). Its runtime `one_of` picks
   one per death, as Canary's `math.random` does.
 
+**D2a. Client delivery of a runtime placement: a protocol-lane prerequisite (Round 6, Codex P1
+4127619230).**
+
+- **The gap.** A synthesized `PlacementRef` exists only inside the scope owner. The client
+  resolves an overlay entry's `placement` against its own immutable content artifact.
+  `WorldObjectOverlayEntryV1` (`docs/contracts/protocol-oteryn/v1/world_object_v1.proto`, lines
+  47-53: `content_generation`, `placement`, `state`, `revision`) has no way to tell the client
+  where a runtime placement is or what it is. The client therefore cannot place or render, for
+  example, the Azerus teleporter at its death cell.
+- **What OD8 needs.** A typed dynamic-placement delivery owned by the protocol lane. Delivering
+  runtime placements to clients is a wire change.
+- **Gate.** OD8 runtime materialization is gated fail-closed on that delivery:
+  - Until it is accepted and implemented, CW3 lowering rejects every `at: death_position` action
+    with the named error `RuntimePlacementDeliveryUnavailable`, so no activatable content carries
+    a template.
+  - The D2 creation step also refuses on its own when the scope has no such delivery path. No key
+    is minted and nothing is bound.
+  - No OD8 object is ever created, `azerus` included.
+  - OD9 is unaffected, because its anchor placement is ordinary content that the client already
+    holds.
+- **Minimal content the protocol lane must carry.** 10.8 records this; this section does not
+  design the encoding.
+  - the runtime `PlacementKey`;
+  - its cell: World, coordinate frame and position;
+  - its footprint: the single `(0, 0, 0)` cell of C3-2, whether explicit or fixed by the contract;
+  - the `LocalObject` definition or presentation reference the client renders from;
+  - the content generation it belongs to.
+- **Lifecycle the delivery needs.** It must cover the whole lifecycle of a runtime placement:
+  - it is delivered to present clients when it is created, and to joining clients in the join or
+    resync snapshot;
+  - it is removed on retirement (D3) and on a content-generation change;
+  - its entry-size and count bounds are registered.
+- **Bounds.** If carrying placement data makes an entry larger than the 1,078 bytes
+  `WOBJ-RL-03` is derived from, `WOBJ-RL-03` (486) must be re-derived. D6's combined check then
+  uses the re-derived value.
+
 **D2. Runtime placement: identity, fencing and bind.** When the owning event fires, the scope owner
 (`ChannelRuntime`/`InstanceRuntime`, D38 W1) runs one synchronous owner-turn step:
 
@@ -2402,7 +2438,8 @@ The template is ordinary immutable content (DUR-04). It carries no position.
 5. **Create.** `ScopeRevertDriver::apply_forward` runs with the create transition. That step mints
    the scheduling ordinal and schedules the §7 record in the same staged commit.
    - On `COMMITTED`, the runtime is inserted into the scope's `runtimes` map (the one
-     `ScopeRevertDriver::wake` already takes) and its overlay delta is published.
+     `ScopeRevertDriver::wake` already takes). Its placement and overlay entry are then published
+     through the D2a delivery.
    - On any other outcome or error, the freshly bound runtime is dropped. It was never inserted
      or published: it sat at revision 0 in a non-visible state, so dropping it is unobservable.
 
@@ -2434,7 +2471,7 @@ absent state:
   finds no runtime at the placement, and becomes `TERMINAL` as `Fenced(Incarnation)` with no
   mutation. This is Canary's "item already gone, timer does nothing".
 - **Last overlay word.** The delta that publishes the absent state is the last one sent for that
-  key; later snapshots omit the retired placement. No new wire message is needed.
+  key. After it, the D2a delivery withdraws the runtime placement, and later snapshots omit it.
 - **Scope restart (C2).** The scope's runtime objects, the creation sequence and the revert
   driver are all scope-ephemeral, so a restart drops them together; nothing is persisted (W2).
   Canary does not persist script-created map items either.
@@ -2580,12 +2617,13 @@ is not edited by this section.
   - The creation step (D2 step 2) therefore also refuses, with `CAPACITY_EXCEEDED`, unless the
     scope's bound local objects (pre-authored plus live runtime, the size of the `runtimes` map
     the scope owner already holds) number fewer than 486. Materialization can therefore never
-    push a snapshot past `WOBJ-RL-03`.
+    push a snapshot past `WOBJ-RL-03`. If D2a re-derives `WOBJ-RL-03` for a larger entry, the
+    check uses the re-derived value.
   - This is the smaller of the two options: one comparison at materialization, instead of
     reserving 64 slots at content validation. It changes no content validation, and it leaves a
     pre-authored-only scope's existing bound unchanged.
 - **Allocation impact:** memory per object is one `LocalObjectRuntime` (bounded keys) plus one
-  `WOBJ-RL-04` record.
+  `WOBJ-RL-04` record, plus the D2a delivery's per-placement cost once it is defined.
 - **Boundary tests:**
   - At 64 live runtime objects the create commits; at 65 it fails before bind, with the object
     count, overlay and records unchanged. A retire frees a slot.
@@ -2652,7 +2690,8 @@ This section adds:
 - the lowering of `create` into the absent/present pair.
 
 It adds no second binding path, no change to `prepare`, `commit` or `PreparedMutation`, no
-persistence, no collision-bearing runtime geometry and no new wire message. The only driver
+persistence and no collision-bearing runtime geometry. It needs, but does not design, a wire
+change: the protocol lane's dynamic-placement delivery (D2a, 10.8). The only driver
 change is 10.2's flag and its terminal-release rule, which apply to runtime placements only.
 It does not implement:
 
@@ -2666,6 +2705,22 @@ Each of these belongs to its existing owner.
 ### 10.6 Exact test obligations
 
 OD8:
+
+- **Gated on the D2a delivery (Round 6, Codex P1 4127619230).**
+  - While the delivery is absent, every `at: death_position` action, `azerus` included, fails
+    lowering with `RuntimePlacementDeliveryUnavailable`.
+  - A creation step reached without a delivery path refuses, with no key minted, no bind, no
+    record and no overlay change.
+  - OD9 lowering and binding are unaffected.
+  - A test asserting that an OD8 object is created, or published as an overlay entry, without the
+    delivery must fail.
+- **Client resolution once D2a exists.**
+  - A client present at creation receives the runtime placement (key, cell, footprint and
+    definition reference) and its present-state entry, and renders the object at the death cell.
+  - A client joining afterwards receives both in its snapshot.
+  - After retirement both clients drop the placement, and neither resolves the retired key again.
+  - An overlay entry for a runtime key that the client has not received as a placement is
+    ignored and never guessed.
 
 - **Lowering.** Each of `mazzinor`, `gaz_haragoth`, `cult_soul_remains` (two templates, one per
   branch) and `azerus` lowers to the template in D1, given compiled content that resolves its
@@ -2819,6 +2874,21 @@ OD9:
 - How the transport projection renders an `absent` state. Server-side, it renders no object; the
   exact client mapping belongs to the transport lane.
 - D91 enforcement, a precondition for admitting both shapes live (10.3 D5).
+- **The protocol lane's prerequisite (D2a, Round 6).** This section does not edit any protocol
+  crate or contract.
+  - **What to add:** a typed dynamic-placement delivery in
+    `docs/contracts/protocol-oteryn/v1/world_object_v1.proto`, the contract of
+    `WorldObjectOverlayEntryV1`. It is registered in `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`
+    under the `WORLD_OBJECT_OVERLAY` state domain, and its reference encoder is
+    `crates/protocol-oteryn/src/world_object.rs`.
+  - **Minimal content:** the runtime `PlacementKey`; its cell (World, coordinate frame,
+    position); its footprint; its `LocalObject` definition or presentation reference; and its
+    content generation.
+  - **Lifecycle:** it is delivered at creation and in join/resync snapshots, and withdrawn on
+    retirement and on a content-generation change.
+  - **Bounds:** its entry-size and count bounds are registered in `RESOURCE_LIMITS_REGISTRY.json`,
+    and `WOBJ-RL-03` is re-derived if an entry grows.
+  - **Gate:** until it lands, OD8 stays gated fail-closed (`RuntimePlacementDeliveryUnavailable`).
 - The `#139` resource packet for `WOBJ-RL-08` and the `WOBJ-RL-04` note (D6).
 
 ### 10.9 Decision test (Round 4, Codex P1 4127532478)
@@ -2837,10 +2907,11 @@ them.
      them later would mean retrofitting shipped code.
 2. **What it unblocks.**
    - **OD9:** lowering and live wiring for `death_priest_shargon` and `the_ravager`.
-   - **OD8:** `azerus` as soon as it is implemented, because it has no interaction prerequisite.
-     `mazzinor` and `cult_soul_remains` follow once the interaction lane's typed
-     `triggering_object` target and their definitions land. `gaz_haragoth` follows once its
-     `aid(33542)` definition exists.
+   - **OD8:** every OD8 sample, `azerus` included, is first gated on the protocol lane's
+     dynamic-placement delivery (D2a). After that, `azerus` needs nothing else. `mazzinor` and
+     `cult_soul_remains` also need the interaction lane's typed `triggering_object` target and
+     their definitions. `gaz_haragoth` also needs its `aid(33542)` definition.
+   - **OD9:** not gated by D2a, because its placement is in content.
    - **Both:** the CW3 lowering and linker work and the scope-owner creation hook in 10.8.
 3. **What becomes harder later.**
    - The reserved `oteryn-runtime` placement namespace becomes a content-wide commitment.
@@ -2867,6 +2938,7 @@ them.
    - Collision-`Present` runtime objects.
    - A `USE`-edge `triggering_object` target.
    - Exact code representations (template, flag, key spelling), which are 10.8's.
+   - The wire encoding of the dynamic-placement delivery, which belongs to the protocol lane (D2a).
 
 **Options and trade-offs for the material choices** (the chosen option is listed first):
 
