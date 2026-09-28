@@ -4,9 +4,9 @@ Evidence tooling only: every bundle is a candidate built from OtsHypothesisOnly 
 observations, never Game truth. Keys use the provisional `candidate:` namespace (no native key minting).
 
 Field rules (docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md section 5):
-- S3/S11/S13: a value TibiaWiki BR or Fandom states decides; on a BR/Fandom conflict the official change in
-  official-changes.json decides, then tibiopedia.pl when it agrees with one wiki (two of three), otherwise the
-  wiki page with the newer revision.
+- S3/S11/S13/S14: a value TibiaWiki BR or Fandom states decides; on a BR/Fandom conflict the official change in
+  official-changes.json decides, then a vote: each wiki, tibiopedia.pl and the Canary 15.30 branch (S14) back one
+  value, the most votes win and a tie goes to the 15.30 branch; otherwise the wiki page with the newer revision.
 - S4: Canary and Crystal are equal sources; a value only one of them has is taken from it, a value they
   disagree on (with the engine default for an absent call) and that no wiki states stays unresolved.
 - S5: player damage/heal formulas are the source expression trees; `level / 5` and Canary's
@@ -16,7 +16,7 @@ Field rules (docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md section 5):
   converter's `combat_ability`), a conjure, or an unresolved native behaviour for custom scripts.
 
 Usage:
-    python convert_spells.py --canary <canary@47dfd51f> --crystal <crystalserver@ff7ede5> \
+    python convert_spells.py --canary <canary@99902524> --crystal <crystalserver@ff7ede5> \
         [--out DIR] [--only NAME ...] [--readiness samples/spell-readiness.json]
 """
 import argparse
@@ -39,14 +39,14 @@ from spell_census import negate  # noqa: E402
 from validate_spell import evaluate, validate  # noqa: E402
 
 SAMPLES = ROOT / 'samples'
-CENSUS = SAMPLES / 'spell-census-canary-47dfd51f-crystal-ff7ede5.json'
+CENSUS = SAMPLES / 'spell-census-canary-99902524-crystal-ff7ede5.json'
 FANDOM_FACTS = SAMPLES / 'wiki-spell-facts-fandom-2026-09-27.json'
 BR_FACTS = SAMPLES / 'wiki-spell-facts-br-2026-09-27.json'
 TIBIOPEDIA_FACTS = SAMPLES / 'tibiopedia-spell-facts-2026-09-28.json'
 OFFICIAL = ROOT / 'official-changes.json'
-REVISION = 'spell-p2-r2'  # r2: S13 (two-of-three references before the newer revision)
-SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'revision': '47dfd51f45280a59a1d3e50ba7edd573d7234446',
-                      'tag': 'canary-47dfd51f'},
+REVISION = 'spell-p2-r3'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote)
+SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
+                      'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
                        'tag': 'crystal-ff7ede5'}}
 VOCATIONS = {'druid': 'elder_druid', 'sorcerer': 'master_sorcerer', 'knight': 'elite_knight', 'paladin': 'royal_paladin',
@@ -54,6 +54,8 @@ VOCATIONS = {'druid': 'elder_druid', 'sorcerer': 'master_sorcerer', 'knight': 'e
 SOURCE_VOCATION = {'druid': 'druid', 'elder druid': 'elder_druid', 'sorcerer': 'sorcerer', 'master sorcerer': 'master_sorcerer',
                    'knight': 'knight', 'elite knight': 'elite_knight', 'paladin': 'paladin', 'royal paladin': 'royal_paladin',
                    'monk': 'monk', 'exalted monk': 'exalted_monk'}
+# Registrar calls whose Canary 15.30 value votes in a BR/Fandom conflict (S14a); same units as the wiki crosswalk.
+VOTE_METHODS = {'level', 'mana', 'soul', 'cooldown', 'groupCooldown', 'basePower', 'magicLevel', 'range'}
 PRIMARY_GROUPS = {'attack', 'healing', 'support', 'special'}
 # Canary/Crystal engine defaults for an absent registrar call (src/creatures/combat/spells.hpp, actions.hpp).
 DEFAULTS = {'isAggressive': True, 'isSelfTarget': False, 'needTarget': False, 'needDirection': False,
@@ -129,8 +131,10 @@ class Wikis:
         reg = record['registrar']
         return self.runes[wiki].get(reg.get('runeId')) or self.runes[wiki].get(str(record['name']).lower())
 
-    def resolve(self, pages, field, spell_name):
-        """(value, wiki provenance, note) for one wiki field; value None when no wiki states it."""
+    def resolve(self, pages, field, spell_name, branch_vote=None):
+        """(value, wiki provenance, note) for one wiki field; value None when no wiki states it.
+
+        branch_vote is the Canary 15.30 branch value of this field in wiki units (S14a), or None."""
         values = {}
         tie_breaker = pages.get('tibiopedia')
         for wiki, page in pages.items():
@@ -154,17 +158,28 @@ class Wikis:
             return value, chosen or list((w, p) for w, (_, p) in values.items()), note
         third = tie_breaker['fields'].get(field) if tie_breaker is not None else None
         third = ws.crosswalk_value(field, third) if third not in (None, '') else None
-        agreeing = [w for w, (v, _) in values.items() if third is not None and v == third]
-        if len(agreeing) == 1:
-            other = 'fandom' if agreeing[0] == 'br' else 'br'
-            note = (f'S13: BR {values["br"][0]!r} and Fandom {values["fandom"][0]!r} disagree and no official change is '
-                    f'recorded; tibiopedia.pl states {third!r} ({tie_breaker["url"]}), two of three references agree '
-                    f'with {agreeing[0]} over {other}.')
-            return third, [(agreeing[0], values[agreeing[0]][1])], note
+        # S13 + S14a: each wiki votes for its value, tibiopedia.pl and the Canary 15.30 branch vote for the wiki value
+        # they equal; the most votes win, and a tie goes to the side of the 15.30 branch.
+        votes = {w: 1 + (third is not None and v == third) + (branch_vote is not None and v == branch_vote)
+                 for w, (v, _) in values.items()}
+        best = max(votes.values())
+        leaders = [w for w, n in votes.items() if n == best]
+        if len(leaders) > 1 and branch_vote is not None:
+            leaders = [w for w in leaders if values[w][0] == branch_vote] or leaders
+        if len(leaders) == 1 and best > 1:
+            winner = leaders[0]
+            other = 'fandom' if winner == 'br' else 'br'
+            backers = ([f'tibiopedia.pl ({tie_breaker["url"]})'] if third == values[winner][0] else []) + \
+                      (['the Canary 15.30 branch'] if branch_vote == values[winner][0] else [])
+            rule = 'S13' if backers and backers[0].startswith('tibiopedia') and len(backers) == 1 else 'S13/S14a'
+            note = (f'{rule}: BR {values["br"][0]!r} and Fandom {values["fandom"][0]!r} disagree and no official change is '
+                    f'recorded; {" and ".join(backers)} side with {winner} over {other} '
+                    f'(votes {votes[winner]}:{votes[other]}).')
+            return values[winner][0], [(winner, values[winner][1])], note
         newer = max(values, key=lambda w: values[w][1].get('timestamp', ''))
         other = 'fandom' if newer == 'br' else 'br'
-        note = (f'S11/S13: BR {values["br"][0]!r} and Fandom {values["fandom"][0]!r} disagree, no official change is '
-                f'recorded and tibiopedia.pl does not side with either; the newer revision ({newer}, {values[newer][1].get("timestamp")}) decides over {other} '
+        note = (f'S11/S13/S14a: BR {values["br"][0]!r} and Fandom {values["fandom"][0]!r} disagree, no official change is '
+                f'recorded and neither tibiopedia.pl nor the Canary 15.30 branch sides with either; the newer revision ({newer}, {values[newer][1].get("timestamp")}) decides over {other} '
                 f'({values[other][1].get("timestamp")}).')
         return values[newer][0], [(newer, values[newer][1])], note
 
@@ -367,12 +382,22 @@ class Bundle:
             out[source] = transform(value) if value is not None else None
         return out
 
+    def branch_vote(self, method):
+        """The Canary (15.30 branch, S14) registrar value of a numeric field, in wiki units, as a tie vote."""
+        record = self.records.get('canary')
+        if record is None or method not in VOTE_METHODS:
+            return None
+        value = record['registrar'].get(method, DEFAULTS.get(method))
+        if isinstance(value, list):
+            value = value[0] if value else None
+        return value if isinstance(value, int) and not isinstance(value, bool) else None
+
     def field(self, destination, wiki_field, method, pages, transform=lambda v: v, wiki_transform=lambda v: v,
               required=True):
         """Resolve one Spell field under S3/S4/S11/S13; returns the value (None when nothing states it)."""
         value, provenance, note = (None, [], None)
         if wiki_field:
-            value, provenance, note = self.wikis.resolve(pages, wiki_field, self.name)
+            value, provenance, note = self.wikis.resolve(pages, wiki_field, self.name, self.branch_vote(method))
         sources = self.source_value(method, transform) if method else {}
         if value is not None:
             value = wiki_transform(value)
