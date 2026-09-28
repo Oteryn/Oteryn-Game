@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/b3-1-transfer
 issue: 162
-pr: null
+pr: 1152
 allocation: "#162 comments 5875188437 and 5875903216"
 base_sha: 7d1134f
 head_sha: null
@@ -166,7 +166,7 @@ client, content data.
 last_progress: local implementation committed on wip/b3-1-transfer; awaiting control-plane publication
 status: implementing
 branch: claude/b3-1-transfer
-pr: null
+pr: 1152
 owner_action_required: null
 blocker: null
 next_action: "#162 control plane publishes, freezes and routes exact-head CI and independent review"
