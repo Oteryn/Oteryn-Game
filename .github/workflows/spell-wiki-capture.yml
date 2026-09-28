@@ -58,6 +58,7 @@ jobs:
           python tibiopedia_spells.py self-test
           python verify_spells.py self-test
           python tibiacom_spells.py self-test
+          python vocation_vitals.py self-test
           for bundle in samples/starter-bundles/*/; do
             python validate_spell.py "$bundle/spell.json" "$bundle/dependencies.json" \
               --catalog "$bundle/catalog.json" --manifest "$bundle/manifest.json" > /dev/null
