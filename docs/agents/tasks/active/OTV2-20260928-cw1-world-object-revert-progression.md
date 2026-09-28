@@ -44,17 +44,14 @@ still `DecisionStatus: CANDIDATE` for the new part:
    must supply — including one canonical scope-owned lifecycle record per identity, `PENDING`→
    `IN_FLIGHT`→`TERMINAL` (Round 14) — and exact test obligations. The owner question itself (who
    accepts this decision) stays explicit and unresolved.
-2. §4/§5 record, without designing it, the CW3 Content-model worker's delta (allocation
-   `OTV2-20260928-cw3-local-object-state-model`: 1a per-state collision presence, 1b authored
-   initial state validated fail-closed, 1c RETAG decision) and the C3 hardening clarification
-   separating the supported fixed, bind-time-reserved collision footprint from out-of-scope
-   dynamically materialized geometry. §8 Follow-up gets the new children, correctly split between
-   CW3 (Content model), CW4 (runtime, ships without `revert_after` for now) and the scope-runtime/
-   Foundation carrier lane (owns §7's progression-input decision).
+2. §4/§5 record, without designing it, the CW3 Content-model worker's delta (1a per-state collision
+   presence, 1b authored initial state validated fail-closed, 1c RETAG decision) and the C3
+   hardening clarification (fixed, bind-time-reserved collision footprint vs. out-of-scope dynamic
+   geometry). §8 Follow-up splits children between CW3, CW4 and the scope-runtime/Foundation carrier
+   lane (owns §7's progression-input decision).
 
 No code, Foundation/runtime/protocol/registry, `content/**` or `tools/**` change. No claim that any
-of this is `ACCEPTED`. D37 relocation and `SCOPE_HANDOFF` are untouched. §4/§8 now cite CW3 (PR
-#1046) and CW4 (PR #1055) as merged, not pending, after merging `origin/main`.
+of this is `ACCEPTED`. D37 relocation and `SCOPE_HANDOFF` are untouched.
 
 ## Architecture and source of truth
 
@@ -73,22 +70,23 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
 - `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §7/§9/§10/§14/§15.4/§28 — binds `revert_after`.
   `foundation/mod.rs` `ScopeRuntimeFence::accept_input` (~1040-1050) — mints an ordinal per
   generation only, tracks no timer identity. `movement.rs` `MovementOwnerTurn` — bounded precedent.
-- `GAME-INTERACTION-01_..._CANDIDATE.md` §4.1/§4.4/§5.1/§5.8/§7 (265-280)/§5.9/§25, `interaction/
+- `GAME-INTERACTION-01_..._CANDIDATE.md` §4.1/§4.4/§5.1/§5.8/§7(265-280)/§5.9/§25, `interaction/
   identity.rs` `ChildOccurrenceRef` (~69-157) — nested-cascade identity; §7: "duplicate delivery ...
   MUST converge to one lifecycle/outcome," "loss of a retained result payload MUST NOT re-enable
-  execution"; §5.9/§25: retention window/count explicitly unfrozen, no numeric bound named — the
-  owning lifecycle contract for round 14's single record.
+  execution"; §5.9/§25: retention window/count unfrozen — the owning contract for round 14's record.
 - `foundation/mod.rs` `CommandIngress` (~53-742) — round 12: `CommandId`-keyed, single-slot,
-  session-gated — rules out reuse, not retention itself.
+  session-gated — rules out reuse.
 - `world_runtime.rs` `prepare`/`PreparedTerminal::unchanged`/`PreparedMutation` (~973-1159) — round
   15: every `unchanged(...)` disposition builds `PreparedMutation::None`; only `COMMITTED` builds
   `Publish` — the complete, exhaustive set. `gameplay_transport/mod.rs` `ComposedFreshAdmission::step`
   (~546-585) — one lock `.await`, then synchronous; no panic/abort/task-supervision code found for
   scope-owner work.
-- `content/reference_playable.rs` `LocalObjectStateDefinition` (~810-813) — round 16: `key` +
-  `collision` only, no attribute field; `PreparedMutation::Publish` likewise has no attribute field.
-  Encounter doc line 144 + sample `the_lord_of_the_lice/encounter.json` lines 70/71/73/74 — a
-  teleporter's `destination`/`revert_destination` is an attribute neither type can restore.
+- `content/reference_playable.rs` `LocalObjectStateDefinition` (~810-813) — round 16: `key`+
+  `collision` only. Round 17: `TransitionBinding` (~1334-1342) — no `revert_after_ms`, no attribute
+  payload; `bind` cannot see authored `destination`/`revert_destination`. Encounter doc line 144 +
+  sample `the_lord_of_the_lice/encounter.json` lines 70/71/73/74.
+  `tools/content-schema/encounter-authoring/validate_encounter.py` (~188-201) + README ("the server
+  does not read these files") — only boundary seeing the full action, offline tooling not wired.
 - PR #1055/#1046 (merged) generalized `LocalObjectRuntime`, shipped 1a/1b/1c.
 
 ## High-risk authority/recovery qualification
@@ -122,26 +120,29 @@ reason: >
 ## Implementation / findings
 
 Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Rounds 1-6: numbering; `Deadline`
-option; rebound to FND-03 §10 timer; staged capacity atomicity; equal-deadline tie-break; one clock
-per scope; `revert_after_ms` needs exactly one bound inverse; pre-`prepare` discard restricted to
-`scope_generation`/`content_generation`. Round 7: never re-arms. Round 8: origin test. Round 9: exact
+option; FND-03 §10 timer; capacity atomicity; equal-deadline tie-break; one clock/scope; exactly one
+bound inverse; pre-`prepare` discard. Round 7: never re-arms. Round 8: origin test. Round 9: exact
 target identity. Round 10: fixed stale summary. Round 11: derived `InteractionChildOccurrenceRef`.
 Round 12: no-op, nothing retained. Round 13: superseded (violated GAME-INTERACTION-01 §7); outcome
-retained. Round 14 (`a0519257`): superseded — two P1 seam bugs; replaced with one lifecycle record,
+retained. Round 14 (`a0519257`): superseded — two P1 seam bugs; one lifecycle record,
 `PENDING|IN_FLIGHT|TERMINAL`. Round 15 (`a2aab063`): convergence — exhaustive `TERMINAL` mapping;
-removed two unproven "never..." claims, added "Open decisions for the owning lane."
+removed two unproven "never..." claims, added "Open decisions." Round 16 (`24141ed7`): a timed
+`map_item` transform can change a teleporter's `destination`, unrestorable by
+`LocalObjectStateDefinition`/`PreparedMutation::Publish` (state+collision only); scoped
+`revert_after_ms` to those two types, said `bind` rejects an attribute-changing transition.
 
-Round 16 (Codex 4120154570, head `24141ed7`): a timed `map_item` transform can change a teleporter's
-`destination` attribute via authored `revert_destination` (encounter doc line 144; sample
-`the_lord_of_the_lice/encounter.json` lines 70-74) — but `LocalObjectStateDefinition` is
-state-key-plus-collision only and `PreparedMutation::Publish` is state/revision/blocking only
-(verified directly); neither can restore an attribute an inverse `TransitionKey` never touches.
-Scoped, not designed, per coordinator decision: `revert_after_ms` now covers only what those two
-types model; `bind` fail-closed rejects an attribute-changing transition with `InvalidBinding`, same
-as a missing/ambiguous inverse. Added open decision 3 (two candidate directions, neither chosen).
-Added a bind-rejection test obligation; qualified `DepthWarzoneBossDeath` (state-only, unaffected).
-Grepped for "every map_item" overclaims — none found elsewhere. Merged `origin/main` (`13576c44`,
-unrelated); `git diff 24141ed7 HEAD` confirms no cited file drifted.
+Round 17 (Codex 4120251303/4120251319, head `a1cad472`, owner's stop rule applies now): round 16's
+"`bind` rejects it" was the wrong boundary — `TransitionBinding` (7 fields, no attribute payload)
+never sees authored `destination`/`revert_destination`; `bind` cannot tell `the_lord_of_the_lice`
+apart from `DepthWarzoneBossDeath`. Fixed: moved the rejection to authoring/lowering, fail-closed
+with a named error. Verified the only existing boundary reading the full action —
+`validate_encounter.py`'s `map_item` block (~188-201) — but its README says "the server does not
+read these files" (offline `CANDIDATE` tooling); no server-side lowering exists yet. Stated as an
+obligation on whichever lowering step is built, naming that file as host. Rewrote the affected
+bullet/narrative/open-decision-3/test obligation. P2: fixed a stale §5 summary line ("no receipt
+store") to describe the round-14 lifecycle record; annotated §7's founding C2 text too. Grepped
+whole doc for other stale summaries; none found. Merged `origin/main` (`3b41c0f4`, unrelated); `git
+diff a1cad472 HEAD` confirms no cited file drifted.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -151,13 +152,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-16; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-17; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 16; unchanged)
+  validation passed (23 files, 47 workflows)." (round 17; unchanged)
 
 ### E2E
 
@@ -182,7 +183,7 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ## Independent review
 
-- required: YES.
+- required: YES
 - exact head: pending
 - method/auditor: pending
 - material findings: pending
@@ -201,14 +202,14 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 16 (Codex 4120154570 on frozen head 24141ed7): a timed map_item transform
-  can change a teleporter's destination attribute (revert_destination), but LocalObjectStateDefinition
-  is state-key+collision only and PreparedMutation::Publish is state/revision/blocking only -- neither
-  can restore an attribute. Verified encounter doc line 144 and sample lines 70-74 directly. Scoped
-  per coordinator decision: revert_after_ms now covers only the state+collision footprint; bind
-  fail-closed rejects an attribute-changing transition with InvalidBinding. Added open decision 3
-  (two directions, neither chosen). Added bind-rejection test obligation; qualified
-  DepthWarzoneBossDeath as state-only. Grepped for overclaims; validators pass.
+  PR #1045 pre-freeze round 17 (Codex 4120251303/4120251319 on frozen head a1cad472, owner's stop
+  rule applies now): round 16's "bind rejects it" was the wrong boundary -- TransitionBinding has no
+  attribute payload and never sees destination/revert_destination. Moved rejection to
+  authoring/lowering, fail-closed with a named error. validate_encounter.py's map_item block is the
+  only existing boundary seeing the full action, but offline CANDIDATE tooling ("the server does not
+  read these files"); no server-side lowering exists yet -- stated as an obligation on whichever
+  lowering step is built. Also fixed a stale SS5 summary line ("no receipt store") to describe the
+  round-14 lifecycle record. Grepped whole doc for stale summaries; validators pass.
 status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null

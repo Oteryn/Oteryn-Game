@@ -175,11 +175,15 @@ keeps its lifetime and exclusions.
   added no new owner, persistence or domain. C3 does not add multi-scope or dynamic geometry; it
   only names the footprint boundary the runtime already enforces by computing collision cells once
   at bind time.
-- §7's recommended `revert_after` option adds exactly one new scope-owned step driver plus a
-  pending-`Deadline` set, both owned by the same scope-runtime owner named in D38 — one mechanism
-  per scope, never per object — and reuses the already-implemented `crates/foundation::time`
-  `Deadline`/`MonotonicClock` primitive rather than inventing a new unit; it adds no per-object
-  timer service, queue, receipt store or persistence.
+- §7's recommended `revert_after` option adds exactly one new scope-owned step driver plus one
+  scope-owned lifecycle-record store (one record per `InteractionChildOccurrenceRef`, `PENDING`→
+  `IN_FLIGHT`→`TERMINAL`, §7 Round 14) — both owned by the same scope-runtime owner named in D38, one
+  mechanism per scope, never per object — and reuses the already-implemented
+  `crates/foundation::time` `Deadline`/`MonotonicClock` primitive rather than inventing a new unit; it
+  adds no per-object timer service or durable persistence (§7's evidence: scope-ephemeral, dropped on
+  scope restart). It does retain a bounded terminal-outcome record per identity within one live scope
+  generation — required by the owning GAME-INTERACTION-01 identity contract (§7 Round 13) — whose
+  exact retention/eviction policy §7 leaves to the owning lane (§7 "Open decisions").
 
 ## 6. Owner decisions
 
@@ -204,7 +208,8 @@ existing owner supplies the logical progression input `revert_after` is measured
 not accept the answer on the owner's behalf, and it binds condition C2 (the revert is the scope
 runtime's own later operation: derived child identity, same World/scope/content-generation/
 overlay-revision fences, fired from the scope runtime's existing progression, cleared on scope
-restart — no per-object timer service, queue, receipt store or persistence).
+restart — no per-object timer service, queue, receipt store or persistence; concretely, one
+scope-owned lifecycle record per identity, Round 14 below, never a per-object mechanism).
 
 Round 3 correction: `revert_after` is bound to the existing FND-03 §10 authoritative-timer contract
 (`docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md`), not to the client-command lifecycle a
@@ -415,10 +420,24 @@ this section's `revert_after_ms` design restores can represent that: `LocalObjec
 state key plus collision only, and `PreparedMutation::Publish` is state/revision/blocking only
 (evidence below). An inverse `TransitionKey` cannot revert an attribute it never touches. Scoped, not
 designed: `revert_after_ms` under this proposal covers only what those two types already model; an
-attribute-changing transition is fail-closed rejected at `bind`, the same treatment as a missing or
-ambiguous inverse ("Exact delta" below) — never silently `COMMITTED` with stale attributes. Retaining
+attribute-changing transition is fail-closed rejected — round 17 below corrects *where*. Retaining
 and restoring attributes is a new capability this document does not design; it is recorded as an open
 decision for the owning lane, with two candidate directions named and neither chosen.
+
+Round 17 correction (owner-authorized; Codex finding 4120251303 on frozen head `a1cad472`): round 16
+said "`bind` rejects it" — wrong boundary. `bind` operates on `TransitionBinding` alone (evidence
+below), which carries no `revert_after_ms` field and no attribute payload; `destination`/
+`revert_destination` exist only on the authored `map_item` action, a layer `bind` never sees. By the
+time a transition reaches `bind`, `the_lord_of_the_lice`'s attribute-changing teleporter and
+`DepthWarzoneBossDeath`'s state-only one are already the same shape — `bind` structurally cannot tell
+them apart. Fixed: moved the rejection to the boundary that *does* see the authored action —
+authoring/lowering, fail-closed, with a named error, so an attribute-changing `revert_after_ms`
+binding never reaches `bind` at all. Verified directly (evidence below): no server-side encounter
+lowering step exists in the read code yet; the closest existing precedent is
+`tools/content-schema/encounter-authoring/validate_encounter.py`'s `map_item` validation, offline
+tooling explicitly marked "the server does not read these files" — so this is stated as an obligation
+on whichever lowering/validation step is built, naming that file as the natural host, not a claim that
+enforcement already exists anywhere today.
 
 ### Problem
 
@@ -608,6 +627,21 @@ today.
   (evidence above): the `DepthWarzoneBossDeath` example this section already cites as a test
   obligation (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` lines 171-172) authors no `destination`/
   `revert_destination` at all — a state-only transform, unaffected by this finding.
+- PROVEN, round 17 (`apps/game-server/src/content/reference_playable.rs` `TransitionBinding`
+  ~1334-1342): exactly `key`/`definition`/`source_state`/`normalized_intent_family`/`target_state`/
+  `owner_capability`/`policy_guard_refs` — no `revert_after_ms` field and no attribute payload;
+  `bind` operates on this type alone and cannot see the authored `map_item` action `destination`/
+  `revert_destination` came from, so it cannot tell `the_lord_of_the_lice` apart from
+  `DepthWarzoneBossDeath` — round 16's "`bind` rejects it" named a boundary that structurally cannot
+  do the check. PROVEN (`tools/content-schema/encounter-authoring/validate_encounter.py` ~188-201):
+  the existing `map_item` validation block already reads `destination`/`revert_destination`/
+  `revert_after_ms` together on one authored action and already enforces one related cross-field rule
+  ("`revert_destination` needs `revert_after_ms`", ~200-201) — it does not yet reject
+  `revert_after_ms` co-occurring with `destination`/`revert_destination`. PROVEN
+  (`tools/content-schema/encounter-authoring/README.md`): "Evidence only: the server does not read
+  these files" — this validator is offline tooling for a `CANDIDATE` format, not a wired production
+  boundary. No server-side encounter-lowering step exists in the read code (evidence above:
+  `TransitionBinding` has no `revert_after_ms` field; CW4 shipped without `revert_after`).
 
 ### Options (minimum real set)
 
@@ -821,18 +855,36 @@ thing, not two — its lifecycle-record store).
   unless *exactly one* transition matches — zero matches is a missing inverse, more than one is an
   ambiguous inverse, and both are equally invalid — producing the one unique inverse `TransitionKey`
   the lifecycle record stores (complete field list above).
-- Scope of what `revert_after_ms` covers (Round 16, fail-closed): `revert_after_ms` is admissible only
-  on a transition whose full effect is modeled today by `LocalObjectStateDefinition` — the state
-  `key` plus `LocalObjectCollisionPresence` (evidence above) — because that is exactly what
+- Scope of what `revert_after_ms` covers, rejected at the boundary that can actually see it (Round
+  17, corrects round 16's "`bind` rejects it"): `revert_after_ms` is admissible only on a transition
+  whose full effect is modeled today by `LocalObjectStateDefinition` — the state `key` plus
+  `LocalObjectCollisionPresence` (evidence above) — because that is exactly what
   `PreparedMutation::Publish` restores: `next_state`/`next_revision`/`next_blocking`, nothing else
-  (evidence above). A transition that also changes non-state object attributes — for example a
-  `map_item` teleporter's `destination`, or an authored `revert_destination` override
-  (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144; sample `the_lord_of_the_lice/encounter.json`
-  lines 70-74, evidence above) — is **not** admissible for `revert_after_ms` under this proposal:
-  `bind` rejects it with `WorldRuntimeError::InvalidBinding`, the same fail-closed treatment as a
-  missing or ambiguous inverse, never silently `COMMITTED` with the wrong attributes restored. This is
-  a new-capability gap (attribute-bearing object state has no bound-inverse mechanism today), not a
-  defect in the revert design above; see "Open decisions for the owning lane" below.
+  (evidence above). `bind` **cannot** enforce this itself: `TransitionBinding` (evidence above) carries
+  only `key`/`definition`/`source_state`/`normalized_intent_family`/`target_state`/`owner_capability`/
+  `policy_guard_refs` — no `revert_after_ms` field and no attribute payload of any kind — while a
+  `map_item` teleporter's `destination`/`revert_destination` exist only on the authored encounter
+  action, a layer `bind` never sees (evidence above: `TransitionBinding` cannot even tell
+  `DepthWarzoneBossDeath`'s state-only transform apart from `the_lord_of_the_lice`'s
+  attribute-changing one — both would already have been reduced to the same shape by the time either
+  reaches `bind`). The rejection therefore belongs to the boundary that *does* see the authored
+  action: an authored `map_item` action carrying `revert_after_ms` together with `destination`,
+  `revert_destination`, or any other non-state attribute is rejected fail-closed, with a named error,
+  at authoring/lowering — it must never reach `bind` at all as a revert-bearing operation. Concretely
+  (evidence above): `tools/content-schema/encounter-authoring/validate_encounter.py`'s existing
+  `map_item` validation (~188-201) already reads every authored field on the action, including
+  `destination`/`revert_destination`/`revert_after_ms` together, and already enforces one related
+  cross-field rule ("`revert_destination` needs `revert_after_ms`", ~200-201) — this new rule is the
+  same shape, added to the same block, and is the natural host for it. That script is explicitly
+  offline tooling for a `CANDIDATE` format ("the server does not read these files" —
+  `encounter-authoring/README.md`), so it is evidence of where the check belongs, not proof a
+  production boundary already enforces it: no server-side encounter lowering step exists yet either
+  (evidence above — `TransitionBinding` has no `revert_after_ms` field at all, and CW4 shipped without
+  `revert_after`). This rejection is therefore an explicit obligation on whichever lowering/validation
+  step is built, offline or server-side, before `revert_after_ms` reaches production content — not
+  something this proposal can claim is already enforced. This is a new-capability gap
+  (attribute-bearing object state has no bound-inverse mechanism today), not a defect in the revert
+  design above; see "Open decisions for the owning lane" below.
 - Introduce the scope owner's own step driver: one per scope owner (`ChannelRuntimeV1`/
   `InstanceRuntime`), never a per-object or per-revert timer, that wakes at the earliest pending
   `Deadline` and drives that scope's own due reverts forward. Whether it piggybacks on a cadence the
@@ -986,9 +1038,10 @@ not this architecture decision.
 3. **Attribute-bearing object state and its timed revert (e.g. teleporter `destination`/
    `revert_destination`).** `revert_after_ms` under this proposal covers only the state-key-plus-
    collision footprint `LocalObjectStateDefinition`/`PreparedMutation::Publish` already model (Round
-   16, evidence above; "Exact delta" above rejects anything wider at bind) — it does not cover a
-   transition that also changes non-state object attributes, such as `map_item`'s authored
-   `destination`/`revert_destination` (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144; sample
+   16, evidence above; "Exact delta" above rejects anything wider at authoring/lowering, Round 17 —
+   `bind` cannot do this check itself, evidence above) — it does not cover a transition that also
+   changes non-state object attributes, such as `map_item`'s authored `destination`/
+   `revert_destination` (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144; sample
    `the_lord_of_the_lice/encounter.json` lines 70-74, evidence above). This is a new capability
    (attribute-bearing object state), not a gap in the revert design above, and this document does not
    design it. Two candidate directions, named without choosing between them: retain the resolved
@@ -996,7 +1049,10 @@ not this architecture decision.
    existing fields, applied outside the state-key/collision model; or fold attributes into
    `LocalObjectStateDefinition`/`PreparedMutation` themselves so a state carries payload and a revert
    is again a pure state transition. Either belongs to the owning lane (and likely CW3/CW4's
-   content-model lane) as its own decision, not this one.
+   content-model lane) as its own decision, not this one. Whichever direction is chosen, the
+   authoring/lowering rejection above (Round 17) is what keeps an attribute-changing transition from
+   reaching `bind` in the meantime — this open decision is about eventually *supporting* the case, not
+   about how it is safely refused today.
 
 ### Exact test obligations
 
@@ -1101,15 +1157,19 @@ not this architecture decision.
   carrying transition with *two or more* bound transitions matching the swapped-states-plus-
   matching-family inverse rule (Exact delta above) must also fail the whole `bind` call with
   `InvalidBinding` — an ambiguous inverse is not resolved by picking one arbitrarily.
-- **An attribute-changing transition is rejected at bind (P1, Round 16, fail-closed).** Binding a
-  `revert_after_ms`-carrying transition whose authored effect changes a non-state object attribute —
-  for example a `map_item` teleporter's `destination`, with or without an authored
-  `revert_destination` (evidence above) — must fail the whole `bind` call with `InvalidBinding`, even
-  when a same-collision-class inverse transition would otherwise satisfy the state-swap rule above. A
-  test asserting such a binding succeeds and later fires `DISPOSITION_COMMITTED` with the object's
-  attributes left unrestored (stale `destination`) must fail — `revert_after_ms` covers only what
-  `LocalObjectStateDefinition`/`PreparedMutation::Publish` model today (evidence above), never a
-  silent partial revert.
+- **An attribute-changing `map_item` action is rejected at authoring/lowering, a state-only one passes
+  (P1, Round 17, corrects round 16's "rejected at bind").** An authored `map_item` action carrying
+  `revert_after_ms` together with `destination`, `revert_destination`, or any other non-state
+  attribute must be rejected fail-closed, with a named error, at the authoring/lowering boundary that
+  reads the action (evidence above) — it must never reach `bind` as a revert-bearing operation at all,
+  so a test asserting `bind` itself is what performs this check must fail (`bind` structurally cannot:
+  `TransitionBinding` carries no attribute payload, evidence above). Conversely, an authored
+  `map_item` action carrying `revert_after_ms` with *no* `destination`/`revert_destination` (a
+  state-only transform, like `DepthWarzoneBossDeath`, evidence above) must pass lowering and reach
+  `bind` normally. A test asserting a binding for an attribute-changing transition reaches `bind` at
+  all and later fires `DISPOSITION_COMMITTED` with the object's attributes left unrestored (stale
+  `destination`) must fail — `revert_after_ms` covers only what `LocalObjectStateDefinition`/
+  `PreparedMutation::Publish` model today (evidence above), never a silent partial revert.
 - **Revert restores exactly the pre-operation state (P1).** Firing a scheduled revert whose fences
   and expected revision still hold must land the object back in precisely the state it was in
   immediately before the original operation committed — the one unique `source_state`/`target_state`
