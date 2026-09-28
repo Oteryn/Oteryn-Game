@@ -4,14 +4,14 @@
 task_id: OTV2-20260928-arena-summons
 title: Arena summon spells through encounters (owner decision D45)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1111
 jira: KAN-16
-base_sha: null
+base_sha: 7c6b0df97832b363a9fd40dd4d3bac282db53fe1
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
