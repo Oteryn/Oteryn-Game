@@ -39,6 +39,7 @@ protected Item identity map for Item references.
 | Dialogue records admitted | 0 in the first wave; 701 later (§7 slices 4b and 4c) |
 | NPCs removed from Tibia Global | 5 held later (§7 slice 4d) |
 | Offer prices from both wikis | 21 later (§7 slice 4d) |
+| Offer prices from two of three wikis | 236 later (§7 slice 4e) |
 
 Held back and reported in the candidates: 145 NPCs (91 unplaced in both sources, 32 single-source
 NPCs the wiki does not know, 7 outfit/movement conflicts, 6 placement conflicts the wiki cannot
@@ -195,6 +196,13 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    (`WIKI_PRICE`), which adds their wiki page bindings. The BR facts are recorded as their own import
    (`g4-npc-prices-tibiawiki-br-r1`, `tibiawiki.com.br`, the facts file's SHA-256). Wave A is then 1,088 NPCs, with 307 trade and 55
    travel Services and 2,282 bindings; the 701 Dialogues are unchanged (none of the five had one).
+4e. Prices from two of three wikis (D13): `OTV2-20260928-npc-majority-price`. Tibiopedia's trade facts
+   (`imports/tibiawiki/npc-tibiopedia/2026-09-28`, captured by `tibiopedia.py`) are the third wiki. Where D12
+   does not apply, 236 plain offers of 51 NPCs take the price two of the three wikis state
+   (`WIKI_MAJORITY_PRICE`: 234 Fandom and Tibiopedia, 2 TibiaWiki BR and Tibiopedia). Offers with a count or
+   sub type are not changed. The Tibiopedia facts are recorded as their own import (`g4-npc-prices-tibiopedia-r1`,
+   `tibiopedia.pl`, the facts file's SHA-256). Wave A keeps 1,088 NPCs, 307 trade and 55 travel Services and
+   701 Dialogues; bindings become 2,296, because the wiki now decides a fact for 14 more NPCs.
 5. Later:
    - placements after World admission;
    - conditional dialogue and dialogue conflicts;

@@ -11,7 +11,17 @@ use oteryn_renderer::{SurfaceDecision, SurfaceEvent, SurfaceSize, SurfaceState};
 use oteryn_synthetic_assets::SyntheticImage;
 use std::error::Error;
 
+mod live;
+
 fn main() -> Result<(), Box<dyn Error>> {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.iter().any(|arg| arg == "--live") {
+        return live::cli::run(&args);
+    }
+    synthetic()
+}
+
+fn synthetic() -> Result<(), Box<dyn Error>> {
     let mut projection = ClientWorldProjection::empty(ClientSessionEpoch::new(1));
     projection.entities.insert(
         ClientEntityRef::new(1),

@@ -750,3 +750,134 @@ fn two_fixture_creature_deaths_have_distinct_death_keys() {
     assert_ne!(keys[0], keys[1]);
     assert_ne!(keys[0].channel_id(), keys[1].channel_id());
 }
+
+// ---------------------------------------------------------------------------
+// D2b: `reward_occurrence`, the memoized per-(death, character) XP
+// occurrence the physical Channel owner keeps in its death record
+// (DUR-03 decision §4.2).
+// ---------------------------------------------------------------------------
+
+fn is_valid_reward_occurrence(bytes: [u8; 16]) -> bool {
+    bytes[6] >> 4 == 7 && bytes[8] & 0xc0 == 0x80
+}
+
+#[test]
+fn reward_occurrence_requires_a_committed_death_first() {
+    let (owner, mut carrier, actor) = fixture(140, true);
+    assert_eq!(
+        carrier
+            .current_owner_combat_death(&owner)
+            .reward_occurrence(actor, [9; 16]),
+        Err(CarrierError::CommittedLethalUnavailable)
+    );
+}
+
+#[test]
+fn reward_occurrence_is_minted_once_and_replay_reuses_the_same_value() {
+    let mut fixture = d1_fixture(142);
+    fixture
+        .strike("strike:reward-once", CombatDeathFixture::HEALTH)
+        .expect("lethal commit");
+    let (_, _) = fixture.project_death().expect("death");
+    let actor = fixture.actor();
+    let character = [11_u8; 16];
+
+    let (first, first_is_fresh) = fixture
+        .borrow_combat_death()
+        .reward_occurrence(actor, character)
+        .expect("first mint");
+    assert!(is_valid_reward_occurrence(first));
+    assert!(first_is_fresh);
+    let (replay, replay_is_fresh) = fixture
+        .borrow_combat_death()
+        .reward_occurrence(actor, character)
+        .expect("idempotent replay");
+    assert_eq!(replay, first);
+    assert!(!replay_is_fresh);
+}
+
+#[test]
+fn reward_occurrence_conflicts_on_a_different_reward_principal() {
+    let mut fixture = d1_fixture(144);
+    fixture
+        .strike("strike:reward-conflict", CombatDeathFixture::HEALTH)
+        .expect("lethal commit");
+    let (_, _) = fixture.project_death().expect("death");
+    let actor = fixture.actor();
+
+    let (first, _) = fixture
+        .borrow_combat_death()
+        .reward_occurrence(actor, [21_u8; 16])
+        .expect("first mint");
+    assert!(is_valid_reward_occurrence(first));
+    assert_eq!(
+        fixture
+            .borrow_combat_death()
+            .reward_occurrence(actor, [22_u8; 16]),
+        Err(CarrierError::RewardPrincipalConflict)
+    );
+}
+
+#[test]
+fn two_fixture_creature_deaths_mint_distinct_reward_occurrences() {
+    let mut first = d1_fixture(146);
+    let mut second = d1_fixture(148);
+    let mut minted = Vec::new();
+    for creature in [&mut first, &mut second] {
+        creature
+            .strike("strike:reward-distinct", CombatDeathFixture::HEALTH)
+            .expect("lethal commit");
+        creature.project_death().expect("death");
+        let actor = creature.actor();
+        minted.push(
+            creature
+                .borrow_combat_death()
+                .reward_occurrence(actor, [33_u8; 16])
+                .expect("mint")
+                .0,
+        );
+    }
+    assert_ne!(minted[0], minted[1]);
+}
+
+#[test]
+fn stale_generation_death_cannot_mint_a_reward_occurrence() {
+    let mut fixture = d1_fixture(150);
+    fixture
+        .strike("strike:reward-stale", CombatDeathFixture::HEALTH)
+        .expect("lethal commit");
+    fixture.project_death().expect("death");
+    let actor = fixture.actor();
+    fixture
+        .advance_owner(ScopeOwnershipGeneration::new(2).expect("generation"))
+        .expect("scope moved");
+    assert_eq!(
+        fixture
+            .borrow_combat_death()
+            .reward_occurrence(actor, [44_u8; 16]),
+        Err(CarrierError::WrongScope)
+    );
+}
+
+#[test]
+fn projected_death_is_read_only_from_the_owner_projection() {
+    let (owner, mut carrier, actor) = fixture(146, true);
+    assert_eq!(
+        carrier
+            .current_owner_combat_death(&owner)
+            .projected_death(actor)
+            .map(|_| ()),
+        Err(CarrierError::CommittedLethalUnavailable)
+    );
+
+    let mut fixture = d1_fixture(148);
+    fixture
+        .strike("strike:projected-death", CombatDeathFixture::HEALTH)
+        .expect("lethal commit");
+    let projected = fixture.project_death().expect("death");
+    let actor = fixture.actor();
+    assert_eq!(
+        fixture.borrow_combat_death().projected_death(actor),
+        Ok(projected)
+    );
+}

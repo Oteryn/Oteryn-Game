@@ -4,12 +4,14 @@
 task_id: OTV2-20260928-item-promotion-repin-v2
 title: Re-pin the Item semantic-promotion lowering v1 packet to the further-grown sample (v2)
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/item-promotion-repin-v2
 issue: 162
 pr: 1155
+merge_pr: 1155
+merge_sha: 0d962e18fa1db0b780d607f37511dcdf05049fcb
 base_sha: 64720c2086ec1838c7dcd0fe4faae496557096d4
 head_sha: null
 final_head_sha: null
@@ -233,8 +235,8 @@ update.
 ## Context checkpoint
 
 ```yaml
-last_progress: full #1084-shaped re-pin complete on owned+leased paths; all targeted tests/validators green; PR #1155 opened; reporting READY_FOR_INTEGRATION
-status: ready
+last_progress: PR #1155 merged; record archived
+status: completed
 branch: claude/item-promotion-repin-v2
 head_sha: null
 pr: 1155
@@ -255,5 +257,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: none
 blocker: null
-next_action: await PR #1155 CI / Merge Queue; bind evidence to its frozen final head at closeout
+next_action: none; merged as PR #1155 and archived
 ```

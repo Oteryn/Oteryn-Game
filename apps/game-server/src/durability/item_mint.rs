@@ -1140,7 +1140,7 @@ fn decode_instance(
     })
 }
 
-fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
+pub(super) fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
     let hex: String = value
         .chars()
         .filter(|character| *character != '-')

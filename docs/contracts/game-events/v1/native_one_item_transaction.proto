@@ -17,8 +17,12 @@ package oteryn.events.v1;
 //
 // Excluded fail-closed (no field exists; an unknown field rejects by canonical
 // round trip): item free text, value lines, transform inputs/outputs,
-// container expansion and the inventory typed_position. TRANSFER stays closed
-// (not admitted) until the typed_position owner defines it.
+// container expansion and the direct-root inventory typed_position.
+// TRANSFER is admitted only for the B3 destinations
+// (reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md
+// §4): the CharacterEquipment `container` slot, direct entries of the equipped
+// main backpack, and the D83 full-merge and top-up shapes. DUR03-RL-01 and
+// DUR03-RL-06 are 2 items / 2 participants / 6 work units for the merge shapes.
 // Historical game-events/v1/item_transaction.proto and
 // game-events/v2/item_transaction.proto remain unchanged.
 
@@ -26,7 +30,7 @@ message OneItemTransactionV1 {
   uint32 interpretation_revision = 1; // exactly 1
   oneof operation {
     OneItemMintV1 mint = 2;
-    OneItemTransferV1 transfer = 3; // closed: not admitted
+    OneItemTransferV1 transfer = 3; // B3 destinations only (see above)
   }
 }
 
@@ -42,7 +46,7 @@ message OneItemStateV1 {
   bytes world_id = 2;         // exactly 16-byte non-nil UUIDv7
   OneItemTypedDefinitionRevisionV1 definition = 3;
   uint32 quantity = 4;
-  uint32 lifecycle = 5; // exactly 1 = LIVE
+  uint32 lifecycle = 5; // 1 = LIVE; 2 = RETIRED (TRANSFER full-merge source after, quantity 0)
 }
 
 message OneItemGroundV1 {
@@ -58,12 +62,34 @@ message OneItemGroundV1 {
 
 message OneItemInventoryV1 {
   bytes character_id = 1; // exactly 16-byte non-nil UUIDv7
-  // typed_position is excluded fail-closed until its owner defines it.
+  // The direct-root typed_position is excluded fail-closed until its owner
+  // defines it.
   reserved 2;
   reserved "typed_position";
   uint64 expected_session_generation = 3;      // expected binding, not live authority
   bytes expected_game_session_id = 4;          // exactly 16-byte non-nil UUIDv7
   uint64 expected_character_lease_generation = 5; // expected binding only
+  // B3 destinations: exactly one of these, or neither for a full merge (the
+  // source retires into the receiver).
+  OneItemContainerEntryV1 container_entry = 6; // direct entry of the main backpack
+  bool equipment_container_slot = 7;           // CharacterEquipment slot `container`
+}
+
+// Container { parent = main backpack, entry = placement ordinal } (B3 §4.1).
+message OneItemContainerEntryV1 {
+  bytes parent_item_instance_id = 1; // exactly 16-byte non-nil UUIDv7
+  uint64 placement_ordinal = 2;      // non-zero; newest (highest) first
+}
+
+// D83 receiver: a compatible stack already in the main backpack. It shares
+// the source's World and definition; quantities are item state, not value
+// lines. Units are conserved: quantity_after - quantity_before equals the
+// source's before - after quantity; quantity_after <= 100.
+message OneItemReceiverV1 {
+  bytes item_instance_id = 1; // exactly 16-byte non-nil UUIDv7
+  OneItemContainerEntryV1 position = 2;
+  uint32 quantity_before = 3;
+  uint32 quantity_after = 4;
 }
 
 message OneItemCommandRefV1 {
@@ -94,6 +120,17 @@ message OneItemProvenanceV1 {
   OneItemCommandRefV1 command_ref = 9; // TRANSFER only; expected binding
 }
 
+// TRANSFER cause: typed_cause "ground_pickup_transfer", the revisions and the
+// actual player CommandRef. Wire-compatible subset of OneItemProvenanceV1
+// (same field numbers); the MINT-only death and loot fields 2-5 are absent.
+message OneItemTransferCauseV1 {
+  string typed_cause = 1;      // <= 128 B
+  string content_revision = 6; // <= 512 B
+  string ruleset_revision = 7; // <= 512 B
+  string sim_revision = 8;     // <= 512 B
+  OneItemCommandRefV1 command_ref = 9;
+}
+
 message OneItemMintV1 {
   OneItemStateV1 after = 1;
   OneItemGroundV1 destination = 2;
@@ -107,5 +144,6 @@ message OneItemTransferV1 {
   OneItemStateV1 after = 2;
   OneItemGroundV1 source = 3;
   OneItemInventoryV1 destination = 4;
-  OneItemProvenanceV1 cause = 5;
+  OneItemTransferCauseV1 cause = 5;
+  OneItemReceiverV1 receiver = 6; // D83 full merge and top-up only
 }

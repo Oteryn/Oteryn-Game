@@ -5163,25 +5163,28 @@
     {
       "id": "DUR03-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
-      "resource": "ItemInstances touched by one DUR-03 native one-item logical transaction",
+      "resource": "ItemInstances touched by one DUR-03 native one-item or B3 merge-shape logical transaction",
       "unit": "ItemInstances per logical transaction",
-      "hard_maximum": 1,
+      "hard_maximum": 2,
       "configurable_range": {
         "minimum": 1,
-        "maximum": 1
+        "maximum": 2
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT touches its one output ItemInstance; TRANSFER's before and after are the same ItemInstance.",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT, the container-slot TRANSFER and the new-entry TRANSFER touch exactly one ItemInstance (before and after are the same item); the B3 full-merge and top-up shapes touch exactly two (source A and receiver B).",
       "client_visible": false,
       "boundary_tests": [
-        "max=1: MINT and TRANSFER each touch exactly one ItemInstance",
-        "max+1=2: a TRANSFER whose before and after ItemInstance ids differ is rejected"
+        "max=1: MINT and the one-item TRANSFER shapes each touch exactly one ItemInstance",
+        "max=2: the full-merge and top-up TRANSFER shapes touch exactly A and B",
+        "max+1=3: a usage of three touched ItemInstances is rejected (CAPACITY_EXCEEDED)",
+        "max+1 for the one-item shapes: a TRANSFER whose before and after ItemInstance ids differ is rejected"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
       ],
-      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Amended by B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.5 (2 for the merge and top-up shapes, 1 otherwise); registered by OTV2-20260928-b3-1-transfer."
     },
     {
       "id": "DUR03-RL-02",
@@ -5194,7 +5197,7 @@
         "maximum": 2
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT has one Ground destination; TRANSFER has one Ground source and one direct-root CharacterInventory destination.",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT has one Ground destination; TRANSFER has one Ground source and at most one destination line (the container slot or a new main-backpack entry; a B3 full merge has only the Ground removal).",
       "client_visible": false,
       "boundary_tests": [
         "max=2: a TRANSFER with one source and one destination line is accepted",
@@ -5202,7 +5205,8 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -5225,7 +5229,8 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
     },
@@ -5248,7 +5253,8 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
     },
@@ -5271,7 +5277,8 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
     },
@@ -5280,46 +5287,50 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
       "resource": "Plan participants in one DUR-03 native one-item logical transaction",
       "unit": "participants per logical transaction",
-      "hard_maximum": 1,
+      "hard_maximum": 2,
       "configurable_range": {
         "minimum": 1,
-        "maximum": 1
+        "maximum": 2
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "Checked before allocation or partial mutation; never truncated.",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated. One participant for MINT and the one-item TRANSFER shapes; two (A and B) for the B3 full-merge and top-up shapes.",
       "client_visible": false,
       "boundary_tests": [
-        "max=1: one participant accepted",
-        "max+1=2: a second participant is rejected"
+        "max=1: one participant accepted for the one-item shapes",
+        "max=2: A and B accepted for the full-merge and top-up shapes",
+        "max+1=3: a third participant is rejected"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
       ],
-      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Amended by B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.5; registered by OTV2-20260928-b3-1-transfer."
     },
     {
       "id": "DUR03-RL-06-EFFECT-WORK-UNITS",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
       "resource": "Effect work units (participant plus its effects) in one DUR-03 native one-item logical transaction",
       "unit": "work units per logical transaction",
-      "hard_maximum": 3,
+      "hard_maximum": 6,
       "configurable_range": {
         "minimum": 3,
-        "maximum": 3
+        "maximum": 6
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "Checked before allocation or partial mutation; never truncated.",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT 2 and the one-item TRANSFER shapes 3 (participant + Ground removal + placement); full merge 5 (A: participant + Ground removal + retirement; B: participant + quantity); top-up 6 (A: participant + Ground removal + placement + quantity; B: 2).",
       "client_visible": false,
       "boundary_tests": [
-        "max=3: three work units accepted",
-        "max+1=4: a fourth work unit is rejected"
+        "max=3: the one-item TRANSFER shapes accepted",
+        "max=6: the top-up shape accepted",
+        "max+1=7: a seventh work unit is rejected"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
       ],
-      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Amended by B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.5; registered by OTV2-20260928-b3-1-transfer."
     },
     {
       "id": "DUR03-RL-07-EVENTS",
@@ -5340,7 +5351,8 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. D50: one audit event per logical transaction."
     },
@@ -5361,11 +5373,13 @@
         "9,216-byte envelope passes the size gate",
         "9,217 bytes rejected before decode",
         "worst-case MINT of the final schema (7,167 B) accepted",
-        "integer-overflow accounting rejected"
+        "integer-overflow accounting rejected",
+        "worst-case B3 top-up TRANSFER envelope of the final schema (6,816 B) accepted"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Sized on the normative EventEnvelope with every optional field present, ANL-01 strings at 128 B and widest varints: overhead at most 1,038 B; worst cases MINT 6,129/7,167 B, TRANSFER 7,433/8,471 B, TRANSFER with a 128 B typed_position 7,565/8,603 B. Any valid payload fits: 7,936 + 1,038 = 8,974 B. The OfflineCandidateEnvelope evidence wrapper is not this envelope. No private 4,096 B cap is registered."
     },
@@ -5385,11 +5399,13 @@
       "boundary_tests": [
         "7,936-byte payload passes the size gate",
         "7,937 bytes rejected before decode",
-        "worst-case MINT payload of the final schema (6,129 B) accepted"
+        "worst-case MINT payload of the final schema (6,129 B) accepted",
+        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 \u00a74.5 bound 7,821 B) accepted"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -5412,7 +5428,8 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Aligned with DUR04-FIRST-PROD-KEY-BYTES and DUR04-FIRST-PROD-STRING-BYTES."
     },
@@ -5435,7 +5452,8 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -5458,7 +5476,8 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -5481,7 +5500,8 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)"
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -5504,7 +5524,8 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: the logical transaction is a durable reservation keyed by the full cause tuple; each commit attempt or reconciliation pass first charges one unit to it with a committed conditional UPDATE, across re-freezes, restarts and concurrent holders; the fourth is rejected before the pass's work)"
+        "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: the logical transaction is a durable reservation keyed by the full cause tuple; each commit attempt or reconciliation pass first charges one unit to it with a committed conditional UPDATE, across re-freezes, restarts and concurrent holders; the fourth is rejected before the pass's work)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
       ],
       "notes": "D51, decision \u00a73.3: a policy value, not a measurement. Stage C must re-decide it once real PostgreSQL reconciliation exists and prove max/max+1 across a restart. Registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -5527,9 +5548,104 @@
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
-        "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: stores game_item_audit_outbox.expires_at = occurred_at + 7,776,000,000 ms; no audit purge path yet)"
+        "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: stores game_item_audit_outbox.expires_at = occurred_at + 7,776,000,000 ms; no audit purge path yet)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
       ],
       "notes": "P90D, decision \u00a73.1 and OTERYN_DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_DECISION_2026-09-27.md. Registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "GAMEITEM01-STACK-QUANTITY-MAX",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md",
+      "resource": "Quantity of one live stack (ItemInstance) admitted by a B3 TRANSFER, and the stack maximum a definition may prove",
+      "unit": "units per ItemInstance",
+      "hard_maximum": 100,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 100
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any mutation; a stackable definition without a proven maximum uses 100; a proven maximum above 100 or a stored quantity above the definition maximum is refused; an unknown stack class is refused (fail closed); a non-stackable item has quantity 1.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=100: a stack of 100 is admitted and a merge may reach exactly 100",
+        "max+1=101: a proven stack maximum of 101 and a stored quantity of 101 are refused",
+        "the payload gate rejects a receiver after-quantity of 101"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_transfer.rs (stack_maximum/plan_transfer)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (check_transfer)"
+      ],
+      "notes": "D82; B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.3/\u00a74.5; a proven larger value waits for a new decision; registered by OTV2-20260928-b3-1-transfer."
+    },
+    {
+      "id": "GAMEITEM01-CONTAINER-ENTRIES-MAX",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md",
+      "resource": "Direct entries of the equipped main backpack",
+      "unit": "entries per container",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "An entry-placing TRANSFER needs current_entry_count < definition_capacity, checked under the character_root row lock before any mutation; a declared capacity above 20 is refused; the database also caps one parent at 20 entries at commit; entry reads are bounded to 21 rows.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=20: the 20th entry is placed",
+        "max+1=21: the 21st entry is refused with the item left on Ground",
+        "a declared capacity of 21 is refused"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_transfer.rs (plan_transfer/load_entries)",
+        "apps/game-server/migrations/0011_item_transfer_backpack.sql (game_item_placement_proven)"
+      ],
+      "notes": "D81; B3 \u00a74.2/\u00a74.5; the backpack definition oteryn:item.registry.i00002752 declares capacity 20; registered by OTV2-20260928-b3-1-transfer."
+    },
+    {
+      "id": "GAMEITEM01-PLACEMENT-DEPTH",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md",
+      "resource": "Placement depth below the CharacterEquipment container slot",
+      "unit": "container levels",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Only direct entries of the character's own slot item are destinations; the composite foreign key (character_id, parent_item_instance_id) -> game_item_container_slots makes a deeper placement unrepresentable; a moved container must be empty (DUR03-RL-05 stays 0).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: an entry whose parent is the equipped main backpack is accepted",
+        "max+1=2: an entry whose parent is itself an entry is rejected by the database",
+        "a non-empty container is refused"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0011_item_transfer_backpack.sql (game_item_container_entries)",
+        "apps/game-server/src/durability/item_transfer.rs (plan_transfer)"
+      ],
+      "notes": "D80; B3 \u00a74.1/\u00a74.5; nested bags are a later decision; registered by OTV2-20260928-b3-1-transfer."
+    },
+    {
+      "id": "GAMEITEM01-REACHABLE-ITEMS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md",
+      "resource": "Items reachable through one character's container slot (the main backpack and its direct entries)",
+      "unit": "ItemInstances per character",
+      "hard_maximum": 21,
+      "configurable_range": {
+        "minimum": 21,
+        "maximum": 21
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Follows from one slot item, depth 1 and at most 20 entries; reads of the main backpack are bounded to 1 + 21 rows and a larger stored set is invalid state.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=21: the main backpack with 20 entries is read in full",
+        "max+1=22: a 21st entry (the 22nd reachable item) is refused"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_transfer.rs (read_character_backpack/load_entries)"
+      ],
+      "notes": "B3 \u00a74.5; registered by OTV2-20260928-b3-1-transfer."
     },
     {
       "id": "COMBAT01-LOOT-PLAN-ENTRIES",
@@ -5619,6 +5735,76 @@
         "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot: entries.len() * 2 checked against 32 before any deterministic_draw call)"
       ],
       "notes": "D77, decision \u00a74.1; evidence packet Q2 COMBAT01-LOOT-RNG-DRAWS = 2 * 16 entries. Not the same value as DUR03-RL-08 (retry/reconciliation work units, unrelated). Registered by OTV2-20260928-combat-d2a-loot-plan."
+    },
+    {
+      "id": "COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "One-item DUR-03 loot MINTs in flight at once across one runtime scope, across every death and loot-settlement workflow in it",
+      "unit": "in-flight loot MINTs per scope",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked once per death, before any entry of its loot plan is frozen, against the scope's already in-flight count the caller supplies; the whole plan is rejected up front rather than minting some entries and stopping partway.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=64: 48 already in flight plus a 16-entry plan is accepted (check_inflight_loot_mint_capacity(48, 16))",
+        "max+1=65: 49 already in flight plus a 16-entry plan is rejected before any entry is frozen (check_inflight_loot_mint_capacity(49, 16))",
+        "a single entry against an already-full scope (64 in flight) is rejected (check_inflight_loot_mint_capacity(64, 1))",
+        "an overflowing caller-supplied count (usize::MAX) is rejected rather than wrapping"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/death_reward.rs (check_inflight_loot_mint_capacity, called from settle_loot before the first freeze_item_mint of a death's plan)"
+      ],
+      "notes": "D78, decision \u00a74.1 row 7: \"64, jak potwory\" (matching the D57 creature envelope). D2b enforces this as a pure guard over a caller-tracked in-flight count; no scope-wide MINT tracker is added by this task. Registered by OTV2-20260928-combat-d2b-death-reward-wiring."
+    },
+    {
+      "id": "COMBAT01-XP-DESCENDANTS-PER-DEATH",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "R7 P03 XP award descendants committed per creature death",
+      "unit": "XP descendants per death",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Enforced structurally, not by a counted check: settle_creature_death_rewards issues at most one commit_character_experience call per invocation, keyed by an ExperienceRewardOccurrence the physical Channel owner mints once per (death, character) and memoizes for the rest of the generation; a repeated composition call for the same death reuses that occurrence and resolves to the same already-committed receipt rather than a second descendant.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one settle_creature_death_rewards call commits exactly one XP receipt (one_creature_death_mints_the_plan_and_awards_xp_once, PG)",
+        "max+1: a second settle_creature_death_rewards call for the same death reuses the memoized occurrence and leaves the XP receipt count at 1, not 2 (replay_is_idempotent_with_no_duplicate_mint_or_xp, PG)"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/death_reward.rs (settle_experience: one commit_character_experience call per invocation)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs (CurrentOwnerCombatDeath::reward_occurrence: mints the occurrence at most once per (death, character) and memoizes it)"
+      ],
+      "notes": "Resource rows decision \u00a74.1 row 9. DUR-03 decision \u00a74.2: \"the Combat owner mints one server UUIDv7 ExperienceRewardOccurrence per (death, eligible character) ... every retry in that generation reuses it.\" Registered by OTV2-20260928-combat-d2b-death-reward-wiring."
+    },
+    {
+      "id": "COMBAT01-REWARD-PRINCIPALS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "Reward principals (characters eligible for a creature death's XP) settled per death",
+      "unit": "reward principals per death",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked first, before loot planning or any durability call: settle_creature_death_rewards rejects the whole composition up front unless exactly one reward principal was supplied.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: check_reward_principal_count(1) accepts",
+        "max+1=2: check_reward_principal_count(2) rejects",
+        "0: check_reward_principal_count(0) rejects (no silent no-op reward)"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/death_reward.rs (check_reward_principal_count, called from settle_creature_death_rewards before planning or minting anything)"
+      ],
+      "notes": "D77/D78 decision \u00a74.1 row 10: \"1 per death (single-principal slice)\". `COMBAT01-DEATH-WORKFLOWS-PER-SCOPE` (row 3) is deliberately not registered here: its own failure mode is recorded as structurally unreachable, bounded by the still-unregistered D57 creature-count envelope, and this composition keeps no scope-wide active-workflow counter to check; registering an unenforced ceiling would be a fake guard. Registered by OTV2-20260928-combat-d2b-death-reward-wiring."
     }
   ]
 }
