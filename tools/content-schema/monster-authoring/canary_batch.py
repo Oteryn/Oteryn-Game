@@ -1652,6 +1652,10 @@ class Converter:
         for callback in combat['callbacks']:
             if callback in ('CALLBACK_PARAM_LEVELMAGICVALUE', 'CALLBACK_PARAM_SKILLVALUE'):
                 notes.append(f'{callback} is the player formula; a monster caster uses its own values instead.')
+            elif callback == 'CALLBACK_PARAM_CHAINPICKER' and combat.get('chain_target_filter') == 'players':
+                notes.append('The chain picker keeps only players outside a protection zone; a monster caster already '
+                             'cannot hit a player in one (combat.cpp canDoCombat), so the chain skips other creatures such '
+                             'as player summons (target_filter players).')
             elif callback != 'CALLBACK_PARAM_CHAINVALUE':
                 raise SpellUnresolved(f'Lua combat callback {callback}.')
         if 'COMBAT_PARAM_USECHARGES' in params:
@@ -1722,6 +1726,8 @@ class Converter:
         if 'chain' in combat:
             count, distance, backtracking = combat['chain']
             ability['chain'] = {'max_targets': int(count), 'range_tiles': int(distance), 'backtracking': bool(backtracking)}
+            if combat.get('chain_target_filter'):
+                ability['chain']['target_filter'] = combat['chain_target_filter']
             if params.get('COMBAT_PARAM_CHAIN_EFFECT'):
                 ability['chain']['chain_asset_binding'] = asset(self.visual('@' + params['COMBAT_PARAM_CHAIN_EFFECT'], 'effect')[0])
         deps['abilities'].append(ability)

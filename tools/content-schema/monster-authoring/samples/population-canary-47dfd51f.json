@@ -15,10 +15,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 111,
-    "fully_resolved": 1539,
+    "blocked": 107,
+    "fully_resolved": 1543,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1175
+    "wiki_adopted_monsters": 1179
   },
   "wiki_adopted_rows": {
     "Loot2": 12722,
@@ -123,17 +123,6 @@
         "the_hunger",
         "the_rage",
         "world_devourer"
-      ]
-    },
-    {
-      "blocker": "unresolved_semantics attacks[] -> chain_bounce",
-      "monsters": 5,
-      "examples": [
-        "quara_looter",
-        "rootthing_amber_shaper",
-        "rootthing_bug_tracker",
-        "mould_phantom",
-        "rotten_golem"
       ]
     },
     {
@@ -1230,6 +1219,7 @@
     "morik_the_gladiator",
     "mornenion",
     "morshabaal",
+    "mould_phantom",
     "mountain_troll",
     "mozradek",
     "mr_punish",
@@ -1389,6 +1379,7 @@
     "quara_constrictor_scout",
     "quara_hydromancer",
     "quara_hydromancer_scout",
+    "quara_looter",
     "quara_mantassin",
     "quara_mantassin_scout",
     "quara_pincher",
@@ -1445,8 +1436,10 @@
     "rocky",
     "rogue_naga",
     "ron_the_ripper",
+    "rootthing_bug_tracker",
     "rorc",
     "rot_elemental",
+    "rotten_golem",
     "rotten_man_maggot",
     "rottie_the_rotworm",
     "rotworm",

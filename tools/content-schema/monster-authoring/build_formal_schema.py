@@ -151,8 +151,10 @@ d['ability']=obj({'identity':use('identity'),'kind':enum('melee','spell'),'range
     'path_requirement':obj({'max_search_tiles':integer(1),'clear_sight':use('bool')},('max_search_tiles','clear_sight'),
         description='D18: the cast needs a walking path to its target found within max_search_tiles (and a clear line of sight '
             'when clear_sight); without one the cast fails and nothing happens.'),
-    'chain':obj({'max_targets':integer(1),'range_tiles':integer(1),'backtracking':use('bool'),'chain_asset_binding':use('assetBinding')},
-                ('max_targets','range_tiles','backtracking'),description='D12: the effect jumps between up to max_targets creatures.')},
+    'chain':obj({'max_targets':integer(1),'range_tiles':integer(1),'backtracking':use('bool'),'chain_asset_binding':use('assetBinding'),
+                 'target_filter':enum('players')},
+                ('max_targets','range_tiles','backtracking'),description='D12: the effect jumps between up to max_targets creatures; '
+                'target_filter players skips every creature that is not a player (the players-only chain picker).')},
     ('identity','kind','range_tiles','needs_target','needs_direction'),
     oneOf=[{'required':['effects'],**forbid('variants')},{'required':['variants'],**forbid('effects','area','chain')}],
     description='For area casts, center precedence is required target position, facing-adjacent position when needs_direction, then caster position. Native execution and no-area target selection require separate qualification.')

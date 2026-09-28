@@ -1855,6 +1855,11 @@
             },
             "chain_asset_binding": {
               "$ref": "#/$defs/assetBinding"
+            },
+            "target_filter": {
+              "enum": [
+                "players"
+              ]
             }
           },
           "required": [
@@ -1862,7 +1867,7 @@
             "range_tiles",
             "backtracking"
           ],
-          "description": "D12: the effect jumps between up to max_targets creatures."
+          "description": "D12: the effect jumps between up to max_targets creatures; target_filter players skips every creature that is not a player (the players-only chain picker)."
         }
       },
       "required": [
