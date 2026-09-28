@@ -744,8 +744,8 @@ fn full_family_import() -> ProtectedCw2B1FullItemFamilyImport {
 }
 
 fn promoted_family_import() -> ProtectedCw2B1PromotedItemFamilyImport {
-    protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)
-        .expect("protected B1 promoted Item family")
+    protected_cw2_b1_item_semantic_promotion_lowering_v1_import(B1_EVIDENCE)
+        .expect("protected B1 item semantic promotion lowering v1 import")
 }
 
 fn gold_coin_family_import() -> ProtectedCw2B1PromotedItemFamilyImport {
@@ -804,19 +804,31 @@ fn count_promoted_atoms(semantics: &ReferenceItemSemantics) -> usize {
 }
 
 #[test]
-fn protected_semantic_promotion_changes_exactly_69_atoms_without_identity_or_materialization_drift()
-{
+fn protected_semantic_promotion_changes_exactly_13292_atoms_with_only_the_r7_p04_identity_rename_as_incidental_drift()
+ {
     let base = full_family_import();
     let promoted = promoted_family_import();
 
     assert_eq!(
         promoted.promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
     );
-    assert_eq!(promoted.promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
     assert_eq!(
-        promoted.family.allocation_digest_sha256, base.allocation_digest_sha256,
-        "semantic promotion must not change the protected identity allocation"
+        promoted.promoted_items,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+    );
+    // Unlike the retired 69-field pass, the single lowering v1 promotion source folds
+    // in the R7 P04 Gold Coin identity rename (`apply_r7_p04_gold_coin_identity_rename`),
+    // so the identity allocation digest is expected to change from the raw full-family
+    // import — by exactly the same pinned rename `r7_p04_renames_exactly_source_3031_
+    // and_carries_only_its_pinned_lowering_v1_promotion` below verifies directly.
+    assert_ne!(
+        promoted.family.allocation_digest_sha256,
+        base.allocation_digest_sha256
+    );
+    assert_eq!(
+        promoted.family.allocation_digest_sha256,
+        "c666b4411f358e45b5e0e7be09a088f85916112d032dfd3558f70bed4d8ede45"
     );
     assert_eq!(promoted.family.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
 
@@ -850,24 +862,41 @@ fn protected_semantic_promotion_changes_exactly_69_atoms_without_identity_or_mat
         else {
             panic!("promoted full family contains only Items");
         };
-        assert_eq!(
-            base_shape.get(&identity.key),
-            Some(&(*materializable, *stack_class)),
-            "promotion changed materializable/stack shape for {}",
-            identity.key
-        );
+        if identity.key == R7_P04_GOLD_COIN_KEY {
+            assert!(*materializable);
+            assert_eq!(*stack_class, ItemStackDocument::StackCapable);
+        } else {
+            assert_eq!(
+                base_shape.get(&identity.key),
+                Some(&(*materializable, *stack_class)),
+                "promotion changed materializable/stack shape for {}",
+                identity.key
+            );
+        }
         let atoms = count_promoted_atoms(semantics);
         atom_count += atoms;
         promoted_items += usize::from(atoms > 0);
     }
 
-    assert_eq!(atom_count, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
-    assert_eq!(promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
+    assert_eq!(atom_count, ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT);
+    assert_eq!(
+        promoted_items,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+    );
 }
 
 #[test]
-fn r7_p04_promotes_exactly_source_3031_without_admitting_typed_coin_semantics() {
-    let before = promoted_family_import();
+fn r7_p04_renames_exactly_source_3031_and_carries_only_its_pinned_lowering_v1_promotion() {
+    // `before`/`after` can no longer be a pure promotion-only vs. promotion+rename pair:
+    // the single lowering v1 promotion source folds `apply_r7_p04_gold_coin_identity_rename`
+    // in unconditionally, so `promoted_family_import()` and `gold_coin_family_import()` now
+    // compute the exact same result. `base` (the raw, un-renamed, un-promoted full family)
+    // is the only independent point of comparison left for the rename itself; unrelated-item
+    // shape preservation across the whole family is already covered by
+    // `protected_semantic_promotion_changes_exactly_13292_atoms_with_only_the_r7_p04_identity_rename_as_incidental_drift`
+    // above, so this test only re-checks the R7 P04-specific bookkeeping and the one
+    // typed field (`presentation.name`) the lowering v1 packet admits for source 3031.
+    let base = full_family_import();
     let after = gold_coin_family_import();
 
     assert_eq!(after.family.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
@@ -879,30 +908,29 @@ fn r7_p04_promotes_exactly_source_3031_without_admitting_typed_coin_semantics() 
         after.family.batch.reimport_states.len(),
         CW2_B1_FULL_ITEM_FAMILY_COUNT
     );
-    assert_eq!(after.promoted_fields, before.promoted_fields);
-    assert_eq!(after.promoted_items, before.promoted_items);
+    assert_eq!(
+        after.promoted_fields,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+    );
+    assert_eq!(
+        after.promoted_items,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+    );
     assert_ne!(
         after.family.allocation_digest_sha256,
-        before.family.allocation_digest_sha256
+        base.allocation_digest_sha256
     );
     assert_eq!(
         after.family.allocation_digest_sha256,
         "c666b4411f358e45b5e0e7be09a088f85916112d032dfd3558f70bed4d8ede45"
     );
 
-    let before_records = before
-        .family
-        .records
-        .iter()
-        .map(|record| {
-            let ProjectReferenceRecord::Item { identity, .. } = record else {
-                panic!("protected full family contains only Items");
-            };
-            (identity.key.as_str(), record)
-        })
-        .collect::<BTreeMap<_, _>>();
-    assert!(before_records.contains_key(R7_P04_GOLD_COIN_OLD_KEY));
-    assert!(!before_records.contains_key(R7_P04_GOLD_COIN_KEY));
+    assert!(base.records.iter().any(|record| {
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_OLD_KEY)
+    }));
+    assert!(!base.records.iter().any(|record| {
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_KEY)
+    }));
 
     let mut gold_records = 0_usize;
     for record in &after.family.records {
@@ -916,23 +944,34 @@ fn r7_p04_promotes_exactly_source_3031_without_admitting_typed_coin_semantics() 
         else {
             panic!("protected full family contains only Items");
         };
-        if identity.key == R7_P04_GOLD_COIN_KEY {
-            gold_records += 1;
-            assert_eq!(identity.family, "Item");
-            assert_eq!(identity.revision, CW2_B1_FULL_ITEM_REVISION);
-            assert_eq!(*client_projection, ProjectionDocument::ClientSafe);
-            assert!(*materializable);
-            assert_eq!(*stack_class, ItemStackDocument::StackCapable);
-            assert!(semantics.is_all_unknown());
-            assert!(matches!(semantics.stack, ReferenceItemField::Unknown));
-        } else {
-            assert_eq!(
-                Some(record),
-                before_records.get(identity.key.as_str()).copied(),
-                "unrelated record changed: {}",
-                identity.key
-            );
+        if identity.key != R7_P04_GOLD_COIN_KEY {
+            continue;
         }
+        gold_records += 1;
+        assert_eq!(identity.family, "Item");
+        assert_eq!(identity.revision, CW2_B1_FULL_ITEM_REVISION);
+        assert_eq!(*client_projection, ProjectionDocument::ClientSafe);
+        assert!(*materializable);
+        assert_eq!(*stack_class, ItemStackDocument::StackCapable);
+        // The #1018 lowering v1 packet admits exactly one typed field for source 3031
+        // (`presentation.name`, lowercase per items.xml) once it resolves to the
+        // renamed native key; every other semantics group remains Unknown.
+        let ReferenceItemField::Known(presentation) = &semantics.presentation else {
+            panic!("R7 P04 Gold Coin presentation unset by the lowering v1 promotion");
+        };
+        assert_eq!(
+            presentation.name,
+            ReferenceItemField::Known("gold coin".to_owned())
+        );
+        assert!(matches!(
+            presentation.description,
+            ReferenceItemField::Unknown
+        ));
+        assert!(matches!(semantics.weapon, ReferenceItemField::Unknown));
+        assert!(matches!(semantics.protection, ReferenceItemField::Unknown));
+        assert!(matches!(semantics.charges, ReferenceItemField::Unknown));
+        assert!(matches!(semantics.container, ReferenceItemField::Unknown));
+        assert!(matches!(semantics.stack, ReferenceItemField::Unknown));
     }
     assert_eq!(gold_records, 1);
     assert!(!after.family.records.iter().any(|record| {

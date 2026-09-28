@@ -70,11 +70,11 @@ fn compiled() -> CompiledReferencePlayableContent {
 fn full_family_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
         max_documents: 8,
-        max_document_bytes: 96_000_000,
-        max_total_bytes: 160_000_000,
+        max_document_bytes: 128_000_000,
+        max_total_bytes: 220_000_000,
         max_json_depth: 24,
-        max_decoded_fields: 2_110_000,
-        max_string_bytes: 96_000_000,
+        max_decoded_fields: 3_000_000,
+        max_string_bytes: 128_000_000,
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
@@ -131,12 +131,15 @@ fn typed_family_linked(
 
 fn promoted_family_linked() -> Result<CanonicalReferencePlayableContent, Box<dyn std::error::Error>>
 {
-    let promoted = protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)?;
+    let promoted = protected_cw2_b1_item_semantic_promotion_lowering_v1_import(B1_EVIDENCE)?;
     assert_eq!(
         promoted.promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
     );
-    assert_eq!(promoted.promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
+    assert_eq!(
+        promoted.promoted_items,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+    );
     let canonical = CanonicalProjectDocuments::from_draft(
         ProjectDraft {
             project_revision: "project-r1".to_owned(),
@@ -183,7 +186,7 @@ fn promoted_atom_count(semantics: &ReferenceItemSemantics) -> usize {
 }
 
 #[test]
-fn protected_semantic_promotion_round_trips_exact_69_atoms_through_artifact_v4_server_and_client()
+fn protected_semantic_promotion_round_trips_exact_13292_atoms_through_artifact_v4_server_and_client()
 -> Result<(), Box<dyn std::error::Error>> {
     let linked = promoted_family_linked()?;
     assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
@@ -206,8 +209,14 @@ fn protected_semantic_promotion_round_trips_exact_69_atoms_through_artifact_v4_s
             _ => 0,
         })
         .sum::<usize>();
-    assert_eq!(promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
-    assert_eq!(promoted_fields, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
+    assert_eq!(
+        promoted_items,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+    );
+    assert_eq!(
+        promoted_fields,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+    );
 
     let compiled = compile_reference_playable(&linked)?;
     let repeated = compile_reference_playable(&linked)?;
@@ -249,8 +258,14 @@ fn protected_semantic_promotion_round_trips_exact_69_atoms_through_artifact_v4_s
         server_promoted += promoted_atom_count(&server_item.semantics);
         client_promoted += promoted_atom_count(&client_item.semantics);
     }
-    assert_eq!(server_promoted, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
-    assert_eq!(client_promoted, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
+    assert_eq!(
+        server_promoted,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+    );
+    assert_eq!(
+        client_promoted,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+    );
     Ok(())
 }
 
