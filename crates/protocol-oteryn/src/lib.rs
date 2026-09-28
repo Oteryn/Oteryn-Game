@@ -359,6 +359,60 @@ pub struct ServerResumeAcceptedValue<'a> {
     pub selected_capabilities: &'a [u32],
 }
 
+/// `ClientBootstrap` fields a client supplies (FND-02 §9): the client-direction counterpart of
+/// `ClientBootstrapView`, for constructing the message instead of decoding it.
+/// `protocol_major`/`transport_profile` are not fields here: `encode_client_bootstrap` always
+/// sends this crate's own pinned `PROTOCOL_MAJOR_V1`/`TRANSPORT_PROFILE_TCP_TLS13_V1`, so a
+/// caller cannot send anything else.
+#[derive(Debug, Clone, Copy)]
+pub struct ClientBootstrapValue<'a> {
+    pub schema_revision: u32,
+    pub character_id: CharacterId,
+    pub admission_material: &'a [u8],
+    pub client_build_id: &'a str,
+    pub supported_capabilities: &'a [u32],
+}
+
+/// Encodes one framed-message-ready `ClientBootstrap` envelope (FND-02 §9): the wire format
+/// `validate_bootstrap_ingress` (via `decode_wire_envelope`/`WireEnvelopeView::client_bootstrap`)
+/// already accepts, matching `encode_server_accepted`'s sibling shape on the server-direction
+/// side. Length- and content-bounds mirror the ones ingress enforces, so this side never
+/// produces a payload a conforming decoder would reject.
+pub fn encode_client_bootstrap(
+    value: &ClientBootstrapValue<'_>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    if value.schema_revision == 0 || value.client_build_id.is_empty() {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if value.admission_material.is_empty() {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if value.admission_material.len() > MAX_ADMISSION_MATERIAL_BYTES {
+        return Err(FoundationProtocolError::BootstrapLimitExceeded);
+    }
+    if value.client_build_id.len() > MAX_CLIENT_BUILD_ID_BYTES {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let mut count = 0usize;
+    let mut previous = None;
+    for &capability in value.supported_capabilities {
+        validate_capability(u64::from(capability), &mut count, &mut previous, false)?;
+    }
+    let mut payload = Vec::new();
+    push_scalar(&mut payload, 1, u64::from(PROTOCOL_MAJOR_V1));
+    push_scalar(&mut payload, 2, u64::from(TRANSPORT_PROFILE_TCP_TLS13_V1));
+    push_scalar(&mut payload, 3, u64::from(value.schema_revision));
+    for &capability in value.supported_capabilities {
+        push_scalar(&mut payload, 4, u64::from(capability));
+    }
+    push_bytes(&mut payload, 5, value.admission_material);
+    push_bytes(&mut payload, 6, value.character_id.as_bytes());
+    push_bytes(&mut payload, 7, value.client_build_id.as_bytes());
+    let mut output = vec![8, MessageType::ClientBootstrap as u8];
+    push_bytes(&mut output, 4, &payload);
+    Ok(output)
+}
+
 fn push_varint(output: &mut Vec<u8>, mut value: u64) {
     while value >= 128 {
         output.push((value as u8 & 0x7f) | 0x80);
@@ -655,6 +709,210 @@ pub fn encode_command_protocol_error(
     push_scalar(&mut output, 2, generation);
     push_bytes(&mut output, 4, &payload);
     Ok(output)
+}
+
+/// Decoded `ServerAccepted` (FND-02 §11): the client-direction counterpart of
+/// `ServerAcceptedValue`/`encode_server_accepted`, for a client decoding what the server sent
+/// instead of encoding it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ServerAcceptedFields {
+    pub game_session_id: GameSessionId,
+    pub world_id: WorldId,
+    pub channel_id: ChannelId,
+    pub connection_generation: u64,
+    pub current_server_sequence: u64,
+    pub next_command_id: u64,
+    pub schema_revision: u32,
+    pub selected_capabilities: Vec<u32>,
+}
+
+/// Decodes one `ServerAccepted` message payload — a `WireEnvelopeView::payload()` whose
+/// `message_type()` is `MessageType::ServerAccepted` (obtained from `decode_wire_envelope` /
+/// `decode_framed_envelope`, which already frame- and length-check the input). Reuses
+/// `validate_server_acceptance_ingress`, the same structural and semantic validation
+/// `decode_wire_envelope` itself applies to every server-direction message, then makes one
+/// further pass over the now-validated payload to recover the typed fields.
+pub fn decode_server_accepted(
+    payload: &[u8],
+) -> Result<ServerAcceptedFields, FoundationProtocolError> {
+    validate_server_acceptance_ingress(MessageType::ServerAccepted, payload)?;
+    let mut cursor = 0usize;
+    let (mut session, mut world, mut channel) = (None, None, None);
+    let (mut generation, mut sequence, mut next_command_id) = (None, None, None);
+    let mut schema_revision = None;
+    let mut capabilities = Vec::new();
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match field {
+            1 => {
+                session = Some(GameSessionId::decode(bounded_length_delimited(
+                    payload,
+                    &mut cursor,
+                    16,
+                    FoundationProtocolError::InvalidWireIdentifier,
+                )?)?);
+            }
+            2 => {
+                world = Some(WorldId::decode(bounded_length_delimited(
+                    payload,
+                    &mut cursor,
+                    16,
+                    FoundationProtocolError::InvalidWireIdentifier,
+                )?)?);
+            }
+            3 => {
+                channel = Some(ChannelId::decode(bounded_length_delimited(
+                    payload,
+                    &mut cursor,
+                    16,
+                    FoundationProtocolError::InvalidWireIdentifier,
+                )?)?);
+            }
+            4 => generation = Some(read_varint(payload, &mut cursor)?),
+            5 => sequence = Some(read_varint(payload, &mut cursor)?),
+            6 => next_command_id = Some(read_varint(payload, &mut cursor)?),
+            9 => schema_revision = Some(read_varint(payload, &mut cursor)?),
+            10 if wire == 0 => {
+                capabilities.push(
+                    u32::try_from(read_varint(payload, &mut cursor)?)
+                        .map_err(|_| FoundationProtocolError::InvalidCapabilitySet)?,
+                );
+            }
+            10 => {
+                let packed = bounded_length_delimited(
+                    payload,
+                    &mut cursor,
+                    payload.len(),
+                    FoundationProtocolError::MalformedEnvelope,
+                )?;
+                let mut packed_cursor = 0usize;
+                while packed_cursor < packed.len() {
+                    capabilities.push(
+                        u32::try_from(read_varint(packed, &mut packed_cursor)?)
+                            .map_err(|_| FoundationProtocolError::InvalidCapabilitySet)?,
+                    );
+                }
+            }
+            _ => skip_field(payload, &mut cursor, wire)?,
+        }
+    }
+    Ok(ServerAcceptedFields {
+        game_session_id: session.ok_or(FoundationProtocolError::InvalidWireIdentifier)?,
+        world_id: world.ok_or(FoundationProtocolError::InvalidWireIdentifier)?,
+        channel_id: channel.ok_or(FoundationProtocolError::InvalidWireIdentifier)?,
+        connection_generation: generation.ok_or(FoundationProtocolError::MalformedEnvelope)?,
+        current_server_sequence: sequence.unwrap_or(0),
+        next_command_id: next_command_id.ok_or(FoundationProtocolError::MalformedEnvelope)?,
+        schema_revision: u32::try_from(
+            schema_revision.ok_or(FoundationProtocolError::MalformedEnvelope)?,
+        )
+        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
+        selected_capabilities: capabilities,
+    })
+}
+
+/// Decodes one `SnapshotChunk` message payload (FND-02 §16) into its `snapshot_id` and the
+/// `DomainSnapshot` entries `encode_single_chunk_snapshot` packed into the chunk body — the
+/// client-direction counterpart of that encoder, for the join/resync snapshot a client receives.
+/// `decode_wire_envelope` already checks the chunk body is well-formed and within
+/// `MAX_SNAPSHOT_CHUNK_BYTES` (`validate_snapshot_chunk_ingress`); this walks it to recover the
+/// typed entries.
+pub fn decode_snapshot_chunk(
+    payload: &[u8],
+) -> Result<(u64, Vec<DomainSnapshot<'_>>), FoundationProtocolError> {
+    let mut cursor = 0usize;
+    let mut snapshot_id = None;
+    let mut body = None;
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match field {
+            1 => snapshot_id = Some(read_varint(payload, &mut cursor)?),
+            3 => {
+                body = Some(bounded_length_delimited(
+                    payload,
+                    &mut cursor,
+                    MAX_SNAPSHOT_CHUNK_BYTES,
+                    FoundationProtocolError::SnapshotLimitExceeded,
+                )?);
+            }
+            _ => skip_field(payload, &mut cursor, wire)?,
+        }
+    }
+    let body = body.unwrap_or(&[]);
+    let mut domains = Vec::new();
+    let mut body_cursor = 0usize;
+    while body_cursor < body.len() {
+        let key = read_varint(body, &mut body_cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        if field != 1 {
+            skip_field(body, &mut body_cursor, wire)?;
+            continue;
+        }
+        let entry = bounded_length_delimited(
+            body,
+            &mut body_cursor,
+            body.len(),
+            FoundationProtocolError::MalformedEnvelope,
+        )?;
+        domains.push(decode_domain_snapshot_entry(entry)?);
+    }
+    Ok((
+        snapshot_id.ok_or(FoundationProtocolError::MalformedEnvelope)?,
+        domains,
+    ))
+}
+
+fn decode_domain_snapshot_entry(
+    input: &[u8],
+) -> Result<DomainSnapshot<'_>, FoundationProtocolError> {
+    let mut cursor = 0usize;
+    let (mut domain_id, mut revision, mut snapshot_type, mut entry_payload) =
+        (None, None, None, None);
+    while cursor < input.len() {
+        let key = read_varint(input, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match field {
+            1 => {
+                domain_id = Some(
+                    u32::try_from(read_varint(input, &mut cursor)?)
+                        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
+                );
+            }
+            2 => revision = Some(read_varint(input, &mut cursor)?),
+            3 => {
+                snapshot_type = Some(
+                    u32::try_from(read_varint(input, &mut cursor)?)
+                        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
+                );
+            }
+            4 => {
+                entry_payload = Some(bounded_length_delimited(
+                    input,
+                    &mut cursor,
+                    input.len(),
+                    FoundationProtocolError::MalformedEnvelope,
+                )?);
+            }
+            _ => skip_field(input, &mut cursor, wire)?,
+        }
+    }
+    let domain_id = domain_id.filter(|id| *id != 0);
+    let snapshot_type = snapshot_type.filter(|value| *value != 0);
+    match (domain_id, snapshot_type) {
+        (Some(domain_id), Some(snapshot_type)) => Ok(DomainSnapshot {
+            domain_id,
+            revision: revision.unwrap_or(0),
+            snapshot_type,
+            payload: entry_payload.unwrap_or(&[]),
+        }),
+        _ => Err(FoundationProtocolError::MalformedEnvelope),
+    }
 }
 
 impl<'a> WireEnvelopeView<'a> {
@@ -1712,6 +1970,133 @@ mod tests {
         let post_admission_error =
             encode_protocol_error(FoundationProtocolError::MalformedEnvelope, 7)?;
         decode_wire_envelope(&post_admission_error)?.validate(Direction::ServerToClient, true)?;
+        Ok(())
+    }
+
+    /// `encode_client_bootstrap` round-trips through the same server-side ingress decode
+    /// (`WireEnvelopeView::client_bootstrap`, driven by `validate_bootstrap_ingress`) the shipped
+    /// server uses for every real `ClientBootstrap`: the wire format is unchanged, only a new
+    /// client-direction encoder was added.
+    #[test]
+    fn client_bootstrap_encoder_round_trips_through_server_ingress_decode()
+    -> Result<(), FoundationProtocolError> {
+        let character = CharacterId::decode(&test_uuid_v7(4))?;
+        let value = ClientBootstrapValue {
+            schema_revision: 3,
+            character_id: character,
+            admission_material: b"fixture-grant",
+            client_build_id: "dev-client/0.1.0",
+            supported_capabilities: &[],
+        };
+        let wire = encode_client_bootstrap(&value)?;
+        let envelope = decode_wire_envelope(&wire)?;
+        assert_eq!(envelope.message_type(), MessageType::ClientBootstrap);
+        let view = envelope.client_bootstrap()?;
+        assert_eq!(view.protocol_major, PROTOCOL_MAJOR_V1);
+        assert_eq!(view.transport_profile, TRANSPORT_PROFILE_TCP_TLS13_V1);
+        assert_eq!(view.schema_revision, value.schema_revision);
+        assert_eq!(view.character_id, character);
+        assert_eq!(view.admission_material, value.admission_material);
+        assert_eq!(view.client_build_id, value.client_build_id);
+        assert!(view.supported_capabilities.is_empty());
+
+        // Zero schema revision and empty admission material are refused before any bytes are
+        // emitted, exactly like every other required field in this crate.
+        assert!(
+            encode_client_bootstrap(&ClientBootstrapValue {
+                schema_revision: 0,
+                ..value
+            })
+            .is_err()
+        );
+        assert!(
+            encode_client_bootstrap(&ClientBootstrapValue {
+                admission_material: &[],
+                ..value
+            })
+            .is_err()
+        );
+        Ok(())
+    }
+
+    /// `decode_server_accepted` round-trips through the existing server-side
+    /// `encode_server_accepted`: same fixture, same fields, both directions of the same wire
+    /// format.
+    #[test]
+    fn server_accepted_decoder_round_trips_through_existing_server_encoder()
+    -> Result<(), FoundationProtocolError> {
+        let accepted = ServerAcceptedValue {
+            game_session_id: GameSessionId::decode(&test_uuid_v7(1))?,
+            world_id: WorldId::decode(&test_uuid_v7(2))?,
+            channel_id: ChannelId::decode(&test_uuid_v7(3))?,
+            connection_generation: 1,
+            current_server_sequence: 0,
+            next_command_id: 1,
+            schema_revision: 5,
+            selected_capabilities: &[],
+        };
+        let wire = encode_server_accepted(&accepted)?;
+        let envelope = decode_wire_envelope(&wire)?;
+        assert_eq!(envelope.message_type(), MessageType::ServerAccepted);
+        let fields = decode_server_accepted(envelope.payload())?;
+        assert_eq!(fields.game_session_id, accepted.game_session_id);
+        assert_eq!(fields.world_id, accepted.world_id);
+        assert_eq!(fields.channel_id, accepted.channel_id);
+        assert_eq!(fields.connection_generation, accepted.connection_generation);
+        assert_eq!(
+            fields.current_server_sequence,
+            accepted.current_server_sequence
+        );
+        assert_eq!(fields.next_command_id, accepted.next_command_id);
+        assert_eq!(fields.schema_revision, accepted.schema_revision);
+        assert!(fields.selected_capabilities.is_empty());
+
+        // Malformed ServerAccepted payloads (the same negatives `validate_server_acceptance_ingress`
+        // already covers) still fail closed through the new decoder.
+        assert!(decode_server_accepted(&[]).is_err());
+        Ok(())
+    }
+
+    /// `decode_snapshot_chunk` round-trips through the existing server-side
+    /// `encode_single_chunk_snapshot`, recovering the exact domain entries it packed — the join
+    /// snapshot a client decodes right after `ServerAccepted`.
+    #[test]
+    fn snapshot_chunk_decoder_round_trips_through_existing_server_encoder()
+    -> Result<(), FoundationProtocolError> {
+        let world_spatial = [1_u8, 2, 3];
+        let world_object_overlay = [4_u8, 5];
+        let frames = encode_single_chunk_snapshot(
+            1,
+            7,
+            0,
+            &[
+                DomainSnapshot {
+                    domain_id: 1,
+                    revision: 1,
+                    snapshot_type: 1,
+                    payload: &world_spatial,
+                },
+                DomainSnapshot {
+                    domain_id: 2,
+                    revision: 0,
+                    snapshot_type: 1,
+                    payload: &world_object_overlay,
+                },
+            ],
+        )?;
+        let chunk_envelope = decode_wire_envelope(&frames[1])?;
+        assert_eq!(chunk_envelope.message_type(), MessageType::SnapshotChunk);
+        let (snapshot_id, domains) = decode_snapshot_chunk(chunk_envelope.payload())?;
+        assert_eq!(snapshot_id, 7);
+        assert_eq!(domains.len(), 2);
+        assert_eq!(domains[0].domain_id, 1);
+        assert_eq!(domains[0].revision, 1);
+        assert_eq!(domains[0].snapshot_type, 1);
+        assert_eq!(domains[0].payload, &world_spatial);
+        assert_eq!(domains[1].domain_id, 2);
+        assert_eq!(domains[1].revision, 0);
+        assert_eq!(domains[1].snapshot_type, 1);
+        assert_eq!(domains[1].payload, &world_object_overlay);
         Ok(())
     }
 

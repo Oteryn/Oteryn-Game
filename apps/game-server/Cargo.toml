@@ -29,6 +29,10 @@ tokio-rustls.workspace = true
 toml.workspace = true
 
 [dev-dependencies]
+# Dev/qualification-only (ADR-0011 §6, #162 C1b): drives the seam qualification's
+# `stage=dev_client`. Not part of either production closure (workspace-boundaries.toml
+# `[dev_edges]`, never walked by the production-closure check).
+oteryn-dev-client = { version = "=0.1.0", path = "../../tools/dev-client" }
 rcgen.workspace = true
 # Test-only: a TLS 1.2-constrained client proves the seam rejects TLS 1.2.
 rustls = { workspace = true, features = ["tls12"] }
