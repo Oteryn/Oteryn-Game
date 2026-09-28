@@ -63,9 +63,9 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "aa3816fe27079844182390c2ae527afbeeca0b516d083401c9575eac0d6de8ea";
+    "205ed805a3f5a9a90230a940ccecc8b867e36b0b4a6d8b267fc88a99d667b905";
 const CREATURE_STAGE_TOOL_SHA256: &str =
-    "0699a70f508d60fb673c4cd25fe716e7455dd8c65d98d5259bc71dbb0bfc9ce5";
+    "8e4f3cec836d89c12f4769ef27924d924ade614b39dcf6b7097c56d3766e6e24";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 /// D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki (`wiki_authored.py`).
 const CREATURE_WIKI_SAMPLE_SHA256: &str =
@@ -105,9 +105,9 @@ const NPC_DIALOGUE_STAGED_SHA256: &str =
 const NPC_DIALOGUES: usize = 701;
 const NPC_DIALOGUE_NODES: usize = 6313;
 const NPC_BINDINGS: usize = 2282;
-const CREATURE_COUNT: usize = 1319;
-const CREATURE_RECORDS: usize = 18348;
-const CREATURE_PROFILES: usize = 17381;
+const CREATURE_COUNT: usize = 1450;
+const CREATURE_RECORDS: usize = 20379;
+const CREATURE_PROFILES: usize = 19435;
 /// Encounter admission E1-E5: encounters admitted with the creatures they cover.
 const ENCOUNTER_COUNT: usize = 58;
 

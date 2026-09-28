@@ -106,8 +106,18 @@ creatures, in the same slices.
    owner of the ability is bound to, and covered by, that encounter. Tests:
    `apps/game-server/tests/content_world_project_v2_encounter_admission.rs`.
 4. Writer and the first wave: `creature_admission_stage.py` stages the encounters and their creatures under E4, the
-   materializer pins the result, and the content tree is regenerated (`content/encounters/{bosses,…}`). One
-   independent exact-head review applies, because `content/world` changes.
+   materializer pins the result, and the content tree is regenerated. One independent exact-head review applies,
+   because `content/world` changes.
+   Done in `OTV2-20260928-encounter-admission-wave`.
+   - **Encounters:** 58 of the 83 encounters are admitted. Each is an Encounter declaration, a typed profile and a
+     `canary/encounter` source binding.
+   - **Deferred encounters (25):** 19 wait for an unadmitted creature, item or ability, 5 keep an
+     `unresolved_semantics` row, and 1 has an unlocated anchor (the Soul War taint zones).
+   - **Creatures:** 1,450 are admitted, up from 1,319. Monsters that wait only on an encounter drop from 164 to 35.
+   - **Content tree:** the admitted encounters are in `content/encounters/definitions/`. The tree contract has no
+     node for Generic encounters, so all types share that node.
+   - **Manifest digests (E5):** each manifest's digest stays in the pinned staged evidence
+     `docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json`, next to its profile.
 5. Later: the remaining encounters as their creatures, items or vocabulary resolve; map binding and the Encounter
    runtime are separate owned slices.
 

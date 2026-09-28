@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
 CREATURE_FAMILY_COUNTS = {
-    "Creature": 1319, "Presentation": 2407, "Behavior": 2407, "Loot": 978, "Ability": 5257, "Effect": 3929, "Formula": 4227,
+    "Creature": 1450, "Presentation": 2538, "Behavior": 2538, "Loot": 1025, "Ability": 5826, "Effect": 4432, "Formula": 4746,
 }
 CREATURE_FAMILY_NODES = {
     "Creature": "content/creatures/definitions/",
@@ -23,17 +23,10 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
-<<<<<<< HEAD
 NPC_COUNT = 1088
 NPC_BINDING_COUNT = 2282
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 58
-=======
-NPC_COUNT = 1093
-# Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
-ENCOUNTER_COUNT = 58
-NPC_BINDING_COUNT = 2281
->>>>>>> 67d2c409 (wip slice 4 tree)
 DIALOGUE_COUNT = 701
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 307, "Service.Travel": 55}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
