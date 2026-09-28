@@ -67,9 +67,10 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
 - `crates/foundation/src/time.rs` `Deadline`/`ManualClock`/`SystemClock::new()` (~50-166) — unused
   in `apps/game-server/src`, fresh incomparable origin per call. Encounter doc line 144 — authors
   `revert_after_ms`.
-- `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §7/§9/§10/§14/§15.4/§28 — binds `revert_after`.
-  `foundation/mod.rs` `ScopeRuntimeFence::accept_input` (~1040-1050) — mints an ordinal per
-  generation only, tracks no timer identity. `movement.rs` `MovementOwnerTurn` — bounded precedent.
+- `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §7/§9/§10/§14/§15.4/§28/(line 266 exhaustion recovery) —
+  binds `revert_after`. `accept_input` (~1040-1050) mints an ordinal per generation, tracks no timer
+  identity, returns `Result<_, GenerationError>`, can fail `Exhausted` (Round 20). `movement.rs`
+  `MovementOwnerTurn` — bounded precedent.
 - `GAME-INTERACTION-01_..._CANDIDATE.md` §4.1/§4.4/§5.1/§5.8/§7(265-280)/§5.9/§25, `interaction/
   identity.rs` `ChildOccurrenceRef` (~69-157) — nested-cascade identity; §7 mandates retention/
   convergence; §5.9/§25 leave the numeric bound unfrozen — the owning contract for round 14's record.
@@ -120,35 +121,30 @@ reason: >
 
 ## Implementation / findings
 
-Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Rounds 1-16: numbering; `Deadline`
+Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Rounds 1-18: numbering; `Deadline`
 option; FND-03 §10 timer; capacity atomicity; equal-deadline tie-break; one clock/scope; exactly one
 bound inverse; pre-`prepare` discard; never re-arms; origin test; exact target identity; fixed stale
 summary; derived `InteractionChildOccurrenceRef`; no-op/nothing retained (12); superseded — violated
 GAME-INTERACTION-01 §7, outcome retained (13); superseded — two P1 seam bugs, one lifecycle record
 `PENDING|IN_FLIGHT|TERMINAL` (14); convergence — exhaustive `TERMINAL` mapping, removed unproven
-"never..." claims, added "Open decisions" (15); scoped `revert_after_ms` to state+collision only,
-wrongly said `bind` rejects an attribute-changing transition (16).
+claims, added "Open decisions" (15); scoped `revert_after_ms` to state+collision, wrongly said `bind`
+rejects an attribute-changing transition (16); fixed — moved rejection to authoring/lowering
+(17, `a1cad472`); fixed `DepthWarzoneBossDeath`'s wrongly-claimed state-only status, whole sample
+corpus checked, replaced test fixture with synthetic transform (18, head `95f7db70`).
 
-Round 17 (`a1cad472`): fixed round 16 — `TransitionBinding` (7 fields, no attribute payload) never
-sees `destination`. Moved rejection to authoring/lowering (`validate_encounter.py`'s `map_item`
-block, offline, not wired — an obligation). Fixed a stale §5 "no receipt store" summary.
+Round 19 (Codex 4120487852/4120487841/4120487862, head `4e450a08`): classified `interaction` a
+non-state attribute, same class as `destination`/`revert_destination`; no authored `map_item` action
+admissible for `revert_after_ms` today; added test obligation; Open decision 4 (`TransitionBinding`
+not the confirmed home) and 5 (tombstone compaction needs a bounded duplicate-delivery horizon).
 
-Round 18 (Codex 4120357243, head `95f7db70`): `DepthWarzoneBossDeath` wrongly called state-only —
-all three Depth encounters carry `destination`+`revert_destination` (lines 65-68/75-78/75-78); whole
-sample corpus checked: only `mazzinor`/`gaz_haragoth`/`cult_soul_remains` creates omit both but carry
-`interaction`. Fixed every state-only claim; replaced test-obligation fixture with labeled synthetic
-transform. Merged `origin/main` (`8d320703`, unrelated); no cited file drifted.
-
-Round 19 (Codex 4120487852/4120487841/4120487862, head `4e450a08`): **P1** — classified `interaction`
-a non-state attribute (encounter-format line 144: content-domain binding, not state), the same class
-as `destination`/`revert_destination`; consequence: no currently authored `map_item` action is
-admissible for `revert_after_ms` at all (Depth trio + `mazzinor`/`gaz_haragoth`/`cult_soul_remains`);
-synthetic fixture remains the only runnable case. Added an interaction-bearing-create-rejected test
-obligation. **P2s (Open decisions only, no redesign):** item 4 — removed the claim that
-`revert_after_ms` lives on `TransitionBinding` (home is the owning lane's choice, plausibly the
-lowered operation occurrence). Item 5 — qualified compaction/tombstone text: a tombstone still costs
-one entry per occurrence; a bounded duplicate-delivery horizon is needed before compaction reclaims
-capacity.
+Round 20 (Codex 4120634397/4120634418/4120634408, head `3827d885`): **P1** — gated lifecycle-record
+creation on the original operation's `prepare` result being `Publish`; every `unchanged` disposition
+now registers no record, releasing reserved capacity; expected state/revision sourced from
+`Publish`'s own fields. Fixed staging bullet, field list, Must-decide-now; added a test obligation.
+**P2:** fixed a plain contradiction — a test obligation still called `interaction` disqualification
+undecided after round 19 settled it. **P2 (no redesign):** `accept_input` can return
+`GenerationError::Exhausted`; qualified the ordering text, added Open decision 6. Merged `origin/main`
+(`13dadcaa`, unrelated); no drift.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -158,13 +154,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-19; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-20; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 19; unchanged)
+  validation passed (23 files, 47 workflows)." (round 20; unchanged)
 
 ### E2E
 
@@ -208,11 +204,14 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 19 (Codex 4120487852/4120487841/4120487862 on frozen head 4e450a08):
-  P1 -- classified interaction a non-state attribute, same class as destination/revert_destination;
-  no authored map_item action is admissible for revert_after_ms today; added a test obligation.
-  P2s (no redesign): Open decision 4 (TransitionBinding is not the confirmed home) and Open
-  decision 5 (tombstone compaction needs a bounded duplicate-delivery horizon too). Validators pass.
+  PR #1045 pre-freeze round 20 (Codex 4120634397/4120634418/4120634408 on frozen head 3827d885):
+  P1 -- record creation gated on the original operation's own prepare result being
+  DISPOSITION_COMMITTED/Publish; unchanged dispositions register no record, release capacity;
+  expected state/revision sourced from Publish's own fields. Fixed staging bullet, field list,
+  Must-decide-now; added a test obligation. P2: fixed a plain contradiction (interaction
+  disqualification wrongly still called undecided). P2 (no redesign): accept_input can return
+  GenerationError::Exhausted; qualified ordering text, added Open decision 6. Merged origin/main
+  (13dadcaa, unrelated); no drift. Validators pass.
 status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null

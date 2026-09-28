@@ -473,6 +473,25 @@ per occurrence, so compaction alone does not reclaim capacity without a bounded 
 horizon too. Added as open decision 5 and qualified open decision 1's compaction text and the
 "no re-execution after compaction" test obligation accordingly.
 
+Round 20 correction (owner-authorized, under the owner's stop rule; Codex findings
+4120634397/4120634418/4120634408 on frozen head `3827d885`): (1) P1 — the staging bullet, canonical
+field list and Must-decide-now previously created a `PENDING` lifecycle record for *any*
+non-timer-origin `revert_after`-carrying operation, without gating on whether that same operation's
+own `prepare` result actually committed. Fixed: a record is created only when `prepare` returns
+`DISPOSITION_COMMITTED`/`PreparedMutation::Publish`; every `unchanged` disposition (`NO_CHANGE`/
+`STALE_STATE`/`OCCUPIED`/`REVISION_EXHAUSTED`/`BINDING_MISMATCH`) registers no record, and the
+capacity reserved for one is released or never committed together with the rest of that operation's
+staged commit. The stored expected state/revision now names `PreparedMutation::Publish`'s own
+`next_state`/`next_revision` as its source, not an independently-computed `transition.target_state`.
+Added a matching test obligation. (2) P2 (Codex 4120634418): the encounter-origin test obligation
+still said whether `interaction` disqualifies `mazzinor`/`gaz_haragoth`/`cult_soul_remains` was
+undecided — a plain contradiction of round 19's own classification. Fixed to match round 19. (3) P2
+(Codex 4120634408): `ScopeRuntimeFence::accept_input` can return `GenerationError::Exhausted`, not
+just reject a stale generation; the presentation-order text calling it "atomically" alongside the
+`PENDING`→`IN_FLIGHT` transition did not account for that failure mode. Qualified that text and added
+open decision 6: fold ordinal issuance into the same atomic step, or invoke FND-03's own scope-terminal
+exhaustion recovery — this document does not redesign which.
+
 ### Problem
 
 `revert_after` needs *some* value that advances on its own, independent of whether a player ever
@@ -537,7 +556,13 @@ today.
   ~959-1058): the FND-03 §10.2 ordinal-on-accept mechanism is already implemented —
   `ScopeRuntimeFence::accept_input(generation)` (~1040-1050) mints a new `RuntimeExecutionOrdinal`
   only for the exact current `ScopeOwnershipGeneration`, rejecting a stale one, matching §10.3's
-  generation-changed cancellation exactly. It is currently instantiated per `GameSession`
+  generation-changed cancellation exactly. `accept_input`'s return type is
+  `Result<RuntimeExecutionOrdinal, GenerationError>` (~1040-1050); `GenerationError::Exhausted`
+  (~858-871) is returned when the raw ordinal counter's own `checked_successor` overflows (~894-898) —
+  ordinal issuance can fail, not just reject a stale generation. `FND-03_RUNTIME_EXECUTION_CONTRACT.md`
+  line 266: "representational exhaustion is scope-terminal until safe ownership lifecycle recovery
+  establishes a new generation" — the contract's own recovery path for this failure (Round 20). It is
+  currently instantiated per `GameSession`
   (`apps/game-server/src/foundation/admission.rs` ~365-381, ~728), not yet as one scope-wide instance
   consumed by `world_runtime.rs`. `accept_input` takes only a `ScopeOwnershipGeneration`: it tracks
   no timer/command identity and cannot by itself detect that a given due timer was already accepted
@@ -716,11 +741,14 @@ today.
    CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE); `bind` rejects (`InvalidBinding`) a `revert_after_ms`-
    carrying transition with zero such matches or more than one — an ambiguous inverse is exactly as
    invalid as a missing one — so firing never has to guess which delta restores the object (evidence
-   above). At commit time, for any non-timer-origin operation — every authoritative input except the
+   above). At commit time, for a non-timer-origin operation — every authoritative input except the
    firing of a pending revert timer itself, which never re-arms itself even when its own transition
-   also carries `revert_after_ms` (Round 7/8) — as part of the *same* staged commit as the original
-   `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4, below), create one `PENDING` lifecycle record
-   under an FND-03 §10.1 scheduling key. The record's exact contents — every field it needs and why —
+   also carries `revert_after_ms` (Round 7/8) — whose own `prepare` result is `DISPOSITION_COMMITTED`/
+   `PreparedMutation::Publish` (Round 20, Codex finding 4120634397: every `unchanged` disposition —
+   `NO_CHANGE`/`STALE_STATE`/`OCCUPIED`/`REVISION_EXHAUSTED`/`BINDING_MISMATCH` — registers no record;
+   there is nothing for a revert to undo when nothing changed), as part of the *same* staged commit as
+   that `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4, below), create one `PENDING` lifecycle
+   record under an FND-03 §10.1 scheduling key. The record's exact contents — every field it needs and why —
    are the single canonical **"Lifecycle record: complete field list"** at the start of Exact delta
    below (Round 14, replacing round 11's pending-entry-only table); this option does not repeat them.
    Among them is the revert's own `InteractionChildOccurrenceRef` (Round 11, evidence above), computed
@@ -802,8 +830,10 @@ today.
    single firing path (a changed object is rejected only inside `prepare`, never by a separate
    pre-`prepare` cancellation), and the one-shot origin test (suppress registration only when this
    execution *is* the firing of a pending revert timer; every other authoritative origin —
-   player/command, encounter/server-event, or otherwise — registers its own one-shot revert as normal,
-   so a mutually timed pair cannot ping-pong and an encounter-originated timed transform is not
+   player/command, encounter/server-event, or otherwise — registers its own one-shot revert only when
+   that same operation's own `prepare` result is `DISPOSITION_COMMITTED`/`Publish` (Round 20 — an
+   `unchanged` outcome registers nothing, evidence above), so a mutually timed pair cannot ping-pong
+   and an encounter-originated timed transform is not
    silently starved of its revert; no periodic/repeating semantics), the complete lifecycle-record
    field list (Round 14, "Exact delta" below) — target identity (`PlacementKey`/`incarnation`/
    `content_generation`, addressed exactly and never re-derived from the overlay revision alone, with
@@ -878,7 +908,7 @@ re-enumerating fields.
 | `Deadline` | `PENDING` | when the timer becomes due (ordering) | `Deadline::after(clock, revert_after_ms)` |
 | scheduling `RuntimeExecutionOrdinal` + within-resolution sequence | `PENDING` | equal-deadline tie-break, FND-03 §10.1 (ordering) | the scheduling resolution's own ordinal |
 | inverse `TransitionKey` | `PENDING`→`IN_FLIGHT` | which delta `prepare`'s `operation` applies | the bind-time unique-inverse check (rounds 5/6) |
-| expected post-operation state + overlay revision | `PENDING`→`IN_FLIGHT` | `prepare`'s `expected_revision`/stale-state check | `transition.target_state`/`next_revision`, already computed by the original commit |
+| expected post-operation state + overlay revision | `PENDING`→`IN_FLIGHT` | `prepare`'s `expected_revision`/stale-state check | `PreparedMutation::Publish`'s `next_state`/`next_revision` (Round 20 — the record is created only when the original operation's own `prepare` result is `Publish`, never `unchanged`; evidence above) |
 | outcome (`TerminalSemanticOutcome`, or the fence-discard reason above) | `TERMINAL` only | the record's one answer to every later presentation of this identity | `prepare`'s outcome, or the `PENDING`-step fence that discarded it |
 
 Together: `PlacementKey`/`incarnation`/`content_generation`/inverse `TransitionKey`/expected
@@ -990,7 +1020,12 @@ thing, not two — its lifecycle-record store).
      failure atomically transitions the record straight to `TERMINAL(REJECTED, reason)` (next bullet
      names the reason) — never a bare discard, so the very next duplicate finds step 2, not step 4
      again. Passing all three fences atomically transitions `PENDING`→`IN_FLIGHT` and calls
-     `accept_input`; only a presentation that made it this far mints an ordinal.
+     `accept_input`; only a presentation that made it this far mints an ordinal. `accept_input` itself
+     returns `Result<RuntimeExecutionOrdinal, GenerationError>` and can fail
+     (`GenerationError::Exhausted`, evidence below) — whether ordinal issuance is inside the same
+     atomic step as the `PENDING`→`IN_FLIGHT` transition, or can independently fail afterward leaving
+     the record `IN_FLIGHT` with no ordinal minted, is not decided here (Round 20, "Open decisions"
+     below, item 6); this document does not claim that ordering is safe.
   This single order is what prevents both P1 gaps round 13's two separate structures left open: a
   fence check landing before the terminal-outcome lookup (Codex finding, evidence above), and a lost
   race between "remove the pending entry" and "write the terminal record" leaving the identity
@@ -1006,17 +1041,26 @@ thing, not two — its lifecycle-record store).
   attribute-changing and rejected before it gets here), or any other non-timer authoritative input —
   the test is "is this execution the firing of a pending revert timer," not which entry point
   produced it), as part of the *same* staged
-  commit as the original `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4): reserve safe bounded
-  capacity for one new lifecycle record *once*, before anything else — Round 14 folds round 13's
-  separate "timer capacity" and "retained-outcome capacity" reservations into this one reservation,
-  since one record now serves the identity's whole life; if capacity is unavailable, fail the
-  *entire* original operation before anything commits — no object mutation and no partial-lifecycle
-  record survives. If capacity is available, create the record `PENDING` with the complete field
+  commit as that `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4): reserve safe bounded
+  capacity for one new lifecycle record *once*, before `prepare` runs on that same operation — Round
+  14 folds round 13's separate "timer capacity" and "retained-outcome capacity" reservations into
+  this one reservation, since one record now serves the identity's whole life; if capacity is
+  unavailable, fail the *entire* original operation before anything commits — no object mutation and
+  no partial-lifecycle record survives. Whether that reservation is actually spent depends on the
+  *same* operation's own `prepare` result (Round 20, Codex finding 4120634397): create the record
+  `PENDING` — with the complete field
   list above (World/Channel/InstanceId, `scope_generation`, `PlacementKey`, `incarnation`,
   `content_generation`, `Deadline`, scheduling `RuntimeExecutionOrdinal`/sequence, inverse
-  `TransitionKey`, expected state/revision) keyed by the revert's own `InteractionChildOccurrenceRef`
+  `TransitionKey`, expected state/revision sourced from that same `Publish`'s `next_state`/
+  `next_revision`) keyed by the revert's own `InteractionChildOccurrenceRef`
   computed now as a nested child of the original operation's own identity, under the FND-03 §10.1
-  scheduling key — so nothing about the revert is derived later, only applied from what was stored.
+  scheduling key — **only when that `prepare` call returns `DISPOSITION_COMMITTED`/
+  `PreparedMutation::Publish`**, so nothing about the revert is derived later, only applied from what
+  was stored. For every `unchanged` disposition (`NO_CHANGE`/`STALE_STATE`/`OCCUPIED`/
+  `REVISION_EXHAUSTED`/`BINDING_MISMATCH`, the exhaustive set, evidence above), no lifecycle record is
+  created at all: the reserved capacity is released, or simply never committed, together with the
+  rest of that operation's own staged commit — there is nothing for a revert to undo when nothing
+  changed.
   This record is `scope_generation`-scoped, owned by the same `ChannelRuntimeV1`/`InstanceRuntime`
   instance as the rest of the overlay; a scope restart is a new instance (corrected evidence above),
   so it is dropped whole, in whichever state it was in, with no separate cleanup path — the same
@@ -1081,7 +1125,7 @@ thing, not two — its lifecycle-record store).
   and stops; do not retry it on a later wake (decided below, not left open) — a later duplicate
   presentation is answered by step 2 of the presentation order above, never a fresh occupancy check.
 
-### Open decisions for the owning lane (Rounds 15/16/19)
+### Open decisions for the owning lane (Rounds 15/16/19/20)
 
 These are genuinely open — this document deliberately does not resolve them, per PLAYABLE_FIRST and
 this section's own `CANDIDATE` status. The owning lane resolves them alongside the exact delta above,
@@ -1158,6 +1202,19 @@ not this architecture decision.
    as capacity reclamation rather than a fixed-size-per-occurrence cost with a smaller constant. This
    document does not design that horizon; the owning lane decides it together with open decision 1
    and the matching `RESOURCE_LIMITS_REGISTRY.json` bound.
+6. **Ordinal issuance inside the `PENDING`→`IN_FLIGHT` step (Round 20, Codex finding 4120634408).**
+   `ScopeRuntimeFence::accept_input` returns `Result<RuntimeExecutionOrdinal, GenerationError>` and can
+   fail with `GenerationError::Exhausted` (evidence above), not only reject a stale generation. This
+   document's presentation order (Exact delta above) calls `accept_input` immediately after the
+   `PENDING`→`IN_FLIGHT` transition but does not decide whether ordinal issuance is inside that same
+   atomic step (so an `Exhausted` failure prevents the transition from happening at all) or can
+   independently fail afterward, leaving a record `IN_FLIGHT` with no ordinal minted and no path back
+   to `TERMINAL`. This document does not redesign that step; the owning lane's implementation must
+   either fold ordinal issuance into the same atomic `PENDING`→`IN_FLIGHT` step, or invoke FND-03's own
+   scope-terminal exhaustion recovery (`FND-03_RUNTIME_EXECUTION_CONTRACT.md` line 266: exhaustion is
+   scope-terminal until safe ownership lifecycle recovery establishes a new generation) for the record
+   left `IN_FLIGHT`. Nothing in this document should be read as claiming the current ordering already
+   handles this safely.
 
 ### Exact test obligations
 
@@ -1288,6 +1345,16 @@ not this architecture decision.
   *every* authored sample under `encounter-authoring/samples/**` for `revert_after_ms` admissibility
   must observe zero passes — only the synthetic fixture is expected to pass until "Open decisions"
   item 3 is resolved.
+- **An original operation that does not commit registers no revert (P1, Round 20, Codex finding
+  4120634397).** Bind a `revert_after_ms`-carrying transition and drive an operation against it whose
+  `prepare` result is `NO_CHANGE`, `STALE_STATE`, `OCCUPIED`, `REVISION_EXHAUSTED` or
+  `BINDING_MISMATCH` (any `unchanged` disposition, the exhaustive set, evidence above) — for example,
+  replaying it against an already-stale `expected_revision`
+  or a target cell that is currently occupied. The test must observe zero lifecycle records created for
+  that operation: no `PENDING` record exists afterward, and the capacity reserved for one is released
+  or simply never committed together with the rest of that operation's own staged commit. A test
+  asserting a record is created (and a timer later fires) for an operation whose own `prepare` result
+  was `unchanged` must fail — a revert has nothing to undo when the original operation changed nothing.
 - **Revert restores exactly the pre-operation state (P1).** Firing a scheduled revert whose fences
   and expected revision still hold must land the object back in precisely the state it was in
   immediately before the original operation committed — the one unique `source_state`/`target_state`
@@ -1336,8 +1403,9 @@ not this architecture decision.
   and omits `destination`/`revert_destination` — every authored `transform` in the corpus carries
   both. The closest near-misses are `create` actions (`mazzinor`, `gaz_haragoth`,
   `cult_soul_remains` ×2) that omit `destination`/`revert_destination` but carry an `interaction`
-  binding; this document does not resolve here whether `interaction` also disqualifies them, so they
-  are not claimed as state-only fixtures either. **No authored encounter currently exercises a
+  binding; `interaction` is classified a non-state attribute and disqualifies them too (Round 19,
+  evidence above), so they are rejected at authoring/lowering exactly like the Depth trio, not claimed
+  as state-only fixtures either. **No authored encounter currently exercises a
   state-only timed revert**, and the Depth encounters stay rejected until "Open decisions" item 3
   (attribute-bearing object state) is resolved. Use a **synthetic, clearly-labeled** state-only
   encounter-originated transform instead — for example, a `map_item(transform sealed_wall to
@@ -1364,11 +1432,14 @@ not this architecture decision.
   (the definition names a fallback, which would be a *distinct* occurrence with its own identity), not
   a hidden retry loop here.
 - **Lifecycle-record capacity atomicity (FND-03 §15.4, Round 14).** If safe bounded capacity for one
-  new lifecycle record is unavailable when any non-timer-origin `revert_after`-carrying operation is
+  new lifecycle record is unavailable when a non-timer-origin `revert_after`-carrying operation is
   about to commit — player/command, encounter/server-event-originated, or any other authoritative
   input — the *entire* original operation fails before anything commits: neither the world-object
-  mutation nor a partial-lifecycle record survives. Only a timer-origin execution (the firing path
-  itself) never attempts this reservation at all (Round 7/8), so it has nothing to fail on.
+  mutation nor a partial-lifecycle record survives. This is a distinct case from an `unchanged`
+  `prepare` result releasing an already-made reservation (previous obligation, Round 20): here the
+  reservation itself cannot be made at all, regardless of what `prepare` would otherwise return. Only
+  a timer-origin execution (the firing path itself) never attempts this reservation at all (Round
+  7/8), so it has nothing to fail on.
   An already-accepted `PENDING`/`IN_FLIGHT` record is never discarded merely because the due queue is
   congested (FND-03 §15.4, second sentence) — that pressure produces `CAPACITY_EXCEEDED` on the *next
   incoming* operation, not eviction of an existing record.
