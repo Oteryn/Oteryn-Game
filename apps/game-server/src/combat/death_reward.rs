@@ -305,8 +305,9 @@ async fn settle_loot(
     Ok(results)
 }
 
-/// Runs the single XP descendant: idempotent progression initialization,
-/// then the memoized (death, character) occurrence, then the R7 P03 award.
+/// Runs the single XP descendant: the memoized (death, character)
+/// occurrence, the R7 P03 award, and the D88 initializer only when the
+/// progression row is missing.
 async fn settle_experience<const N: usize>(
     session: &DurabilitySession<'_, '_, '_>,
     owner: &mut CurrentOwnerCombatDeath<'_>,
@@ -315,41 +316,49 @@ async fn settle_experience<const N: usize>(
     progression: &RewardProgressionBinding<N>,
     amount: ExactI64,
 ) -> Result<ExperienceCommitOutcome, CombatDeathRewardXpError> {
-    // The occurrence is checked/minted first: whether it is freshly minted
-    // (this is the first attempt this generation) or reused (a retry)
-    // decides whether `initialize_character_progression` runs again.
-    // `commit_character_experience`'s own occurrence-keyed replay resolves a
-    // retry without re-validating the caller's fence, but
-    // `initialize_character_progression` has no such shortcut: it re-asserts
-    // the fence on every call, and a retry's `expected_character_revision`
-    // is necessarily whatever the caller supplied for the occurrence's first
-    // attempt (replaying the same request), which may already be behind the
-    // character's actual current revision once that first attempt's XP
-    // commit has landed. Skipping the redundant initialize call on a known
-    // retry avoids rejecting a legitimate replay on that revision drift.
-    let (occurrence_bytes, freshly_minted) = owner
+    // The occurrence is memoized per (death, character), so a retry replays
+    // the same award. The award is attempted first: its own occurrence-keyed
+    // replay resolves a retry without re-asserting the caller's revision.
+    // Only a missing progression row runs the D88 initializer, and the award
+    // is then attempted once more. A failed earlier initialization therefore
+    // never strands the award (a retry re-initializes), and an already
+    // advanced revision never rejects a legitimate replay.
+    let (occurrence_bytes, _) = owner
         .reward_occurrence(actor, *principal.character_id.as_bytes())
         .map_err(CombatDeathRewardXpError::Occurrence)?;
     let occurrence = ExperienceRewardOccurrence::from_bytes(occurrence_bytes)
         .map_err(|_| CombatDeathRewardXpError::InvalidOccurrence)?;
 
-    if freshly_minted {
-        match session
-            .root
-            .initialize_character_progression(
-                session.authority,
-                session.node,
-                principal.gameplay_fence,
-                progression.initialization_request(),
-            )
-            .await
-        {
-            Ok(ProgressionInitializationOutcome::Initialized(_))
-            | Ok(ProgressionInitializationOutcome::AlreadyInitialized(_)) => {}
-            Err(error) => return Err(CombatDeathRewardXpError::Progression(error)),
-        }
+    match commit_experience(session, principal, progression, occurrence, amount).await {
+        Err(CharacterProgressionError::MissingProgressionState) => {}
+        result => return result.map_err(CombatDeathRewardXpError::Progression),
     }
+    match session
+        .root
+        .initialize_character_progression(
+            session.authority,
+            session.node,
+            principal.gameplay_fence,
+            progression.initialization_request(),
+        )
+        .await
+    {
+        Ok(ProgressionInitializationOutcome::Initialized(_))
+        | Ok(ProgressionInitializationOutcome::AlreadyInitialized(_)) => {}
+        Err(error) => return Err(CombatDeathRewardXpError::Progression(error)),
+    }
+    commit_experience(session, principal, progression, occurrence, amount)
+        .await
+        .map_err(CombatDeathRewardXpError::Progression)
+}
 
+async fn commit_experience<const N: usize>(
+    session: &DurabilitySession<'_, '_, '_>,
+    principal: &RewardPrincipal,
+    progression: &RewardProgressionBinding<N>,
+    occurrence: ExperienceRewardOccurrence,
+    amount: ExactI64,
+) -> Result<ExperienceCommitOutcome, CharacterProgressionError> {
     session
         .root
         .commit_character_experience(
@@ -359,7 +368,6 @@ async fn settle_experience<const N: usize>(
             progression.award_request(occurrence, amount),
         )
         .await
-        .map_err(CombatDeathRewardXpError::Progression)
 }
 
 /// The three durability handles every descendant call needs, bundled to keep

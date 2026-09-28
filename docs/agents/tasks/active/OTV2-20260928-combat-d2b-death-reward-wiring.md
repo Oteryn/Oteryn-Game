@@ -87,16 +87,11 @@ caller is added: D/E admission (protocol, content loading, real activation) is a
   reference, the reward principal and the wall-clock millisecond, framed with the RFC 9562
   version/variant nibbles; no new crate dependency.
 - `reward_occurrence` also reports whether it minted fresh or reused an existing value.
-  `settle_experience` calls `initialize_character_progression` only on a fresh mint: it has no
-  occurrence-keyed replay shortcut and re-asserts the caller's fence on every call, while
-  `commit_character_experience`'s own occurrence lookup resolves a retry before touching the
-  fence at all. Without this, a genuine replay (same fence resent, matching the character's
-  *actual* revision as of the first attempt) would be rejected by init's fence check once that
-  first attempt's XP commit has already advanced the character's real revision. This is a
-  narrow, deliberate scope: if a crash lands strictly between the fresh mint and the very first
-  `initialize_character_progression` call, a subsequent retry treats the memoized occurrence as
-  a "reuse" and skips init, so `commit_character_experience` fails closed
-  (`MissingProgressionState`) rather than silently duplicating or fabricating state.
+  `settle_experience` attempts the award first; `commit_character_experience`'s own
+  occurrence lookup resolves a retry before touching the fence. Only
+  `MissingProgressionState` runs the D88 initializer, followed by one more award attempt. A
+  failed earlier initialization is therefore retried instead of stranding the award, and an
+  already advanced revision never rejects a legitimate replay (control-plane repair).
 - `GroundPlacement` has no accepted production placement rule yet (movement.rs/ability
   forbidden). `combat/death_reward.rs::ground_placement` builds the smallest defensible one,
   promoted from the D1 fixture's own pattern: the corpse's local position, and a `corpse_ref`
