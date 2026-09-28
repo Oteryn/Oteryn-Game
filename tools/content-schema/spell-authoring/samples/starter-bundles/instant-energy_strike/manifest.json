@@ -2,7 +2,7 @@
   "sources": [
     {
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
     },
     {
       "repository": "zimbadev/crystalserver",
@@ -29,7 +29,7 @@
     {
       "source_index": 0,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
-      "source_line": 23,
+      "source_line": 24,
       "source_field": "words",
       "kind": "field",
       "status": "mapped",
@@ -129,7 +129,7 @@
     {
       "source_index": 0,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
-      "source_line": 29,
+      "source_line": 30,
       "source_field": "isPremium",
       "kind": "field",
       "status": "approved_omission",
@@ -342,32 +342,32 @@
       "kind": "field",
       "status": "mapped",
       "destination": "/spell/spell/targeting/needs_direction",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data/scripts/spells/attack/energy_strike.lua",
-      "source_line": 30,
-      "source_field": "needCasterTargetOrDirection",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/targeting/target_or_direction",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
-      "source_index": 1,
-      "source_file": "data/scripts/spells/attack/energy_strike.lua",
-      "source_line": 30,
-      "source_field": "needCasterTargetOrDirection",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/targeting/target_or_direction",
       "resolution": "S4: source value (both sources agree)."
     },
     {
       "source_index": 0,
       "source_file": "data/scripts/spells/attack/energy_strike.lua",
       "source_line": 31,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/attack/energy_strike.lua",
+      "source_line": 30,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/attack/energy_strike.lua",
+      "source_line": 32,
       "source_field": "blockWalls",
       "kind": "field",
       "status": "mapped",

@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/intense_healing",
-      "revision": "spell-p2-r2"
+      "revision": "spell-p2-r3"
     },
     "name": "Intense Healing",
     "carrier": "instant",
@@ -52,7 +52,7 @@
       "ability": {
         "family": "Ability",
         "key": "candidate:ability/spell/intense_healing",
-        "revision": "spell-p2-r2"
+        "revision": "spell-p2-r3"
       }
     }
   }

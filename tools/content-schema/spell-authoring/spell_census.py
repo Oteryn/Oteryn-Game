@@ -37,8 +37,10 @@ SPELL_LIB = 'data/scripts/lib/register_spells.lua'
 ENUM_HEADERS = ('src/creatures/creatures_definitions.hpp', 'src/utils/utils_definitions.hpp')
 EXCLUDED = {'data/scripts/spells/#example.lua': 'example script shipped for documentation'}
 SOURCES = {
+    # S14 (owner, 2026-09-28): the Tibia 15.30 branch dudantas/fix-tibia-15-30-regressions, not yet in main.
     'canary': {'repository': 'https://github.com/opentibiabr/canary',
-               'revision': '47dfd51f45280a59a1d3e50ba7edd573d7234446'},
+               'branch': 'dudantas/fix-tibia-15-30-regressions',
+               'revision': '99902524e052f37574194466c2949c576e4ab269'},
     'crystal': {'repository': 'https://github.com/zimbadev/crystalserver',
                 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a'},
 }
