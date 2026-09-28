@@ -7,6 +7,9 @@
     ],
     "DisgustingOozeDeath": [
       "canary:creature/disgusting_ooze"
+    ],
+    "spell.plagirath summon": [
+      "canary:creature/plagirath"
     ]
   },
   "sources": [
@@ -37,6 +40,13 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_disgusting_ooze_death.lua",
       "blob_sha1": "6231122703ccb27198a65b812d0bbcd4e90b0a12"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/plagirath_summon.lua",
+      "blob_sha1": "e4948e8245838ebcf3a69770569604e330ae6f92"
     }
   ],
   "entries": [
@@ -170,6 +180,108 @@
       "status": "mapped",
       "resolution": "creature:say(..., TALKTYPE_MONSTER_SAY).",
       "destination": "/encounter/rules/1/actions/1"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Plagirath is the plagirath participant.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        120
+      ],
+      "status": "mapped",
+      "resolution": "Plagirath casts the registered spell \"plagirath summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell: with 0 summons out, Plagirath gets 4 more Disgusting Oozes as its summons at random tiles of x 33163-33180, y 31497-31506 on floor 13 (it fills up to four). The reference-date wiki (Fandom Disgusting Ooze rev 989432) says they appear with Plagirath.",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell: with 1 summons out, Plagirath gets 3 more Disgusting Oozes as its summons at random tiles of x 33163-33180, y 31497-31506 on floor 13 (it fills up to four). The reference-date wiki (Fandom Disgusting Ooze rev 989432) says they appear with Plagirath.",
+      "destination": "/encounter/rules/3"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell: with 2 summons out, Plagirath gets 2 more Disgusting Oozes as its summons at random tiles of x 33163-33180, y 31497-31506 on floor 13 (it fills up to four). The reference-date wiki (Fandom Disgusting Ooze rev 989432) says they appear with Plagirath.",
+      "destination": "/encounter/rules/4"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell: with 3 summons out, Plagirath gets 1 more Disgusting Oozes as its summons at random tiles of x 33163-33180, y 31497-31506 on floor 13 (it fills up to four). The reference-date wiki (Fandom Disgusting Ooze rev 989432) says they appear with Plagirath.",
+      "destination": "/encounter/rules/5"
     }
   ],
   "outcome_evidence": [

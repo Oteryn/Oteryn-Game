@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "0163a008a89f864326bf0cf5d3a677d46e629fe91a6e00f3fb69393adb344fb9",
+        "4754f465a31d71fa97b2e3bb38bd0237d31e9d1a7604854c7e2d1eabfe801cdb",
     ),
     (
         "definitions/declarations.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1936,
-        "63ad78eff184450b9d8146b2c56539acd16443793a69b43ed9367aad9265f461",
+        "21655344684af6c008ac417aa7a741a968f138595c7215a115bfec48ce673344",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "448b9cdce7ff74228d1883f1ab428a3b436d7d4f4aeb8bfe1215be00cf682a65",
+        "d199e23a71a68c231566e587d7a3b5fef9853844675bacca81b9cdc5cdb49407",
     ),
     (
         "provenance/imports.json",
         4442,
-        "7e92914247c17e8f56149d90a39c84b723d059b6b261c02d362b11ae734c6bcc",
+        "bed6a3ed4a6b1fd9d75881d4e86f885d79f2dade33eeb2b08db66d75a285841f",
     ),
     (
         "provenance/sources.json",
         1_213_904,
-        "30dc78dd3b290eac87315b1167a3fe176d97b4b1ad7e14091353d0b312b7a03d",
+        "9b2f45e50705de4551378a597bc1c37c504efceaefcede4e8b482d097cd34638",
     ),
     (
         "worlds/world.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "8cba8fadb418bb5260e43ffb42a25d9a65c4294d70aa6a0d7ab4e6689bacee37";
+const TREE_SHA256: &str = "968d981a295283d8a3aa09110202623039c8c99df34a7be3857df1af308df2b9";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).

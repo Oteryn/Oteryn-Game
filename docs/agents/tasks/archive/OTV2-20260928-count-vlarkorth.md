@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-count-vlarkorth
 title: Count Vlarkorth per-vocation summon encounter (owner decision D34)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1116
 jira: KAN-16
 base_sha: b6c75634c8e53a26f6f3ef3a3bfa80a00e1e9c44
-head_sha: null
-final_head_sha: null
+head_sha: d32952ff5c6739a4334917f0c18e7ab8d7ce4be5
+final_head_sha: d32952ff5c6739a4334917f0c18e7ab8d7ce4be5
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-28
@@ -68,3 +68,11 @@ Owner decision D34 ("Wszystkie 7") includes the per-vocation summon; this is its
 - The census, the staging, the tree regeneration and its validators pass.
 - The Rust tests pass.
 - Exact-head review before the Merge Queue because staged creature evidence changes.
+
+## Completion
+
+Merged as PR #1116 (`a1d0e4796210c38cd185790b44f8a3a6fb59d1e8`) from final head `d32952f`; required checks passed on that head and the exact-head Codex review
+found no issues. Review rounds added `damage_accumulated` as a percent of the resolved maximum health (Count Vlarkorth 15%,
+Rewar the Bloody 5%), credited heals of the boss, and the `closest_free_tile` position. The census is at 1,553; Count
+Vlarkorth waits in the creature staging with the other encounter-covered monsters (160).
+Owner released.

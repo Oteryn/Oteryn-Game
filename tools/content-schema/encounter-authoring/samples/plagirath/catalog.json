@@ -19,6 +19,11 @@
       "family": "Creature",
       "key": "canary:creature/disgusting_ooze",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/plagirath_summon",
+      "revision": "canary-47dfd51f"
     }
   ]
 }
