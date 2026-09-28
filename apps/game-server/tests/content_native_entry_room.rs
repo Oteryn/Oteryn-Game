@@ -98,7 +98,9 @@ fn committed_room_binds_any_world_id_deterministically() {
         project.source().cells.len(),
         NATIVE_ENTRY_CELLS + NATIVE_ENTRY_DOOR_CELLS
     );
-    assert_eq!(project.door().placements.len(), 1);
+    // DECISION_REQUIRED (r4120444680): `door()` stays genuinely, fully linked with no fabricated
+    // placement — see `NativeEntryProject::door()`'s doc comment.
+    assert!(project.door().placements.is_empty());
     let other = parse_uuid_v7("01890f4c-3b2a-7c01-8d11-9a321b7c0009");
     assert_ne!(
         native_entry_room_documents(other)

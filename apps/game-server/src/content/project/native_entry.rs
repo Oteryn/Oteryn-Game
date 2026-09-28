@@ -10,20 +10,19 @@
 use super::*;
 use crate::content::{
     CanonicalReferencePlayableContent, CollisionClass, DefinitionFamily, DurableMigrationClass,
-    EffectFamily, EligibilityScope, EvidenceBindingRef, EvidenceDisposition,
-    FIRST_PRODUCTION_CAPABILITY_PROFILE, FIRST_PRODUCTION_PROFILE_ID, FirstProductionAbility,
-    FirstProductionArea, FirstProductionBehavior, FirstProductionCell,
-    FirstProductionCompileTarget, FirstProductionContentSource, FirstProductionCreature,
-    FirstProductionEffect, FirstProductionFormulaProfile, FirstProductionItem,
-    FirstProductionLootEntry, FirstProductionLootTable, FirstProductionPresentation,
-    FirstProductionRegion, FirstProductionRelocation, FirstProductionRevisionSet,
-    FirstProductionRngContext, FirstProductionSpawn, FirstProductionTerrain,
-    FirstProductionXpDefinition, FootprintCell, FootprintRelation, LocalObjectCollisionPresence,
-    MapRevisionRef, MultiplicityClass, OwnerCapabilityRequirement, PlacementKey, PlacementRef,
+    EffectFamily, EligibilityScope, FIRST_PRODUCTION_CAPABILITY_PROFILE,
+    FIRST_PRODUCTION_PROFILE_ID, FirstProductionAbility, FirstProductionArea,
+    FirstProductionBehavior, FirstProductionCell, FirstProductionCompileTarget,
+    FirstProductionContentSource, FirstProductionCreature, FirstProductionEffect,
+    FirstProductionFormulaProfile, FirstProductionItem, FirstProductionLootEntry,
+    FirstProductionLootTable, FirstProductionPresentation, FirstProductionRegion,
+    FirstProductionRelocation, FirstProductionRevisionSet, FirstProductionRngContext,
+    FirstProductionSpawn, FirstProductionTerrain, FirstProductionXpDefinition,
+    LocalObjectCollisionPresence, MultiplicityClass, OwnerCapabilityRequirement,
     ProjectFilesystemLimits, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
     REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinition, ReferenceDefinitionKind,
-    ReferencePlayableContentSource, SpatialAddress, SpawnRecoveryClass, TransitionBinding,
-    TransitionKey, compile_first_production, link_reference_playable,
+    ReferencePlayableContentSource, SpawnRecoveryClass, TransitionBinding, TransitionKey,
+    compile_first_production, link_reference_playable,
 };
 
 pub const NATIVE_ENTRY_SOURCE_PROFILE: &str =
@@ -291,8 +290,19 @@ impl NativeEntryProject {
     /// The one entry-room door's own genuine Reference-profile content (#162 A4-a): real
     /// `REFERENCE_PLAYABLE_CONTENT_PROFILE_ID`, fully validated by `link_reference_playable`, and
     /// sharing this project's package/Content-Lock identity, so its content generation is always
-    /// this qualified native-entry project's own. The CW4 kernel binds it through
-    /// `LocalObjectRuntime::bind_native_entry_door`.
+    /// this qualified native-entry project's own.
+    ///
+    /// `placements` is deliberately empty (DECISION_REQUIRED, r4120444680): the accepted evidence
+    /// manifest has no `CONTENT_WORLD` case bound to any target-sensitive claim yet
+    /// (`REFERENCE_TARGET_CLAIM_CASE_BINDINGS` in `content/reference_playable.rs` is an
+    /// accepted-empty array, excluded/read-only for this task), so `link_reference_playable`
+    /// refuses *every* placement's evidence today, honest or not — there is no placement this
+    /// task can add and still have `door()` be genuinely, fully linked. A future consumer derives
+    /// the door's placement (key `accepted::DOOR_CELL.0`, its cell in `source().cells`, initial
+    /// state `accepted::DOOR_CLOSED_STATE`) and constructs its own synthetic,
+    /// deliberately-unpromoted `PlacementRef`, then builds a fence from this content and binds it
+    /// through the existing `LocalObjectRuntime::bind` — exactly as the CW4 test fixtures in
+    /// `world_runtime.rs` already do for ordinary Reference-sourced LocalObjects.
     pub fn door(&self) -> &CanonicalReferencePlayableContent {
         &self.door
     }
@@ -302,7 +312,7 @@ impl NativeEntryProject {
         overlay: NativeFirstEntryDocument,
     ) -> Result<Self, ProjectError> {
         let (source, door) = lower(&project, &overlay)?;
-        require_accepted_bindings(&project, &source)?;
+        require_accepted_bindings(&project, &source, &door)?;
         // The existing FirstProduction validators (cardinality, key uniqueness, population,
         // references) apply before a source counts as qualified (#937 §4).
         compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
@@ -689,6 +699,7 @@ fn pin(ok: bool, reason: &'static str) -> Result<(), ProjectError> {
 fn require_accepted_bindings(
     project: &WorldProject,
     source: &FirstProductionContentSource,
+    door: &CanonicalReferencePlayableContent,
 ) -> Result<(), ProjectError> {
     use accepted as a;
     let manifest = &source.package_manifest;
@@ -822,6 +833,13 @@ fn require_accepted_bindings(
             && source.rng.purpose_keys[0].as_str() == a::RNG_PURPOSE
             && source.rng.profile_revision.as_str() == a::RNG_PROFILE,
         "native entry ability, item, loot, XP or RNG is not the accepted binding",
+    )?;
+    let [door_definition] = door.definitions.as_slice() else {
+        return refuse("native entry door is not the accepted binding");
+    };
+    pin(
+        door_definition.definition.key().as_str() == a::DOOR_DEFINITION,
+        "native entry door is not the accepted binding",
     )
 }
 
@@ -962,11 +980,19 @@ fn lower(
     }
 
     // Region and three cells bijective with three Terrain placements, plus the one door cell
-    // (#162 A4-a; `state.placements.len()` is checked below, once the door overlay is in scope).
+    // (#162 A4-a). Full placement cardinality is enforced here, before any placement is indexed,
+    // so malformed content (including zero placements) fails closed instead of panicking.
     let region = ProductionKey::new(&overlay.region.key)?;
     if overlay.cells.len() != NATIVE_ENTRY_CELLS {
         return refuse("native entry requires exactly three cells and placements");
     }
+    if overlay.doors.len() != NATIVE_ENTRY_DOOR_CELLS {
+        return refuse("native entry requires exactly one door");
+    }
+    if state.placements.len() != NATIVE_ENTRY_CELLS + NATIVE_ENTRY_DOOR_CELLS {
+        return refuse("native entry requires exactly three cells and placements");
+    }
+    let door_overlay = &overlay.doors[0];
     let [area_declaration] = state.declarations.as_slice() else {
         return refuse("native entry requires exactly one Area declaration");
     };
@@ -978,7 +1004,15 @@ fn lower(
     else {
         return refuse("native entry declaration must be one parentless Area");
     };
-    let terrain_ref = &state.placements[0].definition;
+    // Cardinality was just checked above, but a checked lookup keeps this panic-free even if that
+    // invariant is ever weakened elsewhere.
+    let terrain_ref = &state
+        .placements
+        .first()
+        .ok_or(ProjectError::InvalidProject(
+            "native entry requires at least one Terrain placement",
+        ))?
+        .definition;
     require_family(terrain_ref, ProjectV2Family::Terrain)?;
     let terrain = require_generic(records, terrain_ref, ProjectV2Family::Terrain)?;
     let area = ProductionKey::new(&area_identity.key)?;
@@ -1037,14 +1071,8 @@ fn lower(
     }
 
     // The one door's 4th walkable cell (#162 A4-a): same bijective placement-matching discipline
-    // as the three room cells above, plus its own adjacency requirement.
-    if overlay.doors.len() != NATIVE_ENTRY_DOOR_CELLS {
-        return refuse("native entry requires exactly one door");
-    }
-    let door_overlay = &overlay.doors[0];
-    if state.placements.len() != NATIVE_ENTRY_CELLS + NATIVE_ENTRY_DOOR_CELLS {
-        return refuse("native entry requires exactly three cells and placements");
-    }
+    // as the three room cells above (cardinality already enforced above), plus its own adjacency
+    // requirement.
     let door_cell = &door_overlay.cell;
     let NativeEntryCollision::Walkable = door_cell.collision else {
         return refuse("native entry door cell must be walkable");
@@ -1105,11 +1133,6 @@ fn lower(
     });
     let door_world_id = decode_world_id(&project.reference.world_id)?;
     let door_coordinate_frame = crate::content::CoordinateFrameRef::new(&frame.coordinate_frame)?;
-    let door_cell_logical = (
-        door_placement.x,
-        door_placement.y,
-        i32::from(door_placement.floor),
-    );
 
     let relocation = &overlay.relocation;
     if relocation.from_cell == relocation.to_cell
@@ -1356,38 +1379,23 @@ fn lower(
             policy_guard_refs: vec![],
         },
     ];
-    let door_evidence = EvidenceBindingRef::new(
-        ProductionAtom::new("reference manifest revision", "manifest-r0")?,
-        ProductionKey::new("oteryn:cw4.native-entry-door-placement")?,
-        EvidenceDisposition::Unknown,
-    );
-    let door_footprint = FootprintRelation::Qualified {
-        members: vec![FootprintCell {
-            dx: 0,
-            dy: 0,
-            dz: 0,
-        }],
-        evidence: door_evidence.clone(),
-    };
-    let door_placement_ref = PlacementRef {
-        key: PlacementKey::new(&door_cell.placement_key)?,
-        map_revision: MapRevisionRef::new(&overlay.revisions.map)?,
-        definition: door_ref.clone(),
-        address: SpatialAddress {
-            world_id: door_world_id,
-            coordinate_frame: door_coordinate_frame.clone(),
-            cell: crate::content::LogicalCell {
-                x: door_cell_logical.0,
-                y: door_cell_logical.1,
-                z: door_cell_logical.2,
-            },
-            evidence: door_evidence.clone(),
-        },
-        presentation_footprint: door_footprint.clone(),
-        collision_footprint: door_footprint,
-        local_object_initial_state: Some(door_closed_key.clone()),
-    };
-    let mut door_content = link_reference_playable(ReferencePlayableContentSource {
+    // #162 A4-a, DECISION_REQUIRED (r4120444680): the door's placement is deliberately not
+    // included here. `content/reference_playable.rs`'s `REFERENCE_TARGET_CLAIM_CASE_BINDINGS` is
+    // an accepted-empty array ("the evidence manifest currently has no CONTENT_WORLD mechanic
+    // case that can authorize any of these claims") and is excluded/read-only for this task, so
+    // `link_reference_playable`'s `validate_placement` -> `require_reference_promotion` refuses
+    // *every* placement's SpatialAddress/PresentationFootprint/CollisionFootprint claim
+    // unconditionally today, regardless of how genuine its evidence is — there is no honest
+    // evidence this task can construct that passes. Building a placement into this draft would
+    // therefore always fail to link; appending one after linking (the prior approach) fabricated
+    // evidence and mislabeled the unlinked result canonical. Neither is acceptable, so `door()`
+    // stays genuinely, fully linked (empty `placements`, exactly as validated) and carries only
+    // what the linker actually canonicalizes: the one LocalObject definition and its two
+    // transitions. A future consumer derives the door's placement (key `accepted::DOOR_CELL.0`,
+    // its cell in `source().cells`, initial state `accepted::DOOR_CLOSED_STATE`) and constructs
+    // its own synthetic, deliberately-unpromoted `PlacementRef`, exactly as the existing CW4 test
+    // fixtures in `world_runtime.rs` already do for ordinary Reference-sourced LocalObjects.
+    let door_content = link_reference_playable(ReferencePlayableContentSource {
         profile_revision: ProductionAtom::new(
             "reference profile revision",
             REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
@@ -1399,7 +1407,7 @@ fn lower(
         package_manifest: package_manifest.clone(),
         content_lock: content_lock.clone(),
         world_id: door_world_id,
-        coordinate_frame: door_coordinate_frame.clone(),
+        coordinate_frame: door_coordinate_frame,
         definitions: vec![ReferenceDefinition {
             definition: door_ref,
             kind: ReferenceDefinitionKind::LocalObjectStates(door_states),
@@ -1409,7 +1417,6 @@ fn lower(
         ordered_placements: Vec::new(),
         transitions: door_transitions,
     })?;
-    door_content.placements = vec![door_placement_ref];
 
     let source = FirstProductionContentSource {
         package_manifest,
