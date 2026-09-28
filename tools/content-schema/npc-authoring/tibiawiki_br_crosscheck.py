@@ -3,8 +3,10 @@
 Evidence only: reports where the admitted NPC facts agree or disagree with TibiaWiki BR. Nothing is
 changed, admitted or held by this report.
 
-Per NPC, matched to a BR page by name (case-insensitive page title, then the infobox `name`; a name
-variant such as `Name (1)`, `Name (Day)` or `Name Init` falls back to its base name's page):
+Per admitted NPC (the NPC declarations of the pinned admission evidence), matched to a BR page by name
+(case-insensitive page title, then the infobox `name`; a name variant such as `Name (1)`, `Name (Day)` or
+`Name Init` falls back to its base name's page, and a plain name also matches a BR page whose title or
+name carries a qualifier, such as `Name (NPC)`, when exactly one does):
 - removed: the BR infobox `removed` version, when BR says the NPC left the game;
 - position: the nearest admitted placement to any BR map position. MATCH is the same tile, NEAR the
   same floor within NEAR_TILES tiles, CLOSE the same floor within CLOSE_TILES, OTHER_FLOOR within
@@ -34,6 +36,7 @@ ROOT = Path(__file__).resolve().parents[3]
 FACTS = ROOT / 'imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json'
 CANDIDATES = ROOT / 'tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json'
 DIALOGUES = ROOT / 'docs/agents/evidence/OTV2-20260928-npc-dialogue-wave-a-staged.json'
+ADMISSION = ROOT / 'docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json'
 ITEMS = ROOT / 'content/items/definitions'
 SCHEMA = 'OTERYN_NPC_TIBIAWIKI_BR_CROSSCHECK/v1'
 NEAR_TILES = 3
@@ -48,14 +51,21 @@ def normalize(text):
 
 
 def br_index(facts):
-    by_title, by_name = {}, {}
+    by_title, by_name, by_base = {}, {}, {}
     for page in facts['pages']:
         by_title.setdefault(normalize(page['title']), page)
         by_name.setdefault(normalize(page['name']), []).append(page)
-    return by_title, by_name
+        for label in {page['title'], page['name']}:
+            qualified = QUALIFIER.match(label)
+            if qualified:
+                by_base.setdefault(normalize(qualified.group(1)), set()).add(page['pageid'])
+    pages = {page['pageid']: page for page in facts['pages']}
+    by_base = {key: pages[next(iter(ids))] for key, ids in by_base.items() if len(ids) == 1}
+    return by_title, by_name, by_base
 
 
-def find_page(name, by_title, by_name):
+def find_page(name, index):
+    by_title, by_name, by_base = index
     key = normalize(name)
     if key in by_title:
         return by_title[key]
@@ -63,7 +73,9 @@ def find_page(name, by_title, by_name):
     if len(pages) == 1:
         return pages[0]
     variant = VARIANT.match(name)
-    return find_page(variant.group(1), by_title, by_name) if variant else None
+    if variant:
+        return find_page(variant.group(1), index)
+    return by_base.get(key)
 
 
 def plain(text):
@@ -138,6 +150,7 @@ def check_trade(offers, trades, names):
         return {'status': 'NO_BR_TRADE', 'offers': len(offers)}
     if not offers:
         return {'status': 'BR_ONLY', 'br_offers': sum(len(names) for names in trades.values())}
+    # several offers can share one item name (four music sheets); both sides keep every offer
     ours = {'SellToPlayer': {}, 'BuyFromPlayer': {}}
     unnamed = 0
     for offer in offers:
@@ -145,7 +158,7 @@ def check_trade(offers, trades, names):
         if name is None:
             unnamed += 1
             continue
-        ours[offer['direction']].setdefault(name, offer['unit_price'])
+        ours[offer['direction']].setdefault(name, []).append(offer['unit_price'])
     row = {'matched': 0, 'only_ours': [], 'only_br': [], 'price_mismatch': []}
     for direction in ('SellToPlayer', 'BuyFromPlayer'):
         mine, theirs = ours[direction], {}
@@ -153,30 +166,40 @@ def check_trade(offers, trades, names):
             qualified = QUALIFIER.match(name)
             if name not in mine and qualified and qualified.group(1) in mine:
                 name = qualified.group(1)
-            theirs.setdefault(name, price)
+            theirs.setdefault(name, []).append(price)
         for name in sorted(set(mine) | set(theirs)):
             label = f'{direction}:{name}'
-            if name not in theirs:
-                row['only_ours'].append(label)
-            elif name not in mine:
-                row['only_br'].append(label)
-            else:
-                row['matched'] += 1
-                if theirs[name] is not None and theirs[name] != mine[name]:
-                    row['price_mismatch'].append({'offer': label, 'ours': mine[name], 'br': theirs[name]})
+            mine_prices, br_prices = sorted(mine.get(name, [])), theirs.get(name, [])
+            row['matched'] += min(len(mine_prices), len(br_prices))
+            row['only_ours'].extend([label] * max(0, len(mine_prices) - len(br_prices)))
+            row['only_br'].extend([label] * max(0, len(br_prices) - len(mine_prices)))
+            if mine_prices:
+                unmatched = list(mine_prices)
+                explicit = sorted(price for price in br_prices if price is not None)
+                missing = []
+                for price in explicit:
+                    if price in unmatched:
+                        unmatched.remove(price)
+                    else:
+                        missing.append(price)
+                if missing:
+                    row['price_mismatch'].append({'offer': label, 'ours': mine_prices, 'br': explicit})
     if unnamed:
         row['unnamed_offers'] = unnamed
     row['status'] = 'AGREE' if not (row['only_ours'] or row['only_br'] or row['price_mismatch']) else 'DIFFER'
     return {key: value for key, value in row.items() if value not in ([], 0) or key in ('status', 'matched')}
 
 
-def crosscheck(facts, candidates, dialogues, names):
-    by_title, by_name = br_index(facts)
+def crosscheck(facts, candidates, dialogues, admission, names):
+    index = br_index(facts)
+    admitted = {d['identity']['key'] for d in admission['declarations'] if d['kind'] == 'NPC'}
     dialogue_by_npc = {entry['npc']: entry['declaration'] for entry in dialogues['dialogues']}
     rows, totals = [], Counter()
     for candidate in sorted(candidates['candidates'], key=lambda c: c['identity']['key']):
         key, name = candidate['identity']['key'], candidate['name']
-        page = find_page(name, by_title, by_name)
+        if key not in admitted:
+            continue
+        page = find_page(name, index)
         row = {'npc': key, 'name': name}
         if page is None:
             row['br'] = None
@@ -219,6 +242,7 @@ def crosscheck(facts, candidates, dialogues, names):
             'facts_sha256': hashlib.sha256(FACTS.read_bytes()).hexdigest(),
             'candidates_sha256': hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
             'dialogues_sha256': hashlib.sha256(DIALOGUES.read_bytes()).hexdigest(),
+            'admission_sha256': hashlib.sha256(ADMISSION.read_bytes()).hexdigest(),
         },
         'near_tiles': NEAR_TILES, 'close_tiles': CLOSE_TILES, 'near_ratio': NEAR_RATIO,
         'totals': dict(sorted(totals.items())),
@@ -232,7 +256,8 @@ def main():
     args = parser.parse_args()
     report = crosscheck(json.loads(FACTS.read_text(encoding='utf-8')),
                         json.loads(CANDIDATES.read_text(encoding='utf-8')),
-                        json.loads(DIALOGUES.read_text(encoding='utf-8')), item_names())
+                        json.loads(DIALOGUES.read_text(encoding='utf-8')),
+                        json.loads(ADMISSION.read_text(encoding='utf-8')), item_names())
     args.out.write_text(json.dumps(report, indent=1, sort_keys=True, ensure_ascii=False) + '\n', encoding='utf-8')
     print(json.dumps(report['totals'], indent=1))
     return 0

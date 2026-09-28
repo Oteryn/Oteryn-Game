@@ -2,9 +2,10 @@
  "close_tiles": 10,
  "evidence": "REFERENCE_CROSSCHECK_ONLY",
  "inputs": {
+  "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "df80eb000236118c65542becc44827f8c33c56ba45b66fa429213b439b9b46a2",
+  "facts_sha256": "7750398f4e3008c677bd8173ec93e56c0741293670a6bcc59ea33e69445ee916",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -1175,18 +1176,27 @@
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net",
      "SellToPlayer:vial",
+     "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
     "price_mismatch": [
      {
-      "br": 150,
+      "br": [
+       150
+      ],
       "offer": "SellToPlayer:fishing rod",
-      "ours": 40
+      "ours": [
+       40
+      ]
      },
      {
-      "br": 50,
+      "br": [
+       50
+      ],
       "offer": "SellToPlayer:shovel",
-      "ours": 10
+      "ours": [
+       10
+      ]
      }
     ],
     "status": "DIFFER",
@@ -1246,9 +1256,13 @@
     "matched": 12,
     "price_mismatch": [
      {
-      "br": 0,
+      "br": [
+       0
+      ],
       "offer": "BuyFromPlayer:fishing rod",
-      "ours": 30
+      "ours": [
+       30
+      ]
      }
     ],
     "status": "DIFFER"
@@ -1266,7 +1280,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 29,
+    "matched": 31,
     "status": "AGREE"
    }
   },
@@ -1556,9 +1570,16 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 59860,
+    "revid": 420203,
+    "title": "Altar (NPC)"
+   },
    "name": "Altar",
-   "npc": "oteryn:npc.altar"
+   "npc": "oteryn:npc.altar",
+   "position": {
+    "status": "MATCH"
+   }
   },
   {
    "br": {
@@ -2280,6 +2301,9 @@
      "SellToPlayer:wine"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "status": "DIFFER"
@@ -2390,18 +2414,28 @@
      "SellToPlayer:wine;mug of wine"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "price_mismatch": [
      {
-      "br": 4,
+      "br": [
+       4
+      ],
       "offer": "SellToPlayer:bread",
-      "ours": 3
+      "ours": [
+       3
+      ]
      },
      {
-      "br": 6,
+      "br": [
+       6
+      ],
       "offer": "SellToPlayer:cheese",
-      "ours": 5
+      "ours": [
+       5
+      ]
      }
     ],
     "status": "DIFFER"
@@ -2533,7 +2567,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 58,
+    "matched": 60,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -2554,7 +2588,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 63,
+    "matched": 65,
     "only_ours": [
      "SellToPlayer:blue quiver",
      "SellToPlayer:quiver",
@@ -2709,7 +2743,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 105,
+    "matched": 106,
     "only_br": [
      "BuyFromPlayer:grant of arms"
     ],
@@ -2717,6 +2751,7 @@
      "SellToPlayer:bounty talisman",
      "SellToPlayer:grant of arms",
      "BuyFromPlayer:fiery tear",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:royal almandine"
     ],
     "status": "DIFFER"
@@ -3199,6 +3234,7 @@
      "SellToPlayer:hand auger",
      "SellToPlayer:net",
      "SellToPlayer:vial",
+     "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
     "status": "DIFFER",
@@ -3241,7 +3277,7 @@
    "dialogue": {
     "br_lines": 34,
     "matched": 9,
-    "near": 12,
+    "near": 13,
     "texts": 40
    },
    "name": "Baxter",
@@ -3414,7 +3450,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 3,
+    "matched": 6,
     "status": "AGREE"
    }
   },
@@ -3464,9 +3500,14 @@
     "only_ours": [
      "SellToPlayer:blank parchment",
      "SellToPlayer:book",
+     "SellToPlayer:book",
+     "SellToPlayer:book",
      "SellToPlayer:hand auger",
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
      "BuyFromPlayer:book"
     ],
     "status": "DIFFER",
@@ -3531,18 +3572,27 @@
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net",
      "SellToPlayer:vial",
+     "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
     "price_mismatch": [
      {
-      "br": 150,
+      "br": [
+       150
+      ],
       "offer": "SellToPlayer:fishing rod",
-      "ours": 40
+      "ours": [
+       40
+      ]
      },
      {
-      "br": 50,
+      "br": [
+       50
+      ],
       "offer": "SellToPlayer:shovel",
-      "ours": 10
+      "ours": [
+       10
+      ]
      }
     ],
     "status": "DIFFER",
@@ -3685,7 +3735,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 111,
+    "matched": 116,
     "only_br": [
      "SellToPlayer:bag with naga eggs",
      "SellToPlayer:celestial chart",
@@ -3871,9 +3921,13 @@
     ],
     "price_mismatch": [
      {
-      "br": 6,
+      "br": [
+       6
+      ],
       "offer": "SellToPlayer:cheese",
-      "ours": 4
+      "ours": [
+       4
+      ]
      }
     ],
     "status": "DIFFER"
@@ -3930,6 +3984,9 @@
     ],
     "only_ours": [
      "SellToPlayer:ice cream cone",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "status": "DIFFER"
@@ -4322,6 +4379,7 @@
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -5554,9 +5612,13 @@
     ],
     "price_mismatch": [
      {
-      "br": 16,
+      "br": [
+       16
+      ],
       "offer": "BuyFromPlayer:doublet",
-      "ours": 3
+      "ours": [
+       3
+      ]
      }
     ],
     "status": "DIFFER"
@@ -5648,6 +5710,7 @@
    "trade": {
     "matched": 56,
     "only_br": [
+     "BuyFromPlayer:watermelon tourmaline",
      "BuyFromPlayer:wedding ring"
     ],
     "only_ours": [
@@ -5657,6 +5720,7 @@
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:diamond",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -5779,7 +5843,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 37,
+    "matched": 39,
     "status": "AGREE"
    }
   },
@@ -5876,6 +5940,7 @@
      "SellToPlayer:jug"
     ],
     "only_ours": [
+     "SellToPlayer:baking tray",
      "SellToPlayer:empty jug"
     ],
     "status": "DIFFER"
@@ -6145,7 +6210,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 58,
+    "matched": 60,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -6298,27 +6363,45 @@
      "SellToPlayer:wine"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "price_mismatch": [
      {
-      "br": 4,
+      "br": [
+       4
+      ],
       "offer": "SellToPlayer:bread",
-      "ours": 3
+      "ours": [
+       3
+      ]
      },
      {
-      "br": 6,
+      "br": [
+       6
+      ],
       "offer": "SellToPlayer:cheese",
-      "ours": 5
+      "ours": [
+       5
+      ]
      }
     ],
     "status": "DIFFER"
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 11235,
+    "revid": 401944,
+    "title": "Cobra (NPC)"
+   },
    "name": "Cobra",
-   "npc": "oteryn:npc.cobra"
+   "npc": "oteryn:npc.cobra",
+   "position": {
+    "status": "MATCH"
+   }
   },
   {
    "br": null,
@@ -6945,7 +7028,7 @@
    "dialogue": {
     "br_lines": 11,
     "matched": 9,
-    "near": 0,
+    "near": 1,
     "texts": 13
    },
    "name": "Dalbrect",
@@ -7043,6 +7126,8 @@
      "SellToPlayer:water (líquido)"
     ],
     "only_ours": [
+     "SellToPlayer:bottle",
+     "SellToPlayer:bottle",
      "SellToPlayer:bottle"
     ],
     "status": "DIFFER"
@@ -7104,6 +7189,7 @@
      "SellToPlayer:tea;mug of tea"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
      "SellToPlayer:mug",
      "SellToPlayer:vial"
     ],
@@ -7307,7 +7393,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 10,
+    "matched": 12,
     "status": "AGREE"
    }
   },
@@ -7418,7 +7504,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 70,
+    "matched": 72,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -7433,6 +7519,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -7569,28 +7657,6 @@
      33579,
      31868,
      12
-    ],
-    "status": "NEAR"
-   }
-  },
-  {
-   "br": {
-    "pageid": 66100,
-    "revid": 433513,
-    "title": "Dragon Ancestor Spirit"
-   },
-   "name": "Dragon Ancestor Spirit",
-   "npc": "oteryn:npc.dragon_ancestor_spirit",
-   "position": {
-    "br": [
-     32813,
-     31544,
-     10
-    ],
-    "ours": [
-     32813,
-     31545,
-     10
     ],
     "status": "NEAR"
    }
@@ -7994,7 +8060,7 @@
     "status": "CLOSE"
    },
    "trade": {
-    "matched": 69,
+    "matched": 71,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -8008,6 +8074,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -8099,6 +8167,7 @@
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -8230,7 +8299,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 69,
+    "matched": 71,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -8248,6 +8317,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -8569,8 +8640,8 @@
    },
    "dialogue": {
     "br_lines": 17,
-    "matched": 15,
-    "near": 1,
+    "matched": 16,
+    "near": 0,
     "texts": 19
    },
    "name": "Elvith",
@@ -8651,9 +8722,26 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 64880,
+    "revid": 427831,
+    "title": "Emberwing (NPC)"
+   },
    "name": "Emberwing",
-   "npc": "oteryn:npc.emberwing"
+   "npc": "oteryn:npc.emberwing",
+   "position": {
+    "br": [
+     32574,
+     32622,
+     11
+    ],
+    "ours": [
+     33586,
+     32546,
+     13
+    ],
+    "status": "MISMATCH"
+   }
   },
   {
    "br": {
@@ -9288,7 +9376,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 13,
+    "matched": 15,
     "status": "AGREE"
    }
   },
@@ -9390,7 +9478,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 69,
+    "matched": 71,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -9404,6 +9492,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -9978,7 +10068,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 58,
+    "matched": 60,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -10182,6 +10272,7 @@
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -10210,8 +10301,8 @@
    },
    "dialogue": {
     "br_lines": 15,
-    "matched": 14,
-    "near": 4,
+    "matched": 18,
+    "near": 0,
     "texts": 21
    },
    "name": "Galuna",
@@ -10320,12 +10411,16 @@
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
+     "SellToPlayer:picture",
+     "SellToPlayer:picture",
      "SellToPlayer:red bed",
      "SellToPlayer:simple bed",
      "SellToPlayer:treasure chest (ornamented)",
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -10555,7 +10650,7 @@
     "status": "CLOSE"
    },
    "trade": {
-    "matched": 42,
+    "matched": 44,
     "only_br": [
      "SellToPlayer:poison field rune",
      "SellToPlayer:poison wall rune"
@@ -10640,7 +10735,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 60,
+    "matched": 61,
     "only_br": [
      "BuyFromPlayer:amber (item)",
      "BuyFromPlayer:amber with a bug",
@@ -10650,6 +10745,7 @@
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
@@ -10932,7 +11028,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 47,
+    "matched": 49,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -11211,6 +11307,9 @@
      "SellToPlayer:ham",
      "SellToPlayer:meat",
      "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:tomato"
     ],
     "status": "DIFFER"
@@ -11408,7 +11507,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 46,
+    "matched": 49,
     "only_br": [
      "BuyFromPlayer:golden fafnar trophy",
      "BuyFromPlayer:the avenger",
@@ -11419,7 +11518,8 @@
     ],
     "only_ours": [
      "BuyFromPlayer:avenger",
-     "BuyFromPlayer:ironworker"
+     "BuyFromPlayer:ironworker",
+     "BuyFromPlayer:silver fafnar trophy"
     ],
     "status": "DIFFER",
     "unnamed_offers": 3
@@ -11616,6 +11716,7 @@
      "SellToPlayer:candelabrum",
      "SellToPlayer:crusher",
      "SellToPlayer:grey small book",
+     "SellToPlayer:parchment",
      "BuyFromPlayer:blue book",
      "BuyFromPlayer:gemmed book",
      "BuyFromPlayer:green book",
@@ -11625,9 +11726,14 @@
     "only_ours": [
      "SellToPlayer:blank parchment",
      "SellToPlayer:book",
+     "SellToPlayer:book",
+     "SellToPlayer:book",
      "SellToPlayer:hand auger",
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
      "BuyFromPlayer:book"
     ],
     "status": "DIFFER",
@@ -11710,18 +11816,27 @@
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net",
      "SellToPlayer:vial",
+     "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
     "price_mismatch": [
      {
-      "br": 150,
+      "br": [
+       150
+      ],
       "offer": "SellToPlayer:fishing rod",
-      "ours": 40
+      "ours": [
+       40
+      ]
      },
      {
-      "br": 50,
+      "br": [
+       50
+      ],
       "offer": "SellToPlayer:shovel",
-      "ours": 10
+      "ours": [
+       10
+      ]
      }
     ],
     "status": "DIFFER",
@@ -12389,7 +12504,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 68,
+    "matched": 72,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:candle",
@@ -12534,7 +12649,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 2,
+    "matched": 4,
     "status": "AGREE"
    }
   },
@@ -12586,18 +12701,27 @@
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net",
      "SellToPlayer:vial",
+     "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
     "price_mismatch": [
      {
-      "br": 150,
+      "br": [
+       150
+      ],
       "offer": "SellToPlayer:fishing rod",
-      "ours": 40
+      "ours": [
+       40
+      ]
      },
      {
-      "br": 50,
+      "br": [
+       50
+      ],
       "offer": "SellToPlayer:shovel",
-      "ours": 10
+      "ours": [
+       10
+      ]
      }
     ],
     "status": "DIFFER",
@@ -12713,6 +12837,7 @@
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -13178,12 +13303,16 @@
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
+     "SellToPlayer:picture",
+     "SellToPlayer:picture",
      "SellToPlayer:red bed",
      "SellToPlayer:simple bed",
      "SellToPlayer:treasure chest (ornamented)",
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -13375,9 +13504,34 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 10924,
+    "revid": 385683,
+    "title": "Hyacinth (NPC)"
+   },
    "name": "Hyacinth",
-   "npc": "oteryn:npc.hyacinth"
+   "npc": "oteryn:npc.hyacinth",
+   "position": {
+    "br": [
+     32137,
+     32171,
+     4
+    ],
+    "ours": [
+     32138,
+     32172,
+     3
+    ],
+    "status": "OTHER_FLOOR"
+   },
+   "trade": {
+    "matched": 3,
+    "only_ours": [
+     "BuyFromPlayer:empty potion flask",
+     "BuyFromPlayer:empty potion flask"
+    ],
+    "status": "DIFFER"
+   }
   },
   {
    "br": {
@@ -13517,7 +13671,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 64,
+    "matched": 66,
     "only_br": [
      "SellToPlayer:amphora",
      "SellToPlayer:blue bed",
@@ -13536,6 +13690,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -13569,6 +13725,9 @@
      "SellToPlayer:wine"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "status": "DIFFER"
@@ -13651,9 +13810,13 @@
     "matched": 4,
     "price_mismatch": [
      {
-      "br": 5,
+      "br": [
+       5
+      ],
       "offer": "SellToPlayer:bag",
-      "ours": 4
+      "ours": [
+       4
+      ]
      }
     ],
     "status": "DIFFER"
@@ -13779,6 +13942,7 @@
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -13965,6 +14129,7 @@
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -14007,7 +14172,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 69,
+    "matched": 71,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -14021,6 +14186,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -14357,7 +14524,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 69,
+    "matched": 71,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -14373,6 +14540,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -14599,6 +14768,7 @@
    "trade": {
     "matched": 56,
     "only_br": [
+     "BuyFromPlayer:watermelon tourmaline",
      "BuyFromPlayer:wedding ring"
     ],
     "only_ours": [
@@ -14608,6 +14778,7 @@
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:diamond",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -15122,8 +15293,8 @@
    },
    "dialogue": {
     "br_lines": 28,
-    "matched": 25,
-    "near": 3,
+    "matched": 28,
+    "near": 0,
     "texts": 29
    },
    "name": "Kawill",
@@ -15734,12 +15905,8 @@
     "only_br": [
      "SellToPlayer:vial of milk"
     ],
-    "price_mismatch": [
-     {
-      "br": 20,
-      "offer": "SellToPlayer:vial",
-      "ours": 50
-     }
+    "only_ours": [
+     "SellToPlayer:vial"
     ],
     "status": "DIFFER"
    }
@@ -15914,9 +16081,13 @@
     ],
     "price_mismatch": [
      {
-      "br": 25,
+      "br": [
+       25
+      ],
       "offer": "BuyFromPlayer:studded armor",
-      "ours": 10
+      "ours": [
+       10
+      ]
      }
     ],
     "status": "DIFFER"
@@ -16103,6 +16274,8 @@
      "BuyFromPlayer:cookie"
     ],
     "only_ours": [
+     "BuyFromPlayer:empty potion flask",
+     "BuyFromPlayer:empty potion flask",
      "BuyFromPlayer:exploding cookie"
     ],
     "status": "DIFFER"
@@ -16686,8 +16859,8 @@
    },
    "dialogue": {
     "br_lines": 36,
-    "matched": 14,
-    "near": 4,
+    "matched": 15,
+    "near": 3,
     "texts": 44
    },
    "name": "Lynda",
@@ -16918,6 +17091,9 @@
      "SellToPlayer:wine"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "status": "DIFFER"
@@ -17059,7 +17235,7 @@
    },
    "dialogue": {
     "br_lines": 22,
-    "matched": 20,
+    "matched": 22,
     "near": 0,
     "texts": 33
    },
@@ -17159,8 +17335,8 @@
    },
    "dialogue": {
     "br_lines": 30,
-    "matched": 30,
-    "near": 1,
+    "matched": 31,
+    "near": 0,
     "texts": 99
    },
    "name": "Marvik",
@@ -17258,7 +17434,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 74,
+    "matched": 76,
     "only_ours": [
      "SellToPlayer:blue quiver",
      "SellToPlayer:diamond arrow",
@@ -17325,7 +17501,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 14,
+    "matched": 16,
     "status": "AGREE"
    }
   },
@@ -17626,8 +17802,9 @@
     "status": "NO_PLACEMENT"
    },
    "trade": {
-    "matched": 10,
+    "matched": 11,
     "only_br": [
+     "SellToPlayer:christmas present",
      "SellToPlayer:christmas tree package"
     ],
     "only_ours": [
@@ -17722,6 +17899,9 @@
      "SellToPlayer:wine;mug of wine"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "status": "DIFFER"
@@ -17746,6 +17926,8 @@
      "SellToPlayer:water (líquido)"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "status": "DIFFER"
@@ -18094,14 +18276,22 @@
     "matched": 4,
     "price_mismatch": [
      {
-      "br": 10,
+      "br": [
+       10
+      ],
       "offer": "SellToPlayer:ham",
-      "ours": 8
+      "ours": [
+       8
+      ]
      },
      {
-      "br": 7,
+      "br": [
+       7
+      ],
       "offer": "SellToPlayer:meat",
-      "ours": 5
+      "ours": [
+       5
+      ]
      }
     ],
     "status": "DIFFER"
@@ -18247,9 +18437,16 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 30718,
+    "revid": 416416,
+    "title": "Mysterious Ornate Chest (NPC)"
+   },
    "name": "Mysterious Ornate Chest",
-   "npc": "oteryn:npc.mysterious_ornate_chest"
+   "npc": "oteryn:npc.mysterious_ornate_chest",
+   "position": {
+    "status": "MATCH"
+   }
   },
   {
    "br": {
@@ -18449,7 +18646,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 61,
+    "matched": 63,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -18516,18 +18713,27 @@
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net",
      "SellToPlayer:vial",
+     "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
     "price_mismatch": [
      {
-      "br": 150,
+      "br": [
+       150
+      ],
       "offer": "SellToPlayer:fishing rod",
-      "ours": 40
+      "ours": [
+       40
+      ]
      },
      {
-      "br": 50,
+      "br": [
+       50
+      ],
       "offer": "SellToPlayer:shovel",
-      "ours": 10
+      "ours": [
+       10
+      ]
      }
     ],
     "status": "DIFFER",
@@ -18578,7 +18784,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 60,
+    "matched": 62,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -18592,6 +18798,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -18788,7 +18996,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 67,
+    "matched": 69,
     "only_br": [
      "SellToPlayer:soulfire rune",
      "SellToPlayer:the chiller",
@@ -18830,9 +19038,20 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 40578,
+    "revid": 390105,
+    "title": "Nomad (NPC)"
+   },
    "name": "Nomad",
-   "npc": "oteryn:npc.nomad"
+   "npc": "oteryn:npc.nomad",
+   "position": {
+    "status": "MATCH"
+   },
+   "trade": {
+    "br_offers": 1,
+    "status": "BR_ONLY"
+   }
   },
   {
    "br": {
@@ -18984,6 +19203,9 @@
      "SellToPlayer:wine"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "status": "DIFFER"
@@ -19081,7 +19303,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 69,
+    "matched": 71,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -19095,6 +19317,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -19310,6 +19534,7 @@
    "trade": {
     "matched": 56,
     "only_br": [
+     "BuyFromPlayer:watermelon tourmaline",
      "BuyFromPlayer:wedding ring"
     ],
     "only_ours": [
@@ -19319,6 +19544,7 @@
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:diamond",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -19365,6 +19591,7 @@
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -19509,9 +19736,26 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 64883,
+    "revid": 427908,
+    "title": "Omniphant (NPC)"
+   },
    "name": "Omniphant",
-   "npc": "oteryn:npc.omniphant"
+   "npc": "oteryn:npc.omniphant",
+   "position": {
+    "br": [
+     32622,
+     32622,
+     11
+    ],
+    "ours": [
+     32551,
+     32623,
+     11
+    ],
+    "status": "MISMATCH"
+   }
   },
   {
    "br": {
@@ -19617,6 +19861,8 @@
      "SellToPlayer:wand of dragonbreath",
      "SellToPlayer:wand of vortex",
      "BuyFromPlayer:empty potion flask",
+     "BuyFromPlayer:empty potion flask",
+     "BuyFromPlayer:empty potion flask",
      "BuyFromPlayer:spellwand",
      "BuyFromPlayer:vial"
     ],
@@ -19683,6 +19929,8 @@
      "SellToPlayer:wand of dragonbreath",
      "SellToPlayer:wand of vortex",
      "BuyFromPlayer:empty potion flask",
+     "BuyFromPlayer:empty potion flask",
+     "BuyFromPlayer:empty potion flask",
      "BuyFromPlayer:spellwand",
      "BuyFromPlayer:vial"
     ],
@@ -19718,9 +19966,26 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 12201,
+    "revid": 413267,
+    "title": "Orc Berserker (NPC)"
+   },
    "name": "Orc Berserker",
-   "npc": "oteryn:npc.orc_berserker"
+   "npc": "oteryn:npc.orc_berserker",
+   "position": {
+    "br": [
+     32778,
+     31235,
+     7
+    ],
+    "ours": [
+     32777,
+     31237,
+     7
+    ],
+    "status": "NEAR"
+   }
   },
   {
    "br": {
@@ -20162,7 +20427,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 69,
+    "matched": 71,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -20176,6 +20441,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -20400,6 +20667,8 @@
      "SellToPlayer:blank parchment",
      "SellToPlayer:blue quiver",
      "SellToPlayer:book",
+     "SellToPlayer:book",
+     "SellToPlayer:book",
      "SellToPlayer:diamond arrow",
      "SellToPlayer:hand auger",
      "SellToPlayer:lit candelabrum",
@@ -20409,18 +20678,29 @@
      "SellToPlayer:spectral bolt",
      "SellToPlayer:very noble-looking watch",
      "SellToPlayer:vortex bolt",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
      "BuyFromPlayer:book"
     ],
     "price_mismatch": [
      {
-      "br": 120,
+      "br": [
+       120
+      ],
       "offer": "SellToPlayer:crossbow",
-      "ours": 500
+      "ours": [
+       500
+      ]
      },
      {
-      "br": 120,
+      "br": [
+       120
+      ],
       "offer": "BuyFromPlayer:crossbow",
-      "ours": 500
+      "ours": [
+       500
+      ]
      }
     ],
     "status": "DIFFER",
@@ -20486,9 +20766,16 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 11127,
+    "revid": 357486,
+    "title": "Pig (NPC)"
+   },
    "name": "Pig",
-   "npc": "oteryn:npc.pig"
+   "npc": "oteryn:npc.pig",
+   "position": {
+    "status": "MATCH"
+   }
   },
   {
    "br": {
@@ -20740,6 +21027,9 @@
      "SellToPlayer:wine;mug of wine"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "status": "DIFFER"
@@ -20779,8 +21069,8 @@
    },
    "dialogue": {
     "br_lines": 26,
-    "matched": 23,
-    "near": 2,
+    "matched": 25,
+    "near": 0,
     "texts": 36
    },
    "name": "Pydar",
@@ -20966,9 +21256,26 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 64877,
+    "revid": 427950,
+    "title": "Quill (NPC)"
+   },
    "name": "Quill",
-   "npc": "oteryn:npc.quill"
+   "npc": "oteryn:npc.quill",
+   "position": {
+    "br": [
+     32539,
+     32574,
+     11
+    ],
+    "ours": [
+     32538,
+     32574,
+     11
+    ],
+    "status": "NEAR"
+   }
   },
   {
    "br": {
@@ -20998,7 +21305,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 58,
+    "matched": 60,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -21029,7 +21336,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 48,
+    "matched": 50,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -21518,6 +21825,7 @@
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net",
      "SellToPlayer:vial",
+     "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
     "status": "DIFFER",
@@ -21968,7 +22276,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 38,
+    "matched": 40,
     "only_br": [
      "SellToPlayer:avalanche rune",
      "SellToPlayer:chameleon rune",
@@ -22470,7 +22778,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 13,
+    "matched": 15,
     "only_br": [
      "SellToPlayer:blood;vial of blood",
      "SellToPlayer:oil;vial of oil",
@@ -22479,6 +22787,10 @@
      "SellToPlayer:water (líquido);vial of water"
     ],
     "only_ours": [
+     "SellToPlayer:vial",
+     "SellToPlayer:vial",
+     "SellToPlayer:vial",
+     "SellToPlayer:vial",
      "SellToPlayer:vial"
     ],
     "status": "DIFFER"
@@ -22692,6 +23004,18 @@
    "trade": {
     "matched": 2,
     "only_ours": [
+     "SellToPlayer:cocktail glass",
+     "SellToPlayer:cocktail glass",
+     "SellToPlayer:cocktail glass",
+     "SellToPlayer:cocktail glass",
+     "SellToPlayer:cocktail glass",
+     "SellToPlayer:cocktail glass",
+     "SellToPlayer:cocktail glass",
+     "SellToPlayer:cocktail glass",
+     "SellToPlayer:vial",
+     "SellToPlayer:vial",
+     "SellToPlayer:vial",
+     "SellToPlayer:vial",
      "SellToPlayer:vial"
     ],
     "status": "DIFFER"
@@ -22963,13 +23287,21 @@
     ],
     "only_ours": [
      "SellToPlayer:jalapeno pepper",
+     "SellToPlayer:vial",
+     "SellToPlayer:vial",
+     "SellToPlayer:vial",
+     "SellToPlayer:vial",
      "SellToPlayer:vial"
     ],
     "price_mismatch": [
      {
-      "br": 3,
+      "br": [
+       3
+      ],
       "offer": "SellToPlayer:roll",
-      "ours": 2
+      "ours": [
+       2
+      ]
      }
     ],
     "status": "DIFFER"
@@ -23289,7 +23621,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 48,
+    "matched": 50,
     "only_br": [
      "SellToPlayer:black book",
      "SellToPlayer:brown book",
@@ -23299,6 +23631,8 @@
      "SellToPlayer:parchment (grey)",
      "SellToPlayer:parchment (yellow)",
      "SellToPlayer:pick",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:watch",
      "BuyFromPlayer:blue book",
      "BuyFromPlayer:gemmed book",
@@ -23310,17 +23644,26 @@
     "only_ours": [
      "SellToPlayer:blank parchment",
      "SellToPlayer:book",
+     "SellToPlayer:book",
+     "SellToPlayer:book",
      "SellToPlayer:coal basin kit",
      "SellToPlayer:net",
      "SellToPlayer:very noble-looking watch",
      "SellToPlayer:vial",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
      "BuyFromPlayer:book"
     ],
     "price_mismatch": [
      {
-      "br": 25,
+      "br": [
+       25
+      ],
       "offer": "SellToPlayer:scythe",
-      "ours": 50
+      "ours": [
+       50
+      ]
      }
     ],
     "status": "DIFFER",
@@ -23361,7 +23704,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 47,
+    "matched": 49,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -23542,7 +23885,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 57,
+    "matched": 59,
     "only_br": [
      "SellToPlayer:spellbook",
      "SellToPlayer:spellbook of the novice",
@@ -23578,7 +23921,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 47,
+    "matched": 49,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -23887,6 +24230,8 @@
     ],
     "only_ours": [
      "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:vial",
      "SellToPlayer:vial"
     ],
     "status": "DIFFER"
@@ -23997,7 +24342,11 @@
    },
    "trade": {
     "matched": 3,
-    "status": "AGREE"
+    "only_br": [
+     "SellToPlayer:costume bag",
+     "SellToPlayer:costume bag"
+    ],
+    "status": "DIFFER"
    }
   },
   {
@@ -24128,7 +24477,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 69,
+    "matched": 71,
     "only_br": [
      "SellToPlayer:soulfire rune",
      "SellToPlayer:the chiller",
@@ -24136,9 +24485,13 @@
     ],
     "price_mismatch": [
      {
-      "br": 15,
+      "br": [
+       15
+      ],
       "offer": "SellToPlayer:blank rune",
-      "ours": 10
+      "ours": [
+       10
+      ]
      }
     ],
     "status": "DIFFER"
@@ -24249,6 +24602,7 @@
      "SellToPlayer:water (líquido);mug of water"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "status": "DIFFER"
@@ -24353,10 +24707,11 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 119,
+    "matched": 121,
     "only_br": [
      "SellToPlayer:lemon",
-     "SellToPlayer:raspberry"
+     "SellToPlayer:raspberry",
+     "BuyFromPlayer:watermelon tourmaline"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
@@ -24370,6 +24725,7 @@
      "BuyFromPlayer:giant emerald",
      "BuyFromPlayer:giant ruby",
      "BuyFromPlayer:giant sapphire",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -24571,7 +24927,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 58,
+    "matched": 60,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -24686,7 +25042,7 @@
     "status": "CLOSE"
    },
    "trade": {
-    "matched": 22,
+    "matched": 24,
     "status": "AGREE"
    }
   },
@@ -24874,12 +25230,14 @@
    "trade": {
     "matched": 60,
     "only_br": [
+     "BuyFromPlayer:watermelon tourmaline",
      "BuyFromPlayer:wedding ring"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
      "BuyFromPlayer:diamond",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:moonstone",
@@ -24923,6 +25281,7 @@
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -25130,14 +25489,48 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 40170,
+    "revid": 413161,
+    "title": "The First Dragon (NPC)"
+   },
    "name": "The First Dragon",
-   "npc": "oteryn:npc.the_first_dragon"
+   "npc": "oteryn:npc.the_first_dragon",
+   "position": {
+    "br": [
+     33617,
+     31021,
+     13
+    ],
+    "ours": [
+     33617,
+     31017,
+     13
+    ],
+    "status": "CLOSE"
+   }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 63933,
+    "revid": 420346,
+    "title": "The Forgemaster (NPC)"
+   },
    "name": "The Forgemaster",
-   "npc": "oteryn:npc.the_forgemaster"
+   "npc": "oteryn:npc.the_forgemaster",
+   "position": {
+    "br": [
+     34068,
+     32337,
+     14
+    ],
+    "ours": [
+     34068,
+     32333,
+     14
+    ],
+    "status": "CLOSE"
+   }
   },
   {
    "br": {
@@ -25183,7 +25576,7 @@
     "status": "CLOSE"
    },
    "trade": {
-    "matched": 14,
+    "matched": 16,
     "only_br": [
      "SellToPlayer:black book",
      "SellToPlayer:brown book",
@@ -25198,6 +25591,11 @@
     ],
     "only_ours": [
      "SellToPlayer:book",
+     "SellToPlayer:book",
+     "SellToPlayer:book",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
      "BuyFromPlayer:book"
     ],
     "status": "DIFFER"
@@ -25319,6 +25717,7 @@
      "SellToPlayer:black book",
      "SellToPlayer:brown book",
      "SellToPlayer:grey small book",
+     "SellToPlayer:parchment",
      "SellToPlayer:spellbook of the novice",
      "BuyFromPlayer:blue book",
      "BuyFromPlayer:gemmed book",
@@ -25328,6 +25727,11 @@
     "only_ours": [
      "SellToPlayer:blank parchment",
      "SellToPlayer:book",
+     "SellToPlayer:book",
+     "SellToPlayer:book",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
+     "BuyFromPlayer:book",
      "BuyFromPlayer:book"
     ],
     "status": "DIFFER"
@@ -25788,7 +26192,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 47,
+    "matched": 49,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -26118,7 +26522,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 69,
+    "matched": 71,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -26132,6 +26536,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -26332,6 +26738,9 @@
      "SellToPlayer:wine"
     ],
     "only_ours": [
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
+     "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
     "status": "DIFFER"
@@ -26582,10 +26991,11 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 119,
+    "matched": 121,
     "only_br": [
      "SellToPlayer:lemon",
-     "SellToPlayer:raspberry"
+     "SellToPlayer:raspberry",
+     "BuyFromPlayer:watermelon tourmaline"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
@@ -26599,6 +27009,7 @@
      "BuyFromPlayer:giant emerald",
      "BuyFromPlayer:giant ruby",
      "BuyFromPlayer:giant sapphire",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -26723,12 +27134,16 @@
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
+     "SellToPlayer:picture",
+     "SellToPlayer:picture",
      "SellToPlayer:red bed",
      "SellToPlayer:simple bed",
      "SellToPlayer:treasure chest (ornamented)",
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -27442,9 +27857,13 @@
     ],
     "price_mismatch": [
      {
-      "br": 470,
+      "br": [
+       470
+      ],
       "offer": "BuyFromPlayer:war hammer",
-      "ours": 450
+      "ours": [
+       450
+      ]
      }
     ],
     "status": "DIFFER"
@@ -27755,7 +28174,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 47,
+    "matched": 49,
     "only_br": [
      "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
@@ -27796,9 +28215,16 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 12220,
+    "revid": 413166,
+    "title": "Yalahari (NPC)"
+   },
    "name": "Yalahari",
-   "npc": "oteryn:npc.yalahari"
+   "npc": "oteryn:npc.yalahari",
+   "position": {
+    "status": "MATCH"
+   }
   },
   {
    "br": {
@@ -27921,7 +28347,7 @@
     "status": "MISMATCH"
    },
    "trade": {
-    "matched": 643,
+    "matched": 646,
     "only_br": [
      "BuyFromPlayer:atab's mitmah helmet",
      "BuyFromPlayer:axe of sir leonard",
@@ -28003,6 +28429,7 @@
      "BuyFromPlayer:cry-stal",
      "BuyFromPlayer:decayed finger bone",
      "BuyFromPlayer:demon root",
+     "BuyFromPlayer:dracoyle statue",
      "BuyFromPlayer:emerald tortoise shell",
      "BuyFromPlayer:fish eye",
      "BuyFromPlayer:golden cheese wedge",
@@ -28121,7 +28548,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 69,
+    "matched": 71,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -28135,6 +28562,8 @@
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
+     "SellToPlayer:wall mirror",
+     "SellToPlayer:wall mirror",
      "SellToPlayer:yellow bed"
     ],
     "only_ours": [
@@ -28191,6 +28620,7 @@
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:giant amethyst",
+     "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
@@ -28390,7 +28820,7 @@
    "dialogue": {
     "br_lines": 42,
     "matched": 6,
-    "near": 4,
+    "near": 5,
     "texts": 69
    },
    "name": "Zerbrus",
@@ -28655,6 +29085,8 @@
     "only_ours": [
      "SellToPlayer:blank parchment",
      "SellToPlayer:book",
+     "SellToPlayer:book",
+     "SellToPlayer:book",
      "SellToPlayer:hand auger",
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net"
@@ -28761,23 +29193,23 @@
  "totals": {
   "dialogue:br_only": 174,
   "dialogue:checked": 360,
-  "dialogue:matched": 2671,
-  "dialogue:near": 338,
+  "dialogue:matched": 2685,
+  "dialogue:near": 329,
   "dialogue:no_text_matched": 68,
   "dialogue:texts": 5404,
-  "no_br_page": 34,
-  "npcs": 1094,
-  "position:CLOSE": 94,
-  "position:MATCH": 220,
-  "position:MISMATCH": 41,
-  "position:NEAR": 677,
+  "no_br_page": 21,
+  "npcs": 1093,
+  "position:CLOSE": 96,
+  "position:MATCH": 226,
+  "position:MISMATCH": 43,
+  "position:NEAR": 678,
   "position:NO_BR_POSITION": 1,
   "position:NO_PLACEMENT": 2,
-  "position:OTHER_FLOOR": 25,
+  "position:OTHER_FLOOR": 26,
   "removed_on_br": 5,
-  "trade:AGREE": 89,
-  "trade:BR_ONLY": 63,
-  "trade:DIFFER": 207,
+  "trade:AGREE": 88,
+  "trade:BR_ONLY": 64,
+  "trade:DIFFER": 209,
   "trade:NO_BR_TRADE": 6
  }
 }

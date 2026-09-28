@@ -58,16 +58,16 @@ session's network but answers the repository's runners, as it did for the G4 non
 No wiki prose is stored. D3 records the access route and what is kept (the source-profile decision
 forbids bulk-copying TibiaWiki prose).
 
-`tibiawiki_br_crosscheck.py` compares every admitted NPC with those facts and writes
+`tibiawiki_br_crosscheck.py` compares every admitted NPC (from the pinned admission evidence) with those facts and writes
 `samples/tibiawiki-br-crosscheck-v1.json`. The report changes nothing that is admitted.
 
 | Check | Result |
 | --- | --- |
-| BR page found | 1,060 of 1,094 NPCs |
+| BR page found | 1,072 of 1,093 admitted NPCs |
 | Removed on BR (13.12) | 5 |
-| Positions | 220 same tile, 677 within 3 tiles, 94 within 10, 25 on another floor, 41 far |
-| Trade | 89 agree, 207 differ (28 explicit price differences), 63 with BR offers but none admitted |
-| Dialogue | 360 NPCs checked: of 5,404 texts, 2,671 match a transcript line exactly and 338 nearly; 68 NPCs match none |
+| Positions | 226 same tile, 678 within 3 tiles, 96 within 10, 26 on another floor, 43 far |
+| Trade | 88 agree, 209 differ (27 explicit price differences), 64 with BR offers but none admitted |
+| Dialogue | 360 NPCs checked: of 5,404 texts, 2,685 match a transcript line exactly and 329 nearly; 68 NPCs match none |
 
 #1103 committed the raw capture itself before a review finding about this could be applied. This task
 removes it from the tree (it remains in the history of `d17a3826`) and archives the #1103 task record.
