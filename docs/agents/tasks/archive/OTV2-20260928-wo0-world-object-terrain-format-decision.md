@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-wo0-world-object-terrain-format-decision
 title: "WO-0 WorldObject and Terrain authoring format decision (D93-D94)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1157
 base_sha: 9961e4d4afc90d06a92ad7af59cfdbe6857e99b3
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: db4eb5e266bc7e2aa83c70e7d517a8ab81a79ef5
+final_head_sha: db4eb5e266bc7e2aa83c70e7d517a8ab81a79ef5
+final_head_frozen_at: 2026-09-28T19:37Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -54,9 +54,9 @@ which mints identity, requires independent identity review when allocated.
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review.
+- [x] Protected Merge Queue integration.
 
 ## Excluded scope
 
@@ -79,14 +79,26 @@ rule 5869165340). No owner decision changed.
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1157 merged through the Merge Queue on 2026-09-28 as `e19b19d6`.
+- Review: one Codex review of `0b18850` (three P1s), repaired in the single repair generation
+  `db4eb5e`; the owner decided to merge after green CI.
+- Protected-main readback: all three changed files on `e19b19d6` are byte-identical to the frozen
+  head `db4eb5e`.
+- The PR body predates the repair (the LocalObject `presentation` ref and WO-3, the typed
+  `routed_to`, the Item-owned corpse fields); the documents are authoritative.
+- Archived under `OTV2-20260928-a8-donor-item-identity-epoch-decision`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1157 open
-status: validating
+last_progress: protected-integrated as e19b19d6; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: db4eb5e266bc7e2aa83c70e7d517a8ab81a79ef5
 pr: 1157
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1157
+next_action: null
 ```
