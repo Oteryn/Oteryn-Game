@@ -15,10 +15,10 @@ assert manifest["compatibility"] == {
 }
 assert lock["family_counts"] == {
     "Item": 38157, "Mount": 252,
-    "Creature": 1315, "Presentation": 2298, "Behavior": 2298, "Loot": 977, "Ability": 5240, "Effect": 3908, "Formula": 4211,
+    "Creature": 1318, "Presentation": 2301, "Behavior": 2301, "Loot": 978, "Ability": 5254, "Effect": 3926, "Formula": 4224,
     "NPC": 983, "Service.Trade": 289, "Service.Travel": 53,
 }
-assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1315, "NPC": 2035}
+assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1318, "NPC": 2035}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
