@@ -1200,29 +1200,32 @@ impl ChannelActorCarrier {
         }
     }
 
+    /// GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.5 ("Creature slots become
+    /// Movement-capable actors of the same Movement owner"): a creature slot with a live
+    /// (`health > 0`) generation reads exactly like a player slot here. `validate_ref` already
+    /// rejects a stale generation, a vacant slot or an exhausted one before this is reached, and
+    /// `read_position`/`compare_commit_position` already branch on `Slot::CreatureOccupied`
+    /// identically to `Slot::Occupied` for position facts, so no further creature-specific branch
+    /// is needed for Movement to serve a creature actor generically.
     fn read_movement_position(
         &self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
     ) -> Result<MovementPositionSnapshot, CarrierError> {
-        let index = self.validate_ref(continuity, actor_ref)?;
-        if matches!(&self.slots[index], Slot::CreatureOccupied { .. }) {
-            return Err(CarrierError::MovementCreatureUnavailable);
-        }
+        self.validate_ref(continuity, actor_ref)?;
         self.read_position(continuity, actor_ref)
             .map(MovementPositionSnapshot)
     }
 
+    /// See [`Self::read_movement_position`]: a creature slot commits its cardinal step through
+    /// the same compare-commit path a player's does (§4.5).
     fn commit_movement_position(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         expected: PositionSnapshot,
         next: LocalPosition,
     ) -> Result<MovementPositionSnapshot, CarrierError> {
-        let index = self.validate_ref(continuity, expected.actor_ref)?;
-        if matches!(&self.slots[index], Slot::CreatureOccupied { .. }) {
-            return Err(CarrierError::MovementCreatureUnavailable);
-        }
+        self.validate_ref(continuity, expected.actor_ref)?;
         // An exclusive carrier borrow prevents a slot replacement between this check and
         // the existing private exact-snapshot/revision compare-commit.
         self.compare_commit_position(continuity, expected, expected.version.context, next)
