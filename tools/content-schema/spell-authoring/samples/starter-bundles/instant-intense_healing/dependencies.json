@@ -3,7 +3,7 @@
     {
       "identity": {
         "key": "candidate:ability/spell/intense_healing",
-        "revision": "spell-p2-r2"
+        "revision": "spell-p2-r3"
       },
       "kind": "spell",
       "range_tiles": 0,
@@ -13,12 +13,12 @@
         {
           "family": "Effect",
           "key": "candidate:ability/spell/intense_healing/effect",
-          "revision": "spell-p2-r2"
+          "revision": "spell-p2-r3"
         },
         {
           "family": "Effect",
           "key": "candidate:ability/spell/intense_healing/effect-dispel",
-          "revision": "spell-p2-r2"
+          "revision": "spell-p2-r3"
         }
       ]
     }
@@ -27,14 +27,14 @@
     {
       "identity": {
         "key": "candidate:ability/spell/intense_healing/effect",
-        "revision": "spell-p2-r2"
+        "revision": "spell-p2-r3"
       },
       "operation": "heal",
       "damage_type": "healing",
       "formula": {
         "family": "Formula",
         "key": "candidate:formula/spell/intense_healing/combat-1",
-        "revision": "spell-p2-r2"
+        "revision": "spell-p2-r3"
       },
       "presentation": {
         "impact_asset_binding": "crystal.appearance:effect/magic_blue"
@@ -43,7 +43,7 @@
     {
       "identity": {
         "key": "candidate:ability/spell/intense_healing/effect-dispel",
-        "revision": "spell-p2-r2"
+        "revision": "spell-p2-r3"
       },
       "operation": "remove_condition",
       "removed_condition": "paralyze"
@@ -53,7 +53,7 @@
     {
       "identity": {
         "key": "candidate:formula/spell/intense_healing/combat-1",
-        "revision": "spell-p2-r2"
+        "revision": "spell-p2-r3"
       },
       "kind": "player_expression",
       "inputs": "level_magic",
