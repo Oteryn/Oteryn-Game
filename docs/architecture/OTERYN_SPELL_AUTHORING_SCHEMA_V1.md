@@ -2,14 +2,15 @@
 
 - Date: 2026-09-27
 - Status: CANDIDATE / authoring schema with executable validation and source evidence; S1–S5, S11 and S12
-  decided by the owner on 2026-09-27, S13 on 2026-09-28, S6–S10 PROPOSED; no runtime, WorldProject storage or `content/` change
+  decided by the owner on 2026-09-27, S13–S15 on 2026-09-28, S6–S10 PROPOSED; no runtime, WorldProject storage or `content/` change
 - Request: owner request of 2026-09-27 (schema and implementation plan for player spells, as for monsters);
   programme story KAN-16; no GitHub task allocation yet
 - Machine artifacts: `tools/content-schema/spell-authoring/`
 - Companion of: `OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md` (Ability/Effect/Formula, D10–D13, D15, D25),
   `OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md` (rune items), `OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md`
   (`content/abilities/**`)
-- Sources: `opentibiabr/canary@47dfd51f45280a59a1d3e50ba7edd573d7234446`,
+- Sources: `opentibiabr/canary@99902524e052f37574194466c2949c576e4ab269` (branch
+  `dudantas/fix-tibia-15-30-regressions`, S14; `47dfd51f` before S14),
   `zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a` (both `OtsHypothesisOnly`),
   TibiaWiki (Fandom) as of 2026-09-27 (S3). TibiaWiki BR is the registered primary structured source
   (`OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md`) and is captured in phase P1.
@@ -229,6 +230,30 @@ BR and tibiopedia.pl field by field (`samples/spell-verify-3-sources-2026-09-28.
   the blocked Summon Creature mana: BR "varies", Fandom and tibiopedia.pl 100). Readiness is unchanged
   (141 ready, 108 blocked).
 
+### 4.4 Canary 15.30 branch and official library (2026-09-28)
+
+The active branches of both sources were read on 2026-09-28. Neither `main` changed a spell script since
+the pins. Crystal's active branches change no spell value (`summer-update` adds comments,
+`feat-expert-pvp` touches PvP). Canary `dudantas/fix-tibia-15-30-regressions` (last commit 2026-07-28,
+not merged) implements the Tibia 15.30 spell changes:
+
+- 30 changed spells: knight healing, druid attack and healing formulas, Strong Ice Wave, Mass Spirit Mend,
+  Mystic Repulse, stances;
+- 20 new or renamed spells: auras, familiars, Master of Flames/Decay/Thunder, Elemental Synthesis, Divine
+  Defiance, Shared Conservation, Thousand Fist Blows.
+
+With S14 the census reads that branch (`samples/spell-census-canary-99902524-crystal-ff7ede5.json`):
+
+- 252 spells: 152 ready (was 141) and 100 blocked;
+- 15 spells become ready and 4 become blocked. Flurry of Blows, Front Sweep and Strong Ice Wave run Wheel
+  logic in both sources (S6/S7); Divine Barrage has a `needTarget` conflict no wiki decides;
+- Strong and Ultimate Energy/Flame Strike get range 7 (BR, tibiopedia.pl and the branch);
+- the vote returns Wound Cleansing's cooldown to 2 s (BR and the branch against Fandom and tibiopedia.pl;
+  the official news of 2026-07-07 changes only its mana).
+
+The official tibia.com spell library (S15) answers a Cloudflare browser check from the build container
+and is read by the `tibiacom` job of `spell-wiki-capture.yml` on a hosted runner (`tibiacom_spells.py`).
+
 ## 5. Decisions
 
 | # | Proposal | Basis |
@@ -246,6 +271,8 @@ BR and tibiopedia.pl field by field (`samples/spell-verify-3-sources-2026-09-28.
 | S11 | **DECIDED (owner, 2026-09-27).** A value on which TibiaWiki BR and Fandom disagree is taken from the latest official news that changed it (tibia.com, read through its tibiopedia.pl mirror); without such a news item the wiki page with the newer revision wins. The losing value stays in the manifest. | §4.2 conflicts; §3 post-15.30 balancing (neither wiki is always the fresher one). |
 | S12 | **DECIDED (owner, 2026-09-27).** tibiopedia.pl is a third reference: its official news mirror is the S11 evidence and its spell pages may confirm single facts (base power, cooldowns, level, mana); only facts with their URL are recorded, never page text. | §3; tibiopedia.pl is "all rights reserved". |
 | S13 | **DECIDED (owner, 2026-09-28).** Without an official change (S11), a BR/Fandom conflict is decided by tibiopedia.pl when it agrees with one of them (two of three references); only when all three differ does the newer wiki revision decide. tibiopedia.pl never supplies a value neither wiki states. Applied in `convert_spells.py` (`spell-p2-r2`); it changed 9 fields of 6 ready spells (§4.3). | §4.3: in 8 of the 9 fields the majority also matches Canary and Crystal. |
+| S14 | **DECIDED (owner, 2026-09-28).** The Canary source is the Tibia 15.30 branch `dudantas/fix-tibia-15-30-regressions` at `99902524` (not yet in Canary `main`): (a) in a BR/Fandom conflict without an official change, each wiki, tibiopedia.pl and the branch back one value, the most votes win and a tie goes to the branch; (b) formulas, effects and areas come from the branch instead of the older Canary pin, with Crystal still an equal source (S4, S5); (c) the single-target range stated by BR and tibiopedia.pl decides like other wiki fields; (d) its new and renamed spells join the census. Where all wikis agree, they decide even against the branch. | §4.4 |
+| S15 | **DECIDED (owner, 2026-09-28).** The official tibia.com spell library decides every field it states, ahead of the wikis, S11, S13 and S14; the wikis, tibiopedia.pl and the sources supply what it does not state. Captured on a hosted runner (`tibiacom_spells.py`); single facts with the page URL and page SHA-256 only. | §4.4; tibia.com is the game publisher's reference. |
 
 ## 6. Mapping to WorldProject/v2
 
