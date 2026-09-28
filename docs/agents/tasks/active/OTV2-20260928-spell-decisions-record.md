@@ -100,6 +100,9 @@ complete this qualification itself.
 - `8a0f459`: Codex P2 4121543165 (D5a had no soul-maximum transition when premium changes).
   Accepted: V1 has no active premium until the PROD-ENTITLEMENTS-01 consumer contract, so the soul
   maximum is 100; that contract owns the re-evaluation point and the clamping rule.
+- `1686320`: Codex P2 4121579408 (PROD-ENTITLEMENTS-01 is already accepted, so it is not a gate).
+  Accepted: the gate is an explicit product-specific Premium activation or transition decision; the
+  V1 soul maximum stays 100.
 
 ## Context checkpoint
 
