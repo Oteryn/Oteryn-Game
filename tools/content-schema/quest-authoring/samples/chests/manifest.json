@@ -43,16 +43,29 @@
     "claims": 336,
     "placements": 359,
     "claims_linked_to_wiki_quest": {
+      "curated": 53,
       "kv_quest_name": 92,
       "label": 37,
-      "none": 56,
+      "none": 3,
       "storage_key": 151
     },
-    "claims_with_section_candidate_only": 35,
-    "quests": 120,
+    "claims_with_section_candidate_only": 2,
+    "quests": 135,
     "by_status": {
       "approved_omission": 134,
       "mapped": 359
+    },
+    "requirements_parsed": {
+      "quests_with_wiki_requirements": 135,
+      "premium": {
+        "parsed": 135
+      },
+      "min_level": {
+        "note": 4,
+        "parsed": 127,
+        "range": 2,
+        "uncertain": 1
+      }
     }
   },
   "entries": [

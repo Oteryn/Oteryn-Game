@@ -773,6 +773,14 @@ PRIMARYTYPE_PROFILE = {
     "trees": "plant",
     "mushrooms": "plant",
     "soul cores": "material_valuable",
+    # Owner decision 2026-09-28: single-use charms that grant one blessing on use
+    # (Crystal `data/libs/systems/blessing.lua` `Blessings.All[*].charm`); the blessing
+    # effect itself is runtime behaviour, not part of the family.
+    "blessing charms": "progression_material",
+    # Owner decision 2026-09-28: TibiaWiki files every "Clothing Accessories" item as a
+    # creature product (green piece of cloth, ivory comb: primary Creature Products,
+    # secondary Clothing Accessories; old rag is its look-alike event drop).
+    "clothing accessories": "material_valuable",
 }
 # English TibiaWiki (tibia.fandom.com) infobox `primarytype` uses a handful of exact
 # vocabulary variants of the values above (case-folding and pluralization only, verified

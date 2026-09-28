@@ -192,7 +192,9 @@ Quest (kind reward_only)             content/quests/definitions/
   identity, display_name
   shown_in_quest_log                 from the wiki category "Quests in In-Game Quest Log"
   wiki                               title, pageid, revid (facts only)
-  requirements_from_wiki             premium, level (as recorded; not yet typed)
+  requirements_from_wiki             premium, level (as recorded)
+  requirements                       min_level, premium: typed from the recorded values, or null
+  requirements_unparsed              why a value stays null (range, note, uncertain, varies, partial)
   claims[]                           RewardClaim refs
 
 Quest (kind script_only)             content/quests/definitions/
@@ -268,9 +270,9 @@ resolves source ids. The CW2 B3 loot binding evidence has every row still `UNRES
 | Containers / door keys / written texts / random rewards / cooldowns | 68 / 27 / 14 / 6 / 6 |
 | Empty containers and duplicate markers (approved omissions) | 134 |
 | Conflicts: decided by the wiki / as equivalent (§6.4) | 1 / 1 |
-| Claims linked to a wiki quest: KV name / storage key / own label | 92 / 151 / 37 |
-| Claims with a section-only candidate (review) / without a link | 35 / 21 |
-| Reward-only quests | 120 |
+| Claims linked to a wiki quest: KV name / storage key / own label / curated | 92 / 151 / 37 / 53 |
+| Claims with a section-only candidate (review) / without a link | 2 / 3 |
+| Reward-only quests | 135 |
 
 The Thieves Guild goblet chest hands out a golden goblet in Canary and a stolen golden goblet in
 CrystalServer. The wiki decides for CrystalServer: the spoiler says the chest behind the quest door
@@ -281,6 +283,20 @@ tiles away (33079/31173/8), probably one chest moved. The map decides.
 
 Section-only matches are not links, because the file's section headers do not always cover the
 entries below them. The four outlaw camp key chests, for example, sit under the Katana Quest header.
+
+`chest_quest_links.json` links 53 of the 56 weak claims with evidence:
+- a sibling claim of the same quest (14);
+- a reward on the wiki quest page (15);
+- a wiki note on the key (14) or on the item (6);
+- the coverage evidence (4).
+
+Each link cites the wiki page and revision. The last three stay unlinked because nothing ties them
+to a quest: the Rookgaard mushroom chest, the Mintwallin prison key and the Witch House chest.
+
+**Typed requirements.** 198 of the 204 catalogue quests record wiki requirements:
+- 196 have a typed premium flag; the other 2 are `partial`.
+- 184 have a typed minimum level. The rest stay null with a reason: 5 ranges, 4 notes, 3 uncertain
+  values and 1 that varies.
 
 ### 6.1 Doors
 
@@ -332,7 +348,7 @@ apostrophe, an article, a plural or a source spelling.
 | Journals: per stage / fixed / template | 468 / 38 / 23 |
 | Progress tracks (mission and start / auxiliary, §6.5) / set by both servers' Lua / with no literal writer found | 1,001 (556 / 445) / 704 / 109 |
 | Storyline quests linked to a wiki quest | 52 |
-| Reward-only quests absorbed by a storyline quest / script-only quests / catalogue quests | 21 / 35 / 192 |
+| Reward-only quests absorbed by a storyline or script-only quest / script-only quests / catalogue quests | 24 / 35 / 204 |
 | Gates / reward claims attached to storyline quests | 138 / 98 |
 | Missions mapped / of which decided from a conflict (§6.4) | 529 / 35 |
 | Transitions / missions with at least one | 1,832 / 422 |
@@ -368,14 +384,20 @@ joined by that key; `interaction.schema.json` and
 | D37 relocation children: to a named anchor / blocked (a computed target, or a target the committed transcription cannot yet prove is a fully-delimited literal) | 0 / 800 |
 | D38 overlay operations: classified by kind (`TRANSFORM`/`CREATE`/`REMOVE`/`RETAG`) / still blocked pending call-type re-transcription from source | 0 / 891 |
 | Quest children naming a mission transition | 215 |
-| Unresolved statements / conditions | 1,908 / 1,916 |
+| Unresolved statements / conditions | 1,908 / 1,786 |
 | Of the statements, naming a missing owner: delayed callback / key-value write / creature removal / condition / boss cooldown | 304 / 56 / 43 / 26 / 25 |
-| Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 256 / 965 / 37 |
+| Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 268 / 953 / 37 |
 
 An independent spot check of 56 randomly sampled classified lines against their source found no
 misclassification. Most interactions keep some unresolved part: local tables and lookups,
 boss-room loops and delayed callbacks are the common ones. They stay with their source line
 rather than being guessed. Every track a quest child writes is declared by the catalogue (§6.5).
+
+- **Value aliases.** A condition on a local that holds a storage value (`local x =
+  player:getStorageValue(...)`) reads that storage, provided the callback never reassigns the local.
+- **Curated overrides.** `interaction_overrides.json` replaces an unresolved condition that
+  indexes a table in a sibling `lib/quests` file. It names the table's keys and cites the lines.
+  An override whose line is no longer unresolved stops the run.
 
 The Queen of the Banshees shows the result for one quest: 18 interactions; its seven seal flames
 request the seven movement transitions of slice 3 (one per mission, the last one opening the final
@@ -479,8 +501,12 @@ v3.6.1, the `mapDownloadUrl` of the pinned revision, sha256 `a80de1dd…`) and C
 - Canary stamps chest, door and most trigger ids onto placed items at startup (the Map Attributes
   Loader tables), so the raw map holds the items but not those ids. The check therefore compares
   item ids and reads the startup tables, where every listed item is on its tile.
-- The 65 ids not found belong to places loaded at runtime (quest overlay maps) or to scripts
-  nothing on the map triggers; they are listed for review.
+- The 65 ids not found are classified; none of them is on a runtime-loaded overlay map:
+  - 13 are assigned by a script at runtime;
+  - 24 are registered only in CrystalServer scripts;
+  - 28 are found nowhere, which points to dead scripts (among them nine Kilmaresh unique ids).
+- The overlay maps (quest areas and world changes) are pinned by sha256; the report names the Lua
+  call that loads each one.
 - The two open map questions of §6 are answered. The corpse chest is the same tile with a different
   corpse item in each map, which confirms the "equivalent" decision. The Wrath of the Emperor chest
   exists only at each server's own position on its own map: the chest moved between the servers.
@@ -491,20 +517,21 @@ v3.6.1, the `mapDownloadUrl` of the pinned revision, sha256 `a80de1dd…`) and C
 quest, the engine features it needs and the data gaps it still has. It joins interactions to
 quests through the tracks they read or write, then through the script directory.
 
-Built in the order that completes the most quests first, the features give (192 quests):
+Built in the order that completes the most quests first, the features give (204 quests):
 
 | Built so far | Quests complete on the engine side (without data gaps) |
 |---|---:|
-| `USE` trigger and reward claim | 75 (75) |
-| + world objects, teleports, step triggers | 88 (76) |
-| + item consumption, kill triggers, quest state | 95 (78) |
-| + NPC dialogue and progress doors | 121 (98) |
-| + delayed callbacks, item hand-out, summons, achievements, conditions | 158 (99) |
-| + creature removal, boss cooldowns, key-value state, outfits, mounts, experience | 192 (99) |
+| `USE` trigger and reward claim | 86 (86) |
+| + world objects, teleports, step triggers | 99 (87) |
+| + item consumption, kill triggers, quest state | 106 (89) |
+| + progress doors and NPC dialogue | 133 (110) |
+| + delayed callbacks, item hand-out, summons, achievements, conditions | 170 (111) |
+| + creature removal, boss cooldowns, key-value state, outfits, mounts, experience | 204 (111) |
 
-- The reward chest is the first target: with the `USE` trigger it completes 75 quests.
+- The reward chest is the first target: with the `USE` trigger it completes 86 quests.
 - The Queen of the Banshees needs ten features, including summons and delayed callbacks, and still
-  has 18 data gaps in 9 interactions.
+  has 13 data gaps in 8 interactions. They are table field reads, calls used as booleans, tile and
+  item checks, and loops.
 - 29 of 1,221 interactions join no catalogue quest. They are generic scripts (Rookgaard helpers,
   Candia bosses, Marapur, the Raging Mage tower, Soulpit and others), not quest content.
   Five script directories whose name differs from their quest key are joined explicitly
@@ -559,7 +586,7 @@ A player completing The Queen of the Banshees needs:
 | Quest lowering from content | none | a Quest/Interaction definition family in the Reference linker |
 
 The smallest playable slice is a reward chest: a `USE` trigger, one DUR-03 hand-out and a per-character
-claim. It needs only GAME-INTERACTION-01 and DUR-03 accepted and a claim store, and it completes 75
+claim. It needs only GAME-INTERACTION-01 and DUR-03 accepted and a claim store, and it completes 86
 quests on the engine side (§6.7). It also needs the first durable inventory: today only XP persists,
 and item weight and capacity limits are still `PARITY_PENDING_EVIDENCE` (GAME-ITEM-01). A full storyline quest
 needs every row above.

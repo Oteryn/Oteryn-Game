@@ -39,7 +39,13 @@ import lua_tables
 from lua_writers import REGISTRATION, argument, expand_aliases, storage_aliases, strip_code
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
 from ots_questlog import norm, script_of, track_of
-from validate_quest_content import BLOCKED, BLOCKED_SCHEDULED_REVERT_DELAY
+from validate_quest_content import BLOCKED, BLOCKED_DUPLICATE_SCHEDULED_REVERT, BLOCKED_SCHEDULED_REVERT_DELAY
+
+# Curated per-interaction, per-line replacements for a condition ots_interactions.py cannot read statically (a
+# sibling lib/quests/*.lua table indexed by a role field or a world state): interaction key -> source line -> the
+# resolved condition plus a basis citing the table/registration evidence. Applied by `apply_overrides`; a stale
+# entry (its line no longer unresolved) fails the run via `unused_overrides`.
+OVERRIDES = json.loads((ROOT / 'interaction_overrides.json').read_text())
 
 CALLBACK = re.compile(r'^\s*function\s+(\w+)[.:](onStepIn|onStepOut|onAddItem|onUse|onDeath|onKill|onPrepareDeath)\s*\(')
 OBJECT_LINE = re.compile(r'^\s*local\s+\w+\s*=\s*(MoveEvent|Action|CreatureEvent)\s*\(')
@@ -131,8 +137,11 @@ def parse_revert(raw):
             return False, None, None, None, False
         # addEvent(Position.revertItem, delay, position, ...): the scheduler's own two fixed arguments,
         # then whatever Position.revertItem itself is invoked with; a position is conventionally its
-        # first argument (the third argument to addEvent overall).
-        delay = int(args[1]) if len(args) > 1 and re.fullmatch(r'\d+', args[1]) else None
+        # first argument (the third argument to addEvent overall). A non-positive literal delay (schema
+        # `revert_after_ms` requires >= 1) is treated exactly like a non-literal one -- unresolved, never
+        # a recordable duration -- so both fail closed the same way in `revert()`.
+        literal_delay = int(args[1]) if len(args) > 1 and re.fullmatch(r'\d+', args[1]) else None
+        delay = literal_delay if literal_delay and literal_delay >= 1 else None
         target = args[2] if len(args) > 2 else None
         pos = POSITION.fullmatch(target) if target else None
         return True, None, (pos.groups() if pos else None), delay, True
@@ -178,6 +187,10 @@ LITERAL_STORAGE = re.compile(r'Storage(?:\.\w+(?:\[\d+\])?)+$')
 # step is a runtime-selected entry (a loop counter or another variable), never resolved statically.
 CHAIN = re.compile(r'([A-Za-z_]\w*)((?:\.[A-Za-z_]\w*|\[\d+\]|\[[A-Za-z_]\w*\])*)$')
 CHAIN_STEP = re.compile(r'\.([A-Za-z_]\w*)|\[(\d+)\]|\[([A-Za-z_]\w*)\]')
+# `local X = player:getStorageValue(...)` / `local X = Game.getStorageValue(...)`: a value alias, scoped to the
+# callback it is read in (unlike the file-wide Storage.… path aliases), so a later bare `X <op> N` reads the same
+# storage/world-state comparison the direct call already resolves (D36 condition vocabulary, never guessed).
+VALUE_ALIAS = re.compile(r'^local\s+(\w+)\s*=\s*((?:\w+:getStorageValue|Game\.getStorageValue)\([^()]*\))$')
 
 
 class Script:
@@ -205,6 +218,14 @@ class Script:
         actor = next((n for n, r in self.roles.items() if r == 'actor'), None)
         self.players = {actor} if callback == 'onUse' else set()
         self.containers = {}
+        body = [self.raw(n) for n in lua_blocks.function_body(self.lines, number)]
+        declared = [m for text in body if (m := VALUE_ALIAS.match(text))]
+        # an alias counts only when declared once and never assigned again in the callback, so every later
+        # read sees the storage value it was declared with
+        self.value_aliases = {m.group(1): m.group(2) for m in declared
+                              if sum(1 for d in declared if d.group(1) == m.group(1)) == 1
+                              and not any(re.match(rf'^(local\s+)?{re.escape(m.group(1))}\s*=(?!=)', text)
+                                          for text in body if not VALUE_ALIAS.match(text))}
         for line in self.lines[number:]:
             if actor and (m := re.match(rf'\s*local\s+(\w+)\s*=\s*{actor}:getPlayer\(\)', line)):
                 self.players.add(m.group(1))
@@ -305,6 +326,9 @@ class Script:
         return all(READ_ONLY.match(name) for name in re.findall(r'(\w+)\s*\(', code))
 
     def condition(self, text, number):
+        # never inside a string literal (e.g. the `"switchNum"` key of the very call an alias stands for)
+        for alias, expr in self.value_aliases.items():
+            text = re.sub(rf'(?<![\w.:"\']){re.escape(alias)}(?![\w"\'])', expr, text)
         parts = re.split(r'\s+(and|or)\s+', text)
         terms, joins = parts[0::2], set(parts[1::2])
         if len(joins) > 1:
@@ -549,13 +573,24 @@ class Script:
         operation, never its own child). List position is never itself the match: a revert with no
         matching candidate, or with more than one equally plausible candidate, stays blocked instead --
         as does a scheduled (addEvent) revert with no literal delay, which fails closed rather than
-        merging silently with no `revert_after_ms` (only an inherently undelayed revert may do that)."""
+        merging silently with no `revert_after_ms` (only an inherently undelayed revert may do that).
+        A second scheduled revert that provably targets an operation which already carries a
+        `revert_after_ms` (from an earlier one, in source order) never overwrites it -- the operation's
+        actual revert delay cannot be inferred from two conflicting schedules -- and stays blocked
+        instead, with its own explicit reason distinct from an unresolved delay or no candidate at all."""
         receiver, pos = child['_revert_receiver'], child['_revert_position']
         candidates = [c for c in out if c.get('owner') == 'WorldObject' and 'operation' in c
                      and self.same_target(c, receiver, pos)]
         unresolved_delay = child['_revert_scheduled'] and child['_revert_delay_ms'] is None
-        if len(candidates) != 1 or unresolved_delay:
-            reason = BLOCKED_SCHEDULED_REVERT_DELAY if len(candidates) == 1 and unresolved_delay else BLOCKED_WORLD_OBJECT
+        duplicate = (len(candidates) == 1 and child['_revert_delay_ms'] is not None
+                    and 'revert_after_ms' in candidates[0])
+        if len(candidates) != 1 or unresolved_delay or duplicate:
+            if duplicate:
+                reason = BLOCKED_DUPLICATE_SCHEDULED_REVERT
+            elif len(candidates) == 1 and unresolved_delay:
+                reason = BLOCKED_SCHEDULED_REVERT_DELAY
+            else:
+                reason = BLOCKED_WORLD_OBJECT
             blocked = {'owner': 'WorldObject', 'status': 'blocked', 'reason': reason,
                       'source_line': child['_source_line']}
             if child.get('repeated'):
@@ -680,6 +715,45 @@ def unresolved_conditions(interaction):
     return sum(1 for c in conditions(interaction['rules']) if 'unresolved' in c)
 
 
+def apply_overrides(rules, key, used):
+    """Replace an unresolved condition with a curated override's equivalent (`interaction_overrides.json`), for a
+    script-local table or loop `ots_interactions.py` cannot read statically (e.g. a sibling `lib/quests/*.lua`
+    table indexed by a role field or a world state). Every replacement is recorded in `used` so a stale override
+    (naming a line that is no longer unresolved) is caught by `unused_overrides` rather than silently ignored."""
+    overrides = OVERRIDES.get(key, {})
+    if not overrides:
+        return
+
+    def replace(cond):
+        if 'all' in cond or 'any' in cond:
+            combinator = 'all' if 'all' in cond else 'any'
+            cond[combinator] = [replace(c) for c in cond[combinator]]
+            return cond
+        line = cond.get('unresolved', {}).get('line')
+        override = overrides.get(str(line)) if line is not None else None
+        if override:
+            used.add((key, str(line)))
+            return json.loads(json.dumps(override['condition']))
+        return cond
+
+    def walk(nodes):
+        for rule in nodes:
+            if 'branch' in rule:
+                for arm in rule['branch']:
+                    arm['when'] = replace(arm['when'])
+                    walk(arm['then'])
+                walk(rule.get('otherwise', []))
+    walk(rules)
+
+
+def unused_overrides(used):
+    """Fail loudly when a recorded interaction override no longer matches an unresolved line."""
+    stale = sorted(f'{key}#{line}' for key, lines in OVERRIDES.items() for line in lines
+                  if (key, line) not in used)
+    if stale:
+        raise SystemExit(f'interaction overrides without a matching unresolved line: {stale}')
+
+
 def build(repos, scripts, questlog_dir):
     keys = transition_keys(questlog_dir)
     declared_by_path = {norm(t['key'].split('/', 1)[1]): t['key']
@@ -696,7 +770,7 @@ def build(repos, scripts, questlog_dir):
             script.declared = declared_by_path
             for interaction in script.interactions():
                 by_script.setdefault(interaction['identity']['key'].split(':', 1)[1], {})[name] = interaction
-    interactions, manifest_entries, used = [], [], set()
+    interactions, manifest_entries, used, used_overrides = [], [], set(), set()
     for _, pair in sorted(by_script.items()):
         primary = pair.get('canary') or pair['crystalserver']
         agree = len(pair) == 2 and comparable(pair['canary']) == comparable(pair['crystalserver'])
@@ -713,6 +787,10 @@ def build(repos, scripts, questlog_dir):
                     primary = dict(pair['crystalserver'], identity=primary['identity'])
                 status = 'unresolved_semantics' if primary['unresolved'] or unresolved_conditions(primary) else 'mapped'
                 resolution = 'the servers differ; ' + decided(decision)
+        if primary['identity']['key'] in OVERRIDES:
+            primary = dict(primary, rules=json.loads(json.dumps(primary['rules'])))
+            apply_overrides(primary['rules'], primary['identity']['key'], used_overrides)
+            status = 'unresolved_semantics' if primary['unresolved'] or unresolved_conditions(primary) else 'mapped'
         interactions.append({k: v for k, v in primary.items() if k not in ('script', 'callback_line')})
         manifest_entries.append({'destination': primary['identity']['key'], 'status': status, 'resolution': resolution,
                                  'sources': [{'source': n, 'path': SOURCES[n]['datapack'] + '/' + i['script'],
@@ -720,6 +798,7 @@ def build(repos, scripts, questlog_dir):
                                               'blob_sha1': git_blob(repos[n], SOURCES[n]['datapack'] + '/' + i['script'])}
                                              for n, i in pair.items()]})
     unused_decisions('interactions', used)
+    unused_overrides(used_overrides)
     children = [c for i in interactions for c in walk(i['rules'])]
     declared = {t['key'] for t in json.loads((questlog_dir / 'progress.json').read_text())['progress']}
     manifest = {

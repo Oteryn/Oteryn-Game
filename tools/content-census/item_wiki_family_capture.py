@@ -356,7 +356,7 @@ def resolve_direct_page(name, page, report, report_examples):
         report_examples["no_admitted_field"].append(name)
         return None
     folded = value.strip().lower()
-    if folded in ("fireworks", "blessing charms", "clothing accessories"):
+    if folded in ("fireworks", "clothing accessories"):
         reason = "owner_decision_pending"
     elif not folded:
         reason = f"{field}_empty"

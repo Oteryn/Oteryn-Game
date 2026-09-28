@@ -40,6 +40,9 @@ WIKI_DECISIONS = {
 }
 # D25 decisions for the conflicts of the later slices, kept as data next to the tools
 CONFLICT_DECISIONS = json.loads((ROOT / 'conflict_decisions.json').read_text())
+# Curated links for claims the automatic kv_quest_name/storage_key/label/section match could not
+# confidently make (a section-only candidate or no link at all): claim key -> {quest_title, basis, evidence}.
+CHEST_QUEST_LINKS = {row['claim']: row for row in json.loads((ROOT / 'chest_quest_links.json').read_text())['links']}
 
 
 def decided(decision):
@@ -71,6 +74,87 @@ def text_ref(text):
 
 def ref(family, key):
     return {'family': family, 'key': key, 'revision': REVISION}
+
+
+LEVEL_UNCERTAIN = re.compile(r'^\d+\?$')
+LEVEL_RANGE = re.compile(r'^\d+\s*[-/]\s*\d+$|^\d+\+$')
+LEVEL_NOTE = re.compile(r'^\d+\s*\(.*\)$|^\d+\*.*$')
+
+
+def parse_level(value):
+    """A plain integer parses; a `?` marker, a range (`-`, `/`, open-ended `+`), a parenthetical or `*`
+    footnote, `none` and `varies` do not: never a guess, so they stay null with their reason."""
+    value = value.strip()
+    if re.fullmatch(r'\d+', value):
+        return int(value), None
+    if value == '?' or LEVEL_UNCERTAIN.fullmatch(value):
+        return None, 'uncertain'
+    if LEVEL_RANGE.fullmatch(value):
+        return None, 'range'
+    if LEVEL_NOTE.fullmatch(value):
+        return None, 'note'
+    if value.lower() == 'none':
+        return None, 'none'
+    if value.lower() in ('varies', 'various'):
+        return None, 'varies'
+    return None, 'unrecognized'
+
+
+def parse_premium(value):
+    """`yes`/`no` parse; `partial` and `?` do not (never a guess)."""
+    value = value.strip()
+    lower = value.lower()
+    if lower == 'yes':
+        return True, None
+    if lower == 'no':
+        return False, None
+    if lower == 'partial':
+        return None, 'partial'
+    if value == '?':
+        return None, 'uncertain'
+    return None, 'unrecognized'
+
+
+def requirements_of(wiki):
+    """The typed sibling of `requirements_from_wiki` (D-level candidate, never a guess): a clean integer
+    level or yes/no premium parses; anything else (a range, a `?` marker, a note, `none`, `varies`) stays
+    null in `requirements` with its reason recorded in `requirements_unparsed`."""
+    raw = {f: wiki[f] for f in ('premium', 'lvl') if wiki.get(f)}
+    if not raw:
+        return {}
+    typed, unparsed = {}, {}
+    if 'premium' in raw:
+        value, reason = parse_premium(raw['premium'])
+        typed['premium'] = value
+        if reason:
+            unparsed['premium'] = reason
+    if 'lvl' in raw:
+        value, reason = parse_level(raw['lvl'])
+        typed['min_level'] = value
+        if reason:
+            unparsed['min_level'] = reason
+    result = {'requirements_from_wiki': raw, 'requirements': typed}
+    if unparsed:
+        result['requirements_unparsed'] = unparsed
+    return result
+
+
+def requirements_counts(quests):
+    """The parse distribution of typed requirements over a set of quests: how many recorded a wiki
+    value for each field, split between a clean parse and each `requirements_unparsed` reason."""
+    premium, min_level, total = Counter(), Counter(), 0
+    for quest in quests:
+        req = quest.get('requirements')
+        if req is None:
+            continue
+        total += 1
+        unparsed = quest.get('requirements_unparsed', {})
+        if 'premium' in req:
+            premium['parsed' if 'premium' not in unparsed else unparsed['premium']] += 1
+        if 'min_level' in req:
+            min_level['parsed' if 'min_level' not in unparsed else unparsed['min_level']] += 1
+    return {'quests_with_wiki_requirements': total, 'premium': dict(sorted(premium.items())),
+            'min_level': dict(sorted(min_level.items()))}
 
 
 def words(text):
@@ -277,6 +361,8 @@ def build(repos, coverage):
             continue
         groups[claim_marker].append((position, primary, pair, sources, status, resolution))
 
+    by_title = {row['title']: row for row in coverage['quests']} if coverage else {}
+    used_links = set()
     claims, quests = [], {}
     for claim_marker, members in sorted(groups.items()):
         label = next((m[1]['label'] for m in members if m[1]['label']), None)
@@ -289,6 +375,13 @@ def build(repos, coverage):
         basis, wiki = next(((b, w) for b, w in ((b, match_quest(t)) for b, t in (
             ('kv_quest_name', kv_name), ('storage_key', storage_quest.group(1) if storage_quest else None),
             ('label', label), ('section', section))) if w), (None, None))
+        curated = CHEST_QUEST_LINKS.get(key)
+        if curated:
+            used_links.add(key)
+            wiki = by_title.get(curated['quest_title'])
+            if wiki is None:
+                raise SystemExit(f'chest_quest_links.json: no coverage entry for {curated["quest_title"]!r} ({key})')
+            basis = 'curated'
         quest, candidate = None, None
         if wiki and basis == 'section':
             # the file's section headers do not always cover the entries below them (outlaw camp keys sit
@@ -302,9 +395,7 @@ def build(repos, coverage):
                                                   'shown_in_quest_log': wiki['in_quest_log'],
                                                   'wiki': {k: wiki[k] for k in ('title', 'pageid', 'revid')},
                                                   'claims': []})
-            for field in ('premium', 'lvl'):
-                if wiki.get(field):
-                    entry.setdefault('requirements_from_wiki', {})[field] = wiki[field]
+            entry.update(requirements_of(wiki))
             entry['claims'].append(ref('RewardClaim', key))
         timed = [m[1] for m in members if m[1]['value'].get('time')]
         claim = {'identity': {'key': key, 'revision': REVISION}, 'label': label, 'section': section, 'quest': quest,
@@ -322,6 +413,9 @@ def build(repos, coverage):
                                      'resolution': resolution, 'destination': key})
 
     unused_decisions('chests', used_decisions)
+    stale_links = sorted(set(CHEST_QUEST_LINKS) - used_links)
+    if stale_links:
+        raise SystemExit(f'chest_quest_links.json: curated links without a matching claim: {stale_links}')
     manifest = {
         'classification': 'OTS_HYPOTHESIS_ONLY',
         'join': 'map position (unique ids differ between the servers)',
@@ -345,6 +439,7 @@ def build(repos, coverage):
         'claims_with_section_candidate_only': sum(1 for c in claims if c['quest_candidate_from_section']),
         'quests': len(quests),
         'by_status': dict(sorted(counts.items())),
+        'requirements_parsed': requirements_counts(quests.values()),
     }
     definitions = sorted({json.dumps(r, sort_keys=True) for c in claims for r in definition_refs(c)} |
                          {json.dumps(ref('Quest', q), sort_keys=True) for q in quests})
