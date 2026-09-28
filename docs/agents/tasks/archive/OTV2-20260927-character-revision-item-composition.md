@@ -4,19 +4,20 @@
 task_id: OTV2-20260927-character-revision-item-composition
 title: Character revision and item transaction composition decision
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1033
 base_sha: bab42d5c9900b05d9a7b4ff941df1fb60d2ea760
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 88351368710f9c03f5835b945013874caa99d9fa
+final_head_sha: 88351368710f9c03f5835b945013874caa99d9fa
+final_head_frozen_at: 2026-09-28T06:21:57Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-27
 updated_at: 2026-09-28
+merge_commit: 74bb3fd38698ba0f76cb36f449d2fa023f12f4f4
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260927-character-revision-item-composition.md
@@ -137,10 +138,10 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing governance and repository
+- [x] The decision document is on an exact frozen head with passing governance and repository
   policy.
-- [ ] Independent exact-head review, routed by #162.
-- [ ] Protected Merge Queue integration by the Work coordinator. This role has no merge authority.
+- [x] Independent exact-head review: Codex on `8835136` found no issues.
+- [x] Protected Merge Queue integration: `74bb3fd`.
 
 ## Excluded scope
 
@@ -165,17 +166,26 @@ finding_dispositions:
     split into I1a and I1b; §3.3 keeps the fence on replay.
   - `f7e4970`, P1 4119146499: no admission-lock negative case. I1b concurrency case added.
 - Self-review also corrected §39.3 from "forbids" to "declines".
-- The current successor head needs fresh exact-head review and CI.
+- Final head `8835136`: Codex exact-head review clean; all review threads resolved.
+
+## Terminal integration
+
+- PR #1033 merged through the Merge Queue on 2026-09-28 as `74bb3fd` (merge_group `game-gate`
+  run 36387297582 SUCCESS).
+- Protected-main readback: the decision (`53234d3a`) and this record (`c8106ee3`) matched the frozen
+  head before this archive move.
+- Closeout: decision header set to ACCEPTED and DUR-03 §39.3 plus reward-chest §5 cite it, under
+  `OTV2-20260928-character-composition-closeout`.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: returned to AUTHORING after two Codex P1s on f7e4970; I1 split and replay fence kept
-status: validating
+last_progress: protected-integrated as 74bb3fd; closed out and archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
-head_sha: null
+head_sha: 88351368710f9c03f5835b945013874caa99d9fa
 pr: 1033
 owner_action_required: null
 blocker: null
-next_action: "#162 routes fresh exact-head review of the successor head and integrates it through the governed Merge Queue."
+next_action: null
 ```
