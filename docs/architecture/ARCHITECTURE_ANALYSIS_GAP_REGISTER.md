@@ -582,7 +582,7 @@ Risk if omitted: technical CI can be mature while actual game production remains
 Still unresolved:
 
 - Platform/payment versus game-delivery ownership;
-- entitlement identity, scope, expiry and revocation;
+- entitlement identity, expiry and revocation (Store purchase scope: see below);
 - idempotent purchase delivery, refunds and chargebacks;
 - premium/account benefits versus character/world grants;
 - real-money versus in-game economy separation;
@@ -593,6 +593,13 @@ No monetization choice is implied.
 Partially resolved (2026-09-28): Store catalog authorship only — see `docs/architecture/OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md`.
 Coin balance, payment, purchase delivery, entitlement lifecycle, refunds and fraud
 remain open here.
+
+Partially resolved (2026-09-28): Store purchase scope and portability only (owner decisions D47,
+D49) — see `docs/architecture/reviews/OTERYN_GAME_ACCOUNT_PROGRESS_AND_QUEST_707_DISPOSITION_DECISION_2026-09-28.md`
+§4.5. Store purchases belong to the account. A cosmetic unlock applies on every world while its
+entitlement is usable. A purchased item is claimable on any compatible world of the profile family
+it was bought for. Delivery ownership, entitlement identity, expiry, revocation and refunds remain
+open here.
 
 ## 33. Business and sustainability model
 

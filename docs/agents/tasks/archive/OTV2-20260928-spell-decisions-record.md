@@ -4,16 +4,17 @@
 task_id: OTV2-20260928-spell-decisions-record
 title: Record the accepted spell decisions SPELL-D1 to D6 and S6 to S10
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1089
 base_sha: 0f80b8c1ca70d50551141d627e5223e28c3233ff
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 7276679d1c9fae9cfe8bda9337d2f6dc0c035d19
+final_head_sha: 7276679d1c9fae9cfe8bda9337d2f6dc0c035d19
+final_head_frozen_at: 2026-09-28T11:30:38Z
+merge_commit: 800e3eb6ad410442c5ec9f7c9fd2c361201d10cf
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -61,10 +62,10 @@ complete this qualification itself.
 
 ## Acceptance criteria
 
-- [ ] Both documents record the verdicts exactly as in 5867161696.
-- [ ] Governance and repository-policy validators pass.
-- [ ] Independent exact-head review, because the protocol and state contract changes status.
-- [ ] Protected Merge Queue integration.
+- [x] Both documents record the verdicts as in 5867161696, with the reviewed clarifications.
+- [x] Governance and repository-policy validators pass.
+- [x] Independent exact-head review: Codex on `7276679` found no issues.
+- [x] Protected Merge Queue integration: `800e3eb`.
 
 ## Excluded scope
 
@@ -107,14 +108,24 @@ complete this qualification itself.
   the FND-02 §13.2 bounded retention). Accepted: never executed or charged twice; the original
   result while retained, then `COMMAND_OUTCOME_EXPIRED` with reconciliation.
 
+## Terminal integration
+
+- PR #1089 merged through the Merge Queue on 2026-09-28 as `800e3eb`.
+- Review rounds: Codex P2s on `20d700f`, `9ee220d`, `bff9457`, `8a0f459`, `1686320` and `e40fff6`, all
+  accepted and repaired. Main was merged in twice after #1087 and #1093 conflicts. `7276679` was clean.
+- Protected-main readback: the wire contract and task records match `7276679`. The schema also carries
+  #1098's S17 row fix, which merged on main first.
+- Archived under `OTV2-20260928-quest-707-account-scope-decision`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: Codex clean on 78d046c; CI rerouted to the successor head
-status: validating
+last_progress: protected-integrated as 800e3eb; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 7276679d1c9fae9cfe8bda9337d2f6dc0c035d19
 pr: 1089
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1089
+next_action: null
 ```

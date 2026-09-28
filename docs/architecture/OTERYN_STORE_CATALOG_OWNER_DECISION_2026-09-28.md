@@ -32,16 +32,22 @@ is not decided here.
 
 ## 3. Scope of this decision
 
-This **partially** resolves §32: only catalog authorship. Still open there, unchanged
-by this decision:
+This **partially** resolves §32: only catalog authorship. A later owner decision resolves
+purchase scope (see below). Still open there:
 
 - ownership of purchase delivery across the Game/Platform boundary;
-- entitlement identity, scope, expiry and revocation;
+- entitlement identity, expiry and revocation;
 - idempotent purchase delivery across a Game/Platform boundary failure;
 - refunds, chargebacks and fraud/audit/support correction.
 
 No monetization choice, coin-to-money exchange rate, or specific Platform integration
 contract is decided here.
+
+Later owner decision (2026-09-28): the scope and portability of Store purchases are decided by D47
+and D49 in `docs/architecture/reviews/OTERYN_GAME_ACCOUNT_PROGRESS_AND_QUEST_707_DISPOSITION_DECISION_2026-09-28.md`
+§4.5 (account scope; cosmetic unlocks on every world while the entitlement is usable; items
+claimable on compatible worlds of the bought-for profile family). Delivery ownership, entitlement
+identity, expiry, revocation, refunds and fraud stay open as listed above.
 
 ## 4. Item `storevalue` is unchanged
 
