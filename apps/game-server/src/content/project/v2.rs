@@ -1940,7 +1940,7 @@ fn validate_v2_dialogue_keywords(
                 && trigger.len() <= 64
                 && trigger.trim() == trigger.as_str()
                 && !trigger.chars().any(|character| character.is_control())
-                && !trigger.chars().any(char::is_uppercase);
+                && trigger.to_lowercase() == trigger.as_str();
             if !trigger_ok {
                 return Err(ProjectError::InvalidProject(
                     "v2 Dialogue keyword trigger is not a trimmed lowercase word",

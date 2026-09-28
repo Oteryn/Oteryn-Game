@@ -602,7 +602,7 @@ fn dialogue_keywords_admit_the_maximum_depth() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 28] = [
+    let cases: [(&str, &str, Mutation); 29] = [
         (
             "wander without walking",
             "v2 wander requires a walking creature and a positive interval",
@@ -742,6 +742,15 @@ fn each_broken_invariant_is_rejected() {
             |draft| {
                 if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
                     keywords[0].triggers[0] = "\u{c9}clair".into();
+                }
+            },
+        ),
+        (
+            "titlecase dialogue trigger",
+            "v2 Dialogue keyword trigger is not a trimmed lowercase word",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].triggers[0] = "\u{1c5}ungla".into();
                 }
             },
         ),

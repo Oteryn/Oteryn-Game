@@ -24,6 +24,7 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260927-npc-admission-wiki-completion.md
   - docs/agents/tasks/archive/OTV2-20260927-npc-admission-wiki-completion.md
   - apps/game-server/src/content/project/v2.rs
+  - apps/game-server/src/content/project/v2/creature.rs
   - apps/game-server/tests/content_world_project_v2.rs
   - apps/game-server/tests/content_world_project_v2_npc_admission.rs
   - docs/architecture/OTERYN_NPC_AUTHORING_SCHEMA_V1.md
