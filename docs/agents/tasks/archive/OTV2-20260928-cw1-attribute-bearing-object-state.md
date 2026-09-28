@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-cw1-attribute-bearing-object-state
 title: Minimal design for attribute-bearing local-object state (destination/interaction)
 mode: CONTRACT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-attribute-bearing-object-state
 pr: 1099
 base_sha: f0710bfb0513147d6bf573dbbfac591da0dadfa6
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: b2d4deddd221e3b3d60ecafeb3b69cb12ef41447
+final_head_sha: b2d4deddd221e3b3d60ecafeb3b69cb12ef41447
+final_head_frozen_at: 2026-09-28T12:57:47Z
 owner: Oteryn: content world architecture (CW1)
 created_at: 2026-09-28T00:00:00Z
 updated_at: 2026-09-28T00:00:00Z
@@ -176,16 +176,17 @@ Both validators re-run after all edits: PASS (see Validation below).
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- final head: `b2d4deddd221e3b3d60ecafeb3b69cb12ef41447` (frozen final head)
+- trigger source: protected-`main` merge of PR #1099
+- workflow/run/job: `game-gate` and repository protected-branch checks
+- runner assignment: complete
+- classification: PASS
+- result: PASS — merged as `a20850d5` on protected `main`; protected-main readback passed (see
+  Terminal integration)
 
 ## Self-review
 
-- exact head: pending
+- exact head: `b2d4deddd221e3b3d60ecafeb3b69cb12ef41447` (frozen final head)
 - method/reviewer: implementing agent (CW1), mandatory, not delegated
 - material findings: minor markdown formatting defects found and fixed in self-review before freeze
 - verdict: PASS
@@ -193,48 +194,101 @@ Both validators re-run after all edits: PASS (see Validation below).
 ## Independent review
 
 - required: YES.
-- exact head: pending
-- method/auditor: pending (coordinator-directed, no `@codex` trigger from this task)
-- material findings: pending
-- verdict: pending
+- exact head reviewed: `b2d4deddd221e3b3d60ecafeb3b69cb12ef41447` (round 5, last review before merge)
+- method/auditor: Codex review across PR #1099, five rounds total (rounds 1-4 covered in
+  Implementation/findings above; round 5 covered in Terminal integration below)
+- material findings: no P1 open at merge (owner stop rule); round 5 raised two P2s, both recorded as
+  open items binding on the §9 implementation task rather than designed here (see Terminal
+  integration) — consistent with every prior round's P2 handling in this task.
+- verdict: PASS; protected `main` admitted the frozen final head
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: complete (2 files changed: architecture doc + this task record; see Terminal
+  integration)
+- unresolved review threads: none blocking at merge (round 5's two P2s are open items, not blocking —
+  see Terminal integration)
 - related/superseded PRs: sequenced after task A (PR #1097, merged `061b1676`); merged `origin/main`
   four times (round 22 for #1097; rounds 2/3/4, unrelated, no conflicts)
 - protected auto-merge: not requested by this task
-- merge commit/result: pending
-- ownership release: pending
+- merge commit/result: `a20850d5` on protected `main`
+- ownership release: complete; owned paths released at archive
 
 ## Context checkpoint
 
 ```yaml
-last_progress: >
-  Round 4 (PR #1099 Codex on 93940915: 2 P1s + 1 P2) complete -- see "Implementation / findings" above
-  for the full Round 4 entry (predicate-direction fix, narrow revert-exception, corpus re-scan +
-  open decision 9). Merged origin/main (a7ced850, unrelated) first. Validators pass; about to push.
-status: ready
+last_progress: terminal integration recorded; PR #1099 merged on protected main as a20850d5; record archived
+status: completed
 branch: claude/cw1-attribute-bearing-object-state
-head_sha: null
+head_sha: b2d4deddd221e3b3d60ecafeb3b69cb12ef41447
 pr: 1099
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
+final_head_sha: b2d4deddd221e3b3d60ecafeb3b69cb12ef41447
+final_head_frozen_at: 2026-09-28T12:57:47Z
+ci_trigger_source: protected_main_merge
+ci_check_generation: final
+ci_checks_for_current_head: 1
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: complete
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: 1
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 5
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: coordinator freeze at the reported head + independent review
+next_action: none; task closed. Two round-5 P2 open items (see Terminal integration) are binding on the owning lane's §9 implementation task; §9 itself awaits owner acceptance before implementation.
 ```
+
+## Terminal integration
+
+This section supersedes the historical `ready`/pending metadata and checkpoint above with the frozen
+terminal outcome; the complete implementation record above (Rounds 1-4) remains verbatim as historical
+evidence. This closeout performs no architecture, code or schema mutation of its own; it only moves
+this record from `docs/agents/tasks/active/` to `docs/agents/tasks/archive/` and binds terminal
+lifecycle fields. Coordination: issue #162 (control plane).
+
+The owner stop rule applied at round 5: PR #1099 merged with no open P1. Frozen final head
+`b2d4deddd221e3b3d60ecafeb3b69cb12ef41447` (round 4 — see Implementation/findings above; also
+`refs/pull/1099/head`, byte-identical to the merged content for the owned architecture doc) merged on
+protected `main` as commit `a20850d5` at 2026-09-28T13:29:53Z. Protected-main readback passed: §9 is
+present with `DecisionStatus: CANDIDATE`, open decisions 8 and 9 are present, and the owned
+architecture doc is byte-identical between the frozen head and `origin/main` for that file.
+
+**Round 5 Codex review (post-freeze, on the frozen head `b2d4dedd`) — no P1; two P2s recorded as open
+items, binding on the §9 implementation task, not designed here (owner stop rule: this PR merges once
+no P1 is open):**
+
+1. **Narrow §7's inherited rejection test obligations (~lines 1501-1524) to exclude the §9 transform
+   shape.** Those obligations, written before §9 existed, state that every `map_item` action carrying
+   `revert_after_ms` together with `destination`/`revert_destination`/`interaction` is rejected
+   fail-closed at authoring/lowering — a blanket statement §9 now partially supersedes for the covered
+   `transform`+pre-authored-anchor+`destination` shape. The owning lane's implementation must narrow
+   that inherited language so it excludes exactly the shape §9 admits, while keeping fail-closed
+   rejection intact for everything §9 does not cover: open decision 8 (`mazzinor`/`gaz_haragoth`/
+   `cult_soul_remains`/`azerus`, `death_position`) and open decision 9 (`death_priest_shargon`/
+   `the_ravager`, pre-authored `CREATE`+`destination`). This is a text-narrowing obligation on the
+   owning lane's future edit to §7, not a design change to §9 itself.
+2. **Lowering must reject fail-closed when two authored actions at one placement enter the same
+   `target_state` with different attributes.** §9's design keys `local_object_state_attributes` by
+   `target_state`, not by `(target_state, LoweredActionId)` — unlike `local_object_revert_after_ms`,
+   which design point 5 already occurrence-keys per Round 2 (Codex 4121918234). If two authored
+   actions at the same placement both transition into the same `target_state` but declare different
+   `destination`/`revert_destination` values for it, the shared per-state entry cannot hold both. §9
+   does not design a fix for this (out of scope for this closeout, owner stop rule); the owning lane's
+   implementation must add an explicit fail-closed rejection at authoring/lowering for this case (not
+   silently let the second authored action's value overwrite the first's, and not merge them) and a
+   matching test obligation, before or as part of implementing §9.
+
+**§9's `DecisionStatus` remains `CANDIDATE`.** Merging this PR records the design as reviewed
+(Codex round 5: no P1) and integrated into the document; it does not itself constitute owner
+acceptance of §9 as implementation-ready. The owning lane's implementation of §9 — and its resolution
+of open decisions 8 and 9, and the two round-5 P2 items above — waits on that separate owner
+acceptance, exactly as §7's own design-vs-acceptance distinction already works for the rest of this
+document.
+
+Task status: `completed`. Aggregate issue #162 remains open for further work, including owner
+acceptance of §9, the owning lane's implementation of §9 and open decisions 1, 2, 4, 5, 6, 7, 8 and 9,
+and the two round-5 P2 open items recorded above.
