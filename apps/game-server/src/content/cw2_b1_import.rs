@@ -1329,7 +1329,7 @@ pub fn protected_cw2_b1_full_item_family_import(
 pub const ITEM_SEMANTIC_PROMOTION_FIELD_COUNT: usize = 69;
 pub const ITEM_SEMANTIC_PROMOTION_ITEM_COUNT: usize = 23;
 pub const ITEM_SEMANTIC_PROMOTION_PACKET: &[u8] = include_bytes!(
-    "../../../../docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json"
+    "../../../../docs/agents/evidence/OTV2-20260927-content-world-item-semantic-promotion.json"
 );
 pub const R7_P04_GOLD_COIN_EVIDENCE_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20260927-r7-p04-gold-coin.json");
@@ -1346,11 +1346,11 @@ const ITEM_SEMANTIC_PROMOTION_SCHEMA: &str = "OTERYN_ITEM_SEMANTIC_PROMOTION/v1"
 const ITEM_SEMANTIC_PROMOTION_PROFILE: &str = "OTERYN_ITEM_SEMANTIC_PROMOTION_COMPILER/v1";
 const ITEM_SEMANTIC_PROMOTION_STATUS: &str = "PARTIAL_CANONICAL_SEMANTIC_PROMOTION_PACKET";
 const ITEM_SEMANTIC_PROMOTION_COMPILER_SHA256: &str =
-    "1e479d22a94240705cc4a2190904e0a5fe99347ef17b4f3926177ff3b035ab2c";
+    "28878d32d5a1bc6bb92cf469a6b02795be753c90b2ae99eec7472371760f1474";
 const ITEM_TARGET_CONTINUITY_COMPILER_SHA256: &str =
-    "3a3bd72f4c04c591c86764d7e2656d90bee051145a951de2848cef0a89d1f1d2";
+    "7c0d20c86541a81122c6f7d792fd25abd652b2fdfa9e9f202016166806c59646";
 const ITEM_TARGET_CONTINUITY_MANIFEST_SHA256: &str =
-    "6f3ab3bc0799ec13c24c8939e0fde9636bfa8f6fff1ed3e507c6e6a730f47aac";
+    "28856a1fb150ef07b903437f1b1173f2e710a34b22ad2e57328247a34d03e66d";
 
 /// Pinned #1018 v1 lowering *candidate* (`tools/content-schema/item-authoring/
 /// lower_promotion_packet.py`, `samples/promotion-crystal-ff7ede5.json`), copied
@@ -1811,7 +1811,7 @@ fn validate_item_semantic_promotion_packet(
     if packet.schema != ITEM_SEMANTIC_PROMOTION_SCHEMA
         || packet.profile != ITEM_SEMANTIC_PROMOTION_PROFILE
         || packet.status != ITEM_SEMANTIC_PROMOTION_STATUS
-        || packet.target_date != "2026-07-28"
+        || packet.target_date != "2026-09-27"
         || packet.next_action
             != "APPLY_TO_EXISTING_REFERENCE_ITEM_SEMANTICS_AND_COMPILE_ARTIFACT_V4"
     {
