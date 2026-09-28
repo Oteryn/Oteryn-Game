@@ -177,8 +177,9 @@ def cmd_fetch(args):
 MAPA = re.compile(r'\{\{\s*[Mm]apa\s*\|\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)')
 TRADES = re.compile(r'\{\{\s*Trades/(Buy|Sell)(.*?)\}\}', re.S)
 LINK = re.compile(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]')
-# a speaker is `'''Name:'''`, `'''Name''':` or `[[Name]]:` (the name itself may be a link inside the bold)
-SPEAKER = re.compile(r"\s*(?:'''\s*(?:\[\[)?([^'\[\]:|]+?)(?:\]\])?\s*(?::\s*'''|'''\s*:)|\[\[([^\]|:]+?)\]\]\s*:)\s*(.*)$")
+# after links and bold/italic markup are removed, a transcript line is `Speaker: text`; the speaker may be
+# written plain, bold, italic or as a link, before or around the colon, and may contain an apostrophe
+SPEAKER = re.compile(r"\s*([^:<>{}|]{1,60}?)\s*:\s*(.*)$")
 PRICE = re.compile(r"^(?:''')?\s*(\d{1,3}(?:[ .]\d{3})+|\d+)\b")
 FIELD = re.compile(r'^\|\s*([a-z0-9_]+)\s*=(.*)$', re.M)
 
@@ -194,6 +195,10 @@ def price_of(field):
     """An explicit price such as `200`, `1 000`, `1.000`, `'''1 000'''` or `200 gp`; None when the field has none."""
     match = PRICE.match(field.strip())
     return int(re.sub(r'[ .]', '', match.group(1))) if match else None
+
+
+def unmarked(text):
+    return LINK.sub(r'\1', text).replace("'''", '').replace("''", '')
 
 
 def fold(text):
@@ -213,10 +218,10 @@ def page_facts(page):
     speakers = {fold(page['title']), fold(name)}
     lines = []
     for raw in wikitext.split('\n'):
-        match = SPEAKER.match(raw)
-        if match and fold(match.group(1) or match.group(2)) in speakers:
-            text = re.sub(r'</?br\s*/?>', ' ', match.group(3), flags=re.I)
-            text = re.sub(r'\s+', ' ', LINK.sub(r'\1', text).replace("'''", '').replace("''", '')).strip()
+        match = SPEAKER.match(unmarked(raw))
+        if match and fold(match.group(1)) in speakers:
+            text = re.sub(r'</?br\s*/?>', ' ', match.group(2), flags=re.I)
+            text = re.sub(r'\s+', ' ', re.sub(r'\}\}\s*$', '', text)).strip()  # the infobox may close on the last line
             if text:
                 lines.append(text)
     return {'pageid': page['pageid'], 'revid': page['revid'], 'timestamp': page['timestamp'],
@@ -232,6 +237,10 @@ def build_facts(snapshot):
     for page in snapshot['pages']:
         if hashlib.sha256(page['wikitext'].encode('utf-8')).hexdigest() != page['sha256']:
             raise SystemExit(f'page {page["pageid"]} wikitext does not match its sha256')
+    ordered = sorted(snapshot['pages'], key=lambda p: p['pageid'])
+    digest = hashlib.sha256('\n'.join(f'{p["pageid"]}:{p["revid"]}:{p["sha256"]}' for p in ordered).encode()).hexdigest()
+    if digest != snapshot['pages_digest']:
+        raise SystemExit('snapshot pages do not match its pages_digest')
     pages = [page_facts(page) for page in sorted(snapshot['pages'], key=lambda p: p['pageid'])]
     return {'schema': FACTS_SCHEMA, 'license': LICENSE_NOTE, 'api': snapshot['api'],
             'fetched_at': snapshot['fetched_at'], 'snapshot_pages_digest': snapshot['pages_digest'],
@@ -273,14 +282,25 @@ def cmd_self_test(_args):
             "| falas = \n''Jogador:'' '''Hi'''</br>\n"
             "'''Goldro:''' Hello, ''Jogador''. Ask about [[Salgadora|the town]].</br>\n"
             "'''Goldro''': Bold name, colon outside.</br>\n'''[[Goldro]]:''' Linked name.</br>\n"
-            "[[Goldro]]: Link form.</br>\n[[Other]]: Not mine.\n}}")
+            "[[Goldro]]: Link form.</br>\nGoldro: Plain form.</br>\n''Goldro:'' Italic form.</br>\n"
+            "[[Other]]: Not mine.\nGoldro: Bye.}}")
     facts = page_facts({**page_record({'pageid': 7, 'title': 'Goldro', 'revisions': [
         {'revid': 11, 'timestamp': 'T', 'slots': {'main': {'content': text}}}]}), 'role': 'npc'})
     assert facts['positions'] == [(34055, 32503, 7)], facts
     assert facts['trades'] == {'BuyFromPlayer': {}, 'SellToPlayer': {
         'Bread': 4, 'Cheese': None, 'Cot': 200, 'Fire Sword': 1000}}, facts
     assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
-                                  'Linked name.', 'Link form.'], facts
+                                  'Linked name.', 'Link form.', 'Plain form.', 'Italic form.', 'Bye.'], facts
+    apostrophe = page_facts({**page_record({'pageid': 8, 'title': "Lee'Delle", 'revisions': [
+        {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': "'''Lee'Delle:''' Welcome."}}}]}), 'role': 'npc'})
+    assert apostrophe['npc_lines'] == ['Welcome.'], apostrophe
+    tampered = {**snapshot, 'pages': snapshot['pages'][:1]}
+    try:
+        build_facts(tampered)
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError('a snapshot whose pages do not match pages_digest must be rejected')
     assert 'prose' not in json.dumps(facts), facts
     print('wiki_br self-test: PASS')
 

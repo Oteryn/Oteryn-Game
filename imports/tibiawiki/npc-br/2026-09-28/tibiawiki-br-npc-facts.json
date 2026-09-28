@@ -3,7 +3,7 @@
  "counts": {
   "pages": 1253,
   "removed": 11,
-  "with_npc_lines": 569,
+  "with_npc_lines": 606,
   "with_positions": 1237,
   "with_trades": 386
  },
@@ -1268,7 +1268,10 @@
   {
    "implemented": "7.1",
    "name": "Chatterbone",
-   "npc_lines": [],
+   "npc_lines": [
+    "... we hid it... so long ago... so long...",
+    "... we conquered them... held them so long... long ago..."
+   ],
    "pageid": 10402,
    "positions": [
     [
@@ -1569,6 +1572,8 @@
     "I would not consider this as a job. But one of my responsibilities is the training of young shamans. Even druids can learn a few new tricks from me.",
     "We try to figure out the will of the spirits and ways to appease them.",
     "The news I receive are from the spiritual world. They would be of little importance for you.",
+    "We had no contact with the people that passed Svargrond. Their arrival has caused some disturbance in the spirits' world though. ...",
+    "Ancient spirits are restless. It seems that some things that should have been left alone, have awoken from their slumber. I can't tell more yet.",
     "Your foreign gods are concepts we don't really understand.",
     "There should be no such thing like a human that is ruling over the lives of other humans.",
     "The chakoyas are like a force of nature. It would be wrong to try to exterminate them. On the other hand, we can't allow their carnivorous nature to threaten our lives.",
@@ -4547,6 +4552,7 @@
    "name": "Dalbrect",
    "npc_lines": [
     "Be greeted, <u>traveler</u>. Welcome to my hut.",
+    "I am merely a humble fisher now that nothing is left of my noble legacy.",
     "Once my family was once noble and wealthy, but fate turned against us and threw us into poverty.",
     "When Carlin tried to colonize the region now known as the ghostlands, my ancestors put their fortune in that project.",
     "Our family fortune was lost when the colonization of those cursed lands failed. Now nothing is left of our fame or our fortune. If I only had something as a reminder of those better times. <sigh>",
@@ -5705,7 +5711,30 @@
   {
    "implemented": "7.3",
    "name": "Wally",
-   "npc_lines": [],
+   "npc_lines": [
+    "Be greeted, traveller.",
+    "I am working here at the post office for Kevin.",
+    "Oh, our boss is upstairs. Better only disturb him with important issues though.",
+    "Ask Mr. Postner about your current missions.",
+    "I'm Wally the post officer.",
+    "Yes, <u>thats</u> me, Wally!",
+    "Elven volunteers for becoming a postofficer are quite rare. We had to rely on a human living there to ensure our postsystems function. Most elvish members of the guild prefer to work as <u>courriers</u>.",
+    "I <u>gues</u> Edron isn't the source of wealth and <u>rescources</u> as the <u>thaians</u> hoped. The defection of those knights did cause the expansion and exploitation there to an halt.",
+    "The city of the dwarfs is a bit hidden and new postoficers often get lost while looking for it. Just look for a hidden passage to a western valley in the <u>mountaion</u> called the big old one.",
+    "Its a huge <u>Mountain</u>, north of here, just across the river.",
+    "One of the oldest holdings of humanity that still exist and the heart of the biggest kingdom in the known world.",
+    "I think no longer is king Tibianus reigning this city, nor are the merchants ruling it, regardless what they might think. The true monarch before whom all there bow is the money.",
+    "If I would be looking for bones I'd inspect some skeletons ... If I weren't so <u>affraid</u> of them that is.",
+    "This minotaur is quite moody. Better make sure not to anger him. He's likely to call for his guards as soon as he notices a stranger, so you are on tough luck if you ever find him.",
+    "This dog is his <u>majestys</u> most priced <u>possesion</u> and heavily guarded. Anger the dog and you anger the king.",
+    "Old Ben lost some of his marbles in some battle long ago. He is still a quite capable postman though ... on second thought thats some disturbing fact.",
+    "Dove is as good as a dozend pigeons. He He He.",
+    "Although I never met her in person we became penpals over the time.",
+    "Dwarfs make quite good postmen. They are stubborn, strong and ... sturdy. Its a waste that he prefers a job behind the counter.",
+    "This Olrik was made postman only for convenience. He is quite aware that his attitude and affiliation with the thaian government makes it impossible for him to rise in rank. This leads only to him behaving even worse tough.",
+    "Waldo is an explorer. We always feared he might one day take a risk too great for him. I hope he is okay, though.",
+    "It was a pleasure to help you."
+   ],
    "pageid": 10868,
    "positions": [
     [
@@ -7768,7 +7797,29 @@
   {
    "implemented": "7.11",
    "name": "Lee'Delle",
-   "npc_lines": [],
+   "npc_lines": [
+    "Hello, hello, Jogador! Please come in, look, and buy!",
+    "I am already helping you by selling stuff.",
+    "I sell equipment of all kinds. Just ask me about the type of wares you are interested in.",
+    "I sell weapons, shields, armor, helmets, and equipment. For what do you want to ask?",
+    "I sell spears, rapiers, sabres, daggers, hand axes, axes, and short swords. Just tell me what you want to buy.",
+    "I sell wooden shields and studded shields. Just tell me what you want to buy.",
+    "I sell jackets, coats, doublets, leather armor, and leather legs. Just tell me what you want to buy.",
+    "I sell leather helmets, studded helmets, and chain helmets. Just tell me what you want to buy.",
+    "I sell torches, bags, scrolls, shovels, picks, backpacks, sickles, scythes, ropes, fishing rods and sixpacks of worms. Just tell me what you want to buy.",
+    "I am a merchant, so what can I do for you?",
+    "My name is Lee'Delle.",
+    "It is about 0:00 am. I am so sorry, I have no watches to sell. Do you want to buy something else?",
+    "The continent is even more exciting than this isle!",
+    "I sell much. Have a look at the blackboards for my wares or just ask.",
+    "I really love flowers. Sadly my favourites, honey flowers are very rare on this isle. If you can find me one, I'll give you a little reward.",
+    "Honey flowers are my favourites <sigh>.",
+    "be carefull down there. Make sure you bought enough torches and a rope or you might get lost.",
+    "There are plenty of them. Buy here the equipment to kill them and sell their loot afterwards!",
+    "Thais is the capital of the thaian empire.",
+    "He is a great warrior and our protector.",
+    "Bye, bye."
+   ],
    "pageid": 10942,
    "positions": [
     [
@@ -10674,7 +10725,29 @@
   {
    "implemented": "7.1",
    "name": "Alwin",
-   "npc_lines": [],
+   "npc_lines": [
+    "LONG LIVE THE KING!",
+    "That's classified information!",
+    "I am a protector of the people of Venore.",
+    "The harbour is to the north, the weapon market in the south, the general market to the west, and the bank to the east. You will find other shops and the Hard Rock Tavern in the center.",
+    "Tibianus III is our beloved king! He rules over Venore from far away Thais.",
+    "Tibianus III is our beloved king!",
+    "The swamp is a dangerous place and full of monsters, not to mention all those swampelves living at shadowthorn, amazons, and swamptrolls.",
+    "The swamp is full of nasty snakes and there's a dragon breeding ground somewhere in the swamps.",
+    "They are the best example for the results of the Carlin madness.",
+    "This hideous creatures are even more ugly than the normal trolls. They are treacherous and use several poisons.",
+    "Those elves hide in the swamps and are trying to kill all humans in this area.",
+    "This information is confidential.",
+    "They are our rolemodells.",
+    "Only the best of the best serve as silver guards.",
+    "I doubt you have the security clearance to ask that.",
+    "Every guard dreams of becoming one of them one day.",
+    "Look for the Hard Rock Tavern to learn the latest news.",
+    "Ask the merchants of the city. There are more than enough",
+    "We of the red guard are the special forces and town guards.",
+    "This city, a member of the Thaian kingdom, is under the protection of the Thaian army.",
+    "LONG LIVE THE KING!"
+   ],
    "pageid": 11122,
    "positions": [
     [
@@ -12899,6 +12972,7 @@
    "implemented": "7.3",
    "name": "Melchior",
    "npc_lines": [
+    "Greetings, Jogador. I do not see your face, but I can read a thousand things in your voice!",
     "Welcome, Jogador! The lovely sound of your voice shines like a beam of light through my solitary darkness!",
     "My late father, may he rest in peace, chose to call me Melchior.",
     "That is my name.",
@@ -13008,7 +13082,20 @@
   {
    "implemented": "6.1",
    "name": "Budrik",
-   "npc_lines": [],
+   "npc_lines": [
+    "Hiho, Hiho Jogador.",
+    "I am the foreman of this mine.",
+    "My name is Budrik Deepdigger, son of Earth, from the Molten Rock.",
+    "Precisely 9:02 pm, young one.",
+    "We understand the ways of the earth like nobody else does.",
+    "In the deeper mines we discover some nasty beasts now and then.",
+    "This is no funhouse. Leave the miners and their drilling-worms alone and get out! We have already enough trouble without you.",
+    "The Horned Fox is leading his bandits in sneak attacks and raids on us.",
+    "A minotaur they threw out at Mintwallin. He must have some kind of hideout nearby.",
+    "The hideout of the Horned Fox is probably a dangerous if not lethal place for the unexperienced ones.",
+    "This is no funhouse. Leave the miners and their drilling-worms alone and get out! We have already enough trouble without you.",
+    "Bye, bye."
+   ],
    "pageid": 11252,
    "positions": [
     [
@@ -14077,7 +14164,32 @@
    "implemented": "7.2",
    "name": "Pydar",
    "npc_lines": [
-    "Be greeted Jogador! I can smell the scent of a phoenix on you!"
+    "Be greeted Jogador! I can smell the scent of a phoenix on you!",
+    "The ways of the gods are imprehensible to mortals. On the other hand, the elements are raw forces and can be understood and tamed.",
+    "I am the head pyromancer of Kazordoon.",
+    "My name is Pydar Firefist, Son of Fire, from the Savage Axes.",
+    "Ask around. There's a lot to do, jawoll.",
+    "That is our world.",
+    "It's the fourth age of the yellow flame.",
+    "May the great flame devour them all!",
+    "Life feeds on fire and ultimately fire will feed on life.",
+    "Our strong fortifications allow our armies to defend Kazordoon against any threat.",
+    "He is the fiercest axe fighter of our times and a fine strategist.",
+    "A weapon too powerful to be wielded by mortals. It has to be returned to the fire which gave birth to it.",
+    "If he ever dares enter Kazordoon I will gladly dump him into the lava. <u>Tthe</u> sacred flame shall bring justice upon him.",
+    "Our city was founded in ancient times. Abandoned by the gods we once fought for, we created a secure haven for our people.",
+    "This mountain is said to be the oldest in the world. It is the place where fire and earth meet and separate at the same time.",
+    "Bezil and Nezil are buying and selling equipment of all kinds.",
+    "She is the first knight of Kazordoon. She is responsible for teaching our young warriors how to handle an axe.",
+    "Etzel is a true master of the elements. He is a role-model for our youngsters, jawoll.",
+    "He and his wife are running the Jolly Axeman tavern.",
+    "He is a smith. If you are looking for exquisite weapons and armour just talk to him.",
+    "She and her husband are running the Jolly Axeman tavern.",
+    "Uzgod is a weaponsmith just like those in the old legends.",
+    "Though we are through with the so-called gods, Durin, the first dwarf to <u>aquire</u> divine powers of his own, is considered a protector of our race.",
+    "Unlike the gods, the elements don't use mortals as toys, A skilled mind can understand and even control them to some extent.",
+    "The ways of the gods are <u>imprehensible</u> to mortals. On the other hand, the elements are raw forces and can be understood and tamed.",
+    "May the fire in your heart never die, Jogador!"
    ],
    "pageid": 11281,
    "positions": [
@@ -15519,7 +15631,28 @@
   {
    "implemented": "6.97",
    "name": "Kazzan",
-   "npc_lines": [],
+   "npc_lines": [
+    "Feel welcome in the lands of the children of the enlightened Daraman, Jogador.",
+    "I am Kazzan Ibn Gadral, caliph of Darama.",
+    "I am the caliph of the children of Daraman. It is my privilege and mission to ensure their safety.",
+    "I am fine, thank you.",
+    "A caliph is a leader of his people, just like a king.",
+    "Daraman led our ancestors to the continent Darashia to live a life of simplicity and meditation.",
+    "There is nothing you can do for me right now but thank you for offering your help.",
+    "Tibianus is the shepherd of the lost souls of the so called Thaian empire.",
+    "Our people are well prepared to fight for their land and their souls.",
+    "The necromancers of Drefia fell under the wrath of the djinns once. If they challenge us again, they might lose more than a city.",
+    "When the djinns destroyed the better part of the unholy town in their wrath, the brotherhood hid like worms in the sand.",
+    "The Brotherhood of Bones came here fleeing some war on the continent. They corrupted the settlers of the Thaian colony with ease.",
+    "The minotaurs are another test we have to endure. They inhabit the pyramid which is taboo for our people, as Daraman taught us.",
+    "Daraman knew our souls might get corrupted by the things hidden there.",
+    "The gods are powerful but it's ultimately up to us to work on our souls' ascension.",
+    "We have lost contact with the dwarven people of Kazordoon.",
+    "We keep in touch with the queen, but we have not taken sides in the conflict of Carlin and Thais ... yet.",
+    "Once a djinn claimed to have seen it in a dream. I guess it's just that, some dream of a supernatural creature.",
+    "May your soul flourish, Player.",
+    "May your soul flourish."
+   ],
    "pageid": 11435,
    "positions": [
     [
@@ -15542,7 +15675,23 @@
   {
    "implemented": "6.97",
    "name": "Morun",
-   "npc_lines": [],
+   "npc_lines": [
+    "Daraman's blessings! Welcome to Darashia.",
+    "This city is lovely Darashia, pearl of Darama.",
+    "Darashia is the heart of Darama. In the northeast, across the Devourer, there is the dark pyramid. In the west, across the Plague Spike, are the cursed ruins of Drefia.",
+    "The great desert devoured many of the first pilgrims. We learned the ways of the devourer and thus conquered it.",
+    "The minotaurs took shelter in the ancient pyramid, which our people avoid for the dark powers that might be present there.",
+    "Mountain of Poison, Scorpions Rock, it's known by many names. It's to the west of Darashia.",
+    "The ruins of Drefia in the far west are the hideout of the vile necromancer cult that once corrupted this city.",
+    "I am a protector of the people of Darashia.",
+    "The evil of Drefia is strong these days.",
+    "This information is confidential.",
+    "Go to the bazaar in the middle of the town.",
+    "Our leader is enlightened by Daraman, thrice praised be his name!",
+    "The ancient prophet brought our people here from a place long forgotten.",
+    "Ishina sells amulets and other valuables at the market place!",
+    "Daraman's blessings!"
+   ],
    "pageid": 11437,
    "positions": [
     [
@@ -15750,7 +15899,10 @@
   {
    "implemented": "7.1",
    "name": "Chephan",
-   "npc_lines": [],
+   "npc_lines": [
+    "See this fork? Now imagine what a hero like you could do to an evil sorcerer with that fork! Care to buy one?",
+    "Just an oversized kitchenknife. Better buy the real thing."
+   ],
    "pageid": 11451,
    "positions": [
     [
@@ -15790,7 +15942,29 @@
   {
    "implemented": "7.1",
    "name": "Christoph",
-   "npc_lines": [],
+   "npc_lines": [
+    "LONG LIVE THE KING!",
+    "Tibianus III is our beloved king! He rules over Venore from far away Thais.",
+    "The harbour is to the north, the weapon market in the south, the general market to the west, and the bank to the east. You will find other shops and the Hard Rock Tavern in the centre.",
+    "I am a protector of the people of Venore.",
+    "The swamp is a dangerous place and full of monsters, not to mention all those swampelves living at shadowthorn, amazons, and swamptrolls.",
+    "The swamp is full of nasty snakes and there's a dragon breeding ground somewhere in the swamps.",
+    "This hideous creatures are even more ugly than the normal trolls. They are treacherous and use several poisons.",
+    "Those elves hide in the swamps and are trying to kill all humans in this area.",
+    "They are the best example for the results of the Carlin madness.",
+    "This information is confidential.",
+    "This information is confidential.",
+    "They are our rolemodells.",
+    "Only the best of the best serve as silver guards.",
+    "I doubt you have the security clearance to ask that.",
+    "We of the red guard are the special forces and town guards.",
+    "Every guard dreams of becoming one of them one day.",
+    "Look for the Hard Rock Tavern to learn the latest news.",
+    "Ask the merchants of the city. There are more than enough",
+    "The castle is in Thais, the crown of the kingdom.",
+    "This city, a member of the Thaian kingdom, is under the protection of the Thaian army.",
+    "LONG LIVE THE KING!"
+   ],
    "pageid": 11453,
    "positions": [
     [
@@ -15853,7 +16027,24 @@
   {
    "implemented": "7.1",
    "name": "Norbert",
-   "npc_lines": [],
+   "npc_lines": [
+    "Welcome, Player.",
+    "I am a salesperson here, but one day I might become a tailor, or a supermodel perhaps!",
+    "I am Norbert.",
+    "Now it's 0:00 am. Did you notice this is a xelor watch I am wearing?",
+    "Xelor, the dwarf of the chromancers guild, makes the most stylish watches in all the land.",
+    "Even the king of Thais, blessed be his name, can't buy a better wardrobe then ours.",
+    "Our tailors are influenced by styles of the whole known world.",
+    "I don't think they dress that well.",
+    "Those evil mages dress so ugly.",
+    "I fear such a weapon will ruin a silk shirt with one blow.",
+    "Women could do better then to wear armor. Women in leather scare my in particular.",
+    "Thaian wear is not that stylish anymore.",
+    "He's our boss, a great tailor and designer.",
+    "I sell very stylish clothes indeed.",
+    "I have wonderful jackets, coats, lovely doublets, even warlike leather armor, and impressive studded armor.",
+    "Bye, bye."
+   ],
    "pageid": 11474,
    "positions": [
     [
@@ -16003,7 +16194,24 @@
   {
    "implemented": "7.1",
    "name": "Shiantis",
-   "npc_lines": [],
+   "npc_lines": [
+    "Welcome Jogador. What is your need today? Ask me for a trade to check out my offers.",
+    "Of course, just browse through my wares. Remember that if you buy oil, there's a deposit of 5 gold on the vial. Footballs have to be purchased separately.",
+    "Do you want to buy a football for 111 gold?",
+    "Oh, but it's fun to play!",
+    "I am selling several kinds of equipment and decoration. What is your need?",
+    "I am Shiantis.",
+    "As you can see, our inventory is large, just have a look. We sell containers, decoration, illumination, paperware, footballs, and watches. Ask me for a trade.",
+    "I won't tell you for free, but maybe you want to buy a watch?",
+    "I would love to see the royal taxes lowered.",
+    "You will have to visit that spooky magic market for that stuff.",
+    "I will give you 5 gold for every empty vial. Ok?",
+    "I think it's needed for protection. We pay enough taxes for this.",
+    "I heard the merchants will petition the king to lower the taxes.",
+    "Sorry, we run out of stock. I expect another load of wodden excalibug simulacra to arrive next week.",
+    "Ferumbras dolls were not the saleshit we expected. Sold all stock to a strange guy who bought a bunch of needles, too.",
+    "Good bye, player."
+   ],
    "pageid": 11477,
    "positions": [
     [
@@ -16196,7 +16404,15 @@
   {
    "implemented": "7.1",
    "name": "Rose",
-   "npc_lines": [],
+   "npc_lines": [
+    "Welcome to Crunor's Finest Warehouse, Player.",
+    "My name is Rose, nice to meet you, Player.",
+    "Sorry, I have no watch on me.",
+    "That's me. I am not for sale. <giggles>",
+    "Here you may buy some of the most beautiful flowers.",
+    "I offer indoor plants, flower bowls, god flowers, honey flowers and potted flowers. What do you need?",
+    "Good bye."
+   ],
    "pageid": 11480,
    "positions": [
     [
@@ -16264,7 +16480,14 @@
   {
    "implemented": "7.1",
    "name": "Velvet",
-   "npc_lines": [],
+   "npc_lines": [
+    "Welcome to our shop, Player!",
+    "I'm working here in this shop. Are you interested in any of our goods?",
+    "I am Velvet. How can I help you?",
+    "It's 3:29 am, my lady.",
+    "I sell pillows and tapestries.",
+    "Good bye."
+   ],
    "pageid": 11484,
    "positions": [
     [
@@ -16732,7 +16955,28 @@
   {
    "implemented": "7.1",
    "name": "Zebron",
-   "npc_lines": [],
+   "npc_lines": [
+    "Greetings, high roller. So you care for a game, Player?",
+    "Oh, I am just sitting around here and gamble now and then.",
+    "I am known as Zebron.",
+    "It is exactly 0:00 am.",
+    "Ah, our beloved king! Bless him for the gambling licence of Venore.",
+    "What would I need more than that what I can get right here?",
+    "Hehe, they spent a good part of their salary here in the tavern.",
+    "It's a fine place to be around, isn't it?",
+    "So you care for a civilized game of dice?",
+    "Bah, always the same chitchat. Swampelves this and amazons that ... blah blah.",
+    "I would not bet that anyone will ever find it.",
+    "Carlin, the beerless ... what a shame.",
+    "Thais is a bit too conservative for me.",
+    "Aaaah, Venore, Venore, what a wonderful town. Especially for someone with love for gambling like me.",
+    "I had a cousin named Hugo, why do you ask?",
+    "I don't care much for that law stuff, but as far as I know those Venore merchants got a royal gambling licence for the city.",
+    "Hey, you can't leave. Luck is smiling on you. I can feel it!",
+    "Ah, love is the most exciting game of all. I've learnt a few tricks of this game, too and I might share them with someone worthy.",
+    "Greetings, high roller. So you care for a game, Player?",
+    "Hey, you can't leave. Luck is smiling on you. I can feel it!"
+   ],
    "pageid": 11541,
    "positions": [
     [
@@ -16755,7 +16999,39 @@
   {
    "implemented": "7.1",
    "name": "Yberius",
-   "npc_lines": [],
+   "npc_lines": [
+    "Welcome, young Jogador! If you are new in Tibia, ask me for help.",
+    "They are the creators of Tibia and all life on it.",
+    "It's the world of Tibia.",
+    "There are the plants, the citizens, and the monsters.",
+    "Crunor, the god of plants and fertility, watches over all plants, small and big.",
+    "Just walk around and meet them. Chat and learn about them.",
+    "Even they have their part in the bigger scheme. Even if it eludes us mere mortals.",
+    "Earn some gold and upgrade your equipment.",
+    "If you need money, you have to slay monsters and take their gold. Look for swamptrolls in the swamps. But be careful. They use poisoned weapons.",
+    "First you should buy a machete. You will need it in the swamps. And better don't explore without a shovel and a rope.",
+    "I am Brother Yberius.",
+    "Now, it is 8:01 pm. Ask Shiantis for a watch, if you need one.",
+    "The king resides in the far away city of Thais.",
+    "The royal army is here to protect us.",
+    "Earn some gold and upgrade your equipment.",
+    "You aren't looking that bad. Sorry, I can't help you. But if you are looking for additional protection you should go on the pilgrimage of ashes.",
+    "Whenever you receive a lethal wound your lifeforce is damaged. With every single of the five blessings you have this damage will be reduced.",
+    "There are five different blessings available in five sacred places. These blessings are: the spiritual shielding, the spark of the phoenix, the embrace of tibia, the fire of the suns and the wisdom of solitude.",
+    "The gods only know what this spawn of darkness might be up to.",
+    "This blasphemous weapon has to be destroyed.",
+    "If you want to heal your wounds, buy something to eat or hunt some small game. If you are very weak just ask me to heal you.",
+    "I can sense you already talked to the hermit Eremo on the isle of Cormaya and received this blessing.",
+    "I can sense that the spark of the phoenix already was given to you by the dwarven priests of earth and fire in Kazordoon.",
+    "I can see you received the blessing of the two suns in the suntower near Ab'Dendriel.",
+    "I can sense that the druids north of Carlin have provided you with the Embrace of Tibia.",
+    "I see you received the spiritual shielding in the whiteflower temple south of Thais.",
+    "It is said that one enhanced blessing, the 'heart of the mountain', has been lost in the icy wastes of Svargrond. Find a nomad far to the west of these barren lands, hiding in the cold there, slightly above ground. ...",
+    "It is also said that a mysterious djinn, bound to an existence of slavery, lies buried somewhere beneath the northern Tiquanda jungle. I cannot confirm whether this tale is true but if you find him, you shall also find the 'blood of the mountain'.",
+    "May the gods bless you, Player!",
+    "Welcome, young Player! If you are new in Tibia, ask me for help.",
+    "Remember: If you are heavily wounded or poisoned, I can heal you for free."
+   ],
    "pageid": 11546,
    "positions": [
     [
@@ -17099,7 +17375,26 @@
   {
    "implemented": "7.1",
    "name": "Urkalio",
-   "npc_lines": [],
+   "npc_lines": [
+    "Welcome to the pits of the Hard Rock Tavern, Jogador.",
+    "I am responsible for the Hard Rock Pits Tavern.",
+    "I am Urkalio.",
+    "No clue, it's equally dark down here at any time.",
+    "Down here everyone is king as far as where his weapons reach.",
+    "Sooner or later everyone comes here, so why bother to travel.",
+    "I sell food and drinks for the hungry and thirsty.",
+    "I have cookies, bread, cheese, ham, and meat.",
+    "I would love to see that weapon in a fight.",
+    "THAT would be some attraction down here.",
+    "Choose your enemies with care.",
+    "I don't care about their 'independence war'.",
+    "Such a boring city. I wonder why anyone would live there.",
+    "He's the best. To be the man, you'll have to beat the minotaur, so to say. Not that you could provoke him to a fight at all.",
+    "She's kind of my boss.",
+    "Have a good fight, Player.",
+    "Welcome to the pits of the Hard Rock Tavern, Player.",
+    "We're some hasty one, aren't we?"
+   ],
    "pageid": 11577,
    "positions": [
     [
@@ -17235,7 +17530,24 @@
   {
    "implemented": "7.1",
    "name": "Leeland",
-   "npc_lines": [],
+   "npc_lines": [
+    "Greetings, Jogador! Please don't interrupt me for too long!",
+    "My name is Slim, Leeland Slim.",
+    "I am the owner of the Useful Things Warehouse.",
+    "I offer many things. Actually I am sure you will find something you have desired for a long time.",
+    "I have seen most of it. And I like it. <chuckles>",
+    "Do I hear envy in your voice? Is it that you realy want? To be ... king? Well, one never knows ... perhaps you find something royal in my warehouse.",
+    "Ah, Ferumbras. I remember selling him torches for his first adventures as if it was yesterday.",
+    "Perhaps one day I'll settle in Thais again. I love the city's potential.",
+    "I was there some time ago. I exchanged ideas with some important people there and even could sell them something that furthered their cause.",
+    "So it is a watch you need? Make sure to buy one downstairs.",
+    "I would love to have the time to chat and exchange gossip, but sadly business always comes first, you know?",
+    "Taxes are a necessary evil, people say. I like that.",
+    "Privileges have to be paid for. The one way ... or the other.",
+    "Your question suggests you are interested in military? I'm sure you'll find something interesting in my warehouse.",
+    "I just love bets and gambling. It inspires people doing such interesting things.",
+    "Good bye, Player. Make sure to visit my shop."
+   ],
    "pageid": 11580,
    "positions": [
     [
@@ -17304,7 +17616,20 @@
   {
    "implemented": "7.1",
    "name": "Livielle",
-   "npc_lines": [],
+   "npc_lines": [
+    "Bienvenue, Player! My fruits will complete the icing on your cake.",
+    "Oh, for sure will my fruits 'elp you driving off all these nasty diseases and strengthen your immune system!",
+    "Alors, guess what my job might be, standing 'ere in the middle of all these juicy exotic fruits?",
+    "I'm Livielle Delacroix, madame.",
+    "Time is 3:34 am now.",
+    "What's your favorite flavour today? I offer all sorts of exotic fruits.",
+    "I offer you bananas, melons, pumpkins, white mushrooms, oranges, strawberries, and blueberries.",
+    "Do you want to buy a strawberry for 2 gold?",
+    "You should really prefer my fruits over all this fat meat offered elsewhere. They keep you lithe and lissom.",
+    "Bon appétit, and come back soon for your daily dose of vitamins!",
+    "Bienvenue, Player! My fruits will complete the icing on your cake.",
+    "Aww, I don't even deserve a farewell?"
+   ],
    "pageid": 11592,
    "positions": [
     [
@@ -17344,7 +17669,26 @@
   {
    "implemented": "7.1",
    "name": "Maria",
-   "npc_lines": [],
+   "npc_lines": [
+    "The Hard Rock Tavern greets you, Player.",
+    "I am running this upper part of the Hard Rock Tavern.",
+    "Yes, that's here. Below is the Fighting Pits for those fighters that use the Fighting Pits.",
+    "Well, they do a lot of fighting down there.",
+    "I am Maria.",
+    "In Venore, everyone is a king ... until he runs out of luck or money.",
+    "In the long run it's money that rules everything in Tibia.",
+    "Food and drinks as much as you can pay for.",
+    "Good fighters need good entertainment. That's what they get here.",
+    "I can only hope those wild women don't scare away more customers than come here in order to fight against them.",
+    "I think he's more a Thaian problem.",
+    "I'd rather have a stainless steel cooking pan than such a knife.",
+    "As far as the merchants say it's economically unimportant.",
+    "It's a shame that this lousy city is the heart of the kingdom.",
+    "Yes, I am Maria, Maria Corona.",
+    "Good bye, Player. Tell your friends about us and visit us again.",
+    "The Hard Rock Tavern greets you, Jogador.",
+    "Visit us again."
+   ],
    "pageid": 11596,
    "positions": [
     [
@@ -17479,7 +17823,24 @@
   {
    "implemented": "7.1",
    "name": "Rodney",
-   "npc_lines": [],
+   "npc_lines": [
+    "Greetings, Player. Can I help you?",
+    "I sell some local fruits.",
+    "My name is Rodney.",
+    "It is 0:00 pm right now.",
+    "King Tibianus! May the gods bless him!",
+    "I have seen only little of it.",
+    "I can offer some of the local fruits.",
+    "I am glad that the Thaian garrison is here to protect us.",
+    "Rumour goes that some amazons, who where banished from Carlin, took refuge near the swamps.",
+    "Sounds like the name of a foreign soup to me.",
+    "What is that? Is it tasty?",
+    "Our climate is quite rough, so we can only grow wheat here, but no fruits.",
+    "The Thaian protectorate serves our beloved Venore well.",
+    "I have apples, cherries, grapes, and pears. What would you like?",
+    "Greetings, Player. Can I help you?",
+    "Good bye, Player."
+   ],
    "pageid": 11603,
    "positions": [
     [
@@ -17592,7 +17953,43 @@
   {
    "implemented": "7.5",
    "name": "Lorbas",
-   "npc_lines": [],
+   "npc_lines": [
+    "Be greeted, dear traveller Jogador. What brings you here?",
+    "I am just a humble monk and responsible for maintaining this little outpost that is left over from our grand order.",
+    "Our order was once the greatest and richest in the whole known world. Kings, traders and knights of various orders were our supporters, and the gods smiled upon us ... or at least that's what we thought until the day of doom.",
+    "On the day of doom, our dream of building the greatest and most opulent cathedral was shattered.",
+    "The cathedral was already high and impressive, and the order had started to move in although there was still much left to be done. Then the great earthquake came.",
+    "What was once planned as the most impressive cathedral of all times lies now in ruins. ...",
+    "All that the earthquake has left over is a heap of rubble. The ruins are cursed and everybody who dares to go there will draw the ire of heaven on himself. ...",
+    "All those that travel there are infested with bad luck. But only few have returned from this treacherous ground. Noxious fumes are killing intruders almost unnoticed. ...",
+    "Crumbling structures might kill you instantly. ...",
+    "Those who survive the dangers of nature will face the soul-eating ghosts of those who have died in the catastrophe. ...",
+    "It's not worth to go there, there are no riches or treasures left in the ruins, the gold of our order melted away in funding the cathedral's construction. ...",
+    "I urge you to stay away from the cursed ground and the ruins. For the safety of your body and your soul, keep away from there.",
+    "Some say it was just the unstable ground or volcanic activity, some even claim it was the work of demons, but we know it was the will of the gods to punish our vanity.",
+    "In our vanity we thought that we could impress the gods with our money and show piety by building them a monument. ...",
+    "We were wrong, and the gods punished us by sending the worst earthquake that mankind has seen. ...",
+    "Its ground motions could still be felt in Thais, and as the dust settled, only little remained of that what we had built. ...",
+    "Most members of our order were dead, others turned mad or lost faith. We are all that is left from our glorious order.",
+    "I am not worthy to speak about the gods.",
+    "We monks of the humble path feel that we are not worthy to spread the word of the gods. We live in humility and poverty to serve the gods. Most of us have vowed an oath of silence, and I humbly took the burden to become the spokesperson.",
+    "I know nothing about that topic. If you would excuse me, I have things to attend to. (deixa de conversa)",
+    "The king is a worldly ruler, and we don't burden ourselves with worldly concerns anymore.",
+    "He will discover where his path will lead him to. But no matter how ruthless he is, even he stays away from the ruins of the cathedral.",
+    "It is rumoured to be hidden somewhere beneath Edron.",
+    "I own no watch and only a small number of other worldly possessions.",
+    "The gracious tradesmen from Venore send us provisions from time to time.",
+    "Thais is far and we have little contact with the kingdom's capital.",
+    "I hope the knightly order there fares better than our own.",
+    "We have no relations with that town.",
+    "They will have to learn on their own.",
+    "The dwarves are far from being humble. At least this ancient folk knows that there is nothing to gain in the cathedral's ruins and their treasure hunters stay away from there.",
+    "Another continent that has to be seen as a present of the gods to us.",
+    "I will not judge those people.",
+    "I am not the right person to discuss this subject.",
+    "The world is in the hand of the gods.",
+    "Accept my sincere good wishes, Jogador."
+   ],
    "pageid": 11609,
    "positions": [
     [
@@ -17878,7 +18275,44 @@
   {
    "implemented": "6.2",
    "name": "Aneus",
-   "npc_lines": [],
+   "npc_lines": [
+    "Greetings adventurer Jogador. What leads you to me?",
+    "Ok, sit down and listen. Back in the early days, one of the ancestors ... <press m for more>",
+    "... of our king Tibianus III wanted to build the best city in whole of Tibia.",
+    "The works on this new city began and the king sent his best ... <m>",
+    "... Soldiers to protect the workers from orcs and to make them WORK HARDER.",
+    "It was the elite of the whole army. They were called the Red Legion (also known as the bloody legion).",
+    "The orcs attacked the workers from time to time and so they disturbed the works on the city.",
+    "The development of the city was fine. Also a giant castle was build ... <m>",
+    "... northeast of the city. But more and more workers started to rebel because of the bad conditions.",
+    "All rebels were brought to the giant castle. Guarded by the Red Legion, ... <m>",
+    "... they had to work and live in even <u>worser</u> conditions. Also some friends of the king's sister were brought there.",
+    "The king's sister was pretty upset about the situation there but her brother ... <m>",
+    "... didn't want to do anything about this matter. So she made a PLAN to destroy the Red Legion for their cruelty forever.",
+    "The soldiers treated the workers like slaves.",
+    "She ordered her loyal druids and hunters to disguise themselves ... <m>",
+    "... as orcs from the near ISLAND and to ATTACK the Red Legion by night over and over again.",
+    "The General of the Red Legion became very angry about these attacks and after some months he STROKE back!",
+    "Most of the Red Legion went to the island by night. The orcs ... <m>",
+    "... were not prepared and the Red Legion killed hundreds of orcs ... <m>",
+    "... with nearly no loss. After they were satisfied they WALKED BACK to the castle.",
+    "It is said that the orcish shamans cursed the Red Legion. <m>",
+    "Nobody knows. But one third of the soldiers died by a disease on the way back. <m>",
+    "And the orcs wanted to take revenge, and after some days they stroke back! <m>",
+    "The orcs and many allied cyclopses and minotaurs from all ...<m>",
+    "... over Tibia came to avenge their friends, and they killed nearly all ... <m>",
+    "... workers and soldiers in the castle. The HELP of the king's sister came too late.",
+    "She tried to rescue the workers but it was too late. The orcs ... <m>",
+    "... started immediately to attack her troops, too. Her royal troops ... <m>",
+    "... went back to the city. A trick saved the city from destruction.",
+    "They used the same trick as against the Red Legion and the orcs ... <m>",
+    "... started to fight their non-orcish-allies. After a bloody long fight ... <m>",
+    "... the orcs went back to their cities. The city of Carlin was rescued. <m>",
+    "Since then, a woman has always been ruling over Carlin and this statue ... <m>",
+    "... was made to remind us of their great tactics against the orcs ... <m>",
+    "... and the Red Legion. So that was the story of Carlin and these Fields of Glory. I hope you liked it. *He smiles*",
+    "Good bye and take care of you!"
+   ],
    "pageid": 11642,
    "positions": [
     [
@@ -18800,7 +19234,25 @@
   {
    "implemented": "7.1",
    "name": "H.L.",
-   "npc_lines": [],
+   "npc_lines": [
+    "Hmmm. I buy weapons, armor, and other stuff. What do you want, Player?",
+    "I don't have anything to offer, but I buy almost everything. Wanna trade?",
+    "I buy all kinds of armory and weapons.",
+    "Won't tell you.",
+    "Ha! Thais. I lived there once. You know, I was in the royal army. But what they're fighting for... it's all wrong. I deserted.",
+    "You get an excellent fighter training in the army. But they are fighting for the wrong cause.",
+    "I don't really want to talk about it.",
+    "About what? I have no time for this, now move along.",
+    "Didn't I already tell you to go? If you don't have anything important to say, leave me alone.",
+    "They should hang him...",
+    "Yeah. I'm a wild warrior. Well, to be honest, I was. I left them. Some of them became too aggressive. Simply attacking everyone for no reason is not good.",
+    "Well, at least there's one place worth visiting in Tibia. Here!",
+    "Elves... I hate them.",
+    "Dwarfs are good people. I like them.",
+    "Might be a good place to live. But the people are too Thais friendly for my taste.",
+    "He the boss of that tavern. He's alright.",
+    "Women are not good for fighting. I don't need them. I don't trade with them. And I don't like them."
+   ],
    "pageid": 11714,
    "positions": [
     [
@@ -23512,7 +23964,28 @@
   {
    "implemented": "6.4",
    "name": "Avar Tar",
-   "npc_lines": [],
+   "npc_lines": [
+    "Greetings, traveller Player!",
+    "I'm Avar Tar, slayer of monsters, saviour of princesses, and defender of the weak.",
+    "I'm a professional hero.",
+    "I think I'm the greatest hero in Tibia, but my humility forbids me to make an issue out of it.",
+    "I've seen it all and done it all ... at least twice.",
+    "It's 9:45 am right now.",
+    "I fought him several times, sometimes he killed me, sometimes I killed him. I'd say we are even right now, but I'm getting better and more powerful each day.",
+    "I am sure it's hidden in a vault of the Nightmare Knights beneath the Plains of Havoc. I'm planning an expedition to go there and to rout out the Ruthless Seven, but I have to save the world first.",
+    "Oh come on. Let the noobs take care of them. Call me if they are fourteen or so.",
+    "I'm on a quest for the Thaian king ... as usual.",
+    "Ah, my trusty old sword. I left it on Rookgaard years ago when I left for the main continent.",
+    "Rookgaard is full of memories of my first heroic accomplishments ...",
+    "I heard that after all these years, the Minotaur Mage there refuses to leave his room as he is still afraid of me.",
+    "29639 46781! 9063376290 3222011 677 80322429 67538 14805394, 6880326 677 63378129 337011 72683 149630 4378! 453 639 578300 986372 2953639! I know it's rather short, but still, this poem I like best.",
+    "If I had time, I would restore peace in this once proud city, but there's too much to do before I can start that quest.",
+    "I saved the women there once or twice.",
+    "I had to master the magic of all 4 vocations for one of the quests.",
+    "There is a great evil lurking beneath this isle ... and beneath the Plains of Havoc, and in the ancient necropolis, and beneath the Ghostlands ... well basically everywhere.",
+    "Demons know and fear my name! It's not always easy to be a hero, you know?",
+    "See you later, Player."
+   ],
    "pageid": 11948,
    "positions": [
     [
@@ -23917,7 +24390,18 @@
   {
    "implemented": "8.54",
    "name": "Shoddy Beggar",
-   "npc_lines": [],
+   "npc_lines": [
+    "What do you want? Listen to the old madman? If you have nothing to spare, leave me alone.",
+    "My name is... not of your concern.",
+    "Are you kidding me? Do I look like a... well, we'd better change the topic.",
+    "Must be about 11:38 am.",
+    "Tibianus? What is a king measured against a scientist? What is wealth measured against wisdom?",
+    "I thought this was the city of knowledge, arts and exploration. Instead I found this academy full of... *mumbles*",
+    "Ah, the sea of light... we are surrounded by it. It holds the secrets of our very existence, the meaning of - ah you wouldn't even understand.",
+    "Pah, he thinks he knows what holds the world together - in fact he's just as clueless as the rest of the academy. *mumbles*",
+    "I heard about the legend, but I don't know how much of it is actually true.",
+    "Yes, whatever."
+   ],
    "pageid": 11965,
    "positions": [
     [
@@ -26358,7 +26842,26 @@
   {
    "implemented": "7.8",
    "name": "Marcus",
-   "npc_lines": [],
+   "npc_lines": [
+    "Ahoi. What is your business in the harbour?",
+    "I keep an eye on the cargo here in the harbour.",
+    "If people would mind their own business, the city could be a better place.",
+    "<spits on the floor> I killed my share of pirates in my youth. Dogs that give sailors a bad name. Nothing more than bandits.",
+    "The governor's little princess, eh? Too fine and important to care about us ordinary people of course. Why should we care about her?",
+    "The governor does his job I guess.",
+    "The king lives far away and appears like a fairy tale over here.",
+    "Go away with that Thais. I've been there and I've seen it. Not impressive at all.",
+    "A horrible town for a sailor. Imagine a town without alcohol, ruled by women! I guess if you are a pirate or some other dog, your afterlife starts in Carlin.",
+    "They build fine ships in this town. That's the best I can say about it. If you do not have enough money, you are nothing in Venore.",
+    "If people would mind their own business, the city could be a better place.",
+    "Just another lousy pirate, although a quite daring and successful one.",
+    "He is just some old man about which the townspeople are talking now and then. Who cares.",
+    "A klabauterman is some sort of imp that lives on ships and plays quite evil and sometimes lethal pranks on those who annoy him or don't buy his sympathy with little gifts.",
+    "The quara are one of the most murderous threats that the sea gave birth too. I would rather face a giant sea serpent than a horde of quara ...",
+    "In the case of a sea serpent you know at least that you'll end up devoured, but who knows what the quara will do to you.",
+    "I swear I have seen it in the bay just outside of Liberty Bay, deep in the ocean. I was ... uhm catching some fresh air after a night of rum and card games. I looked over the railing into the sea and suddenly I saw that sword in a heap of gold and jewels.",
+    "Bye."
+   ],
    "pageid": 12056,
    "positions": [
     [
@@ -26496,7 +26999,28 @@
   {
    "implemented": "7.8",
    "name": "Theodore Loveless",
-   "npc_lines": [],
+   "npc_lines": [
+    "Greetings, dear visitor.",
+    "I am honoured to humbly serve as the spokesman of the Venorean trading companies.",
+    "Venore has become an impressive little point of trade for wares from all over the world. The steady work pays off and brings us a modest state of luxury ... We have learnt much from our big brother Thais which we admire and where we are still searching for guidance.",
+    "We put great hope in this settlement. The Venorean traders invested much money in the growth of that community here ... We have to see that the little profit we make will be enough to cover our expenses in the remote future ... But we are happy that our money could help to bring peace and to civilise the natives here ... Thais finally brought order to the locals that were torn from fightings and hunger before our arrival.",
+    "Thais is such a lovely city. The bustling centre of civilisation. The world has to thank Thais for so many things.",
+    "Sugar is money. Sugar is business. It's as easy as that.",
+    "I heard he has some relation to these isles. To learn more about it, you probably talk to the mage from Edron that resides in a tower here in the city.",
+    "The king has again proven his great wisdom. The way how he allowed to settle the affairs in Liberty Bays was more than smart ... The trust he has put in the governor, the local military and the help from Venore begins slowly to pay off ... People have work and something to do. The number of fights decreased to the brawls between drunks that are usual for seaports ... As soon as we have the pirates eliminated, we can lower many of the restrictions we had to enforce for the safety of all.",
+    "Governor Silverhand is such a fine person. He does so much for the city and receives so little in return. I hope we can cheer him up now and then. That's the least we can do for this great man that sacrifices himself for the good of his people.",
+    "Ah, my young friend, you have no idea how many companies have some sort of interest in seeing this settlement prosper.",
+    "The pirates are all what is left from the warlords that once terrorised this region. Now that peace and the protection of Liberty Bay byour military moves in, their days are numbered ... One day, hopefully in the near future, the sea will be just as safe as this isle.",
+    "I must admit I am a bit suspicious of this young lady. As far as I know she was not overly fond of the Thaian nobility. Add her strong family ties to this rebel townCarlin and you begin to wonder what that woman is up to. All of a sudden she accepted a mission for the nobility that she did not acknowledge before? And this unholy influence on this poor young Tristan whom she seduced with her beauty. I must admit, I am concerned.",
+    "What a fine young man. I just wonder what brought him here in the first place. Of course I don't believe into rumours that he left a sick wife and 3 childrensomewhere to begin a new life here. That is probably just made up by those that are jealous of him.",
+    "Even the mentionable efforts of this great admiral could not stop the pirates yet. But he will not rest until the last one of this scum will hang for the glory of Thais.",
+    "This notorious pirate and cutthroat has killed more men, women and children than the last epidemic we had here in the slums ...",
+    "Call it like you want. It is just another form of magic ...",
+    "This ugly hag is known as witch and poison brewer. Sadly she is too clever and the citizens too fearful, so the guards could not arrest her yet ...",
+    "Chondur was a charismatic leader amongst the settlers that used to lived here. His greed for land and power made him to one of the warlords that were responsible for all those fights and cruelty between the settlers ...",
+    "We put great hope in this settlement. The Venorean traders invested much money in the growth of that community here ...",
+    "Miss Eleonore is so charming, so beautiful. Her strong will and her independence poses surely a great challenge to every man who wants to marry her. But one look into her beautiful eyes and you will see that she is worth the effort. Perhaps one day I might be allowed to take that challenge ... who knows."
+   ],
    "pageid": 12066,
    "positions": [
     [
@@ -26970,7 +27494,43 @@
    "implemented": "8.0",
    "name": "Thorwulf",
    "npc_lines": [
-    "Hi Jogador."
+    "Hi Jogador.",
+    "I am Thorwulf, slayer of dragons, giants and yetis.",
+    "The dragons of these lands are fierce as a blizzard and lethal as the silent cold and the howling snow storm alike.",
+    "The yetis are powerful and cunning foes. It takes the right bait to lure them out of their hiding places.",
+    "I won't tell. Never ever. Find out on your own.",
+    "I am an expert fighter and I can teach a true warrior in the arts of war.",
+    "I don't have anything to do for you.",
+    "How can someone who never proved himself as a warrior lead people into a battle?",
+    "The people from Carlin seem to respect their queen. Though, I can't understand why. She is hardly a warrior.",
+    "I couldn't care less for gods. Every true warrior creates his own fortune.",
+    "Sorry, I don't teach spells for your vocation.",
+    "As far as I understood it, druids are like our shamans. I know enough magic to defeat my opponents on my own. So I have only little use for such spell casters",
+    "All they are doing is talking to the spirits the whole day. My enemies, however, are of flesh and blood and I can handle them on my own.",
+    "Bah, to know that he is a sorcerer means to know that he is a coward.",
+    "A true warrior will kill his opponents with a rusty knife. There is no need for a mighty weapon. Where is the honour if the weapon is more powerful than its wielder?",
+    "There are no news ... yet. But I can smell blood and steel in the air. I can feel it, there is going to be a battle soon.",
+    "I care little for the people from Carlin. All of them are so weak and timid. I could not care less for their concerns. If they want something to be done, they will have to do it on their own.",
+    "Some far away place the people of Carlin talk about now and then.",
+    "I hate it to wait here for our enemies to arrive. I'd rather go out and wage war in their camps and lairs.",
+    "Thais is not better than Carlin.",
+    "For all I know, they are schemers and liars. That means they are even worse than the other southerners.",
+    "I haven't seen many of them around here.",
+    "The elves that came here were quite skilled with a bow. I respect that in a way, still it takes little courage to shoot something from afar.",
+    "The chakoyas are small but their teeth can shred a man's arm into pieces. Their strength lies in their number as well as in ambushes on unwary or sleeping persons.",
+    "I don't care about cults.",
+    "Our jarl has grown old. I honour him for his deeds in the past but I wonder if a younger leader wouldn't be better now. He could lead us into glorious battles with the raiders.",
+    "Their cowardly tactics are a shame for every true barbarian, so is their obedience to a witch. They are not even worthy opponents.",
+    "Most people have forgotten that being a true barbarian means to be a fearless fighter.",
+    "Those Carliners seem to care about those mines, but they don't have the guts to recapture them. Pathetic.",
+    "The wind that has seen all battles and that puts an icy blanket over the battlefields.",
+    "A boring piece of ice and rock on which only shamans live.",
+    "Men are not supposed to travel the seas. So I don't care if these giant serpents ever existed or if they had only been an excuse for cowards.",
+    "As long as I am not fighting, I am bored.",
+    "A few years ago there was an arena fighter named Alrik. He managed to win the Warlord title three times in a row. He was Svargrond's greatest hero and all of a sudden he was gone and never seen again. ...",
+    "Even his sculpture disappeared. The people say Chyll took him directly to Everspring where he could live a king's life as a reward.",
+    "You talked to Robert, did you? I think I scared him pretty well! Hehehe!",
+    "Bye Jogador."
    ],
    "pageid": 12089,
    "positions": [
@@ -27487,6 +28047,7 @@
     "If only these sea serpents had never disappeared.",
     "What do you know that makes you asking??",
     "That guy from the Carlin Trading Syndicate told me that he knows a guy in Carlin who heard that the postman was talking to a customer about Svargrond and that he would like to work here! ...",
+    "Do you know what that means ??? I could finally leave this cursed ice block for good!!",
     "Good bye, Jogador.",
     "I sell parcels, letters, health potions, mana potions and runes.",
     "With our mail system you can send letters and parcels to other Tibians. I can give you detailed information or sell letters and parcels to you if you ask me for a trade.",
@@ -28214,7 +28775,7 @@
     "I tried to convince them of the quality of human wares, but without success.",
     "I think the Yalahari should leave the factories inactive. They'd only ruin honest people's profit.",
     "I wonder where these gladiators get their supplies from? I wouldn't mind to sell them some decent equipment.",
-    "You really should have bought some extra stuff, just in case.}}"
+    "You really should have bought some extra stuff, just in case."
    ],
    "pageid": 12136,
    "positions": [
@@ -28711,6 +29272,7 @@
     "Our people lived as nomads some generations ago. The contact with Carlin taught us another way of living ...",
     "We did not like everything about it but we are not stupid. We have seen the many advantages ...",
     "If you cannot adapt to this land, you are dead and so we adapted to it and built this city. When the contact to Carlin got lost during the years of the serpents, we kept this city alive ...",
+    "And we survived, even though the raiders did their best to make us fail.",
     "For more than two generations no ship had reached our shores because the giant sea serpents attacked and sank most ships that tried to travel here ...",
     "Not long ago the sea serpents disappeared as suddenly as they had come. Now ships visit us again on a regular base.",
     "In the past, all barbarian tribes roamed the lands of Chyll as nomads. When the Carliners came here and the trade flourished, we used the resources to build this permanent settlement ...",
@@ -31193,6 +31755,7 @@
     "You can join any wizard by using the powder you can find in the envelope on yourself and the rest on someone who did not already join a wizard and has the right colour. ...",
     "Combining yellow and red will result in orange, yellow and blue will be green and red with blue results in violet.",
     "My name is Nathaniel. I am a friend of everything green!",
+    "I am a fan and want to inform other Tibians about the BEST colour to join, the best wizard, the great CAUSE! NATURE! Wizard Fern, whose colour is green of course!",
     "Green is my colour. It is what I stand for. Green represents the wizard Fern of Nature of which I am a great fan.",
     "Farewell friend."
    ],
@@ -31313,7 +31876,7 @@
     "My name is Friedolin. Fun is what I love and orange what I represent!",
     "I am a fan of Furb of Fun and I'm going to inform other Tibians about the BEST colour to join - orange of course!",
     "Well orange is my colour! Fun is what I stand for. Orange represents Furb the wizard of fun! Why would anyone choose anything else?",
-    "Where did he go? Where did he go?}}"
+    "Where did he go? Where did he go?"
    ],
    "pageid": 12299,
    "positions": [
@@ -31672,7 +32235,23 @@
    "implemented": "8.53",
    "name": "Sharon",
    "npc_lines": [
-    "Welcome to Travora, Jogador! I suppose you're here for the character world transfer."
+    "Welcome to Travora, Jogador! I suppose you're here for the character world transfer.",
+    "Character world transfer means that you will leave this world and move to a new one to live there. If you need detailed information just ask me. I can also check if you're ready and teleport you up to the departure platform.",
+    "I can tell you about the requirements for a transfer, about what happens to your skills, quests, money and items, and I can also check if you fulfil the requirements.",
+    "Well, first of all you need to be signed up for a transfer on the Tibia website. Without that, nothing will happen! ...",
+    "You MUST NOT have a black or red skull or have a final warning! Of course we don't want criminals to move around freely. ...",
+    "You MUST give up all your bonds on this world. No marriage. No guild. No house. ...",
+    "You can only move every 6 months! So if you've already changed worlds, you need to wait 6 months for a new transfer. ...",
+    "There is also an item limit. I can tell you about what happens to your money and items, and I can also check if you meet the requirements.",
+    "You are allowed to bring 1000 items with you. They MUST be either in your inventory or in the Travora depot, else they will be deleted! ...",
+    "Some items are limited to ONE only. That includes all pieces of equipment - such as weapons or armors - and some valuable quest items. ...",
+    "For example, you can only bring ONE Sword of Valor, ONE Stonecutter Axe, ONE Nose Ring and so on. Runes, potions and ammunition are unlimited, but of course you could buy all that on your new world and save the space! ...",
+    "I recommend selling all other items and deposit that money on your bank account. Or you could give them to friends who stay here! ...",
+    "I can check if you meet all necessary requirements for a transfer.",
+    "This depot has 1000 item slots. It is south of here. Make sure to put all of your important items there! The rest will be deleted!",
+    "You may only take one item name with you - or one pile of it, if it's a stackable item. Please check your transfer depot here on Travora as well as your inventory and make sure you only have ONE or ONE STACK in total!",
+    "You meet all in-game requirements for a character world transfer. Have you also signed up and paid on the Tibia website?",
+    "Bye-bye, Player! Don't forget - if you logout on the platform above and fulfil all requirements, your character will arrive on your new world after the next server save."
    ],
    "pageid": 12328,
    "positions": [
@@ -33766,7 +34345,14 @@
   {
    "implemented": "9.4",
    "name": "Yasir",
-   "npc_lines": [],
+   "npc_lines": [
+    "Yasu me halaka. <greets you friendly>",
+    "Si! Haneka ariki!",
+    "Me Yasir.",
+    "Tje hari ku ne finjala. Ariki?",
+    "Soso yana. <shakes his head>",
+    "Si, jema ze harun. <waves>"
+   ],
    "pageid": 20472,
    "positions": [
     [
@@ -37958,7 +38544,7 @@
     "Be that as it may, whatever those caves were meant for, these days they are crawling with creatures of different kinds and all are hostile towards us. The competition for food is great down here, and everything is seen as prey by the cave dwellers. ...",
     "Some would like to feast on the crystal of the Spike, others would prefer a diet of gnomes. What they have in common is that they are a threat. If we can't keep them under control their constant attacks and raids on the Spike will wear us down. ...",
     "That's where adventurers fit in to save the day.",
-    "Gnomes have lived autonomous for so long that it still feels odd to work with strangers for many of us.}}"
+    "Gnomes have lived autonomous for so long that it still feels odd to work with strangers for many of us."
    ],
    "pageid": 30986,
    "positions": [
@@ -38647,7 +39233,7 @@
     "Your puny, little ambitions are of little concern to us. Everything you strive to accomplish will be blown away like sand before the desert wind in a blink of a Djinn's eye. ...",
     "Therefore we are as patient as we are wise. You humans, though, are nothing but a curiosity, and nothing that will endure like us.",
     "An upstart human, pretending to be an efreet. Disgusting, but nothing more.",
-    "Bye.}}"
+    "Bye."
    ],
    "pageid": 31809,
    "positions": [
@@ -39581,7 +40167,14 @@
   {
    "implemented": "10.50",
    "name": "Silas",
-   "npc_lines": [],
+   "npc_lines": [
+    "Hello, friend. If you need bows or spears, ammunition or paladin spells, then ask for a trade.",
+    "I am a hunter and trainer of hunters. And I teach paladin spells to those of my kind.",
+    "You seem staggered by it. The invention of glooth added to the uniqueness of our city, I believe - there is no glooth in your lands, I understand?",
+    "A strange substance, gained, I think through some sort of process from an animal. Our historian in the magistrate, or Dr Alaistar Stanton, can surely explain it better to you than I can.",
+    "A kind and intelligent man, but too naive in his dealings with the minotaurs. You'd better purchase some sturdy bow if you go out there to their camps, friend.",
+    "Those brutish creatures cannot share the island with us. We should eradicate their kind, once and for all, or we shall never be safe."
+   ],
    "pageid": 33501,
    "positions": [
     [
@@ -39910,7 +40503,32 @@
   {
    "implemented": "10.50",
    "name": "Roswitha",
-   "npc_lines": [],
+   "npc_lines": [
+    "Hello, my dear. You look like you need a good drink and a chat! Come on in!",
+    "I am Mrs Roswitha Brandon. Mr Brandon has been dead these ten years, poor soul. Nowadays, Mrs Roswitha will do.",
+    "<sighs> He was a passionate fisherman, my poor husband was. Loved nothing as much as the sea wind in the sails and the ship's rudder in his hand. Well, almost nothing. He loved to brew glooth and drink it, too, that's for sure. ...",
+    "Those damned dangerous cliffs and contrary winds around our isle are the reason I shall never again see him in this life. <dabs at her eyes>",
+    "It has a romantic ring to it, that's for sure. Though I guess he has to blow his nose just like the likes of us.",
+    "Horrible brutes they are! Always fighting and attacking us. The only decent sort is Maro - you know, the toolmaker from the upper city. He used to come down here in our part of the city once and a while.",
+    "Well, the island would be lovely if it wasn't for all the terrible beasts that roam it! <sighs>",
+    "Your city is probably quite different from ours. I bet however you got nobs and ordinary people just as well as we do.",
+    "I run this place. It used to be the old post coach station back when Rathleton was a lot smaller, but my late husband made a bed and breakfast of it.",
+    "The city's smartened up, at least on the hill up there <snorts>. Those nobs won't look at the likes of me, oh no. But at least the glooth gets us by in hard times.",
+    "Ah, all I've got for comfort these days. I can tell you some stories about this town that will astound you! Just ask me for a story!",
+    "Ah, where would I be without a good gossip or two. <winks> Just ask me for a story!",
+    "You know they say some poor souls have been captured and made to work inside metal bodies and that's how gargoyles were made? I hope Mr Brandon's soul was not captured by one of those fellows!",
+    "Did you know? That friendly Mr Barnabas Dee is a soothsayer who's foretold many things for this city! If only he had foretold Mr Brandon's death, maybe my poor husband would not have sailed. <shakes head>",
+    "My grandfather used to tell me the mists around this isle were the breath of sleeping dragons, who only breathe out every ten years. Now that would be a sight to see!",
+    "Some say Rathleton was built on the ruins of an ancient order, some say, on a demonic site, and that the mists arising are the souls of the dead ... <shudders> I don't want to believe THAT, though!",
+    "I have been told that a weird scientist blew up the old factory to run from his debts, and that he's now hiding in one of your towns, gambling and drinking. For shame!",
+    "They say Alaistar Stanton married a minotaur princess and brought their child with him when the minotaurs would not accept a human as king. Can you believe that? <shakes head>",
+    "There's a phantom of the old opera, underneath the sewers. It stalks the city at night. Some of my customers have seen it! They say it looks like a horrible beast, moaning and roaring! <shudders>",
+    "Flint used to be the city watch captain. But when he lost his best friend in a battle against the minotaurs, he resigned and became a blacksmith instead. Poor man!",
+    "No one has ever seen Azalea's face, she's always hooded. Some say she is hideously disfigured from a curse that she can't lift, always searching for a cure and that's why she became a druid and doesn't dare show her face, poor thing!",
+    "Some say glooth does all kinds of strange things to you. Some claim it made them light as air and they could fly! Though I guess that's a whiff of peppermoon pollen too many, poor souls. Still, who knows. Try a pint of glooth for yourself! <winks>",
+    "Well, if you drink it too quickly, there's no knowing what'll happen. <winks> If it gets cooler, it's harmless, though. No worries. ...",
+    "One cold, frothy, tasty pint of glooth coming up!"
+   ],
    "pageid": 33508,
    "positions": [
     [
@@ -40002,7 +40620,10 @@
   {
    "implemented": "10.50",
    "name": "Barnabas Dee",
-   "npc_lines": [],
+   "npc_lines": [
+    "Welcome to my humble abode. If you come for new sorcerer spells, you have come to the right place.",
+    "I am an astrologer, navigator and mathematician. Oh, and I also teach sorcerer spells."
+   ],
    "pageid": 33512,
    "positions": [
     [
@@ -41280,6 +41901,7 @@
    "name": "One-Eyed Joe",
    "npc_lines": [
     "Hello there. I'm sorry, I hardly noticed you. I'm a bit nervous. The spooky sounds down there, you know.",
+    "I'm One-Eyed Joe. From Josephina, got that? And I regard this eye patch as a personal feature of beauty!",
     "I'm a pirate. Normally I'm sailing the seas, boarding other ships and gathering treasures. But at the moment my captain graciously assigned me to watch this cursed entrance.",
     "These caves are incredibly beautiful, crystals in vibrant colours grow there like exotic flowers. There are more than a few captains who send down their men in order to quarry the precious crystals. ...",
     "But there are few volunteers. Often the crystal gatherers disappear and are never seen again. Other poor fellows then meet their former shipmates in the form of ghosts or skeletons. It's a cursed area, something evil is down there!",
@@ -41289,6 +41911,7 @@
     "At first glance it seems to be a beautiful - and precious - surrounding. But in truth, deep down in these caverns exists an old evil. Want to hear more?",
     "The evil I mentioned is a strange crystal, imbued with some kind of unholy energy. It is very hard to destroy, no weapon is able to shatter the thing. Maybe a jarring, very loud sound could destroy it. ...",
     "I heard of creatures, that are able to utter ear-splitting sounds. Don't remember the name, though. Would you go down there and try to destroy the crystal?",
+    "Great! Good luck and be careful down there!",
     "Ah, the brave adventurer who sought to destroy the evil crystal down there. Have you been successful?",
     "Hmm ... No, I don't think so. I still feel this strange prickling in my toes.",
     "Ah, the brave adventurer who sought to destroy the evil crystal down there. Have you been successful?",
@@ -42936,7 +43559,17 @@
   {
    "implemented": "10.94",
    "name": "Fadil",
-   "npc_lines": [],
+   "npc_lines": [
+    "Welcome! I suppose you are looking for a trade.",
+    "My name is Fadil.",
+    "I am a Darashian trader. I specialise in strange and unknown objects out of other dimensions. I know that sounds weird. But believe me, such things do exist!",
+    "It is 4:42 am.",
+    "I'm interested in objects out of pure plasma or energy. If you really have the like of it ask me for a trade.",
+    "Of course, let's have a look.",
+    "I don't have any weapons to offer.",
+    "I only buy plasmatic and energetic objects. If you have to offer something like this, ask me for a trade.",
+    "Goodbye. It would be nice to see you again."
+   ],
    "pageid": 38412,
    "positions": [
     [
@@ -44106,6 +44739,8 @@
    "implemented": "11.20.4691",
    "name": "Edgar-Ellen",
    "npc_lines": [
+    "Orshabaal was out of his maze to make us suffer for many days. In Calmera, a knight with blue beard from his hideout appeared. He fought bravely supported by mages, the demon ran and is gone for ages.",
+    "A druid from Eternia just bought his first boots of haste, to finally have his leather boots replaced. Catching a backpack of fish was now his dream, but he ended up swinging his new boots upstream.",
     "This world is nothing without poetry, don't you think? It gives us hope, it envokes love. It's inciting and invigorating all the same.",
     "Rather a calling. The weight of words is something not easily lifted by some, yet it can be a mighty weapon to others. ...",
     "It is my duty to see to it that the words of mighty poets all over Tibia are spread and carried with the heart and prowess they deserve.",
@@ -44595,7 +45230,17 @@
   {
    "implemented": "11.40",
    "name": "Noozer",
-   "npc_lines": [],
+   "npc_lines": [
+    "Hm? Oh! Oh, yes a... visitor! Intruder? Benefactor...? Wha- what are you? If you want to pass through this cave, I may have to disappoint you. Or maybe not. It... depends. So, just passing through?.",
+    "Yes, yes. Or wait - why do you want to.. ah what does it matter. So you want to get through these caves, fine. But be warned! ...",
+    "...wait a second, I lost it. What was I going to say again? Ah yes - DANGEROUS! These. Caves. Are. Dangerous. No way you get out alive. Ever. Again. ...",
+    "Also you should not disturb those... people down there. Yeah. They... hm, wait, they - who are they again? Hey! Who are you? Are you talking to me?! Ah, ah... oh yes, I remember. ...",
+    "Wait - I am the guardian here, yes! The keeper of... something... or another, yes, I... guard this place. With my life. Don't I? Of course! ...",
+    "Is, er... this the moment where I should try to... stop you? Yes? No? Ah, you know what - you go down there, those guys are angry as dung anyway. Try your luck, return to me when you're done. If you still can. Or not.",
+    "Then don't waste my time. I'm doing some important... business... here. Actually... where am I? If I find out, I will be even more angry than I am now. Out of my sight.",
+    "I was stationed in this cave to... guard something. Right now I am not even sure what that was.",
+    "I was on a mission, too - I guess. It was all quite blurry back then. Maybe I'll leave this place after I recovered completely. I have to find out what happened to me."
+   ],
    "pageid": 41116,
    "positions": [
     [
@@ -44673,7 +45318,7 @@
     "In some way their tainted knowledge brought the unthinkable into a resemblance of existence. ...",
     "That is why we can't dabble too much in figuring this out and rather concentrate on our fight to sever its ties to our world.",
     "I have several missions available that deal with severing the ties of the corrupting influence on our world.",
-    "Which of the following topics are you interested in? Cult of Life, Cult of Prosperity, Cult of the Minotaurs, Cult of the Barkless, Cult of the Misguided, Cult of the Orcs, Cult of the Humans?}}"
+    "Which of the following topics are you interested in? Cult of Life, Cult of Prosperity, Cult of the Minotaurs, Cult of the Barkless, Cult of the Misguided, Cult of the Orcs, Cult of the Humans?"
    ],
    "pageid": 41459,
    "positions": [
@@ -45987,7 +46632,54 @@
   {
    "implemented": "11.80",
    "name": "Dedoras",
-   "npc_lines": [],
+   "npc_lines": [
+    "Greetings seekers of knowledge. You seem to be just the person I'm looking for.",
+    "I need the help of some competent adventurers to handle a threat to all creation.",
+    "Of course the first to ask would be the famous Avar Tar, but I heard he's already on a quest of his own and ...",
+    "Well, let's say our last collaboration did not end too well. In fact, I'd be not even surprised if he pretended to not even know me. ...",
+    "So I have to look elsewhere to handle this new threat.",
+    "I guess you know about the background and there is no need to tell you that the forces from beyond managed to acquire the parts of the godbreaker in a coup.",
+    "The goodbreaker was created in ancient times, when the war between the gods and their minions was on its height. Its creation took aeons and incredible sacrifices. ...",
+    "Each part had to be crafted perfectly, to emulate the gods, so it would share 'the same place' with them. ...",
+    "Mere mortals can not even perceive it in his whole but only recognize the part of it that is the physical representation in our world. ...",
+    "If it was meant to be used as an actual weapon, as the ultimate threat, or if Zathroth was just tempted to use his knowledge in the ultimate way - to create something that could undo himself - we don't know. ...",
+    "However in the end even Zathroth deemed it too much of a threat but instead of destroying the contraption once and for all, it was disassembled and hidden away.",
+    "The secret locations of the godbreaker parts were revealed and due to trickery, the minions of Variphor aquired all of them.",
+    "The parts alone do them no good. To assemble the parts, great skill, immense power and forbidden knowledge are necessary. ...",
+    "The skill will be supplied by the fallen Yalahari and the power by Variphor itself. ...",
+    "The only thing they are still lacking is the knowledge to assemble and operate the godbreaker.",
+    "The godbreaker is a complex artifact. Incantation woven into incantation. The powers bound into it are so immense that the slightest mishandling could prove disastrous. ...",
+    "o figure out how it works, let alone how it can be operated safely, could require several centuries of tireless study. And even then this information would be only partial. ...",
+    "Yet the creation and operation of the godbreaker is just the kind of forbidden knowledge Zathroth values most, so it was compiled and stored.",
+    "Of course the dangers of such knowledge were obvious. It was hidden in a sacred place devoted to Zathroth and dangerous knowledge. ...",
+    "The hidden library, the forbidden hoard, the shrouded trove of knowledge or the veiled hoard of forbidden knowledge, the place has many names in many myths.",
+    "The myths agree that the place is well hidden, extremely guarded and contains some of the most powerful pieces of knowledge in this world and probably beyond. ...",
+    "However the knowledge about the godbreaker now poses a threat to all existence. In the hands of Variphor it can cause disaster in previously unknown ways. The gods themselves are in peril.",
+    "Regardless of the dangers, the cult of Zathroth refused to destroy the knowledge of the godbreaker for good. ...",
+    "They value dangerous knowledge that much, that they are unable to part from it, even when faced with the utter destruction of creation.",
+    "This leaves us with no choice but to take action into our own hands.",
+    "You have to find the veiled hoard of Zathroth, breach it and destroy the knowledge how to use the godbreaker.",
+    "I know it's asked much but it's no longer a matter of choice. ...",
+    "The enemy is moving and I have reports that suggest the minions of Variphor are actively searching for Zathroth's library. They must not be allowed to succeed. ...",
+    "We must be the first to reach the hoard and make sure the enemy doesn't get the information he needs.",
+    "I'd recommend to follow the few leads me and my associates could gather so far. ...",
+    "Old myths, some rumors about old texts and other pieces of knowledge that I could use to figure out where to locate the hidden library and how to enter it.",
+    "Hints about the shrouded hoard are numerous, though most are general mentions in texts that deal with Zathroth. But there are other sources. ...",
+    "Like texts about ancient liturgies of Zathroth and historical documents that might give us clues. I already compiled everything of value from the sources that were openly available. ...",
+    "To gather the more obscure parts of knowledge, however, I'll need your help.",
+    "Those pieces of knowledge come in several forms and shapes. For most I can give you more or less specific hints where to start your search.",
+    "I gathered some lore on my own, but I desperately need more information that you might provide me. ...",
+    "My leads are the museum in thais, something strange in the darashian desert, rumors about fishmen, an ancient order, the mysterious asuri, or a lost isle?",
+    "I have heard that it was recently planned to expand the Museum of Tibian Arts. In the course of these activities unexpected difficulties occurred.",
+    "There are rumors of a mysterious statue in the desert next to Darashia. Nobody really knows the meaning of it.",
+    "Sightings of strange fishmen in Tiquanda are stirring up the region. You should be careful when investigating this. ...",
+    "As far as I know a scholar in Edron already dealt with fish-like creatures before.",
+    "Our world has seen many noble knights and orders throughout the centuries. Most of them vanished a long time ago but only few under such mysterious circumstances as the Order of the Falcon. ...",
+    "This noble alliance of honourable knights once resided in Edron to serve the king. Legend has it they vanished practically over night. Rumor has it their disappearance is connected to a forbidden book.",
+    "There's a beautiful but very dangerous palace in the Tiquandan jungle. The young women who live there are actually demons and they are luring unsuspecting mortals in there. ...",
+    "A lucky survivor told me about a portal at the very top of the palace that may lead to another asuri hideout.",
+    "Talk to Captain Charles in Port Hope. He told me that he once ran ashore on a small island where he discovered a small ruin. The architecture was like nothing he had seen before."
+   ],
    "pageid": 44120,
    "positions": [
     [
@@ -49451,7 +50143,42 @@
   {
    "implemented": "12.60",
    "name": "Tik'hi Tak'he",
-   "npc_lines": [],
+   "npc_lines": [
+    "Hail, visitor! Welcome! You can ask me about your 'trust points'!",
+    "I am the shaman of Rascacoon.",
+    "I'm the diviner of the will of the great raccoon and keeper of wisdom.",
+    "This colony lived in peace for centuries, but this peace is now severely disrupted. The pirats became a constant threat and annoyance.",
+    "This colony is called Rascacoon. But our tribe originates from a far way rascoohan city with the name Washingstone.",
+    "When they were still known as Corym, there were only occasional clashes over loot and flotsam. But one day things changed.",
+    "It's only a place of mystery and legend. We have no contact since generations and its location was lost in time.",
+    "Our spies found out that the Corym retrieved an ancient book from a trunk in a shipwreck. It taught them about the ways of the pirates.",
+    "Their leaders were convinced that this was a description of the old and forgotten ways of their people and they adopted it.",
+    "They became the pirats that we know today. They became more organized and more aggressive.",
+    "Things escalated when they by chance discovered the explosiveness of the mold of one of their favourite cheeses.",
+    "They weaponized the mold and refined it to so called green powder to create devastating weapons.",
+    "For now they employ it to terrorize the seas and experiment with its power.",
+    "It's only a matter of time until they will come and use their weapons against us. Therefore they have to be stopped.",
+    "I fear they have yet to unleash the true destructive power of this weapon. For all what we know they keep experimenting and refining it, somewhere deep in their dens. ...",
+    "To disrupt those experiments might prove helpful.",
+    "We know many secrets and studied the pirats for a long time. Our knowledge will prove helpful in fighting them.",
+    "Before we share our knowledge you have to help us, to strengthen our position and secure our colony.",
+    "When we feel safe enough from their retribution, we can approve a strike to the heart of the pirats. Until then it will be your mission to assist our colony.",
+    "He is our creator and guide.",
+    "The mother of all gave birth to the gods. The gods immediately begun with the creation of the world, as this was their only purpose.",
+    "Their greatest accomplishment was the creation of the great raccoon. Of all of the gods creations only he was perfect and therefore he was unique.",
+    "But the great raccoon immediately felt an enormous loneliness, because all of creation had their peers to bond but the unique raccoon hadn't.",
+    "So after the gods were done with creation, the great raccoon stole the secret of life out of their trashcan and created us Rascoohans in his image.",
+    "The great raccoon looks over us and we live our life to his enjoyment.",
+    "When the gods moved on to create other world, the great raccoon stood behind and kept watching over us.",
+    "What king? We have no king or leader. We have to convince other to cooperate and don't order them.",
+    "Are you sure that you want to listen to rascoohan wisdom? It might shatter the perception of reality for the weak.",
+    "Fools rush in while the iron is still hot.",
+    "It's better to be poor and healthy than to throw stones from inside a glasshouse.",
+    "If a man fools you once, shame on him. But if you teach him how to fish, he'll probably won't bother you ever again.",
+    "Never pass on a free snack or an unsecured trashcan - which is basically the same.",
+    "Too many cooks are better than one.",
+    "The early bird gets the worm. But the worm got up even more early and what good did it do him?"
+   ],
    "pageid": 50570,
    "positions": [
     [
@@ -49569,7 +50296,20 @@
   {
    "implemented": "12.60",
    "name": "Om'Wake Naha",
-   "npc_lines": [],
+   "npc_lines": [
+    "Hello, traveller! Be welcome!",
+    "My name is Om'Wake Naha, which translates into 'has many things' in your language.",
+    "I am responsible for supplies and trade of the colony.",
+    "Pesky ratmen are constantly raiding our cheese supplies. I could use a helping hand or two, to get rid of this problem.",
+    "The pirats use transformation magic to enter my cheese cellar as rats and they devour and steal our precious cheese.",
+    "Push as many cheese as you can into the cheese larder in the center of the cellar. Use the staffs that our shaman supplied to dispel the disguise of the rats to fight the intruders.",
+    "Our town, Rascacoon, is just a colony. Our ancestors came here from a place far away on a journey to see the all wonders the world has to offer.",
+    "We face many hardships and hazards but our people are resourceful and until the pirats showed up our colony was thriving.",
+    "After several years of travel and hardships our ancestors settled here.",
+    "One day, when our colony is huge and striving, some of the young ones will go on their own journey and after a long travel will build their own colony.",
+    "This day is still far away. There is still space enough and so much to be accomplished that no one gets bored.",
+    "It's only an old story. Our tribe left that place generations ago."
+   ],
    "pageid": 50624,
    "positions": [
     [
@@ -53491,7 +54231,31 @@
   {
    "implemented": "14.00.142f15",
    "name": "Wyrdin’s Apprentice",
-   "npc_lines": [],
+   "npc_lines": [
+    "Hm? Who's disturbing my perusal! I've just returned from Yalahar and have a lot of reading to do - make it short.",
+    "They discovered a new city to the far north. I've been there, it's huge and bustling, filled to the brim with exotic wares, magic and adventure. ...",
+    "I was an apprentice to the researcher Wyrdin in Edron, he sent me there. He wanted to retrieve some research from the explorer society's representative Timothy, who is stationed there. ...",
+    "However, after seeing what the city had to offer, I took matters in my own hands and started my own venture. Independence and stuff. ...",
+    "I am now translating scientific books from all kinds of sources in Yalahar and beyond. Once I have completed enough tracts, reports and encyclopedias, I will open a store. ...",
+    "I also cut Captain Bluebear a deal to provide passage to the city's harbour, a simple investment. He brings me there, he gets a cut of my published books. ...",
+    "And since I'm a man of business at heart, I could let you in, too - provided an appropriate sum of gold for my expenses of course. You in?",
+    "Great. To cover my expenses, you will have to pay me a... one-time fee. Let's make it 250 gold and you're good to go. What do you say?",
+    "Done deal! The password is 'whizzkid'. Say this to captain Bluebear in Thais and he will know. Please be on your way now, these books won't translate themselves.",
+    "Hm? Who's disturbing my perusal! I've just returned from Yalahar and have a lot of reading to do - make it short.",
+    "They discovered a new city to the far north. I've been there, it's huge and bustling, filled to the brim with exotic wares, magic and adventure. ...",
+    "I was an apprentice to the researcher Wyrdin in Edron, he sent me there. He wanted to retrieve some research from the explorer society's representative Timothy, who is stationed there. ...",
+    "However, after seeing what the city had to offer, I took matters in my own hands and started my own venture. Independence and stuff. ...",
+    "I am now translating scientific books from all kinds of sources in Yalahar and beyond. Once I have completed enough tracts, reports and encyclopedias, I will open a store. ...",
+    "I also cut Captain Bluebear a deal to provide passage to the city's harbour, a simple investment. He brings me there, he gets a cut of my published books. ...",
+    "And since I'm a man of business at heart, I could let you in, too - provided an appropriate sum of gold for my expenses of course. You in?",
+    "They discovered a new city to the far north. I've been there, it's huge and bustling, filled to the brim with exotic wares, magic and adventure. ...",
+    "I was an apprentice to the researcher Wyrdin in Edron, he sent me there. He wanted to retrieve some research from the explorer society's representative Timothy, who is stationed there. ...",
+    "However, after seeing what the city had to offer, I took matters in my own hands and started my own venture. Independence and stuff. ...",
+    "I am now translating scientific books from all kinds of sources in Yalahar and beyond. Once I have completed enough tracts, reports and encyclopedias, I will open a store. ...",
+    "I also cut Captain Bluebear a deal to provide passage to the city's harbour, a simple investment. He brings me there, he gets a cut of my published books. ...",
+    "And since I'm a man of business at heart, I could let you in, too - provided an appropriate sum of gold for my expenses of course. You in?",
+    "Yalahar is a fine city, you're missing an opportunity there, kid. Well, suit yourself."
+   ],
    "pageid": 63018,
    "positions": [
     [
@@ -55928,7 +56692,12 @@
    "name": "Captain Corsarah",
    "npc_lines": [
     "Passage to Venore? The ship is ready to sail!",
-    "The next passage to Venore leaves from here."
+    "The next passage to Venore leaves from here.",
+    "Welcome on board, Sir Jogador. You want to sail to Venore?",
+    "Do you seek a passage to Venore for 200 gold?",
+    "My name is Captain Corsarah.",
+    "I'm the captain of this sailing ship.",
+    "The ship connects Thalassara and Venore."
    ],
    "pageid": 67603,
    "positions": [

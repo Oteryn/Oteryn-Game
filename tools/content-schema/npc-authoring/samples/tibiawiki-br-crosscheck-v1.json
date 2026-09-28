@@ -4,7 +4,7 @@
  "inputs": {
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "7fff2a52206f18d43e9aee57af38f21bb8567bcc6f634f6c5ee0d3149161344b",
+  "facts_sha256": "df80eb000236118c65542becc44827f8c33c56ba45b66fa429213b439b9b46a2",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -2058,6 +2058,12 @@
     "revid": 416567,
     "title": "Aneus"
    },
+   "dialogue": {
+    "br_lines": 36,
+    "matched": 6,
+    "near": 0,
+    "texts": 26
+   },
    "name": "Aneus",
    "npc": "oteryn:npc.aneus",
    "position": {
@@ -2794,6 +2800,12 @@
     "pageid": 11948,
     "revid": 420237,
     "title": "Avar Tar"
+   },
+   "dialogue": {
+    "br_lines": 20,
+    "matched": 3,
+    "near": 0,
+    "texts": 3
    },
    "name": "Avar Tar",
    "npc": "oteryn:npc.avar_tar",
@@ -4665,6 +4677,12 @@
     "revid": 423095,
     "title": "Budrik"
    },
+   "dialogue": {
+    "br_lines": 12,
+    "matched": 5,
+    "near": 4,
+    "texts": 20
+   },
    "name": "Budrik",
    "npc": "oteryn:npc.budrik",
    "position": {
@@ -5770,6 +5788,12 @@
     "pageid": 10402,
     "revid": 437013,
     "title": "Chatterbone"
+   },
+   "dialogue": {
+    "br_lines": 2,
+    "matched": 2,
+    "near": 0,
+    "texts": 72
    },
    "name": "Chatterbone",
    "npc": "oteryn:npc.chatterbone",
@@ -6919,8 +6943,8 @@
     "title": "Dalbrect"
    },
    "dialogue": {
-    "br_lines": 10,
-    "matched": 8,
+    "br_lines": 11,
+    "matched": 9,
     "near": 0,
     "texts": 13
    },
@@ -7167,6 +7191,12 @@
     "pageid": 44120,
     "revid": 352830,
     "title": "Dedoras"
+   },
+   "dialogue": {
+    "br_lines": 46,
+    "matched": 35,
+    "near": 0,
+    "texts": 36
    },
    "name": "Dedoras",
    "npc": "oteryn:npc.dedoras",
@@ -8014,7 +8044,7 @@
     "title": "Edgar-Ellen"
    },
    "dialogue": {
-    "br_lines": 7,
+    "br_lines": 9,
     "matched": 6,
     "near": 1,
     "texts": 7
@@ -13103,7 +13133,7 @@
     "title": "Hjaern"
    },
    "dialogue": {
-    "br_lines": 17,
+    "br_lines": 19,
     "matched": 1,
     "near": 0,
     "texts": 1
@@ -15854,6 +15884,12 @@
     "revid": 443274,
     "title": "Lee'Delle"
    },
+   "dialogue": {
+    "br_lines": 21,
+    "matched": 4,
+    "near": 2,
+    "texts": 62
+   },
    "name": "Lee'Delle",
    "npc": "oteryn:npc.lee_delle",
    "position": {
@@ -16244,6 +16280,12 @@
     "pageid": 11609,
     "revid": 433430,
     "title": "Lorbas"
+   },
+   "dialogue": {
+    "br_lines": 35,
+    "matched": 0,
+    "near": 0,
+    "texts": 1
    },
    "name": "Lorbas",
    "npc": "oteryn:npc.lorbas",
@@ -17294,7 +17336,7 @@
     "title": "Melchior"
    },
    "dialogue": {
-    "br_lines": 63,
+    "br_lines": 64,
     "matched": 2,
     "near": 0,
     "texts": 2
@@ -18386,7 +18428,7 @@
     "title": "Nelly"
    },
    "dialogue": {
-    "br_lines": 38,
+    "br_lines": 39,
     "matched": 2,
     "near": 0,
     "texts": 4
@@ -18809,6 +18851,12 @@
     "pageid": 41116,
     "revid": 405036,
     "title": "Noozer"
+   },
+   "dialogue": {
+    "br_lines": 9,
+    "matched": 0,
+    "near": 1,
+    "texts": 2
    },
    "name": "Noozer",
    "npc": "oteryn:npc.noozer",
@@ -19488,7 +19536,7 @@
     "title": "One-Eyed Joe"
    },
    "dialogue": {
-    "br_lines": 16,
+    "br_lines": 18,
     "matched": 0,
     "near": 0,
     "texts": 0
@@ -20730,9 +20778,9 @@
     "title": "Pydar"
    },
    "dialogue": {
-    "br_lines": 1,
-    "matched": 1,
-    "near": 0,
+    "br_lines": 26,
+    "matched": 23,
+    "near": 2,
     "texts": 36
    },
    "name": "Pydar",
@@ -22040,6 +22088,12 @@
     "revid": 394102,
     "title": "Roswitha"
    },
+   "dialogue": {
+    "br_lines": 24,
+    "matched": 0,
+    "near": 0,
+    "texts": 1
+   },
    "name": "Roswitha",
    "npc": "oteryn:npc.roswitha",
    "position": {
@@ -23132,9 +23186,9 @@
     "title": "Sharon"
    },
    "dialogue": {
-    "br_lines": 1,
+    "br_lines": 17,
     "matched": 0,
-    "near": 0,
+    "near": 1,
     "texts": 18
    },
    "name": "Sharon",
@@ -23212,6 +23266,12 @@
     "pageid": 11477,
     "revid": 433526,
     "title": "Shiantis"
+   },
+   "dialogue": {
+    "br_lines": 16,
+    "matched": 2,
+    "near": 0,
+    "texts": 4
    },
    "name": "Shiantis",
    "npc": "oteryn:npc.shiantis",
@@ -23369,6 +23429,12 @@
     "pageid": 11965,
     "revid": 352867,
     "title": "Shoddy Beggar"
+   },
+   "dialogue": {
+    "br_lines": 10,
+    "matched": 3,
+    "near": 0,
+    "texts": 3
    },
    "name": "Shoddy Beggar",
    "npc": "oteryn:npc.shoddy_beggar",
@@ -27833,6 +27899,12 @@
     "revid": 433385,
     "title": "Yasir"
    },
+   "dialogue": {
+    "br_lines": 6,
+    "matched": 1,
+    "near": 0,
+    "texts": 1
+   },
    "name": "Yasir",
    "npc": "oteryn:npc.yasir",
    "position": {
@@ -28008,6 +28080,12 @@
     "pageid": 11546,
     "revid": 433529,
     "title": "Yberius"
+   },
+   "dialogue": {
+    "br_lines": 31,
+    "matched": 2,
+    "near": 0,
+    "texts": 9
    },
    "name": "Yberius",
    "npc": "oteryn:npc.yberius",
@@ -28252,6 +28330,12 @@
     "pageid": 11541,
     "revid": 433530,
     "title": "Zebron"
+   },
+   "dialogue": {
+    "br_lines": 20,
+    "matched": 2,
+    "near": 1,
+    "texts": 3
    },
    "name": "Zebron",
    "npc": "oteryn:npc.zebron",
@@ -28675,12 +28759,12 @@
  ],
  "schema": "OTERYN_NPC_TIBIAWIKI_BR_CROSSCHECK/v1",
  "totals": {
-  "dialogue:br_only": 154,
-  "dialogue:checked": 346,
-  "dialogue:matched": 2583,
-  "dialogue:near": 327,
-  "dialogue:no_text_matched": 67,
-  "dialogue:texts": 5161,
+  "dialogue:br_only": 174,
+  "dialogue:checked": 360,
+  "dialogue:matched": 2671,
+  "dialogue:near": 338,
+  "dialogue:no_text_matched": 68,
+  "dialogue:texts": 5404,
   "no_br_page": 34,
   "npcs": 1094,
   "position:CLOSE": 94,
