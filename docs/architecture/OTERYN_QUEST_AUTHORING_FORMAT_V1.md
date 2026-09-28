@@ -393,9 +393,11 @@ literal buried in a larger expression such as `toPosition or Position(1,2,7)` is
 match of that one argument. Its nine seal-flame anchor teleports and seven step-back-to-previous-tile
 relocations were typed under an earlier, looser rule that matched a literal position or the name
 `fromPosition` anywhere on the line; neither is recorded with enough evidence (the committed
-transcription never kept the raw argument text, only the resolved anchor or the bare fact) to prove
-under the current rule that the argument itself, not a larger expression around it, was the literal, so
-all 19 now stay blocked rather than risk a false positive. Its 27 WorldObject children — the seal
+transcription never kept the raw argument text, only the resolved anchor position or the bare fact) to
+prove under the current rule that the argument itself, not a larger expression around it, was the
+literal, so all 19 now stay blocked rather than risk a false positive. The anchor positions themselves
+stay in `anchors[]` as retained transcription evidence for the re-run to bind, even where no current
+child references one. Its 27 WorldObject children — the seal
 levers and the magic walls the two conflicts (§6.4) are about — were never typed at all: the committed
 transcription never recorded which source call (`transform`, `createItem`, `remove`, `setActionId`,
 `decay`, `revertItem`) produced each one, only its source line. Turning both into typed data needs a

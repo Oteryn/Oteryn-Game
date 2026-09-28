@@ -439,7 +439,8 @@ interaction_case('item condition item is an Item',
 interaction_case('uid condition has a value', lambda i, c, m: i['rules'][0]['branch'][1]['when']['object'].update(field='unique_id'))
 interaction_case('summon names a creature', lambda i, c, m: c[1].pop('creature'))
 interaction_case('anchor exists', lambda i, c, m: c[1].update(anchor='p9'))
-interaction_case('anchor is used', lambda i, c, m: i['anchors'].append({'key': 'p3', 'source_position': {'x': 5, 'y': 5, 'z': 7}}))
+interaction_case('an anchor with no current consumer is not an error (retained transcription evidence)',
+                 lambda i, c, m: i['anchors'].append({'key': 'p3', 'source_position': {'x': 5, 'y': 5, 'z': 7}}), expected=True)
 interaction_case('anchor positions are unique', lambda i, c, m: i['anchors'][1].update(source_position={'x': 1, 'y': 2, 'z': 7}))
 interaction_case('transition exists', lambda i, c, m: c[0].update(transition='oteryn:quest/banshees#the_hidden_seal:npc_9'))
 interaction_case('transition moves its own track', lambda i, c, m: c[0].update(transition='oteryn:quest/banshees#the_plague_seal:npc_1'))

@@ -43,17 +43,17 @@ across three review rounds.
 **Blocked on the committed corpus:** the transcription never recorded the raw argument text behind
 each Movement/WorldObject child, only its resolved shape. Three rounds progressively proved that
 shape alone cannot verify the current strict rule, so each round's newly-unprovable bucket was
-conservatively downgraded to blocked rather than risk a false positive: **all 800 Movement and all
-891 WorldObject children are blocked today.** A fresh run against real source (this worker's
-`add_repo` for the pinned checkouts was denied) would type most of them correctly first pass — the
-converter is ready. See "Exact delta" below.
+downgraded to blocked: **all 800 Movement and all 891 WorldObject children are blocked today**, with
+every anchor position retained as evidence even where unreferenced. A fresh run against real source
+(`add_repo` for the pinned checkouts was denied) would type most correctly first pass. See "Exact
+delta" below.
 
 ## Architecture and source of truth
 
 - `docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md` §3.3, §6.3, §6.6, §6.7 — D36 (`PROVEN`).
 - `docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md` §3 (D37),
   §4 (D38) — CANDIDATE, decided 2026-09-27; contract text awaits review (not touched here).
-- Counts (`PROVEN`): interactions 1,221; Movement 800 blocked; WorldObject 891 blocked; 0 typed.
+- Counts (`PROVEN`): interactions 1,221; Movement/WorldObject 800/891 blocked; 0 typed; 313 anchors.
 
 ## High-risk authority/recovery qualification
 
@@ -65,74 +65,76 @@ recovery evidence involved.
 
 ## Acceptance criteria
 
-- [x] A Movement/WorldObject child is typed only for an exact, fully-delimited literal argument (an
-  anchor, the bare previous-position variable, a literal `createItem` id/position, a provably
-  same-target revert); anything unverifiable stays blocked.
+- [x] A Movement/WorldObject child is typed only for an exact, fully-delimited literal argument;
+  anything unverifiable stays blocked.
 - [ ] Real D37/D38 data on the committed corpus. **Not met**: three rounds proved the committed shape
   carries no argument-level evidence; schema/converter/tests are ready for a run with real source.
-- [x] CREATE/REMOVE bind an anchor only from a literal position, by argument structure
-  (`createItem(itemId, count/subtype, position)`); RETAG carries no action-id field.
+- [x] CREATE/REMOVE bind an anchor only from a literal position, by argument structure; RETAG carries
+  no action-id field.
 - [x] A revert attaches only to the one candidate (among all preceding ops) it provably matches; no
   match or more than one equally plausible match stays blocked.
 - [x] Value-bearing removals stay DUR-03 consumption; the 43 creature removals stay unresolved (C4).
 - [x] Queen of the Banshees worked example documented in §6.3 with exact before/after counts.
 - [x] 0 schema/semantic validator errors on the full regenerated corpus.
 - [x] `verify_quest_schema.py`: 177/177 (27 converter-level regression cases, three rounds).
-- [x] Deterministic regeneration: idempotent migrations; each round's programmatic diff confirms only
-  the intended owner's children (and round 3's orphaned anchors) changed — other samples byte-
-  identical to `origin/main` throughout.
+- [x] Deterministic regeneration: idempotent migrations. Every anchor present on `origin/main` is
+  present on head (313 = 313, 0 added); 0/1,221 interactions differ outside Movement/WorldObject
+  children and the restored anchors; other samples byte-identical to `origin/main` throughout.
 
 ## Excluded scope
 
 - Real per-instance D37/D38 classification on the committed corpus (see Exact delta).
-- `content/**`, any Rust, protocol, DUR-03/quest-state runtime, D39-D42 reward chests, the proposal's
-  own contract text/review: untouched, per allocation.
-- SCOPE_HANDOFF: no corpus instance signals it (the source servers have no channel concept).
+- `content/**`, any Rust, protocol, DUR-03/quest-state runtime, D39-D42, the proposal's own contract
+  text/review: untouched, per allocation. SCOPE_HANDOFF: no corpus instance signals it.
 
 ## Exact delta to unblock
 
-A worker/session with `opentibiabr/canary` at `47dfd51f` and `zimbadev/crystalserver` at `ff7ede59`
-checked out can complete D37/D38 with no further code change: run `ots_interactions.py --canary
-<checkout> --crystal <checkout>` (types only an exact literal argument structure; else blocked, never
-guessed), diff against `samples/interactions/*.json`, commit. Tests cover every rule.
+A worker/session with `opentibiabr/canary` (`47dfd51f`) and `zimbadev/crystalserver` (`ff7ede59`)
+checked out completes D37/D38 with no further code change: run `ots_interactions.py --canary
+<checkout> --crystal <checkout>` (types only an exact literal argument; else blocked, never guessed),
+diff against `samples/interactions/*.json`, commit. Tests cover every rule.
 
-## Repair rounds (Codex reviews; all fixed, tested, re-validated; round 3 merged `origin/main`
-13efb4f first — no overlap with owned paths, see PR/closeout)
+## Repair rounds (Codex reviews + one owner-flagged correction; all fixed, tested, re-validated;
+round 3 and its correction each merged `origin/main` first — no overlap with owned paths, PR/closeout)
 
 **Round 1** (6d69ccd, 3 P2s): a revert produced its own standalone TRANSFORM; `createItem(id,
 Position(...))` dropped the position; a reward constructor also produced a WorldObject CREATE.
 
 **Round 2** (dde3b43e, 4 P2s; root cause: substring/list-order heuristics): the previous-tile check
 matched any expression merely referencing `fromPosition`; a revert attached by list order alone; a
-`createItem` id was captured from a non-delimited expression; the position argument used an
-`(?i)position` name heuristic. The 209 previously-typed previous-tile children, unprovable from the
-committed shape, were downgraded to blocked.
+`createItem` id was captured from a non-delimited expression; the position argument used a name
+heuristic. The 209 previously-typed previous-tile children, unprovable from the committed shape, were
+downgraded to blocked.
 
-**Round 3** (FINAL per owner authorization for this round, 199d3999, 3 P2s; same root cause, now in
-arguments rounds 1-2's own fixes still searched too broadly): (1) `teleportTo`'s anchor check
-searched the whole statement for a literal `Position`, so `teleportTo(toPosition or Position(1,2,7))`
-typed as `(1,2,7)` — fixed by splitting the argument list and requiring the *first* argument itself
-to fully match; the 219 previously-typed anchor children, equally unprovable from the committed
-shape, are downgraded too, and 205 orphaned anchors removed from `anchors[]` (kept when still used,
-e.g. by a summon). (2) a revert attached to the nearest preceding operation only, so
-`wall1:transform`, `wall2:transform`, `wall1:decay()` wrongly attached to wall2 — fixed by searching
-every preceding operation for the one `same_target` matches; >1 equally plausible match also blocks
-now. (3) a revert's position was found anywhere in its own argument list, so `toPosition +
-Position(1,2,7)` matched — fixed by requiring the split position argument itself to fully match. 6
-new regression cases, incl. each exact example.
+**Round 3** (owner-authorized, 199d3999, 3 P2s; same root cause, now in arguments rounds 1-2's own
+fixes still searched too broadly): (1) `teleportTo`'s anchor check searched the whole statement, so
+`teleportTo(toPosition or Position(1,2,7))` typed as `(1,2,7)` — fixed by splitting the argument list
+and requiring the *first* argument itself to fully match; the 219 previously-typed anchor children,
+equally unprovable from the committed shape, downgraded too. (2) a revert attached to the nearest
+preceding operation only, so `wall1:transform`, `wall2:transform`, `wall1:decay()` wrongly attached
+to wall2 — fixed by searching every preceding operation for the one `same_target` matches; >1 equally
+plausible match also blocks now. (3) a revert's position was found anywhere in its own argument list,
+so `toPosition + Position(1,2,7)` matched — fixed by requiring the split argument itself to fully
+match. 6 new regression cases, incl. each exact example.
+
+**Round 3 correction** (owner-flagged, same round, 8437920): fix (1)'s migration deleted the 219
+downgraded children's now-unreferenced anchors, losing pre-existing `origin/main` evidence. Fixed by
+restoring every anchor exactly as on `origin/main` (313 total; this PR added none) and relaxing the
+anchor-usage check to allow one with no current consumer (an unknown-key reference is still an
+error) — the smaller of the coordinator's two options, needing no new field or lossy reconstruction
+of which child found which anchor.
 
 ## Implementation / findings
 
 - `interaction.schema.json`: `$defs.relocation_target`; typed D37 relocate child; D38 operation
-  shapes (`revert_after_ms` optional; `RETAG` no id field); `to_source_line` optional.
+  shapes; `to_source_line` optional.
 - `ots_interactions.py`: `children()` types only an exact literal argument structure, parsed with
-  `split_args`/`argument` throughout; `same_target()`/`revert()` (searches every candidate, requires
-  exactly one match)/`append_children()`/`strip_internal()`.
-- `validate_quest_content.py`: `BLOCKED` reasons refreshed; blocked-reason check scoped to
-  `status == 'blocked'`; anchor-usage check reads a relocate child's `target.anchor`.
+  `split_args`/`argument`; `same_target()`/`revert()`/`append_children()`/`strip_internal()`.
+- `validate_quest_content.py`: `BLOCKED` reasons refreshed; anchor-usage check no longer errors on an
+  anchor with no current consumer (retained evidence, correction).
 - `verify_quest_schema.py`: `run_converter`/`converter_case` harness, 27 converter-level cases.
-- `samples/interactions/{interactions,manifest}.json`: migrated each round. Final: Movement 800 → 0
-  typed/800 blocked; WorldObject 891 → 0 typed/891 blocked.
+- `samples/interactions/{interactions,manifest}.json`: migrated each round; anchors restored to
+  `origin/main`'s 313 in the correction. Final: Movement/WorldObject 0 typed, all blocked.
 - `docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md`: §3.3, §6.3 counts, Banshees paragraph.
 - `README.md`: updated rows.
 
@@ -150,11 +152,12 @@ new regression cases, incl. each exact example.
 - scenario: NOT_APPLICABLE (offline content tooling)
 
 ### Regeneration / non-regression
-- Round 3 full-corpus diff (stripping Movement children): 0/1,221 interactions differ outside
-  Movement; every anchor removed from `anchors[]` is confirmed (scanning the new rules) to have lost
-  its only consumer, never one still in use. chests/doors/questlog/readiness untouched all 3 rounds
+- Round 3 diff (stripping Movement children, ignoring `anchors[]`): 0/1,221 interactions differ.
+- Correction: `{(key, coords) for a in main's anchors}` ⊆ same set on head, verified per interaction
+  (equal: 313/313, 0 added by this PR). 0/1,221 interactions differ outside Movement/WorldObject
+  children and the restored `anchors[]`. chests/doors/questlog/readiness untouched throughout
   (`ots_readiness.py` reproduces its file byte-identically — its counts key only on owner name).
-- All three migrations are idempotent (re-running finds nothing left to change, writes nothing).
+- All migrations are idempotent (re-running finds nothing left to change, writes nothing).
 
 ### Exact-head CI
 - final head: pending (set at freeze)
@@ -166,37 +169,35 @@ new regression cases, incl. each exact example.
 
 - exact head: pending (set at freeze)
 - method/reviewer: implementing agent (this session)
-- material findings: a schema `oneOf` gap (fixed). Round 1 — 3 Codex P2s. Round 2 — 4 Codex P2s,
-  root-caused to substring/list-order heuristics. Round 3 — 3 Codex P2s, the same root cause
-  recurring in arguments rounds 1-2's own fixes still searched too broadly. All fixed and tested.
-- verdict: no other material findings; each round's fix now parses the exact argument, never the
-  statement around it.
+- material findings: a schema `oneOf` gap (fixed). Round 1 — 3 Codex P2s. Round 2 — 4 Codex P2s, root-
+  caused to substring/list-order heuristics. Round 3 — 3 more of the same, plus an owner-flagged data
+  loss (this PR deleted pre-existing anchors) — all fixed and tested.
+- verdict: no other material findings.
 
 ## Independent review
 
-- required: YES — changes an accepted format's committed samples/schema
+- required: YES — changes an accepted format's samples/schema
 - exact head / method / material findings / verdict: pending
 
 ## PR and closeout
 
 - changed-file review: pending
-- unresolved review threads: pending (round 3 addresses 3 P2s, final round per owner)
+- unresolved review threads: pending (round 3 + owner-flagged correction, still round 3)
 - related/superseded PRs: none known
 - protected auto-merge: pending
 - merge commit/result: pending
-- merge from main: 13efb4f (unrelated CW2/CW3/CW4/monster-authoring work) merged before round 3's
-  commit; no overlap with owned paths, verified empty diff.
+- merge from main: 13efb4f then 45b6cc7 (unrelated work), each merged before its commit; no overlap
+  with owned paths, verified empty diff both times.
 - ownership release: pending — real D37/D38 classification is residual scope for a checkout-capable
   worker/session (Exact delta above).
 
 ## Context checkpoint
 
 ```yaml
-last_progress: repair round 3/FINAL (3 P2s fixed — teleport anchor and revert-position matching now
-  parse the exact argument, not the statement; revert search considers every preceding candidate;
-  the 219 previously-typed anchor children, unprovable like round 2's previous-tile ones, downgraded
-  to blocked, orphaned anchors removed). All D37/D38 on the committed corpus is now blocked; the
-  schema/converter/tests are complete and ready for a run with real source.
+last_progress: round 3 correction (owner-authorized): restored all 313 origin/main anchors round 3's
+  own migration had deleted when their consumer was downgraded, and relaxed the anchor-usage check to
+  allow retained-but-unreferenced evidence. All D37/D38 on the committed corpus is blocked; schema/
+  converter/tests are complete and ready for a run with real source.
 status: blocked
 branch: claude/quest-relocation-worldobject-transcription
 head_sha: null
@@ -213,12 +214,12 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
+repair_cycles_for_current_gate: 4
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: a checkout-capable worker/session must run ots_interactions.py and commit
   the real D37/D38 delta
-blocker: per-instance classification needs the pinned source checkouts; add_repo for
-  canary/crystalserver was denied (Untrusted Code Integration)
-next_action: push round 3, report new head SHA/counts to the coordinator
+blocker: per-instance classification needs the pinned source checkouts; add_repo for canary/
+  crystalserver was denied (Untrusted Code Integration)
+next_action: push the correction, report new head SHA/anchor counts to the coordinator
 ```

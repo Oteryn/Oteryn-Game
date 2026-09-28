@@ -271,8 +271,9 @@ def validate_interactions(interactions_doc, manifest, quests_doc, progress_doc):
         used -= {None}
         for anchor in sorted(used - set(anchors)):
             errors.append(f'{key}: unknown anchor {anchor}')
-        for anchor in sorted(set(anchors) - used):
-            errors.append(f'{key}: anchor {anchor} is not used')
+        # an anchor with no current consumer is not an error: anchors are transcription evidence (a
+        # source position kept for the re-run that binds it), and a child that once referenced one can
+        # be reclassified as blocked under a stricter typing rule without that evidence being deleted.
         for child in children:
             if child.get('status') == 'blocked' and child['owner'] in BLOCKED and child['reason'] != BLOCKED[child['owner']]:
                 errors.append(f'{key}: {child["owner"]} child is blocked for an unknown reason')
