@@ -5,6 +5,7 @@
     "carrier": "<instant|rune>",
     "words": "<string>",
     "reference_spell_id": "<integer>",
+    "library_text": "<string>",
     "requirements": {
       "vocations": [
         "<druid|elder_druid|sorcerer|master_sorcerer|knight|elite_knight|paladin|royal_paladin|monk|exalted_monk>"

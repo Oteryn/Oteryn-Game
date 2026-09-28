@@ -27,7 +27,7 @@ the one shared Ability); this folder adds the player-casting layer and the `play
 | `samples/starter-bundles/` | The P3 starter spells converted by `convert_spells.py --only ... --out`; validated in CI with their manifests. The `conversion` CI job checks out the pinned sources and requires the census, readiness, verification report and starter bundles to reproduce byte for byte. |
 | `samples/spell-census-canary-99902524-crystal-ff7ede5.json` | Output of `spell_census.py` over the Canary 15.30 branch (S14) and Crystal (one spell per line); the converter input. |
 | `samples/spell-census-canary-47dfd51f-crystal-ff7ede5.json` | The census before S14 (Canary `main` at 47dfd51f); input of the 2026-09-27 wiki comparisons. |
-| `samples/wiki-spell-facts-fandom-2026-09-27.json` | Output of `wiki_spells.py facts`: page id, revision id, wikitext SHA-256, allowlisted infobox values and the `Formulae` level curve. |
+| `samples/wiki-spell-facts-fandom-2026-09-27.json` | Output of `wiki_spells.py facts`: page id, revision id, wikitext SHA-256, allowlisted infobox values (including the whole official `librarytext`, S19) and the `Formulae` level curve. |
 | `samples/wiki-spell-compare-fandom-2026-09-27.json` | Output of `wiki_spells.py compare`: per-field counts and difference rows. |
 | `samples/wiki-spell-facts-br-2026-09-27.json` | `wiki_spells.py br-facts` over the hosted-runner BR capture: mapped short facts with revision ids. |
 | `samples/wiki-spell-compare-br-2026-09-27.json` | `wiki_spells.py compare` of the census with TibiaWiki BR. |

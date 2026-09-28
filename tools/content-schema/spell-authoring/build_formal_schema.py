@@ -101,6 +101,8 @@ d['spell'] = obj({
     'name': text(), 'carrier': enum('instant', 'rune'),
     'words': text(maxLength=64, description='Spoken words, lowercase; required for instant spells.'),
     'reference_spell_id': integer(1, description='Client spell id (Canary/Crystal spell:id, wiki spellid).'),
+    'library_text': text(maxLength=4000, description='S19: the official spell library text (Cyclopedia Magical '
+                         'Archive, tibia.com library), verbatim; optional.'),
     'requirements': obj({
         'vocations': array(use('vocation'), 1, True),
         'level': integer(0, description='Required character level; 0 = none (monk starter spells).'), 'premium': use('bool'),

@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_SPELL_WIKI_COMPARE/v1",
-  "license": "TibiaWiki (Fandom), CC BY-SA; only short allowlisted infobox facts with page and revision ids are recorded, never article prose.",
+  "license": "TibiaWiki (Fandom), CC BY-SA; only short allowlisted infobox facts with page and revision ids are recorded, never article prose; librarytext (the official spell library text) is kept whole under owner decision S19.",
   "target_cut": "2026-09-27",
   "census_sources": {"canary": {"repository": "https://github.com/opentibiabr/canary", "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"}, "crystal": {"repository": "https://github.com/zimbadev/crystalserver", "revision": "ff7ede593c69d4c658b382c97443e8155926924a"}},
   "note": "Rows list differences only; field_counts count every compared field.",

@@ -436,6 +436,12 @@
           "minimum": 1,
           "description": "Client spell id (Canary/Crystal spell:id, wiki spellid)."
         },
+        "library_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "S19: the official spell library text (Cyclopedia Magical Archive, tibia.com library), verbatim; optional."
+        },
         "requirements": {
           "type": "object",
           "additionalProperties": false,

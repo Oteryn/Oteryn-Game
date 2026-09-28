@@ -151,7 +151,8 @@ def condition_effect(condition, duration_ms=370000):
 LIGHT = {'type': 'light', 'lifetime': 'fixed_duration', 'light': {'level': 6, 'color': 215}}
 REGENERATION = {'type': 'regeneration', 'lifetime': 'fixed_duration', 'buff_spell': True,
                 'regeneration': {'health_gain': 20, 'health_interval_ms': 3000}}
-VALID_MUTATIONS = {'light condition': condition_effect(LIGHT), 'regeneration condition': condition_effect(REGENERATION)}
+VALID_MUTATIONS = {'light condition': condition_effect(LIGHT), 'regeneration condition': condition_effect(REGENERATION),
+                   'library text': case('light_healing', 'spell', ('library_text',), 'A basic healing spell.', None)}
 
 
 def expecting(mutation, expect):
@@ -214,6 +215,8 @@ NEGATIVE = {
     'conjure effect not a key': case('sudden_death_conjure', 'spell', ('execution', 'conjure', 'effect_asset_binding'),
                                      'magic red', 'is not valid under any'),
     'wheel_unlock not boolean': case('light_healing', 'spell', ('requirements', 'wheel_unlock'), 'yes', 'is not of type'),
+    'empty library text': case('light_healing', 'spell', ('library_text',), '', 'should be non-empty'),
+    'library text not a string': case('light_healing', 'spell', ('library_text',), 3, 'is not of type'),
 }
 
 

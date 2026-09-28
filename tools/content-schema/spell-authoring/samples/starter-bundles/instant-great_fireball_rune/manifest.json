@@ -57,6 +57,16 @@
       "source_index": 1,
       "source_file": "Great Fireball",
       "source_line": 1,
+      "source_field": "librarytext",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/library_text",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Great Fireball",
+      "source_line": 1,
       "source_field": "voc",
       "kind": "field",
       "status": "mapped",
