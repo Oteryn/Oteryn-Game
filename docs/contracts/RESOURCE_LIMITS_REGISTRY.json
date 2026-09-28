@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-28T10:37:40+00:00",
+  "updated_at": "2026-09-28T18:58:44+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -1241,6 +1241,25 @@
       "configurable_range": {
         "minimum": 1,
         "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
+    },
+    {
+      "id": "AI01-PENDING-TIMERS-PER-ACTOR",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+      "resource": "pending AI think timers per live creature actor in the Channel owner timer lane (AI-RL-06)",
+      "unit": "pending timers per actor",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
@@ -4940,6 +4959,98 @@
         "WORLD_OBJECT_OVERLAY state domain 2, snapshot type 1"
       ],
       "notes": "Accepted by the resource owner in #162 comment 5864914163 (USE-WIRE-V1). Derived from the existing single-chunk snapshot byte bound FND02-SNAPSHOT-CHUNK-BYTES = 524,288 bytes (apps/game-server/src/foundation/protocol.rs MAX_SNAPSHOT_CHUNK_BYTES, the same bound encode_single_chunk_snapshot enforces), divided by the maximum encoded WorldObjectOverlayEntryV1 size as an element of the repeated `entries` field. One entry-in-field is at most 1,078 bytes: outer repeated-field tag+length (1 + 2 = 3 bytes) wrapping an entry message of at most 1,075 bytes (content_generation: 1 tag + 1 length + 32 bytes = 34; placement: 1 tag + 2 length + 512 bytes = 515, using the existing accepted FIRST_PRODUCTION_MAX_KEY_BYTES = 512 from apps/game-server/src/content/production.rs; state key: 1 tag + 2 length + 512 bytes = 515, same key bound; revision: 1 tag + 10-byte u64 varint = 11; 34 + 515 + 515 + 11 = 1,075). floor(524,288 / 1,078) = 486 (486 * 1,078 = 523,908; remainder 380 bytes < 1,078). max_payload_bytes registered for WORLD_OBJECT_OVERLAY_SNAPSHOT_V1 is therefore 523,908 bytes, 380 bytes inside the FND02-SNAPSHOT-CHUNK-BYTES hard maximum."
+    },
+    {
+      "id": "WOBJ-RL-04",
+      "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+      "resource": "Timed-revert (revert_after_ms) lifecycle records held by one scope revert driver in one scope generation, in any state (PENDING, IN_FLIGHT or TERMINAL)",
+      "unit": "records per scope generation",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked only after the forward operation's prepare returned Publish and before its commit; a full store fails the whole forward operation with no object mutation and no record. TERMINAL records are kept for the whole scope generation (the duplicate-delivery horizon) and are dropped with the scope-ephemeral driver on restart. Per record: the revert occurrence identity is bounded by WOBJ-RL-06 (4 levels) and WOBJ-RL-07 (4,096 key bytes), so one copy is at most 4,096 key bytes plus 4 x 512 bytes of per-level structure and allocation overhead (6,144 bytes); it is held twice (record key and due-order key, 12,288 bytes); placement, inverse transition and expected state are each bounded by FIRST_PRODUCTION_MAX_KEY_BYTES (512, so 1,536 bytes); fixed fields and map-node overhead stay within 512 bytes. That is at most 14,336 bytes per record and 14 MiB per scope generation, inside 16 MiB.",
+      "client_visible": false,
+      "boundary_tests": [
+        "configured capacity N (tested at N=1): N records are created by committed forward operations",
+        "N+1: the next committed-shaped forward operation fails CAPACITY_EXCEEDED before commit; object state and revision are unchanged",
+        "a forward operation whose prepare result is unchanged never reaches the check",
+        "a configured capacity above 1024 is refused when the driver limits are built"
+      ],
+      "consumers": [
+        "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::apply_forward; not yet wired into a live Channel or Instance owner)"
+      ],
+      "notes": "Section 7 open decisions 1 and 5, resolved by the owning lane in OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement. Lowered from 4,096 to 1,024 in PR #1144 round 3 so the per-generation memory bound holds with the WOBJ-RL-06/07 identity bounds."
+    },
+    {
+      "id": "WOBJ-RL-05",
+      "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+      "resource": "Due timed-revert records one scope revert-driver wake admits",
+      "unit": "records per driver wake",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A wake fires at most this many due records in (deadline, scheduling ordinal, sequence) order and then returns to the scope owner; the remainder is neither dropped nor fired in the same wake and is reported as still due for a later wake.",
+      "client_visible": false,
+      "boundary_tests": [
+        "configured batch B (tested at B=1): B due records fire in one wake",
+        "B+1: the next due record stays PENDING and the wake reports more_due; a later wake fires it",
+        "a configured batch above 32 is refused when the driver limits are built"
+      ],
+      "consumers": [
+        "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::wake; not yet wired into a live Channel or Instance owner)"
+      ],
+      "notes": "Section 7 bounded due-work admission (FND-03 sections 7 and 14), same shape as MovementOwnerTurn's bounded max_inputs. Registered by OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement."
+    },
+    {
+      "id": "WOBJ-RL-06",
+      "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+      "resource": "Nesting depth (ChildOccurrenceRef::ancestry_depth) of a timed-revert child occurrence; its caller-supplied forward occurrence is admitted at depth at most one less",
+      "unit": "occurrence nesting levels",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Checked in ScopeRevertDriver::apply_forward on the supplied forward occurrence before the revert child is derived, and on the derived child, before any ordinal is minted, anything is committed or any record is created; a violation fails the whole forward operation with the named error OccurrenceTooDeep.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=4: a forward occurrence at depth 3 schedules a revert child at depth 4",
+        "max+1=5: a forward occurrence at depth 4 is refused OccurrenceTooDeep with no ordinal, mutation or record"
+      ],
+      "consumers": [
+        "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::apply_forward; not yet wired into a live Channel or Instance owner)"
+      ],
+      "notes": "PR #1144 round 3 (Codex P2 4125881422): ChildOccurrenceRef owns its ancestry recursively, so the record bound needs a depth bound. Registered by OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement."
+    },
+    {
+      "id": "WOBJ-RL-07",
+      "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+      "resource": "Rendered size of a timed-revert forward or child occurrence identity: the bytes of its Debug rendering, which contains every one of its semantic-key bytes (ancestry, definition, target, edge and revision context) at least once, so it bounds the total key bytes",
+      "unit": "bytes",
+      "hard_maximum": 4096,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Measured with a counting writer that stops at the limit without allocating, on the supplied forward occurrence and on the derived revert child, before any ordinal is minted, anything is committed or any record is created; a violation fails the whole forward operation with the named error OccurrenceTooLarge.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a forward occurrence whose rendering is within 4,096 bytes schedules its revert child",
+        "a forward occurrence with a key longer than 4,096 bytes is refused OccurrenceTooLarge with no ordinal, mutation or record",
+        "a caller-supplied revision context that makes the derived child exceed 4,096 bytes is refused OccurrenceTooLarge the same way"
+      ],
+      "consumers": [
+        "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::apply_forward; not yet wired into a live Channel or Instance owner)"
+      ],
+      "notes": "PR #1144 round 3 (Codex P2 4125881422): SemanticKey has no length bound of its own. Registered by OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement."
     },
     {
       "id": "FND04B-LIVENESS-IDLE-PROBE-MS",
