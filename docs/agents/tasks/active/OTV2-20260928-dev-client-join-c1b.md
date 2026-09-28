@@ -153,8 +153,8 @@ reason: >
 
 ### Exact-head CI
 
-- candidate: PR #1147, head `a61536b2940360b8bc544d3d18c4ac843b21f670`; live exact-head checks on
-  that PR govern.
+- candidate: the frozen final head of PR #1147 (a record commit cannot contain its own SHA; `a61536b` is
+  the last functional change); live exact-head checks on that head govern.
 - result: pending (superseding the failed run on `1efc029`, which is no longer the tested head)
 
 ## Self-review
@@ -173,8 +173,8 @@ reason: >
 - required: YES - touches two shared-lease files outside the original owned paths
   (`tools/architecture-check/**`, `crates/protocol-oteryn/**`), changes the production-closure
   checker's semantics, adds a workspace member wired as a dev-dependency of a production root.
-- exact head: `a61536b2940360b8bc544d3d18c4ac843b21f670` (PR #1147)
-- method/auditor: pending control-plane trigger (4 threads on `1efc029` replied naming `a61536b`)
+- exact head: the frozen final head of PR #1147
+- method/auditor: Codex via control-plane trigger on that exact SHA (4 threads on `1efc029` replied naming `a61536b`)
 - material findings: the 4 P2 findings above; disposition `fixed` for each (see Fix round)
 - verdict: pending
 
