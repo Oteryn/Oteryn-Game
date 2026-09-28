@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "5f41d082322cff3ab9fbb3d5924e2cc4c8f87e285b9106cd4b72f340ebf91b2b",
+        "4575d36aa879f9bcf2b29fee9d07ce4265d07e1a4587014522ce2f673613f954",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        13_861_568,
-        "0429a7194ed4a91a9fb2e10fe9ea4583928cee9a1c0c47389e6e39093476500f",
+        20_839_054,
+        "a9512d6930c7ed682616f6ce776c159dba3c2b44ead551b6c36d3753a5a9ae63",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1936,
-        "40d54627844848fc133ff574a64d95bdc755e6b321b0c16148d135a895c7dc0c",
+        "063aeaa13a2681e34e7d46fb9b0ea2f194167cf5ebfc23bedbe21f0d71accc26",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "c9564be76a66029d45efa631b9eaa13b86663643204d78145d3c5f43d0f2fe01",
+        "14fdb2e6c9a7ce08a58ff97884983d0deca7f4db2a08722dc842b12176cc5a2b",
     ),
     (
         "provenance/imports.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "39e74e7d53174e052f34c4af293859300025af6d58ee013c9f102380122a17d1";
+const TREE_SHA256: &str = "a496f3519e527b71fef755fef1d3ed462ee41453c11bdbb73073c85eaa81f4c6";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -627,7 +627,41 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     };
     assert!(gold_coin.materializable);
     assert_eq!(gold_coin.stack_class, ReferenceItemStackClass::StackCapable);
-    assert!(gold_coin.semantics.is_all_unknown());
+    // The #1048 lowering v1 packet admits exactly one typed field for source 3031
+    // (`presentation.name`, lowercase per items.xml) once it resolves to the renamed
+    // native key; every other semantics group remains Unknown.
+    let ReferenceItemField::Known(gold_coin_presentation) = &gold_coin.semantics.presentation
+    else {
+        panic!("R7 P04 Gold Coin presentation unset by the lowering v1 promotion");
+    };
+    assert_eq!(
+        gold_coin_presentation.name,
+        ReferenceItemField::Known("gold coin".to_owned())
+    );
+    assert!(matches!(
+        gold_coin_presentation.description,
+        ReferenceItemField::Unknown
+    ));
+    assert!(matches!(
+        gold_coin.semantics.weapon,
+        ReferenceItemField::Unknown
+    ));
+    assert!(matches!(
+        gold_coin.semantics.protection,
+        ReferenceItemField::Unknown
+    ));
+    assert!(matches!(
+        gold_coin.semantics.charges,
+        ReferenceItemField::Unknown
+    ));
+    assert!(matches!(
+        gold_coin.semantics.container,
+        ReferenceItemField::Unknown
+    ));
+    assert!(matches!(
+        gold_coin.semantics.stack,
+        ReferenceItemField::Unknown
+    ));
     assert_eq!(
         linked
             .definitions
@@ -647,8 +681,11 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             let atoms = promoted_atom_count(&item.semantics);
             (items + usize::from(atoms > 0), fields + atoms)
         });
-    assert_eq!(promoted_items, 178);
-    assert_eq!(promoted_fields, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT + 526);
+    assert_eq!(promoted_items, 10_674);
+    assert_eq!(
+        promoted_fields,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12
+    );
     let (wave1_items, wave1_fields) = linked
         .definitions
         .iter()

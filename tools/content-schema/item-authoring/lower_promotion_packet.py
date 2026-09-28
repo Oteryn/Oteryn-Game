@@ -1,30 +1,37 @@
 """Lower this package's converted, zero-validator-error Crystal Item bundles into
-candidate rows for the Item semantic-promotion packet
+candidate rows for the Item semantic-promotion lowering packet
 `apps/game-server/src/content/cw2_b1_import.rs` decodes
-(`OTERYN_ITEM_SEMANTIC_PROMOTION/v1`,
-`docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json`).
+(`OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING/v1`,
+`docs/agents/evidence/OTV2-20260928-item-promotion-lowering-v1.json`).
 
-This is a v1 lowering *candidate*, not the wired packet. It walks the whole pinned
-Crystal population the same way `population_census.py` does (`engine_items.
-load_engine_sources`/`convert_item`), keeps only Items whose bundle validates with
-zero `validate_item.validate` errors, and re-encodes their already-authored values for
-the same 9 field paths that Rust decoder accepts today: `presentation.name`,
+As of #1048, a packet this script produces is the *wired*, single Item
+semantic-promotion source (`protected_cw2_b1_item_semantic_promotion_lowering_v1_import`);
+the earlier, narrower packet it superseded
+(`docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json`,
+formerly decoded by the now-retired `protected_cw2_b1_promoted_item_family_import`) is
+kept only as historical evidence and has no remaining Rust or test consumer. This
+script still walks the whole pinned Crystal population the same way
+`population_census.py` does (`engine_items.load_engine_sources`/`convert_item`), keeps
+only Items whose bundle validates with zero `validate_item.validate` errors, and
+re-encodes their already-authored values for the same 9 field paths the Rust decoder
+accepts: `presentation.name`,
 `weapon.attack`/`defense`/`extra_defense`/`range_cells`/`hit_chance`,
 `protection.armor`, `charges.count`, `container.capacity`. `typed_value` below mirrors
 `decode_item_semantic_promotion_value`'s exact accepted shape and bounds field by
 field; `validate_row`/`validate_packet` mirror the same Rust function (plus the row
-ordering/uniqueness/partition checks `protected_cw2_b1_promoted_item_family_import`
-makes) in the opposite, checking direction, and run against every row this script
-emits before it is written.
+ordering/uniqueness/partition checks
+`protected_cw2_b1_item_semantic_promotion_lowering_v1_import` makes) in the opposite,
+checking direction, and run against every row this script emits before it is written.
 
-`schema`/`profile`/`status`/`next_action` are deliberately different literal strings
-from the pinned Rust constants (`ITEM_SEMANTIC_PROMOTION_SCHEMA`/`_PROFILE`/`_STATUS`
-and the `next_action` `validate_item_semantic_promotion_packet` requires), so this
-candidate packet can never be mistaken for, or silently accepted as, the wired one.
-Wiring it in — pinned constants, a bespoke apply function mirroring
-`apply_item_semantic_promotion`, and a Rust integration test, per the existing
-packet's own pattern — is left to the Content/World import role; this script and its
-committed output make no Rust-side claim.
+`schema`/`profile`/`status`/`next_action` remain distinct literal strings from this
+lowering packet's pinned Rust constants
+(`ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SCHEMA`/`_PROFILE`/`_STATUS` and the
+`next_action` `validate_item_semantic_promotion_lowering_v1_packet` requires), so a
+fresh candidate this script produces can never be mistaken for, or silently accepted
+as, the exact pinned/wired bytes. Producing a *new* candidate packet for review is this
+script's job; re-pinning it as the wired evidence file — updating the pinned
+constants/digests and the Rust decoder if the 9 field paths themselves change — is left
+to the Content/World import role.
 """
 
 from __future__ import annotations
@@ -259,10 +266,10 @@ def validate_row(row):
 
 def validate_packet(packet):
     """Fail-closed replica of every check
-    `protected_cw2_b1_promoted_item_family_import`/`validate_item_semantic_promotion_
-    packet` (apps/game-server/src/content/cw2_b1_import.rs) would apply to
-    `packet["promotions"]`, run against this candidate before it is written or
-    accepted by `--check`."""
+    `protected_cw2_b1_item_semantic_promotion_lowering_v1_import`/`validate_item_
+    semantic_promotion_lowering_v1_packet` (apps/game-server/src/content/
+    cw2_b1_import.rs) would apply to `packet["promotions"]`, run against this
+    candidate before it is written or accepted by `--check`."""
     promotions = packet["promotions"]
     if not isinstance(promotions, list) or not promotions:
         raise LoweringError("promotions must be a non-empty list")

@@ -1326,11 +1326,6 @@ pub fn protected_cw2_b1_full_item_family_import(
     })
 }
 
-pub const ITEM_SEMANTIC_PROMOTION_FIELD_COUNT: usize = 69;
-pub const ITEM_SEMANTIC_PROMOTION_ITEM_COUNT: usize = 23;
-pub const ITEM_SEMANTIC_PROMOTION_PACKET: &[u8] = include_bytes!(
-    "../../../../docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json"
-);
 pub const R7_P04_GOLD_COIN_EVIDENCE_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20260927-r7-p04-gold-coin.json");
 pub const R7_P04_GOLD_COIN_EVIDENCE_BYTES: usize = 4_982;
@@ -1342,15 +1337,6 @@ pub const R7_P04_GOLD_COIN_OLD_KEY: &str = "oteryn:item.registry.i00002921";
 pub const R7_P04_GOLD_COIN_KEY: &str = "oteryn:item.currency.gold_coin";
 pub const R7_P04_UNRELATED_REGISTRY_KEY: &str = "oteryn:item.registry.i00003031";
 pub const R7_P04_UNRELATED_SOURCE_ITEM_ID: u64 = 3_147;
-const ITEM_SEMANTIC_PROMOTION_SCHEMA: &str = "OTERYN_ITEM_SEMANTIC_PROMOTION/v1";
-const ITEM_SEMANTIC_PROMOTION_PROFILE: &str = "OTERYN_ITEM_SEMANTIC_PROMOTION_COMPILER/v1";
-const ITEM_SEMANTIC_PROMOTION_STATUS: &str = "PARTIAL_CANONICAL_SEMANTIC_PROMOTION_PACKET";
-const ITEM_SEMANTIC_PROMOTION_COMPILER_SHA256: &str =
-    "1e479d22a94240705cc4a2190904e0a5fe99347ef17b4f3926177ff3b035ab2c";
-const ITEM_TARGET_CONTINUITY_COMPILER_SHA256: &str =
-    "3a3bd72f4c04c591c86764d7e2656d90bee051145a951de2848cef0a89d1f1d2";
-const ITEM_TARGET_CONTINUITY_MANIFEST_SHA256: &str =
-    "6f3ab3bc0799ec13c24c8939e0fde9636bfa8f6fff1ed3e507c6e6a730f47aac";
 
 /// Pinned #1018 v1 lowering *candidate* (`tools/content-schema/item-authoring/
 /// lower_promotion_packet.py`, `samples/promotion-crystal-ff7ede5.json`), copied
@@ -1393,30 +1379,10 @@ struct ItemSemanticPromotionCompiler {
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct ItemSemanticPromotionLineage {
-    continuity_compiler_sha256: String,
-    continuity_manifest_schema: String,
-    continuity_manifest_sha256: String,
-    eligible_field_count: usize,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
 struct ItemSemanticPromotionCounts {
     per_field: BTreeMap<String, usize>,
     promoted_fields: usize,
     promoted_items: usize,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ItemSemanticPromotionInvariants {
-    identity_reminted: bool,
-    mutable_wiki_revision_metadata_retained: bool,
-    name_only_identity_resolution: bool,
-    only_derived_eligible_fields_promoted: bool,
-    sibling_fields_default_unknown_or_existing_state: bool,
-    whole_item_promotion: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1427,21 +1393,6 @@ struct ItemSemanticPromotionRow {
     source_item_id: u64,
     source_value: serde_json::Value,
     typed_value: serde_json::Value,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ItemSemanticPromotionPacket {
-    compiler: ItemSemanticPromotionCompiler,
-    counts: ItemSemanticPromotionCounts,
-    invariants: ItemSemanticPromotionInvariants,
-    next_action: String,
-    profile: String,
-    promotions: Vec<ItemSemanticPromotionRow>,
-    protected_lineage: ItemSemanticPromotionLineage,
-    schema: String,
-    status: String,
-    target_date: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1459,23 +1410,6 @@ enum ItemSemanticPromotionValue {
     RationalPercent(ReferenceRationalPercent),
     Count(u32),
     Capacity(u16),
-}
-
-fn expected_item_semantic_promotion_counts() -> BTreeMap<String, usize> {
-    [
-        ("charges.count", 1_usize),
-        ("container.capacity", 1),
-        ("presentation.name", 22),
-        ("protection.armor", 3),
-        ("weapon.attack", 16),
-        ("weapon.defense", 13),
-        ("weapon.extra_defense", 7),
-        ("weapon.hit_chance", 2),
-        ("weapon.range_cells", 4),
-    ]
-    .into_iter()
-    .map(|(field, count)| (field.to_owned(), count))
-    .collect()
 }
 
 fn exact_json_object<'a>(
@@ -1805,201 +1739,6 @@ fn apply_item_semantic_promotion(
     }
 }
 
-fn validate_item_semantic_promotion_packet(
-    packet: &ItemSemanticPromotionPacket,
-) -> Result<(), ProtectedCw2B1ImportError> {
-    if packet.schema != ITEM_SEMANTIC_PROMOTION_SCHEMA
-        || packet.profile != ITEM_SEMANTIC_PROMOTION_PROFILE
-        || packet.status != ITEM_SEMANTIC_PROMOTION_STATUS
-        || packet.target_date != "2026-07-28"
-        || packet.next_action
-            != "APPLY_TO_EXISTING_REFERENCE_ITEM_SEMANTICS_AND_COMPILE_ARTIFACT_V4"
-    {
-        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion packet identity",
-        ));
-    }
-    if packet.compiler.path != "tools/reference-world-corridor-census/item_semantic_promotion.py"
-        || packet.compiler.sha256 != ITEM_SEMANTIC_PROMOTION_COMPILER_SHA256
-    {
-        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion compiler binding",
-        ));
-    }
-    if packet.protected_lineage.continuity_compiler_sha256 != ITEM_TARGET_CONTINUITY_COMPILER_SHA256
-        || packet.protected_lineage.continuity_manifest_schema
-            != "OTERYN_ITEM_TARGET_CONTINUITY_MANIFEST/v1"
-        || packet.protected_lineage.continuity_manifest_sha256
-            != ITEM_TARGET_CONTINUITY_MANIFEST_SHA256
-        || packet.protected_lineage.eligible_field_count != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
-    {
-        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion lineage binding",
-        ));
-    }
-    if packet.counts.promoted_fields != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
-        || packet.counts.promoted_items != ITEM_SEMANTIC_PROMOTION_ITEM_COUNT
-        || packet.counts.per_field != expected_item_semantic_promotion_counts()
-        || packet.promotions.len() != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
-    {
-        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion count partition",
-        ));
-    }
-    let invariants = &packet.invariants;
-    if invariants.identity_reminted
-        || invariants.mutable_wiki_revision_metadata_retained
-        || invariants.name_only_identity_resolution
-        || !invariants.only_derived_eligible_fields_promoted
-        || !invariants.sibling_fields_default_unknown_or_existing_state
-        || invariants.whole_item_promotion
-    {
-        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion invariant binding",
-        ));
-    }
-    Ok(())
-}
-
-/// Apply the exact protected #774-derived semantic promotion packet to the existing full Item
-/// family. Identity allocation, stack class and materialization are inherited byte-for-byte from
-/// the protected full-family importer; only the 69 admitted atomic semantic fields are mutated.
-pub fn protected_cw2_b1_promoted_item_family_import(
-    evidence_bytes: &[u8],
-) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
-    let packet: ItemSemanticPromotionPacket =
-        serde_json::from_slice(ITEM_SEMANTIC_PROMOTION_PACKET).map_err(|_| {
-            ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion packet JSON decoding")
-        })?;
-    validate_item_semantic_promotion_packet(&packet)?;
-
-    let mut family = protected_cw2_b1_full_item_family_import(evidence_bytes)?;
-
-    let mut source_to_native = BTreeMap::<u64, String>::new();
-    for candidate in &family.batch.candidates {
-        let source_item_id =
-            candidate
-                .source_numeric_id
-                .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
-                    "semantic promotion source identity binding",
-                ))?;
-        let mut bindings = candidate.normalized_fields.iter().filter_map(|field| {
-            if field.field_path == "binding.native-item"
-                && let CandidateValue::NativeItemBinding(binding) = &field.value
-            {
-                return Some(binding);
-            }
-            None
-        });
-        let binding = bindings
-            .next()
-            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion native identity binding",
-            ))?;
-        if bindings.next().is_some()
-            || binding.identity.family != "Item"
-            || binding.identity.revision != CW2_B1_FULL_ITEM_REVISION
-            || candidate.candidate_target
-                != format!("{}@{}", binding.identity.key, binding.identity.revision)
-            || source_to_native
-                .insert(source_item_id, binding.identity.key.clone())
-                .is_some()
-        {
-            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion native identity closure",
-            ));
-        }
-    }
-    if source_to_native.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
-        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion source identity count",
-        ));
-    }
-
-    let mut record_index = BTreeMap::<String, usize>::new();
-    for (index, record) in family.records.iter().enumerate() {
-        let ProjectReferenceRecord::Item { identity, .. } = record else {
-            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion non-Item record",
-            ));
-        };
-        if record_index.insert(identity.key.clone(), index).is_some() {
-            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion record identity duplicate",
-            ));
-        }
-    }
-    if record_index.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
-        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion record identity count",
-        ));
-    }
-
-    let mut seen_atoms = BTreeSet::<(String, String)>::new();
-    let mut seen_items = BTreeSet::<String>::new();
-    let mut per_field = BTreeMap::<String, usize>::new();
-    let mut previous: Option<(&str, &str, u64)> = None;
-
-    for row in &packet.promotions {
-        if let Some((native_key, field_path, source_item_id)) = previous
-            && (native_key, field_path, source_item_id)
-                >= (
-                    row.native_key.as_str(),
-                    row.field_path.as_str(),
-                    row.source_item_id,
-                )
-        {
-            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion row ordering",
-            ));
-        }
-        previous = Some((&row.native_key, &row.field_path, row.source_item_id));
-
-        if source_to_native
-            .get(&row.source_item_id)
-            .map(String::as_str)
-            != Some(row.native_key.as_str())
-        {
-            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion exact identity mismatch",
-            ));
-        }
-        if !seen_atoms.insert((row.native_key.clone(), row.field_path.clone())) {
-            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion duplicate atom",
-            ));
-        }
-        seen_items.insert(row.native_key.clone());
-        *per_field.entry(row.field_path.clone()).or_default() += 1;
-
-        let value = decode_item_semantic_promotion_value(row)?;
-        let index = *record_index.get(&row.native_key).ok_or(
-            ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion record missing"),
-        )?;
-        let ProjectReferenceRecord::Item { semantics, .. } = &mut family.records[index] else {
-            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion record type drift",
-            ));
-        };
-        apply_item_semantic_promotion(semantics, &row.field_path, value)?;
-    }
-
-    if seen_atoms.len() != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
-        || seen_items.len() != ITEM_SEMANTIC_PROMOTION_ITEM_COUNT
-        || per_field != expected_item_semantic_promotion_counts()
-    {
-        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion applied partition",
-        ));
-    }
-
-    Ok(ProtectedCw2B1PromotedItemFamilyImport {
-        family,
-        promoted_fields: seen_atoms.len(),
-        promoted_items: seen_items.len(),
-    })
-}
-
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ItemSemanticPromotionLoweringV1ArtifactDigest {
@@ -2186,16 +1925,17 @@ fn validate_item_semantic_promotion_lowering_v1_packet(
 /// Apply the pinned #1018 v1 lowering candidate (population-scale Crystal Item
 /// authored values, re-encoded for the same 9 typed field paths
 /// `decode_item_semantic_promotion_value` already accepts) to the full protected Item
-/// family. This is an independent promotion pass over the protected full-family
-/// import's own Default (`Unknown`) semantics; it does not compose with, or require,
-/// `protected_cw2_b1_promoted_item_family_import`'s existing 69-field packet.
+/// family. This is the single Item semantic-promotion pass over the protected
+/// full-family import's own Default (`Unknown`) semantics (#1048; it replaced the
+/// retired 69-field/23-item `protected_cw2_b1_promoted_item_family_import` pass).
 ///
 /// The lowering candidate's own population census already resolves source item
 /// `3031` to its current, post-R7-P04 native key
 /// (`R7_P04_GOLD_COIN_KEY`/`oteryn:item.currency.gold_coin`), so this function applies
 /// that same pinned identity rename to its fresh full-family import before matching
-/// rows, exactly as `protected_r7_p04_gold_coin_item_family_import` does — without
-/// also inheriting that function's unrelated 69-field semantic promotion.
+/// rows. `protected_r7_p04_gold_coin_item_family_import` delegates directly to this
+/// function (after independently validating its own `gold_coin_evidence_bytes`
+/// parameter) rather than reapplying the rename itself, since it is applied here.
 pub fn protected_cw2_b1_item_semantic_promotion_lowering_v1_import(
     evidence_bytes: &[u8],
 ) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
@@ -2434,11 +2174,12 @@ fn validate_r7_p04_gold_coin_evidence(
 /// particular, this function does not admit a stack maximum, weight, value, exchange rate,
 /// runtime activation, transaction behavior or Global parity.
 ///
-/// Factored out of `protected_r7_p04_gold_coin_item_family_import` so
-/// `protected_cw2_b1_item_semantic_promotion_lowering_v1_import` can apply the exact same
-/// current identity allocation (the #1018 lowering candidate's population census already
-/// reflects this rename) to its own fresh, un-promoted full-family import, without also
-/// inheriting the unrelated existing 69-field semantic promotion.
+/// Shared by `protected_cw2_b1_item_semantic_promotion_lowering_v1_import` (the #1018
+/// lowering candidate's own population census already reflects this rename) and by
+/// `protected_r7_p04_gold_coin_item_family_import`'s historical direct callers; the
+/// latter now delegates straight to the lowering import instead of calling this
+/// function a second time, since a second rename on an already-renamed family would
+/// fail the "target identity already exists" / "opaque record" checks below.
 fn apply_r7_p04_gold_coin_identity_rename(
     family: &mut ProtectedCw2B1FullItemFamilyImport,
 ) -> Result<(), ProtectedCw2B1ImportError> {
@@ -2653,14 +2394,18 @@ fn apply_r7_p04_gold_coin_identity_rename(
     Ok(())
 }
 
+/// Validate the caller-supplied Gold Coin evidence bytes, then delegate to the single
+/// Item semantic-promotion pass (`protected_cw2_b1_item_semantic_promotion_lowering_v1_import`),
+/// which already applies `apply_r7_p04_gold_coin_identity_rename` internally using its
+/// own pinned `R7_P04_GOLD_COIN_EVIDENCE_PACKET`. This function does not call the
+/// rename a second time: doing so on an already-renamed family would fail the
+/// "target identity already exists" check.
 pub fn protected_r7_p04_gold_coin_item_family_import(
     b1_evidence_bytes: &[u8],
     gold_coin_evidence_bytes: &[u8],
 ) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
     validate_r7_p04_gold_coin_evidence(gold_coin_evidence_bytes)?;
-    let mut promoted = protected_cw2_b1_promoted_item_family_import(b1_evidence_bytes)?;
-    apply_r7_p04_gold_coin_identity_rename(&mut promoted.family)?;
-    Ok(promoted)
+    protected_cw2_b1_item_semantic_promotion_lowering_v1_import(b1_evidence_bytes)
 }
 
 fn validate_protected_evidence(evidence_bytes: &[u8]) -> Result<(), ProtectedCw2B1ImportError> {
