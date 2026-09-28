@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-item-wrap-target-corpses
 title: Engine wrap-target family inheritance and corpse-like "dead ..." item routing/profile
 mode: MIGRATE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: item-wrap-corpse
 issue: 162
-pr: null
+pr: 1086
 base_sha: 3a11e3f8
 head_sha: null
 final_head_sha: null
@@ -183,7 +183,7 @@ newly-resolved items in either engine. Promotion packet: 12,021 -> 12,118 Items,
 - changed-file review: pending
 - unresolved review threads: `NOT_APPLICABLE` (no PR opened)
 - related/superseded PRs: none
-- protected auto-merge: `NOT_APPLICABLE` (no PR opened)
+- protected auto-merge: SQUASH via Merge Queue, enabled on PR #1086
 - merge commit/result: pending
 - ownership release: pending
 
@@ -191,10 +191,10 @@ newly-resolved items in either engine. Promotion packet: 12,021 -> 12,118 Items,
 
 ```yaml
 last_progress: engine_items/build_formal_schema/tests/censuses/promotion packet/docs updated and locally validated; committing to item-wrap-corpse
-status: implementing
+status: validating
 branch: item-wrap-corpse
 head_sha: null
-pr: null
+pr: 1086
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -212,5 +212,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit locally on item-wrap-corpse; no push/PR in this interaction
+next_action: required checks, Merge Queue, archive record
 ```
