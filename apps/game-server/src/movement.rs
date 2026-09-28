@@ -13,6 +13,7 @@ use crate::foundation::{
     MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot,
 };
 use std::num::NonZeroUsize;
+mod interest;
 
 pub(crate) const LOCAL_STEP_CANDIDATES_PER_DECISION: usize = 1;
 

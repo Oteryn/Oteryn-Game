@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-move-rl11-visibility-decision
 title: "MOVE-RL-11 visibility decision (D84-D87)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1141
 base_sha: 8e2e474a3d82a6bfbc21be409f444cfd64d42961
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 723554df58f369b42cdf933126fb6bd48e5dfe3c
+final_head_sha: 723554df58f369b42cdf933126fb6bd48e5dfe3c
+final_head_frozen_at: null   # freeze time not recorded in this record; the head is bound by #1141
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -55,9 +55,9 @@ qualification when allocated.
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review (one Codex review of `7fa5291`, one repair generation).
+- [x] Protected Merge Queue integration (`7d1134f090ac249f964fede017efabba91e22b90`).
 
 ## Excluded scope
 
@@ -81,14 +81,23 @@ convergence rule 5869165340). No owner decision changed.
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1141 integrated through the Merge Queue as `7d1134f090ac249f964fede017efabba91e22b90`.
+- Frozen head: `723554df58f369b42cdf933126fb6bd48e5dfe3c`.
+- Protected-main readback: the decision and this record are byte-identical to the frozen head
+  (#162 comment 5875958040).
+- Next allocation: VIS-1 (`OTV2-20260928-move-vis1-interest-set`).
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1141 open
-status: validating
+last_progress: protected-integrated as 7d1134f090ac249f964fede017efabba91e22b90; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 723554df58f369b42cdf933126fb6bd48e5dfe3c
 pr: 1141
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1141
+next_action: null
 ```
