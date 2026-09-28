@@ -379,7 +379,11 @@ BEGIN
               AND a.item_instance_id = NEW.source_item_instance_id
               AND a.occurred_at = NEW.occurred_at
               AND a.envelope_sha256 = NEW.envelope_sha256
-              AND a.created_xact_id = pg_current_xact_id())
+              AND a.created_xact_id = pg_current_xact_id()
+              -- A new TRANSFER's audit event starts pending and unpublished;
+              -- only the publisher's acknowledgement may advance it.
+              AND a.publication_state = 1
+              AND a.published_at IS NULL)
        -- The destination Character must be rooted in the source item's World.
        OR NOT EXISTS (
            SELECT 1 FROM game_character_roots cr
