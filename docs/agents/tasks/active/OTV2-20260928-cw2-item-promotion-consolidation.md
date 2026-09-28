@@ -11,12 +11,12 @@ branch: claude/cw2-item-promotion-consolidation
 issue: 162
 pr: 1064
 base_sha: 45b6cc73d8dbd2988ec0153cfa5ad03318367d51
-head_sha: 00f26734a086b06007af2ff38f482a97ce90fd32
+head_sha: dbb1fe8b60b0a2047f55a6c263a7fe50d4111b8a
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: content world build (Claude Code worker)
 created_at: 2026-09-28T06:45:00Z
-updated_at: 2026-09-28T07:35:00Z
+updated_at: 2026-09-28T07:55:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/cw2_b1_import.rs
@@ -54,11 +54,11 @@ gold-coin import and the materialized `content/world/**` package.
   (PR #1048) wired the lowering pass as an independent pass; this task removes the
   older pass it was explicitly independent of.
 - DERIVED (found this task, coordinator-approved): switching the R7 P04 caller changes
-  committed `content/world/**` (confirmed: 38,157 `Item` records in
-  `definitions/reference.json` match `CW2_B1_FULL_ITEM_FAMILY_COUNT` exactly) and the
-  materializer's `populate_items` (165-item wiki census) collides with the lowering
-  pass on the same 9 field paths for every one of those 165 items — coordinator
-  extended owned_paths and set the reconciliation rule implemented below.
+  committed `content/world/**` (38,157 `Item` records in `definitions/reference.json`
+  match `CW2_B1_FULL_ITEM_FAMILY_COUNT`), and the materializer's `populate_items`
+  (165-item wiki census) collides with the lowering pass on the same 9 field paths for
+  every one of those 165 items — coordinator extended owned_paths and set the
+  reconciliation rule below.
 
 ## High-risk authority/recovery qualification
 
@@ -78,8 +78,7 @@ production mutation, session fence, controller or persisted recovery evidence to
   now-unconditional R7 P04 rename; new coverage that source 3031 gets exactly the
   packet's one field (`presentation.name = "gold coin"`).
 - [x] `content_world_project_repository.rs`: promoted-field/item counts, the gold-coin
-  `is_all_unknown` assertion and the `DOCUMENTS`/`TREE_SHA256` byte-length/sha256
-  table updated from a real regeneration.
+  assertion and the `DOCUMENTS`/`TREE_SHA256` table updated from a real regeneration.
 - [x] `materialize_content_world_project_v2.rs`'s `populate_items`/`promote_name`
   reconciliation implemented exactly per the coordinator's rule (below); materializer
   runs to completion; two runs are byte-identical; `content/world/**` regenerated from
@@ -92,10 +91,9 @@ production mutation, session fence, controller or persisted recovery evidence to
 
 `imports/**`, the pinned packet bytes/digests, `.github/workflows/**`, production
 content-loading wiring, `reference_artifact.rs`/`project_fs.rs`/`world_runtime.rs`.
-The historical 69-field packet file
+The old evidence file
 (`docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json`) is
-kept, unconsumed, as evidence. No generic name normalization (no "The "/parenthetical
-stripping) in `populate_items`.
+kept, unconsumed. No generic name normalization in `populate_items`.
 
 ## Implementation / findings
 
@@ -129,15 +127,19 @@ stripping) in `populate_items`.
 - `populate_items`' field partition shifted from `promoted=526 equal=32 post_cut=3` to
   `promoted=12 equal=546 post_cut=3` (total 561 unchanged) since the lowering pass now
   pre-populates almost all of the wiki census's overlapping fields.
-- Regenerated `content/world/**` by running
-  `cargo run --example materialize_content_world_project_v2 -- --output-root <dir>`
-  twice (byte-identical, `tree_sha256=a496f3519e...`), diffed against the tracked
-  package with the 10 world markers removed exactly as the G4 workflow's "Compare
-  tracked package" step does, then copied only the 4 documents that changed
-  (`content.lock.json`, `definitions/reference.json`, `manifest.json`, `project.json`)
-  over the tracked ones. `definitions/reference.json`: 13,861,568 → 20,839,054 bytes
-  (promoted Item semantics: 69 fields/23 items → 13,292 fields/10,674 items, plus the
-  12 wiki-only fields `populate_items` still contributes net-new).
+- Regenerated `content/world/**` by running the materializer twice (byte-identical,
+  `tree_sha256=a496f3519e...`; see Component/integration), then copied only the 4
+  documents that changed (`content.lock.json`, `definitions/reference.json`,
+  `manifest.json`, `project.json`) over the tracked ones.
+  `definitions/reference.json`: 13,861,568 → 20,839,054 bytes (69/23 → 13,292/10,674
+  promoted fields/items, plus 12 wiki-only fields `populate_items` still contributes).
+- **Repair round 1 (Codex P2, PR comment 4119508551, on head `dbb1fe8b`):** the
+  docstring edit to `lower_promotion_packet.py` changed its own self-hash
+  (`build_packet`'s `compiler_sha256` hashes `Path(__file__)`), breaking `--check`
+  against the pinned sample forever. Fix: reverted the file to byte-identical with
+  `origin/main` (`git diff origin/main -- ...` empty); kept the README change (not
+  hashed). Verified the file's self-hash still equals the pinned
+  `ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_SHA256`.
 
 ## Validation
 
@@ -148,25 +150,21 @@ stripping) in `populate_items`.
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: PASS, zero
   errors/warnings
 - `cargo test -p oteryn-game-server --test content_reference_artifact --test
-  content_world_cw2_b1_import --test content_world_cw2_b1_promotion_lowering --lib`:
-  PASS — lib 661/661 (2 ignored, pre-existing), `content_reference_artifact` 9/9,
-  `content_world_cw2_b1_import` 16/16, `content_world_cw2_b1_promotion_lowering` 3/3;
-  all four counts cross-checked against `grep -c '#\[test\]'` in each file
-- `cargo test -p oteryn-game-server --test content_world_project_repository`: PASS
-  3/3 (cross-checked against `grep -c '#\[test\]'`)
-- `git grep -n 'ITEM_SEMANTIC_PROMOTION_FIELD_COUNT\|ITEM_SEMANTIC_PROMOTION_ITEM_COUNT\|protected_cw2_b1_promoted_item_family_import'` outside `cw2_b1_import.rs`'s one
-  historical docstring line: no remaining Rust/test consumer
+  content_world_cw2_b1_import --test content_world_cw2_b1_promotion_lowering --test
+  content_world_project_repository --lib`: PASS — lib 661/661 (2 pre-existing
+  ignored), 9/9, 16/16, 3/3, 3/3; all counts cross-checked against
+  `grep -c '#\[test\]'` per file
+- `git grep -n 'ITEM_SEMANTIC_PROMOTION_FIELD_COUNT\|ITEM_SEMANTIC_PROMOTION_ITEM_COUNT\|protected_cw2_b1_promoted_item_family_import'`: no remaining Rust/test
+  consumer outside one historical docstring line
 
 ### Component/integration
 
-- Materializer determinism: two full runs to distinct scratch roots, `tree_sha256`
-  identical (`a496f3519e527b71fef755fef1d3ed462ee41453c11bdbb73073c85eaa81f4c6`),
-  `diff --no-dereference --recursive` empty, 11 files each, no symlinks — the exact G4
-  "Materialize twice" step
-- Tracked-package parity: tracked `content/world/**` (10 world markers removed) now
-  `diff --no-dereference --recursive`-identical to the fresh materialization — the
-  exact G4 "Compare tracked package" step
-- `python3 tools/agents/validate_governance.py`: PASS (22 policy docs, 9 lanes)
+- Materializer run twice: identical `tree_sha256`
+  (`a496f3519e527b71fef755fef1d3ed462ee41453c11bdbb73073c85eaa81f4c6`), empty
+  recursive diff, 11 files, no symlinks — the exact G4 "Materialize twice" step
+- Tracked `content/world/**` (markers removed) now diff-identical to the fresh
+  materialization — the exact G4 "Compare tracked package" step
+- `python3 tools/agents/validate_governance.py`: PASS (22 docs, 9 lanes)
 - `python3 tools/repository/validate_repository_policy.py`: PASS (23 files, 47
   workflows)
 
@@ -197,18 +195,18 @@ stripping) in `populate_items`.
 
 - required: YES; changes the single Item semantic-promotion source feeding a
   population-scale committed content package.
-- exact head: pending
-- method/auditor: pending (no `@codex review`/PR comment per this task's routing; left
-  to the control plane's own review step)
-- material findings: pending
-- verdict: pending
+- exact head reviewed: `dbb1fe8b60b0a2047f55a6c263a7fe50d4111b8a`
+- method/auditor: Codex review, PR #1064 comment 4119508551
+- material findings: P0/P1 none. P2 (accepted, repaired round 1): docstring edit to
+  `lower_promotion_packet.py` broke its own self-hashed `compiler_sha256` — see
+  Implementation/findings.
+- verdict: pending re-review of the repaired head
 
 ## PR and closeout
 
-- changed-file review: complete locally (12 files; matches owned_paths exactly)
-- unresolved review threads: none yet (PR just opened)
-- related/superseded PRs: supersedes the old 69-field pass wired historically; none
-  other known
+- changed-file review: complete locally (matches owned_paths)
+- unresolved review threads: 1 (Codex P2, repaired round 1, awaiting re-review)
+- related/superseded PRs: supersedes the old 69-field pass wired historically
 - protected auto-merge: pending (Merge Queue)
 - merge commit/result: pending
 - ownership release: pending
@@ -216,10 +214,10 @@ stripping) in `populate_items`.
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #1064 opened at head 00f26734a086b06007af2ff38f482a97ce90fd32; full local validation green; awaiting exact-head CI and independent review
+last_progress: repair round 1 pushed for Codex P2 (comment 4119508551 on dbb1fe8b) — lower_promotion_packet.py reverted to byte-identical with origin/main; README docstring change kept (not hashed)
 status: validating
 branch: claude/cw2-item-promotion-consolidation
-head_sha: 00f26734a086b06007af2ff38f482a97ce90fd32
+head_sha: dbb1fe8b60b0a2047f55a6c263a7fe50d4111b8a
 pr: 1064
 final_head_sha: null
 final_head_frozen_at: null
@@ -233,10 +231,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: control plane to watch PR #1064 exact-head CI and route independent review; freeze final_head_sha once green
+next_action: control plane to watch PR #1064 exact-head CI and re-review the repaired head; freeze final_head_sha once green
 ```
