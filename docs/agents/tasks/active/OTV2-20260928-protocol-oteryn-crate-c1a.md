@@ -4,16 +4,18 @@
 task_id: OTV2-20260928-protocol-oteryn-crate-c1a
 title: protocol-oteryn crate C1a - extract FND-02 wire codecs
 mode: IMPLEMENT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
+pr: 1131
 allocation_comment: latest #162 comment (owner accepted A6)
 base_branch: main
 branch: claude/protocol-oteryn-c1a
 base_sha: e1ccfd40c08c39e968d7010589e3e31cbb5e3d71
+head_sha: e7370bc783f9888e45c50089f29585f3d0090cdb
 owner: "Oteryn: content world client" (Claude Code)
 created_at: 2026-09-28T15:53:00Z
-updated_at: 2026-09-28T16:10:00Z
+updated_at: 2026-09-28T16:25:00Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/protocol-oteryn/**
@@ -129,24 +131,23 @@ reason: >
 
 ### Exact-head CI
 
-- final head: pending (this record is written before the freeze/push; see the PR for current
-  head/checks)
+- final head: `e7370bc783f9888e45c50089f29585f3d0090cdb`; see PR #1131 for current checks
 - trigger source: push to `claude/protocol-oteryn-c1a`; workflow/runner/classification/result:
-  pending
+  pending (checks not yet observed by this worker)
 
 ## Self-review
 
-- exact head: pending (not self-referenced in this commit)
+- exact head: `e7370bc783f9888e45c50089f29585f3d0090cdb`
 - method/reviewer: implementing agent (this session)
 - material findings: none found; the one architectural blocker (mod.rs FoundationProtocolError
   ownership) was resolved via the shared-lease grant above before authoring the rest of the move
-- verdict: ready to freeze
+- verdict: ready for independent review
 
 ## Independent review
 
 - required: YES - this touches a shared-lease file (`foundation/mod.rs`) and adds a new crate to
   the workspace, per root governance.
-- exact head: pending
+- exact head: `e7370bc783f9888e45c50089f29585f3d0090cdb`
 - method/auditor: pending (no `@codex` trigger from this task per its instructions)
 - material findings: pending
 - verdict: pending
@@ -160,14 +161,13 @@ names. No `@codex review` trigger, no comment on #162.
 ## Context checkpoint
 
 ```yaml
-last_progress: full extraction implemented and locally validated (fmt/clippy/tests/governance
-  green); freezing and opening PR next
-status: implementing
+last_progress: PR #1131 opened on head e7370bc; awaiting checks and independent review
+status: ready
 branch: claude/protocol-oteryn-c1a
-head_sha: pending
-pr: pending
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: e7370bc783f9888e45c50089f29585f3d0090cdb
+pr: 1131
+final_head_sha: e7370bc783f9888e45c50089f29585f3d0090cdb
+final_head_frozen_at: 2026-09-28T16:20:00Z
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
@@ -183,5 +183,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit, push, open PR against main referencing #162 A6 and this record
+next_action: await required checks and independent review on PR #1131
 ```
