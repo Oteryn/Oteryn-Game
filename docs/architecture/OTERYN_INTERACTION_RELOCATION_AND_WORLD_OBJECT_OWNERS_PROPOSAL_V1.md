@@ -264,6 +264,20 @@ command via `apply`/`resume_pending`, an encounter/server-event-originated overl
 other non-timer authoritative input — it registers its one-shot revert exactly as any other
 `revert_after_ms`-carrying operation does, under the same staged capacity reservation.
 
+Round 9 correction (owner-authorized): the pending entry described through round 8 stores fences and
+a `Deadline` but never the target's own identity — which `PlacementKey`, `incarnation` or
+`content_generation` it belongs to (evidence above: `LocalObjectCommand` requires all three, and
+`prepare`'s first check rejects a mismatch on any of them with `DISPOSITION_BINDING_MISMATCH`, before
+ever reaching `expected_revision`/state). The overlay revision alone cannot stand in for that
+identity: it is a per-anchor local counter, so an old timer could fire against a different anchor
+whose revision happens to match, or against a replacement incarnation at the same anchor. Fixed: the
+pending entry now also retains the exact `PlacementKey`, `incarnation` and `content_generation` of
+its target, captured at scheduling time alongside the inverse key and expected state/revision; the
+firing path addresses the object with exactly those stored values, never a lookup or a guess. A
+changed `incarnation` is added to the pre-`prepare` discard class — the timer itself is invalid, the
+same class as `scope_generation`/`content_generation` — while a same-incarnation state or revision
+change still goes through `prepare`'s own `DISPOSITION_STALE_STATE`, unchanged from round 6.
+
 ### Problem
 
 `revert_after` needs *some* value that advances on its own, independent of whether a player ever
@@ -362,6 +376,13 @@ today.
   `self.transitions` (the map `bind` populated from the `transition_keys` this instance was bound
   with) and fails the whole binding if it is absent. Firing a revert therefore cannot invoke "the
   opposite of whatever happened"; it must name one specific bound `TransitionKey` up front.
+  `LocalObjectCommand` (~412-419) requires `placement`, `incarnation` and `content_generation` in
+  addition to the operation and `expected_revision`, and `prepare`'s *first* check (~978-987) rejects
+  with `DISPOSITION_BINDING_MISMATCH` — a different outcome from `DISPOSITION_STALE_STATE` — if any
+  of those three do not match `self`. The pending entry's stored "overlay revision" alone cannot
+  address an object: it is a per-anchor local counter, so two different anchors can coincidentally
+  share a revision, and nothing before round 9 stored which anchor, incarnation or content
+  generation a given timer targets.
   `TransitionBinding` (`apps/game-server/src/content/reference_playable.rs` ~1334-1342) has `key`,
   `source_state`, `target_state`, `normalized_intent_family` and no `revert_after_ms` field today —
   nothing currently associates a transition with an inverse, and CW4 shipped without `revert_after`
@@ -393,8 +414,10 @@ today.
    `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4, below) — compute `Deadline::after(clock,
    Duration::from_millis(revert_after_ms))` from the one clock instance the scope owns (evidence
    above) and register it under an FND-03 §10.1 scheduling key: World/Channel/InstanceId,
-   `scope_generation`, the anchor's overlay revision captured now, the `Deadline`, and §10.1's own
-   equal-deadline tie-break — the `RuntimeExecutionOrdinal` of the owner resolution that *scheduled*
+   `scope_generation`, the anchor's own `PlacementKey`, `incarnation` and `content_generation`
+   (Round 9 — the exact target identity `prepare` requires, never re-derived at firing), the anchor's
+   overlay revision captured now, the `Deadline`, and §10.1's own equal-deadline tie-break — the
+   `RuntimeExecutionOrdinal` of the owner resolution that *scheduled*
    the timer, plus a deterministic within-that-resolution sequence, both retained in the timer key
    itself. The revert's own GAME-INTERACTION-style derived child identity stays separate: it is the
    revert's fire-once/de-duplication identity (§3/§4), never an ordering key. One scope-owned
@@ -460,8 +483,11 @@ today.
    only when this execution *is* the firing of a pending revert timer; every other authoritative
    origin — player/command, encounter/server-event, or otherwise — registers its own one-shot
    revert as normal, so a mutually timed pair cannot ping-pong and an encounter-originated timed
-   transform is not silently starved of its revert; no periodic/repeating semantics) — all six are
-   bound to existing FND-03 sections or the merged CW4 bind-time model, not
+   transform is not silently starved of its revert; no periodic/repeating semantics), and the target
+   identity a timer retains — `PlacementKey`, `incarnation` and `content_generation`, addressed
+   exactly and never re-derived from the overlay revision alone, with a changed `incarnation` (like
+   `scope_generation`/`content_generation`) discarding the timer pre-`prepare` — all seven are bound
+   to existing FND-03 sections or the merged CW4 bind-time model, not
    open design questions. `NO` for the driver's exact wake
    mechanism, whether `ScopeRuntimeFence` is
    promoted to a scope-wide instance or a new scope-owned ordinal issuer is introduced, the exact
@@ -545,15 +571,19 @@ not implement it; it is CANDIDATE and not owner-accepted.
   timer capacity first; if none is available, fail the *entire* original operation before anything
   commits — no object mutation and no partial timer entry survive. If capacity is available, compute
   `Deadline::after(clock, Duration::from_millis(revert_after_ms))` and register it under the FND-03
-  §10.1 scheduling key: World/Channel/InstanceId, `scope_generation`, the overlay revision of the
-  anchor, the `Deadline`, and the equal-deadline tie-break — the *scheduling* resolution's own
-  `RuntimeExecutionOrdinal` plus a deterministic within-that-resolution sequence, retained in this
-  same key (§10.1; not the revert's derived child identity, which stays a separate fire-once/
-  de-duplication identity, as in §3/§4). Store alongside it the exact inverse `TransitionKey` the
-  bind-time check above already validated, plus the expected post-operation state and overlay
-  revision — `transition.target_state` and `next_revision`, both already computed by this same
-  `prepare` call for the original operation (`apps/game-server/src/world_runtime.rs` ~1040-1054) —
-  so nothing about the revert is derived later, only replayed. This state is
+  §10.1 scheduling key: World/Channel/InstanceId, `scope_generation`, the anchor's own `PlacementKey`,
+  `incarnation` and `content_generation` (Round 9 — the exact target identity, captured now, never
+  re-derived at firing), the overlay revision of the anchor, the `Deadline`, and the equal-deadline
+  tie-break — the *scheduling* resolution's own `RuntimeExecutionOrdinal` plus a deterministic
+  within-that-resolution sequence, retained in this same key (§10.1; not the revert's derived child
+  identity, which stays a separate fire-once/de-duplication identity, as in §3/§4). Store alongside
+  it the exact inverse `TransitionKey` the bind-time check above already validated, plus the expected
+  post-operation state and overlay revision — `transition.target_state` and `next_revision`, both
+  already computed by this same `prepare` call for the original operation
+  (`apps/game-server/src/world_runtime.rs` ~1040-1054) — so nothing about the revert is derived
+  later, only replayed. Together, `PlacementKey`/`incarnation`/`content_generation`/inverse
+  `TransitionKey`/expected revision are exactly the fields `LocalObjectCommand` needs (evidence
+  above); the entry stores a complete, addressable target, never an ambiguous one. This state is
   `scope_generation`-scoped, owned by the same `ChannelRuntimeV1`/`InstanceRuntime` instance as the
   rest of the overlay; a scope restart is a new instance (corrected evidence above), so it is
   dropped with no separate cleanup path. Map the capacity failure to `CAPACITY_EXCEEDED` (FND-03
@@ -561,13 +591,16 @@ not implement it; it is CANDIDATE and not owner-accepted.
   §14.1 — that number is not decided here.
 - On each driver wake, present admitted due entries (bounded above) as normalized FND-03 §10.2
   authoritative inputs, in their stored (deadline, scheduling ordinal, within-resolution sequence)
-  tie-break order: run the pending-removal-before-`accept_input` de-duplication step above, mint the
-  surviving entries' `RuntimeExecutionOrdinal`s via the scope's ordinal issuer, then call `prepare`
-  with the entry's stored inverse `TransitionKey` and its stored expected revision as
-  `expected_revision` — reusing `prepare`'s existing stale-precondition checks
-  (`DISPOSITION_STALE_STATE`, `apps/game-server/src/world_runtime.rs` ~988-1013) exactly as they
-  already work for any command, so an object the entry's own fences did not already catch (changed
-  again after this revert was scheduled) is rejected there, never guessed at. Commit through the
+  tie-break order: run the pending-removal-before-`accept_input` de-duplication step above (after the
+  incarnation/content-generation fence below has already passed), mint the surviving entries'
+  `RuntimeExecutionOrdinal`s via the scope's ordinal issuer, then call `prepare` addressing exactly
+  the entry's stored `PlacementKey`/`incarnation`/`content_generation` (Round 9 — never looked up,
+  never guessed, never re-derived from the overlay revision alone) with the entry's stored inverse
+  `TransitionKey` and its stored expected revision as `expected_revision` — reusing `prepare`'s
+  existing stale-precondition checks (`DISPOSITION_STALE_STATE`, `apps/game-server/src/world_runtime.rs`
+  ~988-1013) exactly as they already work for any command, so an object the entry's own fences did
+  not already catch (changed again after this revert was scheduled, but still the same incarnation)
+  is rejected there, never guessed at. Commit through the
   same scope-authority path (`PreparedMutation::Publish`/`TerminalSemanticOutcome`, ~1040-1054) —
   never `apply`/`resume_pending`/`CommandIngress`, which require a live `GameSessionAuthoritySnapshot`
   this timer does not have (P1, evidence above). This commit is a timer-origin execution: it reuses
@@ -576,13 +609,16 @@ not implement it; it is CANDIDATE and not owner-accepted.
   `revert_after_ms` (Round 7/8) — a mutually timed pair fires one direction and stops, it does not
   re-arm itself.
 - Pre-`prepare` discard (§10.3's "scope ownership generation changed"/"invalidated" triggers) is
-  reserved for fences that invalidate the *timer itself*, never for a changed object: `scope_generation`
-  or `content_generation` changing clears the pending entry with the rest of the scope-ephemeral
-  overlay (same reset as §4's "Lifetime"), before it is ever presented to `prepare`. A mismatched
-  overlay revision on the anchor is deliberately *not* one of these pre-`prepare` checks — that case
-  is the previous bullet's job: the entry still reaches `prepare` with its stored inverse key and
-  expected revision, and `prepare`'s own stale-precondition check rejects it there. One path, not
-  two, for "the object changed."
+  reserved for fences that invalidate the *timer itself*, never for a changed object:
+  `scope_generation` or `content_generation` changing clears the pending entry with the rest of the
+  scope-ephemeral overlay (same reset as §4's "Lifetime"); the entry's stored `incarnation` no
+  longer matching the current object at that `PlacementKey` (Round 9 — a replacement incarnation at
+  the same anchor) discards the pending entry the same way — all three are checked before the entry
+  is ever presented to `prepare`. A mismatched overlay revision on the anchor, or any other
+  same-incarnation state/revision change, is deliberately *not* one of these pre-`prepare` checks —
+  that case is the previous bullet's job: the entry still reaches `prepare` with its stored inverse
+  key and expected revision, and `prepare`'s own stale-precondition check rejects it there. One path,
+  not two, for "the object changed within the same incarnation."
 - On an occupancy conflict, terminalize `DISPOSITION_OCCUPIED` for that revert's one derived
   identity and stop; do not retry it on a later wake (decided below, not left open).
 
@@ -601,13 +637,15 @@ not implement it; it is CANDIDATE and not owner-accepted.
   side-effect free: with the entry gone from the pending set, there is nothing left to admit,
   transition or mint an ordinal for.
 - **Fenced, one path (P1, FND-03 §10.1/§10.3).** The revert commits only under the same
-  World/Channel/InstanceId, `scope_generation`, `content_generation` and overlay-revision-of-anchor
-  fences as any other §4 operation, but only two of them are checked *before* `prepare`:
-  `scope_generation`/`content_generation` changing discards the pending entry without ever calling
-  `prepare` (the timer itself is invalid — §10.3's "scope ownership generation changed"). A mismatched
-  overlay revision is deliberately *not* checked there; a test asserting it is (a separate pre-
-  `prepare` cancellation path for a changed object) must fail — the only path for a changed object is
-  `prepare`'s own `DISPOSITION_STALE_STATE` (below).
+  World/Channel/InstanceId, `scope_generation`, `PlacementKey`, `incarnation`, `content_generation`
+  and overlay-revision-of-anchor fences as any other §4 operation, but only three of them are checked
+  *before* `prepare`: `scope_generation`, `content_generation` or the stored `incarnation` no longer
+  matching (Round 9) each discard the pending entry without ever calling `prepare` (the timer itself
+  is invalid — §10.3's "scope ownership generation changed"/target-generation-mismatch triggers). A
+  mismatched overlay revision (a same-incarnation state/revision change) is deliberately *not*
+  checked there; a test asserting it is (a separate pre-`prepare` cancellation path for a changed
+  object) must fail — the only path for a same-incarnation changed object is `prepare`'s own
+  `DISPOSITION_STALE_STATE` (below).
 - **Cleared on scope restart.** The pending-timer set (keyed by `Deadline`) is
   `scope_generation`-scoped state owned by the same `ChannelRuntimeV1`/`InstanceRuntime` instance as
   the rest of the overlay; a scope restart is a new instance (corrected evidence above), so it is
@@ -637,6 +675,18 @@ not implement it; it is CANDIDATE and not owner-accepted.
   pre-`prepare` cancellation — and hit `prepare`'s existing `DISPOSITION_STALE_STATE` path (evidence
   above), committing nothing; the revert never overwrites whatever the object has become in the
   meantime, and there is no second, separate check that could instead silently discard the entry.
+- **Two anchors with an equal overlay revision fire independently (P1, Round 9).** Bind two
+  different `LocalObjectRuntime`s at two different `PlacementKey`s whose overlay revisions happen to
+  be numerically equal, each with its own `revert_after_ms`-carrying operation scheduled. When both
+  timers become due, each must fire against its own stored `PlacementKey` and mutate only its own
+  object; a test that lets either fire against the other's anchor (because it addressed by overlay
+  revision alone instead of the stored `PlacementKey`) must fail.
+- **A replacement incarnation discards the old timer (P1, Round 9).** Schedule a revert, then replace
+  the target object's incarnation at the same `PlacementKey` (the pre-existing recycling path, not
+  something this decision adds). The old timer's entry must be discarded pre-`prepare` when its
+  stored `incarnation` no longer matches — it must never reach `prepare`, never mutate the
+  replacement incarnation's object, and must not appear as a `DISPOSITION_BINDING_MISMATCH` outcome
+  either, since there is no command awaiting a reply for an internally-discarded timer.
 - **A mutually timed pair fires once and stops (P2, Round 7).** Bind a `TRANSFORM a→b` and its
   inverse `TRANSFORM b→a` so *both* carry `revert_after_ms`; schedule the forward operation, let its
   timer become due. The test must observe: exactly one `RuntimeExecutionOrdinal` minted, exactly one
