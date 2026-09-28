@@ -75,7 +75,7 @@ The protected Item evidence chain moves from the 2026-07-28 cut to the 2026-09-2
 1. the TibiaWiki BR current-source collector;
 2. the field verification;
 3. the target-day continuity;
-4. the semantic promotion packet consumed by `cw2_b1_import`.
+4. the semantic promotion packet (since #1064 no longer read by `cw2_b1_import`, which now takes Item promotion from the #1048 lowering pass).
 
 The G4 binding pilot pins the new current source. Each re-collected stage has the same partition as at 2026-07-28, and
 the 69 promoted field values on 23 Items are unchanged, so `content/world` does not change. The G4 wiki captures (165
