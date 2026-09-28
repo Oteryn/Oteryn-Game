@@ -3,7 +3,7 @@
  "counts": {
   "pages": 1253,
   "removed": 11,
-  "with_npc_lines": 619,
+  "with_npc_lines": 620,
   "with_positions": 1237,
   "with_trades": 386
  },
@@ -9754,7 +9754,12 @@
   {
    "implemented": "7.8",
    "name": "Ceiron",
-   "npc_lines": [],
+   "npc_lines": [
+    "Always nice to meet a fellow druid, Jogador.",
+    "Have you lost my waterskin?",
+    "I can give you a new one, but I fear that I have to take a small fee for it. Would you like to buy a waterskin for 1000 gold?",
+    "Together we have roamed the wilderness of Tibia, hunting side by side... I prefer the company of wolves to humans. A wolf will not betray its pack."
+   ],
    "pageid": 11053,
    "positions": [
     [
@@ -13032,13 +13037,6 @@
    "implemented": "7.3",
    "name": "Melchior",
    "npc_lines": [
-    "Assustado, mas eu recordei as histórias do meu avô e eu saudei a criatura usando uma tradicional palavra de cumprimento dos djinns. ...",
-    "Ele trabalhou. Eu consegui engajar o djinn - para ele ser um claro suficiente - em uma conversa. De fato, Eu mesmo que consegui um acordo com ele. Os djinns The djinns moram aqui e precisam de fornecimento, e eu prometi que lhes traria algo. ...",
-    "Um relacionamento altamente lucrativo do negócio seguiu. Infelizmente, minha ambição crescia todo dia, e ela mostrou meu senso de julgamento. ...",
-    "Ouviu-se que existia um segundo forte de djinns e eu viajei para lá. Aquele djinn, que se chamou de Marid, era muito amigável, e em breve eu negociava com ele. ...",
-    "Infelizmente, ele não fez outro tribo de djinn, o Efreet, não demorou para descobrir o que eu era. ...",
-    "A punição dos Efreets' era muito cruel: Eles me cegaram e a esquerda o Kha'labal para morrer de sede e exaustão e servir comida para as scarabs. Mas aquele era um favor que eu não poderia fazer. ...",
-    "Eu esforcei-me desesperadamente e fui acolhido por uma caravana. E me deixaram aqui, e agora eu tenho um tipo de praga à andar por esta cidade metade morto.-->",
     "Greetings, Jogador. I do not see your face, but I can read a thousand things in your voice!",
     "Welcome, Jogador! The lovely sound of your voice shines like a beam of light through my solitary darkness!",
     "My late father, may he rest in peace, chose to call me Melchior.",
@@ -13469,7 +13467,8 @@
     "Well, good and evil will fight each other for all eternity.",
     "<sigh> Well, it saddens me to see what can become of a dwarf. They are truly lost. They are not ours any more, even if their ancestors once might have been. ...",
     "Their dwarfish traits though make them fearsome fighters and the number in which their masters have bred them makes them a threat for anyone. ...",
-    "The worst thing is, if their masters did not seemingly consider the gnomes their major enemies, we would probably face even fiercer attacks. ... Emperor Kruzak It took our entire might to stop their last invasion force. Only when their leader Bloodtooth, a horrible thing that none of our experienced veterans had ever encountered before, was cut down, was the assault stopped. ...",
+    "The worst thing is, if their masters did not seemingly consider the gnomes their major enemies, we would probably face even fiercer attacks. ...",
+    "It took our entire might to stop their last invasion force. Only when their leader Bloodtooth, a horrible thing that none of our experienced veterans had ever encountered before, was cut down, was the assault stopped. ...",
     "Now the Lost are roaming the mines, and are still numerous and powerful enough to pose a threat. Meanwhile, we are regrouping and reorganizing in the hopes that we will be better prepared when the time of another assault comes.",
     "Well, we use all stocked resources of finest metal to craft weapons and armor, we train new warriors and spellcasters every day. ...",
     "We give battle training to each citizen to enable them to better defend themselves and to form militia units in case of emergency. And we call in old favours and allies.",
@@ -48452,7 +48451,12 @@
     "Suon's and Bastesh's blessing, dear guest!",
     "She is a member of my circle, the Midnight Flame. She is actually blind whereas the other members just pretend to be sightless. Most often you can find her in the small park south of the market place. ...",
     "Unfortunately she is experiencing some difficulties at the moment.",
-    "Every member of the Midnight Flame has to perform a ritual once a year. The nature of this ritual as well as its purpose and needed ingredients - we call them paraphernalia - vary from member to member. ... Kallimae Each summer solstice, the goddess Bastesh sends us a dream or vision which reveals our respective ritual. It is very important to perform the ritual within a month from receiving the dream or vision. ... Kallimae Otherwise a member will lose the visionary gift for the year to come. Some of the paraphernalia are easier to obtain than others. Unfortunately, Kilmaresh is more dangerous these days than it used to be. ... Kallimae Many members of my circle are afraid to leave the city or their huts in the Nykri delta to search for their ingredients. They fear the Fafnar cultists as well as the manticores and feral sphinxes. ... Kallimae Some of the Anuma are currently more aggressive and irritable. I assume their ire is caused by the cultists' doings but unfortunately it affects all of Kilmaresh's mortal inhabitants. I'm afraid we are in need of help in this case. ... Kallimae So, would you consent to help four of our members who still can't perform their rituals?",
+    "Every member of the Midnight Flame has to perform a ritual once a year. The nature of this ritual as well as its purpose and needed ingredients - we call them paraphernalia - vary from member to member. ...",
+    "Each summer solstice, the goddess Bastesh sends us a dream or vision which reveals our respective ritual. It is very important to perform the ritual within a month from receiving the dream or vision. ...",
+    "Otherwise a member will lose the visionary gift for the year to come. Some of the paraphernalia are easier to obtain than others. Unfortunately, Kilmaresh is more dangerous these days than it used to be. ...",
+    "Many members of my circle are afraid to leave the city or their huts in the Nykri delta to search for their ingredients. They fear the Fafnar cultists as well as the manticores and feral sphinxes. ...",
+    "Some of the Anuma are currently more aggressive and irritable. I assume their ire is caused by the cultists' doings but unfortunately it affects all of Kilmaresh's mortal inhabitants. I'm afraid we are in need of help in this case. ...",
+    "So, would you consent to help four of our members who still can't perform their rituals?",
     "Bastesh be praised. The four members I'm talking about are Yonan, Tefrit, Narsai and Shimun. Please seek them out and ask them what paraphernalia they still need.",
     "Could you already help Yonan, Tefrit, Shimun and Narsai?",
     "He is a member of my circle, the Midnight Flame. Most often you will find him at the market place where he is trading with gems and jewellery. Unfortunately he is experiencing some difficulties at the moment.",

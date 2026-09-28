@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "cc0e758f504877e98cc970b3ae01fb16db08d28e79cfcd1fe73130e762aa6d1f",
+  "facts_sha256": "673ebfc7778385d4fa07c3107790d42609c44048870149eb3de23e43f67f5b19",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -5703,6 +5703,12 @@
     "revid": 416364,
     "title": "Ceiron"
    },
+   "dialogue": {
+    "br_lines": 4,
+    "matched": 1,
+    "near": 0,
+    "texts": 3
+   },
    "name": "Ceiron",
    "npc": "oteryn:npc.ceiron",
    "position": {
@@ -8891,7 +8897,7 @@
     "title": "Emperor Kruzak"
    },
    "dialogue": {
-    "br_lines": 75,
+    "br_lines": 76,
     "matched": 1,
     "near": 0,
     "texts": 3
@@ -15299,7 +15305,7 @@
     "title": "Kallimae"
    },
    "dialogue": {
-    "br_lines": 63,
+    "br_lines": 68,
     "matched": 0,
     "near": 0,
     "texts": 1
@@ -17633,7 +17639,7 @@
     "title": "Melchior"
    },
    "dialogue": {
-    "br_lines": 71,
+    "br_lines": 64,
     "matched": 2,
     "near": 0,
     "texts": 2
@@ -29345,11 +29351,11 @@
  "schema": "OTERYN_NPC_TIBIAWIKI_BR_CROSSCHECK/v1",
  "totals": {
   "dialogue:br_only": 179,
-  "dialogue:checked": 367,
-  "dialogue:matched": 2820,
+  "dialogue:checked": 368,
+  "dialogue:matched": 2821,
   "dialogue:near": 340,
   "dialogue:no_text_matched": 67,
-  "dialogue:texts": 5848,
+  "dialogue:texts": 5851,
   "matched_by_position_alias": 7,
   "no_br_page": 14,
   "npcs": 1093,

@@ -180,6 +180,8 @@ LINK = re.compile(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]')
 # after links and bold/italic markup are removed, a transcript line is `Speaker: text`; the speaker may be
 # written plain, bold, italic or as a link, before or around the colon, and may contain an apostrophe
 SPEAKER = re.compile(r"\s*([^:<>{}|]{1,60}?)\s*:\s*(.*)$")
+COMMENT = re.compile(r'<!--.*?(?:-->|$)', re.S)
+BOLD_LABEL = re.compile(r"\s*'''\s*((?:\[\[[^\]]*\]\]|[^'\[\]:|])+?)\s*'''\s+(?!:)(\S.*)$")
 TRANSCRIPT_BOUNDARY = ('|', '{{', '}}', '==', '----', '[[Categoria', '[[Arquivo', '[[File', '[[Imagem')
 INDENT = re.compile(r'\s*[:*#;]+\s*')
 BREAK = re.compile(r'<\s*/?\s*br\s*/?\s*>', re.I)
@@ -208,6 +210,17 @@ def unmarked(text):
     return LINK.sub(r'\1', text).replace("'''", '').replace("''", '')
 
 
+def read_turn(raw_segment, speakers):
+    """(folded speaker, text) when a raw segment opens a transcript turn, else None. A bold label without a
+    colon (`'''Ceiron''' text`) opens a turn only for one of this page's own speakers."""
+    bold = BOLD_LABEL.match(raw_segment)
+    if bold and fold(LINK.sub(r'\1', bold.group(1))) in speakers:
+        text = re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(bold.group(2)))).strip()
+        return fold(LINK.sub(r'\1', bold.group(1))), text
+    match = SPEAKER.match(re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(raw_segment))).strip())
+    return (fold(match.group(1)), match.group(2).strip()) if match else None
+
+
 def edit_distance(a, b):
     previous = list(range(len(b) + 1))
     for i, ca in enumerate(a, 1):
@@ -223,7 +236,7 @@ def fold(text):
 
 
 def page_facts(page):
-    wikitext = page['wikitext']
+    wikitext = COMMENT.sub('', page['wikitext'])  # hidden HTML comments are not page content
     name = infobox_field(wikitext, 'name') or page['title']
     trades = {'BuyFromPlayer': {}, 'SellToPlayer': {}}
     for kind, body in TRADES.findall(wikitext):
@@ -239,8 +252,8 @@ def page_facts(page):
     speakers |= {fold(page['title']), fold(name)}
     # a label a single character away from the NPC's name (`Nivev` for Ninev) is a typo on that page;
     # unrelated labels, such as another NPC's copied transcript, stay excluded
-    labels = {fold(match.group(1)) for raw in wikitext.split('\n') for segment in BREAK.split(unmarked(raw))
-              if (match := SPEAKER.match(STRUCTURE.sub('', segment).strip()))}
+    labels = {turn[0] for raw in wikitext.split('\n') for segment in BREAK.split(raw)
+              if (turn := read_turn(segment, speakers))}
     speakers |= {label for label in labels if len(label) >= 4
                  and any(edit_distance(label, speaker) == 1 for speaker in speakers)}
     lines = []
@@ -253,14 +266,14 @@ def page_facts(page):
         indented = INDENT.match(raw)
         line = raw[indented.end():] if indented else raw
         if (not line.strip() or line.lstrip().startswith(TRANSCRIPT_BOUNDARY) or '----' in line
-                or (indented and not SPEAKER.match(STRUCTURE.sub('', unmarked(line)).strip()))):
+                or (indented and not read_turn(BREAK.split(line)[0], speakers))):
             speaker = None
             continue
-        for segment in BREAK.split(unmarked(line)):
-            segment = re.sub(r'\s+', ' ', STRUCTURE.sub('', segment)).strip()
-            match = SPEAKER.match(segment)
-            if match:
-                speaker, text = fold(match.group(1)), match.group(2).strip()
+        for raw_segment in BREAK.split(line):
+            turn = read_turn(raw_segment, speakers)
+            segment = re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(raw_segment))).strip()
+            if turn:
+                speaker, text = turn
                 repeated = SPEAKER.match(text)
                 while repeated and fold(repeated.group(1)) == speaker:  # `Name: Name: text` repeats the label
                     text = repeated.group(2).strip()
@@ -336,6 +349,7 @@ def cmd_self_test(_args):
             "'''Goldro:''' Hello, ''Jogador''. Ask about [[Salgadora|the town]].</br>\n"
             "'''Goldro''': Bold name, colon outside.</br>\n'''[[Goldro]]:''' Linked name.</br>\n"
             "[[Goldro]]: Link form.</br>\nGoldro: Plain form.</br>\n''Goldro:'' Italic form.</br>\n"
+            "<!--\nGoldro: Hidden comment.\n-->\n'''Goldro''' No colon.\n'''Other''' not a label.\n"
             "[[Other]]: Not mine.\n'''Goldro:''' One.<br>Jogador: Accident<br>'''Goldro:''' Two.<br>still two.\n"
             "'''Goldro:''' Goldro: Repeated label.\nGoldrp: Typo label.<br\nGoldro: Bye, and\nsee you soon.\n"
             ":''Jogador:'' Trade?\n:'''Goldro:''' Indented.\n:Respostas:\nNot Goldro any more.\n\n"
@@ -346,7 +360,9 @@ def cmd_self_test(_args):
     assert facts['trades'] == {'BuyFromPlayer': {}, 'SellToPlayer': {
         'Bread': 4, 'Cheese': None, 'Cot': 200, 'Fire Sword': 1000, 'Vial of Blood': None, 'Mug of Beer': 3}}, facts
     assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
-                                  'Linked name.', 'Link form.', 'Plain form.', 'Italic form.', 'One.', 'Two. still two.',
+                                  'Linked name.', 'Link form.', 'Plain form.', 'Italic form.',
+                                  # a bold label of another name opens no turn, so it continues Goldro's
+                                  'No colon. Other not a label.', 'One.', 'Two. still two.',
                                   'Repeated label.', 'Typo label.', 'Bye, and see you soon.', 'Indented.'], facts
     apostrophe = page_facts({**page_record({'pageid': 8, 'title': "Lee'Delle", 'revisions': [
         {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': "'''Lee'Delle:''' Welcome."}}}]}), 'role': 'npc'})
