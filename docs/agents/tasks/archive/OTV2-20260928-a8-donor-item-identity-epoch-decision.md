@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-a8-donor-item-identity-epoch-decision
 title: "A8 donor Item identity epoch decision (D96-D97)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
@@ -56,9 +56,9 @@ identity, requires independent identity review when allocated.
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review.
+- [x] Protected Merge Queue integration (#1163, merged as `9f98b067`).
 
 ## Excluded scope
 
@@ -82,11 +82,11 @@ Codex review of `c97bd25`: one P1, ACCEPTED in repair generation 1 of 1 (#162 co
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1163 open
-status: validating
+last_progress: PR #1163 merged as 9f98b067
+status: completed
 branch: claude/gifted-rubin-a0axzx
 pr: 1163
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1163
+next_action: none; B1b implements the epoch under OTV2-20260928-item-donor-identity-b1b
 ```
