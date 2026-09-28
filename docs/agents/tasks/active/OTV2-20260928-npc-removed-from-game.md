@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-npc-removed-from-game
 title: NPC D11 and D12 - hold NPCs both wikis record as removed from Tibia Global, and take offer prices both wikis agree on
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 1124
 jira: KAN-16
 base_sha: 943e17b07ba42c95a91f6a431990905846a69968
 head_sha: null
