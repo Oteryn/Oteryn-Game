@@ -6,6 +6,11 @@ mod admission {
 }
 mod admission_facade;
 pub mod fnd04_verifier;
+// AI-1 (#162; GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.2): the Channel owner
+// timer lane (FND-03 §10). Not yet consumed outside its own tests: AI-2/AI-3 wire it into
+// `ChannelRuntimeV1`'s owner cycle from their own owned paths.
+#[allow(dead_code)]
+mod owner_timer;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
