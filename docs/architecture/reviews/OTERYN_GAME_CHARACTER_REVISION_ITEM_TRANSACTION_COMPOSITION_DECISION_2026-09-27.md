@@ -1,7 +1,7 @@
 # Character revision and item transaction composition decision
 
 - Decision: `CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1`
-- Status: **CANDIDATE; acceptance requires exact-head validation, independent review and protected integration**
+- Status: **ACCEPTED** (protected integration on `main@74bb3fd`, PR #1033; §7)
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Source conflict: DUR-03 §39.3 `CONFLICT` and `OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md` §5
 - Related: Issues #162, #707, #513; owner decisions D40-D42 (#1029)
@@ -209,4 +209,27 @@ remaining_unknowns:
   - inventory position/capacity/weight policy and numbers
   - RewardClaim physical schema and cooldown identity
 next_action: "#162 validates this exact head, routes the required independent review and integrates it through the governed Merge Queue."
+```
+
+## 7. Protected integration
+
+- PR #1033, frozen head `88351368710f9c03f5835b945013874caa99d9fa`.
+- Independent review: Codex exact-head review of that head found no issues. All earlier findings
+  (P1s on `432dc37`, `ec82b6c` and `f7e4970`; the P2 on `432dc37`) were accepted and repaired.
+- Merge Queue: merge_group `game-gate` SUCCESS (run 36387297582); squash-merged as
+  `74bb3fd38698ba0f76cb36f449d2fa023f12f4f4` on 2026-09-28.
+- Protected-main readback: this file and the task record matched the frozen head blobs
+  (`53234d3a`, `c8106ee3`).
+- DUR-03 §39.3 and reward-chest decisions §5 cite this decision (§6 `required_revalidation`,
+  first item).
+
+```yaml
+result: ACCEPTED
+implementation_may_resume: true   # under a fresh #162 allocation; the §6 revalidation cases still bind it
+superseded_handback_fields:
+  implementation_may_resume: "false until protected-integrated -> true"
+remaining_unknowns:
+  - inventory position/capacity/weight policy and numbers
+  - RewardClaim physical schema and cooldown identity
+  - TRANSFER admission
 ```
