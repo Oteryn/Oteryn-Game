@@ -1,0 +1,362 @@
+#!/usr/bin/env python3
+"""Convert the pinned CrystalServer world map into the WorldPlacement.Base region family.
+
+Writes content/world/placements/ (region files and index.json) plus the committed capture
+summary. The source is OTS_HYPOTHESIS_ONLY migration evidence. Every map item is written
+under its Oteryn item registry number, resolved through the item bindings. The conversion
+fails closed on an unbound item id or an item or tile attribute it does not carry.
+
+    python convert_world_base.py --crystal-root /path/to/crystalserver [--check]
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import sys
+from collections import Counter
+from itertools import pairwise
+from pathlib import Path
+
+import zstandard
+
+import convert_world_metadata as metadata
+import otbm_reader
+import world_region_codec as codec
+from convert_world_metadata import ConvertError, canonical
+
+ROOT = metadata.ROOT
+HERE = metadata.HERE
+SUMMARY = HERE / "samples/world-base-capture-v1.json"
+ITEM_BINDINGS = metadata.ITEM_BINDINGS
+OTBM = "data-global/world/world.otbm"
+DIRECTORY = "content/world/placements"
+GENERATOR = "tools/content-schema/world-authoring/convert_world_base.py"
+PINNED_TOTALS = {"items": 24925845, "tiles": 19325129}
+REGISTRY_KEY = re.compile(r"^oteryn:item\.registry\.i(\d{8})$")
+
+SOURCE = {
+    **metadata.SOURCE,
+    "files": [row for row in metadata.SOURCE["files"] if row["path"] == OTBM],
+}
+# OTBM item attribute -> carried name.
+CARRIED = {
+    4: "action",
+    5: "unique",
+    6: "text",
+    7: "description",
+    8: "teleport",
+    10: "depot",
+    14: "door",
+    15: "count",
+    22: "charges",
+}
+DEST_KEY = "dest"
+_INDEX = list(range(codec.SECTOR_SIZE * codec.SECTOR_SIZE))
+
+
+class UnboundItemsError(ConvertError):
+    """Map items whose server id has no Oteryn item registry number."""
+
+    def __init__(self, unbound: Counter, named: dict[int, str]):
+        self.unbound, self.named = unbound, named
+        top = ", ".join(f"{i}: {n}" for i, n in unbound.most_common(15))
+        super().__init__(
+            f"{len(unbound)} map item ids ({sum(unbound.values())} items) have no Oteryn "
+            f"item registry number: {sum(1 for i in unbound if i in named)} are bound to a "
+            f"named item key, {sum(1 for i in unbound if i not in named)} have no binding. "
+            f"Most used (id: occurrences): {top}; --unbound-report lists them all"
+        )
+
+    def report(self) -> dict:
+        return {
+            "unbound": [
+                {
+                    "named_target": self.named.get(server_id),
+                    "occurrences": count,
+                    "server_id": server_id,
+                }
+                for server_id, count in sorted(self.unbound.items())
+            ]
+        }
+
+
+def registry_numbers(
+    bindings: bytes,
+) -> tuple[dict[int, int], set[int], dict[int, str]]:
+    """Return ``(server id -> registry number, registry numbers of bound targets, named)``.
+
+    A target with a named key (not ``oteryn:item.registry.iNNNNNNNN``) has no registry
+    number, so its server id stays out of the mapping (``named`` maps it to the key) and a
+    map item using it fails closed.
+    """
+    by_server: dict[int, int] = {}
+    targets: set[int] = set()
+    named: dict[int, str] = {}
+    for row in json.loads(bindings)["bindings"]:
+        match = REGISTRY_KEY.match(row["target"]["key"])
+        if match is None:
+            if row["identity_namespace"] == "ots/item_server_id":
+                named[int(row["external_id"])] = row["target"]["key"]
+            continue
+        number = int(match.group(1))
+        targets.add(number)
+        if row["identity_namespace"] != "ots/item_server_id":
+            continue
+        server_id = int(row["external_id"])
+        if by_server.setdefault(server_id, number) != number:
+            raise ConvertError(
+                f"server id {server_id} is bound to two registry numbers"
+            )
+    return by_server, targets, named
+
+
+class Collector:
+    """Buffers encoded tiles per sector; identical tile bodies share one bytes object."""
+
+    def __init__(self, by_server: dict[int, int], named: dict[int, str]):
+        self.by_server = by_server
+        self.named = named
+        self.sectors: dict[tuple[int, int, int], tuple[list, list]] = {}
+        self.bodies: dict[bytes, bytes] = {}
+        self.sector_items: Counter = Counter()
+        self.tiles = self.items = 0
+        self.unbound: Counter = Counter()
+        self.unsupported: Counter = Counter()
+        self.attributes: Counter = Counter()
+        self.house_tiles = self.zone_tiles = 0
+
+    def __call__(self, x, y, z, flags, house, zones, items) -> None:
+        converted = []
+        for server_id, depth, attrs in items:
+            number = self.by_server.get(server_id)
+            if number is None:
+                self.unbound[server_id] += 1
+                continue
+            named = None
+            if attrs:
+                named = {}
+                for key, value in attrs.items():
+                    name = CARRIED.get(8 if key == DEST_KEY else key)
+                    if name is None:
+                        self.unsupported[key] += 1
+                    else:
+                        named[name] = value
+                        self.attributes[name] += 1
+            converted.append((number, depth, named))
+        if house == 0:
+            raise ConvertError(f"house tile ({x}, {y}, {z}) has house id 0")
+        body = codec.encode_tile(flags or 0, house or 0, zones, converted)
+        body = self.bodies.setdefault(body, body)
+        key = (z, x // codec.SECTOR_SIZE, y // codec.SECTOR_SIZE)
+        sector = self.sectors.get(key)
+        if sector is None:
+            sector = self.sectors[key] = ([], [])
+        sector[0].append(
+            _INDEX[(y % codec.SECTOR_SIZE) * codec.SECTOR_SIZE + x % codec.SECTOR_SIZE]
+        )
+        sector[1].append(body)
+        self.sector_items[key] += len(converted)
+        self.tiles += 1
+        self.items += len(items)
+        self.house_tiles += house is not None
+        self.zone_tiles += bool(zones)
+
+    def check(self) -> None:
+        if self.unbound:
+            raise UnboundItemsError(self.unbound, self.named)
+        if self.unsupported:
+            raise ConvertError(
+                f"unsupported OTBM item attributes (attr: occurrences): "
+                f"{dict(sorted(self.unsupported.items()))}"
+            )
+
+    def sector_payload(self, key: tuple[int, int, int]) -> bytes:
+        indexes, bodies = self.sectors.pop(key)
+        order = range(len(indexes))
+        if indexes != sorted(indexes):
+            order = sorted(order, key=indexes.__getitem__)
+        entries = [(indexes[i], bodies[i]) for i in order]
+        for a, b in pairwise(entries):
+            if a[0] == b[0]:
+                raise ConvertError(
+                    f"duplicate tile in sector {key} at local index {a[0]}"
+                )
+        return codec.encode_sector(entries)
+
+
+def zstd_info() -> dict:
+    return {
+        "backend": zstandard.backend,
+        "libzstd": ".".join(map(str, zstandard.ZSTD_VERSION)),
+        "python_package": zstandard.__version__,
+    }
+
+
+def build(blobs: dict[str, bytes], bindings: bytes | None = None) -> dict[str, bytes]:
+    if bindings is None:
+        bindings = ITEM_BINDINGS.read_bytes()
+    by_server, _, named = registry_numbers(bindings)
+    collector = Collector(by_server, named)
+    facts = otbm_reader.read_tiles(blobs[OTBM], collector)
+    if facts.unknown_item_attrs or facts.unknown_tile_attrs:
+        raise ConvertError(
+            f"unknown OTBM attributes: items {dict(facts.unknown_item_attrs)}, "
+            f"tiles {dict(facts.unknown_tile_attrs)}"
+        )
+    collector.check()
+    if facts.width > 0xFFFF or facts.height > 0xFFFF:
+        raise ConvertError("map extent exceeds the region coordinate range")
+    if collector.tiles != facts.tiles:
+        raise ConvertError("tile count differs from the reader")
+
+    per_region: dict[tuple[int, int, int], dict[int, bytes]] = {}
+    region_tiles: Counter = Counter()
+    region_items: Counter = Counter()
+    floors: Counter = Counter()
+    size = codec.SECTORS_PER_SIDE
+    for key in sorted(collector.sectors):
+        z, sx, sy = key
+        region = (z, sx // size, sy // size)
+        region_tiles[region] += len(collector.sectors[key][0])
+        region_items[region] += collector.sector_items[key]
+        floors[z] += len(collector.sectors[key][0])
+        payload = collector.sector_payload(key)
+        per_region.setdefault(region, {})[(sy % size) * size + sx % size] = payload
+    out: dict[str, bytes] = {}
+    regions = []
+    sector_count = disk = 0
+    for region in sorted(per_region):
+        z, rx, ry = region
+        sectors = per_region[region]
+        data = codec.encode_region(z, rx, ry, sectors)
+        path = f"{DIRECTORY}/{codec.region_name(z, rx, ry)}"
+        out[path] = data
+        regions.append(
+            {
+                "items": region_items[region],
+                "path": path,
+                "sha256": hashlib.sha256(data).hexdigest(),
+                "tiles": region_tiles[region],
+            }
+        )
+        sector_count += len(sectors)
+        disk += len(data)
+    totals = {
+        "items": collector.items,
+        "regions": len(regions),
+        "sectors": sector_count,
+        "tiles": collector.tiles,
+    }
+    out[f"{DIRECTORY}/index.json"] = canonical(
+        {
+            "codec": codec.CODEC,
+            "coordinate_frame": metadata.COORDINATE_FRAME,
+            "family": "WorldPlacement.Base",
+            "generator": GENERATOR,
+            "item_bindings": {
+                "path": str(ITEM_BINDINGS.relative_to(ROOT)),
+                "sha256": hashlib.sha256(bindings).hexdigest(),
+            },
+            "population_state": "POPULATED",
+            "region_size": codec.REGION_SIZE,
+            "regions": regions,
+            "schema": "OTERYN_FAMILY_INDEX/v1",
+            "sector_size": codec.SECTOR_SIZE,
+            "shards": [row["path"] for row in regions],
+            "source": SOURCE,
+            "totals": totals,
+            "zstd_level": codec.ZSTD_LEVEL,
+        }
+    )
+    summary = {
+        "bytes_on_disk": disk,
+        "codec": {
+            "name": codec.CODEC,
+            "zstd": zstd_info(),
+            "zstd_level": codec.ZSTD_LEVEL,
+        },
+        "item_attributes": dict(sorted(collector.attributes.items())),
+        "map": {
+            "floors": [0, metadata.MAX_FLOOR],
+            "height": facts.height,
+            "otbm_version": facts.version,
+            "width": facts.width,
+        },
+        "rejected_items": {
+            "unbound_item_ids": len(collector.unbound),
+            "unsupported_attributes": len(collector.unsupported),
+        },
+        "schema": "OTERYN_WORLD_BASE_SOURCE_CAPTURE/v1",
+        "source": SOURCE,
+        "tiles_by_floor": {str(z): n for z, n in sorted(floors.items())},
+        "tiles_with_house": collector.house_tiles,
+        "tiles_with_zone": collector.zone_tiles,
+        "totals": totals,
+    }
+    out[str(SUMMARY.relative_to(ROOT))] = canonical(summary)
+    return out
+
+
+def read_source(crystal_root: Path) -> dict[str, bytes]:
+    blobs = {}
+    for row in SOURCE["files"]:
+        data = (crystal_root / row["path"]).read_bytes()
+        if hashlib.sha256(data).hexdigest() != row["sha256"]:
+            raise ConvertError(f"{row['path']}: sha256 differs from the pinned source")
+        blobs[row["path"]] = data
+    return blobs
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--crystal-root", type=Path, required=True)
+    parser.add_argument("--check", action="store_true", help="fail instead of writing")
+    parser.add_argument(
+        "--unbound-report",
+        type=Path,
+        help="on an unbound-item failure, write every offending id to this JSON file",
+    )
+    args = parser.parse_args()
+    try:
+        out = build(read_source(args.crystal_root))
+        totals = json.loads(out[f"{DIRECTORY}/index.json"])["totals"]
+        if {k: totals[k] for k in PINNED_TOTALS} != PINNED_TOTALS:
+            raise ConvertError(
+                f"totals {totals} differ from the pinned source {PINNED_TOTALS}"
+            )
+    except (ConvertError, otbm_reader.OtbmError, OSError) as error:
+        print(f"FAIL {error}", file=sys.stderr)
+        if isinstance(error, UnboundItemsError) and args.unbound_report:
+            args.unbound_report.write_bytes(canonical(error.report()))
+        return 1
+    stale = [
+        path
+        for path, data in out.items()
+        if not (ROOT / path).is_file() or (ROOT / path).read_bytes() != data
+    ]
+    directory = ROOT / DIRECTORY
+    extra = sorted(
+        str(p.relative_to(ROOT))
+        for p in (directory.iterdir() if directory.is_dir() else [])
+        if str(p.relative_to(ROOT)) not in out
+    )
+    if args.check:
+        for path in stale:
+            print(f"STALE {path}", file=sys.stderr)
+        for path in extra:
+            print(f"EXTRA {path}", file=sys.stderr)
+        return 1 if stale or extra else 0
+    for path in extra:
+        (ROOT / path).unlink()
+    for path in stale:
+        (ROOT / path).parent.mkdir(parents=True, exist_ok=True)
+        (ROOT / path).write_bytes(out[path])
+    print(f"wrote {len(stale)} of {len(out)} files, removed {len(extra)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

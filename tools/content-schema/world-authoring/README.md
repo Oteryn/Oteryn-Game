@@ -1,9 +1,9 @@
 # World metadata authoring (City Area, House, teleport Transition)
 
-This package is the first population of the world tree. It covers **metadata** only: towns,
-houses and teleports. Terrain, map objects and placements (19.3 M tiles, 24.9 M items) are
-a later step. They need a physical storage format selected by measurement, and JSON is not
-that format.
+This package populates the world tree from the pinned CrystalServer map. Steps 1 and 2
+cover **metadata**: towns, houses and teleports. Step 3 covers the **base map** (19.3 M
+tiles, 24.9 M items) in a binary region format selected by measurement (see "Base map
+(step 3)" below).
 
 | Family | Path | Records | Shard schema |
 |---|---|---:|---|
@@ -82,3 +82,48 @@ python test_world_authoring.py             # synthetic OTBM fixtures, converter,
 # Regenerate (needs the pinned crystalserver checkout, not fetched by CI):
 python convert_world_metadata.py --crystal-root /path/to/crystalserver [--check]
 ```
+
+## Base map (step 3)
+
+`WorldPlacement.Base` holds every tile and item of `world.otbm` (19,325,129 tiles,
+24,925,845 items, floors 0-15) in `content/world/placements/`. JSON is not used: the same
+data is 3.25 GB as JSON sectors and about 22 MB in the format below.
+
+- **Layout:** `index.json` (`OTERYN_FAMILY_INDEX/v1`, family `WorldPlacement.Base`) plus one
+  file per non-empty 256x256 region, `region-z{z:02}-x{rx:03}-y{ry:03}.b3`
+  (`rx = x // 256`). The index lists the shards, and a `regions` table with each file's
+  `path`, `sha256`, `tiles` and `items`. `samples/world-base-capture-v1.json` records the
+  source, extent, totals, per-floor tiles, bytes on disk, the zstd build and the count of
+  rejected items (must be 0).
+- **Format** (`OTERYN_WORLD_REGION_B3/v1`, spec in the `world_region_codec.py` docstring): a
+  12-byte header (`OTRB`, version, floor, `rx`, `ry`, sector count), a sector table
+  (index 0-63, offset, length) and one zstd level-3 frame per non-empty 32x32 sector. A
+  sector lists its tiles sorted by (y, x) with delta-coded positions and varints. Items
+  are in stacking order, container contents flattened behind their container with a depth.
+- **Carried per tile:** flags, house id, tile zone ids (Canary `OTBM_TILE_ZONE`, 476 tiles
+  on floor 10). **Per item:** the Oteryn item registry number and, when present, count,
+  charges, action id, unique id, text, description, teleport destination, depot id, house
+  door id. Presence is exact, so a present zero or empty text stays present.
+- **Item identity:** the converter maps each map server id through
+  `imports/crystalserver/bindings/items.json` (`ots/item_server_id`) to the number in
+  `oteryn:item.registry.iNNNNNNNN`. It fails closed, and never guesses, when an id has no
+  binding, is bound to a named item key without a registry number, or when the map holds
+  an item or tile attribute outside the carried set. `--unbound-report PATH` lists every
+  offending id.
+- **Measured** (prototype of this codec on the same map, one thread): full load 1.7 s into
+  a naive model, one sector read about 30 us, compact in-memory base about 170 MB (a
+  shared immutable base for all channels). An edit rewrites one sector but changes the
+  region file as a whole, so git stores it as a binary diff (`.b3` is marked `binary`).
+  Runtime loading and the per-channel overlay are out of scope here.
+- **Speed:** `convert_world_base.py` takes about 2 minutes and 0.7 GB. `validate_world_base.py`
+  decodes all 1,208 regions in about 10 s on four cores (about 40 s on one).
+
+```bash
+python validate_world_base.py              # committed family: sha256, decode, counts, bindings
+python test_world_base.py                  # codec round trips, converter, validator, negatives
+# Regenerate (needs the pinned crystalserver checkout, not fetched by CI):
+python convert_world_base.py --crystal-root /path/to/crystalserver [--check] [--unbound-report FILE]
+```
+
+Region files are compressed by libzstd through the pinned `zstandard` package. The capture
+summary records the versions, and `--check` compares bytes, so run it with the same pins.

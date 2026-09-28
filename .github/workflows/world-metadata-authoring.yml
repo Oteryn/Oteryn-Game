@@ -8,6 +8,7 @@ on:
       - content/houses/**
       - content/world/areas/**
       - content/world/transitions/**
+      - content/world/placements/**
       - imports/crystalserver/bindings/items.json
       - .github/workflows/world-metadata-authoring.yml
   workflow_dispatch:
@@ -42,14 +43,18 @@ jobs:
       - name: Install pinned requirements
         run: python -m pip install -r requirements.txt -r requirements-dev.txt
 
-      - name: Validate committed world metadata families
+      - name: Validate committed world metadata and base map families
         run: |
           set -euo pipefail
           python validate_world_metadata.py
+          python validate_world_base.py
           python ../validate_materialized_game_tree.py
 
       - name: Reader, converter and validator fixture tests
-        run: python test_world_authoring.py
+        run: |
+          set -euo pipefail
+          python test_world_authoring.py
+          python test_world_base.py
 
       - name: Ruff check and format
         working-directory: .
@@ -63,6 +68,7 @@ jobs:
         working-directory: .
         run: test -z "$(git status --short --untracked-files=all)"
 
-  # `convert_world_metadata.py --check` needs the pinned zimbadev/crystalserver checkout,
-  # which this repository's CI does not fetch; whoever regenerates the families runs it
-  # locally and commits the output together with samples/source-capture-v1.json.
+  # `convert_world_metadata.py --check` and `convert_world_base.py --check` need the pinned
+  # zimbadev/crystalserver checkout, which this repository's CI does not fetch; whoever
+  # regenerates the families runs them locally and commits the output together with
+  # samples/source-capture-v1.json and samples/world-base-capture-v1.json.

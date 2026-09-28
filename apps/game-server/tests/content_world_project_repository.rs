@@ -87,12 +87,11 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 fn is_successor_shard(locator: &str) -> bool {
     SUCCESSOR_TREE_MARKERS.iter().any(|marker| {
         let directory = marker.trim_end_matches("index.json");
-        locator
-            .strip_prefix(directory)
-            .is_some_and(|name| !name.contains('/') && name.ends_with(".json"))
-            && !DOCUMENTS
-                .iter()
-                .any(|(document, _, _)| document.starts_with(directory))
+        locator.strip_prefix(directory).is_some_and(|name| {
+            !name.contains('/') && (name.ends_with(".json") || name.ends_with(".b3"))
+        }) && !DOCUMENTS
+            .iter()
+            .any(|(document, _, _)| document.starts_with(directory))
     })
 }
 const TREE_CONTRACT: &str =
