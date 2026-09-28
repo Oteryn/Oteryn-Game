@@ -11,12 +11,12 @@ branch: claude/cw2-item-promotion-consolidation
 issue: 162
 pr: 1064
 base_sha: 45b6cc73d8dbd2988ec0153cfa5ad03318367d51
-head_sha: f95244c9416d3938f7cb7a8aacdf6143b0d5f90b
+head_sha: e5e9e5fe2a0c9dbaf09079e677222e399ee2cd5b
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: content world build (Claude Code worker)
 created_at: 2026-09-28T06:45:00Z
-updated_at: 2026-09-28T08:50:00Z
+updated_at: 2026-09-28T09:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/cw2_b1_import.rs
@@ -84,61 +84,57 @@ controller or persisted recovery evidence touched.
 `item-content-promotion.yml`'s Rust test step (round 3, coordinator-approved — see
 Implementation/findings), production content-loading wiring,
 `reference_artifact.rs`/`project_fs.rs`/`world_runtime.rs`. Old evidence file kept,
-unconsumed. No generic name normalization in `populate_items`.
+unconsumed. No generic name normalization in `populate_items`. **Not re-pinning**
+`docs/agents/evidence/OTV2-20260928-item-promotion-lowering-v1.json` to the
+now-grown `samples/promotion-crystal-ff7ede5.json` (14,173 rows/11,555 Items after
+main's #1052/#1063 wiki-family-fallback/blessing-charms Items) — that re-pin
+(byte-count/digest constants, decoder if the 9 field paths change) is a separate
+follow-up task, coordinator-confirmed after this PR merges.
 
 ## Implementation / findings
 
-- Retired `protected_cw2_b1_promoted_item_family_import` and its 69-only
-  constants/structs; kept the shared decode/apply helpers. R7 P04 caller now
-  validates+delegates to the lowering pass (no double rename).
-- **SHARED_LEASE_REQUIRED (resolved):** switching the R7 P04 caller changes committed
-  `content/world/definitions/reference.json`. Coordinator extended owned_paths to
-  `content/world/**` (regenerate-only).
-- **`populate_items` conflict (resolved, coordinator rule):** lowering sets
-  `presentation.name`/`weapon.*` before `populate_items` (165 wiki items) runs its
-  own, stricter `promote()`. 157/165 names agreed case-insensitively (kept); 384/384
-  `weapon.*` matched exactly (still strict). 8 names disagreed by more than case:
-  pinned, exhaustively-hit `ITEM_NAME_LOWERING_OVERRIDES` table consulted only after
-  the case check fails; every other disagreement still hard-errors. Field partition:
-  `526/32/3` → `12/546/3` (promoted/equal/post_cut).
-- **Tracked data-quality finding (not a blocker):** 2 of those 8 look like
-  crosswalk/identity drift — `weapon.*` matches, names don't: `i00037538` wiki
-  `"Staff"` vs. lowering `"pair of monk fists"`; `i00037526` wiki `"Crypt Strike"` vs.
-  `"falcon sai"`. Flagged for a separate source check.
-- Regenerated `content/world/**` (materializer twice, byte-identical), copied the 4
-  changed documents over the tracked ones. `definitions/reference.json`: 13,861,568 →
-  20,839,054 bytes (69/23 → 13,292/10,674 fields/items, +12 wiki-only).
-- **Repair round 1 (Codex P2, comment 4119508551, head `dbb1fe8b`):** the docstring
-  edit to `lower_promotion_packet.py` changed its own self-hash
-  (`build_packet`'s `compiler_sha256` hashes `Path(__file__)`). Fix: reverted to
-  byte-identical with `origin/main`; kept the README change (not hashed). Self-hash
-  re-verified equal to the pinned `ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_SHA256`.
-- **Repair round 2 (coordinator-flagged CI failure, head `9bdaa729`):**
-  `ITEM_DEFINITION_ROUNDTRIP` — the derived tree (`content/items/**`, generated from
-  `content/world/**` by `world_project_v2_to_tree.py`) was stale. Ran the migrator
-  (no args); 85 files changed: `content/items/**` (78) + `content.lock.json`
-  (top-level) + 6 family `index.json` files, each with only its
-  `legacy_source`/`legacy_blobs` git-blob-SHA pointer changed (zero record/count/
-  shard drift, verified per-file). Coordinator approved committing all 85 (extended
-  owned_paths to `content/**`, migrator output only).
-- **Workflow sweep, every `content/**`/`content/world/**` reader run locally:**
-  `content-tree-migration.yml` both scripts PASS. `g4-item-crystal-bindings.yml`
-  self-test+`--check` PASS. `g4-item-wave1-capture.yml` self-tests+`--check` PASS
-  (conflicts=0); live TibiaWiki fetch NOT_APPLICABLE (network blocked, 403;
-  unrelated to changed files). `native-entry-room-qualification.yml` 2 non-ignored
-  Rust tests PASS; Docker+Platform test NOT_APPLICABLE (infra unavailable; unrelated
-  to changed files). `item-content-promotion.yml` self-tests/hash-pins/crosswalk
-  PASS; live-wiki steps NOT_APPLICABLE (same block); its final step hardcoded 2
-  retired exact Rust test names, silently 0-running — fixed round 3 below (coordinator
-  confirmed it's this task's to fix). `worldproject-v2-full-cardinality-scale.yml`'s
-  triggers don't overlap this PR.
-- **Repair round 3 (coordinator-approved, head `bed28218`):** in
-  `item-content-promotion.yml`'s Rust test step only, updated the 2 exact test names
-  to their round-1 replacements and piped each `cargo test` through
-  `tee /dev/stderr | grep -q 'test result: ok\. 1 passed'` (under the step's existing
-  `pipefail`) so a 0-test run fails closed. Verified locally: both new names run
-  exactly 1 test and pass; the retired old name now exits 1 through the same pipe
-  (previously silently exited 0). Live-wiki/69-packet steps untouched.
+- Retired `protected_cw2_b1_promoted_item_family_import` + 69-only constants/structs
+  (shared decode/apply helpers kept); R7 P04 caller validates+delegates to the
+  lowering pass (no double rename). SHARED_LEASE_REQUIRED (content/world impact) and
+  the `populate_items`/lowering field-path collision were both coordinator-resolved
+  before implementing: `promote_name` accepts case-insensitive `presentation.name`
+  matches (157/165) plus a pinned, exhaustively-hit `ITEM_NAME_LOWERING_OVERRIDES`
+  table for the 8 non-case disagreements; `weapon.*` (384/384) stayed strict; field
+  partition `526/32/3` → `12/546/3`. **Data-quality finding (not a blocker, flagged
+  for a separate check):** 2 of those 8 look like crosswalk/identity drift, not
+  naming style — `i00037538` wiki `"Staff"` vs. lowering `"pair of monk fists"`;
+  `i00037526` wiki `"Crypt Strike"` vs. `"falcon sai"` (both `weapon.*`-exact).
+  `content/world/**` regenerated (materializer twice, byte-identical); 4 documents
+  changed; `definitions/reference.json` 13,861,568→20,839,054 bytes (69/23→
+  13,292/10,674 fields/items, +12 wiki-only).
+- **Repair round 1** (Codex P2, comment 4119508551, head `dbb1fe8b`): a docstring
+  edit had changed `lower_promotion_packet.py`'s own self-hash
+  (`compiler_sha256` hashes `Path(__file__)`); reverted to byte-identical with
+  `origin/main`, kept the unhashed README change.
+- **Repair round 2** (coordinator-flagged CI, head `9bdaa729`):
+  `ITEM_DEFINITION_ROUNDTRIP` — the derived tree was stale. Ran
+  `world_project_v2_to_tree.py` (no args); 85 files changed:
+  `content/items/**` (78) + `content.lock.json` + 6 family `index.json` files, each
+  with only its `legacy_source`/`legacy_blobs` git-blob-SHA pointer moved (zero
+  record/count/shard drift, verified per-file); coordinator approved committing all
+  85. Full workflow sweep of every `content/**` reader: all PASS or NOT_APPLICABLE
+  (network/infra unavailable, unrelated to changed files) except
+  `item-content-promotion.yml`'s hardcoded retired test names, fixed next.
+- **Repair rounds 3/3b** (coordinator-approved, heads `bed28218`/`f95244c9`):
+  `item-content-promotion.yml`'s Rust test step only — updated the 2 exact test
+  names to their round-1 replacements and piped each `cargo test` through
+  `tee /dev/stderr | grep '...' >/dev/null` (under the step's `pipefail`, no `-q` —
+  it can SIGPIPE `tee` mid-write) so a 0-test run fails closed. Verified each round:
+  both new names run exactly 1 test and pass; the retired name exits 1.
+- **Merge with `origin/main` (round 4, head `e5e9e5fe`):** `#1063`/`#1065`/`#1033`
+  landed; merge commit only (no rebase/force). One conflict,
+  `tools/content-schema/item-authoring/README.md` — kept main's grown sample stats
+  (14,173 rows/11,555 Items) and its note that #1048 pins an earlier, smaller
+  snapshot, plus this task's "already wired" framing; dropped only main's now-stale
+  "wiring it in is left to..." sentence (superseded here). Did **not** re-pin the
+  wired evidence file to the grown sample (deferred, see Excluded scope). No other
+  conflict; none of main's incoming changes touch `content/world/**`,
+  `content/items/**` or this task's owned Rust files (confirmed via `git status`).
 
 ## Validation
 
@@ -148,24 +144,25 @@ unconsumed. No generic name normalization in `populate_items`.
   auto-format pass)
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: PASS, zero
   errors/warnings
-- `cargo test` on the 4 content test files + `--lib`: PASS twice (before/after round
-  2) — lib 661/661 (2 pre-existing ignored), 9/9, 16/16, 3/3, 3/3; counts
+- `cargo test` on the 4 content test files + `--lib`: PASS 3x (rounds 2, post-merge
+  round 4) — lib 661/661 (2 pre-existing ignored), 9/9, 16/16, 3/3, 3/3; counts
   cross-checked against `grep -c '#\[test\]'` per file
 - `git grep` for the retired symbols: no remaining Rust/test consumer outside one
   historical docstring line
 - Both new `item-content-promotion.yml` exact names run 1 test each and pass; retired
-  old name now fails the new `grep -q` guard (round 3, verified)
+  old name fails the guard (rounds 3/3b, verified)
 
 ### Component/integration
 
 - Materializer twice: identical `tree_sha256`, empty diff, 11 files, no symlinks (G4
   "Materialize twice"); tracked `content/world/**` diff-identical to fresh output (G4
-  "Compare tracked package")
-- `world_project_v2_to_tree.py` run to completion; both its test/validate scripts PASS
+  "Compare tracked package") — re-confirmed after the round-4 merge, unchanged
+- `world_project_v2_to_tree.py` run to completion; both its test/validate scripts
+  PASS (rounds 2 and 4)
 - Full workflow sweep for every `content/**` reader (round 2) — see round 3 for the
   `item-content-promotion.yml` fix
-- Both governance validators + `validate_repository_policy.py`: PASS, all rounds; no
-  actionlint/other workflow linter present in this repo
+- Both governance validators + `validate_repository_policy.py`: PASS, all 4 rounds;
+  no actionlint/other workflow linter present in this repo
 
 ### E2E
 
@@ -183,30 +180,30 @@ unconsumed. No generic name normalization in `populate_items`.
 
 ## Self-review
 
-- exact head: `bed28218` (round 3, current)
+- exact head: current, see Context checkpoint (post-merge round 4)
 - method/reviewer: implementing session
-- material findings: SHARED_LEASE_REQUIRED, the `populate_items` conflict, the
-  stale-derived-tree CI failure, and the stale `item-content-promotion.yml` test
-  names — all surfaced to and resolved/repaired with the coordinator; see
-  Implementation/findings
+- material findings: SHARED_LEASE_REQUIRED, `populate_items` conflict,
+  stale-derived-tree CI failure, stale `item-content-promotion.yml` test names, and
+  the round-4 `origin/main` merge conflict — all surfaced to/resolved with the
+  coordinator; see Implementation/findings
 - verdict: PASS
 
 ## Independent review
 
 - required: YES; changes the single Item semantic-promotion source feeding a
   population-scale committed content package, plus one CI workflow step.
-- exact head reviewed: `dbb1fe8b` (Codex); rounds 2-3 not yet independently reviewed
+- exact head reviewed: `dbb1fe8b` (Codex); rounds 2-4 not yet independently reviewed
 - method/auditor: Codex review, PR #1064 comment 4119508551
-- material findings: P0/P1 none. P2 (accepted, repaired round 1): see
-  Implementation/findings. Rounds 2-3 were coordinator-caught CI findings (stale
-  derived tree; stale exact test names), repaired the same way.
-- verdict: pending re-review of the round-3 head
+- material findings: P0/P1 none. P2 (accepted, repaired round 1). Rounds 2-3 were
+  coordinator-caught CI findings, repaired. Round 4 is a routine merge with
+  `origin/main`, not a finding.
+- verdict: pending re-review of the round-4 head
 
 ## PR and closeout
 
 - changed-file review: complete locally (matches owned_paths, all rounds)
-- unresolved review threads: 1 (Codex P2, repaired round 1, awaiting re-review); 2
-  CI-caught findings repaired (rounds 2-3), awaiting green re-run
+- unresolved review threads: 1 (Codex P2, repaired round 1, awaiting re-review); all
+  CI-caught findings repaired, merge conflict resolved, awaiting green re-run
 - related/superseded PRs: supersedes the old 69-field pass wired historically
 - protected auto-merge: pending (Merge Queue)
 - merge commit/result: pending
@@ -215,10 +212,10 @@ unconsumed. No generic name normalization in `populate_items`.
 ## Context checkpoint
 
 ```yaml
-last_progress: repair round 3b pushed — grep -q replaced with grep >/dev/null in item-content-promotion.yml's two guard pipelines to avoid SIGPIPE-on-tee flakiness; re-verified both new names exit 0 and the retired name exits 1
+last_progress: merged origin/main (round 4, #1063/#1065/#1033) via merge commit; resolved the one README.md conflict keeping both sides; re-ran content-tree scripts, materializer-twice G4 compare (content/world unchanged), all 4 targeted cargo test files + lib (661/9/16/3/3, all PASS), and both governance validators — all green post-merge
 status: validating
 branch: claude/cw2-item-promotion-consolidation
-head_sha: f95244c9416d3938f7cb7a8aacdf6143b0d5f90b
+head_sha: e5e9e5fe2a0c9dbaf09079e677222e399ee2cd5b
 pr: 1064
 final_head_sha: null
 final_head_frozen_at: null
@@ -232,7 +229,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
+repair_cycles_for_current_gate: 4
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
