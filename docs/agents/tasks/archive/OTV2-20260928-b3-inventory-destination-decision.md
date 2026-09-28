@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-b3-inventory-destination-decision
 title: "B3 inventory destination, capacity and stacks decision (D80-D83)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1137
 base_sha: e6141b414e0cb20fa050ba451869a8ede52a5b53
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: dea076fbee590789062a46b53e8d414dcf0b3da5
+final_head_sha: dea076fbee590789062a46b53e8d414dcf0b3da5
+final_head_frozen_at: 2026-09-28T16:57Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -59,9 +59,9 @@ idempotency and evidence obligations of DUR-03 §39 are unchanged.
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review (one Codex review, one repair generation; owner decision to merge after green CI).
+- [x] Protected Merge Queue integration (`e5cbcfa4`).
 
 ## Excluded scope
 
@@ -87,14 +87,26 @@ convergence rule 5869165340). No owner decision changed.
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1137 merged through the Merge Queue on 2026-09-28 as `e5cbcfa4`.
+- Review: one Codex review of `ed4f32a` (five P1, one P2), repaired in the single repair
+  generation `dea076f`; the owner decided to merge after green CI (#162 comment 5875083548).
+- Protected-main readback: the decision, the DUR-03 pointers, this record and the archived #1132
+  record on `e5cbcfa4` are byte-identical to the frozen head `dea076f`.
+- The PR body predates the repair; the decision document §4 is authoritative.
+- Next allocations: B3-1 (with a content definition proving a `container`-slot equip pattern).
+- Archived under `OTV2-20260928-move-rl11-visibility-decision`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1137 open
-status: validating
+last_progress: protected-integrated as e5cbcfa4; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: dea076fbee590789062a46b53e8d414dcf0b3da5
 pr: 1137
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1137
+next_action: null
 ```
