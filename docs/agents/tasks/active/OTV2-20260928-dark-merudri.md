@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-dark-merudri
 title: Wiki-authored Dark Merudri (owner decision D44)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1082
 jira: KAN-16
 base_sha: 8d320703ec39b39c44c0b38268a07e4b0579e060
 head_sha: null
