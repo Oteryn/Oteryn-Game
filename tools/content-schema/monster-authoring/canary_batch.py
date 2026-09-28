@@ -1467,8 +1467,11 @@ class Converter:
 
         if amounts(probe.make('monster', 'zz unnamed monster')) is not None:
             raise SpellUnresolved('the tile callback also hits unnamed monsters')
+        owner = probe.make('player', 'player')
+        if amounts(probe.make('monster', 'zz player summon', owner)) is not None:
+            raise SpellUnresolved('the tile callback also hits player summons, which no players-only effect covers')
         groups = {}
-        player = amounts(probe.make('player', 'player'))
+        player = amounts(owner)
         if player is not None:
             groups.setdefault(player, {'players': True, 'names': []})
         for name in names:
