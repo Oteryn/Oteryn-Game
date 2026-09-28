@@ -123,6 +123,14 @@ implementation it applies to.
   character completed Q or the account has the fact for Q in the world's profile family. Such
   conditions include doors, teleports, travel routes, NPC services, boss entry and quest
   prerequisites.
+- **Current policy gates the fact.** A reader accepts the account fact only while both of these
+  hold at evaluation time:
+  - the world's active ruleset enables account quest completion;
+  - Q's active content revision declares `account_completion: grant`.
+  Otherwise only the character's own completion counts. When a quest switches from `grant` to
+  `none`, or a world disables the policy, existing facts stop satisfying conditions. They stay as
+  history and apply again if the policy is re-enabled. A fact is never rewritten or deleted to
+  change eligibility.
 - **In-progress state stays per character** (D35 unchanged). Nothing is shared before completion.
 - **Limits.**
   1. The fact replaces only the "completed the quest" condition. Level, vocation, premium and item
@@ -217,8 +225,8 @@ row stays Character.
   costly.
 - **Minimum sufficient:** append-only account facts plus one condition rule. No shared progress
   writer, no new DUR-03 location family.
-- **Reversibility:** the ruleset policy can be disabled for a future pure-Reference world; the facts
-  stay as history.
+- **Reversibility:** the ruleset policy can be disabled for a future pure-Reference world, and a
+  quest can switch to `none`. Readers then ignore existing facts (§4.2), which stay as history.
 - **Superseding evidence:** a quest that needs shared in-progress state; a cosmetic whose gameplay
   effect cannot be separated from its appearance; a Platform entitlement contract that forbids a
   Store inbox.
@@ -245,7 +253,7 @@ follow_up_owners:
   - "Entitlement delivery under PROD-ENTITLEMENTS-01, after an explicit product activation decision: Store inbox and claim"
   - "Reference parity manifest: record the D45, D47, D48 declared differences"
 required_revalidation:
-  - "the first account-fact migration proves: fact inserted only inside a fenced character event; duplicate insert leaves one row and keeps the first earner; a stale character fence writes no fact; a condition reads character-or-account completion; level and item requirements are still checked per character; an exclusive-choice quest cannot grant account completion"
+  - "the first account-fact migration proves: fact inserted only inside a fenced character event; duplicate insert leaves one row and keeps the first earner; a stale character fence writes no fact; a condition reads character-or-account completion; level and item requirements are still checked per character; an exclusive-choice quest cannot grant account completion; an existing fact does not satisfy a condition when the quest now declares none or the world disables the policy"
 remaining_unknowns:
   - Reference-target cosmetic gameplay effects
   - Achievement domain owner

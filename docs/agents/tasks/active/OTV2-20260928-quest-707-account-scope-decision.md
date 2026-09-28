@@ -65,6 +65,7 @@ authority_invariants:
   - K3 a condition accepts character completion or the account fact of the world's profile family, never another family
   - K4 per-character requirements (level, vocation, premium, items) are still checked for the acting character
   - K5 an exclusive-choice quest cannot grant account completion
+  - K6 a reader accepts an account fact only while the world's active ruleset enables the policy and the quest's active revision declares grant
 consumer_boundaries:
   - quest completion commit
   - achievement grant
@@ -74,6 +75,7 @@ mutation_operators:
   applicable:
     - stale generation (stale character fence)
     - mismatched identity or binding (other account, other profile family)
+    - revoked or changed policy (quest switched to none, policy disabled on the world)
     - replay and concurrency (duplicate insert, two characters of one account)
   considered_not_applicable:
     - "time: facts carry no time-based authority"
@@ -84,6 +86,7 @@ negative_cases_required_of_implementation:
   - K3 fact of another profile family -> condition not satisfied
   - K4 account completion with the acting character below the level requirement -> condition not satisfied
   - K5 exclusive-choice quest declaring account completion -> content compiler rejects
+  - K6 existing fact after the quest switches to none, or on a world with the policy disabled -> condition not satisfied; the fact row is unchanged
 positive_cases_required_of_implementation:
   - a character completes a quest; a second character of the account passes its door
 independent_current_fact_sources:
@@ -103,7 +106,8 @@ finding_family_sweep:
 finding_dispositions:
   p0_p1_accepted_and_repaired: []
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred:
+    - "Codex P2 4121915460 (d7f8834): an opt-out did not stop old facts from satisfying conditions. Fixed: readers apply the current world and quest policy (§4.2); K6 added."
 ```
 
 ## Acceptance criteria
