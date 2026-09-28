@@ -9,7 +9,7 @@
         "oteryn:item.registry.i00000033",
         "oteryn:item.registry.i00000034"
       ],
-      "items": 11820
+      "items": 11917
     },
     {
       "blocker": "converter_missing:proficiency.proficiency_id",
@@ -31,7 +31,7 @@
         "oteryn:item.registry.i00000004",
         "oteryn:item.registry.i00000005"
       ],
-      "items": 480
+      "items": 369
     },
     {
       "blocker": "converter_missing:augments",
@@ -3116,11 +3116,11 @@
       "items": 1
     }
   ],
-  "bundle_digest": "31eeab6f3b25259e2e45ce77c7022590d3aac4fe53d43d48b265b815ec43581b",
+  "bundle_digest": "6f982e98718fa9661f8b1efb1821465478404907747e578f14391721074440f9",
   "by_profile": {
     "container": 283,
     "container_equipment": 8,
-    "decoration": 3028,
+    "decoration": 3113,
     "document": 448,
     "equipment_armor": 468,
     "equipment_offhand": 446,
@@ -3129,7 +3129,7 @@
     "food": 197,
     "key": 13,
     "light_source": 175,
-    "material_valuable": 3129,
+    "material_valuable": 3141,
     "plant": 915,
     "progression_material": 7,
     "quest_item": 1149,
@@ -3137,7 +3137,7 @@
     "tool": 324,
     "transformation_item": 23,
     "trash": 212,
-    "unresolved": 26136,
+    "unresolved": 26039,
     "weapon_distance": 176,
     "weapon_magic": 88,
     "weapon_melee": 604
@@ -3152,19 +3152,21 @@
       "unique": 436
     },
     "decision": {
-      "eligible_false": 11588,
+      "eligible_false": 11685,
       "eligible_true": 433,
       "override": 0,
       "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
     },
     "observation": {
       "member": 433,
-      "not_member": 11588,
+      "not_member": 11685,
       "source": "crystal_delivery_list"
     }
   },
   "family_profile_basis": {
     "engine_attribute": 10679,
+    "engine_wrap_target": 85,
+    "owner_name_rule": 12,
     "wiki_evidence_fallback": 1342
   },
   "field_coverage": {
@@ -4525,10 +4527,10 @@
   },
   "outcome": {
     "blocked": 902,
-    "fully_resolved": 11119,
+    "fully_resolved": 11216,
     "items": 38157,
-    "not_converted": 480,
-    "routed_non_item": 25656
+    "not_converted": 369,
+    "routed_non_item": 25670
   },
   "routed_non_item": [
     {
@@ -4596,6 +4598,17 @@
       ],
       "items": 981,
       "owner_reason": "WorldObject:primarytype_world_object"
+    },
+    {
+      "examples": [
+        "oteryn:item.registry.i00004143",
+        "oteryn:item.registry.i00004144",
+        "oteryn:item.registry.i00004148",
+        "oteryn:item.registry.i00004149",
+        "oteryn:item.registry.i00004154"
+      ],
+      "items": 14,
+      "owner_reason": "WorldObject:corpse_decoration"
     }
   ],
   "scope": "Every item id in this engine's pinned data/items/items.xml (fromid/toid ranges expanded); not a placed map object or instance.",
