@@ -26,6 +26,7 @@ owned_paths:
   - apps/game-server/src/content/project/v2.rs
   - apps/game-server/tests/content_world_project_v2.rs
   - apps/game-server/tests/content_world_project_v2_npc_admission.rs
+  - docs/architecture/OTERYN_NPC_AUTHORING_SCHEMA_V1.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -45,12 +46,16 @@ The change mirrors the typed Service offers and routes. The new fields default t
 documents stay byte-identical. Nothing runs: there is no runtime reader, and no content is admitted in
 this slice.
 
+Decision D9 in `OTERYN_NPC_AUTHORING_SCHEMA_V1.md` replaces D5: Tibia Global NPC text is admitted 1:1 as
+reference data, as `LICENSE-ASSETS.md` allows after #1050. The Dialogue fields therefore hold plain text,
+not text references.
+
 Authority: owner request in this session ("kontynuuj 1,2,3 i 4", point 3).
 
 ## Acceptance and evidence
 
 - `content_world_project_v2_npc_admission`: an NPC with a linked Dialogue round-trips.
 - Keywords, triggers and voices are canonicalized.
-- Twenty broken invariants are rejected, and unknown fields fail closed.
+- Twenty-one broken invariants are rejected, and an eight-level keyword chain is admitted, and unknown fields fail closed.
 - The full `oteryn-game-server` test suite, `fmt` and `clippy -D warnings` pass.
 - `content_world_project_repository` is unchanged.
