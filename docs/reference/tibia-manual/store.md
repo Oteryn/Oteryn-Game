@@ -26,7 +26,7 @@ Store access: Activated via button beneath inventory [client]
 
 **Products display** [client]: Listed with quantity/availability groups. Greyed-out items are either limit-reached or character-ineligible (example: potions when at capacity). Sorting by popularity default [client]. "Try On" button for mounts/outfits shows appearance preview [client].
 
-**Purchase mechanics** [client]: 
+**Purchase mechanics** [client]:
 - Instant purchase for character currently logged in; optional confirmation dialog (toggle in Options) [client]
 - Multiple quantity buttons for bulk purchases [client]
 - Purchase applies to active character only; exceptions: Premium Time applies account-wide [server]
@@ -35,7 +35,7 @@ Store access: Activated via button beneath inventory [client]
 
 **"Get Tibia Coins" button** [client]: Launches Webshop for purchase [platform]
 
-**"Gift Tibia Coins" feature** [client]: 
+**"Gift Tibia Coins" feature** [client]:
 - Requires exact recipient character name (any world, any account) [server]
 - Gifts arrive immediately [server]
 - Amounts must be 25-coin increments [server]

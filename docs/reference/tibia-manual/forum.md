@@ -22,19 +22,19 @@
 
 Forum text supports HTML-like bracket codes:
 
-**Links** [platform]: 
+**Links** [platform]:
 - `[url]URL[/url]` or `[url="URL"]label[/url]` (security-restricted on public boards) [platform]
 - `[tibia=https://...]text[/tibia]` (tibia.com internal links) [platform]
 - `[thread=XXX]title[/thread]`, `[post=XXX]title[/post]` (forum self-references) [platform]
 - `[news=XXX]title[/news]` (news archive links via news ID) [platform]
 - `[email]address@example.com[/email]` (disabled on public boards) [platform]
 
-**Formatting** [platform]: 
+**Formatting** [platform]:
 - `[b]bold[/b]`, `[i]italic[/i]`, `[u]underline[/u]` [platform]
 - `[list]...[*]items[/list]` (unordered), `[list=1]...[/list=1]` (ordered numbers), `[list=a]...[/list=a]` (letters) [platform]
 - `[code]...`[/code]` (monospace) [platform]
 
-**Special references** [platform]: 
+**Special references** [platform]:
 - `[player]character[/player]` (character info link) [platform]
 - `[guild]name[/guild]` (guild info link) [platform]
 - `[img]URL[/img]` (disabled on public/guild boards) [platform]
@@ -67,7 +67,7 @@ Public forum subject to Tibia Rules; offensive statements, spam, off-topic/adver
 
 **Council Board** [platform]: Reserved for CipSoft + selected players (new feature discussion) [platform]
 
-**Support Boards** [platform]: 
+**Support Boards** [platform]:
 - Payment Support (orders, payments, billing) [platform]
 - Technical Support (client bugs, connection issues) [platform]
 - Help (game-related questions) [platform]

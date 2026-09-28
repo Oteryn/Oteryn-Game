@@ -14,13 +14,13 @@
 
 **Email Address** [platform]: Account identity anchor; required for login and password recovery. One email per account; reassignable later [platform].
 
-**Account Confirmation and Recovery Key** [platform]: 
+**Account Confirmation and Recovery Key** [platform]:
 - Confirmation link via email; required to unlock account features [platform]
 - Recovery key (20-digit) generated post-confirmation; essential for account recovery and two-factor setup [platform]
 - Recovery key must be written down and re-entered to validate; becomes active only after verification [platform]
 - Can be reset via "Recovery Setup" on account page [platform]
 
-**Secondary Email Address** [platform]: 
+**Secondary Email Address** [platform]:
 - Set after account confirmation and recovery key creation [platform]
 - Must differ from primary and cannot use email-alias variations [platform]
 - Alternative recovery route if primary email compromised [platform]
@@ -92,7 +92,7 @@ Displays unpaid or prepared extra services (e.g., pending character world transf
 
 Export Tibia Coins to blockchain (BEP-20 Tibia Tokens on BNB Smart Chain) or import tokens back to coins [platform].
 
-**Requirements** [platform]: 
+**Requirements** [platform]:
 - Active digital wallet with BNB gas reserves [platform]
 - Confirmed, registered, two-factor-protected account [platform]
 - Non-orange/red/black conduct level [platform]
@@ -135,7 +135,7 @@ Stores registrant name, address, nationality, phone number [platform]. Editable 
 - Should use separate device from game client [platform]
 - Status buttons: Request (unlinked), Confirm/Cancel/Re-request/Link (in-progress), Unlink (active) [platform]
 
-**Two-Factor Email Code (fallback)** [platform]: 
+**Two-Factor Email Code (fallback)** [platform]:
 - Risk of email delays [platform]
 - Status buttons: Request (unlinked), Enter Email Code (in-progress), Deactivate (active) [platform]
 - TAN codes valid 24h, single-use only [platform]
@@ -184,7 +184,7 @@ Devices registered via two-factor login (checkbox "Trusted Device") skip two-fac
 
 ## 7.5 Account Registration
 
-**Why Register** [platform]: 
+**Why Register** [platform]:
 - Enhanced security [platform]
 - Account recovery via postal mail if other methods fail (fee-based; free with registered phone) [platform]
 - Recovery TAN via SMS (phone-registered only) [platform]
