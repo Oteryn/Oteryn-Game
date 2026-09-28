@@ -16,7 +16,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1553,
+  "bundles": 1554,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -243,6 +243,7 @@
     {"monster":"cosmic_energy_prism_c_invu","file":"quests/forgotten_knowledge/cosmic_energy_prism_c_invu","sha256":"0da8031a8a55ed17bb23e0b830b0474d5a573ef16a75d70eb1481c9d69e472ed"},
     {"monster":"cosmic_energy_prism_d","file":"quests/forgotten_knowledge/cosmic_energy_prism_d","sha256":"00cb4ef0b7ef3aec949200ee8f9ff5c5d8c7fc2d795d3b0eff1c5c2808ef91e4"},
     {"monster":"cosmic_energy_prism_d_invu","file":"quests/forgotten_knowledge/cosmic_energy_prism_d_invu","sha256":"7e7863f6d094718d6d2b99b1b6ca83fa595eefe1b24b5cc2a9cdf206556c255a"},
+    {"monster":"count_vlarkorth","file":"quests/grave_danger/bosses/count_vlarkorth","sha256":"e7812d8d68dae7658544fb23f589200a0de7b90e666722d629d49d6f5707f2dc"},
     {"monster":"countess_sorrow","file":"quests/pits_of_inferno/countess_sorrow","sha256":"67132642714089b1abfb133a30097d85053d0f0c70c5585a79974643e3138c7a"},
     {"monster":"courage_leech","file":"quests/soul_war/normal_monsters/furious_crater/courage_leech","sha256":"6ebf0333b09831808c3c1d144bbd7b639ffc6cc8247e83c1cac9f1de0a8b3706"},
     {"monster":"crab","file":"aquatics/crab","sha256":"ae4b5ee53fbc0ca52352f4c57786c2dd9ee43673017dad10129ad250fb7f7c34"},

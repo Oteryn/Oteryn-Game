@@ -64,7 +64,10 @@ d = {
     'subject': {'oneOf': [obj({'role': NAME}, ('role',)), obj({'killer': const(True)}, ('killer',)),
                           obj({'spawned': const(True)}, ('spawned',))]},
     'health': {'oneOf': [enum('full', 'keep_percent', 'keep_absolute', 'remembered'), obj({'percent': integer(1, 100)}, ('percent',))]},
-    'position': {'oneOf': [enum('death_position', 'subject_position'), obj({'anchor': NAME}, ('anchor',)),
+    # D34: the base vocation of a player (a promoted vocation counts as its base).
+    'baseVocation': enum('knight', 'paladin', 'sorcerer', 'druid', 'monk'),
+    # D34: closest_free_tile is the free tile nearest the subject (Canary getClosestFreePosition), searched outward ring by ring.
+    'position': {'oneOf': [enum('death_position', 'subject_position', 'closest_free_tile'), obj({'anchor': NAME}, ('anchor',)),
                            obj({'random_in': NAME}, ('random_in',)),
                            obj({'role_position': NAME, 'otherwise': enum('death_position')}, ('role_position',)),
                            obj({'offset_tiles': integer(0)}, ('offset_tiles',))]},
@@ -78,13 +81,15 @@ d['trigger'] = {'oneOf': [
     kinded('ability_cast', {'role': NAME, 'ability': use('AbilityRef')}, ('role', 'ability')),
     kinded('damage_taken', {'role': NAME, 'source': enum('player', 'non_player', 'any')}, ('role', 'source')),
     kinded('heal_received', {'role': NAME, 'source': enum('player', 'non_player', 'any')}, ('role', 'source')),
-    kinded('damage_accumulated', {'role': NAME, 'amount': integer(1)}, ('role', 'amount')),
+    # D34: a fixed amount, or a percent of the creature's maximum health (the resolved definition's, after wiki adoption).
+    {**kinded('damage_accumulated', {'role': NAME, 'amount': integer(1), 'percent': PERCENT}, ('role',)),
+     'oneOf': [{'required': ['amount']}, {'required': ['percent']}]},
     kinded('timer_elapsed', {'timer': NAME}, ('timer',)),
     kinded('counter_reached', {'counter': NAME, 'value': {'type': 'integer'}}, ('counter', 'value')),
     kinded('area_entered', {'anchor': NAME, 'who': enum('player', 'role'), 'role': NAME}, ('anchor', 'who')),
     kinded('area_left', {'anchor': NAME, 'who': enum('player', 'role'), 'role': NAME}, ('anchor', 'who')),
     kinded('phase_entered', {'phase': NAME}, ('phase',)),
-    kinded('item_used', {'role': NAME, 'item': use('ItemRef')}, ('role', 'item')),
+    kinded('item_used', {'role': NAME, 'item': use('ItemRef'), 'base_vocation': use('baseVocation')}, ('role', 'item')),
     kinded('encounter_started'), kinded('encounter_reset')]}
 
 d['condition'] = {'oneOf': [
@@ -111,6 +116,13 @@ d['action'] = {'oneOf': [
     kinded('spawn', {'creature': use('CreatureRef'), 'role': NAME, 'count': amount(1), 'at': use('position'),
                      'owner': enum('none', 'subject', 'death_master'), 'health': use('health')},
            ('creature', 'count', 'at', 'owner', 'health')),
+    # D34: one creature for each player in an area, chosen by the player's base vocation; players of a vocation without
+    # an entry get none. `counter` adds the number spawned.
+    kinded('spawn_per_player', {'players_in': NAME,
+                                'by_base_vocation': obj({v: use('CreatureRef') for v in ('knight', 'paladin', 'sorcerer', 'druid', 'monk')},
+                                                        minProperties=1),
+                                'at': use('position'), 'owner': enum('none', 'subject'), 'health': use('health'), 'counter': NAME},
+           ('players_in', 'by_base_vocation', 'at', 'owner', 'health')),
     kinded('remove', {'role': NAME, 'all_in': NAME, 'triggering': const(True), 'keep_summons': BOOL}, ()),
     kinded('transform', {'role': NAME, 'into': {'oneOf': [use('CreatureRef'), obj({'next_stage': const(True)}, ('next_stage',)),
                                                            obj({'random_of': array(use('CreatureRef'), 2, True)}, ('random_of',))]},

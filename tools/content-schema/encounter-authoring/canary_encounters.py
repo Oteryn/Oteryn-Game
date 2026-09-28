@@ -1772,14 +1772,14 @@ def king_zelos(build):
                 'Each dying shard explodes: every player on the radius-2 circle around it (the top creature of each tile) takes '
                 '2,000-2,500 life drain damage, with the red magic effect.')
 
-    path = build.rule(item, {'key': 'rewar_calls_fetters', 'trigger': {'kind': 'damage_accumulated', 'role': 'rewar_the_bloody', 'amount': 12500},
+    path = build.rule(item, {'key': 'rewar_calls_fetters', 'trigger': {'kind': 'damage_accumulated', 'role': 'rewar_the_bloody', 'percent': 5},
                              'conditions': [],
                              'actions': [{'kind': 'spawn', 'creature': creature('Fetter'), 'role': 'fetter', 'count': {'min': 1, 'max': 3},
                                           'at': {'random_in': 'rewar_room'}, 'owner': 'none', 'health': 'full'},
                                          {'kind': 'transform', 'role': 'rewar_the_bloody', 'into': creature('Rewar The Bloody Inv'),
                                           'health': 'keep_absolute'}]})
     build.entry(item, path_, list(range(230, 264)), 'mapped', path,
-                'Every 5% of its 250,000 health taken as damage, Rewar calls one to three fetters at random tiles of its room and '
+                'Every 5% of its maximum health (getMaxHealth() * 0.05) taken as damage, Rewar calls one to three fetters at random tiles of its room and '
                 'becomes Rewar The Bloody Inv, which is immune to every element. Heals are not counted.')
     path = build.rule(item, {'key': 'rewar_unfettered', 'trigger': {'kind': 'creature_died', 'role': 'fetter'},
                              'conditions': [not_summoned('fetter'),
@@ -2771,12 +2771,101 @@ def arena_summons(build):
             build.entry(item, SPELLS + script, [8, 9, 10, 23], 'mapped', path, 'removeDelay clears the flag after 15 s.')
 
 
+GRAVE_DANGER = 'data-otservbr-global/scripts/quests/grave_danger_quest/'
+
+
+def count_vlarkorth(build):
+    """D34 per-vocation summon: Count Vlarkorth calls one dark creature per player by base vocation and is invulnerable
+    until each is answered with its remains. The reference-date wiki (Fandom rev 1140872) decides where Canary differs:
+    twice in the fight, invulnerable while the shield holds, and a Dark Merudri for a Monk."""
+    script, remains = GRAVE_DANGER + 'creaturescripts_count_vlarkorth.lua', GRAVE_DANGER + 'actions_dark_remains.lua'
+    item = build.get('count_vlarkorth', 'Grave Danger: Count Vlarkorth', 'instance_per_party')
+    encounter = item['encounter']
+    build.participant(item, 'count_vlarkorth', 'Count Vlarkorth', 'count_vlarkorth_transform')
+    encounter['anchors'].append({'key': 'vlarkorth_room', 'kind': 'area',
+                                 'description': 'Every tile within 10 of Canary (33456, 31437, 13): x 33446-33466, y 31427-31447.'})
+    encounter['state']['counters'] += [{'name': 'shield', 'initial': 0}, {'name': 'waves', 'initial': 0}]
+    encounter['outcomes'].append('count_vlarkorth_engaged')
+    darks = {vocation: creature(name) for vocation, name in (('sorcerer', 'Dark Sorcerer'), ('druid', 'Dark Druid'),
+                                                             ('paladin', 'Dark Paladin'), ('knight', 'Dark Knight'),
+                                                             ('monk', 'Dark Merudri'))}
+    for dark in darks.values():
+        build.define(item, dark)
+    path = build.rule(item, {'key': 'count_vlarkorth_calls_the_darks',
+                             'trigger': {'kind': 'damage_accumulated', 'role': 'count_vlarkorth', 'percent': 15},
+                             'conditions': [{'kind': 'counter_compare', 'counter': 'shield', 'op': '==', 'value': 0},
+                                            {'kind': 'counter_compare', 'counter': 'waves', 'op': '<', 'value': 2}],
+                             'actions': [{'kind': 'spawn_per_player', 'players_in': 'vlarkorth_room', 'by_base_vocation': darks,
+                                          'at': 'closest_free_tile', 'owner': 'none', 'health': 'full', 'counter': 'shield'},
+                                         {'kind': 'counter', 'counter': 'waves', 'operation': 'add', 'value': 1},
+                                         {'kind': 'say', 'subject': {'role': 'count_vlarkorth'}, 'text': 'Face your own darkness!',
+                                          'mode': 'say'}]})
+    build.entry(item, script, [7, 8, 9, 10, 11, 12, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
+                               37, 38, 39, 68, 69, 70, 71, 72, 73, 80, 81, 82, 83, 84, 85], 'mapped', path,
+                'onHealthChange adds each hit to a damage store; at 15% of the maximum health (getMaxHealth() * 0.15) the store '
+                'restarts and every player within 10 tiles of the room centre gets one dark creature of their base vocation on '
+                'the closest free tile, each raising the shield. The reference-date wiki (Fandom Count Vlarkorth rev 1140872) says '
+                'this happens twice in the fight, one Dark <vocation> for each player in the room, so the waves counter stops it '
+                'after two (D25); Canary has no limit. Canary has no Monk entry: the wiki-authored Dark Merudri (D44) answers a Monk.')
+    path = build.rule(item, {'key': 'count_vlarkorth_is_shielded',
+                             'trigger': {'kind': 'damage_taken', 'role': 'count_vlarkorth', 'source': 'any'},
+                             'conditions': [{'kind': 'counter_compare', 'counter': 'shield', 'op': '>', 'value': 0}],
+                             'actions': [{'kind': 'damage_modifier', 'role': 'count_vlarkorth', 'multiplier_percent': 0,
+                                          'sources': 'any', 'until': 'this_hit'}]})
+    build.entry(item, script, [75, 76, 77, 78], 'mapped', path,
+                'While the shield is up Canary shows a block effect and stops counting the damage, but still lets the hit through. '
+                'The reference-date wiki says the remains make the boss "vulnerable again", so it takes no damage while the shield '
+                'holds (D25); taking no damage, it also accumulates none.')
+    for vocation, item_id, voc_line in (('knight', 31203, 2), ('paladin', 31204, 3), ('druid', 31205, 4), ('sorcerer', 31206, 5),
+                                        ('monk', 50311, None)):
+        good_remains = ref('Item', f'canary:item/{item_id}')
+        build.define(item, good_remains)
+        path = build.rule(item, {'key': f'{vocation}_remains_weaken_the_shield',
+                                 'trigger': {'kind': 'item_used', 'role': 'count_vlarkorth', 'item': good_remains,
+                                             'base_vocation': vocation},
+                                 'conditions': [{'kind': 'counter_compare', 'counter': 'shield', 'op': '>', 'value': 0}],
+                                 'actions': [{'kind': 'counter', 'counter': 'shield', 'operation': 'add', 'value': -1},
+                                             {'kind': 'say', 'subject': {'role': 'count_vlarkorth'},
+                                              'text': 'The magic shield of protection is weakened!', 'mode': 'say'}]})
+        if voc_line:
+            build.entry(item, remains, [voc_line, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 27], 'mapped', path,
+                        f'A {vocation} using item {item_id} (good remains of a {vocation}) on Count Vlarkorth uses it up, lowers '
+                        'the shield by one and makes the boss say the line; any other vocation cannot use it. The rule needs a '
+                        'raised shield, so a spare remains cannot bank protection in advance (Canary would let the shield go '
+                        'below zero).')
+        else:
+            build.entry(item, remains, [10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21], 'mapped', path,
+                        'Canary has no Monk remains. The reference-date wiki (Fandom Good Remains of a Merudri rev 1116306, item '
+                        '50311, and Count Vlarkorth rev 1140872: "the respective vocation must use the corpse") gives a Monk the '
+                        'same rule with the remains of the Dark Merudri. NEEDS VERIFICATION (D44).')
+    for source_kind in ('damage_taken', 'heal_received'):
+        path = build.rule(item, {'key': f'players_engage_count_vlarkorth_on_{source_kind}',
+                                 'trigger': {'kind': source_kind, 'role': 'count_vlarkorth', 'source': 'any'}, 'conditions': [],
+                                 'actions': [{'kind': 'emit_outcome', 'outcome': 'count_vlarkorth_engaged',
+                                              'credited': 'players_in_anchor', 'anchor': 'vlarkorth_room'}]})
+        build.entry(item, script, [1, 2, 5, 6, 13, 14, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58], 'mapped', path,
+                    'Every health change of the boss, a ' + ('hit' if source_kind == 'damage_taken' else 'heal (Canary runs the '
+                    'handler for heals too)') + ', credits the players in the room (D27): the reward domain starts a 20-hour '
+                    'boss cooldown and a 30-minute room timer for each, when not already running.')
+    item['manifest']['outcome_evidence'].append({
+        'outcome': 'count_vlarkorth_engaged', 'credited': 'players_in_anchor',
+        'reward_domain': {'canary_storage': 'Storage.Quest.U12_20.GraveDanger.Bosses.CountVlarkorth.Timer',
+                          'cooldown_seconds': 20 * 60 * 60,
+                          'room_storage': 'Storage.Quest.U12_20.GraveDanger.Bosses.CountVlarkorth.Room',
+                          'room_seconds': 30 * 60}})
+    build.entry(item, script, [60, 61, 62, 88], 'approved_omission', None,
+                'Canary returns the secondary part of every heal and of every unshielded hit with its sign flipped. The '
+                'reference-date wiki says nothing of it and no other boss script does it; it is not transcribed. NEEDS VERIFICATION.')
+    build.entry(item, script, [3, 4, 64, 65, 66], 'approved_omission', None,
+                'newPosition and exitPos are unused by this script; a health change without a creature changes nothing.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos, burning_hatred, arena_summons):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos, burning_hatred, arena_summons, count_vlarkorth):
         transcribe(build)
     print(json.dumps(build.write()))
 

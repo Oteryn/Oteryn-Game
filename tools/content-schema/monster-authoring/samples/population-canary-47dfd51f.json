@@ -19,10 +19,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 98,
-    "fully_resolved": 1552,
+    "blocked": 97,
+    "fully_resolved": 1553,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1183,
+    "wiki_adopted_monsters": 1184,
     "wiki_authored": 1
   },
   "wiki_adopted_rows": {
@@ -55,7 +55,7 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 40,
+      "monsters": 39,
       "examples": [
         "energized_raging_mage",
         "izcandar_champion_of_summer",
@@ -540,6 +540,7 @@
     "cosmic_energy_prism_c_invu",
     "cosmic_energy_prism_d",
     "cosmic_energy_prism_d_invu",
+    "count_vlarkorth",
     "countess_sorrow",
     "courage_leech",
     "crab",

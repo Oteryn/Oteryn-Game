@@ -574,7 +574,7 @@
         263
       ],
       "status": "mapped",
-      "resolution": "Every 5% of its 250,000 health taken as damage, Rewar calls one to three fetters at random tiles of its room and becomes Rewar The Bloody Inv, which is immune to every element. Heals are not counted.",
+      "resolution": "Every 5% of its maximum health (getMaxHealth() * 0.05) taken as damage, Rewar calls one to three fetters at random tiles of its room and becomes Rewar The Bloody Inv, which is immune to every element. Heals are not counted.",
       "destination": "/encounter/rules/12"
     },
     {
