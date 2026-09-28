@@ -11,7 +11,7 @@ facts (a section, a heading/anchor reference, a fact key and a value of at most 
 kept only when it carries a factual signal -- a number, a key/value pattern or a named control
 key -- and capped per section).
 
-    python3 tibiacom_capture.py fetch --out imports/official/tibia-com/2026-09-28
+    python3 tibiacom_capture.py fetch --out imports/official/tibia-com
     python3 tibiacom_capture.py verify imports/official/tibia-com/2026-09-28
     python3 tibiacom_capture.py verify-root imports/official/tibia-com
     python3 tibiacom_capture.py check-immutability --base <sha> --head <sha>
@@ -100,6 +100,8 @@ SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
 ACCEPTED_HTTP_STATUS = 200
 # Strict match on what utc_now() produces (P2 r4120883679): an ISO-8601 UTC timestamp ending in Z.
 TIMESTAMP_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
+SNAPSHOT_DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+SNAPSHOT_RUN_RE = re.compile(r'^\d{4}-\d{2}-\d{2}-\d{6}Z$')
 MAX_FETCH_RUN_SECONDS = 3600
 SYMLINK_MODE = '120000'
 
@@ -158,6 +160,22 @@ def parse_utc_timestamp(value):
         return datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
     except ValueError:
         return None
+
+
+def parse_snapshot_directory_name(name):
+    """Accept a legacy date or a unique UTC capture-run timestamp."""
+    if SNAPSHOT_DATE_RE.fullmatch(name):
+        try:
+            return date.fromisoformat(name), None
+        except ValueError:
+            pass
+    if SNAPSHOT_RUN_RE.fullmatch(name):
+        try:
+            run = datetime.strptime(name, '%Y-%m-%d-%H%M%SZ').replace(tzinfo=timezone.utc)
+            return run.date(), run
+        except ValueError:
+            pass
+    return None, None
 
 
 def _reject_duplicate_keys(pairs):
@@ -407,6 +425,12 @@ def cmd_fetch(out_dir):
     # Stamped once, before any request, so every page's fetched_at is >= captured_at
     # (P2 r4120883679) -- this run takes seconds, nowhere near MAX_FETCH_RUN_SECONDS.
     captured_at = utc_now()
+    if out_dir.name == 'tibia-com':
+        out_dir = out_dir / captured_at.replace('T', '-').replace(':', '')
+    if out_dir.exists():
+        print(f'tibiacom_capture: output directory {out_dir} already exists; snapshots are '
+              'immutable, so choose a fresh capture-run directory.', file=sys.stderr)
+        return 2
     pages = []
     facts = []
     for index, section in enumerate(MANUAL_SECTIONS):
@@ -460,7 +484,7 @@ def cmd_fetch(out_dir):
                 spell_facts += 1
             spells = 'captured'
 
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=False)
 
     manifest = {'schema': MANIFEST_SCHEMA, 'captured_at': captured_at, 'pages': pages, 'spells': spells}
     facts_doc = {'schema': FACTS_SCHEMA, 'captured_at': captured_at, 'facts': facts}
@@ -500,15 +524,12 @@ def verify_snapshot(directory):
         errors.append(f'{directory}: snapshot directory must contain exactly {sorted(SNAPSHOT_FILENAMES)}, '
                       f'found extra: {extra_files}')
 
-    # The directory name is the snapshot's provenance date: a real calendar date, equal to
-    # captured_at's date part (P2 r4121095570). Checked before JSON parsing so it applies even to
-    # an otherwise-malformed snapshot.
-    dir_date = None
-    try:
-        dir_date = date.fromisoformat(directory.name)
-    except ValueError:
+    # Legacy snapshots use their UTC date; later runs on the same date use the exact UTC
+    # capture timestamp so an already-committed date directory remains immutable.
+    dir_date, dir_run = parse_snapshot_directory_name(directory.name)
+    if dir_date is None:
         errors.append(f'{directory}: directory name {directory.name!r} must be a real YYYY-MM-DD '
-                      f'calendar date')
+                      'calendar date or YYYY-MM-DD-HHMMSSZ UTC capture timestamp')
 
     try:
         manifest = load_json_no_duplicates(manifest_path.read_text(encoding='utf-8'))
@@ -556,6 +577,9 @@ def verify_snapshot(directory):
     if dir_date is not None and captured_dt is not None and dir_date.isoformat() != manifest_captured_at[:10]:
         errors.append(f'{directory}: directory name {directory.name!r} must equal the date part '
                       f'of captured_at {manifest_captured_at!r}')
+    if dir_run is not None and captured_dt is not None and dir_run != captured_dt:
+        errors.append(f'{directory}: directory name {directory.name!r} must equal the UTC '
+                      f'captured_at timestamp {manifest_captured_at!r}')
 
     pages = manifest.get('pages')
     pages_by_section = {}
@@ -779,8 +803,8 @@ def cmd_verify(directories):
 
 
 def verify_snapshot_root(root_dir):
-    """Every entry directly under the tibia-com snapshot root is README.md or a dated directory
-    (a real YYYY-MM-DD calendar date name) -- P2 r4121271454. The "Verify every committed snapshot
+    """Every entry directly under the tibia-com snapshot root is README.md or a capture directory
+    (a real YYYY-MM-DD date or YYYY-MM-DD-HHMMSSZ UTC run) -- P2 r4121271454. The "Verify every committed snapshot
     directory" step only globs directories, so this is what actually rejects a stray root-level
     file like raw.html; `check-immutability` also rejects one, but only within the current PR's
     diff, not the full committed state.
@@ -790,8 +814,9 @@ def verify_snapshot_root(root_dir):
         return errors  # no snapshots committed yet; nothing to check
     for entry in sorted(root_dir.iterdir()):
         if entry.is_dir():
-            if not is_real_calendar_date(entry.name):
-                errors.append(f'{root_dir}: directory {entry.name!r} must be a real YYYY-MM-DD calendar date')
+            if not is_valid_snapshot_directory(entry.name):
+                errors.append(f'{root_dir}: directory {entry.name!r} must be a real YYYY-MM-DD calendar date '
+                              'or YYYY-MM-DD-HHMMSSZ UTC capture timestamp')
         elif entry.name not in ROOT_ALLOWED_FILENAMES:
             errors.append(f'{root_dir}: unexpected entry {entry.name!r} directly under the snapshot '
                           f'root (only {sorted(ROOT_ALLOWED_FILENAMES)} or a dated directory allowed)')
@@ -823,12 +848,8 @@ def classify_snapshot_path(path):
     return ('dated', f'{SNAPSHOT_PREFIX}{dir_name}', dir_name)
 
 
-def is_real_calendar_date(name):
-    try:
-        date.fromisoformat(name)
-        return True
-    except ValueError:
-        return False
+def is_valid_snapshot_directory(name):
+    return parse_snapshot_directory_name(name)[0] is not None
 
 
 def parse_raw_diff_line(line):
@@ -858,11 +879,11 @@ def find_immutability_violations(diff_lines, exists_at_base):
     the base commit. Returns one violation string per offending line: a symlink mode (120000) on
     either side of the change; a root-level path (directly under `SNAPSHOT_PREFIX`, no
     subdirectory) whose filename is not in `ROOT_ALLOWED_FILENAMES`; a path inside a subdirectory
-    whose name is not a real calendar date; any `A`, `M`, `D`, `R` or `C` whose affected path's
+    whose name is not a valid capture date/run; any `A`, `M`, `D`, `R` or `C` whose affected path's
     dated directory already existed at base -- including an `A` that only adds a new file inside
     an already-committed directory; or whose filename is not in `SNAPSHOT_FILENAMES`, even inside
     a brand-new dated directory. Only `manifest.json`/`facts.json`, as regular files, inside a
-    brand-new, real-calendar-date-named dated directory are allowed (plus README.md at the root).
+    brand-new, valid capture-date/run directory are allowed (plus README.md at the root).
     """
     violations = []
     for line in diff_lines:
@@ -888,9 +909,9 @@ def find_immutability_violations(diff_lines, exists_at_base):
                     break
                 continue  # README.md may change freely; it isn't a dated snapshot
             _, dated_dir, dir_name = classified
-            if not is_real_calendar_date(dir_name):
+            if not is_valid_snapshot_directory(dir_name):
                 violations.append(f'{status}\t{path} (directory name {dir_name!r} must be a real '
-                                  f'YYYY-MM-DD calendar date)')
+                                  f'YYYY-MM-DD calendar date or YYYY-MM-DD-HHMMSSZ UTC capture timestamp)')
                 break
             if exists_at_base(dated_dir):
                 violations.append(f'{status}\t{path} (dated directory {dated_dir}/ exists at the PR base)')
@@ -1099,6 +1120,9 @@ def self_test():
     exists_at_base = lambda dated_dir: dated_dir in existing_at_base
     assert find_immutability_violations(
         [_raw('A', f'{SNAPSHOT_PREFIX}2026-10-05/manifest.json', old_mode='000000')], exists_at_base) == []
+    assert find_immutability_violations(
+        [_raw('A', f'{SNAPSHOT_PREFIX}2026-10-05-123456Z/manifest.json', old_mode='000000')],
+        exists_at_base) == []
     assert len(find_immutability_violations(
         [_raw('A', f'{SNAPSHOT_PREFIX}2026-09-28/extra.json', old_mode='000000')], exists_at_base)) == 1
     assert len(find_immutability_violations(
@@ -1132,9 +1156,11 @@ def self_test():
     assert classify_snapshot_path(f'{SNAPSHOT_PREFIX}2026-09-28/manifest.json') == (
         'dated', f'{SNAPSHOT_PREFIX}2026-09-28', '2026-09-28')
     assert classify_snapshot_path('unrelated/path.txt') is None
-    assert is_real_calendar_date('2026-09-28')
-    assert not is_real_calendar_date('not-a-date')
-    assert not is_real_calendar_date('2026-02-30')
+    assert is_valid_snapshot_directory('2026-09-28')
+    assert is_valid_snapshot_directory('2026-09-28-160207Z')
+    assert not is_valid_snapshot_directory('not-a-date')
+    assert not is_valid_snapshot_directory('2026-02-30')
+    assert not is_valid_snapshot_directory('2026-09-28-250207Z')
     assert find_immutability_violations(
         [_raw('M', f'{SNAPSHOT_PREFIX}README.md')], exists_at_base) == []
     assert len(find_immutability_violations(
@@ -1495,7 +1521,7 @@ def self_test():
         _write_snapshot(directory, base_manifest, base_facts)
         assert verify_snapshot(directory) == [], verify_snapshot(directory)
 
-        # The directory name must be a real calendar date matching captured_at (P2 r4121095570).
+        # Legacy date and exact UTC run names must match captured_at (P2 r4121095570).
         not_a_date_dir = Path(tmp) / 'not-a-date'
         not_a_date_dir.mkdir()
         _write_snapshot(not_a_date_dir, base_manifest, base_facts)
@@ -1513,6 +1539,20 @@ def self_test():
         _write_snapshot(mismatched_date_dir, base_manifest, base_facts)  # captured_at is today
         errors = verify_snapshot(mismatched_date_dir)
         assert any('must equal the date part of captured_at' in e for e in errors), errors
+
+        run_name = base_manifest['captured_at'].replace('T', '-').replace(':', '')
+        run_dir = Path(tmp) / run_name
+        run_dir.mkdir()
+        _write_snapshot(run_dir, base_manifest, base_facts)
+        assert verify_snapshot(run_dir) == [], verify_snapshot(run_dir)
+        assert cmd_fetch(run_dir) == 2  # never overwrite an existing snapshot
+
+        next_second = parse_utc_timestamp(base_manifest['captured_at']) + timedelta(seconds=1)
+        wrong_run_dir = Path(tmp) / next_second.strftime('%Y-%m-%d-%H%M%SZ')
+        wrong_run_dir.mkdir()
+        _write_snapshot(wrong_run_dir, base_manifest, base_facts)
+        errors = verify_snapshot(wrong_run_dir)
+        assert any('must equal the UTC captured_at timestamp' in e for e in errors), errors
 
         # Generic no-smuggled-text guard: verify checks facts.json's RAW byte size on disk, not
         # the parsed form -- padding that appears in no field must still fail.

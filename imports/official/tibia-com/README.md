@@ -3,10 +3,12 @@
 Owner-run command (tibia.com blocks the build container and GitHub-hosted runners, #1077):
 
 ```
-python3 tools/official-capture/tibiacom_capture.py fetch --out imports/official/tibia-com/<YYYY-MM-DD>
+python3 tools/official-capture/tibiacom_capture.py fetch --out imports/official/tibia-com
 ```
 
-Each dated directory is committed immutable; a newer capture adds a new date directory instead of overwriting one.
+The command creates a uniquely named UTC run directory (`YYYY-MM-DD-HHMMSSZ`). Legacy
+`YYYY-MM-DD` directories remain valid. Every snapshot directory is immutable once committed;
+the tool refuses to overwrite an existing output directory.
 
 The capture covers all 19 sections linked from the manual's Contents page. It stores page URLs,
 fetch times, HTTP status, SHA-256 digests and bounded factual excerpts. It does not mirror the
