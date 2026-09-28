@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-duke-teleporter-entry-placement
-pr: null
+pr: 1165
 base_sha: 4e65a5e450f7f6f301abbd45fa2457d56a628ba5
 head_sha: null
 final_head_sha: null
@@ -107,5 +107,5 @@ Existing seam, USE qualification and node-boot tests pass unchanged.
 
 ## Context checkpoint
 
-last_progress: authored and validated; PR opening
+last_progress: authored and validated; PR #1165 open
 jira: pending (no mapped Story resolved in this worker session)
