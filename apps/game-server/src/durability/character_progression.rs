@@ -12,7 +12,7 @@ use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarn
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::progression::{
     CurrentProgressionSnapshot, FiniteProgressionPolicy, ProgressionCalculationError,
-    ProgressionOperation, ProgressionRevisionContext, calculate_progression,
+    ProgressionOperation, ProgressionRevisionContext, calculate_progression, validate_policy,
 };
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::{
@@ -377,8 +377,10 @@ impl DurabilityRoot {
     /// expected revision) in the same transaction as the write.  The 0009
     /// triggers admit this row at revision one without a receipt, so the
     /// CharacterRevision does not advance.  An existing row is never
-    /// overwritten or regressed: the same binding is an idempotent no-op that
-    /// returns the stored state, any other binding fails closed.
+    /// overwritten or regressed: the same binding (context, policy and reward
+    /// revisions) is an idempotent no-op that returns the stored state, any
+    /// other binding fails closed.  The stored state is the constant D84
+    /// value, so it depends on no policy content beyond these revisions.
     pub async fn initialize_character_progression<const N: usize>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -718,6 +720,7 @@ fn validate_initialization<const N: usize>(
             && first.minimum_experience.get() == INITIAL_TOTAL_EXPERIENCE
     });
     if fence.character_lease_generation == 0
+        || validate_policy(policy).is_err()
         || !starts_at_level_one
         || policy.terminal_exclusive_experience.get() <= INITIAL_TOTAL_EXPERIENCE
         || *context != policy.context
@@ -1120,6 +1123,20 @@ mod tests {
         ];
         validate_initialization(&fence(), &initialization).expect("level one policy");
         initialization.policy.thresholds[0].minimum_experience = ExactI64::new(1);
+        assert!(matches!(
+            validate_initialization(&fence(), &initialization),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
+        // A level-one start is not enough: the whole policy must be one the
+        // XP writer can later use (here, non-consecutive levels).
+        initialization.policy.thresholds[0].minimum_experience = ExactI64::new(0);
+        initialization.policy.thresholds[1].level = 3;
+        assert!(matches!(
+            validate_initialization(&fence(), &initialization),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
+        initialization.policy.thresholds[1].level = 2;
+        initialization.policy.death_loss_denominator = 0;
         assert!(matches!(
             validate_initialization(&fence(), &initialization),
             Err(CharacterProgressionError::InvalidInput)
