@@ -4,20 +4,20 @@
 task_id: OTV2-20260928-native-entry-door-m2a
 title: Native entry-room door M2a - one door, CW4-bindable
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: 5865792400
 base_branch: main
 branch: claude/native-entry-door-m2a
-pr: null
-base_sha: 79b85ec6ce3e0ecc34eaf753b524cd8ea61157a4
-head_sha: null
+pr: 1075
+base_sha: 13576c4463f51184c8a96f1bde6d536fe2f16c12
+head_sha: 2f79cffc0716f7a03b112f90c3b357d91e3bbcd2
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: content world runtime" (Claude Code)
 created_at: 2026-09-28T08:00:00Z
-updated_at: 2026-09-28T09:15:00Z
+updated_at: 2026-09-28T09:30:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/project/native_entry.rs
@@ -173,26 +173,29 @@ reason: >
 
 ## PR and closeout
 
-- pending — see the live PR and #162 for current status, not tracked in this file.
+- PR #1075 opened on head `2f79cffc0716f7a03b112f90c3b357d91e3bbcd2`. Changed-file review /
+  unresolved threads / protected auto-merge / merge commit / ownership release: pending — see the
+  live PR and #162 for current status, not tracked in this file.
 - related/superseded PRs: none known; overlap check found no open PR touching these owned paths.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation complete on claude/native-entry-door-m2a; full focused-validation
-  suite green; PR opening next.
-status: implementing
+last_progress: PR #1075 opened on 2f79cffc0716f7a03b112f90c3b357d91e3bbcd2; full
+  focused-validation suite green pre-push (fmt, clippy, cargo test full suite, governance,
+  repository-policy).
+status: validating
 branch: claude/native-entry-door-m2a
-head_sha: null
-pr: null
+head_sha: 2f79cffc0716f7a03b112f90c3b357d91e3bbcd2
+pr: 1075
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
+ci_trigger_source: push to claude/native-entry-door-m2a
 ci_checks_for_current_head: 0
 runner_assignment_state: unknown
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit, push to claude/native-entry-door-m2a, open PR against main referencing #162
-  and this task record, then set status validating with the real pr number
+next_action: await CI/exact-head readback and independent review on PR #1075; no @codex trigger,
+  no comment on #162, per this task's explicit instruction
 ```
