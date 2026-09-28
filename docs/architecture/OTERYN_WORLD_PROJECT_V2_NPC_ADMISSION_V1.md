@@ -36,7 +36,7 @@ protected Item identity map for Item references.
 | Trade services | 289, with 10,723 offer rows (507 with a count, 66 with a sub type) |
 | Travel services | 53, with 189 ungated routes |
 | Placements admitted | 0 (§5) |
-| Dialogue records admitted | 0 in the first wave; 617 later (§7 slice 4b) |
+| Dialogue records admitted | 0 in the first wave; 701 later (§7 slices 4b and 4c) |
 
 Held back and reported in the candidates: 145 NPCs (91 unplaced in both sources, 32 single-source
 NPCs the wiki does not know, 7 outfit/movement conflicts, 6 placement conflicts the wiki cannot
@@ -181,6 +181,12 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    the deferred Dragon Ancestor Spirit keeps none. The materializer verifies each admitted Dialogue against
    the pinned dialogue evidence. The successor tree
    gains `content/dialogues/definitions`.
+4c. Dialogue conflicts (D10): `OTV2-20260928-npc-dialogue-transcripts`. `npc_dialogue_stage.py --transcripts`
+   breaks Canary/Crystal dialogue conflicts with the Tibia Global in-game transcripts of `s2ward/tibia`
+   (commit `8824eb38`): the source whose differing texts match more transcript lines is admitted whole, and
+   the decision, its scores and the transcript used are recorded (`resolved`, `source.transcripts_digest`).
+   84 conflicts are resolved (75 Canary, 9 Crystal). 45 stay held: 44 whose transcript matches neither
+   side better and one without a transcript. 701 Dialogue declarations (6,313 keyword nodes) are admitted.
 5. Later:
    - placements after World admission;
    - conditional dialogue and dialogue conflicts;

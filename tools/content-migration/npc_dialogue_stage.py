@@ -5,6 +5,14 @@ WorldProject/v2 Dialogue declarations, one per admitted NPC candidate that has r
 Pure: reads the committed promotion candidates and the two source text-bundle directories, writes one
 canonical JSON packet. Sources are compared per NPC; agreeing two-source NPCs and single-source NPCs are
 staged, disagreeing two-source NPCs are held for review (DIALOGUE_CONFLICT). No engine writes.
+
+Optional rule D10 (`--transcripts DIR --transcripts-revision SHA`, both required together): tie-break
+DIALOGUE_CONFLICT NPCs only (never TEXT_BUNDLE_UNVERIFIED, never agreeing or single-source NPCs) against
+recorded Tibia Global in-game NPC transcripts under DIR. Each side's texts that differ between the two
+built dialogues are matched, as normalized full-line regexes, against that NPC's own spoken transcript
+lines; the side with strictly more matches (and more than zero) wins and is staged with provenance
+[winner, 'transcript'] and recorded in a new top-level `resolved` list. Everything else is unaffected,
+and a run without `--transcripts` produces byte-identical output to a build without D10 support.
 """
 from __future__ import annotations
 
@@ -288,6 +296,163 @@ def diff_fields(a: dict | None, b: dict | None) -> list[str]:
     return [field for field in DIALOGUE_FIELDS if a.get(field) != b.get(field)]
 
 
+# ---------------------------------------------------------------------------
+# D10: transcript tie-break for DIALOGUE_CONFLICT NPCs (Tibia Global in-game transcripts).
+# Applied only to NPCs that would otherwise be held with reason DIALOGUE_CONFLICT; never changes
+# any other admission logic (agreeing NPCs, single-source NPCs, or TEXT_BUNDLE_UNVERIFIED holds).
+# ---------------------------------------------------------------------------
+
+STEM_NORMALIZE = re.compile(r'[^a-z0-9]+')
+
+
+def normalize_stem(text: str) -> str:
+    return STEM_NORMALIZE.sub('_', text.lower()).strip('_')
+
+
+def normalize_transcript_text(text: str) -> str:
+    return re.sub(r'\s+', ' ', text).strip().casefold()
+
+
+class TranscriptIndex:
+    """Maps a normalized transcript-file stem to the (unique) file(s) sharing that stem."""
+
+    def __init__(self, root: Path):
+        self.root = root
+        by_stem: dict[str, list[Path]] = {}
+        for path in sorted(root.rglob('*.txt')):
+            by_stem.setdefault(normalize_stem(path.stem), []).append(path)
+        self.by_stem = by_stem
+
+    def find(self, slug: str) -> Path | None:
+        candidates = self.by_stem.get(slug)
+        if candidates and len(candidates) == 1:
+            return candidates[0]
+        base = slug.split('_', 1)[0]
+        if base != slug:
+            candidates = self.by_stem.get(base)
+            if candidates and len(candidates) == 1:
+                return candidates[0]
+        return None
+
+
+def load_transcript_lines(path: Path) -> list[str]:
+    """Normalized NPC-spoken lines from a transcript file (lines whose speaker prefix normalizes
+    to the file's own stem; 'Player:' lines and any other speaker are excluded)."""
+    stem_norm = normalize_stem(path.stem)
+    text = path.read_text(encoding='utf-8', errors='replace')
+    lines: list[str] = []
+    for raw_line in text.splitlines():
+        line = raw_line.rstrip()
+        if ':' not in line:
+            continue
+        speaker, _, rest = line.partition(':')
+        speaker = speaker.strip()
+        if not speaker or normalize_stem(speaker) != stem_norm:
+            continue
+        lines.append(normalize_transcript_text(rest))
+    return lines
+
+
+def text_matches_transcript(text: str, transcript_lines: list[str]) -> bool:
+    """True if `text` (which may contain the literal '|PLAYERNAME|' placeholder) matches, as a
+    full-line regex (placeholder -> '.+?', the rest escaped), some normalized transcript line."""
+    normalized = normalize_transcript_text(text)
+    parts = normalized.split('|playername|')
+    pattern = '.+?'.join(re.escape(part) for part in parts)
+    regex = re.compile('^' + pattern + '$')
+    return any(regex.fullmatch(line) for line in transcript_lines)
+
+
+def flatten_keyword_nodes(nodes: list) -> list[dict]:
+    """Every keyword node in the tree (any depth), each with its own attributes but without its
+    'children' key, so identity comparison is per-node rather than per-subtree."""
+    out: list[dict] = []
+
+    def walk(items: list) -> None:
+        for node in items:
+            out.append({k: v for k, v in node.items() if k != 'children'})
+            walk(node.get('children') or [])
+
+    walk(nodes)
+    return out
+
+
+def extra_nodes(nodes_a: list[dict], nodes_b: list[dict]) -> list[dict]:
+    """Nodes in `nodes_a` with no identical (multiset) counterpart in `nodes_b`."""
+    remaining: dict[bytes, int] = {}
+    for node in nodes_b:
+        key = canonical(node)
+        remaining[key] = remaining.get(key, 0) + 1
+    extra = []
+    for node in nodes_a:
+        key = canonical(node)
+        if remaining.get(key, 0) > 0:
+            remaining[key] -= 1
+        else:
+            extra.append(node)
+    return extra
+
+
+def differing_texts(canary_dialogue: dict | None, crystal_dialogue: dict | None) -> tuple[list[str], list[str]]:
+    """Every text that differs between the two candidate dialogues, split by which source it
+    belongs to: message parts and voice entry texts for fields that differ wholesale, and
+    keyword reply parts for individual keyword nodes without an identical counterpart."""
+    a = canary_dialogue or {}
+    b = crystal_dialogue or {}
+    canary_texts: list[str] = []
+    crystal_texts: list[str] = []
+    for key in MESSAGE_KEYS:
+        av, bv = a.get(key), b.get(key)
+        if av != bv:
+            canary_texts.extend(av or [])
+            crystal_texts.extend(bv or [])
+    a_voices, b_voices = a.get('voices'), b.get('voices')
+    if a_voices != b_voices:
+        canary_texts.extend(entry['text'] for entry in (a_voices or {}).get('entries', []))
+        crystal_texts.extend(entry['text'] for entry in (b_voices or {}).get('entries', []))
+    a_flat = flatten_keyword_nodes(a.get('keywords') or [])
+    b_flat = flatten_keyword_nodes(b.get('keywords') or [])
+    for node in extra_nodes(a_flat, b_flat):
+        canary_texts.extend(node.get('reply') or [])
+    for node in extra_nodes(b_flat, a_flat):
+        crystal_texts.extend(node.get('reply') or [])
+    return canary_texts, crystal_texts
+
+
+def score_texts(texts: list[str], transcript_lines: list[str]) -> dict:
+    matches = sum(1 for text in texts if text_matches_transcript(text, transcript_lines))
+    return {'matches': matches, 'misses': len(texts) - matches, 'total': len(texts)}
+
+
+def resolve_conflict(slug: str, canary_dialogue: dict | None, crystal_dialogue: dict | None,
+                      transcripts: TranscriptIndex) -> dict | None:
+    """Apply rule D10 for one held-conflict NPC. Returns None when no transcript is found for it
+    (nothing to add); otherwise a dict with 'path', 'transcript' (path relative to the transcripts
+    root), 'canary_score', 'crystal_score', and, when one source strictly wins (more matches, and
+    more than zero), 'winner'."""
+    path = transcripts.find(slug)
+    if path is None:
+        return None
+    transcript_lines = load_transcript_lines(path)
+    canary_texts, crystal_texts = differing_texts(canary_dialogue, crystal_dialogue)
+    canary_score = score_texts(canary_texts, transcript_lines)
+    crystal_score = score_texts(crystal_texts, transcript_lines)
+    relative = path.relative_to(transcripts.root).as_posix()
+    info = {'path': path, 'transcript': relative, 'canary_score': canary_score, 'crystal_score': crystal_score}
+    cm, km = canary_score['matches'], crystal_score['matches']
+    if cm != km and max(cm, km) > 0:
+        info['winner'] = 'canary' if cm > km else 'crystal'
+    return info
+
+
+def transcripts_used_digest(transcripts_root: Path, used: set[Path]) -> str:
+    """sha256 over sorted `<relative path>:<sha256 of file bytes>` lines of every transcript file
+    that was actually used in a D10 decision (resolved or scored)."""
+    lines = [f'{path.relative_to(transcripts_root).as_posix()}:{hashlib.sha256(path.read_bytes()).hexdigest()}'
+             for path in sorted(used)]
+    return hashlib.sha256('\n'.join(lines).encode()).hexdigest()
+
+
 def build_declaration(slug: str, dialogue: dict) -> dict:
     declaration: dict[str, Any] = {'kind': 'Dialogue',
                                    'identity': {'key': f'oteryn:dialogue.npc.{slug}', 'revision': REVISION}}
@@ -361,7 +526,8 @@ def text_bundle_verified(bundle: dict, reference_dir: Path, source_key: str) -> 
 
 
 def stage(report: dict, canary_dir: Path, crystal_dir: Path, canary_reference: Path,
-          crystal_reference: Path) -> dict:
+          crystal_reference: Path, transcripts: 'TranscriptIndex | None' = None,
+          transcripts_revision: str | None = None) -> dict:
     if report['schema'] != 'OTERYN_NPC_PROMOTION_CANDIDATES/v1':
         raise StageError('promotion candidate report drifted')
     for bundles_dir in (canary_dir, crystal_dir):
@@ -376,7 +542,8 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path, canary_reference: P
         'dropped_extra_fallback': 0, 'dropped_bad_move_up': 0, 'dropped_conflicting_focus_flags': 0,
         'voices_dropped_no_cadence': 0, 'dropped_voice_lines_invalid': 0, 'dropped_shadowed_by_omitted_sibling': 0,
     }
-    dialogues, held = [], []
+    dialogues, held, resolved = [], [], []
+    used_transcripts: set[Path] = set()
     voice_line_total = greet_total = farewell_total = walkaway_total = send_trade_total = 0
     for candidate in candidates:
         npc_key = candidate['identity']['key']
@@ -409,8 +576,44 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path, canary_reference: P
             canary_dialogue = by_source.get('canary')
             crystal_dialogue = by_source.get('crystal')
             if canary_dialogue != crystal_dialogue:
-                held.append({'npc': npc_key, 'reason': 'DIALOGUE_CONFLICT',
-                             'diff': diff_fields(canary_dialogue, crystal_dialogue)})
+                resolution = resolve_conflict(slug, canary_dialogue, crystal_dialogue, transcripts) \
+                    if transcripts is not None else None
+                if resolution is not None:
+                    used_transcripts.add(resolution['path'])
+                if resolution is not None and 'winner' in resolution:
+                    winner = resolution['winner']
+                    dialogue = canary_dialogue if winner == 'canary' else crystal_dialogue
+                    if dialogue is None:
+                        continue
+                    resolved.append({
+                        'npc': npc_key, 'rule': 'D10_TRANSCRIPT', 'chosen': winner,
+                        'score': {'canary': resolution['canary_score']['matches'],
+                                  'crystal': resolution['crystal_score']['matches']},
+                        'transcript': resolution['transcript'],
+                    })
+                    dialogues.append({'npc': npc_key, 'provenance': [winner, 'transcript'],
+                                      'declaration': build_declaration(slug, dialogue)})
+                    if 'greet' in dialogue:
+                        greet_total += 1
+                    if 'farewell' in dialogue:
+                        farewell_total += 1
+                    if 'walkaway' in dialogue:
+                        walkaway_total += 1
+                    if 'send_trade' in dialogue:
+                        send_trade_total += 1
+                    voice_line_total += len(dialogue.get('voices', {}).get('entries', []))
+                    continue
+                held_entry = {'npc': npc_key, 'reason': 'DIALOGUE_CONFLICT',
+                               'diff': diff_fields(canary_dialogue, crystal_dialogue)}
+                if transcripts is not None:
+                    if resolution is not None:
+                        held_entry['transcript_scores'] = {
+                            'transcript': resolution['transcript'],
+                            'canary': resolution['canary_score'], 'crystal': resolution['crystal_score'],
+                        }
+                    else:
+                        held_entry['transcript'] = None
+                held.append(held_entry)
                 continue
             dialogue = canary_dialogue
             if dialogue is None:
@@ -429,31 +632,37 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path, canary_reference: P
         voice_line_total += len(dialogue.get('voices', {}).get('entries', []))
     dialogues.sort(key=lambda entry: entry['npc'])
     held.sort(key=lambda entry: entry['npc'])
+    resolved.sort(key=lambda entry: entry['npc'])
     keyword_node_total = sum(count_nodes(entry['declaration'].get('keywords', [])) for entry in dialogues)
-    return {
-        'schema': 'OTERYN_NPC_DIALOGUE_STAGED/v1',
-        'source': {'canary_revision': CANARY_REVISION, 'crystal_revision': CRYSTAL_REVISION,
-                   'candidates_sha256': hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
-                   'canary_census_bundle_digest': references['canary'][1],
-                   'crystal_census_bundle_digest': references['crystal'][1]},
-        'counts': {'npcs_with_dialogue': len(dialogues),
-                   'held_dialogue_conflict': sum(h['reason'] == 'DIALOGUE_CONFLICT' for h in held),
-                   'held_text_bundle_unverified': sum(h['reason'] == 'TEXT_BUNDLE_UNVERIFIED' for h in held),
-                   'keyword_nodes': keyword_node_total, 'voice_lines': voice_line_total,
-                   'greet': greet_total, 'farewell': farewell_total, 'walkaway': walkaway_total,
-                   'send_trade': send_trade_total,
-                   'dropped_non_say_gated_nodes': stats['dropped_non_say_gated'],
-                   'dropped_no_text_nodes': stats['dropped_no_text'],
-                   'dropped_no_triggers_nodes': stats['dropped_no_triggers'],
-                   'dropped_extra_fallback_nodes': stats['dropped_extra_fallback'],
-                   'dropped_bad_move_up_nodes': stats['dropped_bad_move_up'],
-                   'dropped_conflicting_focus_flags_nodes': stats['dropped_conflicting_focus_flags'],
-                   'voices_dropped_no_cadence': stats['voices_dropped_no_cadence'],
-                   'dropped_voice_lines_invalid': stats['dropped_voice_lines_invalid'],
-                   'dropped_shadowed_by_omitted_sibling_nodes': stats['dropped_shadowed_by_omitted_sibling']},
-        'dialogues': dialogues,
-        'held': held,
-    }
+    source: dict[str, Any] = {'canary_revision': CANARY_REVISION, 'crystal_revision': CRYSTAL_REVISION,
+                               'candidates_sha256': hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
+                               'canary_census_bundle_digest': references['canary'][1],
+                               'crystal_census_bundle_digest': references['crystal'][1]}
+    counts: dict[str, Any] = {'npcs_with_dialogue': len(dialogues),
+                               'held_dialogue_conflict': sum(h['reason'] == 'DIALOGUE_CONFLICT' for h in held),
+                               'held_text_bundle_unverified': sum(h['reason'] == 'TEXT_BUNDLE_UNVERIFIED' for h in held),
+                               'keyword_nodes': keyword_node_total, 'voice_lines': voice_line_total,
+                               'greet': greet_total, 'farewell': farewell_total, 'walkaway': walkaway_total,
+                               'send_trade': send_trade_total,
+                               'dropped_non_say_gated_nodes': stats['dropped_non_say_gated'],
+                               'dropped_no_text_nodes': stats['dropped_no_text'],
+                               'dropped_no_triggers_nodes': stats['dropped_no_triggers'],
+                               'dropped_extra_fallback_nodes': stats['dropped_extra_fallback'],
+                               'dropped_bad_move_up_nodes': stats['dropped_bad_move_up'],
+                               'dropped_conflicting_focus_flags_nodes': stats['dropped_conflicting_focus_flags'],
+                               'voices_dropped_no_cadence': stats['voices_dropped_no_cadence'],
+                               'dropped_voice_lines_invalid': stats['dropped_voice_lines_invalid'],
+                               'dropped_shadowed_by_omitted_sibling_nodes': stats['dropped_shadowed_by_omitted_sibling']}
+    packet: dict[str, Any] = {'schema': 'OTERYN_NPC_DIALOGUE_STAGED/v1', 'source': source, 'counts': counts,
+                               'dialogues': dialogues, 'held': held}
+    # Only present at all when --transcripts was given, so a run without it stays byte-identical
+    # to a build of this tool without D10 support.
+    if transcripts is not None:
+        source['transcripts_revision'] = transcripts_revision
+        source['transcripts_digest'] = transcripts_used_digest(transcripts.root, used_transcripts)
+        counts['resolved_by_transcript'] = len(resolved)
+        packet['resolved'] = resolved
+    return packet
 
 
 def main() -> int:
@@ -465,11 +674,23 @@ def main() -> int:
     parser.add_argument('--crystal-reference-bundles', type=Path, required=True,
                         help='reference-only convert.py output that reproduces the committed Crystal census')
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--transcripts', type=Path, default=None,
+                        help='Optional root of Tibia Global in-game NPC transcript .txt files '
+                             '(rule D10: tie-break DIALOGUE_CONFLICT NPCs against them). '
+                             'Requires --transcripts-revision.')
+    parser.add_argument('--transcripts-revision', type=str, default=None,
+                        help='Commit of the transcripts source, recorded as source.transcripts_revision. '
+                             'Requires --transcripts.')
     args = parser.parse_args()
+    if bool(args.transcripts) != bool(args.transcripts_revision):
+        print('npc dialogue stage: --transcripts and --transcripts-revision are required together',
+              file=sys.stderr)
+        return 1
+    transcripts = TranscriptIndex(args.transcripts) if args.transcripts is not None else None
     report = json.loads(CANDIDATES.read_text())
     try:
         packet = stage(report, args.canary_bundles, args.crystal_bundles, args.canary_reference_bundles,
-                       args.crystal_reference_bundles)
+                       args.crystal_reference_bundles, transcripts, args.transcripts_revision)
     except StageError as error:
         print(f'npc dialogue stage: {error}', file=sys.stderr)
         return 1
