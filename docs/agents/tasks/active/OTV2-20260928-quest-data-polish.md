@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-quest-data-polish
 title: Quest format - typed wiki requirements, chest quest links, runtime-map trigger ids, Banshee data gaps
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
-pr: null
+pr: 1067
 base_sha: ec70ca9e17548c3ab2e0597b4762169b4cac2c3e
 head_sha: null
 final_head_sha: null
