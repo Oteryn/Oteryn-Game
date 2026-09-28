@@ -102,11 +102,15 @@ def cell_text(cell):
     return text, [html.unescape(a).strip() for a in alts], cell
 
 
+# Any case, attributes or whitespace in either tag (CodeQL py/bad-tag-filter).
+SCRIPT = re.compile(r'<script\b[^>]*>.*?</script\b[^>]*>', re.I | re.S)
+
+
 def tables(page_html):
     """(caption, rows) per table of the spell detail block; each row is a list of (text, alts)."""
     start = page_html.find('spellDetailsDiv')
     end = page_html.find('id="search"', start)
-    block = re.sub(r'<script.*?</script>', '', page_html[start:end], flags=re.S)
+    block = SCRIPT.sub('', page_html[start:end])
     out = []
     for table in re.findall(r'<table\b.*?</table>', block, re.S):
         caption = re.search(r'<caption[^>]*>(.*?)</caption>', table, re.S)
@@ -290,6 +294,7 @@ def self_test():
     assert {k: two['fields'][k] for k in ('cooldown', 'cooldowngroup', 'cooldowngroup2', 'secondarygroup', 'voc')} == {
         'cooldown': '30', 'cooldowngroup': '2', 'cooldowngroup2': '30', 'secondarygroup': 'Ultimate Strikes',
         'voc': ALL_VOCATIONS}, two['fields']
+    assert SCRIPT.sub('', 'a<SCRIPT type="x">b</Script >c<script>d</script foo="1">e') == 'ace'
     assert seconds('2s') == '2' and seconds('1min 30s') == '90' and seconds('2h') == '7200'
     assert seconds('-') is None and seconds('0.5s') == '0.5'
     listing = ('<caption><img alt="A" /><a href="https://tibiopedia.pl/spells/Ice_Strike">Ice Strike</a></caption>'
