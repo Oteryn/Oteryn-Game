@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-quest-707-account-scope-decision
 title: "#707 disposition and account-scoped progress decision (D44-D49)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 707
 pr: 1102
 base_sha: 800e3eb6ad410442c5ec9f7c9fd2c361201d10cf
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 87fe1817262757ef6f4bacb10163a1cef2adc23f
+final_head_sha: 87fe1817262757ef6f4bacb10163a1cef2adc23f
+final_head_frozen_at: 2026-09-28T12:58Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -132,9 +132,9 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] The decision document and scope matrix rows are on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document and scope matrix rows are on an exact frozen head with passing validators.
+- [x] Independent exact-head review (Codex, ending in a final candidate review under `CLOSURE_CONVERGENCE_PROTOCOL.md`; owner decision to merge after green CI).
+- [x] Protected Merge Queue integration (`356673fe`).
 
 ## Excluded scope
 
@@ -147,14 +147,26 @@ finding_dispositions:
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 - The #1089 task record is archived with terminal integration evidence (`800e3eb`).
 
+## Terminal integration
+
+- PR #1102 merged through the Merge Queue on 2026-09-28 as `356673fe`.
+- Review: eleven Codex rounds from `d7f8834` to `bf9e636`, with every disposition recorded above.
+  The last two P1s on `bf9e636` were a FINAL_SWEEP_MISS, fixed in `87fe181`; the owner decided to
+  merge after green CI without a further round (#162 comment 5870339731).
+- Protected-main readback: the six owned files on `356673fe` are byte-identical to the frozen head
+  `87fe181`.
+- #707 may be closed as resolved by this decision.
+- Archived under `OTV2-20260928-game-ai-action-integration-decision`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1102 open
-status: validating
+last_progress: protected-integrated as 356673fe; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 87fe1817262757ef6f4bacb10163a1cef2adc23f
 pr: 1102
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1102
+next_action: null
 ```
