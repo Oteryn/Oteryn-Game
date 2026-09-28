@@ -5,371 +5,371 @@
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/001_the_queen_of_the_banshees.lua",
       "blob_sha1": "aa4a33744100461e44d79eb7ad0c617a23e74bd7"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/002_the_paradox_tower.lua",
       "blob_sha1": "4277a8c3b55d14e70586eee0aea744080b0debea"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/003_spike_task.lua",
       "blob_sha1": "ea6ff2b4f331a0d358e5b2a2f7814e05e08f3be4"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/004_a_father_s_burden.lua",
       "blob_sha1": "e94f653cf1432b413f32a9a3aff03c359418ac4c"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/005_bigfoot_s_burden.lua",
       "blob_sha1": "5c11f2a63647c12da63a972409cefc22def7ed99"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/006_children_of_the_revolution.lua",
       "blob_sha1": "30357e9f0a0ff46232cce133465a65c5c68ef140"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/007_factions.lua",
       "blob_sha1": "6d795e8267852a0fad42f0cb610800793336675d"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/008_friends_and_traders.lua",
       "blob_sha1": "5a908773ebbda360df6f23b6bf40d3e777110067"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/009_hot_cuisine.lua",
       "blob_sha1": "08972e41a3048580c9ad4564315e608ac1b764e9"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/010_in_service_of_yalahar.lua",
       "blob_sha1": "0412c9707e383f056ec9d03d79f0852ad36e6d2e"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/011_killing_in_the_name_of.lua",
       "blob_sha1": "9f0a903958cdd3b14622498aaeae72380bc2bacb"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/012_outfit_and_addon_quests.lua",
       "blob_sha1": "edbc3eba94272bca5dba8802d45d2690f7e3ec4e"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/013_sam_s_old_backpack.lua",
       "blob_sha1": "38539cc580ffdd8ab0d267a888b7a64b0e972f69"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/014_sea_of_light.lua",
       "blob_sha1": "aa5ab351b2a389743b1c6a4911d2023ea0ef5b04"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/015_secret_service.lua",
       "blob_sha1": "87042219510f7031cce0f41ec60aa2e1e8f9d4c7"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/016_the_ancient_tombs.lua",
       "blob_sha1": "7a1121b3e40f07bc4e73bfa4cbe35003703ed3e0"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/017_the_ape_city.lua",
       "blob_sha1": "ba5685c2d50a477d74fbfea030883e74f1f7b643"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/018_the_beginning.lua",
       "blob_sha1": "63fb3de6e726a591ae2e2ff363cd70f19c8e82c3"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/019_the_djinn_war_efreet_faction.lua",
       "blob_sha1": "9741a382c6add4d71eea21361c677359941e92a3"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/020_the_djinn_war_marid_faction.lua",
       "blob_sha1": "3be8a4c260c2a0e59f6615344ee0f1a1b8892259"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/021_the_hidden_city_of_beregar.lua",
       "blob_sha1": "2ab34992948fafdc995139dcad694ec478f95530"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/022_the_ice_islands_quest.lua",
       "blob_sha1": "cd590c098eebb706318a978ced6d0cfd516991fb"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/023_the_inquisition.lua",
       "blob_sha1": "81e4b7a25cbd48d2153654ee0634b69696f5b8ea"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/024_the_postman_missions.lua",
       "blob_sha1": "d72ad3331acb2705addc14cbba2e97519eac0b08"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/025_the_shattered_isles.lua",
       "blob_sha1": "8357525110bc01b679a76447b65e9f2f98a8f1ea"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/026_the_thieves_guild.lua",
       "blob_sha1": "817ea817b8f850675b5aded62c08e2b3ebb962da"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/027_the_travelling_trader_quest.lua",
       "blob_sha1": "0b5b6f3098b9f71eee22bb64a81844d15ffc7b43"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/028_the_explorer_society.lua",
       "blob_sha1": "3daf77223a26ba61f225e5514644a7a5c91380a7"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/029_the_ultimate_challenges.lua",
       "blob_sha1": "6be938e85502392da9b69493a8e52eab5644caa1"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/030_the_white_raven_monastery.lua",
       "blob_sha1": "414698743e1430abf7479d054b3c9b2647d00ff4"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua",
       "blob_sha1": "a11b34905e0ea49a2638f3c019683e89ba530224"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/032_unnatural_selection.lua",
       "blob_sha1": "a67ed1c7a0534a443003e3088af4382bfa89f1b3"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/033_what_a_foolish_quest.lua",
       "blob_sha1": "b8787190739d3d236987656a284e2dd7cf5f18fd"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/034_wrath_of_the_emperor.lua",
       "blob_sha1": "c4b78ab56372d8a15efbcf039f660abbbc61734a"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/035_oramond.lua",
       "blob_sha1": "8a367e4c6b472743b21cf3dd9ee9e33b9a7a4018"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/036_forgotten_knowledge.lua",
       "blob_sha1": "40ac647eb9fbee74d3d0c862bd3711c6b49783df"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/037_the_first_dragon.lua",
       "blob_sha1": "148d0b8e5707a1772ad394c8dffe5387d412e05b"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/038_cults_of_tibia.lua",
       "blob_sha1": "8fbeb296a7e3f78ad40651ebd5af8cb5b62b1fba"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/039_dangerous_depths.lua",
       "blob_sha1": "948cca11dedd9c0675c59d551cc9db43e6726e56"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/040_adventurers_guild.lua",
       "blob_sha1": "8918ab04de5f319a723d210589626e84872bcbb4"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/041_dawnport.lua",
       "blob_sha1": "41ba1b29605d45393eeb44c474a2c75b6cf754a6"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/042_the_rookie_guard.lua",
       "blob_sha1": "a39f5aa2f698de9b63e571fd5e9c125f4875efe0"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/043_the_new_frontier.lua",
       "blob_sha1": "1e469576799258cbcd8dbcbd26cc9d49d2b629f3"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/044_spirithunters_quest.lua",
       "blob_sha1": "9bfefee5e2f8f08c0a9bb9fef8f049ee4b37601e"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/045_threatened_dreams.lua",
       "blob_sha1": "f0441e3109ef2ab082700176d63562795c101a66"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/046_blood_brothers.lua",
       "blob_sha1": "4353503ac61881ace7822c888564886822ef6567"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/047_grave_danger.lua",
       "blob_sha1": "8b5e2b81036b76600664e7a738fa6502e375a625"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/048_the_outlaw_camp.lua",
       "blob_sha1": "5da5d953141b92591d1537132f0c91276e23680f"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/049_the_secret_library.lua",
       "blob_sha1": "289189dd2291d5be5ec8c0fb47910b734e635fcb"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/050_the_dream_courts.lua",
       "blob_sha1": "fd6fe3a0058703428abd0e36a65e3c2eb7791cc1"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/lib/core/quests/catalog/051_the_way_of_the_monk.lua",
       "blob_sha1": "b4c11e9b44241cefe4c01973e98f4235cf718ddc"
     },
     {
       "kind": "git",
       "repository": "zimbadev/crystalserver",
-      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
       "path": "data-crystal/lib/core/quests.lua",
       "blob_sha1": "6033c5db8094c179e818cb5aa2aabbeaa1a2285c"
     },
     {
       "kind": "git",
       "repository": "zimbadev/crystalserver",
-      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
       "path": "data-global/lib/core/quests.lua",
       "blob_sha1": "1b3e292826d90e9b92b75f091566d2fe57e682b3"
     }

@@ -1,6 +1,6 @@
 """Transcribe Canary and CrystalServer reward chests into candidate reward claims.
 
-Usage: python ots_chests.py --canary <opentibiabr/canary at 47dfd51f> --crystal <zimbadev/crystalserver at ff7ede59>
+Usage: python ots_chests.py --canary <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
                             [--coverage samples/quest-coverage-2026-09-27.json] [--out samples/chests]
 
 Both servers keep reward chests as data (`startup/tables/chest.lua`, table `ChestUnique`) served by one
@@ -21,14 +21,14 @@ import lua_tables
 
 ROOT = Path(__file__).resolve().parent
 SOURCES = {
-    'canary': {'repository': 'opentibiabr/canary', 'revision': '47dfd51f45280a59a1d3e50ba7edd573d7234446',
-               'datapack': 'data-otservbr-global', 'tag': 'canary-47dfd51f'},
-    'crystalserver': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
-                      'datapack': 'data-global', 'tag': 'crystalserver-ff7ede59'},
+    'canary': {'repository': 'opentibiabr/canary', 'revision': '04b83b512114bfd888000d6e1433ed8ecaec7c5b',
+               'datapack': 'data-otservbr-global', 'tag': 'canary-04b83b51'},
+    'crystalserver': {'repository': 'zimbadev/crystalserver', 'revision': '9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d',
+                      'datapack': 'data-global', 'tag': 'crystalserver-9f5a72c6'},
 }
 CHESTS = 'startup/tables/chest.lua'
 SCRIPT = 'scripts/actions/system/quest_reward_common.lua'
-REVISION = 'canary-47dfd51f+crystalserver-ff7ede59'
+REVISION = 'canary-04b83b51+crystalserver-9f5a72c6'
 # A storage expression that is not a storage key: Canary uid 6093 stores `keyAction` (an undefined global).
 INVALID_MARKERS = {'keyAction'}
 STOP = {'the', 'a', 'an', 'of', 'quest', 'quests', 's', 'and', 'in', 'to'}

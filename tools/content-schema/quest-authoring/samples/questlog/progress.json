@@ -49603,7 +49603,7 @@
             },
             "crystalserver": {
               "path": "data-global/scripts/quests/wrath_of_the_emperor/actions_mission02_firstcontact_repair_teleport.lua",
-              "line": 44,
+              "line": 45,
               "registrations": [
                 "id(11329, 11333, 11334, 11341, 11344, 11347)"
               ]
@@ -50678,7 +50678,7 @@
             },
             "crystalserver": {
               "path": "data-global/scripts/quests/wrath_of_the_emperor/actions_mission02_firstcontact_repair_teleport.lua",
-              "line": 43,
+              "line": 44,
               "registrations": [
                 "id(11329, 11333, 11334, 11341, 11344, 11347)"
               ]

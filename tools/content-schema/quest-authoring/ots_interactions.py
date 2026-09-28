@@ -1,6 +1,6 @@
 """Transcribe quest scripts of Canary and CrystalServer into candidate interaction definitions (D36).
 
-Usage: python ots_interactions.py --canary <opentibiabr/canary at 47dfd51f> --crystal <zimbadev/crystalserver at ff7ede59>
+Usage: python ots_interactions.py --canary <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
                                   [--scripts scripts/quests] [--questlog samples/questlog]
                                   [--out samples/interactions]
 

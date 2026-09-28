@@ -1,0 +1,159 @@
+{
+  "categories": [
+    {
+      "identity": {
+        "key": "oteryn:store.category.consumables",
+        "revision": "definition-r1"
+      },
+      "display_name": "Consumables",
+      "parent": null,
+      "icons": [
+        "Category_Consumables.png"
+      ],
+      "rookgaard": true,
+      "state": "none",
+      "shape": "group",
+      "subclass_names": [
+        "Potions"
+      ]
+    },
+    {
+      "identity": {
+        "key": "oteryn:store.category.potions",
+        "revision": "definition-r1"
+      },
+      "display_name": "Potions",
+      "parent": "oteryn:store.category.consumables",
+      "icons": [
+        "Category_Potions.png"
+      ],
+      "rookgaard": true,
+      "state": "none",
+      "shape": "leaf",
+      "subclass_names": null
+    },
+    {
+      "identity": {
+        "key": "oteryn:store.category.cosmetics_mounts",
+        "revision": "definition-r1"
+      },
+      "display_name": "Mounts",
+      "parent": null,
+      "icons": [
+        "Category_Mounts.png"
+      ],
+      "rookgaard": true,
+      "state": "none",
+      "shape": "leaf",
+      "subclass_names": null
+    }
+  ],
+  "offers": [
+    {
+      "identity": {
+        "key": "oteryn:store.offer.potions.great_health_potion",
+        "revision": "definition-r1"
+      },
+      "category": "oteryn:store.category.potions",
+      "display_name": "Great Health Potion",
+      "icons": [
+        "Great_Health_Potion.png"
+      ],
+      "price_coins": 18,
+      "coin_type": "transferable",
+      "offer_type": "stackable",
+      "state": "none",
+      "description": "Restores hit points.",
+      "home": false,
+      "hireling_slot_number": null,
+      "engine_offer_id": null,
+      "product": {
+        "kind": "item",
+        "item": {
+          "item_refs": [
+            {
+              "family": "Item",
+              "key": "oteryn:item.registry.i00000239",
+              "revision": "definition-r1"
+            }
+          ],
+          "count": 100,
+          "charges": null
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:store.offer.mounts.armoured_war_horse",
+        "revision": "definition-r1"
+      },
+      "category": "oteryn:store.category.cosmetics_mounts",
+      "display_name": "Armoured War Horse",
+      "icons": [
+        "Armoured_War_Horse.png"
+      ],
+      "price_coins": 870,
+      "coin_type": "transferable",
+      "offer_type": "mount",
+      "state": "none",
+      "description": null,
+      "home": false,
+      "hireling_slot_number": null,
+      "engine_offer_id": 23,
+      "product": {
+        "kind": "mount",
+        "mount": {
+          "mount_id": 23
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:store.offer.potions.twist_of_fate",
+        "revision": "definition-r1"
+      },
+      "category": "oteryn:store.category.potions",
+      "display_name": "Twist of Fate",
+      "icons": [
+        "Twist_of_Fate.png"
+      ],
+      "price_coins": 8,
+      "coin_type": "transferable",
+      "offer_type": "blessings",
+      "state": "none",
+      "description": "A regular blessing.",
+      "home": false,
+      "hireling_slot_number": null,
+      "engine_offer_id": null,
+      "product": {
+        "kind": "blessing",
+        "blessing": {
+          "bless_id": 1,
+          "count": 1
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:store.offer.potions.character_name_change",
+        "revision": "definition-r1"
+      },
+      "category": "oteryn:store.category.potions",
+      "display_name": "Character Name Change",
+      "icons": [
+        "Name_Change.png"
+      ],
+      "price_coins": 250,
+      "coin_type": "transferable",
+      "offer_type": "namechange",
+      "state": "none",
+      "description": null,
+      "home": false,
+      "hireling_slot_number": null,
+      "engine_offer_id": 65002,
+      "product": {
+        "kind": "service"
+      }
+    }
+  ]
+}
