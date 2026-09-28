@@ -2397,3 +2397,252 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
         harness.cleanup().await
     })
 }
+
+/// `created_xact_id` must be the actual inserting physical transaction's own
+/// id, never a caller-supplied value, so a row committed by one physical
+/// transaction can never be stamped with the id of a DIFFERENT, still-open
+/// transaction to make it look like that other transaction's own evidence.
+/// Connection 1 inserts and commits a `game_item_audit_outbox` row while
+/// naming transaction B's own `pg_current_xact_id()` as its
+/// `created_xact_id`, even though connection 1 -- not B -- performs and
+/// commits that INSERT. The stamping trigger overwrites the supplied value
+/// with connection 1's real id (asserted directly below), so when B later
+/// tries to complete a full TRANSFER reusing that row as its own audit
+/// evidence, the consistency guard's `a.created_xact_id = pg_current_xact_id()`
+/// check sees connection 1's real (foreign) id, not B's, and rejects it.
+#[test]
+fn audit_created_xact_id_cannot_be_forged() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "xactforge").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let source = harness.mint(&authority, STONE, 1).await?;
+        assert!(harness.on_ground(source).await?);
+
+        // Transaction B: opened on its own connection and held open while
+        // connection 1 does its forged insert below.
+        let mut b = harness.pool.begin().await?;
+        let b_xid: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
+            .fetch_one(&mut *b)
+            .await?;
+
+        let uuid = uuid_text;
+        let character = uuid(id(CHARACTER));
+        let world = uuid(id(WORLD));
+        let channel = uuid(id(CHANNEL));
+        let source_text = uuid(source);
+        let tx_id = uuid(id(90));
+        let event_id = uuid(id(91));
+
+        // Connection 1: a real INSERT + COMMIT (autocommit on the pool, a
+        // separate connection from B's held transaction), explicitly naming
+        // B's xid as `created_xact_id` even though connection 1 performs
+        // this INSERT.
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "INSERT INTO game_item_audit_outbox \
+               (event_id, transaction_id, transaction_ordinal, transaction_count, \
+                event_type_id, schema_revision, retention_profile_id, item_instance_id, \
+                occurred_at, expires_at, envelope, envelope_sha256, publication_state, \
+                published_at, created_xact_id) \
+             VALUES \
+               ('{event_id}', '{tx_id}', 1, 1, 2, 1, \
+                 'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', '{source_text}', 1000, \
+                 7776001000, decode(repeat('ab',16),'hex'), \
+                 sha256(decode(repeat('ab',16),'hex')), 1, NULL, '{b_xid}'::xid8)"
+        )))
+        .execute(&harness.pool)
+        .await?;
+
+        // The stored value is connection 1's OWN inserting transaction, not
+        // the forged value it supplied (the "simpler alternative" check).
+        let stored_xid: String = sqlx::query_scalar(
+            "SELECT created_xact_id::text FROM game_item_audit_outbox \
+               WHERE event_id = $1::uuid",
+        )
+        .bind(&event_id)
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_ne!(
+            stored_xid, b_xid,
+            "an explicit created_xact_id value was stored instead of the \
+             inserting transaction's own id"
+        );
+
+        // In B: a complete, otherwise-genuine container-slot TRANSFER commit
+        // sequence for `source`, whose only evidence for the audit event is
+        // connection 1's already-committed row above (same transaction_id,
+        // event_id, occurred_at and envelope hash).
+        let statements = [
+            format!(
+                "INSERT INTO game_item_transfer_reservations VALUES \
+                 ('{character}', 777, '{character}', '{world}', '{channel}', '{source_text}', 1, \
+                   decode(repeat('ab',33),'hex'), '{tx_id}', '{event_id}', 1000, 1, 900)"
+            ),
+            format!(
+                "UPDATE game_item_instances SET last_transaction_id = '{tx_id}' \
+                   WHERE item_instance_id = '{source_text}' AND lifecycle = 1 AND quantity = 1"
+            ),
+            format!(
+                "DELETE FROM game_item_ground_locations WHERE item_instance_id = '{source_text}'"
+            ),
+            format!(
+                "INSERT INTO game_item_container_slots VALUES \
+                 ('{character}', '{source_text}', '{world}', '{tx_id}')"
+            ),
+            format!(
+                "INSERT INTO game_item_transfer_receipts \
+                   (game_session_id, command_id, character_id, intent_binding, transaction_id, \
+                    event_id, shape, source_item_instance_id, source_quantity_before, \
+                    source_quantity_after, occurred_at, envelope_sha256, committed_at) \
+                 VALUES \
+                 ('{character}', 777, '{character}', decode(repeat('ab',33),'hex'), '{tx_id}', \
+                   '{event_id}', 1, '{source_text}', 1, 1, 1000, \
+                   sha256(decode(repeat('ab',16),'hex')), 1000)"
+            ),
+        ];
+        for statement in &statements {
+            sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
+                .execute(&mut *b)
+                .await?;
+        }
+        let applied = b.commit().await;
+        assert!(
+            applied.is_err(),
+            "a foreign transaction's already-committed audit row, forged to name B's own xid, \
+             was accepted as B's audit evidence"
+        );
+        // Nothing moved: the item is still on Ground, untouched.
+        assert_eq!(harness.item_state(source).await?, (1, 1));
+        assert!(harness.on_ground(source).await?);
+        assert_eq!(harness.count("game_item_container_slots").await?, 0);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// D82's absolute stack ceiling (100): the receipt quantity CHECKs cap every
+/// `source_quantity_before`/`after` and `receiver_quantity_before`/`after` at
+/// 100, so no TRANSFER -- however forged -- can commit an oversized stack. A
+/// genuine 100-unit receiver stack and a genuine 1-unit compatible Ground
+/// source, merged by a forged full-merge (shape 3) receipt that claims
+/// `receiver_quantity_after = 101`, must be rejected even though every other
+/// fact (reservation, audit event, item evidence, Ground removal evidence)
+/// is genuine.
+#[test]
+fn transfer_cannot_exceed_the_stack_ceiling() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "ceiling").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness
+            .committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+            .await?;
+
+        // A genuine 100-unit receiver stack, placed as the backpack's only
+        // entry through the real commit path.
+        let receiver = harness.mint(&authority, COIN, 100).await?;
+        harness
+            .committed(
+                &authority,
+                to_backpack(command(2)?, receiver, facts(COIN, STACKABLE)),
+            )
+            .await?;
+        assert_eq!(harness.item_state(receiver).await?, (100, 1));
+
+        // A genuine 1-unit compatible Ground source, left on Ground.
+        let source = harness.mint(&authority, COIN, 1).await?;
+        assert!(harness.on_ground(source).await?);
+
+        let uuid = uuid_text;
+        let character = uuid(id(CHARACTER));
+        let world = uuid(id(WORLD));
+        let channel = uuid(id(CHANNEL));
+        let source_text = uuid(source);
+        let receiver_text = uuid(receiver);
+        let tx_id = uuid(id(92));
+        let event_id = uuid(id(93));
+        // Every statement below is one a real full-merge TRANSFER commit
+        // would issue -- fresh reservation, fresh audit row of this same
+        // physical transaction, the item's real World and Channel, the
+        // receiver's real prior quantity -- except the receipt claims a
+        // forged 101-unit receiver total, one past the D82 ceiling.
+        let statements = [
+            format!(
+                "INSERT INTO game_item_transfer_reservations VALUES \
+                 ('{character}', 888, '{character}', '{world}', '{channel}', '{source_text}', 2, \
+                   decode(repeat('ab',33),'hex'), '{tx_id}', '{event_id}', 1000, 1, 900)"
+            ),
+            format!(
+                "INSERT INTO game_item_audit_outbox VALUES \
+                 ('{event_id}', '{tx_id}', 1, 1, 2, 1, \
+                   'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', '{source_text}', 1000, \
+                   7776001000, decode(repeat('ab',16),'hex'), \
+                   sha256(decode(repeat('ab',16),'hex')), 1, NULL)"
+            ),
+            format!(
+                "UPDATE game_item_instances SET last_transaction_id = '{tx_id}', \
+                   quantity = 0, lifecycle = 2 \
+                   WHERE item_instance_id = '{source_text}' AND lifecycle = 1 AND quantity = 1"
+            ),
+            format!(
+                "UPDATE game_item_instances SET last_transaction_id = '{tx_id}', quantity = 101 \
+                   WHERE item_instance_id = '{receiver_text}' AND lifecycle = 1 AND quantity = 100"
+            ),
+            format!(
+                "DELETE FROM game_item_ground_locations WHERE item_instance_id = '{source_text}'"
+            ),
+            format!(
+                "INSERT INTO game_item_transfer_receipts \
+                   (game_session_id, command_id, character_id, intent_binding, transaction_id, \
+                    event_id, shape, source_item_instance_id, source_quantity_before, \
+                    source_quantity_after, receiver_item_instance_id, receiver_quantity_before, \
+                    receiver_quantity_after, occurred_at, envelope_sha256, committed_at) \
+                 VALUES \
+                 ('{character}', 888, '{character}', decode(repeat('ab',33),'hex'), '{tx_id}', \
+                   '{event_id}', 3, '{source_text}', 1, 0, '{receiver_text}', 100, 101, 1000, \
+                   sha256(decode(repeat('ab',16),'hex')), 1000)"
+            ),
+        ];
+        let mut tx = harness.pool.begin().await?;
+        let applied: TestResult = async {
+            for statement in &statements {
+                sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
+                    .execute(&mut *tx)
+                    .await?;
+            }
+            tx.commit().await?;
+            Ok(())
+        }
+        .await;
+        assert!(
+            applied.is_err(),
+            "a forged full-merge receipt exceeding the D82 100-unit stack ceiling was accepted"
+        );
+        // Nothing changed: the source is still on Ground at 1 unit, and the
+        // receiver stack is still at its genuine 100.
+        assert_eq!(harness.item_state(source).await?, (1, 1));
+        assert!(harness.on_ground(source).await?);
+        assert_eq!(harness.item_state(receiver).await?, (100, 1));
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
