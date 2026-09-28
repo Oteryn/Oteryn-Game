@@ -4,22 +4,22 @@
 task_id: OTV2-20260928-quest-gap-triage
 title: Quest format - triage the unresolved interaction lines into owner, shared-mechanism and bespoke buckets
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: 1096
 base_sha: de431db75dd88008f623c094683edbe4deeaa09d
-head_sha: null
-final_head_sha: null
+head_sha: 453e77b087b72e78469287e08ab93fff3f4a3cab
+final_head_sha: 453e77b087b72e78469287e08ab93fff3f4a3cab
 final_head_frozen_at: null
 owner: claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk
 created_at: 2026-09-28
 updated_at: 2026-09-28
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260928-quest-gap-triage.md
+  - docs/agents/tasks/archive/OTV2-20260928-quest-gap-triage.md
   - docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md
   - tools/content-schema/quest-authoring/**
 public_contracts: []
