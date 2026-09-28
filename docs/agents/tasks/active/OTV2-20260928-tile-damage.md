@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-tile-damage
 title: Untyped tile damage for named targets in monster area spells
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1056
 jira: KAN-16
 base_sha: ac6d820bf744ac3abe9674258607b9e830eb2306
 head_sha: null
