@@ -132,7 +132,10 @@ Required properties:
 - one creature lifecycle generation produces at most one logical death occurrence;
 - replay/duplicate delivery of the lethal effect cannot create a second death;
 - a stale old-generation creature handle cannot kill/reward a recycled actor;
-- death identity survives retry/recovery enough to reconcile descendant loot/reward work;
+- death identity survives retry/recovery enough to reconcile descendant loot/reward work. Under
+  owner decision D52 (`CREATURE-DEATH-OCCURRENCE-IDENTITY-V1`), a descendant committed before the
+  death's ownership generation ends keeps its result; one not committed by then is dropped, never
+  retried or duplicated;
 - NodeId, pointer address, worker completion order and wall time are not death identity.
 
 If a creature is removed without a semantic death (administrative despawn, scope retirement, incompatible recovery policy), the implementation must not manufacture a death/loot source occurrence.

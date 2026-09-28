@@ -1344,14 +1344,22 @@ pub const R7_P04_UNRELATED_SOURCE_ITEM_ID: u64 = 3_147;
 /// depends on the live, independently-evolving authoring tool tree. Distinct schema/
 /// profile/status/next_action literals from `ITEM_SEMANTIC_PROMOTION_*` above keep the
 /// two packets from ever being mistaken for one another.
+///
+/// Re-pinned twice (task OTV2-20260928-cw2-item-promotion-repin) as
+/// `samples/promotion-crystal-ff7ede5.json` grew: first from 13,292/10,674 to
+/// 14,174/11,556 fields/items, then again to 14,643/12,021 as of this pin, via
+/// the wiki-family-fallback and item-classification work landed in
+/// #1040/#1052/#1063/#1068 and subsequent content rounds (see
+/// `expected_item_semantic_promotion_lowering_v1_counts` for the exact
+/// per-field-path deltas each re-pin carried).
 pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20260928-item-promotion-lowering-v1.json"
 );
-pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_BYTES: usize = 3_500_315;
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_BYTES: usize = 3_870_781;
 pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_SHA256: &str =
-    "85130953b4e366cf60b77b2b58281a446203bc7b2f7011971ab97580f68c49aa";
-pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT: usize = 13_292;
-pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT: usize = 10_674;
+    "dda86c1a1065de9ae29b40dd5f66ee56ddc3666104878a632c8cbe013ada5f2d";
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT: usize = 14_643;
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT: usize = 12_021;
 const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SCHEMA: &str =
     "OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING/v1";
 const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PROFILE: &str =
@@ -1368,7 +1376,7 @@ const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_SHA256: &str =
 const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SOURCE_PROFILE: &str =
     "crystal_ff7ede5_item_definition_v1";
 const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_BUNDLE_DIGEST: &str =
-    "806729f3b2733cd5e44e4582d5bc42bfd06b4e7ff1b690f27fbb568002a4702b";
+    "78c2cd278be2031cfe70988e790341fa15f4fddcbc0b86621daed07779d65e29";
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1819,10 +1827,10 @@ fn expected_item_semantic_promotion_lowering_v1_artifact_digests()
 
 fn expected_item_semantic_promotion_lowering_v1_counts() -> BTreeMap<String, usize> {
     [
-        ("charges.count", 121_usize),
+        ("charges.count", 122_usize),
         ("container.capacity", 453),
-        ("presentation.name", 10_674),
-        ("protection.armor", 429),
+        ("presentation.name", 12_021),
+        ("protection.armor", 432),
         ("weapon.attack", 621),
         ("weapon.defense", 636),
         ("weapon.extra_defense", 160),

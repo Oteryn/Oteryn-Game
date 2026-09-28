@@ -3,7 +3,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/0808",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -28,7 +28,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/0909",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -40,7 +40,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id0909",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -67,7 +67,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3001",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4182 (draconia quest)",
       "quest": null,
@@ -88,7 +88,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/2969",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -104,7 +104,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3002",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4183 (draconia quest)",
       "quest": null,
@@ -116,7 +116,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3002",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -139,7 +139,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/2969",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -147,7 +147,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3003",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4184 (draconia quest)",
       "quest": null,
@@ -168,7 +168,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/2969",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -184,7 +184,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3004",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4185 (draconia quest)",
       "quest": null,
@@ -205,7 +205,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/2969",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -221,7 +221,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3005",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4186 (draconia quest)",
       "quest": null,
@@ -242,7 +242,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/2969",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -258,7 +258,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3006",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4187 (draconia quest)",
       "quest": null,
@@ -279,7 +279,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/2969",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -295,7 +295,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3007",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4188 (draconia quest)",
       "quest": null,
@@ -324,7 +324,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/2969",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -332,7 +332,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3008",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4189 (draconia quest)",
       "quest": null,
@@ -344,7 +344,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3008",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -363,7 +363,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3012",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4193 (draconia quest)",
       "quest": null,
@@ -396,7 +396,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3142",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "noble armor (thais quest)",
       "quest": null,
@@ -421,7 +421,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3301",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -433,7 +433,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3301",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -452,7 +452,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3302",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -464,7 +464,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3302",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -483,7 +483,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3303",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -495,7 +495,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3303",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -514,7 +514,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3304",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -526,7 +526,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3304",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -545,7 +545,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3520",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 3520 (carlin cemetery)",
       "quest": null,
@@ -557,7 +557,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3520",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -592,7 +592,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3600",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -604,7 +604,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3600",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -623,7 +623,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3610",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 3610 (devil helmet quest)",
       "quest": null,
@@ -635,7 +635,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3610",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -662,7 +662,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3620",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 1864 (mad mage room quest)",
       "quest": null,
@@ -674,7 +674,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3620",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -717,7 +717,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3666",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 1910 (mad mage room quest)",
       "quest": null,
@@ -738,7 +738,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/1631",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -746,7 +746,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3667",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 3667 (mintwallin cyclops quest)",
       "quest": null,
@@ -758,7 +758,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3667",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -773,7 +773,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5106",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -781,7 +781,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3700",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 3700 (The Pits of Inferno)",
       "quest": null,
@@ -793,7 +793,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3700",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -808,7 +808,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/1628",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -816,7 +816,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3800",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 2297 (emperor's cookies quest)",
       "quest": null,
@@ -828,7 +828,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3800",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -847,7 +847,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3801",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 2298 (emperor's cookies quest)",
       "quest": null,
@@ -859,7 +859,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/u6_1/emperors_cookies/rewards/cookies",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -878,7 +878,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3802",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 2299 (emperor's cookies quest)",
       "quest": null,
@@ -890,7 +890,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3802",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -957,7 +957,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3899",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 2770 (the paradox tower quest)",
       "quest": null,
@@ -969,7 +969,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3899",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -988,7 +988,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3940",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 2872 (gained with simmon the beggar)",
       "quest": null,
@@ -1013,7 +1013,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/3980",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 3980",
       "quest": null,
@@ -1025,7 +1025,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id3980",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -1044,7 +1044,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/4055",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 3791 (panpipe quest)",
       "quest": null,
@@ -1056,7 +1056,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id4055",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -1075,7 +1075,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/4502",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4491 (alawar's vault quest)",
       "quest": null,
@@ -1087,7 +1087,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id4502",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -1106,7 +1106,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/4601",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4601 (bear room quest)",
       "quest": null,
@@ -1118,7 +1118,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id4601",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -1137,7 +1137,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/4603",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 4693 (kata quest)",
       "quest": null,
@@ -1149,7 +1149,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id4603",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -1168,7 +1168,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/5010",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 5009 (black knight quest)",
       "quest": null,
@@ -1180,12 +1180,12 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id5010",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           },
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/key/id5010",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -1204,7 +1204,7 @@
     {
       "identity": {
         "key": "canary:door-gate/key/6010",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Door of the key 6010 (demon helmet quest)",
       "quest": null,
@@ -1216,7 +1216,7 @@
           {
             "family": "RewardClaim",
             "key": "canary:reward-claim/quest/u7_2/parchment_room/bag",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         ]
       },
@@ -1235,7 +1235,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/100",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 100",
       "quest": null,
@@ -1255,7 +1255,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1687",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1267,7 +1267,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/11237",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1279,7 +1279,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/11237",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1303,7 +1303,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/20",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 20",
       "quest": null,
@@ -1327,7 +1327,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/25",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 25",
       "quest": null,
@@ -1347,7 +1347,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5102",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1363,7 +1363,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/250",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 250",
       "quest": null,
@@ -1403,7 +1403,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/30",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 30",
       "quest": null,
@@ -1423,7 +1423,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5111",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1443,7 +1443,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5102",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1455,7 +1455,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5102",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1467,7 +1467,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5111",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1487,7 +1487,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5129",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1499,7 +1499,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1680",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1511,7 +1511,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1680",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1535,7 +1535,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/35",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 35",
       "quest": null,
@@ -1563,7 +1563,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1648",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -1571,7 +1571,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/40",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 40",
       "quest": null,
@@ -1607,7 +1607,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8365",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1619,7 +1619,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8365",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1631,7 +1631,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/9863",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1683,7 +1683,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5293",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1695,7 +1695,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5293",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1707,7 +1707,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5120",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -1715,7 +1715,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/45",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 45",
       "quest": null,
@@ -1747,7 +1747,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/50",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 50",
       "quest": null,
@@ -1775,7 +1775,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/6262",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1787,7 +1787,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5291",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1815,7 +1815,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1680",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1827,7 +1827,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1678",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1839,7 +1839,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/9565",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -1847,7 +1847,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/60",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 60",
       "quest": null,
@@ -1875,7 +1875,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/6264",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1895,7 +1895,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1680",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1907,7 +1907,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/9565",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1919,7 +1919,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/9565",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1935,7 +1935,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/70",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 70",
       "quest": null,
@@ -1967,7 +1967,7 @@
     {
       "identity": {
         "key": "canary:door-gate/level/80",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Doors for level 80",
       "quest": null,
@@ -1987,7 +1987,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5120",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -1999,7 +1999,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1680",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -2011,7 +2011,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5102",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -2023,7 +2023,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/11237",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -2039,7 +2039,7 @@
     {
       "identity": {
         "key": "canary:door-gate/lever/32182_32145_11",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Katana Quest",
       "quest": null,
@@ -2063,7 +2063,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5107",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -2071,13 +2071,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/hero_rathleton/access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Rathleton quest door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/rathleton_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "label",
       "condition": {
@@ -2108,13 +2108,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u10_50/dark_trails/door_hideout",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/dark_trails_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2137,13 +2137,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u10_50/dark_trails/door_quandon",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/dark_trails_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2166,13 +2166,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u10_50/oramond_quest/the_ancient_sewers/door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/oramond_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2195,13 +2195,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u10_50/oramond_quest/to_take_roots/door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Dark trails/oramond door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/oramond_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2224,13 +2224,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u10_80/grimvale_quest/ancient_feud_doors",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/grimvale_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2269,13 +2269,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u10_90/ferumbras_ascension/first_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Ferumbras ascension door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/ferumbras_ascension_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2298,13 +2298,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u10_90/ferumbras_ascension/monster_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/ferumbras_ascension_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2327,13 +2327,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u10_90/ferumbras_ascension/tarbaz_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/ferumbras_ascension_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2360,7 +2360,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/22508",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -2368,13 +2368,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/barkless/access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2413,13 +2413,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/barkless/boss_access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2442,13 +2442,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/barkless/sulphur_access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2471,13 +2471,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/barkless/tar_access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2500,13 +2500,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/barkless/trial_access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2529,13 +2529,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/final_boss/access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2558,13 +2558,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/life/access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2587,13 +2587,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/minotaurs/access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2616,13 +2616,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/minotaurs/boss_access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Cults of tibia door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2645,13 +2645,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/misguided/access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2674,13 +2674,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/mot_a/access_door_denominator",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2703,13 +2703,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/mot_a/access_door_gareth",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2732,13 +2732,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_40/cults_of_tibia/mot_a/access_door_investigation",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/cults_of_tibia_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2761,13 +2761,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_50/hidden_threats/corym_works_door01",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/hidden_threats_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2786,7 +2786,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/1642",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -2794,13 +2794,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_50/hidden_threats/corym_works_door02",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/hidden_threats_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2819,7 +2819,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/1642",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -2827,13 +2827,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_50/hidden_threats/corym_works_door03",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/hidden_threats_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2852,7 +2852,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/1644",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -2860,13 +2860,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_50/hidden_threats/ratter_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Hidden Threats Quest",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/hidden_threats_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2885,7 +2885,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/1644",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -2893,13 +2893,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u11_50/hidden_threats/servant_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/hidden_threats_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2918,7 +2918,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/1642",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -2926,13 +2926,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_20/grave_danger/bosses/king_zelos/room",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/grave_danger_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -2955,13 +2955,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_20/grave_danger/questline",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/grave_danger_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3072,13 +3072,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Kilmaresh Quest",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/kilmaresh_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3101,13 +3101,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/second/investigating",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/kilmaresh_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3126,7 +3126,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/31568",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3134,13 +3134,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/gryphon_mask",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/kilmaresh_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3159,7 +3159,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/9558",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3167,13 +3167,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/kilmaresh_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3192,7 +3192,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/9558",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -3204,7 +3204,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/9558",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3212,13 +3212,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/mirror_mask",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/kilmaresh_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3237,7 +3237,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/9558",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3245,13 +3245,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/kilmaresh_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3270,7 +3270,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/9558",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -3282,7 +3282,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/9558",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3290,13 +3290,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_east_side",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_order_of_the_lion_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3327,13 +3327,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_southern_side",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_order_of_the_lion_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3396,7 +3396,7 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_60/apirates_tail/tentugly_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -3421,13 +3421,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u12_70/adventures_of_galthen/access_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/adventures_of_galthen_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3450,13 +3450,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/lower_ingol",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_cradle_of_monsters_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3535,13 +3535,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/monster",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_cradle_of_monsters_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3564,13 +3564,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u13_10/cradle_of_monsters/access/mutated_abomination",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_cradle_of_monsters_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3593,13 +3593,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_2/the_queen_of_the_banshees/banshee_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "The queens of the banshee door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_queen_of_the_banshees_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3618,7 +3618,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5113",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -3630,7 +3630,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5113",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3638,13 +3638,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_queen_of_the_banshees_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3663,7 +3663,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5104",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3671,13 +3671,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_2/the_queen_of_the_banshees/first_seal_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_queen_of_the_banshees_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3696,7 +3696,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5104",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3704,13 +3704,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_2/the_queen_of_the_banshees/fourth_seal_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_queen_of_the_banshees_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3729,7 +3729,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5104",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3737,13 +3737,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_2/the_queen_of_the_banshees/last_seal_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_queen_of_the_banshees_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3762,7 +3762,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5104",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3770,13 +3770,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_2/the_queen_of_the_banshees/second_seal_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_queen_of_the_banshees_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3795,7 +3795,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5104",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3803,13 +3803,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_queen_of_the_banshees_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3828,7 +3828,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5104",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3836,13 +3836,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_2/the_queen_of_the_banshees/third_seal_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_queen_of_the_banshees_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3861,7 +3861,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5104",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3869,13 +3869,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_24/the_annihilator/reward",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "The annihilator door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_annihilator_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -3884,7 +3884,7 @@
         "claim": {
           "family": "RewardClaim",
           "key": "canary:reward-claim/quest/u7_24/the_annihilator/reward",
-          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
         }
       },
       "state": "per_character_pass",
@@ -3898,7 +3898,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5113",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -3906,13 +3906,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_24/the_postman_missions/door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_postman_missions_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4111,13 +4111,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_24/the_postman_missions/mission05",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Postman door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_postman_missions_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4140,13 +4140,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_24/the_postman_missions/mission08",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_postman_missions_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4169,13 +4169,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_24/the_postman_missions/mission09",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_postman_missions_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4198,13 +4198,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_24/the_white_raven_monastery/door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "White raven monastery door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_white_raven_monastery_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4235,7 +4235,7 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_4/djinn_war/efreet_faction/door_to_lamp",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Efreet faction",
       "quest": null,
@@ -4260,7 +4260,7 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_4/djinn_war/efreet_faction/door_to_marid_territory",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -4301,7 +4301,7 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_4/djinn_war/faction/efreet_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -4326,7 +4326,7 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_4/djinn_war/faction/marid_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Marid faction",
       "quest": null,
@@ -4351,7 +4351,7 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_4/djinn_war/marid_faction/door_to_efreet_territory",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -4392,7 +4392,7 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_4/djinn_war/marid_faction/door_to_lamp",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -4417,13 +4417,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_4/the_ancient_tombs/vashresamuns_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "The Ancient Tombs Quest - door Vashresamuns",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_ancient_tombs_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4446,13 +4446,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_5/sams_old_backpack/sams_old_backpack_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Sams old backpack door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/sam_s_old_backpack_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4475,13 +4475,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/explorer_society/banshee_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Mission in Isle of Kings",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_explorer_society_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4504,13 +4504,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/explorer_society/bonelords_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Mission in Dark Pyramid",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_explorer_society_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4533,13 +4533,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/explorer_society/calassa_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Mission in Calassa",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_explorer_society_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4562,13 +4562,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/explorer_society/chorurn_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Mission in Chor",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_explorer_society_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4591,13 +4591,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/explorer_society/dwacatra_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Mission in Dwacatra",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_explorer_society_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4620,13 +4620,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/explorer_society/elven_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Mission in Hell Gate",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_explorer_society_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4649,13 +4649,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/explorer_society/ice_music_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Astral Bridge from Svargrond to Liberty Bay",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_explorer_society_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4686,13 +4686,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/explorer_society/memory_stone_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Mission in Endron",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_explorer_society_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4715,13 +4715,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/explorer_society/orc_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Mission in Orc Fortress",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_explorer_society_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4744,13 +4744,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/explorer_society/spectral_stone_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Astral Bridge from Port Hope to Northport",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_explorer_society_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4781,13 +4781,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/the_ape_city/casks_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_ape_city_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4858,13 +4858,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/the_ape_city/chor_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "The ape city door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_ape_city_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4887,13 +4887,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/the_ape_city/dworc_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_ape_city_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4916,13 +4916,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_6/the_ape_city/fibula_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_ape_city_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4945,13 +4945,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Beggar outfit quest door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/beggar_outfits_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -4974,13 +4974,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_8/druid_outfits/druid_amulet_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/druid_outfits_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5003,13 +5003,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Outfit quest door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/hunter_outfits_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5032,13 +5032,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_8/knight_outfits/ramsays_helmet_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/knight_outfits_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5057,7 +5057,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/5122",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -5065,13 +5065,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_8/oriental_outfits/oriental_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/oriental_outfits_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5094,13 +5094,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "THe shattered isles door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_shattered_isles_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5123,13 +5123,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_8/the_shattered_isles/yavern_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_shattered_isles_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5152,13 +5152,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/nightmare_outfits_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5189,13 +5189,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_9/the_pits_of_inferno/shortcut_hub_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "The pits of inferno door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_pits_of_inferno_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5218,13 +5218,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u7_9/the_pits_of_inferno/shortcut_lever_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_pits_of_inferno_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5255,13 +5255,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_0/barbarian_arena/greenhorn_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/barbarian_arena_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5284,13 +5284,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_0/barbarian_arena/pit_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Svargrond arena door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/barbarian_arena_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5329,13 +5329,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_0/barbarian_arena/scrapper_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/barbarian_arena_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5358,13 +5358,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_0/barbarian_arena/warlord_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/barbarian_arena_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5387,13 +5387,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_0/the_ice_islands/formorgar_mines_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_ice_islands_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5416,13 +5416,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_0/the_ice_islands/yakchal_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_ice_islands_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5453,13 +5453,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/koshei_the_deathless/reward_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Koshei the deathless quest door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/koshei_the_deathless_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5482,13 +5482,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/secret_service/avinmission02",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/secret_service_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5511,13 +5511,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/secret_service/avinmission05",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/secret_service_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5540,13 +5540,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/secret_service/cgbmission01",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Secret service door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/secret_service_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5569,13 +5569,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/secret_service/cgbmission02",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/secret_service_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5598,13 +5598,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/secret_service/cgbmission04",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/secret_service_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5627,13 +5627,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/secret_service/cgbmission05",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/secret_service_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5656,13 +5656,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/secret_service/cgbmission06",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/secret_service_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5681,7 +5681,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/6260",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -5689,13 +5689,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/secret_service/mission07",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/secret_service_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5718,13 +5718,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/secret_service/tbimission02",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/secret_service_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5747,13 +5747,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/secret_service/tbimission03",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/secret_service_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5776,13 +5776,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/secret_service/tbimission04",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/secret_service_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5805,13 +5805,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/tibia_tales/aritos_task_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/tibia_tales",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5834,13 +5834,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/to_outfox_afox_quest/questline",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "To Outfox a Fox Quest, mining helmet door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/to_outfox_a_fox_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "label",
       "condition": {
@@ -5863,13 +5863,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/tower_defence_quest/door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/tower_defence_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5888,7 +5888,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/6258",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -5896,7 +5896,7 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/what_afoolish_quest/queen_eloise_cat_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": null,
@@ -5921,13 +5921,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_1/what_afoolish_quest/triangle_tower_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "What a foolish door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/what_a_foolish_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "label",
       "condition": {
@@ -5950,13 +5950,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_2/the_inquisition_quest/mission01",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "The inquisition door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_inquisition_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -5979,13 +5979,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_2/the_inquisition_quest/reward_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_inquisition_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6008,13 +6008,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_2/the_thieves_guild_quest/door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_thieves_guild_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6037,13 +6037,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_2/the_thieves_guild_quest/mission04",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "The thieves guild door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_thieves_guild_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6066,13 +6066,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_2/the_thieves_guild_quest/mission05",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_thieves_guild_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6095,13 +6095,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_2/the_thieves_guild_quest/theatre_script",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_thieves_guild_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6124,13 +6124,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_2/vampire_hunter_quest/door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/vampire_hunter_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6149,7 +6149,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/8259",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -6157,13 +6157,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/alchemist_formula",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6186,13 +6186,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_azerus",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6215,13 +6215,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_bog",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6268,13 +6268,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_last_fight",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6297,13 +6297,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_matrix",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6334,13 +6334,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_quara",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6379,13 +6379,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/door_to_reward",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6416,13 +6416,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/matrix_reward",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6445,13 +6445,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/mission03",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "In service of yalahar door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6482,13 +6482,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/morik_summon",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6511,13 +6511,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/notes_palimuth",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6540,13 +6540,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/in_service_of_yalahar/tamerin_status",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/in_service_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6569,13 +6569,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/the_hidden_city_of_beregar/door_north_mine",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Hidden city of beregar door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_hidden_city_of_beregar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6598,13 +6598,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/the_hidden_city_of_beregar/door_south_mine",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_hidden_city_of_beregar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6627,13 +6627,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_4/the_hidden_city_of_beregar/door_west_mine",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_hidden_city_of_beregar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6656,13 +6656,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_5/hot_cuisine_quest/cookbook_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Hot cuisine door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/hot_cuisine_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6693,13 +6693,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_54/an_uneasy_alliance/quest_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/an_uneasy_alliance_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6722,13 +6722,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_54/children_of_the_revolution/mission03",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Children of the revolution door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/children_of_the_revolution_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6751,13 +6751,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_54/the_new_frontier/mission01",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "The New Frontier Doors",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_new_frontier_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6844,13 +6844,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_54/the_new_frontier/mission04",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_new_frontier_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6937,13 +6937,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_54/the_new_frontier/mission07_1",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_new_frontier_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -6974,13 +6974,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_54/the_new_frontier/mission09/arena_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_new_frontier_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7003,13 +7003,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_54/the_new_frontier/mission09/reward_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_new_frontier_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7032,13 +7032,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_54/the_new_frontier/mission10/magic_carpet_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_new_frontier_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7061,13 +7061,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_54/the_new_frontier/zao_palace_doors",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_new_frontier_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7086,7 +7086,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/9874",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -7098,7 +7098,7 @@
           "appearance": {
             "family": "Item",
             "key": "canary:item/9874",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -7106,13 +7106,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_54/unnatural_selection/mission01",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Unnatural selection door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/unnatural_selection_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7135,13 +7135,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_54/unnatural_selection/mission05",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Unnatural selection door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/unnatural_selection_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7164,13 +7164,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_6/afathers_burden/quest_log",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Fathers burden door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/a_father_s_burden_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "label",
       "condition": {
@@ -7241,13 +7241,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_6/an_interest_in_botany/chest_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/an_interest_in_botany_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7270,13 +7270,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_6/wrath_of_the_emperor/mission02",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Wrath of the emperor door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/wrath_of_the_emperor_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7299,13 +7299,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_6/wrath_of_the_emperor/mission06",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/wrath_of_the_emperor_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7344,13 +7344,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_6/wrath_of_the_emperor/mission07",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/wrath_of_the_emperor_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7381,13 +7381,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_6/wrath_of_the_emperor/mission08",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/wrath_of_the_emperor_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7410,13 +7410,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_6/wrath_of_the_emperor/mission09",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/wrath_of_the_emperor_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7439,13 +7439,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u8_6/wrath_of_the_emperor/mission12",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/wrath_of_the_emperor_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7468,13 +7468,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u9_1/the_rookie_guard/academy_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Lower academy floor door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_rookie_guard_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7497,13 +7497,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u9_1/the_rookie_guard/library_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "The library vault door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_rookie_guard_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7526,13 +7526,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u9_1/the_rookie_guard/unholy_crypt_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "The unholy crypt door",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_rookie_guard_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7555,13 +7555,13 @@
     {
       "identity": {
         "key": "canary:door-gate/progress/quest/u9_60/bigfoots_burden/door_golden_fruits",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Bigfoot burden quest",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/bigfoot_s_burden_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7584,7 +7584,7 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/key/26001",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "closed door",
       "quest": null,
@@ -7605,7 +7605,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/6251",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -7617,7 +7617,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/6251",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -7629,7 +7629,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/6251",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -7641,7 +7641,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/6251",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -7649,7 +7649,7 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/key/3033",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "closed door",
       "quest": null,
@@ -7670,7 +7670,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/6194",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -7682,7 +7682,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/6194",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -7690,7 +7690,7 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/key/4602",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "closed door",
       "quest": null,
@@ -7711,7 +7711,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/5106",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -7719,7 +7719,7 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/level/32",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "gate of expertise",
       "quest": null,
@@ -7739,7 +7739,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1648",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -7747,7 +7747,7 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/level/999",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "gate of expertise",
       "quest": null,
@@ -7767,7 +7767,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1696",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -7775,13 +7775,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_dream_courts_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7804,13 +7804,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_dream_courts_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7833,13 +7833,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/haunted_house/questline",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_dream_courts_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7902,13 +7902,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/the_seven_keys/questline",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_dream_courts_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7931,13 +7931,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u12_00/the_dream_courts/unsafe_release/questline",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "The dream courts door (Andrew Lyze npc)",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_dream_courts_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7956,7 +7956,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/20450",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -7964,13 +7964,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_eastern_side",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_order_of_the_lion_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -7993,13 +7993,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u12_40/the_order_of_the_lion/augustin_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_order_of_the_lion_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8022,13 +8022,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/arthei_marziel_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/blood_brothers_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8055,7 +8055,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8261",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -8079,13 +8079,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/blood_crystal_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": "Blood Brothers Quest",
       "quest": {
         "family": "Quest",
         "key": "canary:quest/blood_brothers_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8108,13 +8108,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/boreth_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/blood_brothers_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8133,7 +8133,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8259",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -8145,7 +8145,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8259",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8153,13 +8153,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/castle_hidden_entrance",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/blood_brothers_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8178,7 +8178,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8261",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8186,13 +8186,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/lersatio_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/blood_brothers_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8223,13 +8223,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_4/blood_brothers/library_door",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/blood_brothers_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8248,7 +8248,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8259",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -8260,7 +8260,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8259",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8268,13 +8268,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_02",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/shadows_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8293,7 +8293,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8363",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8301,13 +8301,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_05",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/shadows_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8326,7 +8326,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8361",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8334,13 +8334,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_06",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/shadows_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8359,7 +8359,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8363",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8367,13 +8367,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_07",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/shadows_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8392,7 +8392,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8363",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8400,13 +8400,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_08",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/shadows_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8437,13 +8437,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_09",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/shadows_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8462,7 +8462,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1674",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8470,13 +8470,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_10",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/shadows_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8531,13 +8531,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_11",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/shadows_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8556,7 +8556,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/8363",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8564,13 +8564,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_final",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/shadows_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8589,7 +8589,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1642",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         },
         {
@@ -8601,7 +8601,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1642",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8609,13 +8609,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/shadows_of_yalahar/door_lab",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/shadows_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8634,7 +8634,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1644",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8642,13 +8642,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/the_isle_of_evil/door_04",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_isle_of_evil_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8667,7 +8667,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/7723",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8675,13 +8675,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/the_isle_of_evil/door_05",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_isle_of_evil_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8700,7 +8700,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1642",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8708,13 +8708,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/the_isle_of_evil/door_06",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_isle_of_evil_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8733,7 +8733,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/1644",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]
@@ -8741,13 +8741,13 @@
     {
       "identity": {
         "key": "crystalserver:door-gate/progress/quest/u8_5/the_isle_of_evil/questline",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "label": null,
       "quest": {
         "family": "Quest",
         "key": "canary:quest/the_isle_of_evil_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
       },
       "quest_link_basis": "storage_key",
       "condition": {
@@ -8766,7 +8766,7 @@
           "appearance": {
             "family": "Item",
             "key": "crystalserver:item/7721",
-            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
       ]

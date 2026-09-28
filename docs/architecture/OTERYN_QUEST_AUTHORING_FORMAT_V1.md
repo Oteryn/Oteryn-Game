@@ -20,7 +20,7 @@
 TibiaWiki (Fandom) lists 373 quests with a quest infobox (`samples/quest-coverage-2026-09-27.json`).
 Checked against the Lua sources of both reference servers:
 
-| | Canary 47dfd51f | CrystalServer ff7ede59 | Either |
+| | Canary 47dfd51f (earlier pin) | CrystalServer ff7ede59 (earlier pin) | Either |
 |---|---:|---:|---:|
 | Implemented | 324 | 328 | 332 |
 | Partial (a storage stub, an outfit item, one reward line) | 9 | 13 | 12 |
@@ -256,6 +256,16 @@ resolves source ids. The CW2 B3 loot binding evidence has every row still `UNRES
 7. A quest keeps one identity across slices and servers: the Canary namespace when Canary
    implements it at all (the coverage sample), otherwise the CrystalServer namespace.
 
+**Pinned revisions.** The transcriptions read Canary `04b83b51` and CrystalServer `9f5a72c6`, both the
+`main` heads on 2026-09-28. Re-pinning from `47dfd51f`/`ff7ede59` brought in only two merged fixes
+that touch quest content, both in CrystalServer:
+- the Summer Court NPC storage key;
+- a guard in the Wrath of the Emperor mission 2 teleport repair.
+
+The only effect on the samples is the new revision identity and shifted source lines. The coverage
+table in §1 is dated evidence at the earlier pins. Unmerged upstream branches (for example a Dream
+Courts teleport fix in Canary, or a fuller Feaster of Souls in CrystalServer) are not sources.
+
 ## 6. First transcription
 
 `samples/chests/` (`ots_chests.py`, deterministic):
@@ -380,13 +390,13 @@ joined by that key; `interaction.schema.json` and
 |---|---:|
 | Interactions | 1,221 |
 | Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 400 / 202 / 14 / 6 |
-| Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Outfit / Mount / Experience / Presentation / Movement / WorldObject | 947 / 208 / 345 (160, 185) / 36 / 14 / 5 / 9 / 2,679 / 800 / 865 |
+| Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Outfit / Mount / Experience / Presentation / Movement / WorldObject | 947 / 208 / 345 (160, 185) / 36 / 14 / 5 / 9 / 2,679 / 800 / 844 |
 | D37 relocation children: to a named anchor / to the previous tile / blocked (a computed target) | 217 / 203 / 380 |
-| D38 overlay operations: `TRANSFORM` / `CREATE` / `REMOVE` / `RETAG` / blocked (no provable anchor or id) | 493 / 42 / 174 / 39 / 117 |
+| D38 overlay operations: `TRANSFORM` / `CREATE` / `REMOVE` / `RETAG` / blocked (object, id, delay or call not provable) | 479 / 27 / 133 / 39 / 166 |
 | Quest children naming a mission transition | 215 |
-| Unresolved statements / conditions | 1,913 / 1,786 |
+| Unresolved statements / conditions | 1,902 / 1,786 |
 | Of the statements, naming a missing owner: delayed callback / key-value write / creature removal / condition / boss cooldown | 304 / 56 / 43 / 26 / 25 |
-| Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 268 / 953 / 37 |
+| Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 267 / 954 / 38 |
 
 An independent spot check of 56 randomly sampled classified lines against their source found no
 misclassification. Most interactions keep some unresolved part: local tables and lookups,
@@ -430,15 +440,18 @@ list):
 - **D38:**
   - a literal `Position(x,y,z)` argument names a pre-authored anchor;
   - a `createItem` id is literal only when its own first argument is a complete integer;
-  - a receiver may be a call chain such as `Tile(pos):getItemById(id)`;
+  - an operation is typed only from a call confirmed in string-stripped code, closed on its own line
+    and with a literal receiver; a receiver reached through a call (`Tile(pos):getItemById(id)`),
+    a multi-line call, a duplicate scheduled revert or a non-positive delay stays blocked with its
+    own reason;
   - a revert attaches only when its own receiver or position provably names the one candidate
     operation it can match unambiguously.
 
 For The Queen of the Banshees this gives:
 - **Movement:** 9 relocations to an anchor, 9 to the previous tile, 1 blocked.
-- **WorldObject:** 12 `TRANSFORM`, 6 `REMOVE`, 3 `CREATE`, 5 blocked.
+- **WorldObject:** 10 `TRANSFORM`, 1 `REMOVE`, 15 blocked.
 
-Across the corpus, 380 Movement and 117 WorldObject children stay blocked, because their target or
+Across the corpus, 380 Movement and 166 WorldObject children stay blocked, because their target or
 object is computed.
 
 ### 6.4 Conflict decisions (D25)
@@ -449,7 +462,7 @@ is copied. The converters apply it and stop when a recorded decision no longer m
 
 | Basis | Chests | Doors | Missions | Interactions |
 |---|---:|---:|---:|---:|
-| Equivalent behaviour or implementation detail (Canary kept) | 1 | 4 | 6 | 10 |
+| Equivalent behaviour or implementation detail (Canary kept) | 1 | 4 | 6 | 11 |
 | Wording: spelling or grammar (the correct version) | | | 6 | |
 | Wiki decides for Canary | | 6 | | 6 |
 | Wiki decides for CrystalServer | | | 8 | 9 |

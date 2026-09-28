@@ -1195,6 +1195,87 @@ def load_wiki_family_fallback(path, identity_index):
     return resolved
 
 
+# --- engine wrap-target family inheritance (owner decision 2026-09-28) --------------
+#
+# Many `family_profile_unresolved` items are house furniture (chairs, a forge, a
+# workbench, lamps) whose own items.xml carries `wrapableto="T"` (almost always the
+# generic decoration-kit id 23398, itself `primarytype="furniture"` -> `decoration`).
+# This is the lowest-priority family resolution: it only ever runs once every existing
+# classifier, `immovable_non_item_route` and the wiki-evidence fallback above have all
+# already failed to resolve a family, so no already-resolved item is ever affected by it.
+# It is deliberately a single hop: T's own `primarytype` is looked up directly against
+# `PRIMARYTYPE_PROFILE`, never through T's own wrapableto (no chaining) and never through
+# T's wiki fallback (only an engine attribute this item's own wrap target itself declares
+# is trusted). When T does not resolve this way -- absent from items.xml, or its own
+# primarytype not admitted -- the item stays unresolved rather than guessed.
+def resolve_wrap_target_profile(items, attrs):
+    """Return (profile, wrap_target_id, wrap_target_primarytype) from this item's own
+    `wrapableto` attribute naming another items.xml id whose own `primarytype` resolves
+    through `PRIMARYTYPE_PROFILE`; else `None`."""
+    wrap_target_id = to_int(attrs.get("wrapableto"))
+    if not wrap_target_id:
+        return None
+    target_record = items.get(wrap_target_id)
+    if target_record is None:
+        return None
+    target_primarytype = target_record["attrs"].get("primarytype")
+    profile = PRIMARYTYPE_PROFILE.get(target_primarytype)
+    if profile is None:
+        return None
+    return profile, wrap_target_id, target_primarytype
+
+
+# --- corpse-like "dead ..." item routing/profile (owner decision 2026-09-28) --------
+#
+# An appearance-flagged corpse (`flags.corpse`/`flags.player_corpse`) is already routed
+# to WorldObject/corpse by `non_item_route` below, before family classification even
+# starts. An engine name starting with "dead " that carries neither flag is either a
+# decorative map/quest corpse (never take-able: routed to WorldObject, not an Item at
+# all) or a genuinely take-able carcass. This only ever runs once every existing
+# classifier, the wrap-target rule above and everything before it have already failed to
+# resolve a family, so it never reroutes an already-resolved item. A take-able one is a
+# real Item only when its exact lower-cased engine name is in the explicit, reviewed
+# owner table below (ordinary animal/creature carcasses -> `material_valuable`; a
+# unique/named quest character -> `quest_item`); any other take-able "dead ..." name
+# stays unresolved (fail closed) rather than guessed.
+DEAD_ITEM_NAME_PREFIX = "dead "
+# Exact lower-cased engine name -> family_profile, reviewed by hand against both pinned
+# engines' items.xml (every `family_profile_unresolved`, take-able, "dead "-prefixed name)
+# 2026-09-28. See docs/agents/tasks/active/OTV2-20260928-item-wrap-target-corpses.md. Every
+# name here is an ordinary animal/creature carcass -> `material_valuable`, the same family
+# the live creature's other drops carry; none of the take-able names in either pinned
+# engine is a unique/named quest character (those, e.g. "dead Doctor Perhaps", "dead
+# Dirtbeard", "dead Evil Mastermind", "dead Monstor", "dead Mephiles", all carry no
+# `flags.take` and are routed as `corpse_decoration` above instead, never reaching this
+# table). An unlisted take-able "dead ..." name stays unresolved (fail closed).
+DEAD_CREATURE_PROFILE = {
+    "dead troll": "material_valuable",
+    "dead rat": "material_valuable",
+    "dead snake": "material_valuable",
+    "dead spider": "material_valuable",
+    "dead wolf": "material_valuable",
+    "dead rabbit": "material_valuable",
+    "dead frog": "material_valuable",
+}
+
+
+def resolve_dead_item_route_or_profile(name, flags):
+    """For an item whose family is still unresolved and whose lower-cased engine `name`
+    starts with `DEAD_ITEM_NAME_PREFIX`: return `("route", owner, reason)` for a
+    non-take-able decoration corpse, `("profile", family_profile)` for a take-able name
+    the owner table admits, or `None` (stays unresolved) when it is take-able but not in
+    the table, or when the name does not start with the prefix at all."""
+    folded = name.strip().lower()
+    if not folded.startswith(DEAD_ITEM_NAME_PREFIX):
+        return None
+    if not flags.get("flags.take"):
+        return ("route", "WorldObject", "corpse_decoration")
+    profile = DEAD_CREATURE_PROFILE.get(folded)
+    if profile is None:
+        return None
+    return ("profile", profile)
+
+
 # --- non-Item routing (corpses, placeholder sprite slots, Terrain/WorldObject types) ---
 #
 # These items are never candidate Items at all: the pinned catalogs route their deciding
@@ -2070,19 +2151,53 @@ def convert_item(sources, item_id):
             family_profile_basis = "wiki_evidence_fallback"
             family_profile_evidence = fallback_entry["evidence"]
         else:
-            blockers.append("family_profile_unresolved")
-            return (
-                None,
-                None,
-                {
-                    "item_id": item_id,
-                    "key": key,
-                    "identity_basis": identity_basis,
-                    "converted": False,
-                    "blockers": blockers,
-                    "field_status": field_status,
-                },
-            )
+            wrap_target = resolve_wrap_target_profile(sources["items"], attrs)
+            if wrap_target is not None:
+                wrap_profile, wrap_target_id, wrap_target_primarytype = wrap_target
+                family_profile = wrap_profile
+                family_profile_basis = "engine_wrap_target"
+                family_profile_evidence = {
+                    "wrap_target_id": wrap_target_id,
+                    "wrap_target_primarytype": wrap_target_primarytype,
+                }
+            else:
+                dead_route = resolve_dead_item_route_or_profile(name, flags)
+                if dead_route is not None and dead_route[0] == "route":
+                    _kind, owner, reason = dead_route
+                    return (
+                        None,
+                        None,
+                        {
+                            "item_id": item_id,
+                            "key": key,
+                            "identity_basis": identity_basis,
+                            "converted": False,
+                            "routed_non_item": {"owner": owner, "reason": reason},
+                            "blockers": blockers,
+                            "field_status": field_status,
+                        },
+                    )
+                if dead_route is not None and dead_route[0] == "profile":
+                    family_profile = dead_route[1]
+                    family_profile_basis = "owner_name_rule"
+                    family_profile_evidence = {
+                        "rule": "take_able_dead_creature",
+                        "name": name.strip().lower(),
+                    }
+            if family_profile is None:
+                blockers.append("family_profile_unresolved")
+                return (
+                    None,
+                    None,
+                    {
+                        "item_id": item_id,
+                        "key": key,
+                        "identity_basis": identity_basis,
+                        "converted": False,
+                        "blockers": blockers,
+                        "field_status": field_status,
+                    },
+                )
 
     item = {
         "identity": {"key": key, "revision": DEFINITION_REVISION},

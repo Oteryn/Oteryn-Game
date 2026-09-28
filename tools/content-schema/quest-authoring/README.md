@@ -33,7 +33,7 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 ```sh
 pip install -r ../monster-authoring/requirements.txt
 python verify_quest_schema.py
-python ots_chests.py --canary <opentibiabr/canary at 47dfd51f> --crystal <zimbadev/crystalserver at ff7ede59>
+python ots_chests.py --canary <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
 python ots_doors.py --canary <canary checkout> --crystal <crystalserver checkout>
 python ots_questlog.py --canary <canary checkout> --crystal <crystalserver checkout>
 python ots_interactions.py --canary <canary checkout> --crystal <crystalserver checkout>

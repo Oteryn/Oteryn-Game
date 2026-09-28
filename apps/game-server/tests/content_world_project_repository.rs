@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "b2f9284065527998e8adc6c67d29f246bcb65a60be78abe9232d628988920b5d",
+        "d20df0f0330ec3a51de7ed87a5d9439cd936bce57c9cd8f52d3238bcdec20964",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        20_839_054,
-        "a9512d6930c7ed682616f6ce776c159dba3c2b44ead551b6c36d3753a5a9ae63",
+        21_705_834,
+        "5ac1a947b17ae96031c5f4553be52061a49bf7450b9780d36250b914f344cf5a",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1936,
-        "6e8f1392feb5f621b985094dde710dbf2f41a6fab14e7ea149236fb7423b87ca",
+        "abb73268b51736ecf2077b293f829f31976d3e0ef7dce41f437bf63b89d0c8df",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "efaf6229ef77265e0fa47e473eea4afd6152dbf9e0bbd50977d49badfe92377c",
+        "7eb90befe59899fb421b7c5e32df300d0fb14069b7197d6b3e50f37d052966a0",
     ),
     (
         "provenance/imports.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "85ecd9474fb3c50fbf510ea371f589ea4f0feddd60b279e9c40ca4714e23b464";
+const TREE_SHA256: &str = "c2ce8629109089091ce975fce633c33a16a3fce44b92ab0c7a357bc38d6d771e";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -702,7 +702,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             let atoms = promoted_atom_count(&item.semantics);
             (items + usize::from(atoms > 0), fields + atoms)
         });
-    assert_eq!(promoted_items, 10_674);
+    assert_eq!(promoted_items, 12_021);
     assert_eq!(
         promoted_fields,
         ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12
