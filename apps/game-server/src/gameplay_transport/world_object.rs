@@ -4,7 +4,13 @@
 //! snapshot type 1. The client sends intent only; the server selects the unique bound
 //! transition out of the object's current state (composed in M2). Decoding is strict:
 //! zero or unknown enum values, unknown or repeated fields, over-bound payloads and a
-//! `content_generation` other than 32 bytes all fail closed.
+//! `content_generation` other than 32 bytes all fail closed. A standard proto3 encoder
+//! omits a scalar or bytes field holding its default value (an empty `placement`/`state`
+//! key, a zero `expected_revision`/`revision`), so decoding accepts that omission and
+//! defaults the field; semantic presence is validated after decoding, not inferred from
+//! wire-default omission (FND-02 §7). Encoding is likewise strict: an oversized
+//! `placement`/`state` key is refused before any bytes are emitted, so this side never
+//! produces a payload a conforming decoder would reject.
 
 // The client-side codecs (intent encode, result and overlay decode) are exercised by
 // the round-trip tests; the server composes only its own direction (M2).
@@ -141,13 +147,20 @@ fn read_single_enum(input: &[u8], maximum: usize) -> Result<u64, WorldObjectErro
     value.ok_or(WorldObjectError::Malformed)
 }
 
-fn encode_world_object_target(target: &WorldObjectTarget) -> Vec<u8> {
+fn encode_world_object_target(target: &WorldObjectTarget) -> Result<Vec<u8>, WorldObjectError> {
+    if target.placement.len() > MAX_KEY_BYTES {
+        return Err(WorldObjectError::LimitExceeded);
+    }
     let mut output = Vec::with_capacity(3 + target.placement.len() + 11);
     push_bytes_field(&mut output, 1, &target.placement);
     push_varint_field(&mut output, 2, target.expected_revision);
-    output
+    Ok(output)
 }
 
+/// A standard proto3 encoder omits a scalar or bytes field holding its default value
+/// (empty `placement`, `expected_revision` 0), so both fields default on omission;
+/// semantic presence (e.g. a real object at its initial revision) is validated after
+/// decoding, not inferred from wire-default omission (FND-02 §7).
 fn decode_world_object_target(input: &[u8]) -> Result<WorldObjectTarget, WorldObjectError> {
     let mut cursor = 0;
     let (mut placement, mut expected_revision) = (None, None);
@@ -167,22 +180,21 @@ fn decode_world_object_target(input: &[u8]) -> Result<WorldObjectTarget, WorldOb
             _ => return Err(WorldObjectError::Malformed),
         }
     }
-    match (placement, expected_revision) {
-        (Some(placement), Some(expected_revision)) => Ok(WorldObjectTarget {
-            placement,
-            expected_revision,
-        }),
-        _ => Err(WorldObjectError::Malformed),
-    }
+    Ok(WorldObjectTarget {
+        placement: placement.unwrap_or_default(),
+        expected_revision: expected_revision.unwrap_or(0),
+    })
 }
 
 /// `ClientCommand.payload` of command type 2. Only the `world_object` oneof member is
-/// registered; any other top-level field (the reserved 2, 3, 4) fails closed.
-pub(crate) fn encode_use_intent(target: &WorldObjectTarget) -> Vec<u8> {
-    let inner = encode_world_object_target(target);
+/// registered; any other top-level field (the reserved 2, 3, 4) fails closed. Refuses to
+/// emit a `placement` over `MAX_KEY_BYTES` rather than publish a payload a conforming
+/// decoder would reject.
+pub(crate) fn encode_use_intent(target: &WorldObjectTarget) -> Result<Vec<u8>, WorldObjectError> {
+    let inner = encode_world_object_target(target)?;
     let mut output = Vec::with_capacity(3 + inner.len());
     push_bytes_field(&mut output, 1, &inner);
-    output
+    Ok(output)
 }
 
 pub(crate) fn decode_use_intent(payload: &[u8]) -> Result<WorldObjectTarget, WorldObjectError> {
@@ -224,16 +236,28 @@ pub(crate) fn decode_use_result(payload: &[u8]) -> Result<UseDisposition, WorldO
     }
 }
 
-fn encode_world_object_overlay_entry(entry: &WorldObjectOverlayEntry) -> Vec<u8> {
+/// Refuses to emit a `placement` or `state` over `MAX_KEY_BYTES` rather than publish a
+/// payload a conforming decoder would reject.
+fn encode_world_object_overlay_entry(
+    entry: &WorldObjectOverlayEntry,
+) -> Result<Vec<u8>, WorldObjectError> {
+    if entry.placement.len() > MAX_KEY_BYTES || entry.state.len() > MAX_KEY_BYTES {
+        return Err(WorldObjectError::LimitExceeded);
+    }
     let mut output =
         Vec::with_capacity(34 + 3 + entry.placement.len() + 3 + entry.state.len() + 11);
     push_bytes_field(&mut output, 1, &entry.content_generation);
     push_bytes_field(&mut output, 2, &entry.placement);
     push_bytes_field(&mut output, 3, &entry.state);
     push_varint_field(&mut output, 4, entry.revision);
-    output
+    Ok(output)
 }
 
+/// `content_generation` has no valid proto3 default here: it must be exactly 32 bytes, so
+/// an absent value fails closed. `placement`, `state` and `revision` are ordinary proto3
+/// scalar/bytes fields; a standard encoder omits them at their default (empty bytes / 0),
+/// so all three default on omission. Semantic presence is validated after decoding, not
+/// inferred from wire-default omission (FND-02 §7).
 fn decode_world_object_overlay_entry(
     input: &[u8],
 ) -> Result<WorldObjectOverlayEntry, WorldObjectError> {
@@ -268,26 +292,24 @@ fn decode_world_object_overlay_entry(
             _ => return Err(WorldObjectError::Malformed),
         }
     }
-    match (content_generation, placement, state, revision) {
-        (Some(content_generation), Some(placement), Some(state), Some(revision)) => {
-            Ok(WorldObjectOverlayEntry {
-                content_generation,
-                placement,
-                state,
-                revision,
-            })
-        }
-        _ => Err(WorldObjectError::Malformed),
-    }
+    let content_generation = content_generation.ok_or(WorldObjectError::Malformed)?;
+    Ok(WorldObjectOverlayEntry {
+        content_generation,
+        placement: placement.unwrap_or_default(),
+        state: state.unwrap_or_default(),
+        revision: revision.unwrap_or(0),
+    })
 }
 
 /// `StateDelta.payload` of domain 2, delta type 1: exactly one changed overlay entry
 /// (`WOBJ-RL-02` = 1).
-pub(crate) fn encode_world_object_overlay_delta(entry: &WorldObjectOverlayEntry) -> Vec<u8> {
-    let inner = encode_world_object_overlay_entry(entry);
+pub(crate) fn encode_world_object_overlay_delta(
+    entry: &WorldObjectOverlayEntry,
+) -> Result<Vec<u8>, WorldObjectError> {
+    let inner = encode_world_object_overlay_entry(entry)?;
     let mut output = Vec::with_capacity(3 + inner.len());
     push_bytes_field(&mut output, 1, &inner);
-    output
+    Ok(output)
 }
 
 pub(crate) fn decode_world_object_overlay_delta(
@@ -323,7 +345,7 @@ pub(crate) fn encode_world_object_overlay_snapshot(
     }
     let mut output = Vec::new();
     for entry in entries {
-        let inner = encode_world_object_overlay_entry(entry);
+        let inner = encode_world_object_overlay_entry(entry)?;
         push_bytes_field(&mut output, 1, &inner);
     }
     if output.len() > MAX_WORLD_OBJECT_OVERLAY_SNAPSHOT_BYTES {
@@ -392,16 +414,15 @@ mod tests {
             target(&[], 0),
             target(&vec![0xaa; MAX_KEY_BYTES], u64::MAX),
         ] {
-            let bytes = encode_use_intent(&value);
+            let bytes = encode_use_intent(&value).expect("encode");
             assert!(bytes.len() <= MAX_USE_INTENT_BYTES, "{}", bytes.len());
             assert_eq!(decode_use_intent(&bytes), Ok(value));
         }
-        let valid = encode_use_intent(&target(b"door:1", 7));
+        let valid = encode_use_intent(&target(b"door:1", 7)).expect("encode");
         for bad in [
             &[][..],           // missing target
             &[0x10, 0x01][..], // unknown top-level field
             &[0x0a][..],       // truncated
-            &[0x0a, 0x00][..], // empty inner message: missing placement/revision
         ] {
             assert_eq!(decode_use_intent(bad), Err(WorldObjectError::Malformed));
         }
@@ -474,6 +495,111 @@ mod tests {
     }
 
     #[test]
+    fn omitted_proto3_defaults_are_accepted_but_required_fields_stay_malformed() {
+        // A standard proto3 encoder omits `placement` (empty bytes) and
+        // `expected_revision` (0) when both hold their default value; an object's
+        // initial revision is 0 (world_runtime.rs), so this must decode, not fail
+        // closed. Semantic presence is validated after decoding (FND-02 §7).
+        let empty_inner = Vec::new();
+        let mut wrapped = Vec::new();
+        push_bytes_field(&mut wrapped, 1, &empty_inner);
+        assert_eq!(
+            decode_use_intent(&wrapped),
+            Ok(WorldObjectTarget {
+                placement: Vec::new(),
+                expected_revision: 0,
+            })
+        );
+        // Only `expected_revision` omitted (defaults to 0); `placement` present.
+        let mut revision_only_omitted = Vec::new();
+        push_bytes_field(&mut revision_only_omitted, 1, b"door:1");
+        wrapped.clear();
+        push_bytes_field(&mut wrapped, 1, &revision_only_omitted);
+        assert_eq!(decode_use_intent(&wrapped), Ok(target(b"door:1", 0)));
+        // Only `placement` omitted (defaults to empty); `expected_revision` present.
+        let mut placement_only_omitted = Vec::new();
+        push_varint_field(&mut placement_only_omitted, 2, 9);
+        wrapped.clear();
+        push_bytes_field(&mut wrapped, 1, &placement_only_omitted);
+        assert_eq!(decode_use_intent(&wrapped), Ok(target(&[], 9)));
+        // A missing oneof `world_object` (the field itself absent) still fails closed.
+        assert_eq!(decode_use_intent(&[]), Err(WorldObjectError::Malformed));
+
+        // The overlay entry: `placement`, `state` and `revision` default on omission,
+        // but `content_generation` has no valid default and must still be present and
+        // exactly 32 bytes.
+        let mut generation_only = Vec::new();
+        push_bytes_field(&mut generation_only, 1, &[0x11; 32]);
+        let mut delta = Vec::new();
+        push_bytes_field(&mut delta, 1, &generation_only);
+        assert_eq!(
+            decode_world_object_overlay_delta(&delta),
+            Ok(WorldObjectOverlayEntry {
+                content_generation: [0x11; 32],
+                placement: Vec::new(),
+                state: Vec::new(),
+                revision: 0,
+            })
+        );
+        // A missing `content_generation` still fails closed (no valid default).
+        let mut no_generation = Vec::new();
+        push_bytes_field(&mut no_generation, 2, b"door:1");
+        let mut delta_no_generation = Vec::new();
+        push_bytes_field(&mut delta_no_generation, 1, &no_generation);
+        assert_eq!(
+            decode_world_object_overlay_delta(&delta_no_generation),
+            Err(WorldObjectError::Malformed)
+        );
+        // A missing delta entry (the repeated field carries none) still fails closed.
+        assert_eq!(
+            decode_world_object_overlay_delta(&[]),
+            Err(WorldObjectError::Malformed)
+        );
+        // `disposition` 0 or absent still fails closed.
+        assert_eq!(decode_use_result(&[]), Err(WorldObjectError::Malformed));
+        assert_eq!(
+            decode_use_result(&[0x08, 0x00]),
+            Err(WorldObjectError::Malformed)
+        );
+    }
+
+    #[test]
+    fn encoders_refuse_to_emit_an_oversized_key() {
+        // Exactly MAX_KEY_BYTES is accepted; MAX_KEY_BYTES + 1 is refused before
+        // any bytes are emitted, so the server never publishes a payload a
+        // conforming decoder would reject.
+        assert!(encode_use_intent(&target(&vec![0; MAX_KEY_BYTES], 0)).is_ok());
+        assert_eq!(
+            encode_use_intent(&target(&vec![0; MAX_KEY_BYTES + 1], 0)),
+            Err(WorldObjectError::LimitExceeded)
+        );
+
+        let ok_entry = entry(&vec![0; MAX_KEY_BYTES], &vec![0; MAX_KEY_BYTES], 0);
+        assert!(encode_world_object_overlay_delta(&ok_entry).is_ok());
+        assert!(encode_world_object_overlay_snapshot(&[ok_entry]).is_ok());
+
+        let oversized_placement = entry(&vec![0; MAX_KEY_BYTES + 1], &[], 0);
+        assert_eq!(
+            encode_world_object_overlay_delta(&oversized_placement),
+            Err(WorldObjectError::LimitExceeded)
+        );
+        assert_eq!(
+            encode_world_object_overlay_snapshot(&[oversized_placement]),
+            Err(WorldObjectError::LimitExceeded)
+        );
+
+        let oversized_state = entry(&[], &vec![0; MAX_KEY_BYTES + 1], 0);
+        assert_eq!(
+            encode_world_object_overlay_delta(&oversized_state),
+            Err(WorldObjectError::LimitExceeded)
+        );
+        assert_eq!(
+            encode_world_object_overlay_snapshot(&[oversized_state]),
+            Err(WorldObjectError::LimitExceeded)
+        );
+    }
+
+    #[test]
     fn overlay_delta_round_trips_exactly_one_entry_and_refuses_malformed() {
         for value in [
             entry(b"door:1", b"closed", 0),
@@ -484,7 +610,7 @@ mod tests {
                 u64::MAX,
             ),
         ] {
-            let bytes = encode_world_object_overlay_delta(&value);
+            let bytes = encode_world_object_overlay_delta(&value).expect("encode");
             assert!(
                 bytes.len() <= MAX_WORLD_OBJECT_OVERLAY_DELTA_BYTES,
                 "{}",
@@ -492,7 +618,8 @@ mod tests {
             );
             assert_eq!(decode_world_object_overlay_delta(&bytes), Ok(value));
         }
-        let valid = encode_world_object_overlay_delta(&entry(b"door:1", b"closed", 1));
+        let valid =
+            encode_world_object_overlay_delta(&entry(b"door:1", b"closed", 1)).expect("encode");
         assert_eq!(
             decode_world_object_overlay_delta(&[]),
             Err(WorldObjectError::Malformed)

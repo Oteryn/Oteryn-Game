@@ -4,20 +4,20 @@
 task_id: OTV2-20260928-use-wire-m1
 title: USE-WIRE-V1 M1 - registries and codecs
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: 5864914163
 base_branch: main
 branch: claude/use-wire-m1
-pr: null
+pr: 1066
 base_sha: 45b6cc73d8dbd2988ec0153cfa5ad03318367d51
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: impl server seam" (Claude Code)
 created_at: 2026-09-28T06:57:13Z
-updated_at: 2026-09-28T07:35:00Z
+updated_at: 2026-09-28T08:05:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
@@ -90,20 +90,36 @@ reason: >
 - [x] `gameplay_transport/mod.rs`: module declaration only.
 - [x] Full required-validation suite green on one head.
 
-## Shared-lease extension: world_spatial.rs
+## Shared-lease extension: world_spatial.rs (resolved)
 
-Registering command 2 / domain 2 grows `PROTOCOL_OTERYN_V1_REGISTRY.json`'s arrays from length 1
-to 2. `gameplay_transport/world_spatial.rs`'s existing test
-`registries_bind_the_accepted_first_control_ids_and_limits` asserted exact global cardinality
-(`assert_eq!(commands.len(), 1)` / `domains.len(), 1)`, was lines 366/371) instead of filtering by
-id/name, so it broke — exactly as #162 comment 5864914163 anticipated would happen to whoever
-registers the next command/domain. This task initially stopped at `SHARED_LEASE_REQUIRED`; the
-control plane then granted a bounded lease extension for exactly this one test. The fix (this
-lease, applied): the two cardinality asserts are replaced with an id-filtered lookup of command id
-1 / domain id 1 (`.find(|x| x["id"] == ...)`), keeping every existing field and limit assertion for
-id 1 unchanged and not weakening the test — it is at least as strict as before (it also stops
-assuming id 1 sits at array index 0). No other line in `world_spatial.rs` changed. All 4
-`world_spatial` tests pass on this head.
+Registering command 2 / domain 2 broke `world_spatial.rs`'s
+`registries_bind_the_accepted_first_control_ids_and_limits` test, which hard-asserted the
+registry's `command_types`/`state_domains` arrays were exactly length 1. This task initially
+stopped at `SHARED_LEASE_REQUIRED`; the control plane then granted a bounded extension scoped to
+that one test. Fix applied: the two cardinality asserts are now an id-filtered lookup of command id
+1 / domain id 1, keeping every existing field/limit assertion for id 1 unchanged (at least as
+strict as before — no more index-0 assumption). No other line in that file changed. PR #1066
+opened on head `505ccb5`.
+
+## Repair: Codex review findings (PR #1066, return to AUTHORING)
+
+Two review findings on `world_object.rs`, both accepted and repaired in this commit:
+- **P1** (r4119513870): decoders rejected an omitted proto3-default scalar/bytes field (e.g. an
+  object at its initial revision 0, which a standard encoder omits). Fixed: `placement`/
+  `expected_revision` in `WorldObjectTarget`, and `placement`/`state`/`revision` in
+  `WorldObjectOverlayEntry`, now default to empty/0 when absent from the wire; `content_generation`
+  keeps no default (absent stays `Malformed`, must be exactly 32 bytes), the missing oneof
+  `world_object`, a missing delta entry, unknown/repeated fields and `disposition` 0/absent all
+  still fail closed. New test:
+  `omitted_proto3_defaults_are_accepted_but_required_fields_stay_malformed`.
+- **P2** (r4119513878): the overlay-entry/delta/snapshot encoders and `encode_use_intent` emitted a
+  `placement`/`state` over `MAX_KEY_BYTES` unchecked. Fixed: all four now return
+  `Result<_, WorldObjectError>` and refuse (`LimitExceeded`) before emitting any bytes when a key
+  exceeds `MAX_KEY_BYTES`; call sites (tests) updated accordingly. New test:
+  `encoders_refuse_to_emit_an_oversized_key` (512 B OK, 513 B refused).
+
+Both review threads were replied to before this repair was pushed. `world_object.rs` now has 7
+tests (was 5); `world_spatial.rs` is unchanged from the shared-lease fix above.
 
 ## Excluded scope
 
@@ -134,11 +150,11 @@ workflows, `content/**`, `tools/**`, the spell-cast candidate (#1042), Server Se
   --all-targets -- -D warnings`; `cargo test -p oteryn-game-server world_object`; `cargo test -p
   oteryn-game-server world_spatial`; `python3 tools/agents/validate_governance.py`; `python3
   tools/repository/validate_repository_policy.py`
-- result: fmt PASS; clippy PASS (no warnings in this task's code); `world_object` 5/5 PASS;
-  `world_spatial` 4/4 PASS (id-filtered lookup fix under the shared-lease extension above);
-  governance validator PASS on this record; `validate_repository_policy.py` PASS (23 files, 47
-  workflows). No dedicated protocol/resource-registry validator script exists beyond
-  `validate_governance.py` (checked `tools/` and `.github/workflows/` by content grep).
+- result (post-repair): fmt PASS; clippy PASS (no warnings in this task's code); `world_object`
+  7/7 PASS (2 new tests for the repair above); `world_spatial` 4/4 PASS; governance validator PASS
+  on this record; `validate_repository_policy.py` PASS. No dedicated protocol/resource-registry
+  validator script exists beyond `validate_governance.py` (checked `tools/` and
+  `.github/workflows/` by content grep).
 
 ### Component/integration
 
@@ -152,41 +168,45 @@ workflows, `content/**`, `tools/**`, the spell-cast candidate (#1042), Server Se
 
 ### Exact-head CI
 
-- final head: pending (not frozen; blocked)
-- trigger source / workflow / runner / classification / result: pending
+- final head: pending (this repair commit not yet pushed at record-write time; see PR #1066 for
+  current head/checks)
+- trigger source: push to `claude/use-wire-m1`; workflow/runner/classification/result: pending
 
 ## Self-review
 
-- exact head: pending (recorded once frozen/pushed; not self-referenced in this commit)
+- exact head: pending (not self-referenced in this commit)
 - method/reviewer: implementing agent (this session)
-- material findings: none outstanding; the `world_spatial.rs` shared-lease item above is resolved
-  under the granted extension
-- verdict: ready to freeze
+- material findings: r4119513870 (P1) and r4119513878 (P2) from the Codex review of PR #1066 —
+  see Repair section above; both accepted and repaired
+- verdict: ready to re-freeze
 
 ## Independent review
 
 - required: YES — public wire (`docs/contracts/**`) and registry change, per the allocation's
   `review: required` and root governance.
-- exact head / method-auditor / material findings / verdict: pending (not frozen; the control
-  plane triggers one `@codex review` after freeze, not performed by this worker)
+- exact head: `505ccb5` (superseded by this repair commit)
+- method/auditor: Codex, automated PR review (not triggered by this worker)
+- material findings: P1 r4119513870, P2 r4119513878 — both accepted and repaired (see above)
+- verdict: findings addressed; a fresh review of the repaired head is for the control plane to
+  request, not this worker (no `@codex` trigger from this task)
 
 ## PR and closeout
 
 - changed-file review / unresolved threads / protected auto-merge / merge commit / ownership
-  release: pending (recorded once the PR is opened and reviewed; not tracked in this file per the
-  no-self-referential-freeze rule — see the live PR and #162 for current status)
+  release: pending — see live PR #1066 and #162 for current status, not tracked in this file
 - related/superseded PRs: none known; overlap check at allocation time found none touching these
   paths
 
 ## Context checkpoint
 
 ```yaml
-last_progress: shared-lease extension applied to world_spatial.rs's id-filtered registry test;
-  full required-validation suite green on all seven owned files on claude/use-wire-m1
-status: implementing
+last_progress: PR #1066 opened on 505ccb5; Codex raised P1 r4119513870 and P2 r4119513878 on
+  world_object.rs; both repaired (proto3-default-omission decoding, fallible key-bounded
+  encoding) with new tests; full required-validation suite green post-repair
+status: validating
 branch: claude/use-wire-m1
 head_sha: null
-pr: null
+pr: 1066
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -204,5 +224,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit, push claude/use-wire-m1 and open the PR to main
+next_action: reply on both review threads, commit and push the repair to claude/use-wire-m1
 ```
