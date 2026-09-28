@@ -195,7 +195,7 @@ d['condition']=obj({'type':use('conditionType'),'lifetime':enum('fixed_duration'
     'buff_spell':{'type':'boolean','description':'S17: the condition is a spell buff (Canary CONDITION_PARAM_BUFF_SPELL).'}},
     ('type','lifetime'),allOf=[
     {'if':{'properties':{'lifetime':{'const':'damage_schedule'}},'required':['lifetime']},
-     'then':{'required':['damage_over_time'],**forbid('speed_formula','light','regeneration')},'else':forbid('damage_over_time')},
+     'then':{'required':['damage_over_time'],**forbid('speed_formula','light','regeneration','buff_spell')},'else':forbid('damage_over_time')},
     {'if':{'properties':{'type':{'const':'light'}},'required':['type']},'then':{'required':['light']},'else':forbid('light')},
     {'if':{'properties':{'type':{'const':'regeneration'}},'required':['type']},'then':{'required':['regeneration']},
      'else':forbid('regeneration')}])

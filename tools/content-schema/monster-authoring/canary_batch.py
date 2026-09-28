@@ -1847,6 +1847,11 @@ class Converter:
         if not ticks:
             raise SpellUnresolved(f'condition {kind} without CONDITION_PARAM_TICKS.')
         body = {'operation': 'condition', 'duration_ms': int(ticks), 'condition': {'type': name, 'lifetime': 'fixed_duration'}}
+        buff = params.pop('CONDITION_PARAM_BUFF_SPELL', None)
+        if buff is not None:
+            if buff not in (True, False, 0, 1):
+                raise SpellUnresolved(f'condition {kind} CONDITION_PARAM_BUFF_SPELL {buff!r} is not a boolean.')
+            body['condition']['buff_spell'] = bool(buff)
         if kind == 'CONDITION_ATTRIBUTES':
             modifiers = []
             for param, value in sorted(params.items()):
@@ -1874,8 +1879,10 @@ class Converter:
             body['condition']['speed_formula'] = ref('Formula', formula_key)
         elif kind == 'CONDITION_LIGHT' and not formula and set(params) == {'CONDITION_PARAM_LIGHT_LEVEL',
                                                                           'CONDITION_PARAM_LIGHT_COLOR'}:
-            body['condition']['light'] = {'level': int(params['CONDITION_PARAM_LIGHT_LEVEL']),
-                                          'color': int(params['CONDITION_PARAM_LIGHT_COLOR'])}
+            light = {'level': params['CONDITION_PARAM_LIGHT_LEVEL'], 'color': params['CONDITION_PARAM_LIGHT_COLOR']}
+            if any(not isinstance(v, (int, float)) or v != int(v) for v in light.values()):
+                raise SpellUnresolved(f'condition {kind} light {light} is not whole numbers.')
+            body['condition']['light'] = {k: int(v) for k, v in light.items()}
         elif kind == 'CONDITION_REGENERATION' and not formula and params:
             regeneration = {}
             for resource in ('health', 'mana'):
@@ -1884,14 +1891,14 @@ class Converter:
                 if (gain is None) != (interval is None):
                     raise SpellUnresolved(f'condition {kind} sets only one of the {resource} gain and interval.')
                 if gain is not None:
+                    if any(not isinstance(v, (int, float)) or v != int(v) for v in (gain, interval)):
+                        raise SpellUnresolved(f'condition {kind} {resource} gain {gain!r} or interval {interval!r} '
+                                              'is not a whole number.')
                     regeneration[f'{resource}_gain'] = int(gain)
                     regeneration[f'{resource}_interval_ms'] = int(interval)
-            buff = params.pop('CONDITION_PARAM_BUFF_SPELL', None)
             if params or not regeneration:
                 raise SpellUnresolved(f'condition {kind} parameters {sorted(params)} have no authoring field.')
             body['condition']['regeneration'] = regeneration
-            if buff is not None:
-                body['condition']['buff_spell'] = bool(buff)
         elif params or formula:
             raise SpellUnresolved(f'condition {kind} parameters {sorted(params)} have no authoring field.')
         return body
