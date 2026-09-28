@@ -468,7 +468,8 @@
         {
           "enum": [
             "death_position",
-            "subject_position"
+            "subject_position",
+            "closest_free_tile"
           ]
         },
         {

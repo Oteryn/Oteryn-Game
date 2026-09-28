@@ -66,7 +66,8 @@ d = {
     'health': {'oneOf': [enum('full', 'keep_percent', 'keep_absolute', 'remembered'), obj({'percent': integer(1, 100)}, ('percent',))]},
     # D34: the base vocation of a player (a promoted vocation counts as its base).
     'baseVocation': enum('knight', 'paladin', 'sorcerer', 'druid', 'monk'),
-    'position': {'oneOf': [enum('death_position', 'subject_position'), obj({'anchor': NAME}, ('anchor',)),
+    # D34: closest_free_tile is the free tile nearest the subject (Canary getClosestFreePosition), searched outward ring by ring.
+    'position': {'oneOf': [enum('death_position', 'subject_position', 'closest_free_tile'), obj({'anchor': NAME}, ('anchor',)),
                            obj({'random_in': NAME}, ('random_in',)),
                            obj({'role_position': NAME, 'otherwise': enum('death_position')}, ('role_position',)),
                            obj({'offset_tiles': integer(0)}, ('offset_tiles',))]},

@@ -92,9 +92,7 @@
               "revision": "canary-47dfd51f"
             }
           },
-          "at": {
-            "offset_tiles": 1
-          },
+          "at": "closest_free_tile",
           "owner": "none",
           "health": "full",
           "counter": "shield"
@@ -326,9 +324,26 @@
       ]
     },
     {
-      "key": "players_engage_count_vlarkorth",
+      "key": "players_engage_count_vlarkorth_on_damage_taken",
       "trigger": {
         "kind": "damage_taken",
+        "role": "count_vlarkorth",
+        "source": "any"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "count_vlarkorth_engaged",
+          "credited": "players_in_anchor",
+          "anchor": "vlarkorth_room"
+        }
+      ]
+    },
+    {
+      "key": "players_engage_count_vlarkorth_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
         "role": "count_vlarkorth",
         "source": "any"
       },

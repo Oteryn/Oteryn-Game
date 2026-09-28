@@ -2796,7 +2796,7 @@ def count_vlarkorth(build):
                              'conditions': [{'kind': 'counter_compare', 'counter': 'shield', 'op': '==', 'value': 0},
                                             {'kind': 'counter_compare', 'counter': 'waves', 'op': '<', 'value': 2}],
                              'actions': [{'kind': 'spawn_per_player', 'players_in': 'vlarkorth_room', 'by_base_vocation': darks,
-                                          'at': {'offset_tiles': 1}, 'owner': 'none', 'health': 'full', 'counter': 'shield'},
+                                          'at': 'closest_free_tile', 'owner': 'none', 'health': 'full', 'counter': 'shield'},
                                          {'kind': 'counter', 'counter': 'waves', 'operation': 'add', 'value': 1},
                                          {'kind': 'say', 'subject': {'role': 'count_vlarkorth'}, 'text': 'Face your own darkness!',
                                           'mode': 'say'}]})
@@ -2838,13 +2838,15 @@ def count_vlarkorth(build):
                         'Canary has no Monk remains. The reference-date wiki (Fandom Good Remains of a Merudri rev 1116306, item '
                         '50311, and Count Vlarkorth rev 1140872: "the respective vocation must use the corpse") gives a Monk the '
                         'same rule with the remains of the Dark Merudri. NEEDS VERIFICATION (D44).')
-    path = build.rule(item, {'key': 'players_engage_count_vlarkorth',
-                             'trigger': {'kind': 'damage_taken', 'role': 'count_vlarkorth', 'source': 'any'}, 'conditions': [],
-                             'actions': [{'kind': 'emit_outcome', 'outcome': 'count_vlarkorth_engaged', 'credited': 'players_in_anchor',
-                                          'anchor': 'vlarkorth_room'}]})
-    build.entry(item, script, [1, 2, 5, 6, 13, 14, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58], 'mapped', path,
-                'Every health change of the boss credits the players in the room (D27): the reward domain starts a 20-hour boss '
-                'cooldown and a 30-minute room timer for each, when not already running.')
+    for source_kind in ('damage_taken', 'heal_received'):
+        path = build.rule(item, {'key': f'players_engage_count_vlarkorth_on_{source_kind}',
+                                 'trigger': {'kind': source_kind, 'role': 'count_vlarkorth', 'source': 'any'}, 'conditions': [],
+                                 'actions': [{'kind': 'emit_outcome', 'outcome': 'count_vlarkorth_engaged',
+                                              'credited': 'players_in_anchor', 'anchor': 'vlarkorth_room'}]})
+        build.entry(item, script, [1, 2, 5, 6, 13, 14, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58], 'mapped', path,
+                    'Every health change of the boss, a ' + ('hit' if source_kind == 'damage_taken' else 'heal (Canary runs the '
+                    'handler for heals too)') + ', credits the players in the room (D27): the reward domain starts a 20-hour '
+                    'boss cooldown and a 30-minute room timer for each, when not already running.')
     item['manifest']['outcome_evidence'].append({
         'outcome': 'count_vlarkorth_engaged', 'credited': 'players_in_anchor',
         'reward_domain': {'canary_storage': 'Storage.Quest.U12_20.GraveDanger.Bosses.CountVlarkorth.Timer',

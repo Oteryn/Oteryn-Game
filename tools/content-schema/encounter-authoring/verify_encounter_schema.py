@@ -223,6 +223,7 @@ case('item use vocation must be a base vocation', rule(trigger={'kind': 'item_us
 PER_PLAYER = {'kind': 'spawn_per_player', 'players_in': 'arena', 'by_base_vocation': {'knight': ref('Creature', 'add')},
               'at': {'offset_tiles': 1}, 'owner': 'none', 'health': 'full', 'counter': 'adds_killed'}
 case('per-player spawn accepted', rule([PER_PLAYER]), True)
+case('spawn at the closest free tile accepted', rule([{**PER_PLAYER, 'at': 'closest_free_tile'}]), True)
 case('damage accumulated as a percent of maximum health accepted',
      rule(trigger={'kind': 'damage_accumulated', 'role': 'boss', 'percent': 15}), True)
 case('damage accumulated takes an amount or a percent, not both',

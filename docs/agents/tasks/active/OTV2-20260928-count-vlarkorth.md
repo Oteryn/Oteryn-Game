@@ -64,7 +64,7 @@ Owner decision D34 ("Wszystkie 7") includes the per-vocation summon; this is its
 
 ## Acceptance and evidence
 
-- `verify_encounter_schema.py` 127/127; 83 encounters validate and 78 manifests resolve fully.
+- `verify_encounter_schema.py` 128/128; 83 encounters validate and 78 manifests resolve fully.
 - The census, the staging, the tree regeneration and its validators pass.
 - The Rust tests pass.
 - Exact-head review before the Merge Queue because staged creature evidence changes.
