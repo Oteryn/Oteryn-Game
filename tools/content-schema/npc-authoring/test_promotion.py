@@ -73,6 +73,16 @@ class PromotionValidatorTests(unittest.TestCase):
         offer['unit_price'] = 999999
         self.assertTrue(any('!= WIKI_PRICE price' in e for e in validate_promotion.errors(report)))
 
+    def test_wiki_price_item_name_is_the_offer_item(self):
+        report = load_sample()
+        names = validate_promotion.registry_item_names()
+        self.assertEqual(validate_promotion.item_name_errors(report, names), [])
+        ahmet = find_candidate(report, 'Ahmet')
+        row = next(r for r in ahmet['arbitration'] if r['rule'] == 'WIKI_PRICE' and r['item_name'] == 'fishing rod')
+        row['item_name'] = 'shovel'  # another item's wiki price must not justify this offer
+        self.assertTrue(any('is not the offer\'s registered item' in e
+                            for e in validate_promotion.item_name_errors(report, names)))
+
     def test_wiki_price_matches_both_pinned_wikis(self):
         snapshot = json.dumps({'npcs': [], 'trade': {'ahmet': [
             {'item': 'Fishing Rod', 'buy_price': 150, 'sell_price': None}]}}).encode()

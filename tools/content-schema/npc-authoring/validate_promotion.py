@@ -36,7 +36,8 @@ Semantic rules:
   (and, conversely, an empty `placements` list requires either this row or the candidate is
   otherwise invalid) and a non-null `wiki`; or rule 'WIKI_PRICE' (D12) with `chosen` == 'wiki', an
   `item_name`, a `price` equal to the unit_price of the admitted offer its fact names (with `--snapshot`
-  and `--br-facts`, also the price both pinned wikis state), a
+  and `--br-facts`, also the price both pinned wikis state) and an `item_name` that is the registered
+  name of that offer's Item (committed `content/items/definitions`), a
   `trade.<item>.<direction>` fact and a non-null `wiki`; or rule 'WIKI_BASE_NAME'/'WIKI_SPELLING' with
   `chosen` == 'wiki', `fact` == 'identity', a single-source candidate and a non-null `wiki`;
 - left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED /
@@ -59,6 +60,7 @@ import re
 import sys
 from pathlib import Path
 
+import promotion_candidates
 from promotion_candidates import slug
 
 SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
@@ -409,9 +411,39 @@ def errors(report):
     return errs
 
 
+def registry_item_names():
+    """Folded registered names of the committed Item definitions, by Item key."""
+    names = {}
+    for path in sorted((Path(__file__).resolve().parents[3] / 'content/items/definitions').glob('items-*.json')):
+        for record in json.loads(path.read_text(encoding='utf-8'))['records']:
+            definition = record['definition']
+            presentation = definition.get('semantics', {}).get('presentation', {})
+            if presentation.get('state') == 'KNOWN' and presentation['value']['name'].get('state') == 'KNOWN':
+                names[definition['identity']['key']] = promotion_candidates.fold(presentation['value']['name']['value'])
+    return names
+
+
+def item_name_errors(report, registry_names):
+    """Every WIKI_PRICE row's item_name is the registered name of the offer its fact names, so one item's
+    wiki price can never justify another item's offer. `registry_names` maps Item keys to folded names."""
+    errs = []
+    for index, candidate in enumerate(report.get('candidates') or []):
+        for row in candidate.get('arbitration') or []:
+            match = WIKI_PRICE_FACT.fullmatch(row.get('fact') or '') if row.get('rule') == 'WIKI_PRICE' else None
+            if match is None:
+                continue
+            named = {registry_names.get((offer.get('item') or {}).get('key'))
+                     for offer in (candidate.get('trade_service') or {}).get('offers') or []
+                     if offer.get('source_item_id') == int(match.group(1)) and offer.get('direction') == match.group(2)}
+            if named != {promotion_candidates.fold(str(row.get('item_name')))}:
+                errs.append(f"candidates[{index}]: WIKI_PRICE {row['fact']} item_name {row.get('item_name')!r} "
+                            f"is not the offer's registered item {sorted(n for n in named if n)!r}")
+    return errs
+
+
 def wiki_price_errors(report, snapshot_bytes, br_facts_bytes):
-    """With the pinned inputs at hand, every WIKI_PRICE row must be the price both wikis state (D12)."""
-    import promotion_candidates  # the same lookup the candidates were built with
+    """With the pinned inputs at hand, every WIKI_PRICE row must be the price both wikis state (D12), using
+    the same lookup the candidates were built with."""
     errs = []
     if hashlib.sha256(snapshot_bytes).hexdigest() != report.get('snapshot_sha256'):
         errs.append('--snapshot does not match snapshot_sha256')
@@ -441,7 +473,7 @@ def main():
     parser.add_argument('--br-facts', type=Path, help='the pinned TibiaWiki BR facts; checks every WIKI_PRICE row')
     args = parser.parse_args()
     report = json.loads(Path(args.report).read_text(encoding='utf-8'))
-    all_errors = errors(report)
+    all_errors = errors(report) + item_name_errors(report, registry_item_names())
     if args.snapshot and args.br_facts:
         all_errors += wiki_price_errors(report, args.snapshot.read_bytes(), args.br_facts.read_bytes())
 
