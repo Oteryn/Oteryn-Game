@@ -124,6 +124,9 @@
     "lifecycle": {
       "$ref": "#/$defs/lifecycle"
     },
+    "availability": {
+      "$ref": "#/$defs/availability"
+    },
     "trade": {
       "$ref": "#/$defs/trade"
     },
@@ -2519,6 +2522,67 @@
       },
       "required": []
     },
+    "availabilityEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "enum": [
+            "tibiawiki"
+          ]
+        },
+        "page_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revision_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "wiki_title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "match_basis": {
+          "enum": [
+            "itemid",
+            "title",
+            "appearance_title",
+            "actualname"
+          ]
+        }
+      },
+      "required": [
+        "source",
+        "page_id",
+        "revision_id",
+        "wiki_title",
+        "match_basis"
+      ]
+    },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "deprecated",
+            "event",
+            "ts-only",
+            "unavailable",
+            "unobtainable"
+          ]
+        },
+        "evidence": {
+          "$ref": "#/$defs/availabilityEvidence"
+        }
+      },
+      "required": [
+        "status",
+        "evidence"
+      ],
+      "description": "Owner decision 2026-09-28 (task f): whether TibiaWiki's own Infobox Object 'status' field asserted something about the exact page that decided this Item's family_profile. Present only when the wiki-evidence fallback resolved family_profile AND that page's own 'status' was non-empty (for a disambiguation, only when every candidate page agreed); absence means 'not asserted', never 'available' -- an Item with no wiki record, or one resolved some other way (engine attribute, wrap-target, dead-item, fluid-type, late-placeholder), never carries this field. 'status' never affects family classification, routing or any other outcome; it is observed fact only."
+    },
     "trade": {
       "type": "object",
       "additionalProperties": false,
@@ -2760,7 +2824,9 @@
         "match_basis": {
           "enum": [
             "itemid",
-            "title"
+            "title",
+            "appearance_title",
+            "actualname"
           ]
         },
         "field": {
@@ -2804,7 +2870,7 @@
         }
       },
       "required": [],
-      "description": "The admitted-mapping fact that resolved family_profile when no direct engine attribute did; the shape carried is exactly one of three mutually exclusive families, keyed by family_profile_basis. 'wiki_evidence_fallback' (resolution/match_basis/...): 'direct' cites the one matched TibiaWiki page's field/value; 'disambiguation' cites 2+ candidate pages that all resolved to the same profile (the family invariant across candidates). 'match_basis' is an audit field: 'itemid' when the pages were joined by the item's own exact numeric TibiaWiki 'itemid', which takes precedence and is authoritative over 'title' (the engine name matched against the wiki title index). 'engine_wrap_target' (wrap_target_id/wrap_target_primarytype): this item's own items.xml 'wrapableto' names another items.xml id whose own engine primarytype resolved the family (one hop only, never chained, never through that id's own wiki fallback). 'owner_name_rule' (rule/name): the item's exact lower-cased engine name matched an explicit, reviewed owner table keyed by 'rule'.",
+      "description": "The admitted-mapping fact that resolved family_profile when no direct engine attribute did; the shape carried is exactly one of three mutually exclusive families, keyed by family_profile_basis. 'wiki_evidence_fallback' (resolution/match_basis/...): 'direct' cites the one matched TibiaWiki page's field/value; 'disambiguation' cites 2+ candidate pages that all resolved to the same profile (the family invariant across candidates). 'match_basis' is an audit field: 'itemid' when the pages were joined by the item's own exact numeric TibiaWiki 'itemid', which takes precedence and is authoritative over 'title' (the engine name matched against the wiki title index), 'appearance_title' (the item's own appearances.dat name, when it differs from its items.xml name, matched against the same title index), and 'actualname' (the item's own items.xml or appearance name matched against the wiki's own infobox 'actualname' field, tried only once none of the other three joins resolved). 'engine_wrap_target' (wrap_target_id/wrap_target_primarytype): this item's own items.xml 'wrapableto' names another items.xml id whose own engine primarytype resolved the family (one hop only, never chained, never through that id's own wiki fallback). 'owner_name_rule' (rule/name): the item's exact lower-cased engine name matched an explicit, reviewed owner table keyed by 'rule'.",
       "allOf": [
         {
           "if": {

@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-item-wrap-target-corpses
 title: Engine wrap-target family inheritance and corpse-like "dead ..." item routing/profile
 mode: MIGRATE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: item-wrap-corpse
 issue: 162
 pr: 1086
 base_sha: 3a11e3f8
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: fcd133f08cc26787301a1b07ea7d41bddc1b58cf
+final_head_sha: fcd133f08cc26787301a1b07ea7d41bddc1b58cf
+final_head_frozen_at: 2026-09-28T10:02:21Z
 owner: owner-launched Claude Code session
 created_at: 2026-09-28T00:00:00Z
 updated_at: 2026-09-28T00:00:00Z
@@ -104,8 +104,7 @@ already-resolved item ever changes):
   numbers updated, new §5c documents both rules with the exact name lists above.
 - [x] Prior task record `OTV2-20260928-item-clothing-accessories` moved to
   `tasks/archive/` with status `completed` (PR #1073 merged).
-- [ ] Required checks pass on the frozen head (local-only task: no PR/CI in this repo
-  interaction; validated locally, see Validation).
+- [x] Required checks pass on the frozen head (PR #1086, squash-merged as `a1af019c`).
 
 ## Excluded scope
 
@@ -164,10 +163,10 @@ newly-resolved items in either engine. Promotion packet: 12,021 -> 12,118 Items,
 
 ## Self-review
 
-- exact head: pending (local commit not yet made at record-authoring time)
+- exact head: `fcd133f08cc26787301a1b07ea7d41bddc1b58cf`
 - method/reviewer: implementing session
 - material findings: none
-- verdict: pending
+- verdict: PASS
 
 ## Independent review
 
@@ -180,23 +179,23 @@ newly-resolved items in either engine. Promotion packet: 12,021 -> 12,118 Items,
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: `NOT_APPLICABLE` (no PR opened)
+- changed-file review: done
+- unresolved review threads: none
 - related/superseded PRs: none
 - protected auto-merge: SQUASH via Merge Queue, enabled on PR #1086
-- merge commit/result: pending
-- ownership release: pending
+- merge commit/result: squash-merged via Merge Queue as `a1af019c` (PR #1086)
+- ownership release: released
 
 ## Context checkpoint
 
 ```yaml
-last_progress: engine_items/build_formal_schema/tests/censuses/promotion packet/docs updated and locally validated; committing to item-wrap-corpse
-status: validating
+last_progress: PR #1086 squash-merged as a1af019c; archived
+status: completed
 branch: item-wrap-corpse
-head_sha: null
+head_sha: fcd133f08cc26787301a1b07ea7d41bddc1b58cf
 pr: 1086
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: fcd133f08cc26787301a1b07ea7d41bddc1b58cf
+final_head_frozen_at: 2026-09-28T10:02:21Z
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
@@ -212,5 +211,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: required checks, Merge Queue, archive record
+next_action: none
 ```
