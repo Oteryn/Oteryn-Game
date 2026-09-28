@@ -48,7 +48,8 @@
         "max_targets": null,
         "range_tiles": null,
         "backtracking": null,
-        "chain_asset_binding": null
+        "chain_asset_binding": null,
+        "target_filter": null
       }
     }
   ],

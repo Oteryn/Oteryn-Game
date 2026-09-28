@@ -15,10 +15,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 111,
-    "fully_resolved": 1539,
+    "blocked": 102,
+    "fully_resolved": 1548,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1175
+    "wiki_adopted_monsters": 1181
   },
   "wiki_adopted_rows": {
     "Loot2": 12722,
@@ -104,17 +104,6 @@
       ]
     },
     {
-      "blocker": "unresolved_semantics attacks[] -> area_damage_named_target",
-      "monsters": 6,
-      "examples": [
-        "ravenous_lava_lurker",
-        "freed_soul",
-        "the_corruptor_of_souls",
-        "the_remorseless_corruptor",
-        "the_source_of_corruption"
-      ]
-    },
-    {
       "blocker": "unresolved_semantics attacks[] -> conditional_summon",
       "monsters": 6,
       "examples": [
@@ -123,17 +112,6 @@
         "the_hunger",
         "the_rage",
         "world_devourer"
-      ]
-    },
-    {
-      "blocker": "unresolved_semantics attacks[] -> chain_bounce",
-      "monsters": 5,
-      "examples": [
-        "quara_looter",
-        "rootthing_amber_shaper",
-        "rootthing_bug_tracker",
-        "mould_phantom",
-        "rotten_golem"
       ]
     },
     {
@@ -232,6 +210,13 @@
       "examples": [
         "the_blazing_time_guardian",
         "the_freezing_time_guardian"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> area_damage_named_target",
+      "monsters": 1,
+      "examples": [
+        "a_greedy_eye"
       ]
     },
     {
@@ -835,6 +820,7 @@
     "fox",
     "frazzlemaw",
     "freakish_lost_soul",
+    "freed_soul",
     "freegoiz",
     "frenzy",
     "frost_dragon",
@@ -1230,6 +1216,7 @@
     "morik_the_gladiator",
     "mornenion",
     "morshabaal",
+    "mould_phantom",
     "mountain_troll",
     "mozradek",
     "mr_punish",
@@ -1389,6 +1376,7 @@
     "quara_constrictor_scout",
     "quara_hydromancer",
     "quara_hydromancer_scout",
+    "quara_looter",
     "quara_mantassin",
     "quara_mantassin_scout",
     "quara_pincher",
@@ -1406,6 +1394,7 @@
     "ratmiral_blackwhiskers",
     "ravenous_beyondling",
     "ravenous_hunger",
+    "ravenous_lava_lurker",
     "raxias",
     "reality_reaver",
     "realityquake",
@@ -1445,8 +1434,10 @@
     "rocky",
     "rogue_naga",
     "ron_the_ripper",
+    "rootthing_bug_tracker",
     "rorc",
     "rot_elemental",
+    "rotten_golem",
     "rotten_man_maggot",
     "rottie_the_rotworm",
     "rotworm",
@@ -1630,6 +1621,7 @@
     "the_brainstealer",
     "the_cold_of_winter",
     "the_collector",
+    "the_corruptor_of_souls",
     "the_count",
     "the_count_of_the_core",
     "the_dark_dancer",
@@ -1673,6 +1665,7 @@
     "the_plasmother",
     "the_ravager",
     "the_red_knight",
+    "the_remorseless_corruptor",
     "the_rootkraken",
     "the_sandking_fake",
     "the_scion_of_havoc",
@@ -1683,6 +1676,7 @@
     "the_sinister_hermit_dirty",
     "the_snapper",
     "the_souldespoiler",
+    "the_source_of_corruption",
     "the_spellstealer",
     "the_unarmored_voidborn",
     "the_unwelcome",

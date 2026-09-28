@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-br-health-experience
 title: TibiaWiki BR health and experience where Fandom is uncertain (D43)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1051
 jira: KAN-16
 base_sha: a911e667e012005b0c41a3b0974280c4535db69c
-head_sha: null
-final_head_sha: null
+head_sha: 5bd529c0e23ad5faafac722679b1b5521eee3d75
+final_head_sha: 5bd529c0e23ad5faafac722679b1b5521eee3d75
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -76,3 +76,8 @@ persistence or authority change.
 - `wiki_br_capture.py self-test` and `wiki_br_fill.py self-test` pass.
 - The census, staging, tree regeneration, the Rust tests and the governance and policy validators pass.
 - The PR gets an exact-head review because `content/world` changes.
+
+## Completion
+
+Merged as PR #1051 (`e91cafdd95c165668126e1dccaf93422af29d55c`) from final head `5bd529c`; required checks passed on that head; the one Codex finding (packet head fields) was answered and resolved.
+Owner released.
