@@ -49,6 +49,15 @@ Merge rules:
   source price; the row records `{"fact": "trade.<item>.<direction>", "rule": "WIKI_PRICE", "chosen": "wiki",
   "item_name": <the offer's item name>, "price": <the wiki price>}`.
   One wiki alone, or two wikis that disagree, never change a price;
+- D13 (`--tibiopedia-facts`, with `--br-facts`): Tibiopedia is the third wiki. Each wiki states one price for
+  an offer when it lists the NPC, item and direction with a single explicit price (every row of it the same).
+  When D12 does not apply and two of the three wikis state the same price, that price replaces a differing
+  source price; the row records `{"fact": "trade.<item>.<direction>", "rule": "WIKI_MAJORITY_PRICE",
+  "chosen": "wiki", "item_name": <the offer's item name>, "price": <the price>, "wikis": <the agreeing
+  wikis, sorted, from fandom/br/tibiopedia>}`. With the Tibiopedia facts, D12 and D13 look a plain offer up
+  under its registered Item name, so Fandom and BR agreeing is always D12 and a majority always includes
+  Tibiopedia; an offer with a count or sub type (a fluid, charges) keeps the D12 lookup and is never changed by
+  D13. The source price stays whenever no two wikis agree;
 - key: `oteryn:npc.<slug>` where the slug is derived once from the registered name (ASCII fold,
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
   Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
@@ -56,6 +65,7 @@ Merge rules:
 Usage: python promotion_candidates.py --canary out/canary/bundles --crystal out/crystal/bundles \
          --snapshot out/fandom/fandom-npc-snapshot.json --item-map out/native-map.json \
          --br-facts ../../../imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json \
+         --tibiopedia-facts ../../../imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json \
          --out samples/promotion-candidates-v1.json
 """
 import argparse
@@ -74,7 +84,7 @@ POSITION_RANK = {'MATCH': 0, 'NEAR': 1, 'MISMATCH': 2}
 LOADABLE = ('RESOLVED', 'PARTIAL')
 PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
 WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING',
-                           'WIKI_CONFIRMED', 'WIKI_PRICE')  # kept in the output
+                           'WIKI_CONFIRMED', 'WIKI_PRICE', 'WIKI_MAJORITY_PRICE')  # kept in the output
 DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
 VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
 SPELLING_MIN_LENGTH = 10
@@ -197,6 +207,18 @@ def route_fact(row):
     return (json.dumps(row['destination'], sort_keys=True), row['price'], row['premium'], row['min_level'], row['gate'])
 
 
+def registry_item_names():
+    """Folded registered names of the committed Item definitions, by Item key."""
+    names = {}
+    for path in sorted((Path(__file__).resolve().parents[3] / 'content/items/definitions').glob('items-*.json')):
+        for record in json.loads(path.read_text(encoding='utf-8'))['records']:
+            definition = record['definition']
+            presentation = definition.get('semantics', {}).get('presentation', {})
+            if presentation.get('state') == 'KNOWN' and presentation['value']['name'].get('state') == 'KNOWN':
+                names[definition['identity']['key']] = fold(presentation['value']['name']['value'])
+    return names
+
+
 def offer_key(offer):
     item = offer['client_id'] if offer['client_id'] is not None else offer['server_item_id']
     return (item, offer['count'], offer['sub_type'])
@@ -211,7 +233,7 @@ def source_offers(bundle):
 
 
 class Builder:
-    def __init__(self, snapshot, item_map, br_facts=None):
+    def __init__(self, snapshot, item_map, br_facts=None, tibiopedia_facts=None, registry_names=None):
         # D12: TibiaWiki BR trade lists by folded NPC title/name, then direction, then folded item name
         self.br_trade = {}
         for page in (br_facts or {}).get('pages', []):
@@ -222,10 +244,20 @@ class Builder:
                     trades[direction].setdefault(fold(item), []).extend(prices)
             for label in (page['title'], page['name']):
                 self.br_trade.setdefault(fold(label), trades)
+        # D13: Tibiopedia trade lists, keyed the same way (its page name is the title without "NPC: ")
+        self.tibiopedia_trade = {}
+        for page in (tibiopedia_facts or {}).get('pages', []):
+            trades = {direction: {fold(item): prices for item, prices in items.items()}
+                      for direction, items in page['trades'].items()}
+            for label in (page['name'], page['title']):
+                if label:
+                    self.tibiopedia_trade.setdefault(fold(label), trades)
         self.wiki_npcs = snapshot['npcs']
         self.wiki = build_wiki_index(self.wiki_npcs)
         self.wiki_trade = snapshot.get('trade', {})
         self.items = {row['source_item_id']: row for row in item_map['records']}
+        # D13 looks each offer up under its registered Item name (folded), by Item key
+        self.registry_names = registry_names or {}
         self.held, self.stats = [], Counter()
 
     def hold(self, name, sources, reason, detail=None):
@@ -345,26 +377,56 @@ class Builder:
                 continue
             # Canary `buy` is what the player pays the NPC; `sell` is what the NPC pays the player
             for direction, price in (('SellToPlayer', offer['buy_price']), ('BuyFromPlayer', offer['sell_price'])):
-                wiki_price = self.wiki_price(name, direction, offer['item_name'], wiki)
+                # D13: with the Tibiopedia facts, a plain offer is looked up under its registered Item name, for D12
+                # and D13 alike, never under the source's own item name; an offer with a count or sub type (a fluid,
+                # charges) is more than its Item, so it keeps the D12 lookup and no majority settles it
+                plain = offer['count'] is None and offer['sub_type'] is None
+                item_name = (self.registry_names.get(item['key']) if self.tibiopedia_trade and plain
+                             else offer['item_name'])
+                wiki_price, rule, wikis = self.wiki_price(name, direction, item_name, wiki), 'WIKI_PRICE', None
+                if wiki_price is None and self.tibiopedia_trade and plain:
+                    wiki_price, wikis = self.majority_price(name, direction, item_name, wiki)
+                    rule = 'WIKI_MAJORITY_PRICE'
                 if price is not None and wiki_price is not None and wiki_price != price:
-                    arbitration.append({'fact': f'{label}.{direction}', 'rule': 'WIKI_PRICE', 'chosen': 'wiki',
-                                        'item_name': offer['item_name'], 'price': wiki_price})
+                    arbitration.append({'fact': f'{label}.{direction}', 'rule': rule, 'chosen': 'wiki',
+                                        'item_name': item_name, 'price': wiki_price,
+                                        **({'wikis': wikis} if wikis else {})})
                     price = wiki_price
                 if price is not None:
                     offers.append({'item': item, 'source_item_id': key[0], 'direction': direction, 'unit_price': price,
                                    'count': offer['count'], 'sub_type': offer['sub_type']})
         return offers
 
-    def wiki_price(self, npc_name, direction, item_name, fandom):
-        """D12: the price both wikis state for this offer, or None when either is silent or they disagree."""
+    def stated_prices(self, npc_name, direction, item_name, fandom):
+        """The single explicit price each wiki states for this offer, by wiki (fandom/br/tibiopedia); a wiki that
+        is silent, gives no explicit price, or whose rows disagree is left out."""
         if not isinstance(item_name, str):
-            return None
+            return {}
+        stated = {}
         row = fandom.get(item_name.lower())
         fandom_price = row and row['buy_price' if direction == 'SellToPlayer' else 'sell_price']
-        br_prices = set(self.br_trade.get(fold(npc_name), {}).get(direction, {}).get(fold(item_name), []))
-        # BR states one price for the offer only when every row of it gives the same explicit price
-        br_price = br_prices.pop() if len(br_prices) == 1 else None
-        return fandom_price if fandom_price is not None and fandom_price == br_price else None
+        if fandom_price is not None:
+            stated['fandom'] = fandom_price
+        for wiki, trade in (('br', self.br_trade), ('tibiopedia', self.tibiopedia_trade)):
+            # one price for the offer only when every row of it gives the same explicit price
+            prices = set(trade.get(fold(npc_name), {}).get(direction, {}).get(fold(item_name), []))
+            if len(prices) == 1 and None not in prices:
+                stated[wiki] = prices.pop()
+        return stated
+
+    def wiki_price(self, npc_name, direction, item_name, fandom):
+        """D12: the price both wikis state for this offer, or None when either is silent or they disagree."""
+        stated = self.stated_prices(npc_name, direction, item_name, fandom)
+        return stated['fandom'] if 'fandom' in stated and stated['fandom'] == stated.get('br') else None
+
+    def majority_price(self, npc_name, direction, item_name, fandom):
+        """D13: the price at least two of the three wikis state for this offer and those wikis, else (None, None)."""
+        stated = self.stated_prices(npc_name, direction, item_name, fandom)
+        for price in sorted(set(stated.values())):
+            wikis = sorted(wiki for wiki, value in stated.items() if value == price)
+            if len(wikis) >= 2:
+                return price, wikis
+        return None, None
 
     def currency(self, bundles, left_out):
         values = {json.dumps(b['services']['trade']['currency'], sort_keys=True) for b in bundles.values()
@@ -469,6 +531,7 @@ def main():
     parser.add_argument('--snapshot', required=True)
     parser.add_argument('--item-map', required=True, help='export_reference_item_identity_map output')
     parser.add_argument('--br-facts', help='committed TibiaWiki BR NPC facts (D12 wiki prices)')
+    parser.add_argument('--tibiopedia-facts', help='committed Tibiopedia NPC facts (D13 majority prices; needs --br-facts)')
     parser.add_argument('--out', required=True)
     args = parser.parse_args()
     snapshot_bytes = Path(args.snapshot).read_bytes()
@@ -477,7 +540,12 @@ def main():
     if item_map['schema'] != 'OTERYN_PROTECTED_ITEM_IDENTITY_MAP_EXPORT/v1':
         raise SystemExit('unexpected item map schema')
     br_facts_bytes = Path(args.br_facts).read_bytes() if args.br_facts else None
-    builder = Builder(json.loads(snapshot_bytes), item_map, json.loads(br_facts_bytes) if br_facts_bytes else None)
+    if args.tibiopedia_facts and not br_facts_bytes:
+        parser.error('--tibiopedia-facts (D13) needs --br-facts (D12)')
+    tibiopedia_bytes = Path(args.tibiopedia_facts).read_bytes() if args.tibiopedia_facts else None
+    builder = Builder(json.loads(snapshot_bytes), item_map, json.loads(br_facts_bytes) if br_facts_bytes else None,
+                      json.loads(tibiopedia_bytes) if tibiopedia_bytes else None,
+                      registry_item_names() if tibiopedia_bytes else None)
     canary, crystal = source_diff.load(args.canary), source_diff.load(args.crystal)
     records = []
     for left, right in source_diff.pair(canary, crystal):
@@ -508,10 +576,12 @@ def main():
             builder.stats['left_out_offers' if row['fact'].startswith('trade.') else 'left_out_routes'] += 1
     report = {
         'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY',
-        'decisions': ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'] + (['D12'] if br_facts_bytes else []),
+        'decisions': ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'] + (['D12'] if br_facts_bytes else [])
+        + (['D13'] if tibiopedia_bytes else []),
         'snapshot_sha256': hashlib.sha256(snapshot_bytes).hexdigest(),
         'item_map_sha256': hashlib.sha256(item_map_bytes).hexdigest(),
         **({'br_facts_sha256': hashlib.sha256(br_facts_bytes).hexdigest()} if br_facts_bytes else {}),
+        **({'tibiopedia_facts_sha256': hashlib.sha256(tibiopedia_bytes).hexdigest()} if tibiopedia_bytes else {}),
         'totals': {'candidates': len(promoted), 'with_travel': sum(1 for r in promoted if r['travel_service']),
                    'with_trade': sum(1 for r in promoted if r['trade_service']),
                    **dict(sorted(builder.stats.items()))},

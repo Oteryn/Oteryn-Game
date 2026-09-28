@@ -81,11 +81,11 @@ const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "d4f1042ae2188ee852656feab2416c1d36b7abd4fc16ded8cbc68397f877d690";
+const NPC_STAGED_SHA256: &str = "67a50aa9bf33b26b48ed618bd11fc1f867ea66be727d44983d98618303877aee";
 const NPC_STAGE_TOOL_SHA256: &str =
-    "ddfe3e0844fe964bc4359f5f200835b80ab17c828fd6d9f14335e55e3c729101";
+    "304978541a377ee42765fd2bdd84c39ff966e0ad5c0f69412160229e0e64f089";
 const NPC_CANDIDATES_SHA256: &str =
-    "6eac448abe51019154ea42afb6de72fcbb9dfb824fb5e6c16ed3fbeedd91dcb2";
+    "5cc03b2dc4bc1004b212b286512ffa693890ba4467d0701604c36b7a14ef2a7f";
 const NPC_WIKI_SNAPSHOT_SHA256: &str =
     "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42";
 const NPC_ITEM_MAP_SHA256: &str =
@@ -95,6 +95,10 @@ const NPC_WIKI_REVISION: &str = "tibiawiki-npc-52f87d29eddd1a4e";
 const NPC_BR_FACTS_SHA256: &str =
     "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a";
 const NPC_BR_REVISION: &str = "tibiawiki-br-npc-0773232ddd356be2";
+/// D13: offer prices two of Fandom, TibiaWiki BR and Tibiopedia agree on also come from the committed Tibiopedia facts.
+const NPC_TIBIOPEDIA_FACTS_SHA256: &str =
+    "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651";
+const NPC_TIBIOPEDIA_REVISION: &str = "tibiopedia-npc-43bfc91ec7721df1";
 const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
 const NPC_COUNT: usize = 1088;
 const NPC_RECORDS: usize = 2176;
@@ -102,10 +106,10 @@ const NPC_DECLARATIONS: usize = 2151;
 const NPC_DIALOGUE_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260928-npc-dialogue-wave-a-staged.json");
 const NPC_DIALOGUE_STAGED_SHA256: &str =
-    "0c82197739ad2d5dbb9d36c5f8a2b49c7671696a13d38d7a336477bf9860d894";
+    "a3f9e997d29c80379a0b912f7905e868cb438f1b7e1b2d062e6695e7c5e390ce";
 const NPC_DIALOGUES: usize = 701;
 const NPC_DIALOGUE_NODES: usize = 6313;
-const NPC_BINDINGS: usize = 2282;
+const NPC_BINDINGS: usize = 2296;
 const CREATURE_COUNT: usize = 1450;
 const CREATURE_RECORDS: usize = 20379;
 const CREATURE_PROFILES: usize = 19435;
@@ -123,7 +127,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 8,
+        max_import_records: 9,
         max_reimport_states: ENCOUNTER_COUNT,
     }
 }
@@ -1337,6 +1341,8 @@ struct NpcPopulation {
     source: ProjectV2Source,
     br_import: ImportBatch,
     br_source: ProjectV2Source,
+    tibiopedia_import: ImportBatch,
+    tibiopedia_source: ProjectV2Source,
     records: Vec<ProjectReferenceRecord>,
     declarations: Vec<ProjectV2Declaration>,
     profiles: Vec<ProjectV2AuthoringProfile>,
@@ -1416,6 +1422,8 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         || source["wiki_revision"] != NPC_WIKI_REVISION
         || source["br_facts_sha256"] != NPC_BR_FACTS_SHA256
         || source["br_revision"] != NPC_BR_REVISION
+        || source["tibiopedia_facts_sha256"] != NPC_TIBIOPEDIA_FACTS_SHA256
+        || source["tibiopedia_revision"] != NPC_TIBIOPEDIA_REVISION
         || counts["npcs"] != NPC_COUNT
         || counts["records"] != NPC_RECORDS
         || counts["declarations"] != NPC_DECLARATIONS
@@ -1473,7 +1481,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         return Err("staged NPC admission counts drifted".into());
     }
     let import = ImportBatch {
-        batch_id: "g4-npc-wave-a-tibiawiki-r4".to_owned(),
+        batch_id: "g4-npc-wave-a-tibiawiki-r5".to_owned(),
         source_repository: "tibia.fandom.com".to_owned(),
         source_revision: NPC_WIKI_REVISION.to_owned(),
         source_artifact_sha256: NPC_WIKI_SNAPSHOT_SHA256.to_owned(),
@@ -1481,7 +1489,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         source_generation_profile: "OTERYN_NPC_FANDOM_SNAPSHOT/v1".to_owned(),
         importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
         mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
-        mapper_revision: "npc-admission-r4".to_owned(),
+        mapper_revision: "npc-admission-r5".to_owned(),
         mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
         reimport_states: Vec::new(),
@@ -1502,7 +1510,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         source_generation_profile: "OTERYN_NPC_TIBIAWIKI_BR_FACTS/v1".to_owned(),
         importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
         mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
-        mapper_revision: "npc-admission-r4".to_owned(),
+        mapper_revision: "npc-admission-r5".to_owned(),
         mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
         reimport_states: Vec::new(),
@@ -1514,11 +1522,34 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         sha256: br_import.source_artifact_sha256.clone(),
         evidence: ProjectV2EvidenceClass::Derived,
     };
+    let tibiopedia_import = ImportBatch {
+        batch_id: "g4-npc-prices-tibiopedia-r1".to_owned(),
+        source_repository: "tibiopedia.pl".to_owned(),
+        source_revision: NPC_TIBIOPEDIA_REVISION.to_owned(),
+        source_artifact_sha256: NPC_TIBIOPEDIA_FACTS_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_NPC_TIBIOPEDIA_FACTS/v1".to_owned(),
+        importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
+        mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "npc-admission-r5".to_owned(),
+        mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let tibiopedia_source = ProjectV2Source {
+        key: "oteryn:source.tibiawiki".to_owned(),
+        import_batch_id: tibiopedia_import.batch_id.clone(),
+        revision: tibiopedia_import.source_revision.clone(),
+        sha256: tibiopedia_import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::Derived,
+    };
     Ok(NpcPopulation {
         import,
         source,
         br_import,
         br_source,
+        tibiopedia_import,
+        tibiopedia_source,
         records,
         declarations,
         profiles,
@@ -1593,6 +1624,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         source: npc_source,
         br_import: npc_br_import,
         br_source: npc_br_source,
+        tibiopedia_import: npc_tibiopedia_import,
+        tibiopedia_source: npc_tibiopedia_source,
         records: npc_records,
         declarations: npc_declarations,
         profiles: npc_profiles,
@@ -1605,7 +1638,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-npc-wave-a-r4".to_owned(),
+                project_revision: "g4-npc-wave-a-r5".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),
@@ -1621,6 +1654,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     creature_wiki_import,
                     npc_import,
                     npc_br_import,
+                    npc_tibiopedia_import,
                 ],
                 metadata: Vec::new(),
             },
@@ -1634,6 +1668,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     creature_wiki_source,
                     npc_source,
                     npc_br_source,
+                    npc_tibiopedia_source,
                 ],
                 declarations,
                 source_identity_bindings: bindings,

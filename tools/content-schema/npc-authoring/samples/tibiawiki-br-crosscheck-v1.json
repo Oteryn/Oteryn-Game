@@ -2,9 +2,9 @@
  "close_tiles": 10,
  "evidence": "REFERENCE_CROSSCHECK_ONLY",
  "inputs": {
-  "admission_sha256": "d4f1042ae2188ee852656feab2416c1d36b7abd4fc16ded8cbc68397f877d690",
-  "candidates_sha256": "6eac448abe51019154ea42afb6de72fcbb9dfb824fb5e6c16ed3fbeedd91dcb2",
-  "dialogues_sha256": "0c82197739ad2d5dbb9d36c5f8a2b49c7671696a13d38d7a336477bf9860d894",
+  "admission_sha256": "67a50aa9bf33b26b48ed618bd11fc1f867ea66be727d44983d98618303877aee",
+  "candidates_sha256": "5cc03b2dc4bc1004b212b286512ffa693890ba4467d0701604c36b7a14ef2a7f",
+  "dialogues_sha256": "a3f9e997d29c80379a0b912f7905e868cb438f1b7e1b2d062e6695e7c5e390ce",
   "facts_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
@@ -24480,17 +24480,6 @@
      "SellToPlayer:vial",
      "SellToPlayer:vial"
     ],
-    "price_mismatch": [
-     {
-      "br": [
-       3
-      ],
-      "offer": "SellToPlayer:roll",
-      "ours": [
-       2
-      ]
-     }
-    ],
     "status": "DIFFER"
    }
   },
@@ -25733,17 +25722,6 @@
      "SellToPlayer:soulfire rune",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
-    ],
-    "price_mismatch": [
-     {
-      "br": [
-       15
-      ],
-      "offer": "SellToPlayer:blank rune",
-      "ours": [
-       10
-      ]
-     }
     ],
     "status": "DIFFER"
    }
