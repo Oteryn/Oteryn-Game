@@ -72,13 +72,14 @@ PLAYERS_ONLY_PICKER = ('if target:isPlayer() then if target:getPosition():isProt
                        'return true end return false')
 
 
-def players_only_chain_picker(text):
-    """True when the script's CALLBACK_PARAM_CHAINPICKER function is exactly the players-only template."""
-    match = re.search(r'setCallback\(\s*CALLBACK_PARAM_CHAINPICKER\s*,\s*"(\w+)"\s*\)', text)
-    if not match:
-        return False
-    body = re.search(r'function\s+' + match.group(1) + r'\s*\(\s*\w+\s*,\s*target\s*\)(.*?)\nend\b', text, re.S)
-    return bool(body) and re.sub(r'\s+', ' ', body.group(1)).strip() == PLAYERS_ONLY_PICKER
+def players_only_chain_pickers(text):
+    """The CALLBACK_PARAM_CHAINPICKER functions of a script whose body is exactly the players-only template."""
+    matched = set()
+    for name in set(re.findall(r'setCallback\(\s*CALLBACK_PARAM_CHAINPICKER\s*,\s*"(\w+)"\s*\)', text)):
+        body = re.search(r'function\s+' + name + r'\s*\(\s*\w+\s*,\s*target\s*\)(.*?)\nend\b', text, re.S)
+        if body and re.sub(r'\s+', ' ', body.group(1)).strip() == PLAYERS_ONLY_PICKER:
+            matched.add(name)
+    return matched
 
 
 def body_tier(text, shared, callbacks):
@@ -212,8 +213,11 @@ class SpellScripts:
         combats = list(rec['combats'].values())
         callbacks = {str(a[0]).lstrip('@') for c in combats for m, a in calls(c) if m == 'setCallback' and a}
         text = path.read_text(encoding='utf-8', errors='replace')
-        players_only = players_only_chain_picker(text)
-        if players_only:
+        players_only = players_only_chain_pickers(text)
+        pickers = {str(a[1]) for c in combats for m, a in calls(c)
+                   if m == 'setCallback' and len(a) >= 2 and str(a[0]).lstrip('@') == 'CALLBACK_PARAM_CHAINPICKER'}
+        if pickers and pickers <= players_only:
+            # Every chain picker of the script is the players-only template; any other picker keeps the script P4.
             callbacks.discard('CALLBACK_PARAM_CHAINPICKER')
         result['tier'], result['tier_reasons'] = body_tier(text, result['shared'], callbacks)
         if result['tier'] in ('P4', 'NOOP'):
@@ -249,7 +253,7 @@ class SpellScripts:
         result['variants'] = variants
         result['combats'] = {n: self._combat(lua, combats[n]) for n in sorted(set(variants))}
         for combat in result['combats'].values():
-            if players_only and 'CALLBACK_PARAM_CHAINPICKER' in combat['callbacks']:
+            if combat['callbacks'].get('CALLBACK_PARAM_CHAINPICKER') in players_only:
                 combat['chain_target_filter'] = 'players'
         return result
 
