@@ -414,11 +414,25 @@
     },
     "transitions_in_both_servers": 1371,
     "storyline_quests_linked_to_wiki": 52,
-    "reward_only_quests_absorbed": 21,
+    "reward_only_quests_absorbed": 24,
     "script_only_quests": 35,
-    "catalogue_quests": 192,
+    "catalogue_quests": 204,
     "by_status": {
       "mapped": 529
+    },
+    "requirements_parsed": {
+      "quests_with_wiki_requirements": 198,
+      "premium": {
+        "parsed": 196,
+        "partial": 2
+      },
+      "min_level": {
+        "note": 4,
+        "parsed": 184,
+        "range": 5,
+        "uncertain": 3,
+        "varies": 1
+      }
     }
   },
   "reward_only_absorbed": [
@@ -428,17 +442,20 @@
     "canary:quest/forgotten_knowledge_quest",
     "canary:quest/secret_service_quest",
     "canary:quest/shadows_of_yalahar_quest",
+    "canary:quest/thais_lighthouse_quest",
     "canary:quest/the_ape_city_quest",
     "canary:quest/the_explorer_society_quest",
     "canary:quest/the_hidden_city_of_beregar_quest",
     "canary:quest/the_ice_islands_quest",
     "canary:quest/the_inquisition_quest",
     "canary:quest/the_new_frontier_quest",
+    "canary:quest/the_outlaw_camp_quest",
     "canary:quest/the_paradox_tower_quest",
     "canary:quest/the_queen_of_the_banshees_quest",
     "canary:quest/the_secret_library_quest",
     "canary:quest/the_shattered_isles_quest",
     "canary:quest/the_thieves_guild_quest",
+    "canary:quest/the_white_raven_monastery_quest",
     "canary:quest/threatened_dreams_quest",
     "canary:quest/what_a_foolish_quest",
     "canary:quest/wrath_of_the_emperor_quest",
