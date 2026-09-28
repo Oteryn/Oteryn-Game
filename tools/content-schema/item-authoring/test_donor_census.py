@@ -217,6 +217,40 @@ def test_classify_wiki_and_owner_table_never_match_a_provisional_key():
     check(key.startswith("donor:"), key)
 
 
+def test_minted_donor_id_joins_wiki_evidence_under_its_epoch_2_key():
+    # Task B2: once B1b binds a donor id, the wiki-evidence join runs under that
+    # committed registry key; an unbound (held) id keeps the provisional key.
+    key = "oteryn:item.registry.i00038100"
+    index = {610: (key, "crystal_exact_binding")}
+    check(donor_census.registry_key(610, index) == key, "minted id uses its key")
+    check(
+        donor_census.registry_key(611, index) == donor_census.donor_key(611),
+        "held id keeps the provisional key",
+    )
+    check(donor_census.registry_key(610, None) == donor_census.donor_key(610), "none")
+    wiki_fallback = {
+        key: {
+            "profile": "tool",
+            "matched_names": {"skewered thing"},
+            "match_basis": "itemid",
+            "evidence": {"resolution": "direct"},
+            "availability": None,
+        }
+    }
+    records = {610: {"name": "skewered thing", "attrs": {}, "flags": {}}}
+    donor = synthetic_donor(records)
+    joined = donor_census.classify_donor_item(
+        610, donor, donor["items"], wiki_fallback, {}, index
+    )
+    check(joined["outcome"] == "resolved", joined)
+    check(joined["family_profile"] == "tool", joined)
+    check(joined["family_profile_basis"] == "wiki_evidence_fallback", joined)
+    unbound = donor_census.classify_donor_item(
+        610, donor, donor["items"], wiki_fallback, {}, None
+    )
+    check(unbound.get("family_profile_basis") != "wiki_evidence_fallback", unbound)
+
+
 def test_donor_census_never_matches_real_committed_tables():
     """The real committed wiki-evidence snapshot and owner leftover-family table are
     both keyed by `oteryn:item.registry.*`; a provisional `donor:` key can never
@@ -311,6 +345,7 @@ if __name__ == "__main__":
         test_classify_dead_item_route_and_owner_table_both_still_apply,
         test_classify_last_resort_routes_apply,
         test_classify_wiki_and_owner_table_never_match_a_provisional_key,
+        test_minted_donor_id_joins_wiki_evidence_under_its_epoch_2_key,
         test_donor_census_never_matches_real_committed_tables,
         test_build_census_donor_ids_never_include_base_ids,
     ]
