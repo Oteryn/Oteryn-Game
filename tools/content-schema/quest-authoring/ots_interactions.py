@@ -81,11 +81,14 @@ CREATE_ITEM = re.compile(r'^local\s+(\w+)\s*=\s*Game\.createItem\(\s*(\d+)\s*\)$
 TEXTED_ITEM = re.compile(r'(\w+):setAttribute\(\s*ITEM_ATTRIBUTE_TEXT\b')
 BLOCKED_MOVEMENT = BLOCKED['Movement']
 BLOCKED_WORLD_OBJECT = BLOCKED['WorldObject']
-# D37: only a bare `teleportTo(fromPosition)` (the previous-position variable itself, at most followed
-# by other, non-positional arguments such as a `pushMove` flag) is a relocation to the previous tile.
-# An offset or lookup that merely mentions `fromPosition` (e.g. `Position(fromPosition.x + 1, ...)`)
-# does not fully-delimited-literal match this, so it stays a computed, blocked target.
-TELEPORT_PREVIOUS = re.compile(r'teleportTo\(\s*fromPosition\s*(?:,\s*[^()]*)?\)')
+# D37: `teleportTo`'s own target argument (the first one, split from the rest with the same
+# bracket-aware `split_args` the D38 operations use) decides the relocation: a complete literal
+# `Position(x,y,z)` is a named anchor, and the bare `fromPosition` variable itself (trailing arguments
+# such as a `pushMove` flag are its own, separate arguments and do not disqualify it) is the previous
+# tile. Anything else -- an offset, a lookup, or merely referencing `fromPosition` inside a larger
+# expression such as `Position(fromPosition.x + 1, ...)` or `toPosition or Position(1,2,7)` -- is not a
+# fully-delimited literal match of that one argument, so it stays a computed, blocked target.
+TELEPORT_CALL = re.compile(r'teleportTo\(')
 # D38 world-object overlay operations: a call matched by one regex names its operation kind and, via its
 # own capture group, the receiver it acts on (the identity a later revert must match to attach, never by
 # list position alone). `Game.createItem(...)` has no such receiver; a `local X = Game.createItem(...)`
@@ -105,22 +108,27 @@ POSITION_REVERT_ITEM = re.compile(r'\bPosition\.revertItem\(')
 
 def parse_revert(raw):
     """Whether `raw` is a revert call, and what it provably reverts: (is_revert, receiver, literal
-    position groups, literal delay in ms). `argument()` bounds each call's own argument list so a
-    literal position found there is that call's, never a look-alike elsewhere on the line."""
+    position groups, literal delay in ms). Each call's own argument list is split with `split_args`
+    (bracket-nesting aware) and only the specific position argument itself -- never the argument list
+    searched as a whole, which would also match a look-alike literal buried in an unrelated expression
+    such as `toPosition + Position(1,2,7)` -- is checked for a complete literal match."""
     if (m := REVERT_METHOD.search(raw)):
         return True, m.group(1), None, None
     if (m := ADD_STOP_EVENT.search(raw)):
-        args = argument(raw, m.end())
-        if not re.match(r'\s*Position\.revertItem\b', args):
+        args = split_args(argument(raw, m.end()))
+        if not args or args[0] != 'Position.revertItem':
             return False, None, None, None
-        delay = None
-        if (dm := re.match(r'\s*Position\.revertItem\s*,\s*(\d+)\s*(?:,|$)', args)):
-            delay = int(dm.group(1))
-        pos = POSITION.search(args)
+        # addEvent(Position.revertItem, delay, position, ...): the scheduler's own two fixed arguments,
+        # then whatever Position.revertItem itself is invoked with; a position is conventionally its
+        # first argument (the third argument to addEvent overall).
+        delay = int(args[1]) if len(args) > 1 and re.fullmatch(r'\d+', args[1]) else None
+        target = args[2] if len(args) > 2 else None
+        pos = POSITION.fullmatch(target) if target else None
         return True, None, (pos.groups() if pos else None), delay
     if (m := POSITION_REVERT_ITEM.search(raw)):
-        args = argument(raw, m.end())
-        pos = POSITION.search(args)
+        args = split_args(argument(raw, m.end()))
+        target = args[0] if args else None
+        pos = POSITION.fullmatch(target) if target else None
         return True, None, (pos.groups() if pos else None), None
     return False, None, None, None
 
@@ -357,21 +365,23 @@ class Script:
             found.append({'owner': 'Ability', 'effect': 'summon',
                           'creature': ref('Creature', f'{self.namespace}:creature/{slug(m.group(1))}'),
                           **({'anchor': self.anchor(pos.groups())} if pos else {'anchor_source_line': number})})
-        if 'teleportTo(' in code:
-            pos = POSITION.search(raw)
+        if 'teleportTo(' in code and (tm := TELEPORT_CALL.search(raw)):
+            target_args = split_args(argument(raw, tm.end()))
+            target = target_args[0] if target_args else None
+            pos = POSITION.fullmatch(target) if target else None
             if pos:
                 # D37: a relocation to a named anchor, in the current scope (VSL-MOVE-01/ChannelRuntime);
                 # cross-Channel/Instance relocation (SCOPE_HANDOFF) has no source signal here and stays
                 # out of scope until that contract exists (proposal §3).
                 found.append({'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
                               'target': {'kind': 'anchor', 'anchor': self.anchor(pos.groups())}})
-            elif TELEPORT_PREVIOUS.search(raw):
+            elif target == 'fromPosition':
                 found.append({'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
                               'target': {'kind': 'previous_position'}})
             else:
                 # a computed target (an offset, a table lookup, anything short of the bare previous-
-                # position variable itself): stays blocked until its definition can name an anchor, or a
-                # DUR-04 component proposes the target.
+                # position variable itself as its own complete argument): stays blocked until its
+                # definition can name an anchor, or a DUR-04 component proposes the target.
                 found.append({'owner': 'Movement', 'status': 'blocked', 'reason': BLOCKED_MOVEMENT, 'to_source_line': number})
         removal = re.search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(([^()]*)\)', raw)
         consumed = removal and self.consumed(removal, number)
@@ -524,22 +534,23 @@ class Script:
 
     def revert(self, out, child):
         """Attach a `_revert` sentinel (from `children()`) to the operation it provably reverts: the
-        nearest preceding typed WorldObject operation in this same statement list whose own identity
-        (receiver, or a `local X = ...` constructor's name) or pre-authored anchor the revert's own
-        receiver/literal position matches (D38 §4: the revert is the same object's own later operation,
-        so it is transcribed as a field on that operation, never its own child). List position alone,
-        with no matching identity, is never sufficient, so an unmatched or ambiguous revert stays
-        blocked instead."""
-        prior = next((c for c in reversed(out) if c.get('owner') == 'WorldObject' and 'operation' in c), None)
-        matched = prior is not None and self.same_target(prior, child['_revert_receiver'], child['_revert_position'])
-        if not matched:
+        preceding typed WorldObject operation, anywhere earlier in this same statement list (not only
+        the immediately preceding one), whose own identity (receiver, or a `local X = ...` constructor's
+        name) or pre-authored anchor the revert's own receiver/literal position matches (D38 §4: the
+        revert is the same object's own later operation, so it is transcribed as a field on that
+        operation, never its own child). List position is never itself the match: a revert with no
+        matching candidate, or with more than one equally plausible candidate, stays blocked instead."""
+        receiver, pos = child['_revert_receiver'], child['_revert_position']
+        candidates = [c for c in out if c.get('owner') == 'WorldObject' and 'operation' in c
+                     and self.same_target(c, receiver, pos)]
+        if len(candidates) != 1:
             blocked = {'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT,
                       'source_line': child['_source_line']}
             if child.get('repeated'):
                 blocked['repeated'] = True
             out.append(blocked)
         elif child['_revert_delay_ms'] is not None:
-            prior['revert_after_ms'] = child['_revert_delay_ms']
+            candidates[0]['revert_after_ms'] = child['_revert_delay_ms']
 
     def append_children(self, out, children):
         for child in children:

@@ -365,7 +365,7 @@ joined by that key; `interaction.schema.json` and
 | Interactions | 1,221 |
 | Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 400 / 202 / 14 / 6 |
 | Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Outfit / Mount / Experience / Presentation / Movement / WorldObject | 947 / 208 / 343 (160, 183) / 36 / 14 / 5 / 9 / 2,679 / 800 / 891 |
-| D37 relocation children: to a named anchor / blocked (computed target, incl. an unproven previous-tile expression) | 219 / 581 |
+| D37 relocation children: to a named anchor / blocked (a computed target, or a target the committed transcription cannot yet prove is a fully-delimited literal) | 0 / 800 |
 | D38 overlay operations: classified by kind (`TRANSFORM`/`CREATE`/`REMOVE`/`RETAG`) / still blocked pending call-type re-transcription from source | 0 / 891 |
 | Quest children naming a mission transition | 215 |
 | Unresolved statements / conditions | 1,908 / 1,916 |
@@ -385,26 +385,29 @@ Canary: the first seal lever's item ids (the wiki is silent) and the first seal'
 CrystalServer triggers elsewhere and closes late, against the wiki.
 
 The Queen of the Banshees is also the worked example for D37 and D38 (`ots_interactions.py`,
-`interaction.schema.json`). Its 20 interactions carry 19 Movement and 27 WorldObject children. Only a
-`teleportTo(fromPosition)` call with no further argument (allowing a trailing non-positional one such
-as a `pushMove` flag) is a typed D37 relocation to the previous tile; an offset or lookup that merely
-mentions `fromPosition` (e.g. `Position(fromPosition.x + 1, ...)`) is not a fully-delimited literal
-match and stays blocked. The converter now names 9 of its Movement children as typed relocations to a
-named anchor (`request: relocate`, `scope: in_scope`); the other 10 (the seven seal flames' step-back
-teleports plus the two picked-at-runtime sacrifice/computed targets) stay blocked until each can name
-an anchor. Its 27 WorldObject children — the seal levers and the magic walls the two conflicts (§6.4)
-are about — are not yet classified into `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG`: the committed
+`interaction.schema.json`). Its 20 interactions carry 19 Movement and 27 WorldObject children, and all
+46 currently stay blocked. `teleportTo`'s own target argument (split from the rest with the same
+bracket-aware splitter D38 uses) must fully match a literal `Position(x,y,z)` to name an anchor, or be
+exactly the bare `fromPosition` variable to relocate to the previous tile; an offset, a lookup, or a
+literal buried in a larger expression such as `toPosition or Position(1,2,7)` is not a fully-delimited
+match of that one argument. Its nine seal-flame anchor teleports and seven step-back-to-previous-tile
+relocations were typed under an earlier, looser rule that matched a literal position or the name
+`fromPosition` anywhere on the line; neither is recorded with enough evidence (the committed
+transcription never kept the raw argument text, only the resolved anchor or the bare fact) to prove
+under the current rule that the argument itself, not a larger expression around it, was the literal, so
+all 19 now stay blocked rather than risk a false positive. Its 27 WorldObject children — the seal
+levers and the magic walls the two conflicts (§6.4) are about — were never typed at all: the committed
 transcription never recorded which source call (`transform`, `createItem`, `remove`, `setActionId`,
-`decay`, `revertItem`) produced each one, only its source line, so turning them into typed D38
-operations needs a fresh run of `ots_interactions.py` against the pinned Canary/CrystalServer
-checkouts (§5). That run would classify each WorldObject call by its exact argument structure (a
-literal `Position(x,y,z)` names a pre-authored anchor; a `createItem` id is only literal when it is a
-complete, delimited integer; a revert attaches only when its own receiver or literal position provably
-names the same object as the operation it reverts), never by an identifier's name or its position in a
-list. The same evidence gap holds for the rest of the corpus: the 891 WorldObject children and 581 of
-the 800 Movement children (372 genuinely computed, 209 a `fromPosition`-referencing expression that is
-not itself provably the bare previous-tile relocation) stay blocked; the other 219 anchor-bound
-Movement children are typed today, since their target was already on record as a literal position.
+`decay`, `revertItem`) produced each one, only its source line. Turning both into typed data needs a
+fresh run of `ots_interactions.py` against the pinned Canary/CrystalServer checkouts (§5); that run
+classifies each call by its own argument structure, parsed with a bracket-aware splitter and matched
+argument by argument (never by searching the whole statement, an identifier's name or its position in a
+list): teleportTo's own target argument for D37; for D38, a literal `Position(x,y,z)` argument names a
+pre-authored anchor, a `createItem` id is literal only when its own first argument is a complete
+integer, and a revert attaches only when its own receiver or its own position argument provably names
+the same object as the one candidate operation among the preceding ones it can match unambiguously. The
+same evidence gap holds for the rest of the corpus: all 800 Movement children and all 891 WorldObject
+children stay blocked, pending that re-transcription.
 
 ### 6.4 Conflict decisions (D25)
 

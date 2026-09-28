@@ -597,6 +597,45 @@ converter_case(
     lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1'
                  and '_identity' not in c[0], c))
 
+# Round 3, Finding 1 (P2, affects committed D37 data): teleportTo's own target argument -- not the
+# whole statement -- must fully match a literal Position(x,y,z) to bind an anchor.
+converter_case(
+    'the exact Codex example: teleportTo(toPosition or Position(1,2,7)) stays blocked, not typed as (1,2,7)',
+    ['creature:teleportTo(toPosition or Position(1, 2, 7))'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and 'target' not in c[0], c), callback='onStepIn')
+converter_case(
+    'a bare teleportTo(Position(x,y,z)) is still a relocation to a named anchor',
+    ['creature:teleportTo(Position(100, 200, 7))'],
+    lambda c, a: (c == [{'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
+                         'target': {'kind': 'anchor', 'anchor': 'p1'}}]
+                 and a == [{'key': 'p1', 'source_position': {'x': 100, 'y': 200, 'z': 7}}], (c, a)), callback='onStepIn')
+converter_case(
+    'a trailing argument after a literal position does not disqualify the anchor',
+    ['creature:teleportTo(Position(100, 200, 7), true)'],
+    lambda c, a: (c[0].get('target', {}).get('kind') == 'anchor', c), callback='onStepIn')
+
+# Round 3, Finding 2 (P2): revert association searches every preceding candidate for exactly one match,
+# not only the immediately preceding operation; more than one equally plausible candidate stays blocked.
+converter_case(
+    'the exact Codex example: wall1:decay() attaches to wall1, not the nearer wall2',
+    ['wall1:transform(2773)', 'wall2:transform(2773)', 'wall1:decay()'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'TRANSFORM']) == 2
+                 and len([x for x in c if x.get('status') == 'blocked']) == 0, c))
+converter_case(
+    'two equally plausible candidates for the same receiver stay blocked, not the nearest one',
+    ['wall1:transform(2773)', 'wall1:transform(2774)', 'wall1:decay()'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'TRANSFORM']) == 2
+                 and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
+
+# Round 3, Finding 3 (P2): a revert's own position argument (split from the rest, per its call's own
+# convention) must itself fully match a literal position; a look-alike buried in a larger expression
+# elsewhere in the argument list must not match.
+converter_case(
+    "the exact Codex example: toPosition + Position(1,2,7) is not itself a literal position argument",
+    ['item:transform(2773)', 'addEvent(Position.revertItem, 5000, toPosition + Position(1, 2, 7), 2772)'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'TRANSFORM' and 'revert_after_ms' in x]) == 0
+                 and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
+
 failed = [r for r in results if not r['passed']]
 if '--verbose' in sys.argv:
     for r in results:

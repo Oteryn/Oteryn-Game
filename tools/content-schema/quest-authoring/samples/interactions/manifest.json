@@ -23,7 +23,7 @@
       "WorldObject": 891
     },
     "blocked_children": {
-      "Movement": 581,
+      "Movement": 800,
       "WorldObject": 891
     },
     "quest_children_naming_a_transition": 215,
@@ -33,9 +33,7 @@
       "mapped": 256,
       "unresolved_semantics": 965
     },
-    "relocation_children": {
-      "anchor": 219
-    },
+    "relocation_children": {},
     "overlay_operations": {},
     "overlay_operations_with_revert_after": 0
   },
