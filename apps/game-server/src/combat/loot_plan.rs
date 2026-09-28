@@ -390,9 +390,15 @@ fn deterministic_draw(
     hasher.update(death_key.scope_ownership_generation.to_be_bytes());
     hasher.update(death_key.actor_local_id.to_be_bytes());
     hasher.update(death_key.actor_local_generation.to_be_bytes());
-    hasher.update(loot_table_ref.family.as_bytes());
-    hasher.update(loot_table_ref.production_key.as_bytes());
-    hasher.update(loot_table_ref.revision_ref.as_bytes());
+    // Length-prefixed so distinct typed references never frame to the same bytes.
+    for field in [
+        loot_table_ref.family.as_bytes(),
+        loot_table_ref.production_key.as_bytes(),
+        loot_table_ref.revision_ref.as_bytes(),
+    ] {
+        hasher.update((field.len() as u64).to_be_bytes());
+        hasher.update(field);
+    }
     hasher.update(draw_ordinal.to_be_bytes());
     hasher.update([match kind {
         DrawKind::Chance => 0_u8,
@@ -476,6 +482,45 @@ mod tests {
                 },
             ],
         }
+    }
+
+    const GOLDEN_CHANCE: u64 = 10_348_850_681_732_701_394;
+    const GOLDEN_QUANTITY: u64 = 9_517_304_501_960_542_980;
+    const GOLDEN_RAT_PLAN: &str = r#"[("oteryn:item.currency.gold_coin", 1, 1)]"#;
+
+    #[test]
+    fn deterministic_draw_is_pinned_by_golden_vectors() {
+        // FND-03 §25: a change to framing, byte order, truncation or the hash must not
+        // silently re-roll historical plans. These values are the canonical derivation.
+        let table_ref = table_ref("oteryn:loot.creature.rat");
+        let key = death_key(7);
+        let chance = deterministic_draw(key, &table_ref, 0, DrawKind::Chance);
+        let quantity = deterministic_draw(key, &table_ref, 1, DrawKind::Quantity);
+        assert_eq!((chance, quantity), (GOLDEN_CHANCE, GOLDEN_QUANTITY));
+        let plan = plan_creature_loot(key, &table_ref, &rat_loot_table()).expect("rat plan");
+        let summary: Vec<(String, u32, u32)> = plan
+            .entries
+            .iter()
+            .map(|entry| {
+                (
+                    entry.item.production_key.clone(),
+                    entry.quantity,
+                    entry.draw_ordinal,
+                )
+            })
+            .collect();
+        assert_eq!(format!("{summary:?}"), GOLDEN_RAT_PLAN);
+    }
+
+    #[test]
+    fn distinct_reference_framings_do_not_collide() {
+        let key = death_key(7);
+        let left = LootDefinitionRef::new("Loot", "a:b", "cd");
+        let right = LootDefinitionRef::new("Loot", "a:bc", "d");
+        assert_ne!(
+            deterministic_draw(key, &left, 0, DrawKind::Chance),
+            deterministic_draw(key, &right, 0, DrawKind::Chance)
+        );
     }
 
     #[test]
