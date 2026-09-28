@@ -75,14 +75,17 @@ Implements the owner-accepted §9 of
 - Project documents do not author `attribute_variant_of` (lowered as `None`): adding a serde field to
   `LocalObjectStateDocument` would break a struct literal in `tests/content_world_project.rs`, which
   is outside the owned paths. Content, world and lock bytes are unchanged.
-- The inverse check does not enforce §7's intent-family pairing: no canonical inverse-family
-  vocabulary exists on main beyond RETAG. The widened state rule and uniqueness are enforced.
+- Round 2 (Codex P1 4124604034): `bind` enforces §7's intent-family pairing through
+  `LocalObjectIntentFamily`, recognized from the existing `normalized_intent_family` key like the
+  RETAG constant (a `TransitionBinding` field would touch unowned `content/project/native_entry.rs`).
+  A timed forward needs a family and its unique inverse the paired one; untimed content is unchanged.
+- Round 2 (Codex P2 4124604044): `revert_destination` without `destination` is rejected by name.
 - Two `revert_destination` occurrences on one forward transition yield two qualifying inverses;
   `bind` rejects that as ambiguous (§9 design point 3 leaves the case undesigned).
 
 ## Open items for task B
 
-- §7 intent-family pairing is not enforced by `bind`: main has no inverse-family vocabulary.
+- Resolved in round 2: §7 intent-family pairing is now enforced by `bind` (see above).
 - A bound inverse can also be picked by USE selection from the forward target state.
 
 ## Acceptance and evidence

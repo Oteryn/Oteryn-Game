@@ -848,6 +848,51 @@ impl LoweredActionId {
 /// `source_state` and `target_state` already carry the identity change, and this intent family is
 /// the only new vocabulary `validate_transition` recognizes for it.
 pub const LOCAL_OBJECT_RETAG_INTENT_FAMILY: &str = "oteryn:reference.intent.local-object-retag";
+pub const LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY: &str =
+    "oteryn:reference.intent.world-object-transform";
+pub const LOCAL_OBJECT_CREATE_INTENT_FAMILY: &str = "oteryn:reference.intent.world-object-create";
+pub const LOCAL_OBJECT_REMOVE_INTENT_FAMILY: &str = "oteryn:reference.intent.world-object-remove";
+pub const LOCAL_OBJECT_OPEN_INTENT_FAMILY: &str = "oteryn:reference.intent.local-object-open";
+pub const LOCAL_OBJECT_CLOSE_INTENT_FAMILY: &str = "oteryn:reference.intent.local-object-close";
+
+/// #162 §7 (Exact delta): the intent families a `revert_after_ms`-carrying transition may use,
+/// recognized from `TransitionBinding::normalized_intent_family` exactly like the RETAG key above.
+/// Any other key has no family: it binds as before but can never carry a timed revert.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LocalObjectIntentFamily {
+    Transform,
+    Create,
+    Remove,
+    Retag,
+    Open,
+    Close,
+}
+
+impl LocalObjectIntentFamily {
+    pub fn from_key(key: &ProductionKey) -> Option<Self> {
+        match key.as_str() {
+            LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY => Some(Self::Transform),
+            LOCAL_OBJECT_CREATE_INTENT_FAMILY => Some(Self::Create),
+            LOCAL_OBJECT_REMOVE_INTENT_FAMILY => Some(Self::Remove),
+            LOCAL_OBJECT_RETAG_INTENT_FAMILY => Some(Self::Retag),
+            LOCAL_OBJECT_OPEN_INTENT_FAMILY => Some(Self::Open),
+            LOCAL_OBJECT_CLOSE_INTENT_FAMILY => Some(Self::Close),
+            _ => None,
+        }
+    }
+
+    /// §7's inverse pairing: TRANSFORM↔TRANSFORM, CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE.
+    pub const fn inverse(self) -> Self {
+        match self {
+            Self::Transform => Self::Transform,
+            Self::Create => Self::Remove,
+            Self::Remove => Self::Create,
+            Self::Retag => Self::Retag,
+            Self::Open => Self::Close,
+            Self::Close => Self::Open,
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[expect(

@@ -4,8 +4,9 @@
 //! 2026-09-28).
 //!
 //! Admitted shape: `map_item transform` at a pre-authored `anchor`, optionally carrying
-//! `destination`, `revert_after_ms` and `revert_destination` (which needs `revert_after_ms`);
-//! `effect` is presentational and ignored. Everything else stays rejected fail-closed with a named
+//! `destination`, `revert_after_ms` and `revert_destination` (which needs both `revert_after_ms`
+//! and `destination`); `effect` is presentational and ignored. The forward transition must carry
+//! the TRANSFORM intent family, and a synthesized inverse carries it too (§7 pairing). Everything else stays rejected fail-closed with a named
 //! error: `at: death_position` (§7 open decision 8), `create` carrying `destination` (§7 open
 //! decision 9), any other non-`transform` operation, `interaction`, and any other field.
 //!
@@ -20,10 +21,11 @@
 //!   `<action id>/revert`.
 
 use super::{
-    ContentError, FootprintCell, FootprintRelation, LocalObjectStateAttributes,
-    LocalObjectStateDefinition, LoweredActionId, MapRevisionRef, PlacementKey, PlacementRef,
-    ProductionKey, ReferenceDefinitionKind, ReferencePlayableContentSource, SpatialAddress,
-    TransitionBinding, TransitionKey, TypedDefinitionRef,
+    ContentError, FootprintCell, FootprintRelation, LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY,
+    LocalObjectIntentFamily, LocalObjectStateAttributes, LocalObjectStateDefinition,
+    LoweredActionId, MapRevisionRef, PlacementKey, PlacementRef, ProductionKey,
+    ReferenceDefinitionKind, ReferencePlayableContentSource, SpatialAddress, TransitionBinding,
+    TransitionKey, TypedDefinitionRef,
 };
 use serde_json::{Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -67,6 +69,10 @@ pub enum EncounterMapItemError {
     RevertDestinationWithoutRevert {
         action: String,
     },
+    /// A `revert_destination` without the `destination` it reverts from.
+    RevertDestinationWithoutDestination {
+        action: String,
+    },
     UnknownAnchor {
         action: String,
         anchor: String,
@@ -78,6 +84,10 @@ pub enum EncounterMapItemError {
     },
     /// Zero or several content transitions match the authored `item` -> `into` edge.
     UnresolvedTransition {
+        action: String,
+    },
+    /// The resolved forward transition does not carry §7's TRANSFORM intent family.
+    ForwardNotTransformFamily {
         action: String,
     },
     /// Round 5 P2: two actions at one placement enter one state with different attributes.
@@ -283,12 +293,16 @@ fn classify(
     if revert_destination.is_some() && revert_after_ms.is_none() {
         return Err(EncounterMapItemError::RevertDestinationWithoutRevert { action: named() });
     }
+    let destination = anchor_of("destination")?;
+    if revert_destination.is_some() && destination.is_none() {
+        return Err(EncounterMapItemError::RevertDestinationWithoutDestination { action: named() });
+    }
     Ok(AdmittedMapItemTransform {
         action: LoweredActionId::new(action)?,
         anchor,
         item: item_key(object, "item")?,
         into: item_key(object, "into")?,
-        destination: anchor_of("destination")?,
+        destination,
         revert_destination,
         revert_after_ms,
     })
@@ -420,6 +434,14 @@ pub fn lower_map_item_transforms(
                 });
             }
         };
+        // `map_item transform` lowers onto a TRANSFORM-family transition only (§7 pairing).
+        if LocalObjectIntentFamily::from_key(&forward.normalized_intent_family)
+            != Some(LocalObjectIntentFamily::Transform)
+        {
+            return Err(EncounterMapItemError::ForwardNotTransformFamily {
+                action: action.to_owned(),
+            });
+        }
         let placement = anchor_placement_key(&admitted.encounter, &transform.anchor)?;
         let destination = transform
             .destination
@@ -482,7 +504,7 @@ pub fn lower_map_item_transforms(
             key: TransitionKey::new(&format!("{action}/revert"))?,
             definition: definition.clone(),
             source_state: forward.target_state.clone(),
-            normalized_intent_family: forward.normalized_intent_family.clone(),
+            normalized_intent_family: ProductionKey::new(LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY)?,
             target_state: post_revert.clone(),
             owner_capability: forward.owner_capability.clone(),
             policy_guard_refs: forward.policy_guard_refs.clone(),
@@ -506,10 +528,12 @@ mod tests {
     use crate::content::{
         CanonicalReferencePlayableContent, ClientProjectionClass, ContentLockBinding,
         ContentLockEntry, CoordinateFrameRef, DefinitionFamily, DefinitionRevisionRef,
-        EvidenceBindingRef, EvidenceDisposition, LocalObjectCollisionPresence, LogicalCell,
-        OwnerCapabilityRequirement, PackageManifestBinding, ProductionAtom,
-        REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
-        ReferenceDefinition, Sha256HexDigest, link_reference_playable,
+        EvidenceBindingRef, EvidenceDisposition, LOCAL_OBJECT_CREATE_INTENT_FAMILY,
+        LOCAL_OBJECT_OPEN_INTENT_FAMILY, LOCAL_OBJECT_REMOVE_INTENT_FAMILY,
+        LocalObjectCollisionPresence, LogicalCell, OwnerCapabilityRequirement,
+        PackageManifestBinding, ProductionAtom, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
+        REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinition, Sha256HexDigest,
+        link_reference_playable,
     };
     use crate::foundation::{
         ChannelId, CharacterId, CharacterLease, CommandId, CommandIngress, CommandRef,
@@ -640,9 +664,7 @@ mod tests {
             key: TransitionKey::new(key)?,
             definition: teleporter()?,
             source_state: ProductionKey::new(source)?,
-            normalized_intent_family: ProductionKey::new(
-                "oteryn:reference.intent.world-object-transform",
-            )?,
+            normalized_intent_family: ProductionKey::new(LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY)?,
             target_state: ProductionKey::new(target)?,
             owner_capability: OwnerCapabilityRequirement {
                 capability_key: ProductionKey::new(
@@ -1241,6 +1263,99 @@ mod tests {
         assert_eq!(
             lower(&no_revert)?,
             Err(EncounterMapItemError::RevertDestinationWithoutRevert { action: action() })
+        );
+
+        let no_destination = edit_first(|object| {
+            object.remove("destination");
+        })?;
+        assert_eq!(
+            lower(&no_destination)?,
+            Err(EncounterMapItemError::RevertDestinationWithoutDestination { action: action() })
+        );
+        Ok(())
+    }
+
+    fn set_family(
+        content: &mut CanonicalReferencePlayableContent,
+        transition: &str,
+        family: &str,
+    ) -> TestResult {
+        let binding = content
+            .transitions
+            .iter_mut()
+            .find(|binding| binding.key.as_str() == transition)
+            .ok_or(fixture("transition to re-family"))?;
+        binding.normalized_intent_family = ProductionKey::new(family)?;
+        Ok(())
+    }
+
+    #[test]
+    fn timed_binding_requires_the_paired_intent_family() -> TestResult {
+        let timed = [(FORWARD, ACTION_A, 1_000)];
+
+        // An inverse matching by states but carrying the wrong family is rejected by name.
+        let mut mismatched = with_revert(plain_content(None, None)?, &timed)?;
+        set_family(
+            &mut mismatched,
+            PLAIN_INVERSE,
+            LOCAL_OBJECT_CREATE_INTENT_FAMILY,
+        )?;
+        assert!(rejects(
+            bind(&mismatched, PLACEMENT_A, &[FORWARD, PLAIN_INVERSE]),
+            "revert_after_ms inverse does not carry the paired intent family"
+        ));
+
+        // A timed forward without a recognized family is rejected; untimed it binds as before.
+        let mut unfamilied = with_revert(plain_content(None, None)?, &timed)?;
+        set_family(
+            &mut unfamilied,
+            FORWARD,
+            "oteryn:reference.intent.world-object-foreign",
+        )?;
+        assert!(rejects(
+            bind(&unfamilied, PLACEMENT_A, &[FORWARD, PLAIN_INVERSE]),
+            "revert_after_ms transition carries no recognized intent family"
+        ));
+        assert!(bind(&unfamilied, PLACEMENT_B, &[FORWARD, PLAIN_INVERSE]).is_ok());
+
+        // CREATE pairs with REMOVE, not with itself.
+        let mut create_remove = with_revert(plain_content(None, None)?, &timed)?;
+        set_family(
+            &mut create_remove,
+            FORWARD,
+            LOCAL_OBJECT_CREATE_INTENT_FAMILY,
+        )?;
+        set_family(
+            &mut create_remove,
+            PLAIN_INVERSE,
+            LOCAL_OBJECT_REMOVE_INTENT_FAMILY,
+        )?;
+        assert!(bind(&create_remove, PLACEMENT_A, &[FORWARD, PLAIN_INVERSE]).is_ok());
+        set_family(
+            &mut create_remove,
+            PLAIN_INVERSE,
+            LOCAL_OBJECT_CREATE_INTENT_FAMILY,
+        )?;
+        assert!(rejects(
+            bind(&create_remove, PLACEMENT_A, &[FORWARD, PLAIN_INVERSE]),
+            "revert_after_ms inverse does not carry the paired intent family"
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn lowering_requires_a_transform_family_forward() -> TestResult {
+        let mut source = duke_source()?;
+        let forward = source
+            .transitions
+            .first_mut()
+            .ok_or(fixture("duke forward"))?;
+        forward.normalized_intent_family = ProductionKey::new(LOCAL_OBJECT_OPEN_INTENT_FAMILY)?;
+        assert_eq!(
+            lower_map_item_transforms(DUKE, &source, &duke_anchors()?),
+            Err(EncounterMapItemError::ForwardNotTransformFamily {
+                action: DUKE_ACTION.to_owned(),
+            })
         );
         Ok(())
     }

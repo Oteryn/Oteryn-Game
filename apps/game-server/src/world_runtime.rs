@@ -1,11 +1,11 @@
 use crate::content::{
     CanonicalReferencePlayableContent, ContentError, DefinitionFamily, FootprintRelation,
-    LocalObjectCollisionPresence, LocalObjectStateAttributes, LocalObjectStateDefinition,
-    LogicalCell, LoweredActionId, NonAuthoritativeReferenceStage, PlacementKey, ProductionKey,
-    REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
-    ReferenceDefinitionKind, ReferencePlayableContentSource, ReferencePlayableGenerationIdentity,
-    ReferenceServerItem, TransitionBinding, TransitionKey, TypedDefinitionRef,
-    link_reference_playable,
+    LocalObjectCollisionPresence, LocalObjectIntentFamily, LocalObjectStateAttributes,
+    LocalObjectStateDefinition, LogicalCell, LoweredActionId, NonAuthoritativeReferenceStage,
+    PlacementKey, ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
+    REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinitionKind, ReferencePlayableContentSource,
+    ReferencePlayableGenerationIdentity, ReferenceServerItem, TransitionBinding, TransitionKey,
+    TypedDefinitionRef, link_reference_playable,
 };
 use crate::foundation::{
     CharacterWorldEligibilityClaimV1, CommandId, CommandIngress, CommandLifecycleError, CommandRef,
@@ -858,22 +858,41 @@ impl LocalObjectRuntime {
                     .ok_or(WorldRuntimeError::InvalidBinding(
                         "revert_after_ms names a transition this placement does not bind",
                     ))?;
+            // §7: a timed transition must carry a recognized intent family, and its inverse must
+            // carry the paired one (TRANSFORM↔TRANSFORM, CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE).
+            let paired_family =
+                LocalObjectIntentFamily::from_key(&forward.normalized_intent_family)
+                    .ok_or(WorldRuntimeError::InvalidBinding(
+                        "revert_after_ms transition carries no recognized intent family",
+                    ))?
+                    .inverse();
             // Widened rule: a candidate inverse leaves the forward target and lands either on the
             // forward source itself or on a state whose *own* declared `attribute_variant_of` is
             // the forward source — never the reverse direction. Inert when no state declares one.
-            let mut inverses = transitions.values().filter(|candidate| {
-                candidate.key != forward.key
-                    && candidate.source_state == forward.target_state
-                    && (candidate.target_state == forward.source_state
-                        || states
-                            .iter()
-                            .find(|state| state.key == candidate.target_state)
-                            .and_then(|state| state.attribute_variant_of.as_ref())
-                            == Some(&forward.source_state))
+            let state_matches = transitions
+                .values()
+                .filter(|candidate| {
+                    candidate.key != forward.key
+                        && candidate.source_state == forward.target_state
+                        && (candidate.target_state == forward.source_state
+                            || states
+                                .iter()
+                                .find(|state| state.key == candidate.target_state)
+                                .and_then(|state| state.attribute_variant_of.as_ref())
+                                == Some(&forward.source_state))
+                })
+                .collect::<Vec<_>>();
+            let mut inverses = state_matches.iter().filter(|candidate| {
+                LocalObjectIntentFamily::from_key(&candidate.normalized_intent_family)
+                    == Some(paired_family)
             });
             if inverses.next().is_none() {
                 return Err(WorldRuntimeError::InvalidBinding(
-                    "revert_after_ms transition has no bound inverse at this placement",
+                    if state_matches.is_empty() {
+                        "revert_after_ms transition has no bound inverse at this placement"
+                    } else {
+                        "revert_after_ms inverse does not carry the paired intent family"
+                    },
                 ));
             }
             if inverses.next().is_some() {
