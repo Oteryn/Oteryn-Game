@@ -260,6 +260,8 @@ path/symbol/entity
 value/formula/behavior candidate
 ```
 
+Branches (owner, 2026-09-28): any branch of `opentibiabr/canary` and `zimbadev/crystalserver` may be used, not only `main`. Pin the exact commit SHA and record the branch name. Prefer `main` when it is equal, and use one revision per batch and repository. The game version is 15.30, so server-side sources re-pin to a 15.30-capable revision, which may be a branch. See `OTERYN_GAME_VERSION_1530_AND_OTS_BRANCHES_DECISION_20260928.md`.
+
 Cross-OTS rule:
 
 ```text
