@@ -70,15 +70,25 @@ def fetch(out):
                     'tables': cut_tables(page.evaluate(TABLES_JS))}
 
         listing = load(LIST_URL)
+        pages.append(listing)
         links = sorted({u for u in (spell_url(h) for h in page.evaluate(LINKS_JS)) if u})
         if not links:
+            # Diagnostics for a layout change: the listing tables go to the artifact, a short sample to the log.
+            write(out, fetched, pages)
+            hrefs = page.evaluate('() => Array.from(document.querySelectorAll("a")).map(a => a.href)')
+            print('title:', page.title(), '| url:', page.url, file=sys.stderr)
+            print('links with "spell":', [h for h in hrefs if 'spell' in h.lower()][:30], file=sys.stderr)
+            print('text:', page.evaluate('() => document.body.innerText').replace('\n', ' | ')[:1500], file=sys.stderr)
             raise SystemExit('tibia.com: the spell library lists no spells (layout change?)')
-        pages.append(listing)
         for index, url in enumerate(links, 1):
             time.sleep(THROTTLE_SECONDS)
             pages.append(load(url))
             print(f'{index}/{len(links)} {url}', file=sys.stderr)
         browser.close()
+    write(out, fetched, pages)
+
+
+def write(out, fetched, pages):
     document = {'schema': 'OTERYN_TIBIACOM_SPELL_TABLES/v1', 'list_url': LIST_URL, 'fetched': fetched,
                 'license': LICENSE_NOTE, 'pages': pages}
     out.parent.mkdir(parents=True, exist_ok=True)
