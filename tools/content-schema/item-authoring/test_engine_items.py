@@ -1471,6 +1471,7 @@ def test_wiki_fallback_loader_accepts_valid_direct_record():
         "registry_key": key,
         "matched_names": ["a matched name"],
         "resolution": "direct",
+        "match_basis": "title",
         "field": "primarytype",
         "value": "Decorations",
         **sample_wiki_source(),
@@ -1492,7 +1493,7 @@ def test_committed_wiki_fallback_snapshot_loads_fail_closed():
     resolved = engine_items.load_wiki_family_fallback(
         engine_items.WIKI_FAMILY_FALLBACK_PATH, engine_items.build_identity_index()
     )
-    check(len(resolved) == 948, len(resolved))
+    check(len(resolved) == 1415, len(resolved))
     check(
         all(
             entry["profile"] in engine_items.PROFILE_ITEM_CLASS
@@ -1559,6 +1560,7 @@ def test_wiki_fallback_loader_rejects_unadmitted_broad_bucket_value():
         "registry_key": key,
         "matched_names": ["some broad bucket item"],
         "resolution": "direct",
+        "match_basis": "title",
         "field": "primarytype",
         "value": "Others",
         **sample_wiki_source(),
@@ -1585,6 +1587,7 @@ def test_wiki_fallback_loader_rejects_divergent_disambiguation_candidates():
         "registry_key": key,
         "matched_names": ["divergent thing"],
         "resolution": "disambiguation",
+        "match_basis": "title",
         "candidates": [
             {
                 "field": "primarytype",
@@ -1620,6 +1623,7 @@ def test_wiki_fallback_loader_rejects_unknown_registry_key():
         "registry_key": fake_key,
         "matched_names": ["ghost item"],
         "resolution": "direct",
+        "match_basis": "title",
         "field": "primarytype",
         "value": "Decorations",
         **sample_wiki_source(),
@@ -1644,6 +1648,7 @@ def test_wiki_fallback_loader_rejects_digest_mismatch():
         "registry_key": key,
         "matched_names": ["digest test item"],
         "resolution": "direct",
+        "match_basis": "title",
         "field": "primarytype",
         "value": "Decorations",
         **sample_wiki_source(),
@@ -1669,6 +1674,7 @@ def test_wiki_fallback_loader_rejects_unknown_top_level_key():
         "registry_key": key,
         "matched_names": ["extra key item"],
         "resolution": "direct",
+        "match_basis": "title",
         "field": "primarytype",
         "value": "Decorations",
         **sample_wiki_source(),
@@ -1716,7 +1722,7 @@ def test_resolve_wiki_family_value_admitted_mapping():
     # `objectclass` bucket it is one of Fandom's broad groupings, unlike the engine's
     # own unrelated `primarytype` "utilities" -> tool entry, which is correct and
     # pre-existing) never resolve as `objectclass` either.
-    for value in ("others", "fireworks", ""):
+    for value in ("others", "fireworks", "clothing accessories", ""):
         check(
             engine_items.resolve_wiki_family_value("primarytype", value) is None,
             f"primarytype={value!r} must never resolve",
@@ -1735,17 +1741,6 @@ def test_resolve_wiki_family_value_admitted_mapping():
         engine_items.resolve_wiki_family_value("objectclass", "blessing charms")
         is None,
         "blessing charms is a primarytype value, never an objectclass",
-    )
-    # Owner decision 2026-09-28: clothing accessories are creature products.
-    check(
-        engine_items.resolve_wiki_family_value("primarytype", "Clothing Accessories")
-        == "material_valuable",
-        "clothing accessories resolve to material_valuable",
-    )
-    check(
-        engine_items.resolve_wiki_family_value("objectclass", "clothing accessories")
-        is None,
-        "clothing accessories is a primarytype value, never an objectclass",
     )
     for value in (
         "other items",
@@ -1779,6 +1774,279 @@ def test_resolve_wiki_family_value_admitted_mapping():
         == "progression_material",
         "objectclass fallback admitted mapping",
     )
+
+
+def test_resolve_wiki_family_value_status_field():
+    # Owner decision 2026-09-28: infobox `status = event` names a time-limited Tibia
+    # event drop (e.g. the 20th anniversary), which is exactly `event_collectible`.
+    check(
+        engine_items.resolve_wiki_family_value("status", "event")
+        == "event_collectible",
+        "status=event resolves to event_collectible",
+    )
+    check(
+        engine_items.resolve_wiki_family_value("status", "Event")
+        == "event_collectible",
+        "status is case-folded like every other admitted field",
+    )
+    for value in ("deprecated", "quest reward", "unobtainable", ""):
+        check(
+            engine_items.resolve_wiki_family_value("status", value) is None,
+            f"status={value!r} must never resolve",
+        )
+    # `status` is the lowest-priority admitted field: it names no field of its own
+    # standing alongside an admitted `primarytype`/`objectclass` value, only a distinct
+    # infobox field entirely. Resolving it never depends on, or overrides, an admitted
+    # `primarytype` value for the same page -- the capture tool's field ordering
+    # (`primarytype` -> `objectclass` -> `status`) is what enforces the priority; this
+    # resolver itself only ever answers for the one field it is asked about.
+    check(
+        engine_items.resolve_wiki_family_value("primarytype", "Decorations")
+        == "decoration",
+        "an admitted primarytype value resolves on its own",
+    )
+    check(
+        engine_items.resolve_wiki_family_value("status", "event") == "event_collectible"
+        and engine_items.resolve_wiki_family_value("primarytype", "Decorations")
+        == "decoration",
+        "status and primarytype resolve independently; status never shadows primarytype",
+    )
+
+
+def load_capture_module():
+    """Dynamically import `tools/content-census/item_wiki_family_capture.py` (a script,
+    not an installed package) so its pure, network-free helpers can be unit tested
+    directly, exactly as `engine_items.resolve_wiki_family_value` already is."""
+    import importlib.util
+    import sys as _sys
+
+    module_path = (
+        engine_items.ROOT.parents[1] / "content-census/item_wiki_family_capture.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "item_wiki_family_capture", module_path
+    )
+    module = importlib.util.module_from_spec(spec)
+    _sys.modules.setdefault(spec.name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _fake_wiki_page(page_id, title, content):
+    """A synthetic already-fetched `WikiFetcher` cache entry, for pure/offline tests of
+    capture-tool functions that only read a page's `content`/`page_id`/identity."""
+    return {
+        "page_id": page_id,
+        "title": title,
+        "revision_id": 1,
+        "revision_timestamp": "2026-01-01T00:00:00Z",
+        "revision_sha1": "a" * 40,
+        "content_sha256": "b" * 64,
+        "content": content,
+    }
+
+
+def test_wiki_status_event_priority_below_primarytype_in_capture_tool():
+    """The capture tool's `resolve_infobox_fields` only ever consults `status` once
+    both `primarytype` and `objectclass` have failed to resolve -- exactly the priority
+    the owner decision requires, and the one place that ordering is actually enforced
+    (`resolve_wiki_family_value` itself has no concept of field priority)."""
+    capture = load_capture_module()
+
+    # An admitted primarytype wins even when status is also present and admitted:
+    # status is never consulted once primarytype already resolved.
+    profile, field, value = capture.resolve_infobox_fields(
+        {"primarytype": "Decorations", "status": "event"}
+    )
+    check(
+        (profile, field, value) == ("decoration", "primarytype", "Decorations"),
+        "an admitted primarytype must win over an admitted status",
+    )
+    # A forbidden, non-empty primarytype value must not block the status fallback.
+    profile, field, value = capture.resolve_infobox_fields(
+        {"primarytype": "Others", "status": "event"}
+    )
+    check(
+        (profile, field, value) == ("event_collectible", "status", "event"),
+        "a forbidden primarytype value must not block the status rule",
+    )
+    # status alone, with neither primarytype nor objectclass present.
+    profile, field, value = capture.resolve_infobox_fields({"status": "event"})
+    check(
+        (profile, field, value) == ("event_collectible", "status", "event"),
+        "status resolves on its own when no other admitted field is present",
+    )
+    # A non-admitted status value resolves nothing.
+    profile, field, value = capture.resolve_infobox_fields(
+        {"primarytype": "Others", "status": "deprecated"}
+    )
+    check(profile is None, "a non-admitted status value must not resolve")
+
+
+def test_wiki_fallback_real_snapshot_old_rag_and_ivory_comb():
+    """Owner decision 2026-09-28: old rag (Crystal 24415) is TibiaWiki's own
+    `status = event` 20th-anniversary drop, not a creature product, so it resolves via
+    the wiki fallback's status rule to `event_collectible`; ivory comb (Crystal 32773)
+    stays a creature product (`material_valuable`) via its own pre-existing direct
+    `primarytype = Creature Products` wiki fallback record. Both engine items carry the
+    native `primarytype = clothing accessories` attribute, which is deliberately never
+    an admitted engine-side alias, so both depend entirely on this wiki evidence."""
+    identity_index = engine_items.build_identity_index()
+    old_rag_key, _basis = identity_index[24415]
+    ivory_comb_key, _basis = identity_index[32773]
+    resolved = engine_items.load_wiki_family_fallback(
+        engine_items.WIKI_FAMILY_FALLBACK_PATH, identity_index
+    )
+    check(
+        resolved[old_rag_key]["profile"] == "event_collectible",
+        resolved[old_rag_key],
+    )
+    check(
+        resolved[old_rag_key]["evidence"]["field"] == "status",
+        resolved[old_rag_key]["evidence"],
+    )
+    check(
+        resolved[ivory_comb_key]["profile"] == "material_valuable",
+        resolved[ivory_comb_key],
+    )
+
+
+def test_capture_tool_itemlist_template_parsing():
+    """Fandom disambiguation pages sometimes list variants inside `{{ItemList ...}}`
+    instead of `[[links]]` (the owner's Kraken Buoy Lamp finding); `key=value`
+    parameters (almost always the leading `type=...`) must never be read as a
+    candidate title."""
+    capture = load_capture_module()
+    content = (
+        "{{Disambig}}\n"
+        "{{ItemList|type=ItemList/Sorted\n"
+        " |Kraken Buoy Lamp (Lit)\n"
+        " |Kraken Buoy Lamp (Unlit)\n"
+        "}}"
+    )
+    check(
+        capture.extract_itemlist_titles(content)
+        == ["Kraken Buoy Lamp (Lit)", "Kraken Buoy Lamp (Unlit)"],
+        capture.extract_itemlist_titles(content),
+    )
+    check(
+        capture.extract_candidate_links(content)
+        == ["Kraken Buoy Lamp (Lit)", "Kraken Buoy Lamp (Unlit)"],
+        "extract_candidate_links must also read ItemList positional entries",
+    )
+    # A [[wikilink]] positional entry resolves to its link target, same as a bare title.
+    linked = "{{ItemList|type=Foo\n |[[Green Piece of Cloth]]\n |Ivory Comb\n}}"
+    check(
+        capture.extract_candidate_links(linked)
+        == ["Green Piece of Cloth", "Ivory Comb"],
+        capture.extract_candidate_links(linked),
+    )
+    # No ItemList template at all: behaves exactly as before (links only).
+    check(
+        capture.extract_candidate_links("[[Foo]] and [[Bar]]") == ["Foo", "Bar"],
+        "extract_candidate_links without any ItemList is unaffected",
+    )
+
+
+def test_capture_tool_itemid_join_precedence_over_name_match():
+    """An exact `itemid` join match is authoritative: it is used even when the item's
+    engine name would otherwise resolve to a different page/profile through the
+    title-based join."""
+    capture = load_capture_module()
+    id_matched_page = _fake_wiki_page(
+        1,
+        "Kraken Buoy Lamp (Unlit)",
+        "{{Infobox Object\n|itemid = 37519\n|primarytype = Decorations\n}}",
+    )
+    record = capture.resolve_id_matched_pages([id_matched_page])
+    check(record["match_basis"] == "itemid", record)
+    check(record["field"] == "primarytype" and record["value"] == "Decorations", record)
+    check(record["resolution"] == "direct", record)
+    # 2+ id-matched pages that agree resolve as a disambiguation-shaped record, still
+    # match_basis="itemid".
+    second_page = _fake_wiki_page(
+        2,
+        "Kraken Buoy Lamp (Lit)",
+        "{{Infobox Object\n|itemid = 37187\n|primarytype = Decorations\n}}",
+    )
+    multi = capture.resolve_id_matched_pages([id_matched_page, second_page])
+    check(multi["resolution"] == "disambiguation", multi)
+    check(multi["match_basis"] == "itemid", multi)
+    check(len(multi["candidates"]) == 2, multi)
+
+
+def test_capture_tool_itemid_join_disagreement_or_failure_has_no_name_fallback():
+    """When id-matched pages disagree, or one of them does not resolve at all, the id
+    evidence is still authoritative: `resolve_id_matched_pages` returns `None` (the
+    caller in `main()` then leaves the item unresolved and never tries a name-based
+    lookup for it, since the id join already had an opinion)."""
+    capture = load_capture_module()
+    decorations_page = _fake_wiki_page(
+        1, "A", "{{Infobox Object\n|itemid = 1\n|primarytype = Decorations\n}}"
+    )
+    weapons_page = _fake_wiki_page(
+        2, "B", "{{Infobox Object\n|itemid = 2\n|primarytype = Weapons\n}}"
+    )
+    check(
+        capture.resolve_id_matched_pages([decorations_page, weapons_page]) is None,
+        "disagreeing id-matched pages must resolve to None, not pick either profile",
+    )
+    unresolved_page = _fake_wiki_page(
+        3, "C", "{{Infobox Object\n|itemid = 3\n|primarytype = Others\n}}"
+    )
+    check(
+        capture.resolve_id_matched_pages([unresolved_page]) is None,
+        "a single id-matched page with a forbidden value must resolve to None",
+    )
+    check(
+        capture.resolve_id_matched_pages([decorations_page, unresolved_page]) is None,
+        "one id-matched page failing to resolve fails the whole id match, even when "
+        "another one of the same id's pages would have resolved on its own",
+    )
+
+
+def test_wiki_fallback_loader_rejects_missing_or_unknown_match_basis():
+    key = FIXTURE_ITEM_KEYS[101]
+    base_record = {
+        "registry_key": key,
+        "matched_names": ["some item"],
+        "resolution": "direct",
+        "field": "primarytype",
+        "value": "Decorations",
+        **sample_wiki_source(),
+    }
+    for match_basis in (None, "name", "itemid ", "ITEMID"):
+        record = dict(base_record)
+        if match_basis is not None:
+            record["match_basis"] = match_basis
+        payload = build_wiki_fallback_payload({key: record})
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "items-family-fallback.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            try:
+                engine_items.load_wiki_family_fallback(
+                    path, engine_items.build_identity_index()
+                )
+            except SystemExit as exc:
+                check("match_basis" in str(exc), exc)
+            else:
+                raise AssertionError(
+                    f"match_basis={match_basis!r} must be rejected fail-closed"
+                )
+    for match_basis in ("itemid", "title"):
+        record = dict(base_record)
+        record["match_basis"] = match_basis
+        payload = build_wiki_fallback_payload({key: record})
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "items-family-fallback.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            resolved = engine_items.load_wiki_family_fallback(
+                path, engine_items.build_identity_index()
+            )
+        check(
+            resolved[key]["evidence"]["match_basis"] == match_basis,
+            resolved[key]["evidence"],
+        )
 
 
 def test_lf_and_crlf_text_fixtures_byte_identical():
@@ -2314,6 +2582,13 @@ def main():
         test_wiki_fallback_loader_rejects_unknown_top_level_key,
         test_wiki_fallback_loader_rejects_duplicate_json_key,
         test_resolve_wiki_family_value_admitted_mapping,
+        test_resolve_wiki_family_value_status_field,
+        test_wiki_status_event_priority_below_primarytype_in_capture_tool,
+        test_wiki_fallback_real_snapshot_old_rag_and_ivory_comb,
+        test_capture_tool_itemlist_template_parsing,
+        test_capture_tool_itemid_join_precedence_over_name_match,
+        test_capture_tool_itemid_join_disagreement_or_failure_has_no_name_fallback,
+        test_wiki_fallback_loader_rejects_missing_or_unknown_match_basis,
         test_committed_wiki_fallback_snapshot_loads_fail_closed,
         test_wiki_fallback_snapshot_is_registered,
         test_family_profile_evidence_shapes_are_mutually_exclusive,
