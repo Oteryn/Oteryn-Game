@@ -50,7 +50,7 @@ TIBIACOM_LIST = SAMPLES / 'tibiacom-spell-list-2026-09-28.json'
 # S15: tibia.com list names that differ from the source spell names (source name -> tibia.com name).
 TIBIACOM_NAMES = {'invisibility': 'invisible', 'paralyze rune': 'paralyse rune', 'monk familiar': 'summon monk familiar'}
 OFFICIAL = ROOT / 'official-changes.json'
-REVISION = 'spell-p2-r5'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list
+REVISION = 'spell-p2-r6'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
                       'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -574,7 +574,7 @@ class Bundle:
                                transform=normal, wiki_transform=normal)
             if words is not None:
                 spell['words'] = words
-        spell_id = self.field(base + '/reference_spell_id', None, 'id', pages, required=False)
+        spell_id = self.field(base + '/reference_spell_id', 'spellid', 'id', pages, required=False)
         if isinstance(spell_id, int) and spell_id > 0:
             spell['reference_spell_id'] = spell_id
         requirements = {}

@@ -542,7 +542,7 @@ def crosswalk_value(field, value):
     if field in ('cooldown', 'cooldowngroup', 'cooldowngroup2'):
         ms = wiki_seconds_ms(value)
         return ms if ms is not None else plain(value)
-    if field in ('levelrequired', 'mana', 'soul', 'basepower', 'amount', 'mlrequired', 'spellrange'):
+    if field in ('levelrequired', 'mana', 'soul', 'basepower', 'amount', 'mlrequired', 'spellrange', 'spellid'):
         number = wiki_number(value)
         if number is not None:
             return number

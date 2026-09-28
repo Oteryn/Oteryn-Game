@@ -158,7 +158,7 @@ and 55 rune item pages (`Category:Runes`), each at its last revision on or befor
 | rune magic level | 36 / 0 | 36 / 0 |
 | conjure amount | 34 / 0 | 34 / 0 |
 
-Compared: Canary 224 spells, Crystal 239; unmatched source spells are monster-only registrations and a
+Compared: Canary 225 spells, Crystal 240; unmatched source spells are monster-only registrations and a
 few conjuring spells whose wiki page name differs. 14 wiki spell pages have no Crystal spell: 11 are
 `deprecated` or `ts-only`, the others are `Gift of Life` (Wheel), `Lesser Mystic Repulse` (15.12) and
 `Mentor Other` (removed by Crystal). Under S3/S4 the differences are adopted from the wiki, for
@@ -190,9 +190,9 @@ groups (Suprimento, Summon, Party, Stance) map to the Support group. BR has no `
 
 ### 4.2 BR ↔ Fandom crosswalk (S3 conflicts)
 
-`samples/wiki-spell-crosswalk-fandom-br-2026-09-27.json`: 206 spells joined by words (the Fandom words
-may carry the parameter) and 32 runes by name. The wikis agree on almost everything: premium 204 / 1,
-vocations 201 / 1, group cooldown 200 / 5, mana 200 / 6, level 196 / 10, cooldown 194 / 10, base power
+`samples/wiki-spell-crosswalk-fandom-br-2026-09-27.json`: 207 spells joined by words (the Fandom words
+may carry the parameter) and 32 runes by name. The wikis agree on almost everything: premium 205 / 1,
+vocations 201 / 2, group cooldown 201 / 5, mana 201 / 6, level 197 / 10, cooldown 195 / 10, base power
 89 / 3; rune level and magic level 32 / 0. The conflicts are the owner's S3 list, for example:
 
 - knight healing after 15.25 (Wound Cleansing, Fair and Intense Wound Cleansing, Bruise Bane): BR has
@@ -279,6 +279,41 @@ which records the copy's SHA-256. The converter applies it as S15 (`spell-p2-r5`
   source, so it has no mechanics to convert.
 - **Still to capture.** The detail pages (cooldowns, soul, magic level, vocations) are not captured yet;
   until they are, the rules above decide those fields.
+
+**Client spell id (`spell-p2-r6`).** `reference_spell_id` now follows the wiki `spellid` field under S3, as §2
+always described; earlier revisions read only the source `spell:id`. 43 values change:
+
+- **Runes.** Rune use now carries the id of its conjuring spell, for example 21 for Sudden Death Rune; no source
+  states an id for rune use.
+- **Instant spells that had no id.**
+  - Find Fiend takes the wiki 248, which settles the Canary 248 and Crystal 20 conflict.
+  - Lightest Magic Missile (Canary) and Practise Magic Missile (Crystal) both join the wiki page Practise Magic
+    Missile and take 168.
+- **Instant spells where the wiki supersedes the source id.**
+  - Lesser Front Sweep changes from 168 to 271; in the sources, 168 also belongs to Practise Magic Missile.
+  - Lesser Ethereal Spear changes from 169 to 270.
+  - Sharpshooter changes from 313 to 135.
+  - Bruise Bane changes from 170 to 175.
+  - Mud Attack changes from 174 to 172.
+  - Ice Burst and Terra Burst swap 262 and 263.
+
+**Full-page check (2026-09-28).** The rendered Fandom `Spells` list (revision 1178141; 162 instant and 33 rune
+spells) and every page of `Category:Runes` and its subcategories (62 articles, current revisions) were compared
+with the converted bundles:
+
+- **Rune spells.** All 36 rune bundles agree on item, level, magic level, vocations and base power. The pages
+  without a bundle are `TS-only` "(Weak)" runes, the deprecated Envenom Rune, Combustion Rune, and three
+  unobtainable Isle of Destiny runes.
+- **Instant and conjuring spells.** 185 of 191 joined rows agree on words, premium, level, vocations, mana, group,
+  soul and amount. Five mana values differ because tibia.com decides under S15: the three Wound Cleansing spells,
+  Mass Spirit Mend and Shield Slam.
+- **Stale Magic Patch capture.** The sixth difference, Magic Patch, exposed a stale capture. The committed Fandom
+  facts had no fields for Magic Patch: the page uses `{{Infobox_Spell`, which the current `infobox()` matches but
+  the capture predates.
+  - Regenerating the facts from the same pinned revisions changes only that page.
+  - The Magic Patch vocation conflict is now explicit: BR and tibiopedia.pl include monks, Fandom does not, and
+    S13 keeps monks 2:1.
+  - The Fandom comparison and the crosswalk are regenerated with it.
 
 ## 5. Decisions
 
