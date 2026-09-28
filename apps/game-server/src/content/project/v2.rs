@@ -1849,7 +1849,7 @@ fn validate_v2_dialogue_keywords(
     node_count: &mut usize,
     limits: ProjectEvidenceLimits,
 ) -> Result<(), ProjectError> {
-    if depth > V2_DIALOGUE_MAX_DEPTH {
+    if !keywords.is_empty() && depth > V2_DIALOGUE_MAX_DEPTH {
         return Err(ProjectError::InvalidProject(
             "v2 Dialogue keyword nesting exceeds the maximum depth",
         ));
@@ -1892,9 +1892,7 @@ fn validate_v2_dialogue_keywords(
                 && trigger.len() <= 64
                 && trigger.trim() == trigger.as_str()
                 && !trigger.chars().any(|character| character.is_control())
-                && !trigger
-                    .chars()
-                    .any(|character| character.is_ascii_uppercase());
+                && !trigger.chars().any(char::is_uppercase);
             if !trigger_ok {
                 return Err(ProjectError::InvalidProject(
                     "v2 Dialogue keyword trigger is not a trimmed lowercase word",

@@ -536,9 +536,26 @@ fn dialogue_keywords_are_canonicalized() {
 }
 
 #[test]
+fn dialogue_keywords_admit_the_maximum_depth() {
+    let mut deep = draft();
+    if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(&mut deep) {
+        *keywords = vec![dialogue_keyword_chain(8)];
+    }
+    let project = admit(deep).expect("admit an eight-level keyword chain");
+    let (_, keywords, _) = dialogue_fields(&project);
+    let mut depth = 0;
+    let mut level = keywords;
+    while let Some(node) = level.first() {
+        depth += 1;
+        level = node.children.as_slice();
+    }
+    assert_eq!(depth, 8);
+}
+
+#[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 20] = [
+    let cases: [(&str, &str, Mutation); 21] = [
         (
             "wander without walking",
             "v2 wander requires a walking creature and a positive interval",
@@ -669,6 +686,15 @@ fn each_broken_invariant_is_rejected() {
             |draft| {
                 if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
                     keywords[0].triggers[0] = "Cargo".into();
+                }
+            },
+        ),
+        (
+            "non-ASCII uppercase dialogue trigger",
+            "v2 Dialogue keyword trigger is not a trimmed lowercase word",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].triggers[0] = "\u{c9}clair".into();
                 }
             },
         ),
