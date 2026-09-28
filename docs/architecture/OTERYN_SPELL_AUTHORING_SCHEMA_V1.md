@@ -297,6 +297,19 @@ S25 (`spell-p2-r11`) brings readiness to 164 ready and 88 blocked:
   `pz_locks_caster` false is the Canary default. These spells are blocked on native behaviours; their behaviour
   contract must settle it from a live test or packet capture.
 
+Wheel of Destiny spell data (S6, S24): `wheel-augments.json` holds the evidence for a later Wheel owner.
+- **Coverage:** 54 augment entries for 25 spells (Augment I and II for 5 spells per vocation, including the Forked,
+  Special and Focus spell groups) and 17 revelation perks with their 3 stages.
+- **Where the values come from:**
+  - 29 augment entries come from official news (8833, 8872, 8944), 23 from Fandom (Conviction Perks revision 1206174)
+    and 2 from Canary only.
+  - Official news supersedes Canary and Fandom on Mystic Repulse I and Thousand Fist Blows II: −4 s instead of −6 s
+    (news 8944).
+  - Fandom supersedes Canary's integer rounding on Terra Wave I (6.5%) and Groundshaker II (12.5%).
+- **Hypotheses, not facts:** the avatar cooldowns, durations and damage reduction, Gift of Life, and two extra
+  cooldown reductions (Special Spells I, Focus Spells II) come from Canary only.
+- **Status:** the file is evidence, not a runtime contract. The spell bundles keep `wheel_unlock` fail-closed.
+
 The official tibia.com spell library (S15) answers a Cloudflare browser check from the build container
 and blocks GitHub-hosted runners outright ("Sorry, you have been blocked"). `tibiacom_spells.py fetch`
 therefore runs on an ordinary machine the site serves (no challenge bypass).
