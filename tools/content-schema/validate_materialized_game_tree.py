@@ -9,6 +9,7 @@ EVIDENCE=ROOT/"docs/agents/evidence/OTV2-20260925-full-game-tree-materialization
 CLOSURE=ROOT/"docs/agents/evidence/OTV2-20260925-world-successor-tree-closure-v1.json"
 LEGACY_ROOT="content/world/"
 WORLD_STATES={"READY_UNPOPULATED","LEGACY_COMPAT_PRESENT"}
+FAMILY_INDEX="OTERYN_FAMILY_INDEX/v1"
 class ValidationError(RuntimeError): pass
 def req(ok: bool, code: str)->None:
     if not ok: raise ValidationError(code)
@@ -18,6 +19,16 @@ def directory_nodes()->list[dict]:
 def world_markers(dirs: list[dict])->list[str]:
     """Successor markers below the legacy WorldProject root, relative to that root."""
     return sorted(node["path"][len(LEGACY_ROOT):]+"index.json" for node in dirs if node["path"].startswith(LEGACY_ROOT))
+def world_successor_files(dirs: list[dict])->list[str]:
+    """Markers plus the shards of successor family indexes, relative to the legacy root.
+
+    None of them is a WorldProject locator, so the legacy package seed removes them all."""
+    files=set(world_markers(dirs))
+    for marker in world_markers(dirs):
+        payload=json.loads((ROOT/LEGACY_ROOT/marker).read_text(encoding="utf-8"))
+        if payload.get("schema")==FAMILY_INDEX:
+            files|={shard[len(LEGACY_ROOT):] for shard in payload["shards"]}
+    return sorted(files)
 def legacy_locators()->set[str]:
     manifest=json.loads((ROOT/LEGACY_ROOT/"manifest.json").read_text(encoding="utf-8"))
     return {"project.json","manifest.json","content.lock.json"}|{row["locator"] for row in manifest["documents"]}
@@ -25,6 +36,9 @@ def main()->int:
     dirs=directory_nodes()
     if sys.argv[1:]==["--print-world-markers"]:
         print("\n".join(world_markers(dirs)))
+        return 0
+    if sys.argv[1:]==["--print-world-successor-files"]:
+        print("\n".join(world_successor_files(dirs)))
         return 0
     req(not sys.argv[1:],"USAGE")
     evidence=json.loads(EVIDENCE.read_text(encoding="utf-8"))
@@ -46,9 +60,23 @@ def main()->int:
         materialized+=1
         payload=json.loads(marker.read_text(encoding="utf-8"))
         if path.startswith(LEGACY_ROOT):
-            req(payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1",f"WORLD_MARKER_SCHEMA:{path}")
-            req(payload.get("kind")==node["kind"],f"KIND_MISMATCH:{path}")
-            req(payload.get("population_state") in WORLD_STATES,f"WORLD_MARKER_STATE:{path}")
+            # A successor directory holds either its marker or a populated family index
+            # whose shards stay inside it; the one sharing a directory with a legacy
+            # locator (worlds/) stays a marker so legacy lookups scan no new entries.
+            local={f.name for f in (ROOT/path).iterdir()}
+            rel=path[len(LEGACY_ROOT):]
+            locators={loc[len(rel):] for loc in legacy_locators() if loc.startswith(rel) and "/" not in loc[len(rel):]}
+            if payload.get("schema")==FAMILY_INDEX:
+                req(not locators,f"WORLD_FAMILY_BESIDE_LOCATOR:{path}")
+                req(payload.get("population_state")=="POPULATED",f"WORLD_FAMILY_STATE:{path}")
+                shards=payload.get("shards",[])
+                req(all(s.startswith(path) and "/" not in s[len(path):] for s in shards),f"WORLD_SHARD_OUTSIDE:{path}")
+                req(local=={"index.json",*(s[len(path):] for s in shards)},f"WORLD_STRAY_FILE:{path}")
+            else:
+                req(payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1",f"WORLD_MARKER_SCHEMA:{path}")
+                req(payload.get("kind")==node["kind"],f"KIND_MISMATCH:{path}")
+                req(payload.get("population_state") in WORLD_STATES,f"WORLD_MARKER_STATE:{path}")
+                req(local=={"index.json"}|locators,f"WORLD_STRAY_FILE:{path}")
         if payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1":
             req(payload.get("path")==path,f"PATH_MISMATCH:{path}")
             req(payload.get("owner")==node["owner"],f"OWNER_MISMATCH:{path}")
@@ -61,6 +89,8 @@ def main()->int:
     req((ROOT/"rulesets/progression/prey/index.json").is_file(),"PREY_TREE_MISSING")
     req((ROOT/"rulesets/progression/wheel-of-destiny/index.json").is_file(),"WHEEL_TREE_MISSING")
     req((ROOT/"rulesets/items/imbuements/index.json").is_file(),"IMBUEMENTS_TREE_MISSING")
-    print(f"PASS materialized={materialized}/97 world_markers={len(markers)}")
+    successors=world_successor_files(dirs)
+    req(not set(successors)&legacy_locators(),"WORLD_SUCCESSOR_IS_LEGACY_LOCATOR")
+    print(f"PASS materialized={materialized}/97 world_markers={len(markers)} world_successor_files={len(successors)}")
     return 0
 if __name__=="__main__": raise SystemExit(main())

@@ -52,13 +52,16 @@ jobs:
         if: ${{ hashFiles('content/world/project.json') != '' }}
         run: |
           set -euo pipefail
-          # Successor authoring-tree directory markers are not WorldProject locators. Remove
-          # exactly the contract-declared set (each must exist), then require an exact package.
+          # Successor authoring-tree markers and their validated family shards are not
+          # WorldProject locators. Remove exactly that set (each must exist), then require an
+          # exact package.
           tracked="$RUNNER_TEMP/tracked-legacy"
           cp -a content/world "$tracked"
           python3 tools/content-schema/validate_materialized_game_tree.py --print-world-markers > "$RUNNER_TEMP/world-markers.txt"
           test "$(wc -l < "$RUNNER_TEMP/world-markers.txt")" -eq 10
-          while IFS= read -r marker; do rm -- "${tracked:?}/${marker:?}"; done < "$RUNNER_TEMP/world-markers.txt"
+          python3 tools/content-schema/validate_materialized_game_tree.py
+          python3 tools/content-schema/validate_materialized_game_tree.py --print-world-successor-files > "$RUNNER_TEMP/world-successors.txt"
+          while IFS= read -r successor; do rm -- "${tracked:?}/${successor:?}"; done < "$RUNNER_TEMP/world-successors.txt"
           find "$tracked" -mindepth 1 -type d -empty -delete
           diff --no-dereference --recursive "$tracked" "$RUNNER_TEMP/world-a"
 
