@@ -4,15 +4,15 @@
 task_id: OTV2-20260928-item-donor-census-summer-update
 title: Donor census of new ids from the Crystal summer-update donor (task B1a)
 mode: MIGRATE
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: null
+pr: 1114
 base_sha: 32ccd294
-head_sha: null
-final_head_sha: null
+head_sha: 99894e56cd79fcd40e8ad37b066151e51efe1423
+final_head_sha: 99894e56cd79fcd40e8ad37b066151e51efe1423
 final_head_frozen_at: null
 owner: owner-launched Claude Code session
 created_at: 2026-09-28T14:00:00Z
@@ -26,7 +26,7 @@ owned_paths:
   - tools/content-schema/item-authoring/samples/donor-census-crystal-summer-update-00ce02a5.json
   - docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md
   - docs/agents/tasks/archive/OTV2-20260928-item-owner-leftover-table.md
-  - docs/agents/tasks/active/OTV2-20260928-item-donor-census-summer-update.md
+  - docs/agents/tasks/archive/OTV2-20260928-item-donor-census-summer-update.md
 public_contracts: []
 depends_on:
   - "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md"
@@ -193,21 +193,21 @@ radiant attire`, `cloud in a bottle`.
 
 ## PR and closeout
 
-- changed-file review: pending; unresolved review threads: `NOT_APPLICABLE` (no PR)
+- changed-file review: complete; unresolved review threads: none (PR #1114)
 - related/superseded PRs: continues `OTV2-20260928-item-owner-leftover-table` (PR
   #1109); precedes B1b (identity allocation) and B2 (wiki recapture)
-- protected auto-merge: `NOT_APPLICABLE`; merge commit/result: pending; ownership
-  release: pending
+- protected auto-merge: via Merge Queue, PR #1114; merge commit/result: `d16dcc6a`;
+  ownership release: released
 
 ## Context checkpoint
 
 ```yaml
 last_progress: donor_census.py implemented and tested; census committed; existing censuses proven byte-identical; #1109 task record archived; formal doc/README updated; committed locally to item-donor-census at db3ccf9b
-status: implementing
+status: completed
 branch: claude/compassionate-albattani-s29syw
-head_sha: null
-pr: null
-final_head_sha: null
+head_sha: 99894e56cd79fcd40e8ad37b066151e51efe1423
+pr: 1114
+final_head_sha: 99894e56cd79fcd40e8ad37b066151e51efe1423
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
@@ -224,5 +224,11 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit locally on item-donor-census; no push/PR in this interaction
+next_action: null
 ```
+
+## Completion
+
+Merged as PR #1114 (`d16dcc6a`) from final head `99894e56cd79fcd40e8ad37b066151e51efe1423` on 2026-09-28. Ownership
+released. Follow-ups B1b (identity allocation, Content/World import role), B2 (wiki
+`itemid` evidence) and B3 (owner-local 15.30 metadata) are not started.
