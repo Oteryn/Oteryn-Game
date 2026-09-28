@@ -975,7 +975,6 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 )?,
                 url: &url,
                 runtime: None,
-                door: None,
                 recovery: &recovery_key()?,
             })
             .await
@@ -1243,7 +1242,6 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         descriptor: &descriptor,
         url: &url,
         runtime: Some(&runtime),
-        door: Some(&door),
         recovery: &recovery_signing,
     });
     // The listener must outlive every client case: an early listener exit is a
@@ -1325,11 +1323,6 @@ struct SeamClients<'a> {
     descriptor: &'a ProducerDescriptor,
     url: &'a str,
     runtime: Option<&'a tokio::sync::Mutex<crate::foundation::ChannelRuntimeV1>>,
-    /// The composed native entry door runtime (#162 5868482467, M2b). `None` only for
-    /// `node_boot_seam_against_running_node`, which has no local door object (the door lives in
-    /// the externally-running node); `stage=dev_client` (#162 C1b) requires it, since it runs
-    /// only against the composed-here topology.
-    door: Option<&'a tokio::sync::Mutex<crate::world_runtime::LocalObjectRuntime>>,
     /// The published Platform recovery key (`oteryn-reauth-recovery-v1`) and its id.
     recovery: &'a (String, SigningKey),
 }
@@ -1507,7 +1500,6 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         descriptor,
         url,
         runtime,
-        door,
         recovery,
     } = clients;
     let exact = connector(certificate, &EXACT)?;
@@ -2103,18 +2095,32 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     // join snapshot (state domains 1 `WORLD_SPATIAL` and 2 `WORLD_OBJECT_OVERLAY`; no post-
     // admission command), using exclusively `oteryn-protocol-oteryn`'s own client-direction
     // codecs (`encode_client_bootstrap`, `decode_server_accepted`, `decode_snapshot_chunk`) —
-    // `oteryn-dev-client` holds no codec of its own. Every expected value is derived from the
-    // live door/channel state, never assumed: `use_wire` above already opened and closed the
-    // door, so its join-snapshot entry here is closed at whatever revision that interaction
-    // left it (2), not a fresh revision 0. `characters[1]` is free here (released to
+    // `oteryn-dev-client` holds no codec of its own. `characters[1]` is free here (released to
     // TERMINAL by the `use_wire` stage above), so this is the 4th durable admission. Its
     // connection then closes the same "silent" way `concurrent[0]`/`use_session` above do (the
     // dev client returns, dropping the TLS stream), so it goes through the identical control-
     // loss (60s) then grace-release (100s) cycle before this function returns, keeping the same
     // single committed actor (character[0]'s own final re-admission below) invariant
     // `seam_flow`'s caller checks last.
-    let door = door.ok_or("dev client stage requires the composed native entry door runtime")?;
-    let runtime_ref = runtime.ok_or("dev client stage requires the composed channel runtime")?;
+    //
+    // The door's expected join-snapshot entry here is the same construction `use_wire_frames`
+    // used for its own final overlay delta above (open then close: revision 0 -> 1 -> 2), which
+    // the `use_wire` stage's own byte-for-byte comparison
+    // (`frames.get(1..) != Some(expected.as_slice())`) already proved matches what the real
+    // server put on the wire — not a fresh-door assumption, and not a live runtime query either,
+    // so this holds identically whether this stage is composed locally
+    // (`server_seam_real_owners_over_tcp_tls`, `runtime` is `Some`) or run against an
+    // externally-running node (`node_boot_seam_against_running_node`, `runtime` is `None` and
+    // there is no local door object to query at all).
+    let dev_client_room = crate::content::qualify_native_entry_room(WorldId::decode(&world)?)
+        .map_err(|e| format!("dev client native entry room: {e}"))?;
+    let dev_client_content_generation = dev_client_room.compiled().client_digest();
+    let door_placement = crate::content::accepted::DOOR_CELL.0.as_bytes().to_vec();
+    let door_state = crate::content::accepted::DOOR_CLOSED_STATE
+        .as_bytes()
+        .to_vec();
+    let door_revision: u64 = 2;
+
     let dev_client_generation = platform_generation(descriptor, &accounts[1]).await?;
     let dev_client_grant = next_grant(&accounts[1], characters[1], dev_client_generation);
     let dev_client_token = sign_grant(&dev_client_grant.borrowed(), now_seconds()?);
@@ -2132,21 +2138,6 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     .await
     .map_err(|error| format!("dev client join: {error}"))?;
 
-    // The door's live current state: `use_wire` above already opened and closed it (revision 0
-    // -> 1 open -> 2 closed), so its expected join-snapshot entry here is closed at revision 2,
-    // not a fresh revision 0. Derive every expected field from the door's own actual current
-    // state and the channel's actual content pin (the same two sources
-    // `observe_world_object_overlay` reads for every real join), never a hardcoded assumption.
-    let (door_placement, door_state, door_revision, dev_client_content_generation) = {
-        let door_guard = door.lock().await;
-        let runtime_guard = runtime_ref.lock().await;
-        (
-            door_guard.placement_key().as_str().as_bytes().to_vec(),
-            door_guard.state_key().as_str().as_bytes().to_vec(),
-            door_guard.revision(),
-            runtime_guard.content_pin().client_artifact_digest(),
-        )
-    };
     if dev_client_snapshot.world_spatial.content_generation != dev_client_content_generation
         || dev_client_snapshot.world_spatial.actor_position
             != (ActorPosition {
@@ -2176,7 +2167,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     {
         return Err(format!(
             "dev client join snapshot native entry door overlay mismatch: {dev_client_door:?} \
-             (live door: placement={door_placement:?} state={door_state:?} revision={door_revision})"
+             (expected placement={door_placement:?} state={door_state:?} revision={door_revision})"
         )
         .into());
     }

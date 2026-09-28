@@ -18,8 +18,9 @@ use oteryn_protocol_oteryn::world_object::{self, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, WorldSpatialObservation};
 use oteryn_protocol_oteryn::{
     ALPN_OTERYN_GAME_V1, CharacterId, ClientBootstrapValue, FoundationProtocolError, FrameLength,
-    GameSessionId, MessageType, decode_server_accepted, decode_snapshot_chunk, decode_snapshot_id,
-    decode_wire_envelope, encode_client_bootstrap,
+    GameSessionId, MessageType, decode_server_accepted, decode_snapshot_begin,
+    decode_snapshot_chunk, decode_snapshot_chunk_framing, decode_snapshot_id, decode_wire_envelope,
+    encode_client_bootstrap,
 };
 use rustls::pki_types::{CertificateDer, ServerName};
 use std::error::Error as StdError;
@@ -73,6 +74,9 @@ pub enum DevClientError {
     Tls(rustls::Error),
     Io(io::Error),
     InvalidServerName,
+    /// The negotiated TLS ALPN protocol was not exactly `oteryn-game/1`, including when no ALPN
+    /// was negotiated at all (FND-02: an ALPN mismatch terminates the connection).
+    AlpnMismatch,
     Protocol(FoundationProtocolError),
     WorldSpatial(world_spatial::WorldSpatialError),
     WorldObject(world_object::WorldObjectError),
@@ -103,6 +107,18 @@ pub enum DevClientError {
         domain_id: u32,
         snapshot_type: u32,
     },
+    /// A `SnapshotChunk`'s `chunk_index` did not equal the index this client expected next
+    /// (zero-based, in order — `SnapshotBegin`'s declared `chunk_count`, FND-02 §16).
+    ChunkIndexMismatch {
+        expected: u32,
+        actual: u32,
+    },
+    /// The summed `data` bytes of every received `SnapshotChunk` did not equal `SnapshotBegin`'s
+    /// declared `total_encoded_bytes`.
+    AssembledLengthMismatch {
+        expected: u64,
+        actual: u64,
+    },
     /// The join snapshot did not carry a domain this client needed.
     MissingDomain(u32),
     /// The TCP connect, TLS handshake, or one frame read did not complete within
@@ -116,6 +132,10 @@ impl fmt::Display for DevClientError {
             Self::Tls(error) => write!(formatter, "TLS setup failed: {error}"),
             Self::Io(error) => write!(formatter, "transport I/O failed: {error}"),
             Self::InvalidServerName => write!(formatter, "invalid TLS server name"),
+            Self::AlpnMismatch => write!(
+                formatter,
+                "TLS ALPN mismatch: server did not negotiate oteryn-game/1"
+            ),
             Self::Protocol(error) => write!(formatter, "FND-02 protocol error: {error}"),
             Self::WorldSpatial(error) => {
                 write!(formatter, "WORLD_SPATIAL decode failed: {error:?}")
@@ -144,6 +164,14 @@ impl fmt::Display for DevClientError {
             } => write!(
                 formatter,
                 "domain {domain_id} carried unregistered snapshot_type {snapshot_type}"
+            ),
+            Self::ChunkIndexMismatch { expected, actual } => write!(
+                formatter,
+                "chunk index mismatch: expected {expected} next, chunk carried {actual}"
+            ),
+            Self::AssembledLengthMismatch { expected, actual } => write!(
+                formatter,
+                "assembled snapshot length mismatch: SnapshotBegin declared {expected} bytes, chunks totaled {actual}"
             ),
             Self::MissingDomain(domain_id) => {
                 write!(formatter, "join snapshot did not carry domain {domain_id}")
@@ -179,14 +207,17 @@ impl From<world_object::WorldObjectError> for DevClientError {
     }
 }
 
-/// Connects to `request.address` over rustls TLS 1.3 with ALPN `oteryn-game/1`, sends a
-/// `ClientBootstrap` built from `request`, and decodes the join snapshot the server sends right
-/// after `ServerAccepted` (`SnapshotBegin`, `SnapshotChunk`, `SnapshotCommit` — FND-02 §16).
-/// Every frame of that snapshot transfer is correlated to the admitted session before being
-/// trusted: `SnapshotBegin`/`SnapshotChunk`/`SnapshotCommit` must each carry the admitted
-/// `connection_generation` (from `ServerAccepted`), and `SnapshotChunk`'s and `SnapshotCommit`'s
-/// `snapshot_id` must equal `SnapshotBegin`'s. The TCP connect, the TLS handshake, and every
-/// frame read are bounded by `request.deadline`.
+/// Connects to `request.address` over rustls TLS 1.3 with ALPN `oteryn-game/1` (rejecting any
+/// other or absent negotiated ALPN before sending anything), sends a `ClientBootstrap` built
+/// from `request`, and decodes the join snapshot the server sends right after `ServerAccepted`
+/// (`SnapshotBegin`, `SnapshotChunk`, `SnapshotCommit` — FND-02 §16). Every frame of that
+/// transfer is correlated to `SnapshotBegin`'s full declaration and the admitted session before
+/// being trusted: `SnapshotBegin`/`SnapshotChunk`/`SnapshotCommit` must each carry the admitted
+/// `connection_generation`; `SnapshotChunk`'s and `SnapshotCommit`'s `snapshot_id` must equal
+/// `SnapshotBegin`'s; exactly `SnapshotBegin`'s declared `chunk_count` chunks are read, each with
+/// the expected `chunk_index` in order; and their summed `data` bytes must equal `SnapshotBegin`'s
+/// declared `total_encoded_bytes`. The TCP connect, the TLS handshake, and every frame read are
+/// bounded by `request.deadline`.
 pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, DevClientError> {
     let connector = tls_connector(request.root_certificate)?;
     let tcp = bounded(
@@ -203,6 +234,12 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
         connector.connect(server_name, tcp),
     )
     .await?;
+    // FND-02: an ALPN mismatch (including no ALPN negotiated at all) terminates the connection
+    // before any Foundation frame is sent, exactly like the seam qualification's own transport
+    // negatives (`wrong_alpn`/`missing_alpn`) expect of the server's own ALPN enforcement.
+    if stream.get_ref().1.alpn_protocol() != Some(ALPN_OTERYN_GAME_V1.as_bytes()) {
+        return Err(DevClientError::AlpnMismatch);
+    }
 
     let bootstrap = encode_client_bootstrap(&ClientBootstrapValue {
         schema_revision: request.schema_revision,
@@ -223,37 +260,108 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
     let accepted_fields = decode_server_accepted(accepted_envelope.payload())?;
     let session_generation = accepted_fields.connection_generation;
 
-    let begin_snapshot_id = read_snapshot_marker(
-        &mut stream,
-        request.deadline,
-        "SnapshotBegin",
-        MessageType::SnapshotBegin,
-        session_generation,
-    )
-    .await?;
-
-    let chunk_frame = bounded(request.deadline, "SnapshotChunk", read_frame(&mut stream)).await?;
-    let chunk_envelope = decode_wire_envelope(&chunk_frame)?;
-    if chunk_envelope.message_type() != MessageType::SnapshotChunk {
+    // SnapshotBegin's full declaration: every chunk read below, and the commit that follows
+    // them, is checked against it before being trusted.
+    let begin_frame = bounded(request.deadline, "SnapshotBegin", read_frame(&mut stream)).await?;
+    let begin_envelope = decode_wire_envelope(&begin_frame)?;
+    if begin_envelope.message_type() != MessageType::SnapshotBegin {
         return Err(DevClientError::UnexpectedMessage {
-            expected: MessageType::SnapshotChunk,
-            actual: chunk_envelope.message_type(),
+            expected: MessageType::SnapshotBegin,
+            actual: begin_envelope.message_type(),
         });
     }
-    if chunk_envelope.connection_generation() != session_generation {
+    if begin_envelope.connection_generation() != session_generation {
         return Err(DevClientError::ConnectionGenerationMismatch {
             expected: session_generation,
-            actual: chunk_envelope.connection_generation(),
+            actual: begin_envelope.connection_generation(),
         });
     }
-    let (chunk_snapshot_id, domains) = decode_snapshot_chunk(chunk_envelope.payload())?;
-    if chunk_snapshot_id != begin_snapshot_id {
-        return Err(DevClientError::SnapshotIdMismatch {
-            expected: begin_snapshot_id,
-            actual: chunk_snapshot_id,
+    let begin = decode_snapshot_begin(begin_envelope.payload())?;
+
+    // Exactly `begin.chunk_count` `SnapshotChunk` frames, strictly in order: a short transfer
+    // (the server stops early) surfaces here as `UnexpectedMessage` (the next frame is
+    // `SnapshotCommit` instead) or as a bounded `Timeout`/`Io` (the connection stalls or closes).
+    // Each chunk's decoded `DomainSnapshot` entries borrow its own frame buffer, which does not
+    // outlive the loop body, so they are dispatched into the owned `world_spatial`/
+    // `world_object` structures immediately rather than accumulated across chunks.
+    let mut world_spatial_observation = None;
+    let mut world_object_overlay = None;
+    let mut assembled_bytes: u64 = 0;
+    for expected_index in 0..begin.chunk_count {
+        let chunk_frame =
+            bounded(request.deadline, "SnapshotChunk", read_frame(&mut stream)).await?;
+        let chunk_envelope = decode_wire_envelope(&chunk_frame)?;
+        if chunk_envelope.message_type() != MessageType::SnapshotChunk {
+            return Err(DevClientError::UnexpectedMessage {
+                expected: MessageType::SnapshotChunk,
+                actual: chunk_envelope.message_type(),
+            });
+        }
+        if chunk_envelope.connection_generation() != session_generation {
+            return Err(DevClientError::ConnectionGenerationMismatch {
+                expected: session_generation,
+                actual: chunk_envelope.connection_generation(),
+            });
+        }
+        let (chunk_index, chunk_data_len) =
+            decode_snapshot_chunk_framing(chunk_envelope.payload())?;
+        if chunk_index != expected_index {
+            return Err(DevClientError::ChunkIndexMismatch {
+                expected: expected_index,
+                actual: chunk_index,
+            });
+        }
+        let (chunk_snapshot_id, chunk_domains) = decode_snapshot_chunk(chunk_envelope.payload())?;
+        if chunk_snapshot_id != begin.snapshot_id {
+            return Err(DevClientError::SnapshotIdMismatch {
+                expected: begin.snapshot_id,
+                actual: chunk_snapshot_id,
+            });
+        }
+        assembled_bytes += chunk_data_len;
+        for domain in &chunk_domains {
+            match (domain.domain_id, domain.snapshot_type) {
+                (
+                    world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    world_spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                ) => {
+                    world_spatial_observation =
+                        Some(world_spatial::decode_world_spatial(domain.payload)?);
+                }
+                (
+                    world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                ) => {
+                    world_object_overlay = Some(
+                        world_object::decode_world_object_overlay_snapshot(domain.payload)?,
+                    );
+                }
+                // PROTOCOL_OTERYN_V1_REGISTRY.json registers exactly one snapshot_type (1) for
+                // domains 1 and 2; anything else naming one of those domains is a registry
+                // violation, not a domain this client merely doesn't need.
+                (
+                    domain_id @ world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    snapshot_type,
+                )
+                | (domain_id @ world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, snapshot_type) => {
+                    return Err(DevClientError::UnregisteredSnapshotType {
+                        domain_id,
+                        snapshot_type,
+                    });
+                }
+                _ => {}
+            }
+        }
+    }
+    if assembled_bytes != begin.total_encoded_bytes {
+        return Err(DevClientError::AssembledLengthMismatch {
+            expected: begin.total_encoded_bytes,
+            actual: assembled_bytes,
         });
     }
 
+    // The commit is accepted only once every declared chunk arrived, in order, and the
+    // assembled length matched.
     let commit_snapshot_id = read_snapshot_marker(
         &mut stream,
         request.deadline,
@@ -262,44 +370,11 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
         session_generation,
     )
     .await?;
-    if commit_snapshot_id != begin_snapshot_id {
+    if commit_snapshot_id != begin.snapshot_id {
         return Err(DevClientError::SnapshotIdMismatch {
-            expected: begin_snapshot_id,
+            expected: begin.snapshot_id,
             actual: commit_snapshot_id,
         });
-    }
-
-    let mut world_spatial_observation = None;
-    let mut world_object_overlay = None;
-    for domain in &domains {
-        match (domain.domain_id, domain.snapshot_type) {
-            (
-                world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                world_spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-            ) => {
-                world_spatial_observation =
-                    Some(world_spatial::decode_world_spatial(domain.payload)?);
-            }
-            (
-                world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-                world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-            ) => {
-                world_object_overlay = Some(world_object::decode_world_object_overlay_snapshot(
-                    domain.payload,
-                )?);
-            }
-            // PROTOCOL_OTERYN_V1_REGISTRY.json registers exactly one snapshot_type (1) for
-            // domains 1 and 2; anything else naming one of those domains is a registry
-            // violation, not a domain this client merely doesn't need.
-            (domain_id @ world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, snapshot_type)
-            | (domain_id @ world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, snapshot_type) => {
-                return Err(DevClientError::UnregisteredSnapshotType {
-                    domain_id,
-                    snapshot_type,
-                });
-            }
-            _ => {}
-        }
     }
 
     Ok(JoinSnapshot {
@@ -833,5 +908,241 @@ mod tests {
         ));
         server.await??;
         Ok(())
+    }
+
+    /// Like `tls_test_listener`, but deliberately configures no ALPN protocol: a trusted server
+    /// (valid, chain-verifiable certificate) whose handshake completes without negotiating one.
+    async fn tls_test_listener_without_alpn() -> Result<
+        (
+            CertificateDer<'static>,
+            tokio_rustls::TlsAcceptor,
+            TcpListener,
+            SocketAddr,
+        ),
+        Box<dyn StdError + Send + Sync>,
+    > {
+        let generated = rcgen::generate_simple_self_signed(vec!["localhost".to_owned()])?;
+        let certificate: CertificateDer<'static> = generated.cert.der().clone();
+        let key = PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
+        let server_config = rustls::ServerConfig::builder_with_provider(Arc::new(
+            rustls::crypto::aws_lc_rs::default_provider(),
+        ))
+        .with_protocol_versions(&[&rustls::version::TLS13])?
+        .with_no_client_auth()
+        .with_single_cert(vec![certificate.clone()], key.into())?;
+        let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(server_config));
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
+        let address = listener.local_addr()?;
+        Ok((certificate, acceptor, listener, address))
+    }
+
+    /// Codex P2 finding 1 (#162 review on PR #1147, `f0f27df`): a trusted TLS server that never
+    /// negotiates ALPN must be rejected before anything is sent, not merely proceed unauthenticated.
+    #[test]
+    fn connect_and_join_rejects_a_connection_with_no_negotiated_alpn()
+    -> Result<(), Box<dyn StdError + Send + Sync>> {
+        block_on(run_no_alpn_case())?
+    }
+
+    async fn run_no_alpn_case() -> Result<(), Box<dyn StdError + Send + Sync>> {
+        let (certificate, acceptor, listener, address) = tls_test_listener_without_alpn().await?;
+        let server = tokio::spawn(async move {
+            let (tcp, _) = listener.accept().await?;
+            let mut stream = acceptor.accept(tcp).await?;
+            // The client must detect the ALPN mismatch and send nothing: a bounded read
+            // observing EOF (or a reset) rather than any bytes proves it.
+            let mut buffer = [0_u8; 1];
+            match tokio::time::timeout(Duration::from_millis(300), stream.read(&mut buffer)).await {
+                Ok(Ok(0)) | Ok(Err(_)) => {}
+                Ok(Ok(_)) => return Err("client sent bytes after an ALPN mismatch".into()),
+                Err(_) => return Err("client did not close after an ALPN mismatch".into()),
+            }
+            Ok::<(), Box<dyn StdError + Send + Sync>>(())
+        });
+
+        let character_id = CharacterId::decode(&test_uuid_v7(4))?;
+        let result = connect_and_join(JoinRequest {
+            address,
+            server_name: "localhost",
+            root_certificate: &certificate,
+            schema_revision: 1,
+            character_id,
+            admission_material: b"fixture-grant",
+            client_build_id: CLIENT_BUILD_ID,
+            deadline: TEST_DEADLINE,
+        })
+        .await;
+        assert!(matches!(result, Err(DevClientError::AlpnMismatch)));
+        server.await??;
+        Ok(())
+    }
+
+    // --- Minimal test-only wire construction for the 3 fixtures below, which need a
+    // `SnapshotBegin` declaring more than the one chunk `encode_single_chunk_snapshot` can ever
+    // produce. This is fixture-only: it simulates a hypothetical/adversarial *server*, never
+    // anything `connect_and_join` itself sends or trusts without checking.
+
+    fn push_test_varint(output: &mut Vec<u8>, mut value: u64) {
+        while value >= 0x80 {
+            output.push((value as u8 & 0x7f) | 0x80);
+            value >>= 7;
+        }
+        output.push(value as u8);
+    }
+
+    fn push_test_scalar(output: &mut Vec<u8>, field: u64, value: u64) {
+        if value != 0 {
+            push_test_varint(output, field << 3);
+            push_test_varint(output, value);
+        }
+    }
+
+    fn push_test_bytes_field(output: &mut Vec<u8>, field: u64, value: &[u8]) {
+        push_test_varint(output, (field << 3) | 2);
+        push_test_varint(output, value.len() as u64);
+        output.extend_from_slice(value);
+    }
+
+    fn test_server_frame(
+        message_type: MessageType,
+        connection_generation: u64,
+        payload: &[u8],
+    ) -> Vec<u8> {
+        let mut output = Vec::new();
+        push_test_scalar(&mut output, 1, message_type as u64);
+        push_test_scalar(&mut output, 2, connection_generation);
+        push_test_bytes_field(&mut output, 4, payload);
+        output
+    }
+
+    fn test_snapshot_begin(snapshot_id: u64, chunk_count: u64, total_bytes: u64) -> Vec<u8> {
+        let mut payload = Vec::new();
+        push_test_scalar(&mut payload, 1, snapshot_id);
+        push_test_scalar(&mut payload, 2, chunk_count);
+        push_test_scalar(&mut payload, 3, total_bytes);
+        test_server_frame(MessageType::SnapshotBegin, 1, &payload)
+    }
+
+    fn test_snapshot_chunk(snapshot_id: u64, chunk_index: u64, data: &[u8]) -> Vec<u8> {
+        let mut payload = Vec::new();
+        push_test_scalar(&mut payload, 1, snapshot_id);
+        push_test_scalar(&mut payload, 2, chunk_index);
+        push_test_bytes_field(&mut payload, 3, data);
+        test_server_frame(MessageType::SnapshotChunk, 1, &payload)
+    }
+
+    fn test_snapshot_commit(snapshot_id: u64) -> Vec<u8> {
+        let mut payload = Vec::new();
+        push_test_scalar(&mut payload, 1, snapshot_id);
+        test_server_frame(MessageType::SnapshotCommit, 1, &payload)
+    }
+
+    /// Drives `connect_and_join` against a fixture that sends exactly `frames` after
+    /// `ServerAccepted`, and asserts the join fails with `expected`.
+    async fn assert_join_fails_with(
+        frames: Vec<Vec<u8>>,
+        expected: impl Fn(&DevClientError) -> bool + Send + 'static,
+    ) -> Result<(), Box<dyn StdError + Send + Sync>> {
+        let (certificate, acceptor, listener, address) = tls_test_listener().await?;
+        let server = tokio::spawn(async move {
+            let (tcp, _) = listener.accept().await?;
+            let mut stream = acceptor.accept(tcp).await?;
+            read_and_discard_bootstrap(&mut stream).await?;
+            write_frame(&mut stream, &fake_accepted_frame()?).await?;
+            for frame in &frames {
+                write_frame(&mut stream, frame).await?;
+            }
+            stream.flush().await?;
+            Ok::<(), Box<dyn StdError + Send + Sync>>(())
+        });
+
+        let character_id = CharacterId::decode(&test_uuid_v7(4))?;
+        let result = connect_and_join(JoinRequest {
+            address,
+            server_name: "localhost",
+            root_certificate: &certificate,
+            schema_revision: 1,
+            character_id,
+            admission_material: b"fixture-grant",
+            client_build_id: CLIENT_BUILD_ID,
+            deadline: TEST_DEADLINE,
+        })
+        .await;
+        let Err(error) = &result else {
+            return Err(format!("expected a join failure, got {result:?}").into());
+        };
+        if !expected(error) {
+            return Err(format!("unexpected error variant: {error:?}").into());
+        }
+        server.await??;
+        Ok(())
+    }
+
+    /// Codex P2 finding 2 (#162 review on PR #1147, `f0f27df`): `SnapshotBegin` declares 2
+    /// chunks, but the server sends only 1 before the commit — rejected (the commit arrives
+    /// where a 2nd `SnapshotChunk` was expected).
+    #[test]
+    fn connect_and_join_rejects_fewer_chunks_than_snapshot_begin_declared()
+    -> Result<(), Box<dyn StdError + Send + Sync>> {
+        block_on(assert_join_fails_with(
+            vec![
+                test_snapshot_begin(1, 2, 0),
+                test_snapshot_chunk(1, 0, &[]),
+                test_snapshot_commit(1),
+            ],
+            |error| {
+                matches!(
+                    error,
+                    DevClientError::UnexpectedMessage {
+                        expected: MessageType::SnapshotChunk,
+                        actual: MessageType::SnapshotCommit
+                    }
+                )
+            },
+        ))?
+    }
+
+    /// Codex P2 finding 2: a `SnapshotChunk` whose `chunk_index` does not match the index
+    /// expected next is rejected.
+    #[test]
+    fn connect_and_join_rejects_a_wrong_chunk_index() -> Result<(), Box<dyn StdError + Send + Sync>>
+    {
+        block_on(assert_join_fails_with(
+            vec![test_snapshot_begin(1, 1, 0), test_snapshot_chunk(1, 1, &[])],
+            |error| {
+                matches!(
+                    error,
+                    DevClientError::ChunkIndexMismatch {
+                        expected: 0,
+                        actual: 1
+                    }
+                )
+            },
+        ))?
+    }
+
+    /// Codex P2 finding 2: the summed `SnapshotChunk` `data` bytes must equal `SnapshotBegin`'s
+    /// declared `total_encoded_bytes`; a mismatch is rejected before the commit is trusted.
+    #[test]
+    fn connect_and_join_rejects_an_assembled_length_mismatch()
+    -> Result<(), Box<dyn StdError + Send + Sync>> {
+        block_on(assert_join_fails_with(
+            vec![
+                // Declares 100 encoded bytes but the one chunk sent carries an empty (valid,
+                // zero-domain) body: 0 actual bytes assembled.
+                test_snapshot_begin(1, 1, 100),
+                test_snapshot_chunk(1, 0, &[]),
+                test_snapshot_commit(1),
+            ],
+            |error| {
+                matches!(
+                    error,
+                    DevClientError::AssembledLengthMismatch {
+                        expected: 100,
+                        actual: 0
+                    }
+                )
+            },
+        ))?
     }
 }

@@ -833,6 +833,94 @@ pub fn decode_snapshot_id(payload: &[u8]) -> Result<u64, FoundationProtocolError
     snapshot_id.ok_or(FoundationProtocolError::MalformedEnvelope)
 }
 
+/// Decoded `SnapshotBegin` (FND-02 §16, `foundation.proto` `SnapshotBegin`): a transfer's full
+/// declaration, which a client checks the rest of the transfer against — exactly `chunk_count`
+/// `SnapshotChunk` frames with strictly increasing `chunk_index`, and their summed `data` bytes
+/// equal to `total_encoded_bytes` — before trusting `SnapshotCommit`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SnapshotBeginFields {
+    pub snapshot_id: u64,
+    pub chunk_count: u32,
+    pub total_encoded_bytes: u64,
+}
+
+/// Decodes one `SnapshotBegin` message payload. Reuses `validate_snapshot_begin_ingress` (the
+/// same `chunk_count <= MAX_SNAPSHOT_CHUNKS` / `total_encoded_bytes <= MAX_SNAPSHOT_ASSEMBLED_BYTES`
+/// bounds `decode_wire_envelope` already applies), then extracts the fields.
+pub fn decode_snapshot_begin(
+    payload: &[u8],
+) -> Result<SnapshotBeginFields, FoundationProtocolError> {
+    validate_snapshot_begin_ingress(payload)?;
+    let mut cursor = 0usize;
+    let (mut snapshot_id, mut chunk_count, mut total_encoded_bytes) = (None, None, None);
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match field {
+            1 if wire == 0 && snapshot_id.is_none() => {
+                snapshot_id = Some(read_varint(payload, &mut cursor)?);
+            }
+            2 if wire == 0 && chunk_count.is_none() => {
+                chunk_count = Some(
+                    u32::try_from(read_varint(payload, &mut cursor)?)
+                        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
+                );
+            }
+            3 if wire == 0 && total_encoded_bytes.is_none() => {
+                total_encoded_bytes = Some(read_varint(payload, &mut cursor)?);
+            }
+            _ => skip_field(payload, &mut cursor, wire)?,
+        }
+    }
+    Ok(SnapshotBeginFields {
+        // Zero is invalid for snapshot_id (foundation.proto); an omitted field defaults to 0 on
+        // the wire either way, so absence is refused exactly like an explicit zero would be.
+        snapshot_id: snapshot_id.ok_or(FoundationProtocolError::MalformedEnvelope)?,
+        // chunk_count and total_encoded_bytes are ordinary proto3 scalars: a standard encoder
+        // omits a zero value, so both default on omission (FND-02 §7); the caller judges whether
+        // a declared zero is semantically usable.
+        chunk_count: chunk_count.unwrap_or(0),
+        total_encoded_bytes: total_encoded_bytes.unwrap_or(0),
+    })
+}
+
+/// A `SnapshotChunk` message payload's `chunk_index` (field 2, zero-based, proto3-omitted-as-0 —
+/// `encode_single_chunk_snapshot` never emits it since its one chunk is always index 0) and its
+/// raw `data` field length in bytes (field 3, the same body `decode_snapshot_chunk` parses). A
+/// client checks `chunk_index` against the index it expected next and sums `data_len` across
+/// every chunk of a transfer to compare against `SnapshotBegin`'s `total_encoded_bytes`.
+pub fn decode_snapshot_chunk_framing(
+    payload: &[u8],
+) -> Result<(u32, u64), FoundationProtocolError> {
+    let mut cursor = 0usize;
+    let (mut chunk_index, mut data_len) = (None, None);
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match field {
+            2 if wire == 0 && chunk_index.is_none() => {
+                chunk_index = Some(
+                    u32::try_from(read_varint(payload, &mut cursor)?)
+                        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
+                );
+            }
+            3 if wire == 2 && data_len.is_none() => {
+                let data = bounded_length_delimited(
+                    payload,
+                    &mut cursor,
+                    MAX_SNAPSHOT_CHUNK_BYTES,
+                    FoundationProtocolError::SnapshotLimitExceeded,
+                )?;
+                data_len = Some(data.len() as u64);
+            }
+            _ => skip_field(payload, &mut cursor, wire)?,
+        }
+    }
+    Ok((chunk_index.unwrap_or(0), data_len.unwrap_or(0)))
+}
+
 /// Decodes one `SnapshotChunk` message payload (FND-02 §16) into its `snapshot_id` and the
 /// `DomainSnapshot` entries `encode_single_chunk_snapshot` packed into the chunk body — the
 /// client-direction counterpart of that encoder, for the join/resync snapshot a client receives.
@@ -2204,6 +2292,38 @@ mod tests {
         let commit = decode_wire_envelope(&frames[2])?;
         assert_eq!(commit.message_type(), MessageType::SnapshotCommit);
         assert_eq!(decode_snapshot_id(commit.payload())?, 9);
+        Ok(())
+    }
+
+    /// `decode_snapshot_begin` and `decode_snapshot_chunk_framing` round-trip through the
+    /// existing server-side `encode_single_chunk_snapshot`: its one chunk is always declared
+    /// `chunk_count: 1`, `chunk_index: 0` (omitted on the wire, defaulted on decode), and
+    /// `total_encoded_bytes` equal to that chunk's `data` length.
+    #[test]
+    fn snapshot_begin_and_chunk_framing_round_trip_through_existing_server_encoder()
+    -> Result<(), FoundationProtocolError> {
+        let payload = [0_u8; 3];
+        let frames = encode_single_chunk_snapshot(
+            1,
+            9,
+            0,
+            &[DomainSnapshot {
+                domain_id: 1,
+                revision: 1,
+                snapshot_type: 1,
+                payload: &payload,
+            }],
+        )?;
+        let begin_envelope = decode_wire_envelope(&frames[0])?;
+        let begin = decode_snapshot_begin(begin_envelope.payload())?;
+        assert_eq!(begin.snapshot_id, 9);
+        assert_eq!(begin.chunk_count, 1);
+        assert!(begin.total_encoded_bytes > 0);
+
+        let chunk_envelope = decode_wire_envelope(&frames[1])?;
+        let (chunk_index, data_len) = decode_snapshot_chunk_framing(chunk_envelope.payload())?;
+        assert_eq!(chunk_index, 0);
+        assert_eq!(data_len, begin.total_encoded_bytes);
         Ok(())
     }
 
