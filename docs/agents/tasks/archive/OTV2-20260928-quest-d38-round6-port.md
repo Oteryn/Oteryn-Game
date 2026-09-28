@@ -4,22 +4,22 @@
 task_id: OTV2-20260928-quest-d38-round6-port
 title: Quest format - port the #1053 fail-closed repair rounds 5-6 and regenerate on the pinned sources
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: 1088
 base_sha: 4b9b033bd5c43b8de6baa481b462e3b0afdae85d
-head_sha: null
-final_head_sha: null
+head_sha: b15269567c6998443c92a78b80ae70e4f59c3de4
+final_head_sha: b15269567c6998443c92a78b80ae70e4f59c3de4
 final_head_frozen_at: null
 owner: claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk
 created_at: 2026-09-28
 updated_at: 2026-09-28
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260928-quest-d38-round6-port.md
+  - docs/agents/tasks/archive/OTV2-20260928-quest-d38-round6-port.md
   - docs/agents/tasks/archive/OTV2-20260928-quest-relocation-worldobject-transcription.md
   - docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md
   - tools/content-schema/quest-authoring/**
