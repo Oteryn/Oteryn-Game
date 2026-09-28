@@ -38,7 +38,7 @@ Two questions follow:
 | D46 | A quest grants its completion to the account by default. A quest may opt out. A quest whose unlock depends on an exclusive choice is opted out automatically. | "3. A" |
 | D47 | Outfits, outfit addons, mounts and Tibia Store purchases belong to the account, not the character (§4.3, §4.5). | "przypisane do konta nie postaci, tak samo rzeczy zakupione w tibia store" |
 | D48 | Achievements belong to the account; progress counters stay per character (§4.4). | Chosen option "Konto, liczniki per postać" |
-| D49 | Portability. Cosmetic unlocks, achievements and Store unlocks apply on every world of the account, in both profiles; a Store unlock only while its entitlement is usable (§4.5). Quest completions apply on every world of the same profile family. A Store item can be claimed on any world of the profile family it was bought for, subject to item compatibility (§4.2-§4.5). | Chosen options "Wszystko na wszystkich", then "Kosmetyki wszędzie" and "Dowolny świat profilu" |
+| D49 | Portability. Cosmetic unlocks, achievements and Store unlocks apply on every world of the account, in both profiles, where the world's content is compatible; a Store unlock only while its entitlement is usable (§4.3-§4.5). Quest completions apply on every world of the same profile family. A Store item can be claimed on any world of the profile family it was bought for, subject to item compatibility (§4.2-§4.5). | Chosen options "Wszystko na wszystkich", then "Kosmetyki wszędzie" and "Dowolny świat profilu" |
 
 ## 3. Facts
 
@@ -142,13 +142,16 @@ implementation it applies to.
   1. The fact replaces only the "completed the quest" condition. Level, vocation, premium and item
      requirements are still checked for the acting character.
   2. It does not skip an encounter. A reward behind an encounter still requires the encounter.
-  3. A quest whose unlock depends on an exclusive choice is character-only (D46). The content
-     validator rejects `account_completion: grant` for it.
+  3. A quest whose unlock depends on an exclusive choice is character-only (D46). Its effective
+     policy is always `none`: an omitted declaration resolves to `none`, not to the default, and
+     the content validator rejects an explicit `account_completion: grant`.
   4. It does not create items. A door that opens with a key item still needs the key.
   5. It covers characters created later and survives deletion of the completing character.
   6. Rewards stay per character: XP only for doing the quest; items through the character's own
      `RewardClaim` (D42); repeatable-quest cooldowns per character.
-- **Content.** Each quest declares `account_completion: grant | none`, default `grant` (D46).
+- **Content.** Each quest may declare `account_completion: grant | none`. The effective policy is
+  resolved at content compilation in this order: an exclusive-choice quest is `none` (limit 3);
+  otherwise the declared value; otherwise the default `grant` (D46).
 - **Profile.** In `Oteryn Reference` this is a declared difference (`DECLARED_DIFFERENCE`, parity
   manifest contract), with this decision as its accepted reference. It is a versioned ruleset
   policy, not a process switch.
@@ -158,13 +161,16 @@ implementation it applies to.
 ### 4.3 Account cosmetic unlocks (D47, D49)
 
 - Outfits, outfit addons and mounts earned in gameplay are `AccountUnlock(account_id, unlock_key)`
-  facts: write-once, never revoked by character deletion.
+  facts: write-once, never revoked by character deletion. The fact records the appearance-definition
+  provenance it was earned under (unlock key and content revision).
 - Store cosmetic unlocks share this account scope and portability (D47, D49), but not this fact
   model. Their delivery, usability, refund, revocation and expiry follow the Platform-owned
   entitlement lifecycle (`PROD-ENTITLEMENTS-01` consumer contract §2.1) and the open §32 decision
   (§4.5).
-- They apply on every world of the account, in both profiles. This decision is the dedicated
-  permission ADR-0010 §6 requires for cosmetics.
+- They apply on every world of the account, in both profiles, where the world's active content
+  defines a compatible appearance for the key. On a world without one, the unlock is unavailable
+  there: it fails closed, the fact is unchanged, and the key is never reinterpreted as another
+  appearance. This decision is the dedicated permission ADR-0010 §6 requires for cosmetics.
 - Portability covers the appearance only. Any gameplay effect of a cosmetic (for example a mount
   speed bonus) belongs to the world's profile ruleset and is evaluated per world.
 - Where the Reference target binds an unlock to one character, this is a declared difference.
@@ -182,7 +188,8 @@ implementation it applies to.
   session ends. Whether it consumes requests in the same transaction or later is for its owner
   contract.
 - Achievement points count once per account; rankings by achievement points rank accounts and are
-  shown on their characters.
+  shown on their characters. A point value comes from the compatible catalogue entry of the world
+  evaluating it; the Achievement owner contract defines the catalogue.
 - Exclusive-choice achievements (for example Marid and Efreet ally) can each be earned by a
   different character of the account.
 - Progress counters (for example fish caught) stay per character. The achievement is granted when
@@ -190,8 +197,10 @@ implementation it applies to.
 - The vocation promotion achievement (GAME-CHAR-01) is character state, not an achievement in this
   sense.
 - An achievement or its points carry no gameplay value. Giving them one needs a separate decision.
-- They apply on every world of the account, in both profiles (ADR-0010 §6 permission). This is a
-  declared difference from the Reference target, which counts achievements per character.
+- They apply on every world of the account, in both profiles (ADR-0010 §6 permission), where the
+  world's achievement catalogue defines a compatible entry for the key. Elsewhere the achievement
+  is not shown and is never reinterpreted; the fact is unchanged. This is a declared difference
+  from the Reference target, which counts achievements per character.
 
 ### 4.5 Store purchases (D47, D49)
 
