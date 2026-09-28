@@ -28,7 +28,7 @@
 
 | # | Decision | Owner choice |
 |---|---|---|
-| D50 | RL-07: one audit event per logical transaction; envelope at most 8,192 B, payload at most 7,936 B; content keys and revisions at most 512 B, other technical fields at most 128 B; item free text excluded; unexercised fields excluded fail-closed (§3.2). RL-01, RL-02, RL-03/04/05, RL-06 and P90D take the measured values of §3.1. No private 4,096 B cap is registered. | Direction #162 5866606575; final numbers accepted: "Koperta 8 192 B", "Tak, jak w kierunku" |
+| D50 | RL-07: one audit event per logical transaction; normative `EventEnvelope` at most 9,216 B, payload at most 7,936 B; content keys and revisions at most 512 B, other technical fields at most 128 B; item free text excluded; unexercised fields excluded fail-closed (§3.2). RL-01, RL-02, RL-03/04/05, RL-06 and P90D take the measured values of §3.1. No private 4,096 B cap is registered. | Direction #162 5866606575; final numbers accepted: "Koperta 8 192 B", "Tak, jak w kierunku"; envelope raised after the normative-envelope recount: "9 216 B" |
 | D51 | RL-08: 3 work units now, with a mandatory re-decision in stage C once real PostgreSQL reconciliation exists (§3.3). | Same |
 | D52 | If the server stops after a creature death but before its loot and XP commit, those rewards are lost. They are never duplicated (§4). | "Przepadają, bez duplikatów" |
 
@@ -49,7 +49,8 @@
 ### 3.2 RL-07: audit events and bytes per transaction (D50)
 
 - Events per logical transaction: **1**.
-- Envelope: **≤ 8,192 B**. Payload: **≤ 7,936 B**. ANL-01 limits still apply on top
+- Envelope (the normative ANL-01 `EventEnvelope`, `game-events/v1/foundation.proto`): **≤ 9,216 B**.
+  Payload: **≤ 7,936 B**. ANL-01 limits still apply on top
   (`ANL01-EVENT-ENVELOPE-BYTES` is 262,144 B).
 - Per-field bounds:
 
@@ -64,19 +65,24 @@
 | Item free text (writable text, descriptions) | excluded from the audit event |
 | Inventory `typed_position` | excluded fail-closed until its owner defines it; TRANSFER stays closed |
 
-- **Derivation.** This is the exact protobuf worst case of the final schema: the candidate fields, with the
-  separate output and death ids and the single loot revision replaced by the full §4.2 loot output
-  cause. Every bounded field is at its maximum, and varints are at their widest:
+- **Derivation.** This is the exact protobuf worst case of the final schema: the candidate payload fields, with
+  the separate output and death ids and the single loot revision replaced by the full §4.2 loot
+  output cause. The payload sits inside the normative `EventEnvelope` with every optional field
+  present: world, channel, instance and node; session, connection generation, runtime order and
+  command; operation, transaction event, correlation, causation and analytics actor; protocol
+  major; and the ruleset, content and build strings at the ANL-01 128 B maximum. Every bounded
+  field is at its maximum and varints are at their widest. The envelope overhead is at most
+  1,038 B.
 
 | Case | Payload | Envelope |
 |---|---|---|
-| MINT | 6,129 B | 6,363 B |
-| TRANSFER, `typed_position` excluded | 7,433 B | 7,667 B |
-| TRANSFER, `typed_position` at 128 B (future) | 7,565 B | 7,799 B |
+| MINT | 6,129 B | 7,167 B |
+| TRANSFER, `typed_position` excluded | 7,433 B | 8,471 B |
+| TRANSFER, `typed_position` at 128 B (future) | 7,565 B | 8,603 B |
 
-  The 8,192 B envelope and 7,936 B payload caps cover every case; about 390 B of headroom remains.
-  Opening TRANSFER with a `typed_position` of up to 128 B needs no re-registration. Anything larger
-  needs a new decision.
+  The payload cap is 7,936 B, so any valid envelope is at most 7,936 + 1,038 = 8,974 B, which is
+  within the 9,216 B cap. Opening TRANSFER with a `typed_position` of up to 128 B needs no
+  re-registration. The `OfflineCandidateEnvelope` evidence wrapper is not the registered envelope.
 - Failure: `CAPACITY_EXCEEDED` or `INVALID_INPUT`, checked before allocation, never truncated,
   not visible to the client.
 
@@ -177,7 +183,7 @@ implementation_may_resume: true   # B4 and D may be allocated now on this owner 
 required_fresh_allocation: true
 required_independent_review: "exact-head independent review (DUR/ANL resource values, death identity)"
 required_revalidation:
-  - "B4: max and max+1 per row; the worst-case MINT audit event of the final schema (6,363 B envelope) is accepted; a 513 B content key or a 129 B technical field is rejected, not truncated"
+  - "B4: max and max+1 per row; the worst-case MINT event of the final schema in the normative EventEnvelope (7,167 B) is accepted; a 513 B content key or a 129 B technical field is rejected, not truncated"
   - "C: re-decide RL-08 from real PostgreSQL reconciliation; prove max/max+1 across restart"
   - "D: a replayed lethal effect makes no second death; a retry in the same generation returns the same MINT and XP result; after a generation change a pending descendant is refused and nothing is minted or awarded; the same key with a different binding conflicts; a stale actor handle cannot kill a recycled actor; a despawn creates no death key"
 remaining_unknowns:

@@ -55,8 +55,9 @@ implements A4.
   (fixed retry loop); VSL-COMBAT-01 :120-151 and :505; DUR-03 :885-897; `runtime_actor_carrier.rs`
   :132-138, :373-382 and :1310-1317; `0003_runtime_scope_assignment.sql` :398-403;
   `character_progression.rs` :31-39; DUR-01 :109 and :361.
-- `DERIVED`: the worst-case protobuf arithmetic for the final schema (§3.2 of the decision): MINT
-  envelope 6,363 B, TRANSFER 7,667 B, and 7,799 B once `typed_position` is defined.
+- `DERIVED`: the worst-case protobuf arithmetic for the final schema in the normative `EventEnvelope`
+  (§3.2 of the decision): MINT 7,167 B, TRANSFER 8,471 B, and 8,603 B once `typed_position` is
+  defined; overhead at most 1,038 B.
 - `UNKNOWN`: stage C PostgreSQL isolation and deadlock behaviour; loot tables; XP values.
 
 ## High-risk authority/recovery qualification
@@ -119,7 +120,8 @@ finding_dispositions:
     - "Codex 4120451420 on 5c0f994 (crash-loss rule conflicted with the DUR-03 restart clause): DUR-03 §39.3 and VSL-COMBAT-01 amended"
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
-    - "Codex 4120451429 on 5c0f994 (maxima measured on the candidate shape, not the full loot cause): recomputed; still within the accepted caps"
+    - "Codex 4120451429 on 5c0f994 (maxima measured on the candidate shape, not the full loot cause): recomputed"
+    - "Codex 4120510110 on 6238499 (envelope sized on the evidence wrapper, not the normative EventEnvelope): recomputed; TRANSFER exceeded 8,192 B, so the owner raised the envelope cap to 9,216 B"
 
 ```
 
