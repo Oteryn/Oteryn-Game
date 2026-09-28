@@ -923,6 +923,25 @@ WIKI_STATUS_PROFILE = {
     "event": "event_collectible",
 }
 
+# --- availability (owner decision 2026-09-28, task f) --------------------------------
+#
+# `Template:Infobox Object`'s own `status` field is forwarded verbatim into
+# `{{Status Messagebox|{{{status|}}}}}`; that template's own source
+# (`{{#if:{{{1|}}}|{{#switch:{{lc:{{{1}}}}}|...}}|}}`) renders nothing at all -- no
+# banner, no implicit "active" designation anywhere -- when the argument is empty, and
+# its `#switch` only ever admits these five values. An absent/empty `status` is
+# therefore never a confirmed "active" default: it is recorded as no availability fact
+# at all (see `fallback_entry`/`item["availability"]` in `convert_item`), never
+# guessed. Any other non-empty value is a hard error in the loader (fail closed) rather
+# than silently admitted.
+ADMITTED_AVAILABILITY_STATUSES = {
+    "deprecated",
+    "ts-only",
+    "event",
+    "unobtainable",
+    "unavailable",
+}
+
 
 def resolve_wiki_family_value(field, value):
     """Resolve one Fandom infobox `field`/`value` pair to a `family_profile` using only
@@ -970,12 +989,16 @@ def _wiki_evidence_source_from_record(row):
 def load_wiki_family_fallback(path, identity_index):
     """Strictly parse, validate and resolve the wiki-evidence family fallback snapshot.
 
-    Returns `{item_key: {"profile": family_profile, "matched_names": {lower-cased
-    engine name, ...}, "evidence": <family_profile_evidence value>}}`. Every check here
+    Returns `{item_key: {"profile": family_profile, "matched_names": {lower-cased name,
+    ...}, "match_basis": "itemid"|"title"|"appearance_title", "evidence":
+    <family_profile_evidence value>}}`. For `match_basis: "appearance_title"`,
+    `matched_names` holds the item's own lower-cased appearances.dat name, not its
+    items.xml name -- `convert_item` checks the right one against it. Every check here
     is fail-closed, exactly like `load_delivery_overrides`: an unknown top-level or
     record key, a duplicate JSON key, a `snapshot_sha256` that does not match the
     recomputed digest of `records`, a `registry_key` absent from the identity index, a
-    missing or unrecognized `match_basis` (must be exactly `itemid` or `title`), a
+    missing or unrecognized `match_basis` (must be exactly `itemid`, `title` or
+    `appearance_title`), a
     `field`/`value` (or, for a disambiguation, any candidate's `field`/`value`) that the
     admitted mapping does not resolve to exactly one profile, or a profile absent from
     `PROFILE_ITEM_CLASS` (the converter's own admitted family_profile set) is a hard
@@ -1051,6 +1074,7 @@ def load_wiki_family_fallback(path, identity_index):
         "field",
         "value",
         "candidates",
+        "availability_status",
     }
     allowed_candidate_keys = {
         "wiki_title",
@@ -1133,8 +1157,11 @@ def load_wiki_family_fallback(path, identity_index):
         if resolution not in ("direct", "disambiguation"):
             raise SystemExit(f"{where}: 'resolution' must be direct or disambiguation")
         match_basis = record.get("match_basis")
-        if match_basis not in ("itemid", "title"):
-            raise SystemExit(f"{where}: 'match_basis' must be itemid or title")
+        if match_basis not in ("itemid", "title", "appearance_title", "actualname"):
+            raise SystemExit(
+                f"{where}: 'match_basis' must be itemid, title, appearance_title or "
+                "actualname"
+            )
 
         if resolution == "direct":
             wiki_source_fields(record, where)
@@ -1187,10 +1214,40 @@ def load_wiki_family_fallback(path, identity_index):
                 f"{where}: profile {profile!r} is not an admitted family_profile"
             )
 
+        # Availability (owner decision 2026-09-28, task f): `None` (JSON `null`, or the
+        # key simply absent) means the matched page(s) carried no `status` fact at all,
+        # or -- for a disambiguation -- the candidates disagreed; never guessed, never
+        # defaulted. A present value must be one of `ADMITTED_AVAILABILITY_STATUSES`.
+        availability_status = record.get("availability_status")
+        if availability_status is None:
+            availability = None
+        else:
+            if (
+                not isinstance(availability_status, str)
+                or availability_status not in ADMITTED_AVAILABILITY_STATUSES
+            ):
+                raise SystemExit(
+                    f"{where}: 'availability_status' {availability_status!r} is not "
+                    "an admitted value"
+                )
+            evidence_page = record if resolution == "direct" else candidates[0]
+            availability = {
+                "status": availability_status,
+                "evidence": {
+                    "source": "tibiawiki",
+                    "page_id": evidence_page["page_id"],
+                    "revision_id": evidence_page["revision_id"],
+                    "wiki_title": evidence_page["wiki_title"],
+                    "match_basis": match_basis,
+                },
+            }
+
         resolved[registry_key] = {
             "profile": profile,
             "matched_names": set(matched_names),
+            "match_basis": match_basis,
             "evidence": evidence,
+            "availability": availability,
         }
     return resolved
 
@@ -1332,6 +1389,106 @@ def immovable_non_item_route(flags):
     if any(flags.get(flag) for flag in GROUND_OR_BORDER_FLAGS):
         return "Terrain", "ground_or_border"
     return "WorldObject", "immovable_unclassified"
+
+
+# --- fluid-kind server names with no appearance object (owner decision 2026-09-28) ---
+#
+# Both pinned engines' `data/items/items.xml` open with ids 1-20 naming the server's
+# `Fluids_t` enum values (`FLUID_WATER` .. `FLUID_CHOCOLATE`; `FLUID_NONE`=0 has no
+# items.xml row of its own) -- internal fluid-content markers, never a client sprite: they
+# have no object in either engine's `appearances.dat`. Verified against the enum itself,
+# identical in both engines: `src/utils/utils_definitions.hpp` (`enum Fluids_t : uint8_t`,
+# Canary lines 413-433, Crystal lines 423-443) in each engine's own upstream repository
+# (opentibiabr/canary and its Crystal fork) -- the pinned data-only checkouts this
+# converter otherwise reads carry no engine source tree of their own. This is the lowest-
+# priority appearance-less rule: it only ever runs once every other classifier (including
+# the wiki-evidence fallback, which never applies with no appearance object at all) has
+# already failed to resolve a family, so no already-resolved item is ever affected. Any
+# other appearance-less `family_profile_unresolved` name (e.g. "bridge", "hive structure")
+# is deliberately NOT a fluid kind and stays unresolved rather than guessed.
+FLUID_TYPE_NAMES = {
+    "water",
+    "wine",
+    "beer",
+    "mud",
+    "blood",
+    "slime",
+    "oil",
+    "urine",
+    "milk",
+    "manafluid",
+    "lifefluid",
+    "lemonade",
+    "rum",
+    "fruit juice",
+    "coconut milk",
+    "mead",
+    "tea",
+    "ink",
+    "candyfluid",
+    "chocolate",
+}
+
+
+def resolve_fluid_type_route(name, xml_record, appearance):
+    """Return (owner, reason) for an items.xml-only fluid-kind name with no appearance
+    object; else `None`. Only ever consulted once family classification has otherwise
+    failed (see module note above)."""
+    if xml_record is None or appearance is not None:
+        return None
+    if name.strip().lower() not in FLUID_TYPE_NAMES:
+        return None
+    return "Fluid", "fluid_type_without_appearance"
+
+
+# --- late placeholder-name routing (owner decision 2026-09-28) ----------------------
+#
+# `PLACEHOLDER_APPEARANCE_NAMES` above is consulted before family classification even
+# starts, and only when the entry carries no items.xml attribute at all -- it must stay
+# that narrow, because some ids sharing one of these very names (e.g. an "old tibia item"
+# id-matched to a real TibiaWiki page, or an "event item" id the wiki evidence fallback
+# otherwise resolves) are genuine, already-resolved Items. The names below are instead
+# checked here, last, only once every other classifier -- engine attributes, the wiki-
+# evidence fallback, wrap-target inheritance and the dead-item rules -- has already failed
+# to resolve this exact item, so an already-resolved or already-routed id carrying one of
+# these names is never rereouted. Same owner/reason as the early placeholder check: these
+# are reserved/generic sprite-sheet slot labels, not a distinct game object.
+LATE_PLACEHOLDER_APPEARANCE_NAMES = {
+    "old tibia item",
+    "unknown item",
+    "unknow",
+    "event item",
+    "unknown corpse",
+}
+
+
+def resolve_late_placeholder_route(name):
+    """Return (owner, reason) when `name` is one of the late-checked placeholder names
+    above; else `None`. Only ever consulted once every other classifier has already
+    failed to resolve a family for this exact item (see module note above)."""
+    if name.strip().lower() not in LATE_PLACEHOLDER_APPEARANCE_NAMES:
+        return None
+    return "WorldObject", "appearance_placeholder_slot"
+
+
+# --- no-client-appearance catch-all (owner decision 2026-09-28, task h) -------------
+#
+# An id whose engine name is neither a fluid kind nor a late-placeholder name, and
+# which still has no `appearances.dat` object at all once every other rule above has
+# failed, names a gap the pinned client build simply does not contain a sprite for
+# (e.g. "bridge", "hive structure", "stone pavement": items.xml range entries whose
+# in-range ids only partly exist in the 15.30 client -- the ids that DO have an
+# appearance already resolve via Terrain/WorldObject `primarytype_world_object` or stay
+# genuinely unresolved for other reasons). This is the last-resort rule in the whole
+# chain: fluid types and late-placeholder names each own their own reason and are
+# always tried first, so neither is ever shadowed by this one.
+def resolve_no_client_appearance_route(appearance):
+    """Return `("WorldObject", "no_client_appearance")` when this item has no
+    `appearances.dat` object at all; else `None`. Only ever consulted once every other
+    last-resort rule has already failed for this exact item."""
+    if appearance is not None:
+        return None
+    return "WorldObject", "no_client_appearance"
 
 
 AMBIGUOUS_HAND_PATTERNS = {
@@ -2027,6 +2184,47 @@ def field_status_row(field, disposition_row, raw_value=_NO_VALUE):
     return "unsupported", field
 
 
+HIGH_CONFIDENCE_MATCH_BASES = ("itemid", "title")
+NAME_JOINED_MATCH_BASES = ("appearance_title", "actualname")
+
+
+def fallback_entry_matches_name(fallback_entry, name, appearance, allowed_bases):
+    """True when `fallback_entry` (a `load_wiki_family_fallback` entry, or `None`)
+    applies to this exact item, and its `match_basis` is one of `allowed_bases`. Wiki
+    evidence never applies to an item with no `appearances.dat` object (e.g. the
+    fluid-kind name rows 1-20: not a physical Item). Which of this item's own names is
+    checked against `matched_names` depends on `match_basis`: `appearance_title` (task
+    e) checks only the appearance name; `actualname` (task g) checks either the
+    items.xml name or the appearance name (whichever one the capture tool actually
+    matched); every other basis (`itemid`, `title`) checks only the items.xml (`name`)
+    one.
+
+    `allowed_bases` exists because `itemid`/`title` are exact, authoritative joins
+    (an id or an exact engine-name match can never collide with an unrelated wiki
+    page), while `appearance_title`/`actualname` are looser, name-string joins that a
+    generic engine name (e.g. "dead rat", "dead goblin") can coincidentally share with
+    an unrelated page (e.g. a quest-specific variant) that happens to use the same
+    literal name. Two already-reviewed, structurally-driven rules -- wrap-target
+    inheritance and the dead-item rules -- resolve those generic names correctly from
+    engine data alone with no such collision risk, so `convert_item` only consults
+    `appearance_title`/`actualname` evidence after both of those have already failed to
+    resolve the item, never before (see `convert_item` below)."""
+    if fallback_entry is None or appearance is None:
+        return False
+    basis = fallback_entry.get("match_basis")
+    if basis not in allowed_bases:
+        return False
+    matched = fallback_entry["matched_names"]
+    appearance_name = (appearance.get("name") or "").strip().lower()
+    if basis == "appearance_title":
+        return bool(appearance_name) and appearance_name in matched
+    if basis == "actualname":
+        return name.strip().lower() in matched or (
+            bool(appearance_name) and appearance_name in matched
+        )
+    return name.strip().lower() in matched
+
+
 def convert_item(sources, item_id):
     """Return (item, dependencies, report). item/dependencies are None when not_converted."""
     profile = sources["profile"]
@@ -2117,6 +2315,7 @@ def convert_item(sources, item_id):
     )
     family_profile_basis = None
     family_profile_evidence = None
+    availability = None
     if family_profile is None:
         immovable_route = immovable_non_item_route(flags)
         if immovable_route is not None:
@@ -2136,22 +2335,45 @@ def convert_item(sources, item_id):
             )
         # Engine-attribute classification always wins; the wiki-evidence fallback only
         # ever applies once every engine signal above has already failed to resolve a
-        # family, and only when this exact item's own lower-cased engine name is one the
+        # family, and only when this exact item's own lower-cased name is one the
         # reviewed snapshot actually resolved (else it is ignored and stays unresolved,
         # never guessed from a same-named-but-different item's evidence). An entry with
         # no `appearances.dat` object (e.g. the fluid-kind name rows 1-20) is not a
         # physical Item, so wiki evidence about a same-named object never applies to it.
+        #
+        # Only the exact, authoritative `itemid`/`title` bases are consulted here. The
+        # looser name-joined bases (`appearance_title` task e, `actualname` task g) are
+        # consulted further below, only once wrap-target inheritance and the dead-item
+        # rules have both already failed -- see `fallback_entry_matches_name`'s
+        # docstring for why (generic engine names can collide with an unrelated wiki
+        # page's `actualname`, but wrap-target/dead-item already resolve those generic
+        # names correctly from engine data alone).
         fallback_entry = sources.get("wiki_family_fallback", {}).get(key)
-        if (
-            fallback_entry is not None
-            and appearance is not None
-            and name.strip().lower() in fallback_entry["matched_names"]
+        if fallback_entry_matches_name(
+            fallback_entry, name, appearance, HIGH_CONFIDENCE_MATCH_BASES
         ):
             family_profile = fallback_entry["profile"]
             family_profile_basis = "wiki_evidence_fallback"
             family_profile_evidence = fallback_entry["evidence"]
+            availability = fallback_entry.get("availability")
         else:
-            wrap_target = resolve_wrap_target_profile(sources["items"], attrs)
+            # `sources["skip_post_wiki_fallback_routes"]`: set only by
+            # `item_wiki_family_capture.collect_unresolved`'s wiki-OFF probe, which asks
+            # "does this id need a wiki lookup at all". EVERY rule below this point --
+            # wrap-target inheritance, the dead-item rules, and the three last-resort
+            # non-Item routes further down -- is LOWER priority than the wiki fallback
+            # above (real wiki evidence, once it exists, always wins over any of them).
+            # Letting one of them fire in that probe would wrongly mark an id "already
+            # handled" and permanently exclude it from the wiki lookup, silently dropping
+            # its real, still-current wiki evidence from every future recapture and then
+            # falling through to the wrong (or merely differently-sourced) answer in
+            # production. The flag is never set for a real conversion.
+            skip_post_wiki = sources.get("skip_post_wiki_fallback_routes", False)
+            wrap_target = (
+                None
+                if skip_post_wiki
+                else resolve_wrap_target_profile(sources["items"], attrs)
+            )
             if wrap_target is not None:
                 wrap_profile, wrap_target_id, wrap_target_primarytype = wrap_target
                 family_profile = wrap_profile
@@ -2160,7 +2382,7 @@ def convert_item(sources, item_id):
                     "wrap_target_id": wrap_target_id,
                     "wrap_target_primarytype": wrap_target_primarytype,
                 }
-            else:
+            elif not skip_post_wiki:
                 dead_route = resolve_dead_item_route_or_profile(name, flags)
                 if dead_route is not None and dead_route[0] == "route":
                     _kind, owner, reason = dead_route
@@ -2184,7 +2406,79 @@ def convert_item(sources, item_id):
                         "rule": "take_able_dead_creature",
                         "name": name.strip().lower(),
                     }
+            # Name-joined wiki evidence (`appearance_title` task e, `actualname` task g),
+            # consulted only now that wrap-target inheritance and the dead-item rules
+            # have both already failed. See `fallback_entry_matches_name`'s docstring:
+            # this ordering exists so that a generic engine name already resolved
+            # correctly by one of those two structural rules is never overridden by a
+            # same-named-but-unrelated wiki page reached only through a looser name join.
+            if (
+                family_profile is None
+                and not skip_post_wiki
+                and fallback_entry_matches_name(
+                    fallback_entry, name, appearance, NAME_JOINED_MATCH_BASES
+                )
+            ):
+                family_profile = fallback_entry["profile"]
+                family_profile_basis = "wiki_evidence_fallback"
+                family_profile_evidence = fallback_entry["evidence"]
+                availability = fallback_entry.get("availability")
             if family_profile is None:
+                # Last-resort non-Item routing rules (owner decision 2026-09-28). Each
+                # only ever runs once every classifier above -- engine attributes, the
+                # wiki-evidence fallback (both priority tiers), wrap-target inheritance
+                # and the dead-item rules -- has already failed to resolve this exact
+                # item, so none can ever reroute an already-resolved or already-routed
+                # id. See `skip_post_wiki_fallback_routes` above: gated the same way.
+                if not skip_post_wiki:
+                    fluid_route = resolve_fluid_type_route(name, xml_record, appearance)
+                    if fluid_route is not None:
+                        owner, reason = fluid_route
+                        return (
+                            None,
+                            None,
+                            {
+                                "item_id": item_id,
+                                "key": key,
+                                "identity_basis": identity_basis,
+                                "converted": False,
+                                "routed_non_item": {"owner": owner, "reason": reason},
+                                "blockers": blockers,
+                                "field_status": field_status,
+                            },
+                        )
+                    late_placeholder_route = resolve_late_placeholder_route(name)
+                    if late_placeholder_route is not None:
+                        owner, reason = late_placeholder_route
+                        return (
+                            None,
+                            None,
+                            {
+                                "item_id": item_id,
+                                "key": key,
+                                "identity_basis": identity_basis,
+                                "converted": False,
+                                "routed_non_item": {"owner": owner, "reason": reason},
+                                "blockers": blockers,
+                                "field_status": field_status,
+                            },
+                        )
+                    no_appearance_route = resolve_no_client_appearance_route(appearance)
+                    if no_appearance_route is not None:
+                        owner, reason = no_appearance_route
+                        return (
+                            None,
+                            None,
+                            {
+                                "item_id": item_id,
+                                "key": key,
+                                "identity_basis": identity_basis,
+                                "converted": False,
+                                "routed_non_item": {"owner": owner, "reason": reason},
+                                "blockers": blockers,
+                                "field_status": field_status,
+                            },
+                        )
                 blockers.append("family_profile_unresolved")
                 return (
                     None,
@@ -2211,6 +2505,12 @@ def convert_item(sources, item_id):
     if family_profile_basis is not None:
         item["family_profile_basis"] = family_profile_basis
         item["family_profile_evidence"] = family_profile_evidence
+    # Owner decision 2026-09-28 (task f): present only when the wiki-evidence fallback
+    # decided this Item's family_profile AND the matched page(s) carried a `status`
+    # fact. Absence means "not asserted", never "available" -- an Item with no wiki
+    # record, or one resolved some other way, never carries this field at all.
+    if availability is not None:
+        item["availability"] = availability
     # `RULE_ID`: eligible iff the Crystal id sharing this Item's allocator key is a
     # member of the pinned Crystal delivery list, unless a per-item override applies.
     # This engine's own pool membership is kept as observation only; it never decides.
