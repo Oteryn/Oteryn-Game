@@ -46,8 +46,11 @@ CENSUS = SAMPLES / 'spell-census-canary-99902524-crystal-ff7ede5.json'
 FANDOM_FACTS = SAMPLES / 'wiki-spell-facts-fandom-2026-09-27.json'
 BR_FACTS = SAMPLES / 'wiki-spell-facts-br-2026-09-27.json'
 TIBIOPEDIA_FACTS = SAMPLES / 'tibiopedia-spell-facts-2026-09-28.json'
+TIBIACOM_LIST = SAMPLES / 'tibiacom-spell-list-2026-09-28.json'
+# S15: tibia.com list names that differ from the source spell names (source name -> tibia.com name).
+TIBIACOM_NAMES = {'invisibility': 'invisible', 'paralyze rune': 'paralyse rune', 'monk familiar': 'summon monk familiar'}
 OFFICIAL = ROOT / 'official-changes.json'
-REVISION = 'spell-p2-r4'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation
+REVISION = 'spell-p2-r5'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
                       'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -99,9 +102,11 @@ def git_blob(data):
 # ------------------------------------------------------------------------------------------------
 
 class Wikis:
-    def __init__(self, fandom, br, official, tibiopedia=None):
+    def __init__(self, fandom, br, official, tibiopedia=None, tibiacom=None):
         # tibiopedia.pl only breaks a BR/Fandom tie (S13); it never states a value the wikis do not.
-        self.docs = {'fandom': fandom, 'br': br, **({'tibiopedia': tibiopedia} if tibiopedia else {})}
+        # tibia.com decides every field it states (S15), ahead of the wikis.
+        self.docs = {'fandom': fandom, 'br': br, **({'tibiopedia': tibiopedia} if tibiopedia else {}),
+                     **({'tibiacom': tibiacom} if tibiacom else {})}
         self.spells, self.spell_names, self.runes = {}, {}, {}
         for wiki, doc in self.docs.items():
             by_words, by_name, runes = {}, {}, {}
@@ -120,9 +125,14 @@ class Wikis:
             self.spells[wiki], self.spell_names[wiki], self.runes[wiki] = by_words, by_name, runes
         self.official = {(c['spell'], c['field']): c for c in official['changes']}
 
-    def spell_page(self, wiki, record):
+    def spell_page(self, wiki, record, words=None):
+        if wiki == 'tibiacom':  # S15: joined by name; its words may correct the sources
+            if record['spell_type'] != 'instant':  # a "Rune" row describes the conjuring spell, not rune use
+                return None
+            name = str(record['name']).lower()
+            return self.spell_names[wiki].get(TIBIACOM_NAMES.get(name, name))
         reg = record['registrar']
-        words = ws.words_key(reg.get('words', ''))
+        words = ws.words_key(words if words else reg.get('words', ''))
         pages = self.spells[wiki].get(words, [])
         if len(pages) != 1:
             pages = [p for key, group in self.spells[wiki].items() if key.startswith(words + ' ') and words
@@ -132,6 +142,8 @@ class Wikis:
         return self.spell_names[wiki].get(str(record['name']).lower())
 
     def rune_page(self, wiki, record):
+        if wiki == 'tibiacom':  # the list view describes spells, not rune use
+            return None
         reg = record['registrar']
         return self.runes[wiki].get(reg.get('runeId')) or self.runes[wiki].get(str(record['name']).lower())
 
@@ -139,10 +151,15 @@ class Wikis:
         """(value, wiki provenance, note) for one wiki field; value None when no wiki states it.
 
         branch_vote is the Canary 15.30 branch value of this field in wiki units (S14a), or None."""
+        official_page = pages.get('tibiacom')
+        if official_page is not None and official_page['fields'].get(field) not in (None, ''):
+            value = ws.crosswalk_value(field, official_page['fields'][field])
+            if value is not None:
+                return value, [('tibiacom', official_page)], 'S15: the official tibia.com spell library states this value.'
         values = {}
         tie_breaker = pages.get('tibiopedia')
         for wiki, page in pages.items():
-            if wiki == 'tibiopedia':
+            if wiki in ('tibiopedia', 'tibiacom'):
                 continue
             if page is not None and page['fields'].get(field) not in (None, ''):
                 value = ws.crosswalk_value(field, page['fields'][field])
@@ -386,6 +403,14 @@ class Bundle:
         return self.source_index[source]
 
     def wiki_source(self, wiki, page):
+        if wiki == 'tibiacom':
+            key = (wiki, page['title'])
+            if key not in self.source_index:
+                self.source_index[key] = len(self.sources)
+                self.sources.append({'kind': 'official_capture', 'url': page['url'], 'title': page['title'],
+                                     'captured': self.wikis.docs[wiki]['target_cut'],
+                                     'content_sha256': page['content_sha256']})
+            return self.source_index[key]
         key = (wiki, page['page_id'])
         if key not in self.source_index:
             self.source_index[key] = len(self.sources)
@@ -504,7 +529,9 @@ class Bundle:
                 self.row('mapped', wiki_field, destination, note or 'S3: the wiki states this value.', wiki=(wiki, page))
             for source, source_value in sources.items():
                 if source_value is not None and source_value != value:
-                    self.row('approved_omission', method, resolution=f'S3: superseded by the wiki value {value!r} '
+                    rule = 'S15: superseded by the official tibia.com' if provenance[0][0] == 'tibiacom' else \
+                        'S3: superseded by the wiki'
+                    self.row('approved_omission', method, resolution=f'{rule} value {value!r} '
                              f'(source {source_value!r}).', source=source, method=method)
             return value
         present = {s: v for s, v in sources.items() if v is not None}
@@ -529,17 +556,22 @@ class Bundle:
     def convert(self):
         primary = self.records.get('crystal') or self.records['canary']
         carrier = primary['spell_type']
-        pages = {w: (self.wikis.rune_page(w, primary) if carrier == 'rune' else self.wikis.spell_page(w, primary))
-                 for w in self.wikis.docs}
+        # S15: the official words (joined by name) also select the wiki pages, since the sources can swap words.
+        official = self.wikis.spell_page('tibiacom', primary) if 'tibiacom' in self.wikis.docs else None
+        official_words = official['fields'].get('words') if official is not None else None
+        pages = {w: (self.wikis.rune_page(w, primary) if carrier == 'rune' else
+                     self.wikis.spell_page(w, primary, official_words)) for w in self.wikis.docs}
         spell_pages = pages
         if carrier == 'rune':
-            spell_pages = {w: self.wikis.spell_page(w, primary) for w in self.wikis.docs}
+            spell_pages = {w: self.wikis.spell_page(w, primary, official_words) for w in self.wikis.docs}
         # A rune and its conjuring spell share a name ("sudden death rune"), so the carrier is part of the key.
         key = f'candidate:spell/{"rune/" if carrier == "rune" else ""}{slug(self.name)}'
         spell = {'identity': ident(key), 'name': primary['name'], 'carrier': carrier}
         base = '/spell/spell'
         if carrier == 'instant':
-            words = self.field(base + '/words', None, 'words', pages, transform=lambda v: re.sub(r'\s+', ' ', v.strip().lower()))
+            normal = lambda v: re.sub(r'\s+', ' ', v.strip().lower())  # noqa: E731
+            words = self.field(base + '/words', 'words' if pages.get('tibiacom') else None, 'words', pages,
+                               transform=normal, wiki_transform=normal)
             if words is not None:
                 spell['words'] = words
         spell_id = self.field(base + '/reference_spell_id', None, 'id', pages, required=False)
@@ -795,7 +827,8 @@ def run(args):
     census = json.loads(CENSUS.read_text(encoding='utf-8'))
     wikis = Wikis(json.loads(FANDOM_FACTS.read_text(encoding='utf-8')), json.loads(BR_FACTS.read_text(encoding='utf-8')),
                   json.loads(OFFICIAL.read_text(encoding='utf-8')),
-                  json.loads(TIBIOPEDIA_FACTS.read_text(encoding='utf-8')))
+                  json.loads(TIBIOPEDIA_FACTS.read_text(encoding='utf-8')),
+                  json.loads(TIBIACOM_LIST.read_text(encoding='utf-8')))
     roots = {'canary': args.canary, 'crystal': args.crystal}
     executions = {s: Execution(s, r) for s, r in roots.items()}
     RUNE_ITEM_IDS.update(int(r['registrar']['runeId']) for s in ('canary', 'crystal') for r in census[s]
@@ -869,7 +902,7 @@ def main(argv=None):
     if args.readiness:
         document = {'schema': 'OTERYN_SPELL_READINESS/v1', 'revision': REVISION,
                     'sources': {s: {k: v for k, v in c.items() if k != 'tag'} for s, c in SOURCES.items()},
-                    'wiki_facts': [FANDOM_FACTS.name, BR_FACTS.name, TIBIOPEDIA_FACTS.name], 'official_changes': OFFICIAL.name,
+                    'wiki_facts': [FANDOM_FACTS.name, BR_FACTS.name, TIBIOPEDIA_FACTS.name, TIBIACOM_LIST.name], 'official_changes': OFFICIAL.name,
                     'summary': summary, 'spells': results}
         ws.write_lines(args.readiness, document, None)
     print(json.dumps(summary, indent=1, ensure_ascii=False))

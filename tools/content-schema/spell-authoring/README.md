@@ -19,7 +19,7 @@ the one shared Ability); this folder adds the player-casting layer and the `play
 | `convert_spells.py` | Plan phase P2: turns the census into Spell bundles (Spell, Ability/Effect/Formula, catalog, import manifest) under S1–S5, S11, S13, S14, S16; plain combats go through the monster converter's `combat_ability`. Needs both checkouts and `lupa`. |
 | `tibiopedia_spells.py` | Fetches the tibiopedia.pl spell pages (owner decision S12) and keeps single facts with the page URL and page SHA-256, in Fandom field names; no descriptions or comments. |
 | `verify_spells.py` | Checks every converted bundle against Fandom, BR and tibiopedia.pl field by field: `agree`, `ours_differs` (the references agree, we do not), `sources_disagree`. |
-| `tibiacom_spells.py` | Captures the official tibia.com spell library (S15) in Chromium on a machine tibia.com serves (it blocks the build container and hosted runners); `facts` maps the table cells to Fandom field names. |
+| `tibiacom_spells.py` | Captures the official tibia.com spell library (S15) in Chromium on a machine tibia.com serves (it blocks the build container and hosted runners); `facts` maps the table cells to Fandom field names; `list-facts` turns an owner copy of the list view into facts. |
 | `vocation_vitals.py` | SPELL-D5 candidate vitals: max hitpoints, mana and capacity per vocation and level from Fandom `Formulae`, soul regeneration from `Soul Point`, hitpoint/mana regeneration from Canary and Crystal where they agree; every conflict is listed. |
 | `cooldown-groups.json` | S9: the declared closed catalogue of cooldown groups and their roles (primary, secondary); `validate_spell.py` rejects any other group. |
 | `official-changes.json` | S11 evidence: official changes that decide a BR/Fandom conflict (fact, date, source URL). |
@@ -34,6 +34,7 @@ the one shared Ability); this folder adds the player-casting layer and the `play
 | `samples/wiki-spell-crosswalk-fandom-br-2026-09-27.json` | `wiki_spells.py crosswalk`: BR ↔ Fandom per-field agreement and conflicts (S3). |
 | `samples/tibiopedia-spell-facts-2026-09-28.json` | `tibiopedia_spells.py facts`: spell and rune facts with URL and page SHA-256. |
 | `samples/vocation-vitals-candidate-2026-09-28.json` | `vocation_vitals.py build`: the candidate vitals with both Fandom revisions, the source pins and the open conflicts. |
+| `samples/tibiacom-spell-list-2026-09-28.json` | `tibiacom_spells.py list-facts`: the tibia.com list view (words, group, type, level, mana, premium) as copied by the owner; applied as S15. |
 | `samples/spell-verify-3-sources-2026-09-28.json` | `verify_spells.py`: our value against the three references, with the disagreeing rows. |
 
 ```text

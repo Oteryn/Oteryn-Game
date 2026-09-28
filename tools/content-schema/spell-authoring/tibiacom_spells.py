@@ -12,6 +12,8 @@ Usage (needs `pip install playwright` and `python -m playwright install chromium
     python tibiacom_spells.py fetch --out tibiacom-spell-tables.json [--headed]
     python tibiacom_spells.py facts --artifact tibiacom-spell-tables.json \
         --out samples/tibiacom-spell-facts-<date>.json
+    python tibiacom_spells.py list-facts --tsv <owner copy of the list view> --captured <YYYY-MM-DD> \
+        --out samples/tibiacom-spell-list-<date>.json
     python tibiacom_spells.py self-test
 """
 import argparse
@@ -182,6 +184,37 @@ def facts(artifact):
             'cut_rule': 'pages as served at the fetch time ' + artifact['fetched'], 'pages': pages}
 
 
+LIST_COLUMNS = ['Name', 'Group', 'Type', 'Exp Lvl', 'Mana', 'Premium']
+LIST_ROW = re.compile(r'^(?P<name>.+?) \((?P<words>[^()]+)\)$')
+
+
+def list_facts(text, captured):
+    """Facts from the library list view (one row per spell: name (words), group, type, level, mana, premium), as
+    copied by the owner from a browser the site serves. '-' and 'var.' mean the list states no single value."""
+    lines = [line.rstrip('\r') for line in text.splitlines() if line.strip()]
+    if lines[0].split('\t') != LIST_COLUMNS:
+        raise SystemExit(f'unexpected list header {lines[0]!r}')
+    digest = hashlib.sha256(text.encode('utf-8')).hexdigest()
+    pages = []
+    for line in lines[1:]:
+        cells = line.split('\t')
+        match = LIST_ROW.match(cells[0])
+        if len(cells) != len(LIST_COLUMNS) or not match:
+            raise SystemExit(f'unexpected list row {line!r}')
+        _, group, kind, level, mana, premium = cells
+        fields = {'name': match['name'], 'words': re.sub(r'\s+"[^"]*"$', '', match['words']).strip(),
+                  'subclass': group, 'type': kind, 'premium': premium}
+        if level != '-':
+            fields['levelrequired'] = level
+        if mana:
+            fields['mana'] = mana
+        pages.append({'template': 'Infobox Spell', 'title': match['name'], 'url': LIST_URL,
+                      'content_sha256': digest, 'fields': fields})
+    return {'schema': 'OTERYN_SPELL_WIKI_FACTS/v1', 'wiki': 'tibiacom', 'api': LIST_URL, 'license': LICENSE_NOTE,
+            'target_cut': captured, 'cut_rule': f'the list view as copied by the owner on {captured} (S15); the '
+            'content SHA-256 is that of the copied table text', 'pages': pages}
+
+
 def self_test():
     assert spell_url('https://www.tibia.com/library/?subtopic=spells&spell=icestrike') == LIST_URL + '&spell=icestrike'
     assert spell_url('https://www.tibia.com/library/?subtopic=spells&vocation=druid') is None
@@ -201,13 +234,22 @@ def self_test():
                               'mlrequired': '15', 'name': 'Sudden Death Rune'}, rune['fields']
     assert 'prose' not in json.dumps([spell, rune])
     assert cut_tables([[['x' * 300], []]]) == [[['x' * 200]]]
+    listing = list_facts('\t'.join(LIST_COLUMNS) + '\nFind Person (exiva "name")\tSupport\tInstant\t8\t20\tno\n'
+                         'Avatar of Steel (uteta res eq)\tSupport\tInstant\t-\t800\tyes\n', '2026-09-28')
+    assert [p['fields'] for p in listing['pages']] == [
+        {'name': 'Find Person', 'words': 'exiva', 'subclass': 'Support', 'type': 'Instant', 'premium': 'no',
+         'levelrequired': '8', 'mana': '20'},
+        {'name': 'Avatar of Steel', 'words': 'uteta res eq', 'subclass': 'Support', 'type': 'Instant',
+         'premium': 'yes', 'mana': '800'}], listing
     print('tibiacom_spells self-test: ok')
     return 0
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('command', choices=('fetch', 'facts', 'self-test'))
+    parser.add_argument('command', choices=('fetch', 'facts', 'list-facts', 'self-test'))
+    parser.add_argument('--tsv', type=Path)
+    parser.add_argument('--captured')
     parser.add_argument('--artifact', type=Path)
     parser.add_argument('--out', type=Path)
     parser.add_argument('--headed', action='store_true', help='fetch: show the browser window')
@@ -218,6 +260,9 @@ def main(argv=None):
         fetch(args.out, args.headed)
         return 0
     from wiki_spells import write_lines
+    if args.command == 'list-facts':
+        write_lines(args.out, list_facts(args.tsv.read_text(encoding='utf-8'), args.captured), 'pages')
+        return 0
     write_lines(args.out, facts(json.loads(args.artifact.read_text(encoding='utf-8'))), 'pages')
     return 0
 
