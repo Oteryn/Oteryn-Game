@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-use-wire-m1
 title: USE-WIRE-V1 M1 - registries and codecs
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: 5864914163
@@ -12,12 +12,12 @@ base_branch: main
 branch: claude/use-wire-m1
 pr: 1066
 base_sha: 45b6cc73d8dbd2988ec0153cfa5ad03318367d51
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: bd8cd3f43a47ee41b6abcbebd6a1630c274c51b6
+final_head_sha: bd8cd3f43a47ee41b6abcbebd6a1630c274c51b6
+final_head_frozen_at: 2026-09-28T07:26:10Z
 owner: "Oteryn: impl server seam" (Claude Code)
 created_at: 2026-09-28T06:57:13Z
-updated_at: 2026-09-28T08:05:00Z
+updated_at: 2026-09-28T07:50:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
@@ -192,23 +192,26 @@ workflows, `content/**`, `tools/**`, the spell-cast candidate (#1042), Server Se
 
 ## PR and closeout
 
-- changed-file review / unresolved threads / protected auto-merge / merge commit / ownership
-  release: pending — see live PR #1066 and #162 for current status, not tracked in this file
-- related/superseded PRs: none known; overlap check at allocation time found none touching these
-  paths
+- changed-file review: 7 files, all inside owned_paths (world_spatial.rs under the control-plane
+  shared-lease extension); verified by the control plane at freeze.
+- independent review: `@codex review` on `505ccb5` raised P1 r4119513870 and P2 r4119513878; both
+  repaired at `bd8cd3f43a47ee41b6abcbebd6a1630c274c51b6`; the second `@codex review` on that exact head reported no findings; both
+  threads resolved.
+- exact-head CI: green on `bd8cd3f43a47ee41b6abcbebd6a1630c274c51b6`; enqueued via protected auto-merge (squash) and merged through the
+  Merge Queue as PR #1066, merge commit `79b85ec6ce3e0ecc34eaf753b524cd8ea61157a4` (protected main readback).
+- ownership release: all owned paths released; M2 (Server Seam composition) is a separate allocation.
+- related/superseded PRs: none
 
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #1066 opened on 505ccb5; Codex raised P1 r4119513870 and P2 r4119513878 on
-  world_object.rs; both repaired (proto3-default-omission decoding, fallible key-bounded
-  encoding) with new tests; full required-validation suite green post-repair
-status: validating
+last_progress: PR #1066 merged through the Merge Queue as 79b85ec; task terminal
+status: completed
 branch: claude/use-wire-m1
-head_sha: null
+head_sha: bd8cd3f43a47ee41b6abcbebd6a1630c274c51b6
 pr: 1066
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: bd8cd3f43a47ee41b6abcbebd6a1630c274c51b6
+final_head_frozen_at: 2026-09-28T07:26:10Z
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
@@ -224,5 +227,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: reply on both review threads, commit and push the repair to claude/use-wire-m1
+next_action: none (terminal); successor M2 allocated separately on #162
 ```
