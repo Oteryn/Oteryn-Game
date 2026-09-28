@@ -44,11 +44,54 @@ acceptance, for the `unresolved_semantics` rows of four encounters. Evidence is 
 | Melting Frozen Horror | death actions on two fixed tiles | no extension; the lever names `dragon_egg` and `solid_frozen_horror`; resolvable now |
 | The Sandking | the stage counter and the brood cycle behind it | CW2-2: `stepped_on corpse_of: role`; CW2-3: `map_item remove triggering: true`; CW2-4: `random_in` with an optional `free: true` (existing `random_in` semantics unchanged) |
 
-The extensions widen parameters of existing terms. No trigger, condition or action kind is added.
+The extensions (DERIVED) widen parameters of existing terms. No trigger, condition or action kind is added.
 
 Owner questions (deviations and product choices only): Q1 Alptramun (follow Canary's never-cast spell, or the
 wiki), Q2 Gorzindel room and return defects, Q3 Sandking brood spawn failure, Q4 Melting Frozen Horror killed
 while parked (recommended: follow Canary).
+
+## Evidence classification
+
+Labels follow `docs/agents/AGENTS.md` and apply to CrystalServer `ff7ede59`, path `data-global/`.
+
+- **PROVEN** (source read, file:line):
+  - Alptramun:
+    - `alptramun summon` spawns 1-4 dreams by counter band while fewer than 5 summons exist
+      (`scripts/spells/monster/alptramun_summon.lua:15-47`).
+    - No monster casts it (`monster/quests/the_dream_courts/bosses/alptramun.lua:120-132`).
+    - The counter skips mastered dreams (`creaturescripts_dream_courts_death.lua:68-70,107-114`).
+  - Gorzindel:
+    - The tome's portal and its 10 s return (`creaturescripts_gorzindel.lua:38-50`).
+    - The first-open-room teleport and the return (`movements_gorzindel.lua:1-38`).
+    - The tome cannot move (`stolen_tome_of_portals.lua:14,35`).
+    - The lever tiles (`bosses_levers/gorzindel.lua:22-27`).
+  - Melting Frozen Horror:
+    - The death actions on two fixed tiles (`creaturescripts_bosses_kill.lua:37-48`).
+    - The lever places the dragon egg and the parked melting horror (`actions_frozen_horror.lua:7-12,64-67`).
+    - The swap and revert (`creaturescripts_dragon_egg.lua:1-43`).
+  - The Sandking:
+    - The lever sets stage 1 (`actions_bosses_levers.lua:480-481`).
+    - The stage cycle (`creaturescripts_sandking.lua:1-130`).
+    - Corpse healing (`movements_sandking.lua:3-16`).
+    - The credit needs stage 5 (`creaturescripts_bosses_mission_cults.lua:7,24-26`).
+    - The mark survives corpse decay (`src/game/game.cpp:3097,3148`).
+    - `SandHealth` never acts (`creaturescripts_sandking.lua:132-152`).
+  - `data-crystal/` registers none of these events.
+- **DERIVED** (proposal, pending owner acceptance):
+  - Alptramun and Melting Frozen Horror need no vocabulary change.
+  - CW2-1..4 and their authored JSON (§12.1-12.4).
+  - Existing-term JSON validates against the current schema. Only the proposed terms fail.
+  - The decision test (§12.7).
+- **UNKNOWN** (waits on the owner):
+  - Q1: Alptramun's escalation, and whether its row becomes `approved_omission`.
+  - Q2: Gorzindel's room and return defects.
+  - Q3: the free-tile brood spawn, and with it CW2-4.
+  - Q4: Melting Frozen Horror killed while parked.
+  - The dragon egg transcription (outside this task).
+- **CONFLICT** (Canary vs wiki):
+  - Alptramun: Canary never escalates, while the reference-date wiki says killed summons return stronger (Q1).
+  - `SandHealth`'s evident intent (reflection) against its no-op in Canary. This is a D25 wiki check, not decided
+    here.
 
 ## Excluded scope
 
@@ -66,5 +109,5 @@ while parked (recommended: follow Canary).
 
 ## Context checkpoint
 
-last_progress: review round 3 on #1183 addressed (decision test added as §12.7; design unchanged)
+last_progress: review round 4 on #1183 addressed (evidence classified PROVEN/DERIVED/UNKNOWN/CONFLICT)
 jira: pending (no mapped Story resolved in this worker session)
