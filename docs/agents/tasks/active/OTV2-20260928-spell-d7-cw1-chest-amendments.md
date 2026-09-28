@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-spell-d7-cw1-chest-amendments
 title: "Record SPELL-D7 (D89), CW1 D90/D91 and reward chest D92 amendments"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1151
 base_sha: 75e502a8e90020afacbf37a8791e5eec54ea1b41
 head_sha: null
 final_head_sha: null
@@ -76,11 +76,11 @@ child (P3b step 1, #1144, `CHEST-1`) carries its own qualification.
 ## Context checkpoint
 
 ```yaml
-last_progress: authored
-status: implementing
+last_progress: authored; PR #1151 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1151
 owner_action_required: null
 blocker: null
-next_action: open the PR, bind this record to it, freeze and route one external review
+next_action: exact-head review and Merge Queue integration of #1151
 ```
