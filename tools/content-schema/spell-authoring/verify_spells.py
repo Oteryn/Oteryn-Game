@@ -37,6 +37,12 @@ SPELL_FIELDS = ('levelrequired', 'mana', 'soul', 'premium', 'voc', 'cooldown', '
                 'subclass', 'secondarygroup', 'basepower', 'amount')
 RUNE_FIELDS = ('levelrequired', 'mlrequired', 'basepower', 'charges')
 GROUP_FIELDS = ('subclass', 'secondarygroup')
+# Page categories that are not cooldown groups: conjuring, familiar, party and stance spells cool down in the
+# Support group (wiki_spells.BR_PRIMARY_GROUP); "Party" as a second BR category names no cooldown group.
+PRIMARY_GROUP = {'conjure': 'support', 'supply': 'support', 'summon': 'support', 'party': 'support',
+                 'stance': 'support'}
+SECONDARY_GROUP = {'party': None, 'virtude': 'virtue'}
+VARIES = ('różnie', 'różni', 'zmienna')  # tibiopedia.pl for a value that varies (party spells)
 
 
 def group_key(value):
@@ -44,11 +50,19 @@ def group_key(value):
     return re.sub(r'[^a-z]', '', ws.plain(str(value)).lower()) or None
 
 
-def reference_value(field, raw):
+def reference_value(field, raw, fields=None):
     if raw is None or ws.plain(str(raw)) in ('', '-', '?'):
         return None
-    if field in GROUP_FIELDS:
-        return group_key(raw)
+    if field == 'subclass':
+        key = group_key(raw)
+        return PRIMARY_GROUP.get(key, key)
+    if field == 'secondarygroup':
+        key = group_key(raw)
+        return SECONDARY_GROUP.get(key, key)
+    if ws.plain(str(raw)).lower().rstrip('.') in VARIES:
+        return 'varies'
+    if field == 'cooldowngroup2' and not reference_value('secondarygroup', (fields or {}).get('secondarygroup')):
+        return None  # Fandom writes a second group time (often 0) on spells without a second group
     if field == 'charges':
         return ws.wiki_number(raw)
     return ws.crosswalk_value(field, raw)
@@ -144,7 +158,7 @@ def verify(bundles, references, readiness, official):
             found = {}
             for ref, page in pages.items():
                 raw = page['fields'].get('charges' if field == 'charges' else field)
-                value = reference_value(field, raw)
+                value = reference_value(field, raw, page['fields'])
                 if value is not None:
                     found[ref] = value
             verdict, follows = classify(ours.get(field), found)
@@ -153,6 +167,10 @@ def verify(bundles, references, readiness, official):
                 row = {'spell_type': spell_type, 'name': name, 'status': status.get((spell_type, name)),
                        'field': field, 'verdict': verdict, 'ours': ours.get(field), 'references': found,
                        'follows': follows, 'pages': [page_ref(r, pages[r]) for r in sorted(pages)]}
+                # Our value follows one reference while the other two agree: 2 of 3 say otherwise.
+                others = [v for r, v in found.items() if r not in follows]
+                if verdict == 'sources_disagree' and len(follows) == 1 and len(others) == 2 and others[0] == others[1]:
+                    row['minority'] = True
                 change = changes.get((name, field))
                 if change:
                     row['official_change'] = {k: change[k] for k in ('date', 'source', 'value')}
@@ -160,7 +178,9 @@ def verify(bundles, references, readiness, official):
     summary = {'bundles': len(bundles), 'unmatched': len(unmatched),
                'field_counts': {f: dict(sorted(c.items())) for f, c in sorted(counts.items())},
                'verdicts': dict(sorted(Counter(r['verdict'] for r in rows).items())),
-               'ours_differs_ready': sum(1 for r in rows if r['verdict'] == 'ours_differs' and r['status'] == 'ready')}
+               'ours_differs_ready': sum(1 for r in rows if r['verdict'] == 'ours_differs' and r['status'] == 'ready'),
+               'minority': sum(1 for r in rows if r.get('minority')),
+               'minority_ready': sum(1 for r in rows if r.get('minority') and r['status'] == 'ready')}
     return summary, rows, unmatched
 
 
@@ -195,10 +215,14 @@ def self_test():
                         ('ice strike', 'cooldown'): ('sources_disagree', ['br', 'fandom']),
                         ('sudden death rune', 'charges'): ('ours_differs', [])}, verdicts
     assert summary['field_counts']['levelrequired'] == {'agree': 2}, summary
+    assert summary['minority'] == 0 and reference_value('mana', 'różnie') == 'varies', summary
     assert summary['field_counts']['voc'] == {'agree': 1}, summary
     assert summary['field_counts']['subclass'] == {'agree': 1}, summary
     assert not unmatched
     assert group_key('Ultimate Strikes') == 'ultimatestrikes' and reference_value('mana', '?') is None
+    assert reference_value('cooldowngroup2', '2', {}) is None
+    assert reference_value('cooldowngroup2', '30', {'secondarygroup': 'Ultimate Strikes'}) == 30000
+    assert reference_value('subclass', 'Conjure') == 'support' and reference_value('secondarygroup', 'Party') is None
     print('verify_spells self-test: ok')
     return 0
 

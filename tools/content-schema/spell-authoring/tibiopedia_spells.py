@@ -33,10 +33,14 @@ THROTTLE_SECONDS = 1.0
 RETRIES = 4
 LICENSE_NOTE = ('tibiopedia.pl, all rights reserved; only single facts with the page URL and the SHA-256 of '
                 'the fetched page are recorded (owner decision S12), never descriptions, comments or images.')
+# Cooldown group icons carry the group; the icon file name is the English group (Fandom names).
+GROUP_ICON = {'attack': 'Attack', 'support': 'Support', 'healing': 'Healing', 'stances': 'Stance', 'focus': 'Focus',
+              'special': 'Special', 'crippling': 'Crippling', 'virtues': 'Virtue', 'ultimate': 'Ultimate Strikes',
+              'bursts': 'Bursts of Nature', 'beams': 'Great Beams'}
 GROUP = {'atak': 'Attack', 'leczenie': 'Healing', 'wsparcie': 'Support', 'specjalne': 'Special',
          'skupienie': 'Focus', 'postawa': 'Stance', 'przywołanie': 'Summon', 'drużyna': 'Party'}
 DAMAGE = {'fizyczne': 'Physical', 'ogień': 'Fire', 'lód': 'Ice', 'energia': 'Energy', 'ziemia': 'Earth',
-          'śmierć': 'Death', 'święte': 'Holy', 'leczenie': 'Healing', 'wyssanie życia': 'Life Drain',
+          'śmierć': 'Death', 'święte': 'Holy', 'świętość': 'Holy', 'leczenie': 'Healing', 'wyssanie życia': 'Life Drain',
           'wyssanie many': 'Mana Drain', 'utonięcie': 'Drowning', 'agonia': 'Agony'}
 YES_NO = {'tak': 'yes', 'nie': 'no'}
 ALL_VOCATIONS = 'Druid, Sorcerer, Knight, Paladin, Monk'
@@ -91,11 +95,11 @@ def fetch(cache):
 
 
 def cell_text(cell):
-    """Cell text; an icon cell reads as its alt text (group icons carry the group name)."""
+    """(text, icon alts, raw HTML) of a cell; an icon cell reads as its alt text."""
     alts = re.findall(r'<img[^>]*\balt="([^"]*)"', cell)
     text = html.unescape(re.sub(r'<[^>]+>', ' ', re.sub(r'<br\s*/?>', ' ', cell)))
     text = re.sub(r'\s+', ' ', text).strip()
-    return text, [html.unescape(a).strip() for a in alts]
+    return text, [html.unescape(a).strip() for a in alts], cell
 
 
 def tables(page_html):
@@ -125,17 +129,28 @@ def seconds(value):
     return str(int(total)) if total == int(total) else str(total)
 
 
+def group_name(src, alt):
+    icon = src.rsplit('/', 1)[-1].rsplit('.', 1)[0].lower()
+    return GROUP_ICON.get(icon) or GROUP.get(alt.lower(), alt)
+
+
 def cooldowns(rows):
-    """Own cooldown, then each group cooldown with its group, from a Cooldown table."""
+    """Own cooldown, then each group cooldown with its group, from a Cooldown table.
+
+    Several groups share one cell: '2s (<img attack>), 30s (<img ultimate>)'."""
     own, groups = None, []
     for row in rows[1:]:
         if len(row) < 2:
             continue
-        label, (value, alts) = row[0][0].lower(), row[1]
+        label, (value, _alts, raw) = row[0][0].lower(), row[1]
         if label in ('czaru', 'runy'):
-            own = seconds(value)
+            own = seconds(re.sub(r'\(.*', '', value))
         elif label.startswith('grup'):
-            groups.append((seconds(value), GROUP.get(alts[0].lower(), alts[0]) if alts else None))
+            for amount, tag in re.findall(r'([\d.,]+\s*(?:h|min|s)(?:\s*[\d.,]+\s*(?:min|s))?)\s*\(\s*(<img[^>]*>)', raw):
+                src = re.search(r'\bsrc="([^"]*)"', tag)
+                alt = re.search(r'\balt="([^"]*)"', tag)
+                groups.append((seconds(amount), group_name(src.group(1) if src else '',
+                                                           html.unescape(alt.group(1)) if alt else '')))
     return own, groups
 
 
@@ -165,7 +180,11 @@ def page_facts(url, page_html):
         head = header_row(rows, 'Lvl', 'Profesja', 'Formuła')
         if head:
             spell['levelrequired'] = head['Lvl'][0]
-            spell['voc'] = head['Profesja'][0]
+            voc = head['Profesja'][0]
+            if voc.lower() == 'każda':
+                spell['voc'] = ALL_VOCATIONS
+            elif voc not in ('', '-'):
+                spell['voc'] = voc
             spell['words'] = head['Formuła'][0]
             if 'Sp' in head:
                 spell['soul'] = head['Sp'][0]
@@ -214,6 +233,11 @@ def page_facts(url, page_html):
     spell['name'] = name
     rows = [{'template': 'Infobox Spell', 'title': name, 'url': url, 'fields': spell}]
     if rune:
+        # A rune page states the rune's own base power, damage type and range next to the conjuring spell.
+        for field in ('basepower', 'spellrange'):
+            if field in spell:
+                rune[field] = spell.pop(field)
+        spell.pop('damagetype', None)
         if len(cooldown_tables) > 1 and cooldown_tables[1][0] is not None:
             rune['cooldown'] = cooldown_tables[1][0]
         rune['name'] = name
@@ -246,17 +270,26 @@ Sudden Death Rune</caption><tr><th>Grupa zaklęcia</th><th>Premium</th></tr><tr>
 <th>Lvl</th><th>Mlvl</th><th>Mana</th><th>Profesja</th></tr><tr><td>45</td><td>15</td><td>0</td><td>Każda</td>
 </tr></table><table class="spell"><tr><th colspan="2">Cooldown</th></tr><tr><td> Runy </td><td> 2s </td></tr>
 <tr><td> Grupy </td><td> 2s (<img alt="atak" />) </td></tr></table></div><div id="search"></div>'''
+TWO_GROUPS = '''<div class="spellDetailsDiv"><table class="spell"><caption><img alt="Ultimate Flame Strike" /></caption>
+<tr><th>Lvl</th><th>Profesja</th><th>Formuła</th></tr><tr><td>90</td><td>Każda</td><td>exevo max flam</td></tr></table>
+<table class="spell"><tr><th colspan="2">Cooldown</th></tr><tr><td> Czaru </td><td> 30s (<img src="i/ufs.gif"
+alt="Ultimate Flame Strike" />) </td></tr><tr><td> Grupy </td><td> 2s (<img src="s/attack.gif" alt="atak" />), 30s
+(<img src="s/ultimate.gif" alt="ultimate" />) </td></tr></table></div><div id="search"></div>'''
 
 
 def self_test():
     spell, rune = page_facts('https://tibiopedia.pl/spells/Sudden_Death_Rune', SAMPLE)
     assert spell['fields'] == {'subclass': 'Support', 'premium': 'no', 'levelrequired': '45', 'voc': 'Sorcerer',
-                               'words': 'adori gran mort', 'soul': '5', 'mana': '985', 'basepower': '150',
-                               'damagetype': 'Death', 'spellrange': '7', 'cooldown': '2', 'cooldowngroup': '2',
-                               'name': 'Sudden Death Rune', 'type': 'Rune'}, spell['fields']
+                               'words': 'adori gran mort', 'soul': '5', 'mana': '985', 'cooldown': '2',
+                               'cooldowngroup': '2', 'name': 'Sudden Death Rune', 'type': 'Rune'}, spell['fields']
     assert rune['fields'] == {'damagetype': 'Death', 'charges': '3', 'levelrequired': '45', 'mlrequired': '15',
-                              'vocrequired': ALL_VOCATIONS, 'cooldown': '2', 'name': 'Sudden Death Rune'}, rune
+                              'vocrequired': ALL_VOCATIONS, 'basepower': '150', 'spellrange': '7', 'cooldown': '2',
+                              'name': 'Sudden Death Rune'}, rune
     assert 'prose' not in json.dumps([spell, rune])
+    (two,) = page_facts('https://tibiopedia.pl/spells/Ultimate_Flame_Strike', TWO_GROUPS)
+    assert {k: two['fields'][k] for k in ('cooldown', 'cooldowngroup', 'cooldowngroup2', 'secondarygroup', 'voc')} == {
+        'cooldown': '30', 'cooldowngroup': '2', 'cooldowngroup2': '30', 'secondarygroup': 'Ultimate Strikes',
+        'voc': ALL_VOCATIONS}, two['fields']
     assert seconds('2s') == '2' and seconds('1min 30s') == '90' and seconds('2h') == '7200'
     assert seconds('-') is None and seconds('0.5s') == '0.5'
     listing = ('<caption><img alt="A" /><a href="https://tibiopedia.pl/spells/Ice_Strike">Ice Strike</a></caption>'
