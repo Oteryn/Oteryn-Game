@@ -20,29 +20,29 @@
       "Outfit": 14,
       "Presentation": 2679,
       "Quest": 947,
-      "WorldObject": 865
+      "WorldObject": 844
     },
     "blocked_children": {
       "Movement": 380,
-      "WorldObject": 117
+      "WorldObject": 166
     },
     "relocation_children": {
       "anchor": 217,
       "previous_position": 203
     },
     "overlay_operations": {
-      "CREATE": 42,
-      "REMOVE": 174,
+      "CREATE": 27,
+      "REMOVE": 133,
       "RETAG": 39,
-      "TRANSFORM": 493
+      "TRANSFORM": 479
     },
     "overlay_operations_with_revert_after": 0,
     "quest_children_naming_a_transition": 215,
-    "unresolved_lines": 1913,
+    "unresolved_lines": 1902,
     "unresolved_conditions": 1786,
     "by_status": {
-      "mapped": 268,
-      "unresolved_semantics": 953
+      "mapped": 267,
+      "unresolved_semantics": 954
     }
   },
   "undeclared_progress_tracks": [
@@ -2797,7 +2797,7 @@
     },
     {
       "destination": "canary:interaction/dangerous_depth/creaturescripts_lost_exile_task_makeshift_kill",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -20736,7 +20736,7 @@
     {
       "destination": "canary:interaction/wrath_of_the_emperor/actions_mission02_firstcontact_repair_teleport",
       "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
+      "resolution": "the servers differ; D25 decides for canary (equivalent: CrystalServer 9f5a72c6 adds nil guards on the tile and item before the transform (its #952); the teleport repair behaves the same whenever the tile exists.)",
       "sources": [
         {
           "source": "canary",
