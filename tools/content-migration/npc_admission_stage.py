@@ -160,7 +160,12 @@ def pilot(candidates: list[dict]) -> list[dict]:
     return [c for c in candidates if c['identity']['key'] in chosen]
 
 
-def stage(report: dict, registered: set[str], pilot_only: bool) -> dict:
+def count_dialogue_nodes(nodes: list) -> int:
+    return sum(1 + count_dialogue_nodes(node.get('children', [])) for node in nodes)
+
+
+def stage(report: dict, registered: set[str], pilot_only: bool, dialogue_index: dict | None = None,
+          dialogue_staged_sha256: str | None = None) -> dict:
     if report['schema'] != 'OTERYN_NPC_PROMOTION_CANDIDATES/v1' or report['item_map_sha256'] != ITEM_MAP_SHA256:
         raise StageError('promotion candidate report drifted')
     candidates = sorted(report['candidates'], key=lambda c: c['identity']['key'])
@@ -172,6 +177,8 @@ def stage(report: dict, registered: set[str], pilot_only: bool) -> dict:
         candidates = pilot(candidates)
     records, declarations, profiles, bindings = [], [], [], []
     wiki_pages = 0
+    dialogue_count = 0
+    dialogue_node_count = 0
     # D8: Day/Night and stage variants share one wiki page; a page binds only the NPC it names alone.
     wiki_bound = [c['wiki']['pageid'] for c in candidates if wiki_decided(c)]
     shared_pages = {page for page in wiki_bound if wiki_bound.count(page) > 1}
@@ -193,9 +200,16 @@ def stage(report: dict, registered: set[str], pilot_only: bool) -> dict:
         if candidate['travel_service']:
             declarations.append(travel_declaration(candidate['travel_service']))
             services.append(ref('Service', candidate['travel_service']['identity']['key']))
+        dialogue_declaration = dialogue_index.get(key) if dialogue_index else None
+        dialogue_ref = None
+        if dialogue_declaration is not None:
+            dialogue_ref = ref('Dialogue', dialogue_declaration['identity']['key'])
+            declarations.append(dialogue_declaration)
+            dialogue_count += 1
+            dialogue_node_count += count_dialogue_nodes(dialogue_declaration.get('keywords', []))
         declarations.append({'kind': 'NPC', 'identity': {'key': key, 'revision': REVISION},
                              'presentation': ref('Presentation', presentation), 'behavior': ref('Behavior', behavior),
-                             'dialogue': None, 'services': sorted(services, key=lambda r: r['key']),
+                             'dialogue': dialogue_ref, 'services': sorted(services, key=lambda r: r['key']),
                              'fields': text_field('profession', candidate['profession'])
                              + text_field('speech_bubble', candidate['presentation'].get('speech_bubble'))})
         for source, source_key, revision in (('canary', 'oteryn:source.canary', CANARY_REVISION),
@@ -215,19 +229,25 @@ def stage(report: dict, registered: set[str], pilot_only: bool) -> dict:
     declarations.sort(key=lambda d: (d['kind'], d['identity']['key']))
     bindings.sort(key=lambda b: (b['source_key'], b['source_revision'], b['identity_namespace'], b['external_id']))
     services = [d for d in declarations if d['kind'] == 'Service']
+    source = {'canary_revision': CANARY_REVISION, 'crystal_revision': CRYSTAL_REVISION,
+             'candidates_sha256': hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
+             'item_map_sha256': ITEM_MAP_SHA256, 'wiki_snapshot_sha256': report['snapshot_sha256'],
+             'wiki_revision': wiki_revision(report)}
+    counts = {'npcs': len(candidates), 'records': len(records), 'profiles': len(profiles),
+             'trade_services': sum(1 for d in services if 'offers' in d),
+             'travel_services': sum(1 for d in services if 'routes' in d),
+             'offers': sum(len(d.get('offers', [])) for d in services),
+             'routes': sum(len(d.get('routes', [])) for d in services),
+             'declarations': len(declarations), 'bindings': len(bindings), 'wiki_pages': wiki_pages}
+    if dialogue_index is not None:
+        source['dialogue_staged_sha256'] = dialogue_staged_sha256
+        counts['dialogues'] = dialogue_count
+        counts['dialogue_nodes'] = dialogue_node_count
     return {
         'schema': 'OTERYN_NPC_ADMISSION_STAGED/v1',
         'wave': 'pilot' if pilot_only else 'A',
-        'source': {'canary_revision': CANARY_REVISION, 'crystal_revision': CRYSTAL_REVISION,
-                   'candidates_sha256': hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
-                   'item_map_sha256': ITEM_MAP_SHA256, 'wiki_snapshot_sha256': report['snapshot_sha256'],
-                   'wiki_revision': wiki_revision(report)},
-        'counts': {'npcs': len(candidates), 'records': len(records), 'profiles': len(profiles),
-                   'trade_services': sum(1 for d in services if 'offers' in d),
-                   'travel_services': sum(1 for d in services if 'routes' in d),
-                   'offers': sum(len(d.get('offers', [])) for d in services),
-                   'routes': sum(len(d.get('routes', [])) for d in services),
-                   'declarations': len(declarations), 'bindings': len(bindings), 'wiki_pages': wiki_pages},
+        'source': source,
+        'counts': counts,
         'records': records,
         'declarations': declarations,
         'authoring_profiles': profiles,
@@ -249,12 +269,22 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--pilot', action='store_true', help='stage only the slice-3 pilot NPCs')
+    parser.add_argument('--dialogues', type=Path, help='OTERYN_NPC_DIALOGUE_STAGED/v1 packet to bind into NPCs')
     args = parser.parse_args()
     report = json.loads(CANDIDATES.read_text())
     registered = {r['identity']['key'] for r in json.loads(REFERENCE.read_text())['records']
                   if r['identity'].get('family') == 'Item' or r.get('kind') == 'Item'}
+    dialogue_index = dialogue_sha256 = None
+    if args.dialogues:
+        dialogue_bytes = args.dialogues.read_bytes()
+        dialogue_sha256 = hashlib.sha256(dialogue_bytes).hexdigest()
+        dialogue_packet = json.loads(dialogue_bytes)
+        if dialogue_packet['schema'] != 'OTERYN_NPC_DIALOGUE_STAGED/v1':
+            print('npc admission stage: dialogue packet drifted', file=sys.stderr)
+            return 1
+        dialogue_index = {entry['npc']: entry['declaration'] for entry in dialogue_packet['dialogues']}
     try:
-        packet = stage(report, registered, args.pilot)
+        packet = stage(report, registered, args.pilot, dialogue_index, dialogue_sha256)
     except StageError as error:
         print(f'npc admission stage: {error}', file=sys.stderr)
         return 1

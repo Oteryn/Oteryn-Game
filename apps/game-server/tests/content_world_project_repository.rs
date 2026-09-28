@@ -17,12 +17,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "62679f3eee1c329b983e14774d5894cf2c562370ea5bb5acb455b471e038ba39",
+        "d20df0f0330ec3a51de7ed87a5d9439cd936bce57c9cd8f52d3238bcdec20964",
     ),
     (
         "definitions/declarations.json",
-        12_295_571,
-        "4a7599fe0f66580c077e040d7f45a152fbe64ca6749cc92e610b3de54035f041",
+        13_196_043,
+        "757409da5b8d84a27fe54e61f2115886a5bac4ee482ebf8a524e9e2b64ff1476",
     ),
     (
         "definitions/reference.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1936,
-        "0433096d9b656fafdcbb83c9f476c814f5c2563c6b956765f9caa49dbea460c8",
+        "abb73268b51736ecf2077b293f829f31976d3e0ef7dce41f437bf63b89d0c8df",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "5c0b4930c89bc36d77a1c03801cfdc55a774504837fee5a292ec45192162e8b7",
+        "7eb90befe59899fb421b7c5e32df300d0fb14069b7197d6b3e50f37d052966a0",
     ),
     (
         "provenance/imports.json",
         3836,
-        "51210c62963f6342c7945c8d7208ad77da9de74b6a046b420aaf44925937cf3b",
+        "88db71107238f8d4aa79d2d41532198a6e5c450832a15881ebf618e07075bf1d",
     ),
     (
         "provenance/sources.json",
         1_213_365,
-        "c25838ce9453ecf69741afec1bff9379ac195dd063c14cc4625f176bed3cf4ca",
+        "3f33758e6c4cfb3ac7fd529126cd65cf33c484278cad5ae98ca3c3491eadb9d5",
     ),
     (
         "worlds/world.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "2b4dca7f739935721d7dd3452c915339e0c57df2d84bc3ccca35df1e2ea28af7";
+const TREE_SHA256: &str = "c2ce8629109089091ce975fce633c33a16a3fce44b92ab0c7a357bc38d6d771e";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -94,7 +94,8 @@ const CREATURE_PROFILES: usize = 17369;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1093;
 const NPC_RECORDS: usize = 2186;
-const NPC_DECLARATIONS: usize = 1456;
+const NPC_DECLARATIONS: usize = 2073;
+const NPC_DIALOGUES: usize = 617;
 const NPC_BINDINGS: usize = 2281;
 
 fn repository_root() -> PathBuf {
@@ -273,7 +274,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-wave-a-r2");
+    assert_eq!(project.project_revision(), "g4-npc-wave-a-r3");
     assert_eq!(project.imports().len(), 6);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -347,6 +348,26 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(
         v2.declarations
             .iter()
+            .filter(|declaration| matches!(declaration, ProjectV2Declaration::Dialogue { .. }))
+            .count(),
+        NPC_DIALOGUES
+    );
+    assert_eq!(
+        v2.declarations
+            .iter()
+            .filter(|declaration| matches!(
+                declaration,
+                ProjectV2Declaration::Npc {
+                    dialogue: Some(_),
+                    ..
+                }
+            ))
+            .count(),
+        NPC_DIALOGUES
+    );
+    assert_eq!(
+        v2.declarations
+            .iter()
             .filter(|declaration| matches!(declaration, ProjectV2Declaration::Mount { .. }))
             .count(),
         252
@@ -371,9 +392,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         ProjectV2Declaration::Npc {
             presentation: Some(_),
             behavior: Some(_),
-            dialogue: None,
             ..
         } => true,
+        ProjectV2Declaration::Dialogue { fields, .. } => fields.is_empty(),
         ProjectV2Declaration::Service {
             recipes, fields, ..
         } => recipes.is_empty() && fields.is_empty(),
@@ -448,7 +469,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[4].sha256, mount_import.source_artifact_sha256);
     assert_eq!(v2.sources[4].evidence, ProjectV2EvidenceClass::Derived);
     let npc_import = &project.imports()[5];
-    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r2");
+    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r3");
     assert!(npc_import.candidates.is_empty());
     assert_eq!(v2.sources[5].key, v2.sources[2].key);
     assert_eq!(v2.sources[5].import_batch_id, npc_import.batch_id);
