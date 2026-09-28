@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-official-library-sources
 title: Tibia.com library as a monster source and wiki summon/convince costs (owner decision D47)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1175
 jira: KAN-16
 base_sha: 39d5681e
 head_sha: null
