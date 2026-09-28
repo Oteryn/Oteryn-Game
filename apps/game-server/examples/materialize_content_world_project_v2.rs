@@ -184,6 +184,83 @@ fn promote<T: PartialEq>(
     }
 }
 
+/// Exactly the 8 `presentation.name` disagreements between the G4 165-item wiki census
+/// (`populate_items`) and the #1048 Item semantic-promotion lowering v1 packet that
+/// ASCII-case-insensitive equality does not resolve. Owner decision: the lowering
+/// value is the single promotion source and wins verbatim for exactly these pinned
+/// `(native_key, wiki census title, lowering items.xml value)` triples, nowhere else.
+/// `i00037538` and `i00037526` are tracked as a separate data-quality finding (their
+/// names look like crosswalk/identity drift, not a formatting difference, even though
+/// their `weapon.*` facts agree exactly) — see the task record.
+const ITEM_NAME_LOWERING_OVERRIDES: &[(&str, &str, &str)] = &[
+    (
+        "oteryn:item.registry.i00037538",
+        "Staff",
+        "pair of monk fists",
+    ),
+    ("oteryn:item.registry.i00006361", "The Avenger", "avenger"),
+    ("oteryn:item.registry.i00007913", "The Epiphany", "epiphany"),
+    (
+        "oteryn:item.registry.i00007205",
+        "The Justice Seeker",
+        "justice seeker",
+    ),
+    ("oteryn:item.registry.i00007835", "The Devileye", "devileye"),
+    (
+        "oteryn:item.registry.i00021963",
+        "Ferumbras' Staff (Club)",
+        "Ferumbras' staff",
+    ),
+    (
+        "oteryn:item.registry.i00032484",
+        "Souleater (Axe)",
+        "souleater",
+    ),
+    (
+        "oteryn:item.registry.i00037526",
+        "Crypt Strike",
+        "falcon sai",
+    ),
+];
+
+/// `promote`'s `presentation.name` counterpart. The #1048 Item semantic-promotion
+/// lowering pass now runs ahead of this wiki census and already sets `presentation.name`
+/// to the lowercase `items.xml` text for any item it covers, so a wiki-sourced Title
+/// Case candidate that agrees with the existing value save for ASCII case is treated as
+/// the same fact rather than a contradiction; the existing lowercase value is kept
+/// unchanged. A residual disagreement is a no-op (the existing lowering value is kept)
+/// only when it exactly matches a pinned `ITEM_NAME_LOWERING_OVERRIDES` entry — no
+/// generic "The " or parenthetical stripping. Every other disagreement still errors
+/// exactly as `promote` does.
+fn promote_name(
+    slot: &mut ReferenceItemField<String>,
+    native_key: &str,
+    value: String,
+    overrides_hit: &mut BTreeSet<&'static str>,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    match slot {
+        ReferenceItemField::Unknown => {
+            *slot = ReferenceItemField::Known(value);
+            Ok(true)
+        }
+        ReferenceItemField::Known(existing) if existing.eq_ignore_ascii_case(&value) => Ok(false),
+        ReferenceItemField::Known(existing) => {
+            match ITEM_NAME_LOWERING_OVERRIDES
+                .iter()
+                .find(|(key, wiki, lowering)| {
+                    *key == native_key && *wiki == value && *lowering == existing.as_str()
+                }) {
+                Some((key, _, _)) => {
+                    overrides_hit.insert(key);
+                    Ok(false)
+                }
+                None => Err("Item candidate contradicts an existing field state".into()),
+            }
+        }
+        _ => Err("Item candidate contradicts an existing field state".into()),
+    }
+}
+
 fn presentation(
     semantics: &mut ReferenceItemSemantics,
 ) -> Result<&mut ReferenceItemPresentation, Box<dyn std::error::Error>> {
@@ -236,6 +313,8 @@ fn apply_field(
     semantics: &mut ReferenceItemSemantics,
     field: &Value,
     title: &str,
+    native_key: &str,
+    overrides_hit: &mut BTreeSet<&'static str>,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     let path = field["field_path"]
         .as_str()
@@ -248,7 +327,12 @@ fn apply_field(
             if field["source_value"] != value || value != title {
                 return Err("Item name disagrees with source page".into());
             }
-            promote(&mut presentation(semantics)?.name, value.to_owned())
+            promote_name(
+                &mut presentation(semantics)?.name,
+                native_key,
+                value.to_owned(),
+                overrides_hit,
+            )
         }
         "weapon.attack" | "weapon.defense" | "weapon.extra_defense" => {
             let value = candidate_value(field, "SIGNED_POINTS")?["value"]
@@ -342,6 +426,7 @@ fn populate_items(
     let mut promoted_count = 0;
     let mut equal_count = 0;
     let mut post_cut_count = 0;
+    let mut overrides_hit = BTreeSet::new();
     for row in selected {
         let binding: ProjectV2SourceIdentityBinding =
             serde_json::from_value(row["binding"].clone())?;
@@ -398,11 +483,23 @@ fn populate_items(
             }
             if timestamp > "2026-07-28T23:59:59Z" {
                 // The sole later revision has fields already present in the protected cut.
-                if apply_field(semantics, field, title)? {
+                if apply_field(
+                    semantics,
+                    field,
+                    title,
+                    &binding.target.key,
+                    &mut overrides_hit,
+                )? {
                     return Err("post-cut Item field cannot be promoted".into());
                 }
                 post_cut_count += 1;
-            } else if apply_field(semantics, field, title)? {
+            } else if apply_field(
+                semantics,
+                field,
+                title,
+                &binding.target.key,
+                &mut overrides_hit,
+            )? {
                 promoted_count += 1;
             } else {
                 equal_count += 1;
@@ -419,7 +516,18 @@ fn populate_items(
         });
         bindings.push(binding);
     }
-    if promoted_count != 526 || equal_count != 32 || post_cut_count != 3 {
+    if overrides_hit.len() != ITEM_NAME_LOWERING_OVERRIDES.len() {
+        let unused = ITEM_NAME_LOWERING_OVERRIDES
+            .iter()
+            .filter(|(key, _, _)| !overrides_hit.contains(key))
+            .map(|(key, _, _)| *key)
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(
+            format!("Item name lowering override table entries never hit: {unused}").into(),
+        );
+    }
+    if promoted_count != 12 || equal_count != 546 || post_cut_count != 3 {
         return Err(format!("Item field partition drifted: promoted={promoted_count} equal={equal_count} post_cut={post_cut_count}").into());
     }
     let import = ImportBatch {
@@ -1311,7 +1419,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=526 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
         promoted.promoted_items, promoted.promoted_fields
     );
     Ok(())
