@@ -4,16 +4,16 @@
 task_id: OTV2-20260929-a11-stance-persistence-decision
 title: "A11 STANCE-0 Character stance persistence decision (D140)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1225
 base_sha: d4d5e2c4072c7bdd3f3ef9ecb5c742cd2ae428c3
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 63d2449be11955c89a1a9cba4960d399bf0b3716
+final_head_sha: 63d2449be11955c89a1a9cba4960d399bf0b3716
+final_head_frozen_at: "2026-09-29 (#162 5889111016)"
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-29
 updated_at: 2026-09-29
@@ -51,9 +51,9 @@ Not applicable to this docs-only task. STANCE-0 changes persistence and needs in
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review.
+- [x] Protected Merge Queue integration.
 
 ## Excluded scope
 
@@ -74,14 +74,24 @@ changed.
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1225 merged through the Merge Queue on 2026-09-29 as `0f3d75aa`.
+- Review: two P1 findings, both fixed by `63d2449b`. The owner decided to merge after green CI.
+- Protected-main readback: all three owned files are byte-identical to `63d2449b`.
+- The owner decision was later renumbered D140 -> D145 (A12 §6), because D4 (#1218) already held
+  D140-D144.
+- Archived under `OTV2-20260929-a12-item-identity-tibia-id`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1225 open
-status: validating
+last_progress: protected-integrated as 0f3d75aa; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 63d2449be11955c89a1a9cba4960d399bf0b3716
 pr: 1225
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1225
+next_action: null
 ```
