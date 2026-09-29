@@ -14,6 +14,7 @@ Use targeted reads by default:
 
 - do not bulk-read complete Issue or PR comment timelines; start from metadata/current state and fetch only specifically referenced or latest material comments needed by the decision;
 - do not enumerate every open PR/task when the affected lane, dependency or ownership set is already bounded;
+- long threads such as #162: read the Issue body and the `STATE` comment it links, then only the last page of comments (last page = ceil(comment count / page size), from the Issue metadata); never start from page 1, which holds the oldest comments;
 - do not read the complete `PROMPT_LIFECYCLE.json` to invoke one known alias; resolve the matching entry only;
 - do not read historical sections of long-lived allocation/task documents when a current checkpoint already supersedes them, unless history itself is material evidence;
 - do not load `OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` for a technical worker unless owner-facing launch/status placement is the task;
