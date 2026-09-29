@@ -22,6 +22,7 @@ oteryn-placeholder-assets = { version = "=0.1.0", path = "../../crates/placehold
 oteryn-platform-client = { version = "=0.1.0", path = "../../crates/platform-client" }
 oteryn-platform-contracts = { version = "=0.1.0", path = "../../crates/platform-contracts" }
 oteryn-renderer = { version = "=0.1.0", path = "../../crates/renderer" }
+oteryn-session = { version = "=0.1.0", path = "../../crates/session" }
 
 [target.'cfg(windows)'.dependencies]
 winit.workspace = true
