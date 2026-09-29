@@ -15,6 +15,9 @@ pub(crate) mod chain;
 #[cfg(test)]
 mod chain_tests;
 pub(crate) mod formula;
+pub(crate) mod locate;
+#[cfg(test)]
+mod part_b_tests;
 #[cfg(test)]
 mod part_d_tests;
 pub(crate) mod party;
@@ -143,7 +146,7 @@ pub(crate) struct SpellDefinition {
     /// Cast at a target or, without one, in the looking direction (Canary `needCasterTargetOrDirection`).
     pub(crate) target_or_direction: bool,
     pub(crate) self_target: bool,
-    /// Who the cast may be aimed at (D.3, `targeting.allowed_targets`).
+    /// Who the cast may be aimed at (D.3 and B.5, `targeting.allowed_targets`).
     pub(crate) allowed_targets: AllowedTargets,
     pub(crate) aggressive: bool,
     /// The caster must wield a melee weapon (Canary/Crystal `needWeapon`; D.4).
@@ -231,36 +234,58 @@ impl SpellBook {
         Ok(book)
     }
 
-    /// The instant spell a spoken message casts, if any. Words compare case-insensitively with
-    /// collapsed whitespace; a spell that takes a parameter also matches `words "parameter`.
+    /// The instant spell a spoken message casts, if any (part B.3 P1 and P2, Canary
+    /// `getInstantSpell` and `playerSaySpell`). Whitespace runs collapse to one space and the ends
+    /// are trimmed. The spell whose words are the longest case-insensitive prefix is chosen; a
+    /// spell without a parameter must match exactly, one with a parameter needs a space and at
+    /// least one more character after its words. The parameter is the text between the first
+    /// two quotes (an unclosed quote runs to the end; text after the closing quote makes the
+    /// message chat) or, without quotes, a single word (two words make it chat). It keeps the
+    /// spoken case; an empty parameter is `None`. `None` means the message is chat.
     pub(crate) fn spoken(&self, message: &str) -> Option<SpokenSpell<'_>> {
-        let normalized = message
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join(" ")
-            .to_lowercase();
-        if let Some(&index) = self.by_words.get(&normalized) {
-            return Some(SpokenSpell {
-                spell: &self.spells[index],
-                parameter: None,
-            });
-        }
-        let (words, parameter) = normalized.split_once(" \"")?;
-        let &index = self.by_words.get(words)?;
+        let message = message.split_whitespace().collect::<Vec<_>>().join(" ");
+        let (words, &index) = self
+            .by_words
+            .iter()
+            .filter(|(words, _)| {
+                message
+                    .as_bytes()
+                    .get(..words.len())
+                    .is_some_and(|prefix| prefix.eq_ignore_ascii_case(words.as_bytes()))
+            })
+            .max_by_key(|(words, _)| words.len())?;
         let spell = &self.spells[index];
-        match spell.carrier {
+        let takes_parameter = matches!(
+            spell.carrier,
             Carrier::Instant {
                 takes_parameter: true,
                 ..
-            } => {
-                let parameter = parameter.trim_end_matches('"').trim();
-                Some(SpokenSpell {
-                    spell,
-                    parameter: (!parameter.is_empty()).then(|| parameter.to_owned()),
-                })
             }
-            _ => None,
+        );
+        let rest = message.get(words.len()..)?;
+        if rest.is_empty() {
+            return Some(SpokenSpell {
+                spell,
+                parameter: None,
+            });
         }
+        let parameter = rest.strip_prefix(' ').filter(|_| takes_parameter)?;
+        let parameter = match parameter.find('"') {
+            Some(open) => {
+                let quoted = &parameter[open + 1..];
+                match quoted.find('"') {
+                    None => quoted,
+                    Some(close) if close + 1 == quoted.len() => &quoted[..close],
+                    Some(_) => return None,
+                }
+            }
+            None if parameter.contains(' ') => return None,
+            None => parameter,
+        };
+        Some(SpokenSpell {
+            spell,
+            parameter: (!parameter.is_empty()).then(|| parameter.to_owned()),
+        })
     }
 
     pub(crate) fn rune(&self, item: u32) -> Option<&SpellDefinition> {
@@ -336,7 +361,8 @@ pub(crate) enum CastRejection {
     WeaponRequired,
     /// A `needs_shield` spell cast without a shield (D.4.1); nothing is spent.
     ShieldRequired,
-    /// The target is not one `allowed_targets` permits (D.3.1 step 1); nothing is spent.
+    /// The target is not one `allowed_targets` permits (D.3.1 step 1, B.5 step 1); nothing is
+    /// spent.
     TargetNotAllowed,
     /// A spell with `allowed_targets` was resolved with a target but without the target facts
     /// ([`resolve_targeted_cast`]).

@@ -19,7 +19,7 @@ use crate::ability::{AbilityEngine, AbilityOccurrence, RevisionSet};
 const RUNE: &str = include_str!(
     "../../../../tools/content-schema/spell-authoring/samples/starter-bundles/rune-sudden_death_rune/spell.json"
 );
-const HEALING: &str = include_str!(
+pub(super) const HEALING: &str = include_str!(
     "../../../../tools/content-schema/spell-authoring/samples/starter-bundles/instant-light_healing/dependencies.json"
 );
 const STRIKE: &str = include_str!(
@@ -29,9 +29,9 @@ const STRIKE_DEPENDENCIES: &str = include_str!(
     "../../../../tools/content-schema/spell-authoring/samples/starter-bundles/instant-energy_strike/dependencies.json"
 );
 
-const CASTER: u64 = 1;
-const OTHER_PLAYER: u64 = 2;
-const SUMMON: u64 = 3;
+pub(super) const CASTER: u64 = 1;
+pub(super) const OTHER_PLAYER: u64 = 2;
+pub(super) const SUMMON: u64 = 3;
 
 fn var(name: &str) -> Value {
     json!({ "var": name })
@@ -95,7 +95,7 @@ fn ultimate_healing_rune_bundle(allowed_targets: &str) -> (Value, Value) {
     (spell, dependencies)
 }
 
-fn ultimate_healing_rune() -> SpellDefinition {
+pub(super) fn ultimate_healing_rune() -> SpellDefinition {
     let (spell, dependencies) = ultimate_healing_rune_bundle("self_or_own_summons");
     spell_from_bundle(&spell, &dependencies).expect("Ultimate Healing Rune admitted")
 }
@@ -156,7 +156,7 @@ fn shield_bash() -> SpellDefinition {
     spell_from_bundle(&spell, &dependencies).expect("Shield Bash admitted")
 }
 
-fn caster(vocation: Vocation) -> CasterState {
+pub(super) fn caster(vocation: Vocation) -> CasterState {
     CasterState {
         vocation,
         level: 100,
@@ -182,15 +182,15 @@ fn knight_with_shield(defense: u32) -> CasterState {
     }
 }
 
-fn at_ms(millis: u64) -> SemanticTimeMicros {
+pub(super) fn at_ms(millis: u64) -> SemanticTimeMicros {
     SemanticTimeMicros::from_micros(millis * 1000)
 }
 
-fn lowest(minimum: i64, _: i64) -> i64 {
+pub(super) fn lowest(minimum: i64, _: i64) -> i64 {
     minimum
 }
 
-fn target(creature: u64, master: Option<u64>) -> CastTarget {
+pub(super) fn target(creature: u64, master: Option<u64>) -> CastTarget {
     CastTarget {
         caster: CASTER,
         creature,
@@ -199,7 +199,7 @@ fn target(creature: u64, master: Option<u64>) -> CastTarget {
     }
 }
 
-fn occurrence(id: &str) -> AbilityOccurrence {
+pub(super) fn occurrence(id: &str) -> AbilityOccurrence {
     let revisions = RevisionSet::new(
         "ruleset:r1",
         "content:part-d",
