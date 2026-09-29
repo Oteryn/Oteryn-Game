@@ -5859,6 +5859,72 @@
       "notes": "B3 \u00a74.5; registered by OTV2-20260928-b3-1-transfer."
     },
     {
+      "id": "GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
+      "resource": "Direct Container(parent = corpse) entries of one creature's corpse ItemInstance",
+      "unit": "entries per corpse",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The composing caller's whole-plan preflight checks the death's full accepted loot-plan entry count against this ceiling before any entry (corpse included) is frozen; the database also caps one corpse parent at 16 entries at commit under a corpse-row lock taken before counting (mirrors GAMEITEM01-CONTAINER-ENTRIES-MAX's backpack ceiling), so a concurrent race at the ceiling still admits at most 16.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=16: the 16th loot entry is placed in the corpse's container",
+        "max+1=17: the 17th loot entry is refused by the database, leaving exactly 16 live entries"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entry_proven)"
+      ],
+      "notes": "D131, decision \u00a74.2: equal by construction to the already-accepted COMBAT01-LOOT-PLAN-ITEMS/COMBAT01-ITEMS-PER-CORPSE (both 16); the two must never diverge. Registered by OTV2-20260929-d3-1-corpse-migration."
+    },
+    {
+      "id": "GAMEITEM01-CORPSE-PLACEMENT-DEPTH",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
+      "resource": "Placement depth below a corpse ItemInstance",
+      "unit": "container levels",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Only direct entries of the corpse item itself are admitted destinations; the composite foreign key (parent_item_instance_id, world_id) -> game_item_instances plus the parent-live-CORPSE_MATERIALIZATION-receipt check make a deeper placement (a bag inside a corpse) unrepresentable in this slice.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: a loot entry whose parent is the death's own corpse ItemInstance is accepted",
+        "max+1=2: a loot entry whose parent is itself a corpse container entry is rejected by the database"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entries)"
+      ],
+      "notes": "D131; decision \u00a74.2 mirrors GAMEITEM01-PLACEMENT-DEPTH; nested bags inside corpses are a later decision. Registered by OTV2-20260929-d3-1-corpse-migration."
+    },
+    {
+      "id": "GAMEITEM01-CORPSE-REACHABLE-ITEMS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
+      "resource": "Items reachable through one creature's corpse (the corpse ItemInstance and its direct Container entries)",
+      "unit": "ItemInstances per corpse",
+      "hard_maximum": 17,
+      "configurable_range": {
+        "minimum": 17,
+        "maximum": 17
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Follows from one corpse item, depth 1 and at most 16 entries (the corpse item itself plus its 16 entries); mirrors GAMEITEM01-REACHABLE-ITEMS.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=17: a fully looted-into corpse (1 corpse item + 16 entries) is read in full",
+        "max+1=18: an 18th reachable item (a 17th entry) is refused"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entries)"
+      ],
+      "notes": "D131; decision \u00a74.2. Registered by OTV2-20260929-d3-1-corpse-migration."
+    },
+    {
       "id": "COMBAT01-LOOT-PLAN-ENTRIES",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
       "resource": "Loot-table entries planned for one creature death",
