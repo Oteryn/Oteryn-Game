@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-ai3-perception-chase-wander
 title: GAME-AI-01 §5 AI-3 -- compile ai/ into the server; perception, chase, wander (D115)
 mode: IMPLEMENT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/ai3-perception-chase-wander
@@ -12,9 +12,9 @@ issue: 162
 pr: 1196
 allocation: "GAME-AI-01 §5 AI-3 row; D115 in #162 comment 5879404970"
 base_sha: b6bb50dce51cc2468a5ab3cca570863bc8607185
-head_sha: pending_push
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: f87a4c8bb8535d284957585819a0ac10fe4f960f
+final_head_sha: f87a4c8bb8535d284957585819a0ac10fe4f960f
+final_head_frozen_at: 2026-09-29
 owner: "Oteryn: impl ai (claude-code-session-01U1WRHgL9X8RbuiG1pwczrF)"
 created_at: 2026-09-29
 updated_at: 2026-09-29
@@ -190,11 +190,16 @@ review and integration.
 ## Context checkpoint
 
 ```yaml
-last_progress: repair generation 1 (Codex P2 fix + deferral, PR #1196 frozen head 1c8c9db) implemented, tested and validated; pushing now
-status: waiting
+last_progress: PR #1196 merged via Merge Queue as d388527; protected-main readback matched f87a4c8; record archived
+status: completed
 pr: 1196
-head_sha: pending_push
-final_head_sha: null
+head_sha: f87a4c8bb8535d284957585819a0ac10fe4f960f
+final_head_sha: f87a4c8bb8535d284957585819a0ac10fe4f960f
 blocker: "ScopeRuntimeFence has no accessible constructor outside foundation, so schedule_next_think cannot be exercised end-to-end from this task's own tests; live wiring into ChannelRuntimeV1's owner cycle needs a foundation-owned follow-up"
-next_action: "control plane: freeze the pushed SHA, route independent re-review, allocate the ChannelRuntimeV1/ScopeRuntimeFence wiring follow-up and AI-4 (which also inherits the deferred PathProposal::revalidate binding item)"
+next_action: none for this task; production-wiring binding items are routed on #162
 ```
+
+## Closeout
+
+- merge commit/result: `d388527` on protected `main` (#1196); readback byte-identical to `f87a4c8`
+- ownership release: all leases released at merge
