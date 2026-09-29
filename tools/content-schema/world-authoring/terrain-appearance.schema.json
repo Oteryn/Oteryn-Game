@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.dev/schemas/content/terrain-appearance/v1",
+  "title": "Oteryn Terrain authoring files v1 (family index, shard, capture summary)",
+  "description": "Terrain identities for the appearance-only ids of the base map, one record per id the official Tibia client declares and the pinned CrystalServer items.xml does not. Every field comes from the client appearance of that id. Ids that items.xml declares belong to the Item registry.",
+  "oneOf": [
+    { "$ref": "#/$defs/family_index" },
+    { "$ref": "#/$defs/terrain_shard" },
+    { "$ref": "#/$defs/capture_summary" }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "count": { "type": "integer", "minimum": 0 },
+    "appearance_id": { "type": "integer", "minimum": 1, "maximum": 999999 },
+    "class": { "enum": ["ground", "border", "blocking", "decoration"] },
+    "flag": { "enum": ["bank", "clip", "unmove", "unpass"] },
+    "terrain_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "key", "revision"],
+      "properties": {
+        "family": { "const": "Terrain" },
+        "key": { "type": "string", "pattern": "^oteryn:terrain\\.a[0-9]{6}$" },
+        "revision": { "const": "definition-r1" }
+      }
+    },
+    "client_source_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disposition", "external_id", "identity_namespace", "source_key", "source_revision", "target"],
+      "properties": {
+        "disposition": { "const": "EXACT" },
+        "external_id": { "type": "string", "pattern": "^[1-9][0-9]{0,5}$" },
+        "identity_namespace": { "const": "tibia-client/appearance-id" },
+        "source_key": { "const": "oteryn:source.tibia_client" },
+        "source_revision": { "$ref": "#/$defs/sha256" },
+        "target": { "$ref": "#/$defs/terrain_reference" }
+      }
+    },
+    "declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["appearance_id", "class", "flags", "identity", "kind", "occurrences_on_base_map"],
+      "properties": {
+        "appearance_id": { "$ref": "#/$defs/appearance_id" },
+        "automap_color": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "class": { "$ref": "#/$defs/class" },
+        "flags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/flag" }
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["key", "revision"],
+          "properties": {
+            "key": { "type": "string", "pattern": "^oteryn:terrain\\.a[0-9]{6}$" },
+            "revision": { "const": "definition-r1" }
+          }
+        },
+        "kind": { "const": "Terrain" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "occurrences_on_base_map": { "$ref": "#/$defs/count" },
+        "speed": { "type": "integer", "minimum": 0, "maximum": 65535 }
+      }
+    },
+    "terrain_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declaration", "source_bindings"],
+      "properties": {
+        "declaration": { "$ref": "#/$defs/declaration" },
+        "source_bindings": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/client_source_binding" }
+        }
+      }
+    },
+    "terrain_shard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "records", "schema", "shard"],
+      "properties": {
+        "family": { "const": "Terrain" },
+        "records": { "type": "array", "minItems": 1, "maxItems": 500, "items": { "$ref": "#/$defs/terrain_record" } },
+        "schema": { "const": "OTERYN_TERRAIN_AUTHORING_SHARD/v1" },
+        "shard": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["count", "end", "index", "start"],
+          "properties": {
+            "count": { "type": "integer", "minimum": 1, "maximum": 500 },
+            "end": { "type": "integer", "minimum": 0 },
+            "index": { "type": "integer", "minimum": 0 },
+            "start": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "pinned_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["client_version", "evidence", "files", "manifest", "source_key"],
+      "properties": {
+        "client_version": { "const": "15.30" },
+        "evidence": { "const": "OfficialClient" },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": { "type": "string", "pattern": "^content/assets/files/appearances-[0-9a-f]{64}\\.dat$" },
+              "sha256": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        },
+        "manifest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["archive_sha256", "path"],
+          "properties": {
+            "archive_sha256": { "$ref": "#/$defs/sha256" },
+            "path": { "const": "imports/official/client-assets/15.30/manifest.json" }
+          }
+        },
+        "source_key": { "const": "oteryn:source.tibia_client" }
+      }
+    },
+    "family_index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coordinate_frame", "family", "generator", "population_state", "record_count", "schema",
+        "shard_size", "shards", "source"
+      ],
+      "properties": {
+        "coordinate_frame": { "const": "global-target-2026-09-27" },
+        "family": { "const": "Terrain" },
+        "generator": { "const": "tools/content-schema/world-authoring/convert_terrain.py" },
+        "population_state": { "const": "POPULATED" },
+        "record_count": { "type": "integer", "minimum": 1 },
+        "schema": { "const": "OTERYN_FAMILY_INDEX/v1" },
+        "shard_size": { "const": 500 },
+        "shards": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^content/world/terrain/terrain-[0-9]{5}-[0-9]{5}\\.json$" }
+        },
+        "source": { "$ref": "#/$defs/pinned_source" }
+      }
+    },
+    "class_totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["occurrences_on_base_map", "records"],
+      "properties": {
+        "occurrences_on_base_map": { "$ref": "#/$defs/count" },
+        "records": { "$ref": "#/$defs/count" }
+      }
+    },
+    "capture_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "appearances", "class_rule", "classes", "families", "flags", "occurrences_on_base_map",
+        "records_with", "schema", "source"
+      ],
+      "properties": {
+        "appearances": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["objects", "path", "sha256"],
+          "properties": {
+            "objects": { "type": "integer", "minimum": 1 },
+            "path": { "type": "string", "pattern": "^content/assets/files/appearances-[0-9a-f]{64}\\.dat$" },
+            "sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "class_rule": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "string", "maxLength": 128 } },
+        "classes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["blocking", "border", "decoration", "ground"],
+          "properties": {
+            "blocking": { "$ref": "#/$defs/class_totals" },
+            "border": { "$ref": "#/$defs/class_totals" },
+            "decoration": { "$ref": "#/$defs/class_totals" },
+            "ground": { "$ref": "#/$defs/class_totals" }
+          }
+        },
+        "families": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["Terrain"],
+          "properties": { "Terrain": { "type": "integer", "minimum": 1 } }
+        },
+        "flags": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bank", "clip", "unmove", "unpass"],
+          "properties": {
+            "bank": { "$ref": "#/$defs/count" },
+            "clip": { "$ref": "#/$defs/count" },
+            "unmove": { "$ref": "#/$defs/count" },
+            "unpass": { "$ref": "#/$defs/count" }
+          }
+        },
+        "occurrences_on_base_map": { "$ref": "#/$defs/count" },
+        "records_with": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["automap_color", "name", "speed"],
+          "properties": {
+            "automap_color": { "$ref": "#/$defs/count" },
+            "name": { "$ref": "#/$defs/count" },
+            "speed": { "$ref": "#/$defs/count" }
+          }
+        },
+        "schema": { "const": "OTERYN_TERRAIN_SOURCE_CAPTURE/v1" },
+        "source": { "$ref": "#/$defs/pinned_source" }
+      }
+    }
+  }
+}

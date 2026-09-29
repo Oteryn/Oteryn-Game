@@ -22,6 +22,7 @@ owned_paths:
   - content/world/worlds/
   - content/world/objects/
   - content/world/areas/islands/
+  - content/world/terrain/
   - imports/tibiawiki/islands/
   - tools/content-schema/validate_materialized_game_tree.py
   - .gitattributes
@@ -51,8 +52,12 @@ sha256-pinned and `OtsHypothesisOnly`.
   order: `{key, source_item_id, provisional}`.
   - A bound id (`imports/crystalserver/bindings/items.json`, `ots/item_server_id`) takes its
     binding target key, registry or named, with `provisional: false`.
+  - An appearance-only id (declared by the official client, not by `items.xml`) takes the
+    `oteryn:terrain.a<id>` key of its `Terrain` record with `provisional: false` (5,942 ids).
   - Any other id takes `donor:crystalserver@00ce02a5:item/<id>` with `provisional: true`
-    (5,943 appearance-only ids and 44 items that `items.xml` declares).
+    (4 items that `items.xml` declares and the appearance-less id 99).
+  - **Ownership rule: ids present in `items.xml` -> Item registry (item agent, B1b);
+    appearance-only ids -> Terrain (world).**
   - Item identity work later rewrites palette entries only. Region files do not change.
 - **Format:** measured before selection (about 22 MB versus 3.25 GB as JSON sectors). Spec
   in the `world_region_codec.py` docstring.
@@ -104,11 +109,23 @@ sha256-pinned and `OtsHypothesisOnly`.
       no committed teleport links them). 7 candidates are excluded with a reason
       (3 without coordinates, 2 part of the landmass, 2 event-only not on the map) in
       `samples/islands-capture-v1.json`. `validate_islands.py` and `test_islands.py` pass.
+- [x] `Terrain` holds 5,942 records (`oteryn:terrain.a<id>`), one per appearance-only palette
+      id that the official 15.30 client `appearances-2dfa943b….dat` declares (owner-confirmed
+      redistribution), from `convert_terrain.py --check` and `client_appearance_reader.py`.
+      Ownership rule: ids present in `items.xml` -> Item registry (item agent, B1b);
+      appearance-only ids -> Terrain (world). Fields come only from the appearance: `class`
+      by the documented rule (ground 740, border 1,533, blocking 2,611, decoration 1,058),
+      `flags`, `speed`, `name`, `automap_color` and `occurrences_on_base_map`. Client ids
+      equal server ids (checked against `items.xml` names and ground evidence). The base map
+      palette switched those 5,942 keys from `donor:` to Terrain keys (region files
+      byte-identical; 5 provisional remain: 4 `items.xml` ids for B1b and id 99). Validators
+      `validate_terrain.py` and `validate_world_base.py` (a non-provisional key is an Item
+      binding target or a Terrain key of that id) and `test_terrain.py` pass.
 - [ ] Required checks pass on the frozen PR head.
 
 ## Excluded scope
 
-- Admitting provisional items (item B1b) and a Terrain identity path.
+- Admitting provisional items (item B1b).
 - A patch layer for authored Oteryn edits over a regenerated base.
 - Runtime consumption, the per-channel overlay and the native `WorldTilePosition` mapping.
 - The `15.30/` fragment maps.
@@ -121,6 +138,7 @@ sha256-pinned and `OtsHypothesisOnly`.
 - `convert_floor_changes.py --check` (pinned checkout), `validate_floor_changes.py` and
   `test_floor_changes.py` pass.
 - `convert_islands.py --check`, `validate_islands.py` and `test_islands.py` pass.
+- `convert_terrain.py --check`, `validate_terrain.py` and `test_terrain.py` pass.
 - `validate_world_base.py` passes; `test_world_base.py` and `test_world_authoring.py` pass.
 - `ruff check` and `ruff format --check` pass from the repository root.
 - `validate_materialized_game_tree.py`, `validate_governance.py` and

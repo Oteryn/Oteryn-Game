@@ -9,9 +9,10 @@ format selected by measurement (see "Base map (step 3)" below).
 |---|---|---:|---|
 | `Area.City` | `content/world/areas/cities/` | 35 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `Area.HuntingPlace` | `content/world/areas/hunting-places/` | 445 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
-| `Area.Island` | `content/world/areas/islands/` | 52 | `OTERYN_AREA_AUTHORING_SHARD/v1` (`island.schema.json`) |
+| `Area.Island` | `content/world/areas/islands/` | 59 | `OTERYN_AREA_AUTHORING_SHARD/v1` (`island.schema.json`) |
 | `Area.Region` | `content/world/areas/regions/` | 465 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `House` | `content/houses/` | 995 | `OTERYN_HOUSE_AUTHORING_SHARD/v1` |
+| `Terrain` | `content/world/terrain/` | 5,942 | `OTERYN_TERRAIN_AUTHORING_SHARD/v1` (`terrain-appearance.schema.json`) |
 | `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
 | `World` | `content/world/worlds/` | 1 | `OTERYN_WORLD_AUTHORING_SHARD/v1` (`world-record.schema.json`) |
 | `WorldObject.FloorChange` | `content/world/objects/` | 447 | `OTERYN_WORLD_OBJECT_AUTHORING_SHARD/v1` (`floor-change.schema.json`) |
@@ -371,18 +372,30 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   - an id bound in `imports/crystalserver/bindings/items.json` (`ots/item_server_id`) takes
     that binding's target key, either `oteryn:item.registry.iNNNNNNNN` or a named key such
     as `oteryn:item.currency.gold_coin`, with `provisional: false`;
+  - an appearance-only id (the official client declares it, `items.xml` does not) that the
+    committed Terrain family covers takes that record's `oteryn:terrain.a<id>` key with
+    `provisional: false` (see "Terrain" below);
   - any other id takes `donor:crystalserver@00ce02a5:item/<id>` (the donor-census key
-    form) with `provisional: true`. This covers appearance-only terrain ids that are not in
-    `items.xml` and new items that no binding covers yet.
+    form) with `provisional: true`. This covers ids that `items.xml` declares but no Item
+    binding covers yet (the item agent's B1b registry step admits them) and ids no source
+    declares.
+
+  **Ownership rule:** ids present in `items.xml` -> Item registry (item agent, B1b);
+  appearance-only ids -> Terrain (world). An id is never both.
 
   An entry the map stops using is never removed: it is flagged `"retired": true`, which is
   allowed only while no region references it.
 
-  Later identity work (admitting the provisional items, a Terrain identity path) rewrites
+  Identity work (admitting the provisional items, the Terrain identity path) rewrites
   palette entries in `index.json` only. The 22 MB of region files do not change. The
   capture summary counts provisional entries and occurrences, split into ids that
-  `items.xml` declares at the pinned revision and appearance-only ids. Current counts:
-  25,963 palette entries, 5,987 provisional, 811,579 provisional item occurrences.
+  `items.xml` declares at the pinned revision and appearance-only ids, and the Terrain-keyed
+  entries. Current counts: 25,963 palette entries; 5,942 Terrain keys (757,025
+  occurrences); 5 provisional (24 occurrences): 4 ids that `items.xml` declares and id 99,
+  which neither `items.xml` nor the client declares.
+  `validate_world_base.py` accepts a non-provisional key that is an Item binding target or
+  a Terrain key of that palette id (`oteryn:terrain.a` plus the id in six digits, bound in
+  the Terrain family), and rejects an id that is both.
   The converter still fails closed, and never guesses, on an item or tile attribute
   outside the carried set.
 - **Measured** (prototype of this codec on the same map, one thread): full load 1.7 s into
@@ -414,3 +427,58 @@ new map no longer uses as `"retired": true`. Untouched region files stay byte-id
 The validator requires unique ids and keys, every non-retired entry referenced and every
 retired entry unreferenced. Oteryn edits authored on top of the base map will later need a
 separate patch layer that survives a regeneration. That layer is not implemented.
+
+## Terrain (official client appearances)
+
+`Terrain` (`content/world/terrain/`, owner Terrain) gives a permanent identity to every
+**appearance-only** id of the base map palette: an id that the official Tibia 15.30 client
+declares in `content/assets/files/appearances-<sha256>.dat` (owner-confirmed redistribution,
+sha256 checked against `imports/official/client-assets/15.30/manifest.json`) and that the
+pinned CrystalServer `items.xml` does not declare. Ownership rule: **ids present in
+`items.xml` -> Item registry (item agent, B1b); appearance-only ids -> Terrain (world)**.
+Terrain is not the D93 `oteryn:terrain.registry.iNNNNNNNN` space of the routed Item ids
+(`tools/content-schema/world-object-authoring/`, WO-2); those ids are in `items.xml` and stay
+Item business.
+
+- **Reader:** `client_appearance_reader.py` decodes the raw protobuf with the framing of
+  `client_map_reader.py` (fails closed on malformed frames, repeated ids, non boolean flags,
+  unsupported wire types). Only object appearances (field 1) and, per object, the id, name
+  and the flags `bank` (1, with waypoints = ground speed), `clip` (2), `unpass` (13),
+  `unmove` (14) and `automap` (30, colour) are read; frame groups and every other flag are
+  skipped. The reader agrees with the item agent's `engine_items` decode on all 43,516 objects
+  (max id 55,117).
+- **Client ids equal server ids (checked):** in the pinned `items.xml` 33,978 ids also have a
+  client appearance. Of the 8,411 with a client name, 8,037 (95.6%) equal the items.xml name
+  (gold coin 3031, platinum coin 3035, the rest are renames such as `ring of the count` ->
+  `the ring of the count`, or generic names like `weapon of carving`). The ground evidence
+  agrees: the water and lava ids of the island ground classes (501) all have appearances,
+  ids named `grass` carry bank speed 150 most often, `stone wall` ids are `unpass` (913 of
+  934) and water ground is `unpass`. No id is shifted.
+- **Records:** one per appearance-only palette id that has an appearance: 5,942 (id 99 has
+  none and stays provisional). Key `oteryn:terrain.a<id, six digits>`, fields only from the
+  appearance: `appearance_id`, `class`, `flags` (the subset of `bank`, `clip`, `unmove`,
+  `unpass` the appearance sets), `speed` (bank waypoints, ground only), `name` (7 records),
+  `automap_color` (2,942), `occurrences_on_base_map` (top-level tile items over the region
+  files, container contents excluded). Binding: namespace `tibia-client/appearance-id`,
+  source `oteryn:source.tibia_client`, source revision the sha256 of the appearances file.
+- **Class rule** (first match): `bank` -> `ground`; else `clip` -> `border`; else `unpass`
+  -> `blocking`; else `decoration`. No `liquid` class: the client flag `liquidpool` (liquid
+  splash decals) occurs on none of these ids, `liquidcontainer` (drinkable containers) on
+  three that are not ground, and water or lava ground has no flag of its own (it is `bank`
+  or `clip`, usually `unpass`).
+- **Counts** (capture summary): ground 740, border 1,533, blocking 2,611, decoration 1,058;
+  757,025 occurrences on the base map.
+- **Generation order:** `convert_terrain.py --crystal-root PATH` derives the set (palette
+  ids with no Item binding, not declared by `items.xml`, known to the client) and writes the
+  records; `convert_world_base.py --crystal-root PATH` then switches those palette keys (only
+  `index.json` and the summary change, region files stay byte-identical); the offline
+  `convert_terrain.py --check` takes the set from the Terrain-keyed palette entries.
+  `validate_terrain.py` re-decodes the appearances, recounts occurrences over the regions
+  (about 20 s) and checks every palette mapping.
+
+```bash
+python convert_terrain.py --check           # committed family and capture, offline
+python validate_terrain.py                  # committed family: appearances, palette, recount
+python test_terrain.py                      # reader, converter and validator fixtures
+python convert_terrain.py --crystal-root /path/to/crystalserver [--check]   # derive the set
+```

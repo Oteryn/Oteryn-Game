@@ -7,7 +7,8 @@ item, an index into the ``palette`` of index.json. The palette holds one entry p
 map server item id and is append-only: a fresh build orders entries by ascending id, and a
 build over a committed palette keeps every entry at its index, appends new ids at the end
 in ascending id order and flags an entry the map no longer uses ``"retired": true``. An id
-bound in the item bindings resolves to its binding target key. Any other id gets a
+bound in the item bindings resolves to its binding target key, an appearance-only id that the
+committed Terrain family covers to its `oteryn:terrain.a<id>` key. Any other id gets a
 provisional donor key. The conversion fails closed on an item or tile attribute it does
 not carry.
 
@@ -42,6 +43,9 @@ GENERATOR = "tools/content-schema/world-authoring/convert_world_base.py"
 PINNED_TOTALS = {"items": 24925845, "tiles": 19325129}
 ITEM_NAMESPACE = "ots/item_server_id"
 DONOR_PREFIX = f"donor:crystalserver@{metadata.SOURCE['revision'][:8]}:item/"
+TERRAIN_DIRECTORY = "content/world/terrain"
+TERRAIN_NAMESPACE = "tibia-client/appearance-id"
+TERRAIN_KEY_PREFIX = "oteryn:terrain.a"
 
 SOURCE = {
     **metadata.SOURCE,
@@ -86,8 +90,28 @@ def bound_keys(bindings: bytes) -> dict[int, str]:
     return keys
 
 
-def palette_entry(server_id: int, bound: dict[int, str]) -> dict:
-    key = bound.get(server_id)
+def terrain_keys(root: Path = ROOT) -> dict[int, str]:
+    """``{appearance id: Terrain key}`` of the committed Terrain family (empty until populated)."""
+    path = root / TERRAIN_DIRECTORY / "index.json"
+    index = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    keys: dict[int, str] = {}
+    for shard in index.get("shards", []):
+        for record in json.loads((root / shard).read_text(encoding="utf-8"))["records"]:
+            for row in record["source_bindings"]:
+                if row["identity_namespace"] == TERRAIN_NAMESPACE:
+                    keys[int(row["external_id"])] = row["target"]["key"]
+    return keys
+
+
+def palette_entry(
+    server_id: int, bound: dict[int, str], terrain: dict[int, str] | None = None
+) -> dict:
+    """Item binding key, else Terrain key (appearance-only ids), else the provisional donor key."""
+    item_key = bound.get(server_id)
+    terrain_key = (terrain or {}).get(server_id)
+    if item_key and terrain_key:
+        raise ConvertError(f"server id {server_id} is both an Item and a Terrain id")
+    key = item_key or terrain_key
     return {
         "key": key or donor_key(server_id),
         "provisional": key is None,
@@ -96,7 +120,10 @@ def palette_entry(server_id: int, bound: dict[int, str]) -> dict:
 
 
 def build_palette(
-    bound: dict[int, str], occurrences: Counter, previous: list[dict] | None = None
+    bound: dict[int, str],
+    occurrences: Counter,
+    previous: list[dict] | None = None,
+    terrain: dict[int, str] | None = None,
 ) -> list[dict]:
     """The append-only palette.
 
@@ -112,12 +139,12 @@ def build_palette(
         if server_id in seen:
             raise ConvertError(f"committed palette lists server id {server_id} twice")
         seen.add(server_id)
-        entry = palette_entry(server_id, bound)
+        entry = palette_entry(server_id, bound, terrain)
         if server_id not in occurrences:
             entry["retired"] = True
         palette.append(entry)
     palette.extend(
-        palette_entry(server_id, bound)
+        palette_entry(server_id, bound, terrain)
         for server_id in sorted(occurrences)
         if server_id not in seen
     )
@@ -257,8 +284,10 @@ def build(
     blobs: dict[str, bytes],
     bindings: bytes | None = None,
     previous: list[dict] | None = None,
+    terrain: dict[int, str] | None = None,
 ) -> dict[str, bytes]:
-    """Build every output; `previous` is the committed palette to extend, if any."""
+    """Build every output; `previous` is the committed palette to extend, if any and
+    `terrain` the committed Terrain keys of appearance-only ids."""
     if bindings is None:
         bindings = ITEM_BINDINGS.read_bytes()
     bound = bound_keys(bindings)
@@ -274,11 +303,15 @@ def build(
         raise ConvertError("map extent exceeds the region coordinate range")
     if collector.tiles != facts.tiles:
         raise ConvertError("tile count differs from the reader")
-    palette = build_palette(bound, collector.occurrences, previous)
+    palette = build_palette(bound, collector.occurrences, previous, terrain)
     collector.remap({row["source_item_id"]: i for i, row in enumerate(palette)})
     declared = items_xml_ids(blobs[ITEMS_XML])
     provisional = {"appearance_only": [0, 0], "in_items_xml": [0, 0]}
+    terrain_entries = terrain_occurrences = 0
     for row in palette:
+        if row["key"].startswith(TERRAIN_KEY_PREFIX):
+            terrain_entries += 1
+            terrain_occurrences += collector.occurrences[row["source_item_id"]]
         if row["provisional"]:
             kind = (
                 "in_items_xml"
@@ -376,6 +409,10 @@ def build(
                 },
                 "occurrences": sum(v[1] for v in provisional.values()),
             },
+            "terrain": {
+                "entries": terrain_entries,
+                "occurrences": terrain_occurrences,
+            },
         },
         "rejected_items": {"unsupported_attributes": len(collector.unsupported)},
         "schema": "OTERYN_WORLD_BASE_SOURCE_CAPTURE/v1",
@@ -405,7 +442,11 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="fail instead of writing")
     args = parser.parse_args()
     try:
-        out = build(read_source(args.crystal_root), previous=committed_palette())
+        out = build(
+            read_source(args.crystal_root),
+            previous=committed_palette(),
+            terrain=terrain_keys(),
+        )
         totals = json.loads(out[f"{DIRECTORY}/index.json"])["totals"]
         if {k: totals[k] for k in PINNED_TOTALS} != PINNED_TOTALS:
             raise ConvertError(

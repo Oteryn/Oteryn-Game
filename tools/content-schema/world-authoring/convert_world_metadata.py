@@ -75,6 +75,11 @@ FAMILIES = {
         "stem": "houses",
         "schema": "OTERYN_HOUSE_AUTHORING_SHARD/v1",
     },
+    "Terrain": {
+        "dir": "content/world/terrain",
+        "stem": "terrain",
+        "schema": "OTERYN_TERRAIN_AUTHORING_SHARD/v1",
+    },
     "Transition.Teleport": {
         "dir": "content/world/transitions",
         "stem": "teleports",

@@ -256,6 +256,7 @@ class ConvertAndValidateTest(unittest.TestCase):
                     "in_items_xml": {"entries": 0, "occurrences": 0},
                     "occurrences": 2,
                 },
+                "terrain": {"entries": 0, "occurrences": 0},
             },
         )
         z, rx, ry, sectors = codec.decode_region(self.region.read_bytes())
@@ -439,7 +440,7 @@ class ConvertAndValidateTest(unittest.TestCase):
             (unused, "no item uses"),
             (out_of_range, "palette indexes outside"),
             (provisional_but_bound, "has a binding"),
-            (wrong_binding, "not a binding target"),
+            (wrong_binding, "not an Item binding target"),
             (wrong_revision, "provisional key must be"),
             (retired_but_used, "retired palette entries an item still uses"),
             (retired_not_true, "malformed entry"),
@@ -452,6 +453,83 @@ class ConvertAndValidateTest(unittest.TestCase):
                 self.assertTrue(any(expected in e for e in errors), errors)
                 self.write_index(json.loads(self.out[validate.INDEX]))
         self.assertEqual(self.errors(), [])
+
+    TERRAIN_KEY = "oteryn:terrain.a001949"
+
+    def write_terrain(self, root, keys):
+        """A minimal committed Terrain family: one record and binding per appearance id."""
+        records = [
+            {
+                "declaration": {"identity": {"key": key}},
+                "source_bindings": [
+                    {
+                        "identity_namespace": convert.TERRAIN_NAMESPACE,
+                        "external_id": str(appearance_id),
+                        "target": {"key": key},
+                    }
+                ],
+            }
+            for appearance_id, key in sorted(keys.items())
+        ]
+        directory = root / convert.TERRAIN_DIRECTORY
+        directory.mkdir(parents=True, exist_ok=True)
+        shard = f"{convert.TERRAIN_DIRECTORY}/terrain-00000-00000.json"
+        (root / shard).write_text(json.dumps({"records": records}))
+        (directory / "index.json").write_text(json.dumps({"shards": [shard]}))
+
+    def test_appearance_only_ids_take_their_terrain_key(self):
+        terrain = {1949: self.TERRAIN_KEY}
+        out = convert.build(self.blobs, ITEMS_BY_SERVER_ID, terrain=terrain)
+        palette = self.palette_of(out)
+        self.assertEqual(
+            palette[2],
+            {"key": self.TERRAIN_KEY, "provisional": False, "source_item_id": 1949},
+        )
+        summary = self.summary(out)["palette"]
+        self.assertEqual(summary["terrain"], {"entries": 1, "occurrences": 2})
+        self.assertEqual(summary["provisional"]["entries"], 0)
+        # Only `index.json` and the summary change: region files keep their bytes.
+        region = f"{validate.DIRECTORY}/region-z07-x003-y003.b3"
+        self.assertEqual(out[region], self.out[region])
+        root = self.install(out)
+        self.write_terrain(root, terrain)
+        self.assertEqual(validate.validate(root), [])
+        self.assertEqual(convert.terrain_keys(root), terrain)
+
+    def test_terrain_key_must_belong_to_a_terrain_record_of_that_id(self):
+        out = convert.build(
+            self.blobs, ITEMS_BY_SERVER_ID, terrain={1949: self.TERRAIN_KEY}
+        )
+        root = self.install(out)
+        # no Terrain family: the key is neither an Item binding nor a Terrain key
+        errors = validate.validate(root)
+        self.assertTrue(any("not an Item binding target" in e for e in errors), errors)
+        # a record of another id, or a key that does not spell its id
+        self.write_terrain(root, {1949: "oteryn:terrain.a000001"})
+        errors = validate.validate(root)
+        self.assertTrue(any("differs from its id" in e for e in errors), errors)
+        self.write_terrain(root, {1950: "oteryn:terrain.a001950"})
+        errors = validate.validate(root)
+        self.assertTrue(any("not an Item binding target" in e for e in errors), errors)
+
+    def test_an_id_cannot_be_an_item_and_a_terrain_id(self):
+        with self.assertRaises(convert.ConvertError):
+            convert.build(
+                self.blobs, ITEMS_BY_SERVER_ID, terrain={100: "oteryn:terrain.a000100"}
+            )
+        out = convert.build(self.blobs, ITEMS_BY_SERVER_ID)
+        root = self.install(out)
+        self.write_terrain(root, {100: "oteryn:terrain.a000100"})
+        errors = validate.validate(root)
+        self.assertTrue(
+            any("both an Item and a Terrain id" in e for e in errors), errors
+        )
+
+    def test_provisional_id_with_a_terrain_record_is_rejected(self):
+        root = self.install(self.out)
+        self.write_terrain(root, {1949: self.TERRAIN_KEY})
+        errors = validate.validate(root)
+        self.assertTrue(any("has a binding" in e for e in errors), errors)
 
     def install(self, out):
         """Write a build into a fresh temp root and return it."""
@@ -537,7 +615,7 @@ class ConvertAndValidateTest(unittest.TestCase):
 
     def test_bindings_change_makes_a_registry_entry_stale(self):
         self.write_bindings(bindings_for([(100, GOLD), (1234, GOLD.upper())]))
-        self.assertTrue(any("not a binding target" in e for e in self.errors()))
+        self.assertTrue(any("not an Item binding target" in e for e in self.errors()))
         self.write_bindings(
             bindings_for([(100, GOLD), (1234, REGISTRY), (1949, "a:b")])
         )

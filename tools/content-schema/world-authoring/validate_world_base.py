@@ -19,7 +19,14 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import world_region_codec as codec
-from convert_world_base import DONOR_PREFIX, ITEM_NAMESPACE, PINNED_TOTALS
+from convert_world_base import (
+    DONOR_PREFIX,
+    ITEM_NAMESPACE,
+    PINNED_TOTALS,
+    TERRAIN_DIRECTORY,
+    TERRAIN_KEY_PREFIX,
+    TERRAIN_NAMESPACE,
+)
 
 HERE = Path(__file__).resolve().parent
 DIRECTORY = "content/world/placements"
@@ -191,7 +198,33 @@ def check_index(index: dict, summary: dict, errors: list[str]) -> None:
         errors.append(f"{INDEX}: generator {generator!r} does not exist")
 
 
-def check_palette(palette, bound: dict[int, set[str]], errors: list[str]) -> bool:
+def terrain_bindings(root: Path, errors: list[str]) -> dict[int, set[str]]:
+    """``{appearance id: Terrain keys}`` from the committed Terrain family, if populated.
+
+    A Terrain key is `oteryn:terrain.a` plus the appearance id in six digits, so the source
+    id a palette entry names is the id in the key and in the record's binding.
+    """
+    path = f"{TERRAIN_DIRECTORY}/index.json"
+    index = load(root, path, strict=False) if (root / path).is_file() else {}
+    found: dict[int, set[str]] = {}
+    for shard in index.get("shards", []):
+        for record in load(root, shard, strict=False)["records"]:
+            for row in record["source_bindings"]:
+                if row["identity_namespace"] != TERRAIN_NAMESPACE:
+                    continue
+                appearance_id, key = int(row["external_id"]), row["target"]["key"]
+                if key != f"{TERRAIN_KEY_PREFIX}{appearance_id:06d}":
+                    errors.append(f"{shard}: terrain key {key!r} differs from its id")
+                found.setdefault(appearance_id, set()).add(key)
+    return found
+
+
+def check_palette(
+    palette,
+    bound: dict[int, set[str]],
+    terrain: dict[int, set[str]],
+    errors: list[str],
+) -> bool:
     """Check the palette in isolation; returns False when it cannot be indexed."""
     if not isinstance(palette, list) or not palette:
         errors.append(f"{INDEX}: palette must be a non-empty list")
@@ -225,12 +258,17 @@ def check_palette(palette, bound: dict[int, set[str]], errors: list[str]) -> boo
                 errors.append(
                     f"{where}: provisional key must be {DONOR_PREFIX}{server_id}"
                 )
-            if server_id in bound:
+            if server_id in bound or server_id in terrain:
                 errors.append(f"{where}: provisional id {server_id} has a binding")
-        elif key not in bound.get(server_id, ()):
+        elif key not in bound.get(server_id, ()) and key not in terrain.get(
+            server_id, ()
+        ):
             errors.append(
-                f"{where}: key {key!r} is not a binding target of server id {server_id}"
+                f"{where}: key {key!r} is not an Item binding target or a Terrain "
+                f"key of server id {server_id}"
             )
+        if server_id in bound and server_id in terrain:
+            errors.append(f"{where}: id {server_id} is both an Item and a Terrain id")
     return len(errors) == start
 
 
@@ -253,19 +291,28 @@ def check_palette_use(
         )
     if sum(used.values()) != items:
         errors.append(f"{INDEX}: palette occurrences differ from the item total")
-    entries = occurrences = 0
+    entries = occurrences = terrain_entries = terrain_occurrences = 0
     for i, row in enumerate(palette):
         if row["provisional"]:
             entries += 1
             occurrences += used[i]
+        if row["key"].startswith(TERRAIN_KEY_PREFIX):
+            terrain_entries += 1
+            terrain_occurrences += used[i]
     recorded = summary.get("palette")
     provisional = recorded.get("provisional") if isinstance(recorded, dict) else None
     if not isinstance(provisional, dict) or set(recorded) != {
         "entries",
         "provisional",
+        "terrain",
     }:
-        errors.append(f"{SUMMARY}: palette must hold entries and provisional")
+        errors.append(f"{SUMMARY}: palette must hold entries, provisional and terrain")
         return
+    if recorded["terrain"] != {
+        "entries": terrain_entries,
+        "occurrences": terrain_occurrences,
+    }:
+        errors.append(f"{SUMMARY}: palette.terrain differs from the decoded palette")
     if recorded["entries"] != len(palette):
         errors.append(f"{SUMMARY}: palette.entries differs from the index palette")
     if (provisional.get("entries"), provisional.get("occurrences")) != (
@@ -342,8 +389,9 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
     for row in load(root, ITEM_BINDINGS, strict=False)["bindings"]:
         if row["identity_namespace"] == ITEM_NAMESPACE:
             bound.setdefault(int(row["external_id"]), set()).add(row["target"]["key"])
+    terrain = terrain_bindings(root, errors)
     palette = index["palette"]
-    if not check_palette(palette, bound, errors):
+    if not check_palette(palette, bound, terrain, errors):
         return errors
     extent = (summary["map"]["width"], summary["map"]["height"])
     args = (str(root), extent, len(palette))

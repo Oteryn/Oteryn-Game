@@ -11,11 +11,13 @@ on:
       - content/world/placements/**
       - content/world/worlds/**
       - content/world/objects/**
+      - content/world/terrain/**
       - imports/crystalserver/bindings/items.json
       - imports/tibiawiki/hunting-places/**
       - imports/tibiawiki/islands/**
       - imports/official/client-assets/15.30/manifest.json
       - content/assets/files/catalog-content.json
+      - content/assets/files/appearances-*.dat
       - content/assets/files/map-*.dat
       - content/assets/files/subarea-*
       - .github/workflows/world-metadata-authoring.yml
@@ -63,6 +65,8 @@ jobs:
           python convert_world_record.py --check
           python validate_world_record.py
           python validate_floor_changes.py
+          python convert_terrain.py --check
+          python validate_terrain.py
           python ../validate_materialized_game_tree.py
 
       - name: Reader, converter and validator fixture tests
@@ -73,6 +77,7 @@ jobs:
           python test_world_record.py
           python test_floor_changes.py
           python test_islands.py
+          python test_terrain.py
 
       - name: Ruff check and format
         working-directory: .
@@ -87,8 +92,10 @@ jobs:
         run: test -z "$(git status --short --untracked-files=all)"
 
   # `convert_world_metadata.py --check`, `convert_world_base.py --check`,
-  # `convert_floor_changes.py --check` and `convert_islands.py --crystal-root` need the pinned
+  # `convert_floor_changes.py --check`, `convert_islands.py --crystal-root` and
+  # `convert_terrain.py --crystal-root` need the pinned
   # zimbadev/crystalserver checkout, which this repository's CI does not fetch; whoever
   # regenerates the families runs them locally and commits the output together with
   # samples/source-capture-v1.json, samples/world-base-capture-v1.json and
-  # samples/floor-changes-capture-v1.json.
+  # samples/floor-changes-capture-v1.json (`convert_terrain.py` also writes
+  # samples/terrain-capture-v1.json).
