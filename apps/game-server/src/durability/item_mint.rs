@@ -39,6 +39,7 @@ use super::item_mint_audit::{
     LOOT_MINT_TYPED_CAUSE, MintEventIdentity, OneItemGroundV1, OneItemMintV1, OneItemProvenanceV1,
     OneItemStateV1, OneItemTypedDefinitionRevisionV1, RL08_RETRY_WORK_UNITS_MAX,
 };
+use super::item_transfer_audit::OneItemContainerEntryV1;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
@@ -51,10 +52,6 @@ const INTENT_BINDING_VERSION: u8 = 1;
 const EVENT_TYPE_ID: i64 = audit::EVENT_TYPE_ID as i64;
 const EVENT_SCHEMA_REVISION: i64 = audit::EVENT_SCHEMA_REVISION as i64;
 
-// D3-1 is test-only: `commit_corpse_mint` and its supporting items below have
-// no production caller yet (D3-2's `combat/death_reward.rs` composes the
-// corpse-MINT-then-loot-MINT sequence and is a later, separate allocation).
-#[allow(dead_code)]
 /// DUR-03 §39.4 / D3 §4.1: the reserved sentinel `loot_purpose_key` naming a
 /// creature's own corpse MINT (always `draw_ordinal = 0`), never reused by an
 /// ordinary loot entry's own cause.
@@ -64,7 +61,6 @@ pub const CORPSE_MATERIALIZATION_PURPOSE_KEY: &str = "CORPSE_MATERIALIZATION";
 /// corpse projections per scope (`COMBAT01-CORPSES-PER-SCOPE`), enforced only
 /// at the corpse's own MINT commit under the per-scope `oteryn:corpse-cap:`
 /// advisory lock -- never re-decided here.
-#[allow(dead_code)]
 const COMBAT01_CORPSES_PER_SCOPE_MAX: i64 = 64;
 
 /// Equality on the full cause tuple, parameters `$1..$10`; never a hash.
@@ -194,6 +190,36 @@ pub struct GroundPlacement {
     pub native_room_placement_context: Vec<u8>,
 }
 
+/// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): a corpse container
+/// holds at most this many entries; a loot entry's `placement_ordinal` is
+/// `1..=` this.
+pub const CORPSE_CONTAINER_ENTRIES_MAX: u32 = 16;
+
+/// `Container { parent_item_instance_id = <the death's corpse>, entry }`
+/// (DUR-03 §39.4, D3 §4.1/§4.2): where a loot entry's own MINT establishes
+/// its fresh item instead of Ground.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CorpseContainerPlacement {
+    /// The committed corpse `ItemInstance` of the same death.
+    pub corpse_item_instance_id: [u8; 16],
+    /// `1..=CORPSE_CONTAINER_ENTRIES_MAX`; the caller assigns it so the
+    /// frozen audit event and the replayed cause always agree on it.
+    pub placement_ordinal: u32,
+}
+
+/// Complete semantic input of one loot MINT into a corpse container (D3-2).
+/// The corpse's own MINT stays an ordinary Ground [`ItemMintRequest`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CorpseLootMintRequest {
+    pub cause: ItemMintCause,
+    pub item: TypedDefinitionRef,
+    pub quantity: u32,
+    pub placement: CorpseContainerPlacement,
+    pub content_revision: String,
+    pub ruleset_revision: String,
+    pub sim_revision: String,
+}
+
 /// Complete semantic input of one Ground MINT.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemMintRequest {
@@ -213,6 +239,9 @@ pub struct ItemMintRequest {
 #[derive(Debug)]
 pub struct ItemMintCandidate {
     request: ItemMintRequest,
+    /// `Some` exactly for a corpse-loot MINT; `request.ground` is then an
+    /// unused empty placeholder that no validation, binding or insert reads.
+    corpse_entry: Option<CorpseContainerPlacement>,
     transaction_id: [u8; 16],
     event_id: [u8; 16],
     item_instance_id: [u8; 16],
@@ -390,8 +419,57 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         request: ItemMintRequest,
     ) -> Result<ItemMintCandidate> {
-        validate_request(&request)?;
-        let intent_binding = intent_binding(&request)?;
+        self.freeze_mint(authority, node, request, None).await
+    }
+
+    /// Freeze one loot MINT into a corpse container (DUR-03 §39.4, D3-2),
+    /// exactly like [`Self::freeze_item_mint`] except for its destination: a
+    /// new reservation is created only while the parent is a live corpse
+    /// `ItemInstance` of the same death. Commit it with
+    /// [`Self::commit_corpse_loot_mint`].
+    pub async fn freeze_corpse_loot_mint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: CorpseLootMintRequest,
+    ) -> Result<ItemMintCandidate> {
+        let CorpseLootMintRequest {
+            cause,
+            item,
+            quantity,
+            placement,
+            content_revision,
+            ruleset_revision,
+            sim_revision,
+        } = request;
+        let request = ItemMintRequest {
+            cause,
+            item,
+            quantity,
+            ground: GroundPlacement {
+                spatial_position: Vec::new(),
+                corpse_ref: Vec::new(),
+                map_revision: String::new(),
+                content_revision: String::new(),
+                native_room_placement_context: Vec::new(),
+            },
+            content_revision,
+            ruleset_revision,
+            sim_revision,
+        };
+        self.freeze_mint(authority, node, request, Some(placement))
+            .await
+    }
+
+    async fn freeze_mint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: ItemMintRequest,
+        corpse_entry: Option<CorpseContainerPlacement>,
+    ) -> Result<ItemMintCandidate> {
+        validate_request(&request, corpse_entry.as_ref())?;
+        let intent_binding = intent_binding(&request, corpse_entry.as_ref())?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemMintError::AuthorityRejected)?;
@@ -423,6 +501,11 @@ impl DurabilityRoot {
                     if !fence_is_live(&mut tx, &request.cause.death, &node).await? {
                         return Ok(Err(ItemMintError::AuthorityRejected));
                     }
+                    if let Some(entry) = &corpse_entry
+                        && !corpse_parent_is_live(&mut tx, &request.cause.death, entry).await?
+                    {
+                        return Ok(Err(ItemMintError::InvalidInput));
+                    }
                     let row = sqlx::query(
                         "SELECT game_character_uuid_v7()::text AS transaction_id, \
                                 game_character_uuid_v7()::text AS event_id, \
@@ -443,7 +526,7 @@ impl DurabilityRoot {
                             occurred_at_unix_ms,
                             server_build_id: SERVER_BUILD_ID,
                         },
-                        mint_message(&request, item_instance_id),
+                        mint_message(&request, corpse_entry.as_ref(), item_instance_id),
                     ) {
                         Ok(envelope) => envelope,
                         Err(error) => return Ok(Err(error.into())),
@@ -468,6 +551,7 @@ impl DurabilityRoot {
         let envelope_sha256 = Sha256::digest(&reservation.envelope).into();
         Ok(ItemMintCandidate {
             request,
+            corpse_entry,
             transaction_id: reservation.transaction_id,
             event_id: reservation.event_id,
             item_instance_id: reservation.item_instance_id,
@@ -563,6 +647,11 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         candidate: &mut ItemMintCandidate,
     ) -> Result<ItemMintOutcome> {
+        // A corpse-loot candidate commits only through its own path: this one
+        // writes a Ground location.
+        if candidate.corpse_entry.is_some() {
+            return Err(ItemMintError::InvalidInput);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemMintError::AuthorityRejected)?;
@@ -604,23 +693,7 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::ConflictingCandidate));
                     }
 
-                    let identity_reused: bool = sqlx::query_scalar(
-                        "SELECT EXISTS (SELECT 1 FROM game_item_mint_receipts \
-                                         WHERE transaction_id = encode($1,'hex')::uuid \
-                                            OR event_id = encode($2,'hex')::uuid \
-                                            OR item_instance_id = encode($3,'hex')::uuid) \
-                             OR EXISTS (SELECT 1 FROM game_item_audit_outbox \
-                                         WHERE transaction_id = encode($1,'hex')::uuid \
-                                            OR event_id = encode($2,'hex')::uuid) \
-                             OR EXISTS (SELECT 1 FROM game_item_instances \
-                                         WHERE item_instance_id = encode($3,'hex')::uuid)",
-                    )
-                    .bind(frozen.transaction_id.as_slice())
-                    .bind(frozen.event_id.as_slice())
-                    .bind(frozen.item_instance_id.as_slice())
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    if identity_reused {
+                    if mint_identity_reused(&mut tx, &frozen).await? {
                         return Ok(Err(ItemMintError::ConflictingCandidate));
                     }
 
@@ -670,9 +743,6 @@ impl DurabilityRoot {
     ///   §4.1 row 6; D3 §4.2) -- never a freeze-time-only count, so two
     ///   concurrent corpse commits for one scope can never both observe room
     ///   and both succeed.
-    // D3-2 is the production caller (a later, separate allocation); today
-    // only D3-1's own PG tests call this.
-    #[allow(dead_code)]
     pub async fn commit_corpse_mint(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -686,7 +756,7 @@ impl DurabilityRoot {
         // D3 §4.1: the corpse's own MINT is always draw_ordinal = 0, the
         // reserved sentinel ordinal no ordinary loot entry's own cause ever
         // uses; the DB's own CHECK (migration 0013) enforces this too.
-        if candidate.request.cause.draw_ordinal != 0 {
+        if candidate.request.cause.draw_ordinal != 0 || candidate.corpse_entry.is_some() {
             return Err(ItemMintError::InvalidInput);
         }
         audit::check_uuid_v7(&top_damage_character_id)?;
@@ -744,23 +814,7 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::ConflictingCandidate));
                     }
 
-                    let identity_reused: bool = sqlx::query_scalar(
-                        "SELECT EXISTS (SELECT 1 FROM game_item_mint_receipts \
-                                         WHERE transaction_id = encode($1,'hex')::uuid \
-                                            OR event_id = encode($2,'hex')::uuid \
-                                            OR item_instance_id = encode($3,'hex')::uuid) \
-                             OR EXISTS (SELECT 1 FROM game_item_audit_outbox \
-                                         WHERE transaction_id = encode($1,'hex')::uuid \
-                                            OR event_id = encode($2,'hex')::uuid) \
-                             OR EXISTS (SELECT 1 FROM game_item_instances \
-                                         WHERE item_instance_id = encode($3,'hex')::uuid)",
-                    )
-                    .bind(frozen.transaction_id.as_slice())
-                    .bind(frozen.event_id.as_slice())
-                    .bind(frozen.item_instance_id.as_slice())
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    if identity_reused {
+                    if mint_identity_reused(&mut tx, &frozen).await? {
                         return Ok(Err(ItemMintError::ConflictingCandidate));
                     }
 
@@ -783,6 +837,101 @@ impl DurabilityRoot {
                     }
 
                     insert_corpse_mint(&mut tx, &frozen, top_damage_character_id).await?;
+                    let committed = CommittedItemMint {
+                        transaction_id: frozen.transaction_id,
+                        event_id: frozen.event_id,
+                        item_instance_id: frozen.item_instance_id,
+                        occurred_at_unix_ms: frozen.occurred_at_unix_ms,
+                        envelope_sha256: frozen.envelope_sha256,
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(ItemMintOutcome::Committed(committed)))
+                })
+            })
+            .await?
+    }
+
+    /// Commit one frozen corpse-loot MINT (DUR-03 §39.4, child `D3-2`): the
+    /// loot item is established as a fresh `Container(parent = the death's
+    /// corpse)` entry, never on Ground and never through a TRANSFER. It
+    /// differs from [`Self::commit_item_mint`] only in what it is admitted for
+    /// and what it writes:
+    /// - admitted only for a candidate frozen by
+    ///   [`Self::freeze_corpse_loot_mint`];
+    /// - the parent must be a live corpse `ItemInstance` of the same death
+    ///   (also enforced by the migration 0013 consistency guard), else
+    ///   `InvalidInput`;
+    /// - the `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` ceiling and the
+    ///   corpse-row lock serializing concurrent entries are the migration's
+    ///   deferred `game_item_corpse_container_entry_proven` trigger;
+    /// - the D52 fence is checked exactly as for every other MINT: a death
+    ///   whose ownership generation ended is refused, never re-reserved.
+    pub async fn commit_corpse_loot_mint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        candidate: &mut ItemMintCandidate,
+    ) -> Result<ItemMintOutcome> {
+        let Some(placement) = candidate.corpse_entry else {
+            return Err(ItemMintError::InvalidInput);
+        };
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemMintError::AuthorityRejected)?;
+        self.charge_item_mint_work_unit(recovery.clone(), candidate)
+            .await?;
+        let frozen = FrozenMint::of(candidate);
+        let node = node.clone();
+
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    lock_cause(&mut tx, &frozen.request.cause).await?;
+
+                    if let Some(row) = load_receipt(&mut tx, &frozen.request.cause).await? {
+                        let stored: Vec<u8> = row.try_get("intent_binding")?;
+                        if stored != frozen.intent_binding {
+                            return Ok(Err(ItemMintError::ConflictingCause));
+                        }
+                        let committed = decode_receipt(&row)?;
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(ItemMintOutcome::AlreadyCommitted(committed)));
+                    }
+
+                    let Some(row) = load_reservation(&mut tx, &frozen.request.cause).await? else {
+                        return Ok(Err(ItemMintError::ConflictingCandidate));
+                    };
+                    let stored: Vec<u8> = row.try_get("intent_binding")?;
+                    if stored != frozen.intent_binding {
+                        return Ok(Err(ItemMintError::ConflictingCause));
+                    }
+                    let reservation = decode_reservation(&row)?;
+                    if reservation.transaction_id != frozen.transaction_id
+                        || reservation.event_id != frozen.event_id
+                        || reservation.item_instance_id != frozen.item_instance_id
+                    {
+                        return Ok(Err(ItemMintError::ConflictingCandidate));
+                    }
+                    if mint_identity_reused(&mut tx, &frozen).await? {
+                        return Ok(Err(ItemMintError::ConflictingCandidate));
+                    }
+
+                    // DUR-03 §32 / D52: the reservation's fence must be live.
+                    if !fence_matches(&reservation, &node)
+                        || !fence_is_live(&mut tx, &frozen.request.cause.death, &node).await?
+                    {
+                        return Ok(Err(ItemMintError::AuthorityRejected));
+                    }
+                    if !corpse_parent_is_live(&mut tx, &frozen.request.cause.death, &placement)
+                        .await?
+                    {
+                        return Ok(Err(ItemMintError::InvalidInput));
+                    }
+
+                    insert_corpse_loot_mint(&mut tx, &frozen, &placement).await?;
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
                         event_id: frozen.event_id,
@@ -874,17 +1023,31 @@ impl DurabilityRoot {
     }
 }
 
-fn validate_request(request: &ItemMintRequest) -> Result<()> {
+fn validate_request(
+    request: &ItemMintRequest,
+    corpse_entry: Option<&CorpseContainerPlacement>,
+) -> Result<()> {
     let cause = &request.cause;
     validate_definition(&cause.loot_table)?;
     audit::check_content_key(&cause.purpose_key)?;
     validate_definition(&request.item)?;
-    let ground = &request.ground;
-    audit::check_technical_bytes(&ground.spatial_position)?;
-    audit::check_technical_bytes(&ground.corpse_ref)?;
-    audit::check_content_key(&ground.map_revision)?;
-    audit::check_content_key(&ground.content_revision)?;
-    audit::check_technical_bytes(&ground.native_room_placement_context)?;
+    if let Some(entry) = corpse_entry {
+        // The corpse's own MINT is a Ground MINT (D3 §4.1); a loot entry never
+        // carries its reserved cause.
+        audit::check_uuid_v7(&entry.corpse_item_instance_id)?;
+        if cause.purpose_key == CORPSE_MATERIALIZATION_PURPOSE_KEY
+            || !(1..=CORPSE_CONTAINER_ENTRIES_MAX).contains(&entry.placement_ordinal)
+        {
+            return Err(ItemMintError::InvalidInput);
+        }
+    } else {
+        let ground = &request.ground;
+        audit::check_technical_bytes(&ground.spatial_position)?;
+        audit::check_technical_bytes(&ground.corpse_ref)?;
+        audit::check_content_key(&ground.map_revision)?;
+        audit::check_content_key(&ground.content_revision)?;
+        audit::check_technical_bytes(&ground.native_room_placement_context)?;
+    }
     audit::check_content_key(&request.content_revision)?;
     audit::check_content_key(&request.ruleset_revision)?;
     audit::check_content_key(&request.sim_revision)?;
@@ -918,7 +1081,10 @@ fn push_definition(out: &mut Vec<u8>, value: &TypedDefinitionRef) -> Result<()> 
 /// Digest of the complete business intent. Frozen identities and the trusted
 /// timestamp are excluded, so a re-frozen candidate of the same intent
 /// resolves to the original result instead of conflicting.
-fn intent_binding(request: &ItemMintRequest) -> Result<[u8; 33]> {
+fn intent_binding(
+    request: &ItemMintRequest,
+    corpse_entry: Option<&CorpseContainerPlacement>,
+) -> Result<[u8; 33]> {
     let cause = &request.cause;
     let death = &cause.death;
     let mut semantic = vec![INTENT_BINDING_VERSION];
@@ -933,17 +1099,30 @@ fn intent_binding(request: &ItemMintRequest) -> Result<[u8; 33]> {
     push_definition(&mut semantic, &request.item)?;
     semantic.extend_from_slice(&request.quantity.to_be_bytes());
     let ground = &request.ground;
-    for value in [
-        ground.spatial_position.as_slice(),
-        ground.corpse_ref.as_slice(),
-        ground.map_revision.as_bytes(),
-        ground.content_revision.as_bytes(),
-        ground.native_room_placement_context.as_slice(),
+    // A Ground MINT keeps its original byte layout, so every existing
+    // reservation and receipt binding stays valid.
+    let placement_fields: Vec<&[u8]> = match corpse_entry {
+        None => vec![
+            ground.spatial_position.as_slice(),
+            ground.corpse_ref.as_slice(),
+            ground.map_revision.as_bytes(),
+            ground.content_revision.as_bytes(),
+            ground.native_room_placement_context.as_slice(),
+        ],
+        Some(entry) => {
+            semantic.extend_from_slice(&entry.placement_ordinal.to_be_bytes());
+            vec![
+                b"corpse-container-entry".as_slice(),
+                entry.corpse_item_instance_id.as_slice(),
+            ]
+        }
+    };
+    for value in placement_fields.into_iter().chain([
         request.content_revision.as_bytes(),
         request.ruleset_revision.as_bytes(),
         request.sim_revision.as_bytes(),
         LOOT_MINT_TYPED_CAUSE.as_bytes(),
-    ] {
+    ]) {
         push_text(&mut semantic, value)?;
     }
     let digest: [u8; 32] = Sha256::digest(&semantic).into();
@@ -961,7 +1140,11 @@ fn definition_message(value: &TypedDefinitionRef) -> OneItemTypedDefinitionRevis
     }
 }
 
-fn mint_message(request: &ItemMintRequest, item_instance_id: [u8; 16]) -> OneItemMintV1 {
+fn mint_message(
+    request: &ItemMintRequest,
+    corpse_entry: Option<&CorpseContainerPlacement>,
+    item_instance_id: [u8; 16],
+) -> OneItemMintV1 {
     let death = &request.cause.death;
     let world = death.world_id.as_bytes().to_vec();
     let channel = death.channel_id.as_bytes().to_vec();
@@ -974,7 +1157,7 @@ fn mint_message(request: &ItemMintRequest, item_instance_id: [u8; 16]) -> OneIte
             quantity: request.quantity,
             lifecycle: ITEM_LIFECYCLE_LIVE,
         }),
-        destination: Some(OneItemGroundV1 {
+        destination: corpse_entry.is_none().then(|| OneItemGroundV1 {
             world_id: world.clone(),
             channel_id: channel.clone(),
             spatial_position: request.ground.spatial_position.clone(),
@@ -983,6 +1166,10 @@ fn mint_message(request: &ItemMintRequest, item_instance_id: [u8; 16]) -> OneIte
             content_revision: request.ground.content_revision.clone(),
             native_room_placement_context: request.ground.native_room_placement_context.clone(),
             runtime_scope_ownership_generation: generation,
+        }),
+        corpse_container_entry: corpse_entry.map(|entry| OneItemContainerEntryV1 {
+            parent_item_instance_id: entry.corpse_item_instance_id.to_vec(),
+            placement_ordinal: u64::from(entry.placement_ordinal),
         }),
         source: Some(OneItemProvenanceV1 {
             typed_cause: LOOT_MINT_TYPED_CAUSE.into(),
@@ -1174,7 +1361,6 @@ async fn fence_is_live(
 /// it. The count is authoritative only inside the same transaction as the
 /// corpse's own insert; an earlier `freeze_item_mint`-time count is advisory
 /// only (§39.4).
-#[allow(dead_code)]
 async fn corpse_cap_recount(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     death: &CreatureDeathKey,
@@ -1213,7 +1399,6 @@ async fn insert_mint(
 /// `materialized_at` is left NULL here; only the deferred
 /// `game_item_mint_receipt_materialize_corpse` trigger (migration 0013) ever
 /// writes it.
-#[allow(dead_code)]
 async fn insert_corpse_mint(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     frozen: &FrozenMint,
@@ -1229,24 +1414,7 @@ async fn insert_mint_with_corpse_attribution(
 ) -> std::result::Result<(), DurabilityError> {
     let request = &frozen.request;
     let death = &request.cause.death;
-    let world = death.world_id.as_bytes().as_slice();
-    let item = frozen.item_instance_id.as_slice();
-    sqlx::query(
-        "INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
-           definition_production_key, definition_revision_ref, quantity, lifecycle, \
-           minted_transaction_id) \
-         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, $4, $5, $6, 1, \
-           encode($7,'hex')::uuid)",
-    )
-    .bind(item)
-    .bind(world)
-    .bind(&request.item.family)
-    .bind(&request.item.production_key)
-    .bind(&request.item.revision_ref)
-    .bind(i64::from(request.quantity))
-    .bind(frozen.transaction_id.as_slice())
-    .execute(&mut **tx)
-    .await?;
+    insert_item_instance(tx, frozen).await?;
     sqlx::query(
         "INSERT INTO game_item_ground_locations(item_instance_id, world_id, channel_id, \
            runtime_scope_ownership_generation, spatial_position, corpse_ref, map_revision, \
@@ -1254,8 +1422,8 @@ async fn insert_mint_with_corpse_attribution(
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
            $4::text::numeric(20,0), $5, $6, $7, $8, $9)",
     )
-    .bind(item)
-    .bind(world)
+    .bind(frozen.item_instance_id.as_slice())
+    .bind(death.world_id.as_bytes().as_slice())
     .bind(death.channel_id.as_bytes().as_slice())
     .bind(death.scope_ownership_generation.get().to_string())
     .bind(request.ground.spatial_position.as_slice())
@@ -1265,20 +1433,85 @@ async fn insert_mint_with_corpse_attribution(
     .bind(request.ground.native_room_placement_context.as_slice())
     .execute(&mut **tx)
     .await?;
+    insert_receipt(tx, frozen, top_damage_character_id, None).await?;
+    insert_audit_outbox(tx, frozen).await
+}
+
+/// D3-2: a loot entry's MINT, identical to [`insert_mint`] except that the
+/// fresh item is established as `Container(parent = corpse)` entry
+/// `placement.placement_ordinal` instead of on Ground, and its receipt names
+/// that parent and ordinal (migration 0013).
+async fn insert_corpse_loot_mint(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    frozen: &FrozenMint,
+    placement: &CorpseContainerPlacement,
+) -> std::result::Result<(), DurabilityError> {
+    let death = &frozen.request.cause.death;
+    insert_item_instance(tx, frozen).await?;
+    sqlx::query(
+        "INSERT INTO game_item_corpse_container_entries(item_instance_id, world_id, \
+           parent_item_instance_id, placement_ordinal, placed_transaction_id) \
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
+           $4::text::numeric(20,0), encode($5,'hex')::uuid)",
+    )
+    .bind(frozen.item_instance_id.as_slice())
+    .bind(death.world_id.as_bytes().as_slice())
+    .bind(placement.corpse_item_instance_id.as_slice())
+    .bind(placement.placement_ordinal.to_string())
+    .bind(frozen.transaction_id.as_slice())
+    .execute(&mut **tx)
+    .await?;
+    insert_receipt(tx, frozen, None, Some(placement)).await?;
+    insert_audit_outbox(tx, frozen).await
+}
+
+async fn insert_item_instance(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    frozen: &FrozenMint,
+) -> std::result::Result<(), DurabilityError> {
+    let request = &frozen.request;
+    sqlx::query(
+        "INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
+           definition_production_key, definition_revision_ref, quantity, lifecycle, \
+           minted_transaction_id) \
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, $4, $5, $6, 1, \
+           encode($7,'hex')::uuid)",
+    )
+    .bind(frozen.item_instance_id.as_slice())
+    .bind(request.cause.death.world_id.as_bytes().as_slice())
+    .bind(&request.item.family)
+    .bind(&request.item.production_key)
+    .bind(&request.item.revision_ref)
+    .bind(i64::from(request.quantity))
+    .bind(frozen.transaction_id.as_slice())
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
+async fn insert_receipt(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    frozen: &FrozenMint,
+    top_damage_character_id: Option<[u8; 16]>,
+    corpse_entry: Option<&CorpseContainerPlacement>,
+) -> std::result::Result<(), DurabilityError> {
+    let request = &frozen.request;
+    let death = &request.cause.death;
     sqlx::query(
         "INSERT INTO game_item_mint_receipts(death_world_id, death_channel_id, \
            death_scope_ownership_generation, death_actor_local_id, \
            death_actor_local_generation, loot_table_family, loot_table_production_key, \
            loot_table_revision_ref, loot_purpose_key, draw_ordinal, intent_binding, \
            transaction_id, event_id, item_instance_id, occurred_at, envelope_sha256, \
-           committed_at, corpse_top_damage_character_id) \
+           committed_at, corpse_top_damage_character_id, \
+           destination_parent_item_instance_id, destination_ordinal) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3::text::numeric(20,0), $4, \
            $5::text::numeric(20,0), $6, $7, $8, $9, $10, $11, encode($12,'hex')::uuid, \
            encode($13,'hex')::uuid, encode($14,'hex')::uuid, $15, $16, \
            floor(extract(epoch FROM statement_timestamp())*1000)::bigint, \
-           encode($17,'hex')::uuid)",
+           encode($17,'hex')::uuid, encode($18,'hex')::uuid, $19::text::numeric(20,0))",
     )
-    .bind(world)
+    .bind(death.world_id.as_bytes().as_slice())
     .bind(death.channel_id.as_bytes().as_slice())
     .bind(death.scope_ownership_generation.get().to_string())
     .bind(i64::from(death.actor_local_id))
@@ -1291,12 +1524,21 @@ async fn insert_mint_with_corpse_attribution(
     .bind(frozen.intent_binding.as_slice())
     .bind(frozen.transaction_id.as_slice())
     .bind(frozen.event_id.as_slice())
-    .bind(item)
+    .bind(frozen.item_instance_id.as_slice())
     .bind(frozen.occurred_at_unix_ms)
     .bind(frozen.envelope_sha256.as_slice())
     .bind(top_damage_character_id.map(|value| value.to_vec()))
+    .bind(corpse_entry.map(|entry| entry.corpse_item_instance_id.to_vec()))
+    .bind(corpse_entry.map(|entry| entry.placement_ordinal.to_string()))
     .execute(&mut **tx)
     .await?;
+    Ok(())
+}
+
+async fn insert_audit_outbox(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    frozen: &FrozenMint,
+) -> std::result::Result<(), DurabilityError> {
     sqlx::query(
         "INSERT INTO game_item_audit_outbox(event_id, transaction_id, transaction_ordinal, \
            transaction_count, event_type_id, schema_revision, retention_profile_id, \
@@ -1310,13 +1552,71 @@ async fn insert_mint_with_corpse_attribution(
     .bind(EVENT_TYPE_ID)
     .bind(EVENT_SCHEMA_REVISION)
     .bind(audit::RETENTION_PROFILE_ID)
-    .bind(item)
+    .bind(frozen.item_instance_id.as_slice())
     .bind(frozen.occurred_at_unix_ms)
     .bind(audit::AUDIT_RETENTION_P90D_MS)
     .bind(frozen.envelope.as_slice())
     .execute(&mut **tx)
     .await?;
     Ok(())
+}
+
+/// The frozen identities already belong to a committed MINT, audit event or
+/// item: a different logical transaction must never reuse them.
+async fn mint_identity_reused(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    frozen: &FrozenMint,
+) -> std::result::Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_item_mint_receipts \
+                         WHERE transaction_id = encode($1,'hex')::uuid \
+                            OR event_id = encode($2,'hex')::uuid \
+                            OR item_instance_id = encode($3,'hex')::uuid) \
+             OR EXISTS (SELECT 1 FROM game_item_audit_outbox \
+                         WHERE transaction_id = encode($1,'hex')::uuid \
+                            OR event_id = encode($2,'hex')::uuid) \
+             OR EXISTS (SELECT 1 FROM game_item_instances \
+                         WHERE item_instance_id = encode($3,'hex')::uuid)",
+    )
+    .bind(frozen.transaction_id.as_slice())
+    .bind(frozen.event_id.as_slice())
+    .bind(frozen.item_instance_id.as_slice())
+    .fetch_one(&mut **tx)
+    .await?)
+}
+
+/// D3 §4.1: the parent of a corpse-loot MINT is the live corpse
+/// `ItemInstance` (still on Ground) that this exact death's own
+/// `CORPSE_MATERIALIZATION` MINT committed. The migration 0013 guard enforces
+/// the same at commit; this is the early, typed refusal.
+async fn corpse_parent_is_live(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    death: &CreatureDeathKey,
+    placement: &CorpseContainerPlacement,
+) -> std::result::Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS ( \
+           SELECT 1 FROM game_item_mint_receipts cr \
+             JOIN game_item_ground_locations cg ON cg.item_instance_id = cr.item_instance_id \
+             JOIN game_item_instances ci ON ci.item_instance_id = cr.item_instance_id \
+            WHERE cr.item_instance_id = encode($1,'hex')::uuid \
+              AND cr.loot_purpose_key = $2 \
+              AND cr.death_world_id = encode($3,'hex')::uuid \
+              AND cr.death_channel_id = encode($4,'hex')::uuid \
+              AND cr.death_scope_ownership_generation = $5::text::numeric(20,0) \
+              AND cr.death_actor_local_id = $6 \
+              AND cr.death_actor_local_generation = $7::text::numeric(20,0) \
+              AND ci.lifecycle = 1)",
+    )
+    .bind(placement.corpse_item_instance_id.as_slice())
+    .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+    .bind(death.world_id.as_bytes().as_slice())
+    .bind(death.channel_id.as_bytes().as_slice())
+    .bind(death.scope_ownership_generation.get().to_string())
+    .bind(i64::from(death.actor_local_id))
+    .bind(death.actor_local_generation.to_string())
+    .fetch_one(&mut **tx)
+    .await?)
 }
 
 fn decode_receipt(
@@ -1428,9 +1728,9 @@ mod tests {
 
     #[test]
     fn intent_binding_covers_the_whole_intent_and_every_cause_component() {
-        let base = intent_binding(&request()).expect("binding");
+        let base = intent_binding(&request(), None).expect("binding");
         assert_eq!(base[0], INTENT_BINDING_VERSION);
-        assert_eq!(intent_binding(&request()).expect("binding"), base);
+        assert_eq!(intent_binding(&request(), None).expect("binding"), base);
         let mutations: [fn(&mut ItemMintRequest); 8] = [
             |r| r.cause.death.actor_local_id = 8,
             |r| r.cause.death.actor_local_generation = 2,
@@ -1444,7 +1744,7 @@ mod tests {
         for mutate in mutations {
             let mut changed = request();
             mutate(&mut changed);
-            assert_ne!(intent_binding(&changed).expect("binding"), base);
+            assert_ne!(intent_binding(&changed, None).expect("binding"), base);
         }
     }
 
@@ -1453,40 +1753,106 @@ mod tests {
         let mut zero = request();
         zero.quantity = 0;
         assert!(matches!(
-            validate_request(&zero),
+            validate_request(&zero, None),
             Err(ItemMintError::InvalidInput)
         ));
         let mut generation = request();
         generation.cause.death.actor_local_generation = 0;
         assert!(matches!(
-            validate_request(&generation),
+            validate_request(&generation, None),
             Err(ItemMintError::InvalidInput)
         ));
         let mut long = request();
         long.cause.purpose_key = "p".repeat(513);
         assert!(matches!(
-            validate_request(&long),
+            validate_request(&long, None),
             Err(ItemMintError::InvalidInput)
         ));
         let mut max = request();
         max.cause.purpose_key = "p".repeat(512);
         max.ground.corpse_ref = vec![3; 128];
-        assert!(validate_request(&max).is_ok());
+        assert!(validate_request(&max, None).is_ok());
         let mut technical = request();
         technical.ground.corpse_ref = vec![3; 129];
         assert!(matches!(
-            validate_request(&technical),
+            validate_request(&technical, None),
             Err(ItemMintError::InvalidInput)
         ));
     }
 
     #[test]
     fn frozen_mint_message_is_admissible_and_in_the_death_scope() {
-        let message = mint_message(&request(), id(9));
+        let message = mint_message(&request(), None, id(9));
         audit::check_mint(&message).expect("admissible MINT");
         let ground = message.destination.expect("ground");
         assert_eq!(ground.world_id, id(1).to_vec());
         assert_eq!(ground.channel_id, id(2).to_vec());
         assert_eq!(ground.runtime_scope_ownership_generation, 1);
+    }
+
+    fn placement(ordinal: u32) -> CorpseContainerPlacement {
+        CorpseContainerPlacement {
+            corpse_item_instance_id: id(8),
+            placement_ordinal: ordinal,
+        }
+    }
+
+    #[test]
+    fn corpse_loot_binding_covers_parent_and_ordinal_and_differs_from_ground() {
+        let base = intent_binding(&request(), Some(&placement(1))).expect("binding");
+        assert_eq!(
+            intent_binding(&request(), Some(&placement(1))).expect("binding"),
+            base
+        );
+        assert_ne!(
+            intent_binding(&request(), Some(&placement(2))).expect("binding"),
+            base
+        );
+        let other_parent = CorpseContainerPlacement {
+            corpse_item_instance_id: id(9),
+            placement_ordinal: 1,
+        };
+        assert_ne!(
+            intent_binding(&request(), Some(&other_parent)).expect("binding"),
+            base
+        );
+        assert_ne!(intent_binding(&request(), None).expect("binding"), base);
+    }
+
+    #[test]
+    fn corpse_loot_placement_is_bounded_before_database_work() {
+        for ordinal in [1, CORPSE_CONTAINER_ENTRIES_MAX] {
+            assert!(validate_request(&request(), Some(&placement(ordinal))).is_ok());
+        }
+        for ordinal in [0, CORPSE_CONTAINER_ENTRIES_MAX + 1] {
+            assert!(matches!(
+                validate_request(&request(), Some(&placement(ordinal))),
+                Err(ItemMintError::InvalidInput)
+            ));
+        }
+        let mut reserved = request();
+        reserved.cause.purpose_key = CORPSE_MATERIALIZATION_PURPOSE_KEY.into();
+        assert!(matches!(
+            validate_request(&reserved, Some(&placement(1))),
+            Err(ItemMintError::InvalidInput)
+        ));
+        let bad_parent = CorpseContainerPlacement {
+            corpse_item_instance_id: [0; 16],
+            placement_ordinal: 1,
+        };
+        assert!(matches!(
+            validate_request(&request(), Some(&bad_parent)),
+            Err(ItemMintError::InvalidInput)
+        ));
+    }
+
+    #[test]
+    fn corpse_loot_message_has_a_container_destination_and_no_ground() {
+        let message = mint_message(&request(), Some(&placement(3)), id(9));
+        audit::check_mint(&message).expect("admissible corpse-loot MINT");
+        assert!(message.destination.is_none());
+        let entry = message.corpse_container_entry.expect("container entry");
+        assert_eq!(entry.parent_item_instance_id, id(8).to_vec());
+        assert_eq!(entry.placement_ordinal, 3);
     }
 }
