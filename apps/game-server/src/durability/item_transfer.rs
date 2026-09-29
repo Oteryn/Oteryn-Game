@@ -371,6 +371,16 @@ pub struct CharacterBackpack {
     pub entries: Vec<BackpackEntry>,
 }
 
+/// Where a live TRANSFER source currently is (D3-5). A live item is on at
+/// most one of these, and neither ever becomes the other: Ground items are
+/// never re-parented into a corpse, and corpse entries leave only by TRANSFER
+/// or decay, so a read here stays true until the item stops being a source.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ItemSourceLocation {
+    Ground,
+    CorpseEntry { corpse_item_instance_id: [u8; 16] },
+}
+
 /// Materialized D83 plan over the authoritative before-state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TransferPlan {
@@ -898,6 +908,64 @@ impl DurabilityRoot {
                     };
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(backpack))
+                })
+            })
+            .await?
+    }
+
+    /// D3-5: where the live item `item_instance_id` is as a TRANSFER source,
+    /// or `None` when it is neither live on Ground nor a direct entry of a
+    /// live corpse. Read-only; TRANSFER admission re-derives it under lock.
+    pub async fn read_item_source_location(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        item_instance_id: [u8; 16],
+    ) -> Result<Option<ItemSourceLocation>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemTransferError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let on_ground: bool = sqlx::query_scalar(
+                        "SELECT EXISTS (SELECT 1 FROM game_item_instances i \
+                                          JOIN game_item_ground_locations g \
+                                         USING (item_instance_id, world_id) \
+                                         WHERE i.item_instance_id = encode($1,'hex')::uuid \
+                                           AND i.lifecycle = 1)",
+                    )
+                    .bind(item_instance_id.as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    let location = if on_ground {
+                        Some(ItemSourceLocation::Ground)
+                    } else {
+                        let corpse: Option<String> = sqlx::query_scalar(
+                            "SELECT e.parent_item_instance_id::text \
+                               FROM game_item_instances i \
+                               JOIN game_item_corpse_container_entries e \
+                                 ON e.item_instance_id = i.item_instance_id \
+                                AND e.world_id = i.world_id \
+                               JOIN game_item_instances ci \
+                                 ON ci.item_instance_id = e.parent_item_instance_id \
+                                AND ci.lifecycle = 1 \
+                              WHERE i.item_instance_id = encode($1,'hex')::uuid \
+                                AND i.lifecycle = 1",
+                        )
+                        .bind(item_instance_id.as_slice())
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                        match corpse {
+                            Some(corpse) => Some(ItemSourceLocation::CorpseEntry {
+                                corpse_item_instance_id: uuid_text(&corpse)?,
+                            }),
+                            None => None,
+                        }
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(location))
                 })
             })
             .await?

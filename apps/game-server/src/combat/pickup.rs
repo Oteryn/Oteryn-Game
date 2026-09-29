@@ -19,6 +19,13 @@
 //! yet: GAME-INTERACTION's network dispatch (resolving `source_definition` from a live Ground
 //! listing, proving the CommandRef is still pending before commit) is a later admission stage.
 //!
+//! D3-5 ([`settle_corpse_pickup`], decision D134) is the same pickup with a corpse-container
+//! source: its caller names the corpse as well as the entry. Neither request trusts the family it
+//! names. Both read where the item currently is and refuse a mismatch (`SourceMismatch`), so a
+//! Ground request never takes a corpse entry and a corpse request never takes a Ground item or
+//! an entry of a different corpse. The D133 window and the corpse's own exclusion stay entirely
+//! in `durability::item_transfer`'s admission and its database guards.
+//!
 //! This is `crate::combat_pickup` (a top-level module, not `combat::pickup`): `combat.rs` is
 //! also recompiled standalone by `foundation/mod.rs`'s `#[cfg(test)] mod exact_actor_test_combat`
 //! and by PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not Content,
@@ -33,8 +40,8 @@ use crate::content::{
 };
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{
-    CurrentCharacterItemFence, ItemDefinitionFacts, ItemStackClass, ItemTransferDestination,
-    ItemTransferError, ItemTransferOutcome, ItemTransferRequest,
+    CurrentCharacterItemFence, ItemDefinitionFacts, ItemSourceLocation, ItemStackClass,
+    ItemTransferDestination, ItemTransferError, ItemTransferOutcome, ItemTransferRequest,
 };
 use crate::foundation::CommandRef;
 
@@ -161,11 +168,30 @@ pub(crate) struct GroundPickupRequest {
     pub(crate) sim_revision: String,
 }
 
+/// D3-5 corpse-container pickup intent: the [`GroundPickupRequest`] shape, with the source
+/// named as an entry of one corpse instead of a bare Ground item.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct CorpsePickupRequest {
+    pub(crate) command: CommandRef,
+    pub(crate) corpse_item_instance_id: [u8; 16],
+    /// The loot entry to take out of that corpse.
+    pub(crate) source_item_instance_id: [u8; 16],
+    /// As [`GroundPickupRequest::source_definition`].
+    pub(crate) source_definition: TypedDefinitionRef,
+    pub(crate) destination: ItemTransferDestination,
+    pub(crate) content_revision: String,
+    pub(crate) ruleset_revision: String,
+    pub(crate) sim_revision: String,
+}
+
 #[derive(Debug)]
 pub(crate) enum GroundPickupError {
     /// The claimed item, or (for `MainBackpack`) the currently equipped backpack, has no
     /// admissible Content definition.
     Content(PickupContentError),
+    /// The item is a live source, but not the one the request named: a Ground request for a
+    /// corpse entry, or a corpse request for a Ground item or another corpse's entry.
+    SourceMismatch,
     Transfer(ItemTransferError),
 }
 
@@ -179,6 +205,9 @@ impl std::fmt::Display for GroundPickupError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Content(error) => write!(formatter, "pickup content resolution: {error}"),
+            Self::SourceMismatch => {
+                formatter.write_str("pickup: the item is not at the source the request named")
+            }
             Self::Transfer(error) => write!(formatter, "pickup transfer: {error}"),
         }
     }
@@ -198,8 +227,52 @@ pub(crate) async fn settle_ground_pickup(
     fence: CurrentCharacterItemFence,
     request: GroundPickupRequest,
 ) -> Result<ItemTransferOutcome, GroundPickupError> {
+    settle_pickup(session, content, fence, ItemSourceLocation::Ground, request).await
+}
+
+/// D3-5 entry point: [`settle_ground_pickup`] for an entry of the named corpse. Whether the
+/// requester may take it yet (D133) is decided by the TRANSFER admission, not here.
+pub(crate) async fn settle_corpse_pickup(
+    session: &DurabilitySession<'_, '_, '_>,
+    content: &CanonicalReferencePlayableContent,
+    fence: CurrentCharacterItemFence,
+    request: CorpsePickupRequest,
+) -> Result<ItemTransferOutcome, GroundPickupError> {
+    let source = ItemSourceLocation::CorpseEntry {
+        corpse_item_instance_id: request.corpse_item_instance_id,
+    };
+    let request = GroundPickupRequest {
+        command: request.command,
+        source_item_instance_id: request.source_item_instance_id,
+        source_definition: request.source_definition,
+        destination: request.destination,
+        content_revision: request.content_revision,
+        ruleset_revision: request.ruleset_revision,
+        sim_revision: request.sim_revision,
+    };
+    settle_pickup(session, content, fence, source, request).await
+}
+
+async fn settle_pickup(
+    session: &DurabilitySession<'_, '_, '_>,
+    content: &CanonicalReferencePlayableContent,
+    fence: CurrentCharacterItemFence,
+    named_source: ItemSourceLocation,
+    request: GroundPickupRequest,
+) -> Result<ItemTransferOutcome, GroundPickupError> {
     let item = resolve_item_definition_facts(content, &request.source_definition)
         .map_err(GroundPickupError::Content)?;
+    // A live item at another source than the named one is refused. An item that is no longer
+    // a live source at all falls through, so a replayed command still finds its receipt and a
+    // stale one gets the TRANSFER's own `SourceNotOnGround`.
+    if let Some(current) = session
+        .root
+        .read_item_source_location(session.authority, request.source_item_instance_id)
+        .await?
+        && current != named_source
+    {
+        return Err(GroundPickupError::SourceMismatch);
+    }
     let backpack = match request.destination {
         ItemTransferDestination::ContainerSlot => None,
         ItemTransferDestination::MainBackpack => {

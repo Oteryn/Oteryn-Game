@@ -31,7 +31,7 @@ use crate::item_transfer_postgres_cases::{
 use std::time::Duration;
 
 /// A top-damage identity that is not any fenced Character of these cases.
-const OTHER_TOP: u8 = 150;
+pub(crate) const OTHER_TOP: u8 = 150;
 const SECOND_ACCOUNT: u8 = 60;
 const SECOND_CHARACTER: u8 = 61;
 const SECOND_SESSION: u8 = 62;
@@ -55,7 +55,7 @@ fn corpse_facts() -> ItemDefinitionFacts {
     }
 }
 
-/// The loot entry definition forged by `forge_loot_entry`.
+/// The loot entry definition `put_loot` forges.
 fn loot_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
         definition: typed("ItemType", "fixture:corpse-loot", "rev-1"),
@@ -195,7 +195,7 @@ async fn seed_second_character(pool: &sqlx::PgPool) -> TestResult {
 
 /// One corpse through the real D3-1 MINT path, its top-damage Character fixed
 /// at materialization. `actor` is the death's actor slot (unique per corpse).
-async fn mint_corpse(
+pub(crate) async fn mint_corpse(
     harness: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     actor: u32,
@@ -245,7 +245,18 @@ async fn mint_corpse(
 /// `corpse` (reservation, receipt, audit event, item and its corpse container
 /// entry), the same forged shape D3-1's own cases use. Occupies ids
 /// `seed..seed + 3`.
-fn forge_loot_entry(actor: u32, corpse: [u8; 16], ordinal: u64, seed: u8) -> Vec<String> {
+fn forge_loot_entry(
+    definition: &TypedDefinitionRef,
+    actor: u32,
+    corpse: [u8; 16],
+    ordinal: u64,
+    seed: u8,
+) -> Vec<String> {
+    let (family, key, revision) = (
+        &definition.family,
+        &definition.production_key,
+        &definition.revision_ref,
+    );
     let world = uuid_text(id(WORLD));
     let channel = uuid_text(id(CHANNEL));
     let corpse = uuid_text(corpse);
@@ -272,8 +283,7 @@ fn forge_loot_entry(actor: u32, corpse: [u8; 16], ordinal: u64, seed: u8) -> Vec
             "INSERT INTO game_item_instances \
                (item_instance_id, world_id, definition_family, definition_production_key, \
                 definition_revision_ref, quantity, lifecycle, minted_transaction_id) \
-             VALUES ('{item}', '{world}', 'ItemType', 'fixture:corpse-loot', 'rev-1', 1, 1, \
-                     '{tx}')"
+             VALUES ('{item}', '{world}', '{family}', '{key}', '{revision}', 1, 1, '{tx}')"
         ),
         format!(
             "INSERT INTO game_item_mint_receipts \
@@ -327,9 +337,29 @@ async fn put_loot(
     ordinal: u64,
     seed: u8,
 ) -> TestResult<[u8; 16]> {
+    put_loot_of(
+        harness,
+        &loot_facts().definition,
+        corpse,
+        actor,
+        ordinal,
+        seed,
+    )
+    .await
+}
+
+/// [`put_loot`] of a caller-chosen definition (D3-5: one Content can resolve).
+pub(crate) async fn put_loot_of(
+    harness: &Harness,
+    definition: &TypedDefinitionRef,
+    corpse: [u8; 16],
+    actor: u32,
+    ordinal: u64,
+    seed: u8,
+) -> TestResult<[u8; 16]> {
     run_statements(
         &harness.pool,
-        forge_loot_entry(actor, corpse, ordinal, seed),
+        forge_loot_entry(definition, actor, corpse, ordinal, seed),
     )
     .await?;
     Ok(id(seed))
@@ -338,7 +368,11 @@ async fn put_loot(
 /// Move a corpse's `materialized_at` to `age_ms` before the database's own
 /// clock now, outside the runtime guards (test-only time travel; the runtime
 /// itself can never write the column).
-async fn set_materialized_ago(harness: &Harness, corpse: [u8; 16], age_ms: i64) -> TestResult {
+pub(crate) async fn set_materialized_ago(
+    harness: &Harness,
+    corpse: [u8; 16],
+    age_ms: i64,
+) -> TestResult {
     harness
         .tamper(&format!(
             "UPDATE game_item_mint_receipts \
