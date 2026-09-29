@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: OTV2-20260929-content-combat-d113-d114-d116
-title: D113/D114 item semantics (rat corpse, backpack); D116 rat spawn scoped out as a schema gap
+title: D113/D114 item semantics blocked on a missing owner-decision promotion mechanism; D116 rat spawn scoped out
 mode: IMPLEMENT
-status: implementing
+status: blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/content-combat-d113-d114-d116
@@ -20,21 +20,6 @@ updated_at: 2026-09-29
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260929-content-combat-d113-d114-d116.md
-  - content/world/definitions/reference.json
-  - content/world/manifest.json
-  - content/world/project.json
-  - content/world/content.lock.json
-  - content/items/definitions/items-02500-02999.json
-  - content/items/definitions/items-05500-05999.json
-  - content/items/index.json
-  - content/content.lock.json
-  - content/abilities/definitions/index.json
-  - content/abilities/effects/index.json
-  - content/abilities/formulas/index.json
-  - content/behaviors/index.json
-  - content/creatures/definitions/index.json
-  - content/loot/index.json
-  - content/presentations/definitions/index.json
 public_contracts: []
 depends_on: []
 blocks: []
@@ -42,78 +27,88 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-## Product delta
+## Outcome
 
-**D114** (backpack `oteryn:item.registry.i00002752`): `semantics.equipment` KNOWN with
-one pattern (`pattern_id` 1, `primary_slot` KNOWN(`CONTAINER`), every other pattern field
-UNKNOWN); `stack_class` -> `NonStackable`; `materializable` -> `true`. Container capacity
-20 was already KNOWN and is unchanged.
+A first pass hand-edited `content/world/definitions/reference.json` directly and
+recomputed its pinned digests. The control plane rejected that route: the canonical
+package is materializer-owned and `g4-canonical-worldproject-package-seed` must stay
+green. Per instruction, all 15 content files touched by that pass were reverted back to
+byte-identical with the pre-edit tracked state (verified: `git diff HEAD~1` over
+`content/` is empty after the revert) and this record now reports a **STOP**: no
+existing mechanism accepts a plain owner-decided Item fact (`materializable`,
+`stack_class`, `semantics.equipment`) for an ordinary opaque registry item.
 
-**D113** (rat corpse `oteryn:item.registry.i00005801`): `materializable` -> `true`,
-`stack_class` -> `NonStackable`, `semantics.container` KNOWN capacity 16 (D3 decision
-#1198, `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX = 16`); no equipment pattern; every other
-semantics field UNKNOWN. The 60 s corpse decay was checked against the schema: the
-`semantics.temporal` group exists but its `decay_target` is a required transform target
-(item-to-item), which does not model a plain timed despawn and no target item was
-supplied by the decision, so it was left UNKNOWN rather than populated with an invented
-target.
+## Mechanisms checked
 
-**D116** (2 rats in the starting room, outside the accepted Movement proof path): out of
-scope, reported as a gap. The only spawn representation in the tree is
-`NativeEntrySpawn` inside `apps/game-server/src/content/project/native_entry_room.json`
-(`native_first_entry.spawn`) — a single, non-repeatable field. `native_entry.rs` validates
-an exact, hardcoded cell set (`accepted::CELLS`/`DOOR_CELL`) for that same room, where the
-only two `Walkable` cells (`entry-start`, `entry-east`) already form the Movement proof
-path, `entry-north` is `Blocked` by design, and `entry-door` is gated behind the door. The
-broader `content/world/worlds/world.json` (`OTERYN_WORLD_PROJECT_WORLDS/v2`) is still
-empty (`worlds: []`, `placements: []`) — no general WorldPlacement/spawn population
-exists elsewhere to attach a second spawn to. Adding a second rat or new walkable cells
-would require inventing/extending both the JSON schema and its Rust validator, which is
-out of the smallest-sufficient scope for this task. D113/D114 ship without it.
+- **Item semantic-promotion lowering v1** (#1155 `0d962e1`, `#1155`/`#1084`/`#1064`
+  lineage; `apps/game-server/src/content/cw2_b1_import.rs`
+  `protected_cw2_b1_item_semantic_promotion_lowering_v1_import` /
+  `apply_item_semantic_promotion`, packet
+  `docs/agents/evidence/OTV2-20260928-item-promotion-lowering-v1.json`). Confirmed by
+  reading the packet: it already carries `container.capacity=20` and
+  `presentation.name="backpack"` for `oteryn:item.registry.i00002752` (source_item_id
+  2854) — this is where D114's "capacity 20 is already known" comes from — and **zero**
+  rows for `oteryn:item.registry.i00005801`. It cannot carry D113/D114's remaining
+  facts: (a) it is strictly Crystal-`items.xml`-sourced, with the whole packet validated
+  against pinned source-repository/revision/artifact-digest lineage
+  (`source_engine == "crystal"`, `zimbadev/crystalserver@ff7ede5…`) — an owner decision
+  is not a Crystal fact and could not pass that lineage check; (b)
+  `decode_item_semantic_promotion_value`/`apply_item_semantic_promotion` only decode 9
+  field paths (`presentation.name`, `weapon.{attack,defense,extra_defense,hit_chance,range_cells}`,
+  `protection.armor`, `charges.count`, `container.capacity`) — `equipment.patterns` is
+  not one of them even though it is a listed destination in
+  `CW2_B1_ITEM_FIELD_DISPOSITIONS`; (c) `apply_item_semantic_promotion`'s signature is
+  `(&mut ReferenceItemSemantics, …)` — it cannot reach the enclosing record's
+  `materializable`/`stack_class`, which are `ProjectReferenceRecord::Item` fields, not
+  `semantics` fields.
+- **TibiaWiki wave1 enrichment** (`apps/game-server/examples/materialize_content_world_project_v2.rs`
+  `apply_wave1_fact`, evidence `ITEM_WAVE1_STAGED`): decodes exactly
+  `weapon.weapon_type`, `imbuement.slot_count`, `stack.stackable` (only `false`),
+  `trade_restrictions.marketable`. No `materializable`/`stack_class`/`container`/`equipment`
+  case; same `&mut ReferenceItemSemantics`-only signature problem.
+- **D11–D13 NPC offer-price decisions** (`#1159`/`#1124`, `populate_npcs`): a different
+  family (`NPC`/`Service.Trade` offers), driven by wiki-majority price computation, not
+  a route into `Item` `semantics`/`materializable`/`stack_class` at all.
+- **`tools/content-schema/item-authoring/owner-item-family-decisions.json`**: a real
+  owner ledger, but it records item-family *taxonomy* classification
+  (`profile`/`reason`/wiki citation) consumed into `content/items/taxonomy/items.json`
+  via `family_assignments`, not `Reference` semantics/`materializable`/`stack_class`.
+- **Baseline allocation** (`protected_cw2_b1_full_item_family_import`,
+  `cw2_b1_import.rs` ~L1643): every opaque `oteryn:item.registry.i*` record (38,093 of
+  38,157) is permanently seeded `materializable: false, stack_class: Unknown`. Only the
+  64-row `NATIVE_ITEM_BATCH` (hardcoded Rust constants, not a ledger) ever sets
+  `materializable: true` with an explicit `stack_class` for a *named* item. No pass in
+  `main()` (`materialize_content_world_project_v2.rs`) ever revisits an opaque item's
+  `materializable`/`stack_class` after that baseline.
 
-## Tooling used for the pinned digests
+## Smallest extension point (not implemented)
 
-`tools/content-migration/world_project_v2_to_tree.py` regenerates the successor
-`content/items/**` shard tree and family indices from `content/world/definitions/reference.json`.
-No repository tool regenerates `content/world/manifest.json` / `project.json` /
-`content.lock.json` from a live-edited `reference.json` (the seed example
-`apps/game-server/examples/materialize_content_world_project_v2.rs` rebuilds the whole
-WorldProject package from fixed, embedded, sha256-pinned evidence snapshots, not from the
-tracked file, and was not touched by this task). Its digest formula was recovered from
-`apps/game-server/src/content/production.rs` (`PackageManifestBinding::provenance_preimage`,
-a big-endian-u32-length-prefixed concatenation of `package_key`, `package_revision`,
-`semantic_schema_version`, `licensing_metadata`, `source_manifest_digest`, sha256'd) and
-`apps/game-server/src/content/project.rs`/`project/v2.rs` (`source_manifest_digest` = raw
-sha256 of `manifest.json`'s own bytes; `project.json`'s `manifest_sha256`/
-`content_lock_sha256` are raw sha256 of `manifest.json`/`content.lock.json`'s own bytes).
-The formula was verified by reproducing the pre-edit committed digests byte-for-byte
-before use, then applied by a small local script to recompute the four pinned digests
-after the `reference.json` edit. No digest was hand-typed.
+**File:** `apps/game-server/src/content/cw2_b1_import.rs`
+**Function:** a new function sibling to `apply_item_semantic_promotion` (defined next to
+it, ~L2110), operating on `&mut ProjectReferenceRecord::Item { materializable,
+stack_class, semantics, .. }` (the whole record, not just `semantics`) so it can also
+flip `materializable`/`stack_class`, plus a new `equipment.patterns` case either there or
+in `apply_item_semantic_promotion`. It would need its own pinned evidence packet
+(distinct from the Crystal-sourced `ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET`),
+keyed by `native_key` + `#162` comment id instead of Crystal `source_item_id`/lineage,
+validated the same rigorous way (exact byte length + sha256, ordered/unique rows,
+applied-partition counts) as `R7_P04_GOLD_COIN_EVIDENCE_PACKET`/the lowering packet, and
+called from `main()` in `apps/game-server/examples/materialize_content_world_project_v2.rs`
+after `populate_items`. This is reported only; it is not implemented.
 
-## Known CI gap
+## D116 (unchanged from the prior pass, still accepted as a gap)
 
-`g4-canonical-worldproject-package-seed.yml` (`content/world/**`) materializes the
-WorldProject package twice from `materialize_content_world_project_v2` and diffs it
-against the tracked `content/world/` (minus the 10 successor-tree directory markers).
-That materializer reconstructs the pre-edit `reference.json`/`manifest.json`/
-`project.json`/`content.lock.json` byte-for-byte (verified locally: `diff` against a
-freshly materialized package shows exactly those 4 files differing, and within
-`reference.json` exactly the 2 edited item records differ) because it does not know
-about this candidate's 2 field edits, which were authored directly rather than through a
-new admission/evidence batch. This candidate's `g4-canonical-worldproject-package-seed`
-run is therefore expected to fail its "Compare tracked package" step unless the control
-plane accepts a direct edit here, or a follow-up teaches the materializer example about
-it. `content-tree-migration.yml`'s two validators, `validate_materialized_game_tree.py`,
-`cargo test --lib content`, and the three `content_world_project_*`/`content_world_cw2_b1_import`
-integration tests were run locally and pass.
+2 rats outside the Movement proof path is scoped out. The only spawn representation is
+`NativeEntrySpawn` in `apps/game-server/src/content/project/native_entry_room.json`
+(`native_first_entry.spawn`) — a single, non-repeatable field whose room's cell set
+(`native_entry.rs` `accepted::CELLS`/`DOOR_CELL`) is hardcoded and exactly validated; the
+two `Walkable` cells (`entry-start`, `entry-east`) already are the proof path, and the
+general `content/world/worlds/world.json` WorldPlacement tree is still empty
+(`worlds: []`, `placements: []`).
 
-## Validation and custody
+## Validation
 
-One writer on one exclusively allocated branch, direct hand-edit + digest recompute,
-canonical compact-JSON serialization preserved and round-trip verified before editing.
-`tools/content-migration/{test,validate}_world_project_v2_to_tree.py`,
-`tools/content-schema/validate_materialized_game_tree.py`,
-`tools/agents/validate_governance.py`, `git diff --check`, `cargo test --lib content`,
-and the `content_world_project_repository`/`content_world_project_v2`/
-`content_world_cw2_b1_import` integration tests all pass locally. No PR opened per the
-control-plane task; branch pushed for the coordinator to pick up.
+`git diff HEAD~1 -- content/` is empty (exact revert of the earlier hand-edit).
+`tools/agents/validate_governance.py` and `git diff --check` pass. No content, tree, or
+digest changes remain in this candidate; nothing else was run since there is no
+substantive delta to validate this round.
