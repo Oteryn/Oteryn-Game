@@ -193,3 +193,10 @@ remaining_unknowns:
   - whether an intermediate fail-closed build ships before the Platform endpoint
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates N1 and N2; N4 waits for the accepted N4-P Platform contract, N8 goes to the protocol lane."
 ```
+
+## Notes
+
+Factual notes added 2026-09-29 by `OTV2-20260929-n4p-contract-game`. They change no decision above.
+
+- **"#1083" is a wrong reference.** PR #1083 is the closed tibia.com capture tool, not a game-gate change. N5 landed alone through PR #1275; the "game-gate fan-in" batch partner named in §1, §7 (N5) and the handback is unidentified.
+- **N4-P contract.** The Platform Game Gateway contract candidate is `docs/contracts/OTERYN_V2_NATIVE_GATEWAY_LOGIN_CONTRACT.md` in Oteryn/Oteryn-Platform (PR #1420, Issue #1419), pending in `docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json`. Game-side companion candidates: `docs/contracts/OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md` and `docs/contracts/OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md`. N4 stays blocked until that contract is accepted.
