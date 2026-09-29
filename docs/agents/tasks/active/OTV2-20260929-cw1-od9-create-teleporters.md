@@ -80,8 +80,9 @@ This task implements §10.2 and §10.4 of
   from the new kill. There is no second object and no second record. In `world_object_revert.rs`:
   - `select_open_create` finds the timed CREATE forward whose target is the current state. It is
     `None` for any TRANSFORM forward, so the duke keeps owner decision 3's no-op.
-  - `ScopeRevertDriver::rearm_open_create` runs the D91 owner check (`check_scope_owner`) first. It
-    then finds the unique `PENDING` record that matches the placement, incarnation, content
+  - `ScopeRevertDriver::rearm_open_create` first applies the same runtime scope and scope-generation
+    fence as `apply_scope_operation` (the shared `LocalObjectRuntime::check_scope_fence`; #1204
+    review P1 4130255100), then the D91 owner check (`check_scope_owner`). It then finds the unique `PENDING` record that matches the placement, incarnation, content
     generation, scope generation, inverse, owner, current state and revision. It mints one ordinal
     for the accepted re-kill, and moves the record's deadline and scheduling ordinal to now plus
     `revert_after_ms`.
@@ -125,6 +126,11 @@ This task implements §10.2 and §10.4 of
     states. A foreign owner's create, remove and re-arm are refused with `EventOwnerMismatch`,
     with no ordinal, record or deadline change.
   - `a_re_kill_without_one_pending_revert_fails_closed_and_the_duke_keeps_its_no_op`.
+  - `a_re_arm_with_a_runtime_from_another_scope_or_a_stale_generation_is_refused` (#1204 review
+    P1): a runtime at the same placement, incarnation, content generation, state and revision but
+    from another channel scope (`StaleRuntimeScope`) or a stale scope generation
+    (`StaleScopeOwnershipGeneration`) is refused, with no ordinal, deadline, record or state change
+    on either side; the driver's own runtime still re-arms.
 - The existing duke and §9 tests are unchanged, apart from the `absent: false` literals.
 
 ## Excluded scope
@@ -152,5 +158,5 @@ The results are in the PR.
 
 ## Context checkpoint
 
-last_progress: implemented and validated locally; PR #1204 opened for CI and review
+last_progress: #1204 review P1 4130255100 fixed (scope/generation fence on the re-arm); returned to AUTHORING, awaiting coordinator freeze
 jira: pending (no mapped Story resolved in this worker session)

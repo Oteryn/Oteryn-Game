@@ -543,8 +543,9 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     /// `WOBJ-RL-04` is unaffected. `create` is `select_open_create`'s edge; `owner` is the
     /// executing event's own owner, checked against the edge as for `apply_forward` (D91). The
     /// re-kill is one accepted scope input, so it mints one ordinal, which orders the re-armed
-    /// deadline. Returns the re-armed record. No matching `PENDING` record fails closed with
-    /// nothing changed.
+    /// deadline. Returns the re-armed record. A runtime bound under another scope or scope
+    /// generation (`StaleRuntimeScope`/`StaleScopeOwnershipGeneration`), or no matching `PENDING`
+    /// record, fails closed with nothing changed.
     pub(crate) fn rearm_open_create(
         &mut self,
         runtime: &LocalObjectRuntime,
@@ -555,6 +556,12 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
         if self.scope_terminal {
             return Err(RevertError::ScopeTerminal);
         }
+        let generation = self.issuer.generation();
+        // The same scope and generation fence as `apply_scope_operation` (#1204 review): a runtime
+        // bound under another scope or scope generation never re-arms this driver's record.
+        runtime
+            .check_scope_fence(self.scope, generation)
+            .map_err(RevertError::Runtime)?;
         let operation = ScopeLocalObjectOperation::new(
             runtime.placement_key().clone(),
             runtime.incarnation(),
@@ -574,7 +581,6 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
                 "re-armed transition is not timed for this action at this placement",
             )));
         };
-        let generation = self.issuer.generation();
         let mut open = self
             .records
             .iter()
@@ -1162,9 +1168,28 @@ mod tests {
         transitions: &[&str],
         incarnation: u64,
     ) -> Result<LocalObjectRuntime, WorldRuntimeError> {
-        let fence = ScopeContentGenerationFence::for_test(
+        bind_in(
+            content,
+            placement,
+            transitions,
+            incarnation,
             scope()?,
             generation(1)?,
+        )
+    }
+
+    /// `bind_at` under an explicit scope and scope generation.
+    fn bind_in(
+        content: &CanonicalReferencePlayableContent,
+        placement: &PlacementKey,
+        transitions: &[&str],
+        incarnation: u64,
+        scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+    ) -> Result<LocalObjectRuntime, WorldRuntimeError> {
+        let fence = ScopeContentGenerationFence::for_test(
+            scope,
+            scope_generation,
             ReferenceContentGeneration::from_content(content)?,
         );
         let keys = transitions
@@ -1175,8 +1200,8 @@ mod tests {
         LocalObjectRuntime::bind(
             content,
             &fence,
-            scope()?,
-            generation(1)?,
+            scope,
+            scope_generation,
             placement,
             incarnation,
             &keys,
@@ -1205,6 +1230,20 @@ mod tests {
             Arc::new(clock.clone()),
             limits,
         ))
+    }
+
+    /// A registered-limits driver owned by `scope` at `scope_generation`.
+    fn driver_in(
+        clock: &ManualClock,
+        scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+    ) -> ScopeRevertDriver<TestIssuer> {
+        ScopeRevertDriver::new(
+            scope,
+            TestIssuer::new(scope_generation),
+            Arc::new(clock.clone()),
+            RevertDriverLimits::registered(),
+        )
     }
 
     /// A scope operation executed by the fixture event that owns `transition`: the timed
@@ -2995,6 +3034,125 @@ mod tests {
             assert_eq!(fired, &id);
             assert!(outcome.committed());
             assert_eq!(state_of(&od9.runtimes, anchor.as_str())?, at(&absent, 2));
+        }
+        Ok(())
+    }
+
+    /// `od9_bound`, re-bound under `scope` at `scope_generation` and opened by its own driver.
+    fn od9_open_in(
+        clock: &ManualClock,
+        key: &str,
+        encounter: &str,
+        scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+    ) -> TestResult<(ScopeRevertDriver<TestIssuer>, Od9, ChildOccurrenceRef)> {
+        let mut od9 = od9_bound(key, encounter)?;
+        let runtime = bind_in(
+            &od9.content,
+            &od9.anchor,
+            &[&od9.create, &od9.remove],
+            1,
+            scope,
+            scope_generation,
+        )?;
+        od9.runtimes.insert(od9.anchor.clone(), runtime);
+        let mut driver = driver_in(clock, scope, scope_generation);
+        let id = opened(od9_kill(
+            &mut driver,
+            &mut od9,
+            key,
+            &format!("{key}/death/1"),
+        )?)?;
+        Ok((driver, od9, id))
+    }
+
+    /// #1204 review (P1): `foreign` is an open teleporter at the same placement, incarnation,
+    /// content generation, state and revision as the one `driver` scheduled `id` for, but bound
+    /// under another scope or scope generation. Its re-arm is refused with `expected`, and
+    /// nothing changes on either side.
+    fn assert_foreign_re_arm_refused(
+        driver: &mut ScopeRevertDriver<TestIssuer>,
+        (key, od9, id): (&str, &Od9, &ChildOccurrenceRef),
+        foreign: &Od9,
+        expected: &WorldRuntimeError,
+    ) -> TestResult {
+        let runtime = foreign
+            .runtimes
+            .get(&foreign.anchor)
+            .ok_or(fixture("foreign runtime"))?;
+        let (minted, deadline, records) = (
+            driver.issuer().minted,
+            driver.next_deadline(),
+            driver.record_count(),
+        );
+        let lifecycle = driver.lifecycle(id).cloned();
+        match driver.rearm_open_create(
+            runtime,
+            &LoweredActionId::new(&od9.action)?,
+            &TransitionKey::new(&od9.create)?,
+            &TransitionEventOwner::new(key)?,
+        ) {
+            Err(RevertError::Runtime(ref error))
+                if std::mem::discriminant(error) == std::mem::discriminant(expected) => {}
+            other => return Err(format!("expected {expected:?}, got {other:?}").into()),
+        }
+        assert_eq!(driver.issuer().minted, minted);
+        assert_eq!(driver.next_deadline(), deadline);
+        assert_eq!(driver.record_count(), records);
+        assert_eq!(driver.lifecycle(id).cloned(), lifecycle);
+        assert_eq!(
+            state_of(&od9.runtimes, od9.anchor.as_str())?,
+            at(SEALED_ITEM, 1)
+        );
+        assert_eq!(
+            state_of(&foreign.runtimes, foreign.anchor.as_str())?,
+            at(SEALED_ITEM, 1)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_re_arm_with_a_runtime_from_another_scope_or_a_stale_generation_is_refused() -> TestResult {
+        let other_scope =
+            RuntimeScopeRefV1::channel(world(1)?, ChannelId::decode(&uuid_v7(4)).map_err(fixture)?);
+        for (key, _, encounter) in OD9_SAMPLES {
+            let clock = ManualClock::new(Moment::ZERO);
+
+            // A runtime from a different scope: another channel of the same world.
+            let (mut driver, od9, id) =
+                od9_open_in(&clock, key, encounter, scope()?, generation(1)?)?;
+            let (_, foreign, _) = od9_open_in(&clock, key, encounter, other_scope, generation(1)?)?;
+            assert_foreign_re_arm_refused(
+                &mut driver,
+                (key, &od9, &id),
+                &foreign,
+                &WorldRuntimeError::StaleRuntimeScope,
+            )?;
+
+            // A runtime from a stale scope generation: bound at generation 1 while this driver
+            // owns the scope at generation 2.
+            let (mut driver, od9, id) =
+                od9_open_in(&clock, key, encounter, scope()?, generation(2)?)?;
+            let (_, stale, _) = od9_open_in(&clock, key, encounter, scope()?, generation(1)?)?;
+            assert_foreign_re_arm_refused(
+                &mut driver,
+                (key, &od9, &id),
+                &stale,
+                &WorldRuntimeError::StaleScopeOwnershipGeneration,
+            )?;
+
+            // The driver's own runtime still re-arms its record.
+            clock.advance(millis(60_000))?;
+            let runtime = od9.runtimes.get(&od9.anchor).ok_or(fixture("runtime"))?;
+            assert_eq!(
+                driver.rearm_open_create(
+                    runtime,
+                    &LoweredActionId::new(&od9.action)?,
+                    &TransitionKey::new(&od9.create)?,
+                    &TransitionEventOwner::new(key)?,
+                )?,
+                id
+            );
         }
         Ok(())
     }

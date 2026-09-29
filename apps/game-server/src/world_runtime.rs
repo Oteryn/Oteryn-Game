@@ -1144,6 +1144,23 @@ impl LocalObjectRuntime {
         }
     }
 
+    /// The runtime scope and scope-ownership-generation fence of a scope operation: the caller's
+    /// scope owner must be the one this runtime was bound under. Reads only; `apply_scope_operation`
+    /// runs it first, and the §7 driver runs it before a Q2=b re-arm mints an ordinal.
+    pub(crate) fn check_scope_fence(
+        &self,
+        scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+    ) -> Result<(), WorldRuntimeError> {
+        if scope != self.scope {
+            return Err(WorldRuntimeError::StaleRuntimeScope);
+        }
+        if scope_generation != self.scope_generation {
+            return Err(WorldRuntimeError::StaleScopeOwnershipGeneration);
+        }
+        Ok(())
+    }
+
     fn is_player_use(&self, transition: &TransitionKey) -> bool {
         !self.event_transitions.contains_key(transition)
     }
@@ -1509,12 +1526,7 @@ impl LocalObjectRuntime {
         capability: Option<&RevertSchedulingCapability>,
         stage_publish: impl FnOnce(&ScopePublish<'_>) -> Result<(), E>,
     ) -> Result<Result<TerminalSemanticOutcome, E>, WorldRuntimeError> {
-        if scope != self.scope {
-            return Err(WorldRuntimeError::StaleRuntimeScope);
-        }
-        if scope_generation != self.scope_generation {
-            return Err(WorldRuntimeError::StaleScopeOwnershipGeneration);
-        }
+        self.check_scope_fence(scope, scope_generation)?;
         self.check_scope_owner(operation)?;
         if capability.is_none() && self.carries_revert(operation.transition_key()) {
             return Err(WorldRuntimeError::InvalidBinding(
