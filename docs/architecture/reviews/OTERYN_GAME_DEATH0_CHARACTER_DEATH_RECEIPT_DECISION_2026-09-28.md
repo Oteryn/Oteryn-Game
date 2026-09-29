@@ -14,7 +14,8 @@
   implementation allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 - Amended by A13 (`OTERYN_GAME_A13_CHARACTER_BUILD_STATE_DECISION_2026-09-29.md` §4.6): §3.1
-  death receipt build fields
+  death receipt build fields. The amendment takes effect only when A13 is accepted. The chain now
+  has further kinds (stance, build) beyond the two named in §3.1.
 
 ## 1. Question
 
@@ -170,6 +171,7 @@ implementation_lanes: [DEATH-0, DEATH-1]
 required_revalidation:
   - "DEATH-0: a death receipt lowers experience and advances the revision; an XP receipt still requires a strict increase; mixed chains XP → death → XP pass; a gap, a duplicate revision or a before/after mismatch across kinds fails the deferred guard; death receipts are immutable and untruncatable"
   - "DEATH-1: a retry with the same occurrence and binding returns the first receipt; the same occurrence with a changed policy or input conflicts even when the stored outputs would match; a stale fence writes nothing; an XP award and a death serialize without deadlock"
+  - "DEATH ML loss child (A13 §4.6): a death with NULL build fields keeps the version 1 binding and leaves the build row; a death with non-NULL fields strictly lowers (magic_level, mana_spent), updates the build row in the same revision and joins the build chain"
   - "DEATH-1: a restart after the death commits and before respawn places the character at the recorded temple on the next admission and deletes the pending row once; a death receipt carries the death cell a resumed DEATH-3 workflow reads"
 remaining_unknowns:
   - Character position persistence

@@ -118,6 +118,11 @@ persistence review.
     3. W2b measures guard latency against chain length (§4.5 "Growth").
     4. One session orders its own Character commits (§4.2 "Writer").
     5. `0017` is merged (`878f6fad`); CHAR-BUILD-1 is `0018`.
+    6. Read-only `oteryn-hard-worker` self-review of this repair: its material finding (no
+       before/after chain across build-carrying receipts) is fixed by §4.2 "Build chain". Also
+       added: the row-guard placement and the revision-1 list; the flush failure paths; the death
+       binding version; the death build-field CHECKs; and "training is not enabled in production
+       before the DEATH ML loss child".
   - Re-review of the successor head goes through the control plane.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
