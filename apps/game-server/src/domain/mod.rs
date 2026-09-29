@@ -1,6 +1,7 @@
 //! Protocol- and persistence-neutral Character and Item semantic core.
 
 pub mod death;
+pub mod premium;
 pub mod progression;
 
 use std::collections::{BTreeMap, BTreeSet};
