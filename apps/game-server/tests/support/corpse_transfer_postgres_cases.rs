@@ -83,6 +83,23 @@ fn fence_of(character: u8, session: u8) -> TestResult<CurrentCharacterItemFence>
     })
 }
 
+/// The second Character's bootstrap command binding (source revision 2).
+fn second_bootstrap_binding() -> Vec<u8> {
+    let mut binding = vec![1];
+    binding.extend_from_slice(&id(63));
+    binding.extend_from_slice(&2_i64.to_be_bytes());
+    binding.extend_from_slice(&id(64));
+    binding.extend_from_slice(&id(SECOND_ACCOUNT));
+    binding.extend_from_slice(&id(WORLD));
+    binding.extend_from_slice(&1_i64.to_be_bytes());
+    binding.extend_from_slice(&120_i64.to_be_bytes());
+    for value in ["profile-1", "ruleset-1", "content-1", "starter-1"] {
+        binding.extend_from_slice(&u16::try_from(value.len()).expect("length").to_be_bytes());
+        binding.extend_from_slice(value.as_bytes());
+    }
+    binding
+}
+
 /// A second player in the same World and Channel: Character 61 (account 60)
 /// with an active GameSession 62, its admission guards and nothing else; the
 /// runtime-scope assignment and readiness are the harness's, shared.
@@ -99,6 +116,39 @@ async fn seed_second_character(pool: &sqlx::PgPool) -> TestResult {
     .bind(id(SECOND_CHARACTER).as_slice())
     .bind(id(SECOND_ACCOUNT).as_slice())
     .bind(id(WORLD).as_slice())
+    .execute(pool)
+    .await?;
+    // `open_character_authority` verifies Character integrity: every root needs
+    // its bootstrap receipt, and the single intent floor must name the receipt
+    // with the highest source revision (here 2, advancing the harness's 1).
+    let binding = second_bootstrap_binding();
+    sqlx::query(
+        "INSERT INTO game_character_operation_receipts(\
+           operation_id,command_binding,account_id,character_id,world_id,character_revision,\
+           event_id,occurred_at,server_build_id,transaction_id,issuer_decision_id,\
+           intent_source_revision,issued_at_source,expires_at_source) \
+         VALUES (encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,\
+           encode($5,'hex')::uuid,1,encode($6,'hex')::uuid,1,'test/1',\
+           encode($7,'hex')::uuid,encode($8,'hex')::uuid,2,1,120)",
+    )
+    .bind(id(64).as_slice())
+    .bind(&binding)
+    .bind(id(SECOND_ACCOUNT).as_slice())
+    .bind(id(SECOND_CHARACTER).as_slice())
+    .bind(id(WORLD).as_slice())
+    .bind(id(65).as_slice())
+    .bind(id(66).as_slice())
+    .bind(id(63).as_slice())
+    .execute(pool)
+    .await?;
+    sqlx::query(
+        "UPDATE game_character_bootstrap_intent_floors \
+            SET source_revision = 2, issuer_decision_id = encode($1,'hex')::uuid, \
+                intent_binding = $2 \
+          WHERE issuer_scope = 1",
+    )
+    .bind(id(63).as_slice())
+    .bind(&binding)
     .execute(pool)
     .await?;
     sqlx::query(
