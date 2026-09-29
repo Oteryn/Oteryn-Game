@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/rune/sudden_death_rune",
-      "revision": "spell-p2-r11"
+      "revision": "spell-p2-r12"
     },
     "name": "sudden death rune",
     "carrier": "rune",
@@ -58,7 +58,7 @@
       "item": {
         "family": "Item",
         "key": "candidate:item/3155",
-        "revision": "spell-p2-r11"
+        "revision": "spell-p2-r12"
       },
       "charges": 3,
       "magic_level": 15,
@@ -72,7 +72,7 @@
       "ability": {
         "family": "Ability",
         "key": "candidate:ability/spell/rune/sudden_death_rune",
-        "revision": "spell-p2-r11"
+        "revision": "spell-p2-r12"
       }
     }
   }

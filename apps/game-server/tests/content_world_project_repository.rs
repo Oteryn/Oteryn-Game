@@ -17,12 +17,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "2e166b8b00d8cf065adf6ad4012fe840f2d9dc1b8aef9241426a4c37e520dc1c",
+        "68e50e6fca0c08da7ed49b1ea2f68ce08ecc320e837bfe4c16750c2a84e9bc33",
     ),
     (
         "definitions/declarations.json",
-        14_875_551,
-        "36e70ed06836128d443527c1f70ce75c4a9f8d7a96c8fa1ec0f046e174f04a4b",
+        14_875_562,
+        "ee06078f127ba0fc1bd2002e0fd67c59b5b22c6f6d972aaa70145c7c0e334141",
     ),
     (
         "definitions/reference.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1937,
-        "7b9df621a1bd1fef6717ec849cf49f8d795226c15aa5f7044e01bd90dee75133",
+        "5a717a64adfe78546a858e2131682a91a87b9ce965d7f283465fcfe7e219b531",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "4378da499a1355e1feb036514fc5f7a18fb4d487552d3cf00401287ef107be13",
+        "279969b29ac27bf8879e2b9188a091594f9d6d1ad97eca3e4e7ffebd93fda25a",
     ),
     (
         "provenance/imports.json",
         30_006,
-        "6ee87cc5a40c1409de4e36ac952bfc171a53390691df3fd0934b2ba6e86296e6",
+        "67463b0da2413a2f79cb4640370439b633f512cd6402dacccd3c77479f7968eb",
     ),
     (
         "provenance/sources.json",
         1_285_736,
-        "a38451ef1e18dd330e2270d3408c00d7c75e5528aa9320c15d257b64d5cb8564",
+        "8565f02a2b8821f8d2b0fbbce8a2ac790b434a23629c163306f6f34cb624d950",
     ),
     (
         "worlds/world.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "90b85df9dbb671bddf620de06600fcee3e33c0b13dc804f9fa5e61d890fb6399";
+const TREE_SHA256: &str = "81d057f236866988351e92784b7476bf63a105af7ba8d90dce94d08a6fa7e81e";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).

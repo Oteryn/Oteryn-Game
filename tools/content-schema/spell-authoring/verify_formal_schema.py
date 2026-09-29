@@ -153,6 +153,7 @@ REGENERATION = {'type': 'regeneration', 'lifetime': 'fixed_duration', 'buff_spel
                 'regeneration': {'health_gain': 20, 'health_interval_ms': 3000}}
 VALID_MUTATIONS = {'light condition': condition_effect(LIGHT), 'regeneration condition': condition_effect(REGENERATION),
                    'library text': case('light_healing', 'spell', ('library_text',), 'A basic healing spell.', None),
+                   'harmony role': case('light_healing', 'spell', ('harmony_role',), 'builder', None),
                    'cast at position': case('light_healing', 'spell', ('targeting', 'cast_at_position'), True, None),
                    'aim at target': mutate('light_healing', lambda spell, deps: spell['targeting'].update(
                        needs_direction=True, aim_at_target=True), None)}
@@ -218,6 +219,7 @@ NEGATIVE = {
     'conjure effect not a key': case('sudden_death_conjure', 'spell', ('execution', 'conjure', 'effect_asset_binding'),
                                      'magic red', 'is not valid under any'),
     'wheel_unlock not boolean': case('light_healing', 'spell', ('requirements', 'wheel_unlock'), 'yes', 'is not of type'),
+    'harmony role is closed': case('light_healing', 'spell', ('harmony_role',), 'charger', 'is not one of'),
     'empty library text': case('light_healing', 'spell', ('library_text',), '', 'should be non-empty'),
     'library text not a string': case('light_healing', 'spell', ('library_text',), 3, 'is not of type'),
     'aim at target without a direction': case('light_healing', 'spell', ('targeting', 'aim_at_target'), True,

@@ -449,6 +449,7 @@ fn source_with_target_claim(
         local_object_initial_state: Some(ProductionKey::new("oteryn:reference.state.closed")?),
         local_object_state_attributes: BTreeMap::new(),
         local_object_revert_after_ms: BTreeMap::new(),
+        local_object_event_transitions: BTreeMap::new(),
     };
     candidate.placements.push(placement);
     Ok(candidate)
