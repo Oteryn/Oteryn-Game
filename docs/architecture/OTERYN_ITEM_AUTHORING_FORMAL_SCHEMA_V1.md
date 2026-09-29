@@ -965,6 +965,36 @@ reported, never guessed: 53692, 53693, 53696, 53783, 54262, 54267, 54564, 54566 
 **Canary sample.** B1b's bindings also gave 9 ids in Canary `47dfd51f`'s own `items.xml` a key. The regenerated
 `population-canary-47dfd51f.json` therefore has 9 more converted items. Its wiki-evidence count is unchanged (1,364).
 
+## 5l-b. Client appearance-only census (task B3, 2026-09-29)
+
+`client_appearance_census.py` reads the owner's local 15.30 client `appearances.dat`. The file is pinned by size
+(5,017,996 B) and sha256 `2dfa943b…`, as recorded in the owner-supplied client asset manifest. It is reference
+evidence only and is never committed.
+
+The tool censuses every appearance id that none of the pinned `items.xml` define (Crystal `ff7ede5`, donor `00ce02a5`,
+Canary `47dfd51f`). Each id gets exactly the facts this lane already reads: name, description and a fixed flag
+subset. The routing is Oteryn's own `non_item_route` and `immovable_non_item_route`, from the appearance alone. Each id
+also gets a provisional `client:tibia@15.30-2dfa943b:item/<id>` key. No identity is minted.
+
+The committed sample `samples/client-appearance-census-15-30-2dfa943b.json` covers 43,516 appearance ids. 38,796 are
+engine-defined, which leaves **9,310 undefined**: 1,306 in the 15.30 range (`>= 52977`) and 8,004 older. They split as
+follows:
+
+| Outcome | Count |
+|---|---|
+| Routed | 8,766 |
+| — Terrain `ground_or_border` | 2,896 |
+| — WorldObject `immovable_unclassified` | 5,569 |
+| — WorldObject `corpse` | 301 |
+| Pickupable candidates (`flags.take`) | 247 |
+| Unclassified | 297 |
+
+What follows:
+
+- **Map geometry.** The routed ids are client-only map geometry. The WO-1 census does not cover them, because it
+  starts from `items.xml`. They need their own identity step before WO-2 can key them.
+- **Pickupable candidates.** These need a family and an identity decision, just as the donor ids did.
+
 ## 5m. Routed Item pointer: `routed_to` (WO-1, 2026-09-28)
 
 WO-0 (`docs/architecture/reviews/OTERYN_GAME_WO0_WORLD_OBJECT_AND_TERRAIN_AUTHORING_FORMAT_DECISION_2026-09-28.md`,
