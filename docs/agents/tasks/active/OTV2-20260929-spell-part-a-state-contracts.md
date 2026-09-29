@@ -4,12 +4,12 @@
 task_id: OTV2-20260929-spell-part-a-state-contracts
 title: "Part A state contracts: monk Harmony/Serene (SPELL-D8) and Wheel of Destiny state"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/spell-part-a-state-contracts
 issue: 162
-pr: null
+pr: 1205
 base_sha: 0bd0fd75480fc70bb4629958b22b66a0e1e253f4
 head_sha: null
 final_head_sha: null
@@ -83,10 +83,10 @@ fenced durable Character writes. Their implementing children carry the qualifica
 ## Context checkpoint
 
 ```yaml
-last_progress: authored both documents
-status: implementing
+last_progress: authored both documents; PR #1205 open
+status: validating
 branch: claude/spell-part-a-state-contracts
-pr: null
+pr: 1205
 owner_action_required: "Q1-Q2 of SPELL-D8 and Q1-Q3 of the Wheel candidate"
 blocker: null
 next_action: exact-head review and Merge Queue integration; then the Part A runtime resumes
