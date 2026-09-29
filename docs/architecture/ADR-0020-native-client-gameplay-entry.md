@@ -98,7 +98,15 @@ Each child needs its own #162 allocation. Numbering is provisional.
 | N6 | Entity rendering: creatures and other players | VIS-1, VIS-2, N2 |
 | N7 | Chat UI | chat protocol and server lane (does not exist) |
 
-The production entry replaces the fail-closed one only when N1, N3, N4, N4-P and N5 have landed and the entry check in section 2 passes. Whether an intermediate build (before N4-P) may ship is UNKNOWN. It must stay fail-closed.
+The production entry replaces the fail-closed one only when N1, N3, N4, N4-P, N5, N6 and N7 have landed and the entry check in section 2 passes, because D129 makes creatures, other players and chat part of the first entry. A reduced first entry (without N6 or N7) needs a new explicit owner decision. Whether an intermediate build (before N4-P) may ship is UNKNOWN. It must stay fail-closed.
+
+## Decision timing
+
+- Must decide now? YES.
+- Blocked downstream work: N1 to N7 cannot be allocated, and the closure change batched with #1083 cannot be scoped, until the crate chain, the closure rule and the fail-closed amendment are fixed.
+- Harder later: once the client is built on a direct or ad hoc protocol edge, codec and admission detail spreads into the app and the closure rule needs a migration. A dev grant path would also leave a credential path to remove later.
+- Supersession evidence: a reviewed or measured failure of the session-crate edge (for example an admission or codec defect the crate boundary cannot contain), a security finding against the closure rule, or a changed owner decision on D98, D129 or D138.
+- Deliberately not decided: see the section of that name below.
 
 ## Decision test
 

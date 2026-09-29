@@ -80,6 +80,9 @@ changed.
   handback no longer allow allocation (A10 banner, status, handback).
 - 4131093146 (three closure gates): N5 changes `merge-gate.yml`, `merge-group-gate.yml` and
   `rust.yml` together or one shared check (§1, delivery, revalidation).
+- 4131548989 (first entry gate omits N6/N7): the gate now includes N6 and N7 per D129; a reduced
+  entry needs a new owner decision (§7). 4131549000 (decision test): added "Decision timing" with
+  the mandatory now/blocked/harder-later/supersession answers.
 
 ## Validation
 
