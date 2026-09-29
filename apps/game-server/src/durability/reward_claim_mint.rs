@@ -58,7 +58,7 @@ use super::item_transfer::{
 use super::item_transfer_audit::{OneItemCommandRefV1, OneItemInventoryV1};
 use super::reward_claim_mint_audit::{
     self as audit, OneItemRewardClaimCauseV1, OneItemRewardClaimMintV1,
-    REWARD_CLAIM_MINT_TYPED_CAUSE, REWARD_CLAIM_MINT_USAGE, RewardClaimMintEventIdentity,
+    REWARD_CLAIM_MINT_TYPED_CAUSE, RewardClaimMintEventIdentity,
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -685,9 +685,6 @@ async fn admit(
         Ok(destination) => destination,
         Err(refusal) => return Ok(Err(RewardClaimMintError::Refused(refusal))),
     };
-    if let Err(error) = REWARD_CLAIM_MINT_USAGE.check() {
-        return Ok(Err(error.into()));
-    }
     Ok(Ok(destination))
 }
 
@@ -987,10 +984,7 @@ fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
     mint_audit::check_content_key(&request.claim.revision_ref)?;
     validate_facts(&request.item).map_err(from_transfer_input)?;
     validate_facts(&request.backpack).map_err(from_transfer_input)?;
-    if request.claim.family.is_empty()
-        || request.claim.production_key.is_empty()
-        || request.claim.revision_ref.is_empty()
-    {
+    if request.quantity == 0 {
         return Err(RewardClaimMintError::InvalidInput);
     }
     for revision in [

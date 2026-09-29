@@ -337,6 +337,17 @@ This is what the stored Canary value already means (Canary hits the returned val
 changes; the D12 wording "up to `max_targets` creatures" was one short. No monster uses the new fields, and the
 creature admission does not accept them yet.
 
+Fork import rule: a Canary fork chain value (`pickForkTargets`, a chain value callback that returns the fork flag)
+is the total number of creatures, the first included, so the importer stores it minus 1. `max_targets` always
+counts the further creatures, for both shapes (Forked Glacier: Canary 7, `max_targets` 6). Equal distances go to
+the lowest creature id in both shapes (chain §7 Q1 proposal, until the owner's in-game test).
+
+Step rounding: each creature hit draws its own value (Canary `doCombat` per chain target), an integer after the
+truncated formula bounds. Its step value is `value * max(0, 100 + i * damage_step_percent) / 100` in exact integer
+arithmetic, rounded half away from zero (Canary `std::round`), before any mitigation. It equals Canary's double
+computation for every step Chained Penance reaches (−5%, steps 0-5 with a Wheel +1); Canary's doubles differ only
+on some exact halves beyond, which are floating-point artefacts. Example: 101 at step 1 of −5% gives 95.95, so 96.
+
 `area_damage_named_target` is probed like `heal_allies_in_area`. A `CALLBACK_PARAM_TARGETTILE` callback that, on each
 tile of the ability area, takes a fixed or rolled amount of health from the top creature through `Creature:addHealth`
 is authored as an extra `damage` effect of damage type `untyped`:

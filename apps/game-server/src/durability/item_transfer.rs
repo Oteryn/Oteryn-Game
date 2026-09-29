@@ -1357,7 +1357,7 @@ pub(crate) async fn load_entries(
         .collect()
 }
 
-pub(crate) fn decode_definition(
+fn decode_definition(
     row: &sqlx::postgres::PgRow,
 ) -> std::result::Result<TypedDefinitionRef, DurabilityError> {
     Ok(TypedDefinitionRef {
@@ -1367,9 +1367,7 @@ pub(crate) fn decode_definition(
     })
 }
 
-pub(crate) fn decode_quantity(
-    row: &sqlx::postgres::PgRow,
-) -> std::result::Result<u32, DurabilityError> {
+fn decode_quantity(row: &sqlx::postgres::PgRow) -> std::result::Result<u32, DurabilityError> {
     u32::try_from(row.try_get::<i64, _>("quantity")?)
         .map_err(|_| DurabilityError::InvalidStoredState)
 }

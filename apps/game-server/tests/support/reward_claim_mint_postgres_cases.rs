@@ -1067,10 +1067,6 @@ fn refusals_and_invalid_input_write_nothing() -> TestResult {
                 ),
                 RewardClaimRefusal::QuantityAboveStackMaximum,
             ),
-            (
-                coins(command(7)?, CLAIM, 0),
-                RewardClaimRefusal::QuantityAboveStackMaximum,
-            ),
             (wrong_backpack, RewardClaimRefusal::DefinitionMismatch),
             (
                 oversized_backpack,
@@ -1086,6 +1082,12 @@ fn refusals_and_invalid_input_write_nothing() -> TestResult {
         oversize.claim.production_key = "k".repeat(513);
         assert!(matches!(
             harness.claim(&authority, fence()?, oversize).await,
+            Err(RewardClaimMintError::InvalidInput)
+        ));
+        assert!(matches!(
+            harness
+                .claim(&authority, fence()?, coins(command(22)?, CLAIM, 0))
+                .await,
             Err(RewardClaimMintError::InvalidInput)
         ));
         let mut empty = coins(command(21)?, CLAIM, 1);

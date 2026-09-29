@@ -989,10 +989,11 @@ conservation) is unchanged.
   new cause shape (unlike `DECAY_RETIRE` below, which names one because none existed for a decay
   reason): it is the existing loot-MINT cause with its destination generalized from "an
   already-equipped backpack entry" (reward chest) to "this death's own corpse entry" (D3). The
-  proto/registry change this needs — widening `OneItemMintV1.destination` from `OneItemGroundV1`
-  only to admit a `Container` alternative — is not defined or registered here; it lands in the
-  D3-6 implementation child alongside `DECAY_RETIRE`'s own registration, under the same
-  non-candidate, no-`_fixture`-field-names conditions.
+  proto/registry change this needs — admitting a `Container` alternative beside
+  `OneItemMintV1.destination` (`OneItemGroundV1`) — is not defined here; the D3-2 implementation
+  child registers it as the additive `OneItemMintV1.corpse_container_entry` (field 5, exactly one of
+  the two set), under the same non-candidate, no-`_fixture`-field-names conditions. `DECAY_RETIRE`'s
+  own registration stays with D3-6.
 - **Whole-plan preflight.** Before any entry of a death's accepted loot plan is frozen — corpse
   included — the composing caller checks the plan's full accepted entry count against
   `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (16, equal by construction to the already-accepted
