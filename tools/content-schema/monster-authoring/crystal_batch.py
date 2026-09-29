@@ -32,14 +32,17 @@ SOURCE_NOTE = (f'{REPOSITORY} branch {BRANCH} at {REVISION} (read {READ}): the o
                f'(Canary {cb.REVISION[:8]}); loot names resolve through the 15.30 item tables of this commit.')
 
 
+def git(crystal, *args):
+    return subprocess.run(['git', '-C', str(crystal), *args], capture_output=True, text=True).stdout.strip()
+
+
 def require_revision(crystal):
-    """Every output records REVISION, so the files read must be those of that commit: HEAD is REVISION and they are clean."""
-    def git(*args):
-        return subprocess.run(['git', '-C', str(crystal), *args], capture_output=True, text=True).stdout.strip()
-    head = git('rev-parse', 'HEAD')
+    """Every output records REVISION, so the files read must be those of that commit: HEAD is REVISION and they are clean.
+    files() lists the monsters from the REVISION tree, so untracked or ignored files are never read."""
+    head = git(crystal, 'rev-parse', 'HEAD')
     if head != REVISION:
         raise SystemExit(f'{crystal} is at {head or "no git commit"}, not the pinned CrystalServer revision {REVISION}')
-    dirty = git('status', '--porcelain', '--untracked-files=all', '--', MONSTER_DIR, *SHARED_SOURCES)
+    dirty = git(crystal, 'status', '--porcelain', '--untracked-files=no', '--', MONSTER_DIR, *SHARED_SOURCES)
     if dirty:
         raise SystemExit(f'{crystal} has local changes to files read at {REVISION}:\n{dirty}')
 
@@ -66,7 +69,8 @@ def files(canary, crystal):
     require_revision(crystal)
     canary_slugs = {cb.slug(name) for path in (canary / cb.MONSTER_DIR).rglob('*.lua') if (name := created_name(path))}
     result = []
-    for path in sorted((crystal / MONSTER_DIR).rglob('*.lua')):
+    tracked = git(crystal, 'ls-tree', '-r', '--name-only', REVISION, '--', MONSTER_DIR).splitlines()
+    for path in sorted(crystal / name for name in tracked if name.endswith('.lua')):
         if cb.slug(created_name(path)) not in canary_slugs:
             result.append(str(path.relative_to(crystal / MONSTER_DIR))[:-4])
     return result
