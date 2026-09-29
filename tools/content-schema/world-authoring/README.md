@@ -11,6 +11,7 @@ format selected by measurement (see "Base map (step 3)" below).
 | `Area.HuntingPlace` | `content/world/areas/hunting-places/` | 445 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `House` | `content/houses/` | 995 | `OTERYN_HOUSE_AUTHORING_SHARD/v1` |
 | `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
+| `World` | `content/world/worlds/` | 1 | `OTERYN_WORLD_AUTHORING_SHARD/v1` (`world-record.schema.json`) |
 
 Each directory has an `OTERYN_FAMILY_INDEX/v1` `index.json`, plus canonical JSON shards of
 500 records named `<stem>-<start>-<end>.json`. Every family index, shard and record shape
@@ -87,8 +88,6 @@ position-based.
   - 1 with a destination outside the map;
   - 5 with a destination on an absent tile.
 - **Not here yet:**
-  - the World record (bounds and floors). Its `worlds/` directory shares space with a
-    legacy locator.
   - floor changes through stairs, ladders or holes. These are derived from item types
     together with terrain.
   - islands and streets; per-place skills, loot and experience ratings of hunting places.
@@ -107,12 +106,42 @@ position-based.
   removes them before its exact `diff -r`.
 - `content_world_project_repository.rs` admits them by the same rule.
 
+**The one exception is `worlds/`**, which shares space with the legacy locator
+`worlds/world.json`. Legacy lookups scan that directory, so it may hold the family index and
+exactly **one** shard (`worlds-00000-00000.json`, the World record) next to the locator, and
+nothing else. `validate_materialized_game_tree.py` (`SHARED_WITH_LOCATOR`,
+`SHARED_MAX_SHARDS`) and the repository test (`SHARED_DIRECTORY_SUCCESSOR_SHARDS`) name that
+one path. Every other directory with a legacy locator still refuses a family. The
+repository test's directory-scan budget grows by exactly the one added entry
+(`144 + 56 + 1`; measured 189 to 190 scanned entries in the recapture test).
+
+## World record
+
+`content/world/worlds/` holds one `World` record, `oteryn:world.oteryn`, generated offline by
+`convert_world_record.py [--check]` from committed data only:
+
+- `bounds` is the exact tile bounding box of the base map (`min_x` 1340, `min_y` 1643,
+  `max_x_exclusive` 34264, `max_y_exclusive` 33813), computed from the region sector tables
+  with only the four edge columns of sectors decoded. The maxima are exclusive, as the
+  half-open envelope of `OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1` requires. `source_map`
+  keeps the OTBM header extent (35143x34812, version 4) for comparison; the tiles cover
+  less of it.
+- `floors` is the strictly increasing list of floors that hold tiles: 0-15.
+- `legacy_world_id` is the identity of `content/world/definitions/reference.json`.
+- `validate_world_record.py` requires bounds and floors to equal the recomputed base map
+  extent, and every City temple, House entry, door and footprint corner, teleport `from` and
+  `to` and hunting place position to lie inside the bounds on a declared floor. Base map
+  tiles are inside by that equality.
+
 ## Commands
 
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 python validate_world_metadata.py          # committed families: schema + semantics
 python test_world_authoring.py             # synthetic OTBM and wiki fixtures, converters, validator
+python convert_world_record.py --check     # World record from the committed base map (offline)
+python validate_world_record.py            # World record and positions inside its bounds
+python test_world_record.py                # World converter, validator, worlds/ tree exception
 python convert_hunting_places.py --check   # offline, from the committed TibiaWiki snapshot
 # Regenerate (needs the pinned crystalserver checkout, not fetched by CI):
 python convert_world_metadata.py --crystal-root /path/to/crystalserver [--check]

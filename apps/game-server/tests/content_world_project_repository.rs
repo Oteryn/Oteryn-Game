@@ -81,10 +81,18 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
     "transitions/index.json",
     "worlds/index.json",
 ];
+/// The one successor shard that sits beside a legacy locator: the `World` family record in
+/// `worlds/`. Legacy lookups of `worlds/world.json` scan that directory, so this exception is
+/// bounded to exactly one shard and is counted in the scan budget of `filesystem_limits`.
+const SHARED_DIRECTORY_SUCCESSOR_SHARDS: [&str; 1] = ["worlds/worlds-00000-00000.json"];
 /// Successor family shards (written by `tools/content-schema/world-authoring`) are likewise
 /// never WorldProject locators. They sit only in a successor directory that holds no legacy
-/// locator, so legacy locator lookups scan no additional directory entries.
+/// locator, so legacy locator lookups scan no additional directory entries, except for the
+/// single explicit `SHARED_DIRECTORY_SUCCESSOR_SHARDS` entry.
 fn is_successor_shard(locator: &str) -> bool {
+    SHARED_DIRECTORY_SUCCESSOR_SHARDS.contains(&locator) || is_unshared_successor_shard(locator)
+}
+fn is_unshared_successor_shard(locator: &str) -> bool {
     SUCCESSOR_TREE_MARKERS.iter().any(|marker| {
         let directory = marker.trim_end_matches("index.json");
         locator.strip_prefix(directory).is_some_and(|name| {
@@ -146,8 +154,10 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // ambient parent, so retain the original 128-entry evidence budget plus
         // exactly that bounded sibling delta without relaxing the per-scan limit.
         // The 10 successor world markers add 5 siblings to the package root (seen by
-        // each of the 11 locator lookups) plus 1 entry in worlds/: exactly 56 more.
-        max_total_directory_entries_scanned: 144 + 56,
+        // each of the 11 locator lookups) plus 1 entry in worlds/: exactly 56 more. The
+        // World family adds one shard beside worlds/world.json, which the single
+        // `worlds/world.json` lookup scans once: exactly 1 more (144 + 56 + 1).
+        max_total_directory_entries_scanned: 144 + 56 + 1,
     }
 }
 
@@ -888,7 +898,7 @@ fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_packag
         world_markers.push(format!("{locator}index.json"));
         if payload["schema"] == "OTERYN_FAMILY_INDEX/v1" {
             // A populated successor family: shards stay in this directory, which holds no
-            // legacy locator (see `is_successor_shard`).
+            // legacy locator except `worlds/` (see `is_successor_shard`).
             assert_eq!(payload["population_state"], "POPULATED", "{path}");
             let shards = payload["shards"].as_array().expect("family index shards");
             assert!(!shards.is_empty(), "{path}");

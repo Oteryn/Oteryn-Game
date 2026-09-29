@@ -19,6 +19,8 @@ execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/world-authoring/
   - content/world/placements/
+  - content/world/worlds/
+  - tools/content-schema/validate_materialized_game_tree.py
   - .gitattributes
   - .github/workflows/world-metadata-authoring.yml
   - apps/game-server/tests/content_world_project_repository.rs
@@ -69,6 +71,13 @@ sha256-pinned and `OtsHypothesisOnly`.
 - [x] `test_world_base.py` covers codec round trips, palette variants and validator
       negatives.
 - [x] The world-metadata workflow validates and tests the base family.
+- [x] The `World` family holds one record (`oteryn:world.oteryn`) with the exact tile bounds
+      of the base map (half-open, `x` 1340-34263, `y` 1643-33812), the source header extent
+      and floors 0-15, generated offline by `convert_world_record.py --check`. The one
+      explicit exception to "no family beside a legacy locator" is `worlds/` (index plus
+      exactly one shard); the repository test scan budget grows by exactly that entry.
+      `validate_world_record.py` checks every placement extent, City, House, teleport and
+      hunting place position against the bounds and floors.
 - [ ] Required checks pass on the frozen PR head.
 
 ## Excluded scope
@@ -81,6 +90,8 @@ sha256-pinned and `OtsHypothesisOnly`.
 ## Validation
 
 - `convert_world_base.py --check` against the pinned checkout is byte-identical.
+- `convert_world_record.py --check`, `validate_world_record.py` and `test_world_record.py`
+  pass.
 - `validate_world_base.py` passes; `test_world_base.py` and `test_world_authoring.py` pass.
 - `ruff check` and `ruff format --check` pass from the repository root.
 - `validate_materialized_game_tree.py`, `validate_governance.py` and
