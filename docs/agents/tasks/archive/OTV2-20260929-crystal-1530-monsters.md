@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-crystal-1530-monsters
 title: Game version 15.30 monsters from the CrystalServer summer-update branch (Canary lacks them)
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1209
 jira: KAN-16
 base_sha: 0bd0fd75
-head_sha: null
-final_head_sha: null
+head_sha: a37e8380682ce7c4ca91b07f6717f449bf7ca4b2
+final_head_sha: a37e8380682ce7c4ca91b07f6717f449bf7ca4b2
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-29
@@ -52,7 +52,9 @@ Summer Update 2026 monsters, so they come from CrystalServer `summer-update` at 
   values, per D15 and D47.
 - Census: 48 resolved, 1 blocked (Phosphorus final form, an unresolved attack).
 - Admission: 13 creatures enter `content/world` under the new import batch `g4-creature-crystal-1530-r1`
-  (`oteryn:source.crystalserver`, bindings `crystalserver/monster-file`).
+  (`oteryn:source.crystalserver` at revision `crystalserver-creature-1530:<commit>`, bindings
+  `crystalserver/monster-file`). The batch has its own source revision because the NPC summer supplement (#1200)
+  already holds the bare commit.
   - 33 wait for their 15.30 loot items in the Oteryn Item registry (#1179 registers the Crystal `00ce02a5` items).
   - The 2 Energy Cannons wait as `initial_health`: they spawn at 1 of 100 health, and the profile has one health value.
 
@@ -60,3 +62,6 @@ Summer Update 2026 monsters, so they come from CrystalServer `summer-update` at 
 
 - The census, the staging, the materializer, the tree writer and its validators, and the Rust tests pass.
 - Exact-head review before the Merge Queue, because `content/world` changes.
+- #1209 was merged as `eb6b6658` on 2026-09-29. Every file it changed is byte-identical to the PR head `a37e8380`, and
+  CI (`game-gate`, `Merge gate / Rust Linux workspace`) was green on that head. All five Codex review threads were
+  fixed and resolved.
