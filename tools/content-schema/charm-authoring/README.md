@@ -9,13 +9,14 @@ cost and value, and a typed effect. Per the full-game tree contract
 - A character's Charm Points, Minor Charm Echoes, unlocks and assignments are durable Character state.
 - Per-creature charm points belong to the Bestiary facts in `content/creatures/bestiary/`.
 
-None of these is modelled here. The package writes nothing under `content/` and mints no identity. The `key` values
-(`oteryn:charm.<name>`) are proposals until content population.
+None of these is modelled here. The `key` values (`oteryn:charm.<name>`) are minted at content population, which is `content` below;
+`capture`, `build` and `validate` still write only under this directory.
 
 | File | Purpose |
 |---|---|
 | `charm.schema.json` | One catalogue (`OTERYN_CHARM_AUTHORING_CATALOGUE/v1`), JSON Schema 2020-12, closed shapes. The effect is a `oneOf` over typed shapes: `attack_proc_damage`, `attack_proc_resource_damage`, `kill_area_damage`, the timed effects (paralyse, haste, prevent flee) and the parameterless effects (dodge, parry, leech, critical and so on). |
 | `charm_authoring.py` | `capture` writes the source facts. `build` derives the catalogue and the comparison report from them, and `build --check` diffs an in-memory build against the committed samples. `validate` runs the schema and semantic checks. |
+| `charm_authoring.py content` | Writes (`--check` verifies) `content/charms/index.json` (`OTERYN_FAMILY_INDEX/v1`) and the shard `charms-00000-00024.json` (one `definition` per Charm, identity `{key, revision: definition-r1}`), and registers `Charm` in `content/project.json` (`migrated_families`), `content/manifest.json` (`families`, `managed_files`) and `content/content.lock.json` (`static_family_counts`). |
 | `test_charm_authoring.py` | No-network tests: infobox parsing and its rejections, the pinned Canary digest, the committed build, and one negative case per validator rule. |
 | `samples/charm-sources-2026-09-29.json` | The captured source facts (details below). |
 | `samples/charms-candidate.json` | The candidate catalogue, which validates. |
@@ -46,6 +47,13 @@ None of these is modelled here. The package writes nothing under `content/` and 
 - There are exactly the stages 1, 2 and 3, and both cost and value strictly increase across them.
 - A trigger chance is at most 100%.
 
+## Content population
+
+`content/lock family_counts` is asserted verbatim by `tools/content-migration`, whose generator does not yet
+know Charm, so the count is `static_family_counts.Charm` in `content/content.lock.json`. Teaching that
+generator and validator about Charm (and moving the count into `family_counts`) is a follow-up outside this package.
+Nothing loads `content/charms/` at runtime; `runtime_source` stays `legacy_until_separately_qualified`.
+
 ## Wiki and Canary comparison (2026-09-29)
 
 All 25 charms agree on name, category, stage costs and stage values; 20 also agree on element and effect percent.
@@ -60,6 +68,7 @@ The catalogue follows the wiki; the 5 open points are for the rules layer:
 pip install -r requirements.txt
 python charm_authoring.py build --check
 python charm_authoring.py validate samples/charms-candidate.json
+python charm_authoring.py content --check
 python test_charm_authoring.py
 
 # evidence refresh (network + Canary checkout at 47dfd51f; local only)
