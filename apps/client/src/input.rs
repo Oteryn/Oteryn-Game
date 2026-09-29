@@ -153,7 +153,8 @@ pub struct MouseActions {
     gameplay: ContextId,
     text: ContextId,
     modal: ContextId,
-    pointer: (f64, f64),
+    /// Last pointer position; `None` at startup and after focus or device loss.
+    pointer: Option<(f64, f64)>,
 }
 
 impl MouseActions {
@@ -185,7 +186,7 @@ impl MouseActions {
             gameplay,
             text,
             modal,
-            pointer: (0.0, 0.0),
+            pointer: None,
         })
     }
 
@@ -210,18 +211,28 @@ impl MouseActions {
     pub fn route(&mut self, events: &[NormalizedInputEvent]) -> Vec<ClickAction> {
         let mut clicks = Vec::new();
         for event in events {
-            if let NormalizedInputEvent::PointerMoved { position, .. } = event {
-                self.pointer = (f64::from(position.x().get()), f64::from(position.y().get()));
+            // Only pointer, button and lifecycle events reach the click router: a held
+            // keyboard key or wheel movement is irrelevant to the click chord and must not
+            // block it. Text and modal contexts still suppress it inside the router.
+            match event {
+                NormalizedInputEvent::PointerMoved { position, .. } => {
+                    self.pointer =
+                        Some((f64::from(position.x().get()), f64::from(position.y().get())));
+                }
+                NormalizedInputEvent::FocusChanged { focused: false }
+                | NormalizedInputEvent::DeviceLost => self.pointer = None,
+                NormalizedInputEvent::Key { .. }
+                | NormalizedInputEvent::Wheel { .. }
+                | NormalizedInputEvent::TextCommitted(_) => continue,
+                _ => {}
             }
             for action in self.router.process(event) {
                 if action.action().as_str() == CLICK_ACTION
                     && action.context() == &self.gameplay
                     && action.phase() == ActionPhase::Started
+                    && let Some((x, y)) = self.pointer
                 {
-                    clicks.push(ClickAction {
-                        x: self.pointer.0,
-                        y: self.pointer.1,
-                    });
+                    clicks.push(ClickAction { x, y });
                 }
             }
         }
@@ -357,6 +368,7 @@ mod tests {
     #[test]
     fn text_and_modal_contexts_suppress_the_click_action() -> Result<(), InputError> {
         let mut actions = MouseActions::new()?;
+        actions.route(&[moved(1, 1)?]);
         actions.set_text_active(true)?;
         assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
         actions.route(&[primary(ButtonState::Released)]);
@@ -377,6 +389,54 @@ mod tests {
                 .route(&[NormalizedInputEvent::FocusChanged { focused: false }])
                 .is_empty()
         );
+        assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn click_needs_a_fresh_pointer_after_startup_and_after_loss() -> Result<(), InputError> {
+        let mut actions = MouseActions::new()?;
+        assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
+        actions.route(&[primary(ButtonState::Released), moved(10, 20)?]);
+        assert_eq!(actions.route(&[primary(ButtonState::Pressed)]).len(), 1);
+        actions.route(&[primary(ButtonState::Released)]);
+        actions.route(&[NormalizedInputEvent::FocusChanged { focused: false }]);
+        actions.route(&[NormalizedInputEvent::FocusChanged { focused: true }]);
+        assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
+        actions.route(&[primary(ButtonState::Released), moved(30, 40)?]);
+        assert_eq!(
+            actions.route(&[primary(ButtonState::Pressed)]),
+            vec![ClickAction { x: 30.0, y: 40.0 }]
+        );
+        actions.route(&[
+            primary(ButtonState::Released),
+            NormalizedInputEvent::DeviceLost,
+        ]);
+        assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
+        Ok(())
+    }
+
+    fn key_w(state: ButtonState) -> NormalizedInputEvent {
+        NormalizedInputEvent::Key {
+            code: oteryn_input_actions::KeyCode::KEY_W,
+            state,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        }
+    }
+
+    #[test]
+    fn a_held_unrelated_key_does_not_block_the_click_but_contexts_still_suppress()
+    -> Result<(), InputError> {
+        let mut actions = MouseActions::new()?;
+        actions.route(&[moved(5, 6)?, key_w(ButtonState::Pressed)]);
+        assert_eq!(actions.route(&[primary(ButtonState::Pressed)]).len(), 1);
+        actions.route(&[primary(ButtonState::Released)]);
+        actions.set_modal_active(true)?;
+        assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
+        actions.route(&[primary(ButtonState::Released)]);
+        actions.set_modal_active(false)?;
+        actions.set_text_active(true)?;
         assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
         Ok(())
     }
