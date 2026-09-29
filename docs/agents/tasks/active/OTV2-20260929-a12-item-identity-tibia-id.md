@@ -4,12 +4,12 @@
 task_id: OTV2-20260929-a12-item-identity-tibia-id
 title: "A12 Item identity equals the Tibia id (D146-D148)"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1237
 base_sha: b90f85c9
 head_sha: null
 final_head_sha: null
@@ -83,10 +83,10 @@ independent exact-head identity review. ITEM-ID-1 needs its own review.
 
 ```yaml
 last_progress: decision authored
-status: implementing
+status: validating
 branch: claude/gifted-rubin-a0axzx
 head_sha: null
-pr: null
+pr: 1237
 owner_action_required: null
 blocker: null
 next_action: "validate, open the PR, freeze, request review"
