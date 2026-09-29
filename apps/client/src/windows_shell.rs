@@ -1,3 +1,4 @@
+use oteryn_client::input::{ClickWalk, click_tile};
 use oteryn_client::pre_native_status;
 use oteryn_client::scene::PlaceholderScene;
 use oteryn_foundation::ProcessGeneration;
@@ -6,7 +7,7 @@ use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
-use winit::event::WindowEvent;
+use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
 
@@ -47,6 +48,8 @@ struct Application {
     renderer: Option<WindowsRenderer<Arc<Window>>>,
     scene: Option<PlaceholderScene>,
     generation: ProcessGeneration,
+    cursor: (f64, f64),
+    walk: ClickWalk,
     fatal_error: Option<ShellError>,
 }
 
@@ -58,6 +61,8 @@ impl Application {
             renderer: None,
             scene: None,
             generation: ProcessGeneration::new(1),
+            cursor: (0.0, 0.0),
+            walk: ClickWalk::new(),
             fatal_error: None,
         }
     }
@@ -150,6 +155,26 @@ impl ApplicationHandler for Application {
                     return;
                 }
                 event_loop.exit();
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                self.cursor = (position.x, position.y);
+            }
+            WindowEvent::MouseInput {
+                state: ElementState::Pressed,
+                button: MouseButton::Left,
+                ..
+            } => {
+                let picked = self.scene.as_mut().and_then(|scene| {
+                    let tile = click_tile(scene.view(), self.cursor.0, self.cursor.1)?;
+                    Some((tile, scene.select_tile(tile)))
+                });
+                // A visible entity or object becomes the target; any other tile becomes the
+                // walk goal. N4 drives `walk` through the session's `step`.
+                match picked {
+                    Some((_, Ok(Some(_)))) | None => {}
+                    Some((tile, Ok(None))) => self.walk.set_goal(tile),
+                    Some((_, Err(_error))) => self.fail(event_loop, ShellError::RendererRender),
+                }
             }
             WindowEvent::Resized(size) => {
                 if let Some(renderer) = &mut self.renderer
