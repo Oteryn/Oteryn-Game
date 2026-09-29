@@ -11,7 +11,7 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use serde_json::{Value, json};
 
 use super::authoring::spell_from_bundle;
-use super::plan::effect_plan;
+use super::plan::{CastPlanError, effect_plan};
 use super::target::{AllowedTargets, CastTarget};
 use super::*;
 use crate::ability::{AbilityEngine, AbilityOccurrence, RevisionSet};
@@ -194,6 +194,7 @@ fn target(creature: u64, master: Option<u64>) -> CastTarget {
     CastTarget {
         caster: CASTER,
         creature,
+        actor: format!("actor:{creature}"),
         master,
     }
 }
@@ -367,6 +368,73 @@ fn ultimate_healing_rune_refuses_both_monk_vocations() {
             Err(CastRejection::VocationCannotUse)
         );
     }
+}
+
+/// The plan of a cast checked against one target applies to that target only: a rune checked on
+/// the caster cannot heal another player, and a rune cast without the target facts cannot plan
+/// on a target at all.
+#[test]
+fn a_checked_cast_plans_only_on_its_checked_target() {
+    let rune = ultimate_healing_rune();
+    let resolution = resolve_targeted_cast(
+        &rune,
+        &caster(Vocation::Druid),
+        &Cooldowns::default(),
+        at_ms(0),
+        target(CASTER, None),
+        &mut lowest,
+    )
+    .expect("cast on self");
+    let checked = resolution.target.as_ref().expect("checked target");
+    assert_eq!((checked.creature(), checked.actor()), (CASTER, "actor:1"));
+    for other in [Some("actor:2"), None] {
+        assert_eq!(
+            effect_plan(
+                &rune,
+                &resolution,
+                "actor:1",
+                other,
+                occurrence("cast:uhr-mismatch"),
+                "channel:test",
+            ),
+            Err(CastPlanError::TargetMismatch)
+        );
+    }
+
+    // A spell without `allowed_targets` checked on a target keeps that target too.
+    let (spell, dependencies) = ultimate_healing_rune_bundle("any");
+    let any = spell_from_bundle(&spell, &dependencies).expect("any admitted");
+    let resolution = resolve_targeted_cast(
+        &any,
+        &caster(Vocation::Druid),
+        &Cooldowns::default(),
+        at_ms(0),
+        target(OTHER_PLAYER, None),
+        &mut lowest,
+    )
+    .expect("cast on another player");
+    assert_eq!(
+        effect_plan(
+            &any,
+            &resolution,
+            "actor:1",
+            Some("actor:3"),
+            occurrence("cast:any-mismatch"),
+            "channel:test",
+        ),
+        Err(CastPlanError::TargetMismatch)
+    );
+    assert!(
+        effect_plan(
+            &any,
+            &resolution,
+            "actor:1",
+            Some("actor:2"),
+            occurrence("cast:any-match"),
+            "channel:test",
+        )
+        .is_ok()
+    );
 }
 
 /// The target rule comes after the cast checks: a cooling rune reports the cooldown first.

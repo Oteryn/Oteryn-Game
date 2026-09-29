@@ -34,7 +34,7 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use chain::{ChainCreature, ChainHit, ChainSpec, ChainStart, ChainWorld, pick_chain, step_value};
 pub(crate) use formula::{Formula, FormulaError, FormulaInputs};
 use party::{PartyBuffSpec, PartyFailure, PartyWorld};
-use target::{AllowedTargets, CastTarget};
+use target::{AllowedTargets, CastTarget, CheckedTarget};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum Vocation {
@@ -445,6 +445,8 @@ pub(crate) struct CastResolution {
     pub(crate) chain: Vec<ChainHitResolution>,
     /// Members a party buff affects, by creature id, each with its own effects; empty otherwise.
     pub(crate) party: Vec<PartyMemberResolution>,
+    /// The target of a cast by [`resolve_targeted_cast`]; its plan applies to this creature only.
+    pub(crate) target: Option<CheckedTarget>,
     pub(crate) cooldowns: Cooldowns,
 }
 
@@ -464,7 +466,7 @@ enum Facts<'a> {
     None,
     Chain(&'a dyn ChainWorld, ChainStart),
     Party(&'a dyn PartyWorld),
-    Target(CastTarget),
+    Target(&'a CastTarget),
 }
 
 /// Check and resolve one cast at `now`. `draw(minimum, maximum)` is the world damage distribution.
@@ -503,7 +505,7 @@ pub(crate) fn resolve_targeted_cast(
         cooldowns,
         now,
         true,
-        Facts::Target(target),
+        Facts::Target(&target),
         draw,
     )
 }
@@ -624,7 +626,7 @@ fn resolve(
     // The script checks of D.3 and D.4 run after the engine checks (Canary `onCastSpell`).
     if spell.allowed_targets != AllowedTargets::Any
         && let Facts::Target(target) = facts
-        && !spell.allowed_targets.allows(&target)
+        && !spell.allowed_targets.allows(target)
     {
         return Err(CastRejection::TargetNotAllowed);
     }
@@ -744,6 +746,10 @@ fn resolve(
         effects,
         chain,
         party,
+        target: match facts {
+            Facts::Target(target) => Some(target.checked()),
+            Facts::None | Facts::Chain(..) | Facts::Party(_) => None,
+        },
         cooldowns: after,
     })
 }

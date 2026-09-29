@@ -42,7 +42,9 @@ are spell fields and a formula input.
 - **D.3 `target_default`, admitted** as `targeting.allowed_targets` (`any`, `self_only`, `self_or_own_summons`;
   absent = `any`). `spell/target.rs` checks a `CastTarget` (caster, creature, master). `resolve_targeted_cast` runs
   the cast checks first, then refuses a target that is not allowed (`TargetNotAllowed`); nothing is spent.
-  `resolve_cast` refuses a targeted cast of such a spell without the target facts (`TargetFactsRequired`). The
+  `resolve_cast` refuses a targeted cast of such a spell without the target facts (`TargetFactsRequired`).
+  The accepted `CastResolution` keeps the checked target (opaque `CheckedTarget`); `effect_plan` refuses any
+  other target (`TargetMismatch`, Codex P2 4132906709). The
   reader rejects `allowed_targets` together with a chain or a party buff. No summon owner exists, so every live
   creature has no master and only the caster qualifies (as `SoloParty` in Part C). Q7 uses the doc proposal
   (`self_or_own_summons`, F); Q8 is plain rune vocations. Tests cover D.3.4 tests 1-5.
