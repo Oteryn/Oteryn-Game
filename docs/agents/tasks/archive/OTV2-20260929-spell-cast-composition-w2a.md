@@ -7,7 +7,7 @@ mode: IMPLEMENT
 status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1263
 allocation_comment: "#162 5895497246"
 base_branch: main
 branch: claude/spell-cast-composition-w2a
