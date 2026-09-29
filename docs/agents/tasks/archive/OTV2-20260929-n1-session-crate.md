@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-n1-session-crate
 title: N1 - transport-neutral session crate and TLS/TCP adapter extracted from tools/dev-client (ADR-0020)
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation: "#162 allocation of ADR-0020 child N1 (repository worker)"
@@ -97,3 +97,7 @@ game-server reaches the dev client only through its dev edge). The closure amend
   the dev client beside the session crate's own. A production client can use `SessionError` and
   `TcpAdapterError` directly.
 - No PR comment, review trigger or Jira update by this worker.
+
+## Archive closeout
+
+- completed; squash merged as #1233 (7000d41); archived by the leftover-record housekeeping PR

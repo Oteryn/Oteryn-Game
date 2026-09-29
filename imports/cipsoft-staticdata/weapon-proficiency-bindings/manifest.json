@@ -1,0 +1,46 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "family": "WeaponProficiencyBinding",
+  "files": [
+    {
+      "path": "weapon-proficiency-bindings-00000-00149.json",
+      "records": 150,
+      "sha256": "ca3703d45d02d142b8391ce40bfb256f3f6792fff50c050143b248daf03f11d0"
+    },
+    {
+      "path": "weapon-proficiency-bindings-00150-00299.json",
+      "records": 150,
+      "sha256": "c50ba2700f3d09befdb65b3b48c07e50a5113cfa202a5c64cb053801e1f0a050"
+    },
+    {
+      "path": "weapon-proficiency-bindings-00300-00449.json",
+      "records": 150,
+      "sha256": "5631b7ae28bedf40f8f4a473a33bc11ddce4ea9cb32668e519bf65a0c0dfb13d"
+    },
+    {
+      "path": "weapon-proficiency-bindings-00450-00599.json",
+      "records": 150,
+      "sha256": "02b92b3822e6a9891f87f3979e295e78ff8da2b80c41bc7166f16096b7a8d7dc"
+    },
+    {
+      "path": "weapon-proficiency-bindings-00600-00665.json",
+      "records": 66,
+      "sha256": "3bc82986d3498eced740741aafe5bd47eb2ff6eb886bc7e775d0d5ed905f2a3b"
+    }
+  ],
+  "identity_namespace": "cipsoft/appearance_object_id",
+  "inputs": {
+    "appearances": {
+      "file": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+    },
+    "proficiencies": {
+      "file": "content/assets/files/proficiencies-7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015.json",
+      "sha256": "7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015"
+    }
+  },
+  "record_count": 666,
+  "schema": "OTERYN_CIPSOFT_WEAPONPROFICIENCYBINDING_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_ASSETS"
+}

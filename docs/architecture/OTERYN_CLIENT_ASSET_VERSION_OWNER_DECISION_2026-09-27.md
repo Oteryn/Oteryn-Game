@@ -51,6 +51,19 @@ has 43,516 objects (max id 55117) versus Crystal 15.25's 42,108 (max id 54266):
 have engine server data on the pinned 15.25 engines. Filling them from TibiaWiki
 (BR/Fandom, already-admitted sources) is separate, explicitly deferred future work.
 
+## Amendment 2026-09-29 (D154, D155)
+
+Owner decisions of 2026-09-29 (#162 comment 5898471146), recorded in
+`docs/architecture/reviews/OTERYN_GAME_OWNER_DECISION_BATCH_D154_D158_2026-09-29.md`. History above
+is unchanged.
+
+- **D154 (Q8a, clarified by Q12a, #162 2026-09-29):** the 15.30 client files under
+  `content/assets/files/` (#1251-#1253) stay in the repository and agents must not delete them.
+  This states retention only. The 2026-09-29 owner supersession note above governs redistribution
+  rights, which it confirms for these files (Q12a).
+- **D155 (Q9, delegated to the control plane):** keep plain Git, no Git LFS. Revisit if
+  `content/assets` grows materially or clone/CI cost becomes a problem.
+
 ## Non-claims
 
 - This decision claims no intellectual-property or distribution rights over

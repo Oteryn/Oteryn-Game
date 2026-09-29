@@ -1,0 +1,41 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "family": "House",
+  "files": [
+    {
+      "path": "houses-00000-00249.json",
+      "records": 250,
+      "sha256": "38d11169b0b7afd10e63bad503a5b0fe530a742fdb824ab7abb6b2fb2cf5cde4"
+    },
+    {
+      "path": "houses-00250-00499.json",
+      "records": 250,
+      "sha256": "62c54e8b3b1ac5ab337beb999789a898ccbf35f3a9eaf0716dfc8f35ac6b48cb"
+    },
+    {
+      "path": "houses-00500-00749.json",
+      "records": 250,
+      "sha256": "8d731cedcdb5e2fb191865aeca9d88a43fd72195f8ff44f54ff12c1563a8e826"
+    },
+    {
+      "path": "houses-00750-00994.json",
+      "records": 245,
+      "sha256": "94c43e965825a286dff7e22de9d8ba255a13f20ea96680f9ef376e7a89514cc9"
+    }
+  ],
+  "identity_namespace": "cipsoft/staticdata/house_id",
+  "inputs": {
+    "staticdata": {
+      "file": "content/assets/files/staticdata-62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128.dat",
+      "sha256": "62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128"
+    },
+    "staticmapdata": {
+      "file": "content/assets/files/staticmapdata-0967af2eacdd8f2a608e738b9042362676167d6c6455e60d08db7ae16cf7ea53.dat",
+      "sha256": "0967af2eacdd8f2a608e738b9042362676167d6c6455e60d08db7ae16cf7ea53"
+    }
+  },
+  "record_count": 995,
+  "schema": "OTERYN_CIPSOFT_STATICDATA_HOUSE_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_STATICDATA"
+}

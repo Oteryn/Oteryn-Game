@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-n3-client-mouse-input
 title: N3 - client mouse input, click to tile and click to target (ADR-0020)
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation: "#162 allocation of ADR-0020 child N3 (repository worker)"
@@ -62,3 +62,7 @@ No command, wire message, server or session change.
   for a targeted tile object needs the overlay placement and revision from the session (N4).
 - The walk is not driven by a session yet; `ClickWalk` is driven by N4 with `step` results.
 - Entities are fixtures until VIS-2.
+
+## Archive closeout
+
+- completed; squash merged as #1239 (b004a8f); archived by the leftover-record housekeeping PR
