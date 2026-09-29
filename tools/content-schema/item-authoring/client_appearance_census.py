@@ -208,9 +208,9 @@ def membership_document_bytes(
         "ids_sha256": hashlib.sha256(ids_bytes).hexdigest(),
         "ids": ids,
     }
-    return (
-        json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
-    ).encode("utf-8")
+    return (json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n").encode(
+        "utf-8"
+    )
 
 
 def main():

@@ -139,8 +139,15 @@ def test_membership_manifest():
         check(
             set(document)
             == {
-                "schema", "client_version", "appearances_file", "appearances_sha256",
-                "appearances_bytes", "object_count", "max_id", "ids_sha256", "ids",
+                "schema",
+                "client_version",
+                "appearances_file",
+                "appearances_sha256",
+                "appearances_bytes",
+                "object_count",
+                "max_id",
+                "ids_sha256",
+                "ids",
             },
             "id-only fields",
         )
