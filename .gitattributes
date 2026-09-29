@@ -1,1 +1,3 @@
 *.sql text eol=lf
+content/assets/files/** -text -diff
+content/assets/files/README.md text eol=lf diff

@@ -1,10 +1,1 @@
-{
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/loot/",
-  "kind": "static_content",
-  "owner": "Loot",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
-  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Reusable loot tables referenced by Creature/Encounter."
-}
+{"attached_authoring_profiles":23,"attached_source_bindings":0,"family":"Loot","legacy_source":{"git_blob_sha":"a8ff4494d714a02da659851ec98787cded12a9cc","path":"content/world/definitions/reference.json","schema":"OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1"},"record_count":1026,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/loot/loot-00000-00499.json","content/loot/loot-00500-00999.json","content/loot/loot-01000-01025.json"]}

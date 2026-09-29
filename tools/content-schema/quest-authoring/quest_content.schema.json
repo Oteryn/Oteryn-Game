@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:schema/quest-content/v1",
+  "title": "Oteryn quest content v1 (CANDIDATE): reward claims, door gates, reward-only and storyline quests",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "claims": {"type": "array", "items": {"$ref": "#/$defs/claim"}},
+    "quests": {"type": "array", "items": {"$ref": "#/$defs/quest"}},
+    "gates": {"type": "array", "items": {"$ref": "#/$defs/gate"}}
+  },
+  "$defs": {
+    "text_ref": {
+      "description": "Narrative text is reserved content (LICENSE-ASSETS.md): a digest, length and placeholders, never the text.",
+      "type": "object", "additionalProperties": false, "required": ["sha256", "length", "placeholders"],
+      "properties": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "length": {"type": "integer", "minimum": 0},
+                     "placeholders": {"type": "array", "items": {"type": "string"}}}
+    },
+    "identity": {
+      "type": "object", "additionalProperties": false, "required": ["key", "revision"],
+      "properties": {"key": {"type": "string", "pattern": "^[a-z0-9_-]+:[a-z0-9_./-]+$"}, "revision": {"type": "string", "minLength": 1}}
+    },
+    "ref": {
+      "type": "object", "additionalProperties": false, "required": ["family", "key", "revision"],
+      "properties": {
+        "family": {"enum": ["Item", "Achievement", "Quest", "RewardClaim", "Gate"]},
+        "key": {"type": "string", "pattern": "^[a-z0-9_-]+:[a-z0-9_./-]+$"},
+        "revision": {"type": "string", "minLength": 1}
+      }
+    },
+    "quantity": {
+      "type": "object", "additionalProperties": false, "required": ["item", "count"],
+      "properties": {"item": {"$ref": "#/$defs/ref"}, "count": {"type": "integer", "minimum": 1}}
+    },
+    "position": {
+      "description": "Source map position, kept as evidence; a map project binds it to a world placement.",
+      "type": "object", "additionalProperties": false, "required": ["x", "y", "z"],
+      "properties": {"x": {"type": "integer", "minimum": 0}, "y": {"type": "integer", "minimum": 0}, "z": {"type": "integer", "minimum": 0, "maximum": 15}}
+    },
+    "reward": {
+      "type": "object", "additionalProperties": false, "required": ["items"],
+      "properties": {
+        "items": {"type": "array", "items": {"$ref": "#/$defs/quantity"}},
+        "random_one_of": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/quantity"}},
+        "container": {"$ref": "#/$defs/ref"},
+        "key_binding": {"type": ["string", "null"], "pattern": "^[a-z0-9_-]+:door-key/[0-9]+$"},
+        "written_text": {
+          "type": "object", "additionalProperties": false, "required": ["item", "text_ref"],
+          "properties": {"item": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]}, "text_ref": {"$ref": "#/$defs/text_ref"}}
+        }
+      }
+    },
+    "placement": {
+      "type": "object", "additionalProperties": false, "required": ["position", "appearance", "reward"],
+      "properties": {
+        "position": {"$ref": "#/$defs/position"},
+        "appearance": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
+        "reward": {"$ref": "#/$defs/reward"},
+        "achievement": {"$ref": "#/$defs/ref"}
+      }
+    },
+    "claim": {
+      "type": "object", "additionalProperties": false,
+      "required": ["identity", "label", "section", "quest", "quest_link_basis", "quest_candidate_from_section", "claim", "placements"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "label": {"type": ["string", "null"]},
+        "section": {"type": ["string", "null"]},
+        "quest": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
+        "quest_link_basis": {"enum": ["kv_quest_name", "storage_key", "label", "curated", null]},
+        "quest_candidate_from_section": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
+        "claim": {
+          "type": "object", "additionalProperties": false, "required": ["per", "repeat"],
+          "properties": {
+            "per": {"const": "character"},
+            "repeat": {
+              "oneOf": [
+                {"type": "object", "additionalProperties": false, "required": ["kind"], "properties": {"kind": {"const": "once"}}},
+                {"type": "object", "additionalProperties": false, "required": ["kind", "hours"],
+                 "properties": {"kind": {"const": "cooldown"}, "hours": {"type": "integer", "minimum": 1}}}
+              ]
+            }
+          }
+        },
+        "placements": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/placement"}},
+        "source_divergence": {"type": "string", "minLength": 1}
+      }
+    },
+    "gate": {
+      "description": "A door that lets a character pass while its condition holds (per_character_pass), or a door that is locked or unlocked for everyone by a matching key or a paired lever (shared_lock).",
+      "type": "object", "additionalProperties": false,
+      "required": ["identity", "label", "quest", "quest_link_basis", "condition", "state", "placements"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "label": {"type": ["string", "null"]},
+        "quest": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
+        "quest_link_basis": {"enum": ["storage_key", "label", null]},
+        "condition": {
+          "oneOf": [
+            {"type": "object", "additionalProperties": false, "required": ["kind", "progress", "claim"],
+             "properties": {"kind": {"const": "quest_progress"},
+                            "progress": {"type": "string", "pattern": "^[a-z0-9_-]+:quest-progress/[a-z0-9_./-]+$"},
+                            "claim": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]}}},
+            {"type": "object", "additionalProperties": false, "required": ["kind", "level"],
+             "properties": {"kind": {"const": "min_level"}, "level": {"type": "integer", "minimum": 1}}},
+            {"type": "object", "additionalProperties": false, "required": ["kind", "key_binding", "key_from_claims"],
+             "properties": {"kind": {"const": "door_key"},
+                            "key_binding": {"type": "string", "pattern": "^[a-z0-9_-]+:door-key/[0-9]+$"},
+                            "key_from_claims": {"type": "array", "items": {"$ref": "#/$defs/ref"}}}},
+            {"description": "No player-state condition: a lever at this position toggles the door open and closed for everyone.",
+             "type": "object", "additionalProperties": false, "required": ["kind", "lever_position"],
+             "properties": {"kind": {"const": "lever"}, "lever_position": {"$ref": "#/$defs/position"}}}
+          ]
+        },
+        "state": {"enum": ["per_character_pass", "shared_lock"]},
+        "placements": {
+          "type": "array", "minItems": 1,
+          "items": {"type": "object", "additionalProperties": false, "required": ["position", "appearance"],
+                    "properties": {"position": {"$ref": "#/$defs/position"}, "appearance": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]}}}
+        }
+      }
+    },
+    "progress": {"type": "string", "pattern": "^[a-z0-9_-]+:quest-progress/[a-z0-9_./-]+$"},
+    "journal_template": {
+      "description": "A journal line the source computes; kept as its string pieces and the progress tracks it reads.",
+      "type": "object", "additionalProperties": false, "required": ["parts", "reads"],
+      "properties": {"parts": {"type": "array", "items": {"$ref": "#/$defs/text_ref"}}, "reads": {"type": "array", "items": {"type": "string"}}}
+    },
+    "transition": {
+      "description": "A named change of a mission's progress track that one owner requests and the quest domain validates (D35).",
+      "type": "object", "additionalProperties": false, "required": ["key", "owner", "callback", "from", "servers"],
+      "properties": {
+        "key": {"type": "string", "pattern": "^[a-z_]+_[0-9]+$"},
+        "owner": {"enum": ["npc", "action", "movement", "creature_event", "global_event", "talk_action", "event_callback", "library", "other"]},
+        "callback": {"type": ["string", "null"]},
+        "requested_by": {"description": "NPC dialogue that requests the transition: the NPC authoring bundle key and the player keywords and topics around the write.",
+                         "type": "object", "additionalProperties": false, "required": ["npc", "keywords", "topics"],
+                         "properties": {"npc": {"type": "string", "pattern": "^(canary|crystal):npc/[^/]+$"},
+                                        "keywords": {"type": "array", "items": {"oneOf": [{"type": "string", "minLength": 1, "maxLength": 20, "pattern": "^\\S+( \\S+)?$"},
+                                                                                  {"$ref": "#/$defs/text_ref"}]}},
+                                        "topics": {"type": "array", "items": {"type": "integer", "minimum": 0}}}},
+        "from": {"oneOf": [{"type": "null"},
+                           {"type": "object", "additionalProperties": false, "required": ["op", "value", "exact"],
+                            "properties": {"op": {"enum": ["==", "~=", "<", "<=", ">", ">="]}, "value": {"type": "integer"},
+                                           "exact": {"type": "boolean"}}}]},
+        "to": {"type": "integer"},
+        "increment": {"type": "integer", "minimum": 1},
+        "computed": {"enum": ["timestamp", "expression"]},
+        "servers": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["canary", "crystalserver"]}}
+      },
+      "oneOf": [{"required": ["to"]}, {"required": ["increment"]}, {"required": ["computed"]}]
+    },
+    "mission": {
+      "type": "object", "additionalProperties": false, "required": ["key", "name", "progress", "start_value", "end_value", "journal", "transitions"],
+      "properties": {
+        "key": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "name": {"type": "string", "minLength": 1},
+        "progress": {"$ref": "#/$defs/progress"},
+        "start_value": {"type": "integer"},
+        "end_value": {"type": "integer"},
+        "transitions": {"type": "array", "items": {"$ref": "#/$defs/transition"}},
+        "journal": {
+          "oneOf": [
+            {"type": "object", "additionalProperties": false, "required": ["kind", "stages"],
+             "properties": {"kind": {"const": "per_stage"},
+                            "stages": {"type": "array", "minItems": 1, "items": {
+                              "type": "object", "additionalProperties": false, "required": ["value"],
+                              "properties": {"value": {"type": "integer"}, "text_ref": {"$ref": "#/$defs/text_ref"}, "template": {"$ref": "#/$defs/journal_template"}},
+                              "oneOf": [{"required": ["text_ref"]}, {"required": ["template"]}]}}}},
+            {"type": "object", "additionalProperties": false, "required": ["kind", "text_ref"],
+             "properties": {"kind": {"const": "fixed"}, "text_ref": {"$ref": "#/$defs/text_ref"}}},
+            {"type": "object", "additionalProperties": false, "required": ["kind", "parts", "reads"],
+             "properties": {"kind": {"const": "template"}, "parts": {"type": "array", "items": {"$ref": "#/$defs/text_ref"}},
+                            "reads": {"type": "array", "items": {"type": "string"}}}},
+            {"type": "object", "additionalProperties": false, "required": ["kind"], "properties": {"kind": {"const": "none"}}}
+          ]
+        }
+      }
+    },
+    "quest": {
+      "type": "object", "additionalProperties": false, "required": ["identity", "display_name", "kind", "shown_in_quest_log", "claims"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "display_name": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["reward_only", "storyline", "script_only"]},
+        "shown_in_quest_log": {"type": "boolean"},
+        "wiki": {
+          "type": "object", "additionalProperties": false, "required": ["title", "pageid", "revid"],
+          "properties": {"title": {"type": "string"}, "pageid": {"type": "integer"}, "revid": {"type": "integer"}}
+        },
+        "requirements_from_wiki": {
+          "description": "The wiki infobox premium/lvl fields, as recorded (evidence): not yet typed, and not always a clean single value.",
+          "type": "object", "additionalProperties": false,
+          "properties": {"premium": {"type": "string"}, "lvl": {"type": "string"}}
+        },
+        "requirements": {
+          "description": "The typed sibling of requirements_from_wiki: null (never a guess) for anything requirements_unparsed explains.",
+          "type": "object", "additionalProperties": false,
+          "properties": {"premium": {"type": ["boolean", "null"]}, "min_level": {"type": ["integer", "null"], "minimum": 0}}
+        },
+        "requirements_unparsed": {
+          "description": "Why a requirements field is null despite requirements_from_wiki recording a value: a range or open-ended '+', a '?' marker, a parenthetical or '*' footnote, literal 'none'/'varies', or an unrecognized form.",
+          "type": "object", "additionalProperties": false,
+          "properties": {"premium": {"enum": ["partial", "uncertain", "unrecognized"]},
+                         "min_level": {"enum": ["range", "note", "uncertain", "none", "varies", "unrecognized"]}}
+        },
+        "claims": {"type": "array", "items": {"$ref": "#/$defs/ref"}},
+        "source_name": {"type": "string", "minLength": 1},
+        "start": {
+          "oneOf": [{"type": "null"},
+                    {"type": "object", "additionalProperties": false, "required": ["progress", "at_least"],
+                     "properties": {"progress": {"$ref": "#/$defs/progress"}, "at_least": {"type": "integer"}}}]
+        },
+        "missions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/mission"}},
+        "gates": {"type": "array", "items": {"$ref": "#/$defs/ref"}}
+      },
+      "if": {"properties": {"kind": {"const": "storyline"}}},
+      "then": {"required": ["source_name", "start", "missions", "gates"]},
+      "else": {
+        "not": {"anyOf": [{"required": ["missions"]}, {"required": ["start"]}, {"required": ["gates"]}]},
+        "if": {"properties": {"kind": {"const": "reward_only"}}},
+        "then": {"properties": {"claims": {"minItems": 1}}},
+        "else": {
+          "description": "script_only: a quest the servers implement in scripts (chests, bosses, world state) with no quest-log entry; the wiki decides it exists (D25), so it is required here.",
+          "required": ["wiki"]
+        }
+      }
+    }
+  }
+}

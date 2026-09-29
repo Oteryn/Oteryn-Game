@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-25T08:55:50+00:00",
+  "updated_at": "2026-09-29T00:00:00+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -1248,6 +1248,101 @@
       "boundary_tests": [
         "hard maximum accepted",
         "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
+    },
+    {
+      "id": "AI01-PENDING-TIMERS-PER-ACTOR",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+      "resource": "pending AI think timers per live creature actor in the Channel owner timer lane (AI-RL-06)",
+      "unit": "pending timers per actor",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
+    },
+    {
+      "id": "AI01-SPAWN-SOURCES-PER-SCOPE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+      "resource": "realized spawn sources per Channel ownership generation (AI-RL-11, D57)",
+      "unit": "spawn sources per scope",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
+    },
+    {
+      "id": "AI01-SPAWN-POPULATION",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+      "resource": "live or pending creatures per spawn source (AI-RL-11, D57)",
+      "unit": "creatures per spawn source",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
+    },
+    {
+      "id": "AI01-SPAWN-PLACEMENT-CELLS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+      "resource": "declared placement cells per spawn source, one per creature (AI-RL-12)",
+      "unit": "declared cells per spawn source",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
+    },
+    {
+      "id": "AI01-SPAWN-OCCUPANCY-RETRIES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+      "resource": "occupied-cell respawn retries per creature per respawn window (AI-RL-13, D115)",
+      "unit": "retries per respawn window",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 (the fourth retry) terminates the occurrence SKIPPED rather than exceeding the bound",
         "checked arithmetic overflow rejected before allocation or partial mutation"
       ]
     },
@@ -4830,6 +4925,1278 @@
         "isolated, unactivated production Movement local-step kernel"
       ],
       "notes": "Accepted by resource owner in #139 comment 5829651359 for the #889 ENGINE_READINESS proof, under the VSL-MOVE-01 owner baseline. This per-decision limit does not admit or activate the July-28 Reference data target (#483), certify Reference parity, bound the static-cell index population, or close other Movement resource rows."
+    },
+    {
+      "id": "MOVE-RL-02",
+      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "resource": "Movement step inputs applied for one actor in one Channel owner work cycle",
+      "unit": "step inputs per actor per work cycle",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one step input is applied per actor per Channel owner work cycle; further inputs remain outstanding FND-02 commands bounded by FND02-OUTSTANDING-COMMANDS, processed FIFO per session and round-robin across actors.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one step input for an actor is applied in a work cycle",
+        "max+1=2: a second step input for the same actor is not applied in the same work cycle; it stays outstanding and the 65th outstanding command is refused under the existing FND-02 rule"
+      ],
+      "consumers": [
+        "first connected Movement child: own-actor cardinal step (FIRST-CONTROL-WIRE-V1)"
+      ],
+      "notes": "Accepted by the resource owner in #139 comment 5853424970 (FIRST-CONTROLLED-STEP-LIMITS-V1). Speed and timing semantics are not decided; occupancy, visibility, relocation, Interaction and pathfinding rows are fail-closed exclusions in this child."
+    },
+    {
+      "id": "MOVE-RL-11",
+      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "resource": "Semantic entities in one WORLD_SPATIAL_VISIBILITY snapshot or delta",
+      "unit": "entities per snapshot or delta",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The first child carries only the session's own actor; a second entity is refused before encoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1: the own actor is carried in a snapshot or delta",
+        "max+1=2: a second entity cannot be encoded by the first-child payload schema"
+      ],
+      "consumers": [
+        "WORLD_SPATIAL_VISIBILITY state domain 1, delta type 1, snapshot type 1"
+      ],
+      "notes": "Accepted by the resource owner in #139 comment 5853424970. Other actors are not visible in the first child."
+    },
+    {
+      "id": "MOVE-RL-08",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Enter, leave and update entries in one visibility delta",
+      "unit": "entries per delta",
+      "hard_maximum": 256,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A larger change is sent as a full snapshot (resync); a delta never exceeds 256 entries.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=256: a change of exactly 256 entries is a delta",
+        "max+1=257: a change of 257 entries becomes a resync snapshot"
+      ],
+      "consumers": [
+        "movement::interest::diff_interest",
+        "movement::interest::INTEREST_DELTA_ENTRIES_MAX"
+      ],
+      "notes": "Re-decided in D87. Decision section 4.4; #162 comment 5875958040. Wire consumer arrives with VIS-2 (new WORLD_SPATIAL revision); MOVE-RL-11 remains 1 until then."
+    },
+    {
+      "id": "MOVE-RL-09",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Candidates examined by one visibility query",
+      "unit": "candidates per query",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Candidates are enumerated in canonical order and the query stops at 1,024 examined, so the selection is identical on replay; the own actor counts as one examined candidate.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1024: 1,024 candidates are all examined",
+        "max+1=1025: the 1,025th candidate is never examined"
+      ],
+      "consumers": [
+        "movement::interest::InterestIndex::query_with",
+        "movement::interest::VISIBILITY_QUERY_CANDIDATES_MAX"
+      ],
+      "notes": "D87. Decision section 4.4; #162 comment 5875958040."
+    },
+    {
+      "id": "MOVE-RL-10",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Results returned by one visibility query",
+      "unit": "results per query",
+      "hard_maximum": 256,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The query returns the nearest 256 in canonical order and never allocates beyond it; the own actor is always one of them.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=256: 256 visible entities are all returned",
+        "max+1=257: the farthest visible entity in canonical order is excluded"
+      ],
+      "consumers": [
+        "movement::interest::InterestIndex::query_with",
+        "movement::interest::VISIBILITY_QUERY_RESULTS_MAX"
+      ],
+      "notes": "Equals the future MOVE-RL-11 value (D87). Decision section 4.4; #162 comment 5875958040. Wire consumer arrives with VIS-2 (new WORLD_SPATIAL revision); MOVE-RL-11 remains 1 until then."
+    },
+    {
+      "id": "MOVE-VIEW-WIDTH",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Interest area width per Channel",
+      "unit": "tiles",
+      "hard_maximum": 36,
+      "configurable_range": {
+        "minimum": 15,
+        "maximum": 36
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Fixed per Channel for its lifetime; default 18 (Reference). A width outside 15..36 is rejected at construction.",
+      "client_visible": true,
+      "boundary_tests": [
+        "min=15 and max=36 are accepted",
+        "min-1=14 and max+1=37 are rejected"
+      ],
+      "consumers": [
+        "movement::interest::VisibilitySettings"
+      ],
+      "notes": "D84. Decision section 4.4; #162 comment 5875958040."
+    },
+    {
+      "id": "MOVE-VIEW-HEIGHT",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Interest area height per Channel",
+      "unit": "tiles",
+      "hard_maximum": 28,
+      "configurable_range": {
+        "minimum": 11,
+        "maximum": 28
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Fixed per Channel for its lifetime; default 14 (Reference). A height outside 11..28 is rejected at construction.",
+      "client_visible": true,
+      "boundary_tests": [
+        "min=11 and max=28 are accepted",
+        "min-1=10 and max+1=29 are rejected"
+      ],
+      "consumers": [
+        "movement::interest::VisibilitySettings"
+      ],
+      "notes": "D84. Decision section 4.4; #162 comment 5875958040."
+    },
+    {
+      "id": "MOVE-VIEW-FLOORS",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Floors visible to one observer",
+      "unit": "floors",
+      "hard_maximum": 8,
+      "configurable_range": {
+        "minimum": 5,
+        "maximum": 8
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Above ground (floor <= 7) floors 0..7 (8 floors); underground the observer floor +/- 2, clamped at 15 (5 floors, fewer at 14 and 15). Tiles beyond the floor rule are not candidates; never an error. Not configurable.",
+      "client_visible": true,
+      "boundary_tests": [
+        "floor 7 sees floors 0..7 and not 8",
+        "floor 10 sees 8..12; floor 14 sees 12..15; floor 15 sees 13..15"
+      ],
+      "consumers": [
+        "movement::interest::floor_visible"
+      ],
+      "notes": "D86. Decision section 4.4; #162 comment 5875958040."
+    },
+    {
+      "id": "WOBJ-RL-01",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Use inputs applied for one actor in one Channel owner work cycle",
+      "unit": "use inputs per actor per work cycle",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one use input is applied per actor per Channel owner work cycle; further inputs remain outstanding FND-02 commands bounded by FND02-OUTSTANDING-COMMANDS, processed FIFO per session and round-robin across actors.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one use input for an actor is applied in a work cycle",
+        "max+1=2: a second use input for the same actor is not applied in the same work cycle; it stays outstanding and the 65th outstanding command is refused under the existing FND-02 rule"
+      ],
+      "consumers": [
+        "USE_INTENT command (USE-WIRE-V1)"
+      ],
+      "notes": "Accepted by the resource owner in #162 comment 5864914163 (USE-WIRE-V1). The server selects the unique bound transition; the client sends intent only. Occupancy, reach and stale-state disposition semantics are decided by USE-WIRE-V1; composition into the Server Seam is M2."
+    },
+    {
+      "id": "WOBJ-RL-02",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Overlay entries encoded in one WORLD_OBJECT_OVERLAY delta",
+      "unit": "overlay entries per delta",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One committed use transition changes exactly one world object; the delta carries that single overlay entry and a second entry is refused before encoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1: the one changed overlay entry is carried in a delta",
+        "max+1=2: a second entry cannot be encoded by the WORLD_OBJECT_OVERLAY_DELTA_V1 payload schema"
+      ],
+      "consumers": [
+        "WORLD_OBJECT_OVERLAY state domain 2, delta type 1"
+      ],
+      "notes": "Accepted by the resource owner in #162 comment 5864914163 (USE-WIRE-V1)."
+    },
+    {
+      "id": "WOBJ-RL-03",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Overlay entries encoded in one WORLD_OBJECT_OVERLAY snapshot",
+      "unit": "overlay entries per snapshot",
+      "hard_maximum": 486,
+      "configurable_range": {
+        "minimum": 486,
+        "maximum": 486
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Entry 487 is refused before encoding; the snapshot assembler never allocates for an unbounded overlay count.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=486: 486 overlay entries are carried in a snapshot within FND02-SNAPSHOT-CHUNK-BYTES",
+        "max+1=487: a 487th entry is refused before encoding"
+      ],
+      "consumers": [
+        "WORLD_OBJECT_OVERLAY state domain 2, snapshot type 1"
+      ],
+      "notes": "Accepted by the resource owner in #162 comment 5864914163 (USE-WIRE-V1). Derived from the existing single-chunk snapshot byte bound FND02-SNAPSHOT-CHUNK-BYTES = 524,288 bytes (apps/game-server/src/foundation/protocol.rs MAX_SNAPSHOT_CHUNK_BYTES, the same bound encode_single_chunk_snapshot enforces), divided by the maximum encoded WorldObjectOverlayEntryV1 size as an element of the repeated `entries` field. One entry-in-field is at most 1,078 bytes: outer repeated-field tag+length (1 + 2 = 3 bytes) wrapping an entry message of at most 1,075 bytes (content_generation: 1 tag + 1 length + 32 bytes = 34; placement: 1 tag + 2 length + 512 bytes = 515, using the existing accepted FIRST_PRODUCTION_MAX_KEY_BYTES = 512 from apps/game-server/src/content/production.rs; state key: 1 tag + 2 length + 512 bytes = 515, same key bound; revision: 1 tag + 10-byte u64 varint = 11; 34 + 515 + 515 + 11 = 1,075). floor(524,288 / 1,078) = 486 (486 * 1,078 = 523,908; remainder 380 bytes < 1,078). max_payload_bytes registered for WORLD_OBJECT_OVERLAY_SNAPSHOT_V1 is therefore 523,908 bytes, 380 bytes inside the FND02-SNAPSHOT-CHUNK-BYTES hard maximum."
+    },
+    {
+      "id": "WOBJ-RL-04",
+      "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+      "resource": "Timed-revert (revert_after_ms) lifecycle records held by one scope revert driver in one scope generation, in any state (PENDING, IN_FLIGHT or TERMINAL)",
+      "unit": "records per scope generation",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked only after the forward operation's prepare returned Publish and before its commit; a full store fails the whole forward operation with no object mutation and no record. TERMINAL records are kept for the whole scope generation (the duplicate-delivery horizon) and are dropped with the scope-ephemeral driver on restart. Per record: the revert occurrence identity is bounded by WOBJ-RL-06 (4 levels) and WOBJ-RL-07 (4,096 key bytes), so one copy is at most 4,096 key bytes plus 4 x 512 bytes of per-level structure and allocation overhead (6,144 bytes); it is held twice (record key and due-order key, 12,288 bytes); placement, inverse transition and expected state are each bounded by FIRST_PRODUCTION_MAX_KEY_BYTES (512, so 1,536 bytes); fixed fields and map-node overhead stay within 512 bytes. That is at most 14,336 bytes per record and 14 MiB per scope generation, inside 16 MiB.",
+      "client_visible": false,
+      "boundary_tests": [
+        "configured capacity N (tested at N=1): N records are created by committed forward operations",
+        "N+1: the next committed-shaped forward operation fails CAPACITY_EXCEEDED before commit; object state and revision are unchanged",
+        "a forward operation whose prepare result is unchanged never reaches the check",
+        "a configured capacity above 1024 is refused when the driver limits are built"
+      ],
+      "consumers": [
+        "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::apply_forward; not yet wired into a live Channel or Instance owner)"
+      ],
+      "notes": "Section 7 open decisions 1 and 5, resolved by the owning lane in OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement. Lowered from 4,096 to 1,024 in PR #1144 round 3 so the per-generation memory bound holds with the WOBJ-RL-06/07 identity bounds."
+    },
+    {
+      "id": "WOBJ-RL-05",
+      "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+      "resource": "Due timed-revert records one scope revert-driver wake admits",
+      "unit": "records per driver wake",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A wake fires at most this many due records in (deadline, scheduling ordinal, sequence) order and then returns to the scope owner; the remainder is neither dropped nor fired in the same wake and is reported as still due for a later wake.",
+      "client_visible": false,
+      "boundary_tests": [
+        "configured batch B (tested at B=1): B due records fire in one wake",
+        "B+1: the next due record stays PENDING and the wake reports more_due; a later wake fires it",
+        "a configured batch above 32 is refused when the driver limits are built"
+      ],
+      "consumers": [
+        "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::wake; not yet wired into a live Channel or Instance owner)"
+      ],
+      "notes": "Section 7 bounded due-work admission (FND-03 sections 7 and 14), same shape as MovementOwnerTurn's bounded max_inputs. Registered by OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement."
+    },
+    {
+      "id": "WOBJ-RL-06",
+      "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+      "resource": "Nesting depth (ChildOccurrenceRef::ancestry_depth) of a timed-revert child occurrence; its caller-supplied forward occurrence is admitted at depth at most one less",
+      "unit": "occurrence nesting levels",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Checked in ScopeRevertDriver::apply_forward on the supplied forward occurrence before the revert child is derived, and on the derived child, before any ordinal is minted, anything is committed or any record is created; a violation fails the whole forward operation with the named error OccurrenceTooDeep.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=4: a forward occurrence at depth 3 schedules a revert child at depth 4",
+        "max+1=5: a forward occurrence at depth 4 is refused OccurrenceTooDeep with no ordinal, mutation or record"
+      ],
+      "consumers": [
+        "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::apply_forward; not yet wired into a live Channel or Instance owner)"
+      ],
+      "notes": "PR #1144 round 3 (Codex P2 4125881422): ChildOccurrenceRef owns its ancestry recursively, so the record bound needs a depth bound. Registered by OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement."
+    },
+    {
+      "id": "WOBJ-RL-07",
+      "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+      "resource": "Rendered size of a timed-revert forward or child occurrence identity: the bytes of its Debug rendering, which contains every one of its semantic-key bytes (ancestry, definition, target, edge and revision context) at least once, so it bounds the total key bytes",
+      "unit": "bytes",
+      "hard_maximum": 4096,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Measured with a counting writer that stops at the limit without allocating, on the supplied forward occurrence and on the derived revert child, before any ordinal is minted, anything is committed or any record is created; a violation fails the whole forward operation with the named error OccurrenceTooLarge.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a forward occurrence whose rendering is within 4,096 bytes schedules its revert child",
+        "a forward occurrence with a key longer than 4,096 bytes is refused OccurrenceTooLarge with no ordinal, mutation or record",
+        "a caller-supplied revision context that makes the derived child exceed 4,096 bytes is refused OccurrenceTooLarge the same way"
+      ],
+      "consumers": [
+        "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::apply_forward; not yet wired into a live Channel or Instance owner)"
+      ],
+      "notes": "PR #1144 round 3 (Codex P2 4125881422): SemanticKey has no length bound of its own. Registered by OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement."
+    },
+    {
+      "id": "FND04B-LIVENESS-IDLE-PROBE-MS",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Out-of-combat LivenessProbe cadence of one admitted positioned connection",
+      "unit": "milliseconds",
+      "hard_maximum": 5000,
+      "configurable_range": {
+        "minimum": 5000,
+        "maximum": 5000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One outstanding probe per connection; one probe frame per cadence tick; no per-probe allocation beyond one frame.",
+      "client_visible": false,
+      "boundary_tests": [
+        "5000 ms: a probe is sent one cadence after the baseline snapshot and then every cadence",
+        "An answered probe resets the missed count; a late ack of an older probe restores nothing"
+      ],
+      "consumers": [
+        "gameplay_transport serve_admitted (OTV2-20260927-liveness-control-loss)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Out-of-combat loss is declared three cadences after the first unanswered probe (four after the baseline snapshot)."
+    },
+    {
+      "id": "FND04B-LIVENESS-IDLE-MISSED",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Consecutive unanswered out-of-combat probes that prove playable control lost",
+      "unit": "probes",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 3
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Reaching the limit ends the admitted transport as control lost; no durable session mutation in this child.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=3: the third consecutive unanswered probe ends the transport as control lost at the next cadence",
+        "max-1=2 unanswered probes followed by an answered probe keep control"
+      ],
+      "consumers": [
+        "gameplay_transport serve_admitted (OTV2-20260927-liveness-control-loss)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss."
+    },
+    {
+      "id": "FND04B-LIVENESS-COMBAT-PROBE-MS",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "In-combat LivenessProbe cadence of one admitted positioned connection",
+      "unit": "milliseconds",
+      "hard_maximum": 1000,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One outstanding probe per connection; one probe frame per cadence tick.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1000 ms: in combat a probe is sent every cadence"
+      ],
+      "consumers": [
+        "combat state (not composed yet)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Registered ahead of the combat state; not consumed until it exists."
+    },
+    {
+      "id": "FND04B-LIVENESS-COMBAT-MISSED",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Consecutive unanswered in-combat probes that prove playable control lost",
+      "unit": "probes",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Reaching the limit ends the admitted transport as control lost (about one 2 s combat tick).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: the second consecutive unanswered in-combat probe ends the transport as control lost"
+      ],
+      "consumers": [
+        "combat state (not composed yet)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Registered ahead of the combat state; not consumed until it exists."
+    },
+    {
+      "id": "FND04B-SAME-SESSION-GRACE-S",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Same-session grace from the authoritative ControlLossEpoch boundary to the original grace deadline",
+      "unit": "seconds",
+      "hard_maximum": 60,
+      "configurable_range": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One original grace deadline per loss epoch, fixed at the loss decision and never restarted or extended; a RECONNECTABLE session keeps its present, uncontrolled actor and its claims until the deadline.",
+      "client_visible": false,
+      "boundary_tests": [
+        "The committed loss records original_grace_deadline = decision time + 60 s",
+        "A replayed identical loss decision keeps the original deadline"
+      ],
+      "consumers": [
+        "gameplay_transport control-loss commit (OTV2-20260927-control-loss-lifecycle)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 \u00a74 (#822 comments 5854525644 and 5854565314); matches the Tibia 60 s logout block; to be measured and tuned before release. Expiry release and positive resume are later children."
+    },
+    {
+      "id": "DUR03-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "ItemInstances touched by one DUR-03 native one-item or B3 merge-shape logical transaction",
+      "unit": "ItemInstances per logical transaction",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT, the container-slot TRANSFER and the new-entry TRANSFER touch exactly one ItemInstance (before and after are the same item); the B3 full-merge and top-up shapes touch exactly two (source A and receiver B).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: MINT and the one-item TRANSFER shapes each touch exactly one ItemInstance",
+        "max=2: the full-merge and top-up TRANSFER shapes touch exactly A and B",
+        "max+1=3: a usage of three touched ItemInstances is rejected (CAPACITY_EXCEEDED)",
+        "max+1 for the one-item shapes: a TRANSFER whose before and after ItemInstance ids differ is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Amended by B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.5 (2 for the merge and top-up shapes, 1 otherwise); registered by OTV2-20260928-b3-1-transfer."
+    },
+    {
+      "id": "DUR03-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Location/custody lines in one DUR-03 native one-item logical transaction",
+      "unit": "location/custody lines per logical transaction",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT has one Ground destination; TRANSFER has one Ground source and at most one destination line (the container slot or a new main-backpack entry; a B3 full merge has only the Ground removal).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: a TRANSFER with one source and one destination line is accepted",
+        "max+1=3: an additional or duplicated location line is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Value lines in one DUR-03 native one-item logical transaction",
+      "unit": "value lines per logical transaction",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Not admitted: the registered payload has no value-line field, so any value line rejects fail-closed as an unknown field before use.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=0: a transaction with no value line is accepted",
+        "max+1=1: any value line is rejected fail-closed"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
+    },
+    {
+      "id": "DUR03-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Transform inputs/outputs in one DUR-03 native one-item logical transaction",
+      "unit": "transform inputs/outputs per logical transaction",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Not admitted: the registered payload has no transform field, so any transform input or output rejects fail-closed as an unknown field before use.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=0: a transaction with no transform is accepted",
+        "max+1=1: any transform input or output is rejected fail-closed"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
+    },
+    {
+      "id": "DUR03-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Container expansion in one DUR-03 native one-item logical transaction",
+      "unit": "expanded container levels per logical transaction",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Direct root only: the registered payload has no container-expansion field, so any expansion rejects fail-closed as an unknown field before use.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=0: a direct-root transaction is accepted",
+        "max+1=1: any container expansion is rejected fail-closed"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
+    },
+    {
+      "id": "DUR03-RL-06-PARTICIPANTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Plan participants in one DUR-03 native one-item logical transaction",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated. One participant for MINT and the one-item TRANSFER shapes; two (A and B) for the B3 full-merge and top-up shapes.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one participant accepted for the one-item shapes",
+        "max=2: A and B accepted for the full-merge and top-up shapes",
+        "max+1=3: a third participant is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Amended by B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.5; registered by OTV2-20260928-b3-1-transfer."
+    },
+    {
+      "id": "DUR03-RL-06-EFFECT-WORK-UNITS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Effect work units (participant plus its effects) in one DUR-03 native one-item logical transaction",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT 2 and the one-item TRANSFER shapes 3 (participant + Ground removal + placement); full merge 5 (A: participant + Ground removal + retirement; B: participant + quantity); top-up 6 (A: participant + Ground removal + placement + quantity; B: 2).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=3: the one-item TRANSFER shapes accepted",
+        "max=6: the top-up shape accepted",
+        "max+1=7: a seventh work unit is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Amended by B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.5; registered by OTV2-20260928-b3-1-transfer."
+    },
+    {
+      "id": "DUR03-RL-07-EVENTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Audit events for one DUR-03 native one-item logical transaction",
+      "unit": "events per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "TransactionEventRef count and ordinal are exactly 1; checked on the envelope before the payload is used.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: TransactionEventRef ordinal=1, count=1 accepted",
+        "max+1=2: count=2 is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. D50: one audit event per logical transaction."
+    },
+    {
+      "id": "DUR03-RL-07-ENVELOPE-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "One encoded normative ANL-01 EventEnvelope (game-events/v1/foundation.proto) carrying event type 2, including payload",
+      "unit": "bytes",
+      "hard_maximum": 9216,
+      "configurable_range": {
+        "minimum": 9216,
+        "maximum": 9216
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES still applies on top.",
+      "client_visible": false,
+      "boundary_tests": [
+        "9,216-byte envelope passes the size gate",
+        "9,217 bytes rejected before decode",
+        "worst-case MINT of the final schema (7,167 B) accepted",
+        "integer-overflow accounting rejected",
+        "worst-case B3 top-up TRANSFER envelope of the final schema (6,816 B) accepted"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Sized on the normative EventEnvelope with every optional field present, ANL-01 strings at 128 B and widest varints: overhead at most 1,038 B; worst cases MINT 6,129/7,167 B, TRANSFER 7,433/8,471 B, TRANSFER with a 128 B typed_position 7,565/8,603 B. Any valid payload fits: 7,936 + 1,038 = 8,974 B. The OfflineCandidateEnvelope evidence wrapper is not this envelope. No private 4,096 B cap is registered."
+    },
+    {
+      "id": "DUR03-RL-07-PAYLOAD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "One exact OneItemTransactionV1 payload (event type 2) inside EventEnvelope.payload",
+      "unit": "bytes",
+      "hard_maximum": 7936,
+      "configurable_range": {
+        "minimum": 7936,
+        "maximum": 7936
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the encoded or borrowed payload length before decoding or copying; ANL01-EVENT-PAYLOAD-BYTES still applies on top.",
+      "client_visible": false,
+      "boundary_tests": [
+        "7,936-byte payload passes the size gate",
+        "7,937 bytes rejected before decode",
+        "worst-case MINT payload of the final schema (6,129 B) accepted",
+        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 \u00a74.5 bound 7,821 B) accepted"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-07-CONTENT-KEY-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "One content key or revision string in the event type 2 payload: production_key, revision_ref, map revision, ground content revision, loot table key and revision, loot purpose key, provenance content revision, ruleset and SIM revisions",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Validate each field length before retaining or copying; oversize input is rejected, never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "512-byte content key accepted",
+        "513 bytes rejected, not truncated"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Aligned with DUR04-FIRST-PROD-KEY-BYTES and DUR04-FIRST-PROD-STRING-BYTES."
+    },
+    {
+      "id": "DUR03-RL-07-TECHNICAL-FIELD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "One technical field in the event type 2 payload: definition and loot table family (closed enum name), spatial_position, corpse ref, native room/placement context, typed_cause",
+      "unit": "bytes",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Validate each field length before retaining or copying; oversize input is rejected, never truncated. retention_profile_id and other envelope strings stay bounded by ANL01-ENVELOPE-STRING-BYTES (128 B).",
+      "client_visible": false,
+      "boundary_tests": [
+        "128-byte technical field accepted",
+        "129 bytes rejected, not truncated"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-07-UUID-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "One UUID field in event type 2 payload or envelope: item, world, channel, character, session, event, transaction",
+      "unit": "bytes",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Exact width checked before use; any other width is rejected.",
+      "client_visible": false,
+      "boundary_tests": [
+        "16 bytes accepted",
+        "15 and 17 bytes rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-07-PAYLOAD-SHA256-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "EventEnvelope.payload_sha256 for event type 2",
+      "unit": "bytes",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Exact width and SHA-256 equality over the exact payload bytes checked before the payload is used.",
+      "client_visible": false,
+      "boundary_tests": [
+        "32 bytes accepted",
+        "31 and 33 bytes rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-08",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Retry and reconciliation work for one DUR-03 native one-item logical transaction",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 3
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "All attempts reuse the same TransactionId and frozen candidate; an unknown outcome is held and never gets a new TransactionId; each pass stays within DFR-DB-PASS-MS (2,000 ms).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=3: three retry/reconciliation work units accepted",
+        "max+1=4: a fourth work unit is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: the logical transaction is a durable reservation keyed by the full cause tuple; each commit attempt or reconciliation pass first charges one unit to it with a committed conditional UPDATE, across re-freezes, restarts and concurrent holders; the fourth is rejected before the pass's work)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+      ],
+      "notes": "D51, decision \u00a73.3: a policy value, not a measurement. Stage C must re-decide it once real PostgreSQL reconciliation exists and prove max/max+1 across a restart. Registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-AUDIT-RETENTION-S",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Ordinary retention ceiling of one event type 2 durable-audit event (profile DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1)",
+      "unit": "elapsed seconds",
+      "hard_maximum": 7776000,
+      "configurable_range": {
+        "minimum": 7776000,
+        "maximum": 7776000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Expiry = envelope trusted-server timestamp + 7,776,000 s over [start, expiry); never recomputed or refreshed; deletion subject only to an explicit audited case/legal hold.",
+      "client_visible": false,
+      "boundary_tests": [
+        "expiry - 1 s retained",
+        "expiry and later expired"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+        "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: stores game_item_audit_outbox.expires_at = occurred_at + 7,776,000,000 ms; no audit purge path yet)",
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+      ],
+      "notes": "P90D, decision \u00a73.1 and OTERYN_DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_DECISION_2026-09-27.md. Registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "GAMEITEM01-STACK-QUANTITY-MAX",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md",
+      "resource": "Quantity of one live stack (ItemInstance) admitted by a B3 TRANSFER, and the stack maximum a definition may prove",
+      "unit": "units per ItemInstance",
+      "hard_maximum": 100,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 100
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any mutation; a stackable definition without a proven maximum uses 100; a proven maximum above 100 or a stored quantity above the definition maximum is refused; an unknown stack class is refused (fail closed); a non-stackable item has quantity 1.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=100: a stack of 100 is admitted and a merge may reach exactly 100",
+        "max+1=101: a proven stack maximum of 101 and a stored quantity of 101 are refused",
+        "the payload gate rejects a receiver after-quantity of 101"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_transfer.rs (stack_maximum/plan_transfer)",
+        "apps/game-server/src/durability/item_transfer_audit.rs (check_transfer)"
+      ],
+      "notes": "D82; B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.3/\u00a74.5; a proven larger value waits for a new decision; registered by OTV2-20260928-b3-1-transfer."
+    },
+    {
+      "id": "GAMEITEM01-CONTAINER-ENTRIES-MAX",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md",
+      "resource": "Direct entries of the equipped main backpack",
+      "unit": "entries per container",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "An entry-placing TRANSFER needs current_entry_count < definition_capacity, checked under the character_root row lock before any mutation; a declared capacity above 20 is refused; the database also caps one parent at 20 entries at commit; entry reads are bounded to 21 rows.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=20: the 20th entry is placed",
+        "max+1=21: the 21st entry is refused with the item left on Ground",
+        "a declared capacity of 21 is refused"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_transfer.rs (plan_transfer/load_entries)",
+        "apps/game-server/migrations/0011_item_transfer_backpack.sql (game_item_placement_proven)"
+      ],
+      "notes": "D81; B3 \u00a74.2/\u00a74.5; the backpack definition oteryn:item.registry.i00002752 declares capacity 20; registered by OTV2-20260928-b3-1-transfer."
+    },
+    {
+      "id": "GAMEITEM01-PLACEMENT-DEPTH",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md",
+      "resource": "Placement depth below the CharacterEquipment container slot",
+      "unit": "container levels",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Only direct entries of the character's own slot item are destinations; the composite foreign key (character_id, parent_item_instance_id) -> game_item_container_slots makes a deeper placement unrepresentable; a moved container must be empty (DUR03-RL-05 stays 0).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: an entry whose parent is the equipped main backpack is accepted",
+        "max+1=2: an entry whose parent is itself an entry is rejected by the database",
+        "a non-empty container is refused"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0011_item_transfer_backpack.sql (game_item_container_entries)",
+        "apps/game-server/src/durability/item_transfer.rs (plan_transfer)"
+      ],
+      "notes": "D80; B3 \u00a74.1/\u00a74.5; nested bags are a later decision; registered by OTV2-20260928-b3-1-transfer."
+    },
+    {
+      "id": "GAMEITEM01-REACHABLE-ITEMS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md",
+      "resource": "Items reachable through one character's container slot (the main backpack and its direct entries)",
+      "unit": "ItemInstances per character",
+      "hard_maximum": 21,
+      "configurable_range": {
+        "minimum": 21,
+        "maximum": 21
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Follows from one slot item, depth 1 and at most 20 entries; reads of the main backpack are bounded to 1 + 21 rows and a larger stored set is invalid state.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=21: the main backpack with 20 entries is read in full",
+        "max+1=22: a 21st entry (the 22nd reachable item) is refused"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_transfer.rs (read_character_backpack/load_entries)"
+      ],
+      "notes": "B3 \u00a74.5; registered by OTV2-20260928-b3-1-transfer."
+    },
+    {
+      "id": "GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
+      "resource": "Direct Container(parent = corpse) entries of one creature's corpse ItemInstance",
+      "unit": "entries per corpse",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The composing caller's whole-plan preflight checks the death's full accepted loot-plan entry count against this ceiling before any entry (corpse included) is frozen; the database also caps one corpse parent at 16 entries at commit under a corpse-row lock taken before counting (mirrors GAMEITEM01-CONTAINER-ENTRIES-MAX's backpack ceiling), so a concurrent race at the ceiling still admits at most 16.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=16: the 16th loot entry is placed in the corpse's container",
+        "max+1=17: the 17th loot entry is refused by the database, leaving exactly 16 live entries"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entry_proven)"
+      ],
+      "notes": "D131, decision \u00a74.2: equal by construction to the already-accepted COMBAT01-LOOT-PLAN-ITEMS/COMBAT01-ITEMS-PER-CORPSE (both 16); the two must never diverge. Registered by OTV2-20260929-d3-1-corpse-migration."
+    },
+    {
+      "id": "GAMEITEM01-CORPSE-PLACEMENT-DEPTH",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
+      "resource": "Placement depth below a corpse ItemInstance",
+      "unit": "container levels",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Only direct entries of the corpse item itself are admitted destinations; the composite foreign key (parent_item_instance_id, world_id) -> game_item_instances plus the parent-live-CORPSE_MATERIALIZATION-receipt check make a deeper placement (a bag inside a corpse) unrepresentable in this slice.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: a loot entry whose parent is the death's own corpse ItemInstance is accepted",
+        "max+1=2: a loot entry whose parent is itself a corpse container entry is rejected by the database"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entries)"
+      ],
+      "notes": "D131; decision \u00a74.2 mirrors GAMEITEM01-PLACEMENT-DEPTH; nested bags inside corpses are a later decision. Registered by OTV2-20260929-d3-1-corpse-migration."
+    },
+    {
+      "id": "GAMEITEM01-CORPSE-REACHABLE-ITEMS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
+      "resource": "Items reachable through one creature's corpse (the corpse ItemInstance and its direct Container entries)",
+      "unit": "ItemInstances per corpse",
+      "hard_maximum": 17,
+      "configurable_range": {
+        "minimum": 17,
+        "maximum": 17
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Follows from one corpse item, depth 1 and at most 16 entries (the corpse item itself plus its 16 entries); mirrors GAMEITEM01-REACHABLE-ITEMS.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=17: a fully looted-into corpse (1 corpse item + 16 entries) is read in full",
+        "max+1=18: an 18th reachable item (a 17th entry) is refused"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entries)"
+      ],
+      "notes": "D131; decision \u00a74.2. Registered by OTV2-20260929-d3-1-corpse-migration."
+    },
+    {
+      "id": "COMBAT01-LOOT-PLAN-ENTRIES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "Loot-table entries planned for one creature death",
+      "unit": "loot plan entries per death",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before allocating any plan storage; a source loot table over the ceiling is rejected whole, never truncated to fit.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=16: a 16-entry loot table is planned",
+        "max+1=17: a 17-entry loot table is rejected before planning"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot: rejects a loot table with more than 16 entries before planning)"
+      ],
+      "notes": "D77, decision \u00a74.1: \"16 pozycji\". Registered by OTV2-20260928-combat-d2a-loot-plan."
+    },
+    {
+      "id": "COMBAT01-LOOT-PLAN-ITEMS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "ItemInstances a creature death's loot plan may mint",
+      "unit": "ItemInstances per death",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One MINT per accepted plan entry; a stack is one ItemInstance with a quantity, never multiple instances. Checked before the plan is returned; never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=16: a plan with 16 accepted entries (16 chance draws all succeeding) is returned",
+        "max+1=17: a plan that would accept a 17th entry is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot: rejects before returning a plan with more than 16 accepted entries)"
+      ],
+      "notes": "D77, decision \u00a74.1: one MINT per plan entry, a stack is one instance with quantity. Registered by OTV2-20260928-combat-d2a-loot-plan."
+    },
+    {
+      "id": "COMBAT01-LOOT-PLAN-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "Typed-identity footprint of one creature death's loot plan (death key, loot table ref and every accepted entry's item ref and purpose key)",
+      "unit": "bytes",
+      "hard_maximum": 30720,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 30720
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Charged incrementally as each entry is accepted (header once, then one charge per accepted entry); rejected before the running total, or a single addition, would exceed the ceiling. Never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=30,720 B: the running footprint accepts an addition that lands exactly on the ceiling",
+        "max+1=30,721 B: an addition that would land one byte over the ceiling is rejected",
+        "16 maximum-content-key-width entries (512 B keys/revisions) plus header fit exactly at 30,720 B"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot / charge_plan_bytes: header once, then per accepted entry)"
+      ],
+      "notes": "D77, decision \u00a74.1/\u00a74.1.1: 16 * 1,792 B + 2,048 B = 30,720 B, the exact worst case of `durability/item_mint.rs`'s own TypedDefinitionRef/content-key encoding at DUR03-RL-07 field maxima. Registered by OTV2-20260928-combat-d2a-loot-plan."
+    },
+    {
+      "id": "COMBAT01-LOOT-RNG-DRAWS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "Deterministic RNG draws (one chance draw and one quantity draw per loot-table entry) to plan one creature death",
+      "unit": "draws per death",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before any draw is made (before planning): a table needing more than 32 draws is rejected whole.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=32: a 16-entry table needs exactly 32 draws and is planned",
+        "max+1 would need 17 entries, already rejected by COMBAT01-LOOT-PLAN-ENTRIES before its 34th draw"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot: entries.len() * 2 checked against 32 before any deterministic_draw call)"
+      ],
+      "notes": "D77, decision \u00a74.1; evidence packet Q2 COMBAT01-LOOT-RNG-DRAWS = 2 * 16 entries. Not the same value as DUR03-RL-08 (retry/reconciliation work units, unrelated). Registered by OTV2-20260928-combat-d2a-loot-plan."
+    },
+    {
+      "id": "COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "One-item DUR-03 loot MINTs in flight at once across one runtime scope, across every death and loot-settlement workflow in it",
+      "unit": "in-flight loot MINTs per scope",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked once per death, before any entry of its loot plan is frozen, against the scope's already in-flight count the caller supplies; the whole plan is rejected up front rather than minting some entries and stopping partway.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=64: 48 already in flight plus a 16-entry plan is accepted (check_inflight_loot_mint_capacity(48, 16))",
+        "max+1=65: 49 already in flight plus a 16-entry plan is rejected before any entry is frozen (check_inflight_loot_mint_capacity(49, 16))",
+        "a single entry against an already-full scope (64 in flight) is rejected (check_inflight_loot_mint_capacity(64, 1))",
+        "an overflowing caller-supplied count (usize::MAX) is rejected rather than wrapping"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/death_reward.rs (check_inflight_loot_mint_capacity, called from settle_loot before the first freeze_item_mint of a death's plan)"
+      ],
+      "notes": "D78, decision \u00a74.1 row 7: \"64, jak potwory\" (matching the D57 creature envelope). D2b enforces this as a pure guard over a caller-tracked in-flight count; no scope-wide MINT tracker is added by this task. Registered by OTV2-20260928-combat-d2b-death-reward-wiring."
+    },
+    {
+      "id": "COMBAT01-XP-DESCENDANTS-PER-DEATH",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "R7 P03 XP award descendants committed per creature death",
+      "unit": "XP descendants per death",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Enforced structurally, not by a counted check: settle_creature_death_rewards issues at most one commit_character_experience call per invocation, keyed by an ExperienceRewardOccurrence the physical Channel owner mints once per (death, character) and memoizes for the rest of the generation; a repeated composition call for the same death reuses that occurrence and resolves to the same already-committed receipt rather than a second descendant.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one settle_creature_death_rewards call commits exactly one XP receipt (one_creature_death_mints_the_plan_and_awards_xp_once, PG)",
+        "max+1: a second settle_creature_death_rewards call for the same death reuses the memoized occurrence and leaves the XP receipt count at 1, not 2 (replay_is_idempotent_with_no_duplicate_mint_or_xp, PG)"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/death_reward.rs (settle_experience: one commit_character_experience call per invocation)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs (CurrentOwnerCombatDeath::reward_occurrence: mints the occurrence at most once per (death, character) and memoizes it)"
+      ],
+      "notes": "Resource rows decision \u00a74.1 row 9. DUR-03 decision \u00a74.2: \"the Combat owner mints one server UUIDv7 ExperienceRewardOccurrence per (death, eligible character) ... every retry in that generation reuses it.\" Registered by OTV2-20260928-combat-d2b-death-reward-wiring."
+    },
+    {
+      "id": "COMBAT01-REWARD-PRINCIPALS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+      "resource": "Reward principals (characters eligible for a creature death's XP) settled per death",
+      "unit": "reward principals per death",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked first, before loot planning or any durability call: settle_creature_death_rewards rejects the whole composition up front unless exactly one reward principal was supplied.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: check_reward_principal_count(1) accepts",
+        "max+1=2: check_reward_principal_count(2) rejects",
+        "0: check_reward_principal_count(0) rejects (no silent no-op reward)"
+      ],
+      "consumers": [
+        "apps/game-server/src/combat/death_reward.rs (check_reward_principal_count, called from settle_creature_death_rewards before planning or minting anything)"
+      ],
+      "notes": "D77/D78 decision \u00a74.1 row 10: \"1 per death (single-principal slice)\". `COMBAT01-DEATH-WORKFLOWS-PER-SCOPE` (row 3) is deliberately not registered here: its own failure mode is recorded as structurally unreachable, bounded by the still-unregistered D57 creature-count envelope, and this composition keeps no scope-wide active-workflow counter to check; registering an unenforced ceiling would be a fake guard. Registered by OTV2-20260928-combat-d2b-death-reward-wiring."
+    },
+    {
+      "id": "COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
+      "resource": "Distinct CharacterId damage contributors tracked per live creature actor generation",
+      "unit": "distinct contributors per creature generation",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Fail-open for combat, fail-closed only for attribution: past the bound, DamageContributors::record silently declines to add a new (17th+) distinct attacker to the map; the caller's own HP mutation already committed independently and is never affected. An already-tracked contributor keeps accumulating regardless of map size.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=16: 16 distinct contributors are all tracked",
+        "max+1=17: a 17th distinct contributor is never added and never becomes (or affects) the deterministic top-damage winner",
+        "an already-tracked contributor keeps accumulating past the cap once the map is full"
+      ],
+      "consumers": [
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs (DamageContributors::record, CurrentOwnerExactActorCommit::commit_damage_for_attacker, CurrentOwnerCombatDeath::top_damage_character)"
+      ],
+      "notes": "D132, \u00a74.3 of the D3 corpse container/loot window/decay decision. Ephemeral, per-creature-generation state only: a fresh, empty map on every creature admission, dropped with the slot on removal or respawn (D52: nothing duplicated, nothing silently completed by a later generation). No production caller yet; D3-2 wires CurrentOwnerCombatDeath::top_damage_character into settle_creature_death_rewards. Registered by OTV2-20260929-d3-3-top-damage."
+    },
+    {
+      "id": "COMBAT01-DAMAGE-RECEIPTS-PER-CREATURE-GENERATION",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_D4_MULTI_HIT_DAMAGE_RECEIPT_DECISION_2026-09-29.md",
+      "resource": "Committed damage receipts retained at once per live creature actor generation",
+      "unit": "retained damage receipts per creature generation",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Retention, not admission: when 16 receipts are retained, a new distinct occurrence evicts the oldest evictable receipt (sequenced, and either from a superseded session or covered by its attacker's current high-water mark) and still applies; the evicted occurrence's resubmission is refused StaleAttackerSequence, never re-applied. Only when no retained receipt is evictable (unsequenced, or its attacker is untracked past COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE) is the new occurrence refused DamageReceiptCapacityExceeded, fail-closed with HP and every receipt untouched (GAME-ABILITY-01 section 12). Each receipt retains at most MAX_OWNER_COMMIT_BINDING_BYTES = 4096 bytes of binding.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=16: sixteen distinct occurrences from one attacker all retain and apply",
+        "max+1=17: a 17th evictable occurrence evicts the oldest receipt and still applies; the evicted occurrence's replay is StaleAttackerSequence and mutates nothing",
+        "max=16 non-evictable: sixteen unsequenced receipts retain, with never an eviction of an unsequenced receipt",
+        "max+1=17 non-evictable: a 17th occurrence with no evictable receipt is DamageReceiptCapacityExceeded and mutates nothing",
+        "a 20 HP creature is killed by more than 16 distinct occurrences with none refused by capacity and exactly one lethal receipt"
+      ],
+      "consumers": [
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs (DamageReceipts, ChannelActorCarrier::commit_creature_damage_inner, CurrentOwnerExactActorCommit::commit_damage_for_attacker, committed_lethal_receipt_inner, validate_lethal_receipt)",
+        "apps/game-server/src/ability/commit.rs (commit_exact_owner_damage)"
+      ],
+      "notes": "D140-D144, D4 multi-hit damage receipt decision. Ephemeral, per-creature-generation state only, dropped with the slot (D52). The replay identity of an attributed commit is carrier-derived from (CharacterId, GameSessionId, CommandId sequence, sub_ordinal); sub_ordinal is bounded by the already-registered ABILITY01-EFFECT-PLAN-ENTRIES = 2 (mirrored, not re-registered). Registered by OTV2-20260929-d4-1-multi-hit."
+    },
+    {
+      "id": "SPELL-RL-01",
+      "owner_contract": "../architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md",
+      "resource": "Spell cast inputs applied for one actor in one Channel owner work cycle",
+      "unit": "spell cast inputs per actor per work cycle",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one spell cast input is applied per actor per Channel owner work cycle; further inputs remain outstanding FND-02 commands bounded by FND02-OUTSTANDING-COMMANDS, processed FIFO per session and round-robin across actors.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one spell cast input for an actor is applied in a work cycle",
+        "max+1=2: a second spell cast input for the same actor is not applied in the same work cycle; it stays outstanding and the 65th outstanding command is refused under the existing FND-02 rule"
+      ],
+      "consumers": [
+        "WORLD_ACTOR_SPELL_CAST_INTENT command type 3 (crates/protocol-oteryn/src/actor_spell.rs; composition is section 9 step 2)"
+      ],
+      "notes": "SPELL-D6 (RL-01 = 1), #162 owner acceptance 5867161696; contract section 7. Registered by OTV2-20260929-spell-cast-wire-w1 (#162 allocation 5894588548)."
+    },
+    {
+      "id": "SPELL-RL-02",
+      "owner_contract": "../architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md",
+      "resource": "Ability effects in one spell cast Effect Plan",
+      "unit": "effects per cast Effect Plan",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A cast whose resolved effects exceed 2 fails CAPACITY_EXCEEDED before PRIMARY COMMIT: no mana, soul, cooldown or effect is committed.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: a cast with two resolved effects commits both in one Effect Plan",
+        "max+1=3: a cast with a third effect fails CAPACITY_EXCEEDED before commit and nothing is paid"
+      ],
+      "consumers": [
+        "apps/game-server/src/ability/mod.rs MAX_EFFECT_PLAN_ENTRIES, reached from the spell cast Effect Plan (composition is section 9 step 2)"
+      ],
+      "notes": "SPELL-D6 (RL-02 = 2), #162 owner acceptance 5867161696; contract section 7. The same bound as ABILITY01-EFFECT-PLAN-ENTRIES = 2, the current EffectPlan bound, applied to a spell cast; it adds no second limit. Registered by OTV2-20260929-spell-cast-wire-w1 (#162 allocation 5894588548)."
+    },
+    {
+      "id": "SPELL-RL-03",
+      "owner_contract": "../architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md",
+      "resource": "Actors in one ACTOR_VITALS snapshot or delta",
+      "unit": "actors per snapshot or delta",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The payload carries only the session's own actor; a second actor cannot be encoded by the ActorVitalsV1 payload schema.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1: the own actor's vitals are carried in a snapshot or delta",
+        "max+1=2: a second actor cannot be encoded by the ActorVitalsV1 payload schema"
+      ],
+      "consumers": [
+        "ACTOR_VITALS state domain 3, delta type 1, snapshot type 1 (crates/protocol-oteryn/src/actor_spell.rs)"
+      ],
+      "notes": "SPELL-D6 (RL-03 = 1), #162 owner acceptance 5867161696; contract section 7. SPELL-RL-04 (spells in one content-generation spell book) needs a finite measured value at registration (SPELL-D6) and is left to composition. Registered by OTV2-20260929-spell-cast-wire-w1 (#162 allocation 5894588548)."
     }
   ]
 }

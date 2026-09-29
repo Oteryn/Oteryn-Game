@@ -5,15 +5,18 @@
 //! canonical document set. Filesystem containment, no-follow admission, alias detection, staging,
 //! journalling and atomic publication belong to a later boundary.
 
+mod native_entry;
 mod v2;
+pub use native_entry::*;
 pub use v2::*;
 
 use super::{
     CanonicalReferencePlayableContent, ClientProjectionClass, ContentError, ContentLockBinding,
-    ContentLockEntry, DefinitionFamily, DefinitionRevisionRef, PackageManifestBinding,
-    ProductionAtom, ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
-    REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceAbilityDefinition, ReferenceCreatureDefinition,
-    ReferenceDefinition, ReferenceDefinitionKind, ReferenceEffectDefinition, ReferenceEffectFamily,
+    ContentLockEntry, DefinitionFamily, DefinitionRevisionRef, LocalObjectCollisionPresence,
+    LocalObjectStateDefinition, PackageManifestBinding, ProductionAtom, ProductionKey,
+    REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
+    ReferenceAbilityDefinition, ReferenceCreatureDefinition, ReferenceDefinition,
+    ReferenceDefinitionKind, ReferenceEffectDefinition, ReferenceEffectFamily,
     ReferenceFormulaDefinition, ReferenceItemDefinition, ReferenceItemDestination,
     ReferenceItemPhysicalClass, ReferenceItemSemantics, ReferenceItemStackClass,
     ReferenceLootDefinition, ReferenceLootEntry, ReferenceLootSelectionAlgorithm,
@@ -235,7 +238,21 @@ impl ProjectSnapshot {
     }
 
     pub fn parse(&self, limits: ProjectEvidenceLimits) -> Result<WorldProject, ProjectError> {
-        parse_snapshot(self, limits.validate()?)
+        parse_snapshot(self, limits.validate()?, ProjectAdmission::Ordinary)
+            .map(|(project, _)| project)
+    }
+
+    /// Admit, parse and qualify one native entry-room project (`NATIVE_ENTRY_SOURCE_QUALIFICATION_V1`).
+    ///
+    /// The native variant is selected here, before any control document is parsed, and is always
+    /// parsed under the fixed `native_entry_first_slice_limits()` (#940 §4). Ordinary
+    /// [`Self::parse`] refuses it.
+    pub fn parse_native_entry(&self) -> Result<NativeEntryProject, ProjectError> {
+        let limits = native_entry_first_slice_limits().project.validate()?;
+        let (project, overlay) = parse_snapshot(self, limits, ProjectAdmission::NativeEntry)?;
+        let overlay =
+            overlay.ok_or(ProjectError::InvalidProject("native entry overlay missing"))?;
+        NativeEntryProject::qualify(project, overlay)
     }
 }
 
@@ -592,7 +609,7 @@ pub enum ProjectReferenceRecord {
     LocalObject {
         identity: DefinitionIdentityDocument,
         client_projection: ProjectionDocument,
-        states: Vec<String>,
+        states: Vec<LocalObjectStateEntryDocument>,
     },
 }
 
@@ -781,12 +798,82 @@ impl ProjectReferenceRecord {
                     kind: ReferenceDefinitionKind::LocalObjectStates(
                         states
                             .iter()
-                            .map(|state| ProductionKey::new(state).map_err(ProjectError::from))
-                            .collect::<Result<_, _>>()?,
+                            .map(LocalObjectStateEntryDocument::lower)
+                            .collect::<Result<_, ProjectError>>()?,
                     ),
                     client_projection: client_projection.lower(),
                 })
             }
+        }
+    }
+}
+
+/// D38 W1a authored form: one entry of a `LocalObject`'s declared state vocabulary, carrying the
+/// per-state collision presence alongside the state key.
+///
+/// Compatibility rule for `OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1`: this schema predates
+/// per-state collision presence, so `#[serde(untagged)]` on
+/// [`LocalObjectStateEntryDocument`] keeps decoding a legacy bare state-key string
+/// (`"oteryn:reference.state.closed"`) accepted under the same `v1` schema label. A legacy entry
+/// carries no collision presence and none may be defaulted (that would silently promote a state
+/// this task never validated), so `LocalObjectStateEntryDocument`'s own lowering fails closed for
+/// it.
+/// The writer (`CanonicalProjectDocuments::from_draft`) only ever encodes the typed object form;
+/// nothing in this codebase re-emits the legacy shape.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LocalObjectStateDocument {
+    pub key: String,
+    pub collision: LocalObjectCollisionDocument,
+}
+
+impl LocalObjectStateDocument {
+    fn lower(&self) -> Result<LocalObjectStateDefinition, ProjectError> {
+        Ok(LocalObjectStateDefinition {
+            key: ProductionKey::new(&self.key)?,
+            collision: self.collision.lower(),
+            // #162 §9: attribute variants are synthesized by the encounter `map_item` lowering,
+            // never authored through this project document, so the document shape (and every
+            // existing content byte) is unchanged.
+            attribute_variant_of: None,
+            absent: false,
+        })
+    }
+}
+
+/// One `states` array entry as `OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1` may decode it: either
+/// the typed `{key, collision}` object new authoring always uses, or (read-only) a legacy bare
+/// state-key string from before per-state collision presence existed. See the compatibility rule
+/// documented on [`LocalObjectStateDocument`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum LocalObjectStateEntryDocument {
+    Legacy(String),
+    Typed(LocalObjectStateDocument),
+}
+
+impl LocalObjectStateEntryDocument {
+    fn lower(&self) -> Result<LocalObjectStateDefinition, ProjectError> {
+        match self {
+            Self::Legacy(_) => Err(ProjectError::from(ContentError::InvalidArtifact(
+                "legacy v1 LocalObject state lacks collision presence; re-author with {key, collision}",
+            ))),
+            Self::Typed(typed) => typed.lower(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum LocalObjectCollisionDocument {
+    Present,
+    Absent,
+}
+
+impl LocalObjectCollisionDocument {
+    fn lower(self) -> LocalObjectCollisionPresence {
+        match self {
+            Self::Present => LocalObjectCollisionPresence::Present,
+            Self::Absent => LocalObjectCollisionPresence::Absent,
         }
     }
 }
@@ -1139,8 +1226,17 @@ pub(super) struct ProjectCaptureDocument {
     pub(super) sha256: String,
 }
 
+/// Which source variant a capture may admit. The native entry variant is selected explicitly by
+/// its own API before any parse; ordinary capture never accepts it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum ProjectAdmission {
+    Ordinary,
+    NativeEntry,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct ProjectCapturePlan {
+    admission: ProjectAdmission,
     root: RootDocument,
     manifest: ManifestDocumentRoot,
     lock: LockDocument,
@@ -1154,6 +1250,22 @@ impl ProjectCapturePlan {
         lock_bytes: &[u8],
         limits: ProjectEvidenceLimits,
     ) -> Result<Self, ProjectError> {
+        Self::from_control_documents_for(
+            root_bytes,
+            manifest_bytes,
+            lock_bytes,
+            limits,
+            ProjectAdmission::Ordinary,
+        )
+    }
+
+    pub(super) fn from_control_documents_for(
+        root_bytes: &[u8],
+        manifest_bytes: &[u8],
+        lock_bytes: &[u8],
+        limits: ProjectEvidenceLimits,
+        admission: ProjectAdmission,
+    ) -> Result<Self, ProjectError> {
         let limits = limits.validate()?;
         for bytes in [root_bytes, manifest_bytes, lock_bytes] {
             limits.check(
@@ -1164,8 +1276,22 @@ impl ProjectCapturePlan {
         }
 
         let root: RootDocument = parse_strict(root_bytes, limits)?;
-        let is_v2 = root.schema == WORLD_PROJECT_V2_ROOT_SCHEMA
-            && root.source_profile == WORLD_PROJECT_V2_SOURCE_PROFILE;
+        let is_v2 = match admission {
+            ProjectAdmission::Ordinary => {
+                root.schema == WORLD_PROJECT_V2_ROOT_SCHEMA
+                    && root.source_profile == WORLD_PROJECT_V2_SOURCE_PROFILE
+            }
+            ProjectAdmission::NativeEntry => {
+                if root.schema != WORLD_PROJECT_V2_ROOT_SCHEMA
+                    || root.source_profile != NATIVE_ENTRY_SOURCE_PROFILE
+                {
+                    return Err(ProjectError::InvalidProject(
+                        "native entry admission requires the native source profile",
+                    ));
+                }
+                true
+            }
+        };
         if !is_v2
             && (root.schema != WORLD_PROJECT_ROOT_SCHEMA
                 || root.source_profile != WORLD_PROJECT_SOURCE_PROFILE)
@@ -1312,7 +1438,7 @@ impl ProjectCapturePlan {
             });
         }
         if is_v2 {
-            validate_v2_roles(&by_role)?;
+            validate_v2_roles(&by_role, admission)?;
         } else {
             require_role(
                 &by_role,
@@ -1340,6 +1466,7 @@ impl ProjectCapturePlan {
         }
 
         Ok(Self {
+            admission,
             root,
             manifest,
             lock,
@@ -1355,12 +1482,18 @@ impl ProjectCapturePlan {
 fn parse_snapshot(
     snapshot: &ProjectSnapshot,
     limits: ProjectEvidenceLimits,
-) -> Result<WorldProject, ProjectError> {
+    admission: ProjectAdmission,
+) -> Result<(WorldProject, Option<NativeFirstEntryDocument>), ProjectError> {
     let root_bytes = required(snapshot, PROJECT_LOCATOR)?;
     let manifest_bytes = required(snapshot, MANIFEST_LOCATOR)?;
     let lock_bytes = required(snapshot, LOCK_LOCATOR)?;
-    let plan =
-        ProjectCapturePlan::from_control_documents(root_bytes, manifest_bytes, lock_bytes, limits)?;
+    let plan = ProjectCapturePlan::from_control_documents_for(
+        root_bytes,
+        manifest_bytes,
+        lock_bytes,
+        limits,
+        admission,
+    )?;
 
     let mut expected = BTreeSet::from([
         PROJECT_LOCATOR.to_owned(),
@@ -1505,16 +1638,19 @@ fn parse_snapshot(
     validate_imports(&imports.batches, &reference.records)?;
     validate_native_item_licensing(&imports.batches, &plan.manifest.licensing_metadata)?;
     validate_metadata(&metadata.entries)?;
-    Ok(WorldProject {
-        root: plan.root,
-        manifest: plan.manifest,
-        lock: plan.lock,
-        reference,
-        imports,
-        metadata,
-        manifest_bytes: manifest_bytes.to_vec(),
-        v2: None,
-    })
+    Ok((
+        WorldProject {
+            root: plan.root,
+            manifest: plan.manifest,
+            lock: plan.lock,
+            reference,
+            imports,
+            metadata,
+            manifest_bytes: manifest_bytes.to_vec(),
+            v2: None,
+        },
+        None,
+    ))
 }
 
 fn required<'a>(snapshot: &'a ProjectSnapshot, locator: &str) -> Result<&'a [u8], ProjectError> {
@@ -2322,5 +2458,91 @@ mod project_resource_tests {
                 limit: usize::MAX,
             })
         ));
+    }
+}
+
+#[cfg(test)]
+mod local_object_state_entry_tests {
+    use super::*;
+
+    #[test]
+    fn legacy_string_state_still_decodes_under_v1() -> Result<(), serde_json::Error> {
+        let entry: LocalObjectStateEntryDocument =
+            serde_json::from_str("\"oteryn:reference.state.closed\"")?;
+        assert_eq!(
+            entry,
+            LocalObjectStateEntryDocument::Legacy("oteryn:reference.state.closed".to_owned())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_string_state_fails_closed_on_lowering() {
+        let entry =
+            LocalObjectStateEntryDocument::Legacy("oteryn:reference.state.closed".to_owned());
+        assert!(matches!(
+            entry.lower(),
+            Err(ProjectError::Content(ContentError::InvalidArtifact(
+                "legacy v1 LocalObject state lacks collision presence; re-author with {key, collision}"
+            )))
+        ));
+    }
+
+    #[test]
+    fn typed_object_state_round_trips_and_lowers() -> Result<(), ProjectError> {
+        let entry = LocalObjectStateEntryDocument::Typed(LocalObjectStateDocument {
+            key: "oteryn:reference.state.open".to_owned(),
+            collision: LocalObjectCollisionDocument::Absent,
+        });
+
+        let encoded = serde_json::to_string(&entry)
+            .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
+        let decoded: LocalObjectStateEntryDocument = serde_json::from_str(&encoded)
+            .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
+        assert_eq!(decoded, entry);
+
+        let lowered = entry.lower()?;
+        assert_eq!(lowered.key.as_str(), "oteryn:reference.state.open");
+        assert_eq!(lowered.collision, LocalObjectCollisionPresence::Absent);
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_local_object_record_decodes_and_fails_closed_on_lower() -> Result<(), ProjectError> {
+        // Proves the coordinator's exact finding: a full `OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1`
+        // `LocalObject` record authored before per-state collision presence existed (bare state-key
+        // strings) still decodes under the same `v1` schema label, and fails closed only at
+        // `.lower()`, never silently defaulting a collision presence.
+        let json = r#"{
+            "kind": "LocalObject",
+            "identity": {
+                "family": "LocalObject",
+                "key": "oteryn:reference.object.legacy-door",
+                "revision": "definition-r1"
+            },
+            "client_projection": "ClientSafe",
+            "states": ["oteryn:reference.state.closed", "oteryn:reference.state.open"]
+        }"#;
+        let record: ProjectReferenceRecord = serde_json::from_str(json)
+            .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
+        let ProjectReferenceRecord::LocalObject { states, .. } = &record else {
+            return Err(ProjectError::InvalidProject(
+                "legacy decode probe changed record kind",
+            ));
+        };
+        assert_eq!(
+            states,
+            &vec![
+                LocalObjectStateEntryDocument::Legacy("oteryn:reference.state.closed".to_owned()),
+                LocalObjectStateEntryDocument::Legacy("oteryn:reference.state.open".to_owned()),
+            ]
+        );
+        assert!(matches!(
+            record.lower(),
+            Err(ProjectError::Content(ContentError::InvalidArtifact(
+                "legacy v1 LocalObject state lacks collision presence; re-author with {key, collision}"
+            )))
+        ));
+        Ok(())
     }
 }

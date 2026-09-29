@@ -84,7 +84,11 @@
         "family": "Formula",
         "key": "canary:formula/orc_shaman/attack-1-1",
         "revision": "canary-47dfd51f"
-      }
+      },
+      "mitigated_by": [
+        "armor",
+        "shield"
+      ]
     },
     {
       "identity": {

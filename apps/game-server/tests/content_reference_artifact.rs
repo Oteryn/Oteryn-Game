@@ -35,7 +35,7 @@ fn canonical_documents() -> CanonicalProjectDocuments {
             semantic_schema_version: "reference-schema-v1".to_owned(),
             licensing_metadata: "PENDING".to_owned(),
             world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
-            coordinate_frame: "global-target-2026-07-28".to_owned(),
+            coordinate_frame: "global-target-2026-09-27".to_owned(),
             records: vec![imported.record],
             imports: vec![imported.batch],
             metadata: Vec::new(),
@@ -70,11 +70,11 @@ fn compiled() -> CompiledReferencePlayableContent {
 fn full_family_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
         max_documents: 8,
-        max_document_bytes: 96_000_000,
-        max_total_bytes: 160_000_000,
+        max_document_bytes: 128_000_000,
+        max_total_bytes: 220_000_000,
         max_json_depth: 24,
-        max_decoded_fields: 2_110_000,
-        max_string_bytes: 96_000_000,
+        max_decoded_fields: 3_000_000,
+        max_string_bytes: 128_000_000,
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
@@ -115,7 +115,7 @@ fn typed_family_linked(
             semantic_schema_version: "reference-schema-v1".to_owned(),
             licensing_metadata: "PENDING".to_owned(),
             world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
-            coordinate_frame: "global-target-2026-07-28".to_owned(),
+            coordinate_frame: "global-target-2026-09-27".to_owned(),
             records: imported.records,
             imports: vec![imported.batch],
             metadata: Vec::new(),
@@ -131,12 +131,15 @@ fn typed_family_linked(
 
 fn promoted_family_linked() -> Result<CanonicalReferencePlayableContent, Box<dyn std::error::Error>>
 {
-    let promoted = protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)?;
+    let promoted = protected_cw2_b1_item_semantic_promotion_lowering_v1_import(B1_EVIDENCE)?;
     assert_eq!(
         promoted.promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
     );
-    assert_eq!(promoted.promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
+    assert_eq!(
+        promoted.promoted_items,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+    );
     let canonical = CanonicalProjectDocuments::from_draft(
         ProjectDraft {
             project_revision: "project-r1".to_owned(),
@@ -144,7 +147,7 @@ fn promoted_family_linked() -> Result<CanonicalReferencePlayableContent, Box<dyn
             semantic_schema_version: "reference-schema-v1".to_owned(),
             licensing_metadata: "PENDING".to_owned(),
             world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
-            coordinate_frame: "global-target-2026-07-28".to_owned(),
+            coordinate_frame: "global-target-2026-09-27".to_owned(),
             records: promoted.family.records,
             imports: vec![promoted.family.batch],
             metadata: Vec::new(),
@@ -183,7 +186,7 @@ fn promoted_atom_count(semantics: &ReferenceItemSemantics) -> usize {
 }
 
 #[test]
-fn protected_semantic_promotion_round_trips_exact_69_atoms_through_artifact_v4_server_and_client()
+fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v4_server_and_client()
 -> Result<(), Box<dyn std::error::Error>> {
     let linked = promoted_family_linked()?;
     assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
@@ -206,8 +209,14 @@ fn protected_semantic_promotion_round_trips_exact_69_atoms_through_artifact_v4_s
             _ => 0,
         })
         .sum::<usize>();
-    assert_eq!(promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
-    assert_eq!(promoted_fields, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
+    assert_eq!(
+        promoted_items,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+    );
+    assert_eq!(
+        promoted_fields,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+    );
 
     let compiled = compile_reference_playable(&linked)?;
     let repeated = compile_reference_playable(&linked)?;
@@ -249,8 +258,14 @@ fn protected_semantic_promotion_round_trips_exact_69_atoms_through_artifact_v4_s
         server_promoted += promoted_atom_count(&server_item.semantics);
         client_promoted += promoted_atom_count(&client_item.semantics);
     }
-    assert_eq!(server_promoted, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
-    assert_eq!(client_promoted, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
+    assert_eq!(
+        server_promoted,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+    );
+    assert_eq!(
+        client_promoted,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+    );
     Ok(())
 }
 
@@ -604,15 +619,15 @@ fn protected_project_links_compiles_loads_and_stages_with_semantic_equivalence()
     assert_eq!(
         compiled.server_digest(),
         [
-            199, 192, 106, 212, 18, 62, 17, 244, 10, 33, 134, 27, 72, 253, 155, 193, 227, 163, 120,
-            28, 30, 255, 26, 229, 213, 63, 221, 149, 98, 111, 20, 125,
+            186, 118, 60, 192, 82, 100, 10, 110, 116, 222, 209, 39, 237, 39, 120, 104, 80, 44, 208,
+            107, 57, 4, 77, 129, 216, 46, 245, 148, 194, 207, 107, 61,
         ]
     );
     assert_eq!(
         compiled.client_digest(),
         [
-            164, 20, 224, 125, 140, 136, 44, 180, 114, 134, 89, 86, 211, 126, 223, 187, 35, 87,
-            101, 223, 236, 254, 54, 158, 25, 54, 29, 149, 66, 144, 186, 252,
+            165, 218, 30, 88, 175, 45, 42, 201, 105, 195, 56, 147, 104, 172, 199, 22, 170, 233, 56,
+            104, 100, 2, 53, 76, 196, 140, 22, 16, 18, 220, 118, 142,
         ]
     );
     assert!(compiled.server_artifact.len() <= REFERENCE_PLAYABLE_MAX_SERVER_ARTIFACT_BYTES);

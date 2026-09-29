@@ -789,13 +789,13 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
         )
         sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
         metadata = {
-            "workspace_root": str(root),
+            "workspace_root": "/repo",
             "workspace_members": list(roots),
             "packages": [
                 {
                     "id": name,
                     "name": name,
-                    "manifest_path": str(root / package_root / "Cargo.toml"),
+                    "manifest_path": f"/repo/{package_root}/Cargo.toml",
                     "dependencies": [],
                 }
                 for name, package_root in roots.items()

@@ -1,0 +1,344 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_diamond_blossom",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "The Secret Library: The Diamond Blossom",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_diamond_blossom",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_diamond_blossom",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_diamond_blossom_ignores_damage_taken_from_unprepared_players",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "the_diamond_blossom",
+        "source": "player"
+      },
+      "conditions": [
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3566",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3379",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3388",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/8039",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/8053",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/8064",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/22534",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3381",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/7991",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3380",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/10439",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3564",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_diamond_blossom",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_diamond_blossom_ignores_damage_taken_from_creatures",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "the_diamond_blossom",
+        "source": "non_player"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_diamond_blossom",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_diamond_blossom_ignores_heal_received_from_unprepared_players",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "the_diamond_blossom",
+        "source": "player"
+      },
+      "conditions": [
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3566",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3379",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3388",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/8039",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/8053",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/8064",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/22534",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3381",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/7991",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3380",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/10439",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        },
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/3564",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "armor"
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_diamond_blossom",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_diamond_blossom_ignores_heal_received_from_creatures",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "the_diamond_blossom",
+        "source": "non_player"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_diamond_blossom",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

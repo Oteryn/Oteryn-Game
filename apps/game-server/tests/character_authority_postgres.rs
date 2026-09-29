@@ -1837,3 +1837,41 @@ async fn fresh_rerun(database: &Database) -> TestResult {
     std::fs::remove_dir_all(retained)?;
     Ok(())
 }
+
+// R7 P03 shares its cases with the focused standalone target so the established
+// protected PostgreSQL 17.6 lane executes the exact same qualification.
+#[path = "support/character_progression_postgres_cases.rs"]
+mod character_progression_postgres_cases;
+
+// DUR-03 stage C one-item Ground MINT shares its cases with the focused
+// standalone target through the same protected PostgreSQL lane.
+#[path = "support/item_mint_postgres_cases.rs"]
+mod item_mint_postgres_cases;
+
+// B3-1 TRANSFER (Ground -> container slot / main backpack entries) shares its
+// cases with the focused standalone target through the same protected lane.
+#[path = "support/item_transfer_postgres_cases.rs"]
+mod item_transfer_postgres_cases;
+
+// D3-4 corpse-container TRANSFER (D133 window, corpse never a source) shares
+// its cases with the focused standalone target through the same protected lane.
+#[path = "support/corpse_transfer_postgres_cases.rs"]
+mod corpse_transfer_postgres_cases;
+
+// D3-6 corpse DECAY_RETIRE (N+1 one-item steps at materialized_at + 60 s,
+// resumable from durable state) shares its cases with the focused standalone
+// target through the same protected lane.
+#[path = "support/corpse_decay_postgres_cases.rs"]
+mod corpse_decay_postgres_cases;
+
+// DEATH-0 death receipts, blessings and pending respawns (migration 0016)
+// share their cases with the focused standalone target through the same
+// protected lane.
+#[path = "support/character_death_receipts_postgres_cases.rs"]
+mod character_death_receipts_postgres_cases;
+
+// CHEST-1 reward-claim MINT (a `once` RewardClaim into a new main backpack
+// entry) shares its cases with the focused standalone target through the same
+// protected lane.
+#[path = "support/reward_claim_mint_postgres_cases.rs"]
+mod reward_claim_mint_postgres_cases;

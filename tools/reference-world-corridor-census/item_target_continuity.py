@@ -17,9 +17,10 @@ from pathlib import Path
 from typing import Any, Iterable
 
 TARGET_COUNT = 38_157
-TARGET_DATE = "2026-07-28"
-TARGET_DAY_START = "2026-07-28T00:00:00Z"
-TARGET_DAY_END = "2026-07-28T23:59:59Z"
+TARGET_DATE = "2026-09-27"
+PRE_TARGET_DAY_END = "2026-09-26T23:59:59Z"
+TARGET_DAY_START = "2026-09-27T00:00:00Z"
+TARGET_DAY_END = "2026-09-27T23:59:59Z"
 
 SCHEMA = "OTERYN_ITEM_TARGET_CONTINUITY/v1"
 MANIFEST_SCHEMA = "OTERYN_ITEM_TARGET_CONTINUITY_MANIFEST/v1"
@@ -33,13 +34,13 @@ CURRENT_SOURCE_ID = "TIBIAWIKI_STRUCTURED"
 
 # Protected lineage after #770/#771.
 FIELD_VERIFICATION_MANIFEST_PATH = (
-    "docs/agents/evidence/OTV2-20260922-content-world-item-field-verification.json"
+    "docs/agents/evidence/OTV2-20260927-content-world-item-field-verification.json"
 )
 CURRENT_SOURCE_COLLECTOR_PATH = (
     "tools/reference-world-corridor-census/item_current_source_tibiawiki.py"
 )
 PROTECTED_CURRENT_SOURCE_COLLECTOR_SHA256 = (
-    "ef160e7b76458029064d7f50d7808fa80add99da96d2a5ebacbbc7c6426ba748"
+    "0e23b3dd721cd054ef42d112df4bf848d73cd672b4ebd241a2a9de450f3f0fd5"
 )
 
 MAX_CANDIDATE_FIELDS = 256
@@ -347,7 +348,7 @@ def fetch_page_history(client, collector, page_id: int) -> dict[str, Any]:
         client,
         collector,
         page_id=page_id,
-        rvstart="2026-07-27T23:59:59Z",
+        rvstart=PRE_TARGET_DAY_END,
         rvend=None,
         rvdir="older",
         rvlimit=1,
@@ -600,7 +601,7 @@ def build_manifest(full: dict[str, Any], *, compiler_sha256: str) -> dict[str, A
                 "protected #770 field state CORROBORATED_CURRENT",
                 "same protected current-source page identity",
                 "last pre-target-day revision field equals current value",
-                "every 2026-07-28 revision field equals current value",
+                "every 2026-09-27 revision field equals current value",
                 "no missing/unparsed field in the historical target window",
             ],
             "different_value": "CONFLICT",

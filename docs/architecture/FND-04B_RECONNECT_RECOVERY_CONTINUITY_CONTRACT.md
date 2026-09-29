@@ -76,6 +76,17 @@ The following values must be finite before implementation but are deliberately n
 
 Historical `2s/5s/15s` values from superseded #109 are non-canonical.
 
+Provisional registered values (owner decision `DISCONNECT-PROTECTION-V1` §1, Oteryn/Oteryn-Game #822 comments 5854525644 and 5854565314). They are to be measured and tuned before release, and changing them does not reopen the mechanism:
+
+| Row | Value | Consumed by |
+|---|---|---|
+| `FND04B-LIVENESS-IDLE-PROBE-MS` | 5000 ms | admitted positioned connection, out of combat |
+| `FND04B-LIVENESS-IDLE-MISSED` | 3 consecutive unanswered probes | same |
+| `FND04B-LIVENESS-COMBAT-PROBE-MS` | 1000 ms | combat state, not composed yet |
+| `FND04B-LIVENESS-COMBAT-MISSED` | 2 consecutive unanswered probes | same |
+
+Only the ack of the current outstanding probe, received at the authoritative server on the current generation, clears the missed count. A late ack of an older probe restores nothing, and an ack of a probe never sent is a protocol violation. Reaching the missed limit proves playable-control loss for the transport. `ControlLossEpoch` state, grace, cleanup and protection are composed by later children. The client answers probes from its game loop, so a frozen game stops acknowledging.
+
 ## 5. ControlLossEpoch
 
 `ControlLossEpoch` is logical server-authoritative continuity state, not a new public foundation identity.
@@ -110,6 +121,16 @@ It never begins at socket close, first missed probe, cleanup or reconnect attemp
 The original deadline/remaining eligibility is server-authoritative continuity state and MUST survive failover/restart without restart or extension. If current authority cannot prove the original epoch/deadline, it MUST NOT guess a new same-session window.
 
 Stale-transport cleanup is a separate resource lifecycle and does not redefine grace.
+
+Provisional registered value: `FND04B-SAME-SESSION-GRACE-S` = 60 s. This is owner decision `DISCONNECT-PROTECTION-V1` §4 (Oteryn/Oteryn-Game #822), to be measured and tuned before release.
+
+The first composed owner records a fresh-origin loss in these cases:
+- when authenticated liveness proves it;
+- after a closed or failed admitted transport, once the detection window passes without restored control.
+
+The loss decision revalidates claim ownership (presence and lease holder), not the byte identity of the claim rows. An independent owner re-observation that leaves ownership unchanged, such as a Platform security refresh, does not block loss. Loss removes control and grants nothing. Because account security and character eligibility are not loss conditions, every later resume or re-entry MUST revalidate them as current (§§12–13, item 10).
+
+The loss is timed on the durable owner's clock, the same clock that samples the final decision. The original deadline is fixed at that decision. The actor stays present and uncontrolled in its Channel. Once the deadline passes on the durable clock without resumed control, the owner terminally releases the session. The release is prepared from the current claim rows and committed through the exact fenced lifecycle release. Only after that TERMINAL fact does the Channel remove the exact actor, so the character may be admitted again. Positive resume is a separate child.
 
 ## 7. Exact 4-second defensive PvE protection
 
@@ -346,6 +367,30 @@ Uses same PREPARE/COMMIT state machine with recovery grant replacing missing rec
 COMMIT additionally revalidates recovery JWT time, exact credential/trust state, key/profile evidence source age/order/current decision, Platform-security source age/order/generation/state, RecoveryGrantNonce, each independent revision, AccountId->CharacterId first and CharacterId->WorldId second.
 
 RecoveryGrantNonce is consumed only with successful authority switch.
+
+Implementation note (#822 PR 5a): for a session whose loss is recorded by the owning-loss receipt, same-session reauthenticated recovery uses the typed complete-reconnect durability format, not the legacy reconnect journal. Under the admission relation locks, the adapter binds each PREPARE and COMMIT to:
+
+- the exact durable original loss;
+- the exact current session;
+- current claim ownership;
+- the ready runtime owner;
+- the retained budget reconstructed from its immutable receipts.
+
+PREPARE reserves the candidate transport. COMMIT consumes the RecoveryGrantNonce and switches the same GameSession to the candidate connection. The legacy continuity row never holds protection continuity; the complete-reconnect effect carries it.
+
+Implementation note (#822 PR 5b): the Channel owner serves `ClientResume` with a Platform `oteryn-reauth-recovery-v1` credential for a lost session in grace.
+
+- Each PREPARE and COMMIT revalidates the credential against the Recovery V2 floors that the deciding transaction fences. The lock order is: admission relations, then custody, then registration, then floors.
+- COMMIT is reauthorized from a fresh verification.
+- A refused or unproven PREPARE is withdrawn.
+- The resumed connection continues FND-02 CommandId and server_sequence from the lost connection, at the next connection generation, with a snapshot of the same actor.
+
+Implementation note (#822 PR 5c): a loss after a resume is recorded as the next epoch (§5). The recovered connection ended, so the restored episode is closed and a new one begins.
+
+- The loss retains the resumed epoch's history: its restored budget, its original grace deadline and the protection its committed recovery left. The durable commit re-derives that history from the immutable receipts under its relation locks and refuses any other.
+- The new epoch is exactly the resumed epoch plus one. It has its own original grace deadline (§6) and its own empty recovery budget.
+- Protection is carried unchanged: a resume never re-arms it (§8). Re-arm stays with the protection work.
+- If the loss after a resume cannot be proven or is refused, the session is terminally released instead of staying ACTIVE on a dead transport. The player then loses grace, but can still enter again.
 
 ## 21. Grace expiry and post-grace existing-actor recovery
 

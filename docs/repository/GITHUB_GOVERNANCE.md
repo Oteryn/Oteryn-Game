@@ -13,8 +13,8 @@
 - Changed-file classification fails closed when GitHub reports more than the 3,000-file files-API cap or when the enumerated file count does not exactly match the pull request metadata.
 - Review conversations must be resolved.
 - Force-push, branch deletion, and merge commits are rejected.
-- General required approvals remain `0` while the repository has only one maintainer. `require_code_owner_review` is enabled separately and therefore requires owner approval only when a PR touches a path actually present in the deliberately narrow base-branch `CODEOWNERS` file.
-- Code Owner approvals are dismissed when new reviewable commits are pushed, so an approval cannot silently cover a later control-plane head.
+- General required approvals remain `0` while the repository has only one maintainer. `require_code_owner_review` is `false` in `.github/repository-policy.json` (since #265, the Merge Queue qualification), and the configuration readback verifies that value; see *Protected merge-authority control plane* for how control-plane changes are authorized.
+- Stale approvals are dismissed when new reviewable commits are pushed (`dismiss_stale_reviews_on_push`).
 - GitHub-generated squash commits are verified. A strict signed-commit rule is deferred because it would prevent the maintainer from squash-merging third-party-authored PRs such as Dependabot updates.
 
 The retained `Agent governance / validate` workflow remains available during the transition to the aggregate gate and for explicit manual governance validation, but it is not the canonical required status after the repository policy is applied. It also handles `pull_request: edited` and reads current PR title/body/base/head state from the GitHub API rather than trusting a frozen event-body snapshot; `workflow_dispatch` is retained only as an exact-head break-glass governance recovery path.
@@ -23,7 +23,7 @@ The retained `Agent governance / validate` workflow remains available during the
 
 `Oteryn-v2` is a public repository. GitHub push rulesets are available for private/internal repositories (and eligible fork networks), not for an ordinary public repository. A push ruleset also applies repository-wide and therefore does not use branch `ref_name` targeting. The failed post-merge run after PR #238 proved this platform boundary when GitHub rejected the attempted public push ruleset.
 
-For the current public repository, the native fallback is **required Code Owner review on a deliberately narrow control-plane ownership map**. The base-branch `.github/CODEOWNERS` owns only:
+For the current public repository the policy strategy is **`explicit_owner_authorization_plus_merge_queue`** (`control_plane_protection` in `.github/repository-policy.json`). GitHub does not enforce Code Owner review; a control-plane change needs the owner's explicit authorization for that exact change, recorded on the coordination Issue, a green `Merge authority audit` on the exact head, and the Merge Queue. The base-branch `.github/CODEOWNERS` records the owner of the control-plane paths:
 
 - `.github/CODEOWNERS` itself;
 - `.github/workflows/`;
@@ -34,7 +34,7 @@ GitHub evaluates CODEOWNERS from the pull request base branch. A PR changing one
 
 The machine policy retains the no-bypass `Protect repository control plane` push-ruleset definition as a **latent private/internal strategy only**. For private/internal visibility that latent strategy is a **dedicated push ruleset**. `tools/repository/apply_github_settings.py` applies it only when GitHub reports repository visibility `private` or `internal`; on a public repository it removes any stale ruleset of that name and verifies the Code Owner fallback instead. The push-ruleset definition intentionally contains no `ref_name` condition because GitHub push rulesets are repository-wide.
 
-A legitimate future merge-authority/control-plane change with one maintainer is intentionally break-glass work: the owner must explicitly and temporarily alter the live `Protect main` Code Owner-review requirement in GitHub Settings, perform the bounded governance PR with exact-head validation and mandatory independent audit, then restore the canonical policy and require post-merge repository-configuration plus live ruleset readback. Do not create routine bypass actors or weaken the general merge gate for convenience. Adding a second trusted maintainer can instead allow ordinary Code Owner approval without break-glass.
+A merge-authority/control-plane change is never routine: it needs the owner's explicit authorization for that change, exact-head validation, a green merge-authority audit and, afterwards, the post-merge repository-configuration readback. A change to `.github/workflows/merge-gate.yml` or `agent-governance.yml` first needs the audit's approved-blob pin rotated in a separate owner-authorized change. Do not create bypass actors or weaken the general merge gate for convenience. Enabling Code Owner review would need a policy change in `.github/repository-policy.json` (for example with a second trusted maintainer), not a manual settings edit, which the readback would report as drift.
 
 `Merge authority audit / validate` is the deterministic, non-AI independent audit workflow for high-risk merge-authority changes. It checks the branch ruleset contract, the public Code Owner fallback, the latent private/internal push policy, visibility-aware apply/readback logic and adversarial mutations of the aggregate merge gate on the exact PR head. It does not consume owner-funded AI quota and does not replace the ordinary aggregate merge gate.
 

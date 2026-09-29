@@ -1,0 +1,229 @@
+{
+  "encounter": "canary:encounter/goshnars_megalomania",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "mType.onSpawn": [
+      "canary:creature/lesser_splinter_of_madness",
+      "canary:creature/greater_splinter_of_madness",
+      "canary:creature/mighty_splinter_of_madness"
+    ],
+    "GoshnarsHatredBuff": [
+      "canary:creature/goshnar_s_megalomania_blue",
+      "canary:creature/goshnar_s_megalomania_green",
+      "canary:creature/goshnar_s_megalomania_purple"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/megalomania_room/lesser_splinter_of_madness.lua",
+      "blob_sha1": "9b39776a4b77434a7e59b6517b29aed34a8895f9"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/megalomania_room/greater_splinter_of_madness.lua",
+      "blob_sha1": "d96ae1461657f09448914690bd12c39064607e3c"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/megalomania_room/mighty_splinter_of_madness.lua",
+      "blob_sha1": "21d7229366b5caae1632afa83f322bc686b6c4e6"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+      "blob_sha1": "cf81168aa00b063ba9ce379e48b7254a4522e160"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_green.lua",
+      "blob_sha1": "787ab94b6627f5785fc9a574e6192f679e933235"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+      "blob_sha1": "7781c66516d83abbe905496cff7c3caf44902bf9"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        97
+      ],
+      "status": "mapped",
+      "resolution": "Lesser Splinter of Madness is the lesser_splinter_of_madness participant; its file registers mType.onSpawn.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104
+      ],
+      "status": "mapped",
+      "resolution": "onSpawn schedules, 120 s later, setType(\"Greater Splinter of Madness\", true) on the same creature if it still exists: the next stage with its full health.",
+      "destination": "/encounter/rules/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        97
+      ],
+      "status": "mapped",
+      "resolution": "Greater Splinter of Madness is the greater_splinter_of_madness participant; its file registers mType.onSpawn.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104
+      ],
+      "status": "mapped",
+      "resolution": "onSpawn schedules, 120 s later, setType(\"Mighty Splinter of Madness\", true) on the same creature if it still exists: the next stage with its full health.",
+      "destination": "/encounter/rules/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        97
+      ],
+      "status": "mapped",
+      "resolution": "Canary runs onSpawn only for a creature that is spawned, and setType does not run it again (monster_functions.cpp luaMonsterSetType), so a splinter that grew from a lesser one never becomes mighty. The reference-date wiki (Soul War Quest/Spoiler: lesser splinters \"will become Greater Splinters of Madness and then Mighty Splinters of Madness\") decides (D25): creature_spawned also fires for a creature transformed into the role.",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        97
+      ],
+      "status": "mapped",
+      "resolution": "Mighty Splinter of Madness is the mighty_splinter_of_madness participant; its file registers mType.onSpawn.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110
+      ],
+      "status": "mapped",
+      "resolution": "After 120 s a mighty splinter still in the room is absorbed and Goshnar's Megalomania grows stronger: its madness rises by 5 (the wiki: \"If a Mighty Splinter of Madness is not removed in due time, it will be absorbed by the boss, increasing its Madness\"). Canary's callback calls say and remove on the undefined global `creature` and fails before increaseHatredDamageMultiplier(5); the wiki decides (D25).",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        36
+      ],
+      "status": "mapped",
+      "resolution": "Goshnar's Megalomania Blue is the goshnars_megalomania participant; its file registers GoshnarsHatredBuff.",
+      "destination": "/encounter/participants/3/creatures"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        35
+      ],
+      "status": "mapped",
+      "resolution": "Goshnar's Megalomania Green is the goshnars_megalomania participant; its file registers GoshnarsHatredBuff.",
+      "destination": "/encounter/participants/3/creatures"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Goshnar's Megalomania Purple is the goshnars_megalomania participant; its file registers GoshnarsHatredBuff.",
+      "destination": "/encounter/participants/3/creatures"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        619,
+        621,
+        622,
+        623,
+        624,
+        625,
+        626,
+        627,
+        628,
+        629,
+        630,
+        631,
+        640,
+        641,
+        642,
+        644,
+        645,
+        646,
+        648
+      ],
+      "status": "mapped",
+      "resolution": "GoshnarsHatredBuff: every hit by a player on Goshnar's Megalomania adds its madness to its defense (the wiki: \"The higher the Madness, the less damage Megalomania will take\").",
+      "destination": "/encounter/rules/3"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        632,
+        633,
+        634,
+        635,
+        636,
+        637,
+        638,
+        639
+      ],
+      "status": "approved_omission",
+      "resolution": "The outgoing branch compares the name of the hit player with \"Goshnar's Megalomania\", so it never raises the damage of Megalomania."
+    }
+  ],
+  "outcome_evidence": []
+}

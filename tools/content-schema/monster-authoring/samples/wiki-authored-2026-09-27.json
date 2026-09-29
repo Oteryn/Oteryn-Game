@@ -1,0 +1,471 @@
+{
+ "target_cut": "2026-09-27",
+ "rule": "Owner decision D44: a monster Tibia has and Canary lacks is authored from the wiki; values no wiki gives come from the Canary template and are marked NEEDS VERIFICATION.",
+ "br_capture": {
+  "workflow": ".github/workflows/monster-wiki-capture.yml",
+  "sha256": "85844cba53e444939a15e5741b9e4f34811fd58b393402785df638fbed9f5810"
+ },
+ "template": "data-otservbr-global/monster/quests/grave_danger/dark_knight.lua",
+ "sources": {
+  "fandom.monster": {
+   "api": "https://tibia.fandom.com/api.php",
+   "title": "Dark Merudri",
+   "page_id": 108320,
+   "revision_id": 1098116,
+   "revision_timestamp": "2025-04-08T09:46:45Z",
+   "content_sha256": "5efc2d183673b612c6810de4e938ef58dea9af07a93fe01627e1d5374a2d090f",
+   "facts": {
+    "name": {
+     "value": "Dark Merudri",
+     "line": 2
+    },
+    "article": {
+     "value": "a",
+     "line": 3
+    },
+    "actualname": {
+     "value": "dark merudri",
+     "line": 4
+    },
+    "plural": {
+     "value": "",
+     "line": 5
+    },
+    "hp": {
+     "value": "6500",
+     "line": 6
+    },
+    "exp": {
+     "value": "0",
+     "line": 7
+    },
+    "armor": {
+     "value": "",
+     "line": 8
+    },
+    "mitigation": {
+     "value": "",
+     "line": 9
+    },
+    "summon": {
+     "value": "--",
+     "line": 10
+    },
+    "convince": {
+     "value": "--",
+     "line": 11
+    },
+    "illusionable": {
+     "value": "no",
+     "line": 12
+    },
+    "creatureclass": {
+     "value": "",
+     "line": 13
+    },
+    "primarytype": {
+     "value": "",
+     "line": 14
+    },
+    "bestiaryclass": {
+     "value": "",
+     "line": 15
+    },
+    "bestiarylevel": {
+     "value": "",
+     "line": 16
+    },
+    "attacktype": {
+     "value": "",
+     "line": 17
+    },
+    "usespells": {
+     "value": "yes",
+     "line": 18
+    },
+    "bestiaryname": {
+     "value": "",
+     "line": 19
+    },
+    "bestiarytext": {
+     "value": "",
+     "line": 20
+    },
+    "occurrence": {
+     "value": "",
+     "line": 21
+    },
+    "spawntype": {
+     "value": "Regular",
+     "line": 22
+    },
+    "isboss": {
+     "value": "no",
+     "line": 23
+    },
+    "abilities": {
+     "value": "{{Ability List|}}",
+     "line": 24
+    },
+    "maxdmg": {
+     "value": "0",
+     "line": 25
+    },
+    "pushable": {
+     "value": "no",
+     "line": 26
+    },
+    "pushobjects": {
+     "value": "yes",
+     "line": 27
+    },
+    "walksaround": {
+     "value": "--",
+     "line": 28
+    },
+    "walksthrough": {
+     "value": "",
+     "line": 29
+    },
+    "paraimmune": {
+     "value": "yes",
+     "line": 30
+    },
+    "senseinvis": {
+     "value": "yes",
+     "line": 31
+    },
+    "physicalDmgMod": {
+     "value": "100%?",
+     "line": 32
+    },
+    "earthDmgMod": {
+     "value": "100%?",
+     "line": 33
+    },
+    "fireDmgMod": {
+     "value": "100%?",
+     "line": 34
+    },
+    "deathDmgMod": {
+     "value": "100%?",
+     "line": 35
+    },
+    "energyDmgMod": {
+     "value": "100%?",
+     "line": 36
+    },
+    "holyDmgMod": {
+     "value": "100%?",
+     "line": 37
+    },
+    "iceDmgMod": {
+     "value": "100%?",
+     "line": 38
+    },
+    "hpDrainDmgMod": {
+     "value": "100%?",
+     "line": 39
+    },
+    "drownDmgMod": {
+     "value": "100%?",
+     "line": 40
+    },
+    "healMod": {
+     "value": "100%",
+     "line": 41
+    },
+    "sounds": {
+     "value": "{{Sound List|}}",
+     "line": 42
+    },
+    "implemented": {
+     "value": "15.00.249ccc",
+     "line": 43
+    },
+    "race_id": {
+     "value": "",
+     "line": 44
+    },
+    "notes": {
+     "value": "It becomes [[Good Remains of a Merudri]] when it dies.",
+     "line": 45
+    },
+    "behaviour": {
+     "value": "",
+     "line": 48
+    },
+    "speed": {
+     "value": "",
+     "line": 49
+    },
+    "strategy": {
+     "value": "",
+     "line": 50
+    },
+    "location": {
+     "value": "Under the Cemetery north of [[Edron]], with [[Count Vlarkorth]].",
+     "line": 51
+    },
+    "loot": {
+     "value": "{{Loot Table|}}",
+     "line": 52
+    },
+    "history": {
+     "value": "",
+     "line": 53
+    }
+   }
+  },
+  "fandom.corpse": {
+   "api": "https://tibia.fandom.com/api.php",
+   "title": "Good Remains of a Merudri",
+   "page_id": 108042,
+   "revision_id": 1116306,
+   "revision_timestamp": "2025-07-26T12:36:02Z",
+   "content_sha256": "a24e4c53b344ab3dab8148de514a3772767099ede45f1620cdedbf3350017974",
+   "facts": {
+    "name": {
+     "value": "Good Remains of a Merudri",
+     "line": 2
+    },
+    "itemid": {
+     "value": "50311",
+     "line": 3
+    },
+    "article": {
+     "value": "a",
+     "line": 4
+    },
+    "actualname": {
+     "value": "good remains of a merudri",
+     "line": 5
+    },
+    "implemented": {
+     "value": "15.00.249ccc",
+     "line": 6
+    },
+    "objectclass": {
+     "value": "Other Items",
+     "line": 7
+    },
+    "primarytype": {
+     "value": "Quest Items",
+     "line": 8
+    },
+    "immobile": {
+     "value": "no",
+     "line": 9
+    },
+    "walkable": {
+     "value": "yes",
+     "line": 10
+    },
+    "pickupable": {
+     "value": "yes",
+     "line": 11
+    },
+    "usable": {
+     "value": "yes",
+     "line": 12
+    },
+    "weight": {
+     "value": "0.10",
+     "line": 13
+    },
+    "marketable": {
+     "value": "no",
+     "line": 14
+    },
+    "droppedby": {
+     "value": "{{Dropped By|}}",
+     "line": 15
+    },
+    "buyfrom": {
+     "value": "--",
+     "line": 16
+    },
+    "sellto": {
+     "value": "--",
+     "line": 17
+    },
+    "notes": {
+     "value": "These are the remains of a [[Dark Merudri]].",
+     "line": 18
+    }
+   }
+  },
+  "fandom.outfit": {
+   "api": "https://tibia.fandom.com/api.php",
+   "title": "Monk Outfits",
+   "page_id": 108263,
+   "revision_id": 1102608,
+   "revision_timestamp": "2025-05-09T19:33:52Z",
+   "content_sha256": "b8f9cb4a8afd5581cdc19557a364963ab95639697a16f3872d2f8dcedc70ba7a",
+   "facts": {
+    "name": {
+     "value": "Monk",
+     "line": 2
+    },
+    "primarytype": {
+     "value": "Basic",
+     "line": 3
+    },
+    "male_id": {
+     "value": "1824",
+     "line": 4
+    },
+    "female_id": {
+     "value": "1825",
+     "line": 5
+    },
+    "premium": {
+     "value": "no",
+     "line": 6
+    },
+    "outfit": {
+     "value": "[[Free Account]]",
+     "line": 7
+    },
+    "addons": {
+     "value": "",
+     "line": 8
+    },
+    "achievement": {
+     "value": "",
+     "line": 9
+    },
+    "implemented": {
+     "value": "15.00.249ccc",
+     "line": 10
+    },
+    "artwork": {
+     "value": "",
+     "line": 11
+    },
+    "notes": {
+     "value": "",
+     "line": 12
+    },
+    "history": {
+     "value": "",
+     "line": 13
+    }
+   }
+  },
+  "br.monster": {
+   "api": "https://www.tibiawiki.com.br/api.php",
+   "title": "Dark Merudri",
+   "page_id": 64022,
+   "revision_id": 423733,
+   "revision_timestamp": "2025-04-08T14:47:16Z",
+   "content_sha256": "173928e737a951e07244841d81e06e3935f34a1f85de0363e8787997a0349498",
+   "facts": {
+    "name": {
+     "value": "Dark Merudri",
+     "line": 2
+    },
+    "hp": {
+     "value": "6500",
+     "line": 3
+    },
+    "exp": {
+     "value": "0",
+     "line": 4
+    },
+    "isboss": {
+     "value": "não",
+     "line": 6
+    },
+    "illusionable": {
+     "value": "não",
+     "line": 12
+    },
+    "creatureclass": {
+     "value": "Humanos",
+     "line": 13
+    },
+    "primarytype": {
+     "value": "Criaturas de Quests",
+     "line": 14
+    },
+    "pushable": {
+     "value": "não",
+     "line": 16
+    },
+    "pushobjects": {
+     "value": "sim",
+     "line": 17
+    },
+    "maxdmg": {
+     "value": "550",
+     "line": 24
+    },
+    "hab_physical": {
+     "value": "[[Melee|Corpo a corpo]] (0-160).",
+     "line": 26
+    },
+    "hab_earth": {
+     "value": "[[Magias de Criaturas#Wave|Wave costas]] (0-???).",
+     "line": 27
+    },
+    "hab_energy": {
+     "value": "[[Melee|Exori 3x3]] (430-550), [[Magias de Criaturas|Ball 3x3]] (290-460).",
+     "line": 30
+    },
+    "physicalDmgMod": {
+     "value": "100%",
+     "line": 44
+    },
+    "earthDmgMod": {
+     "value": "100%",
+     "line": 45
+    },
+    "fireDmgMod": {
+     "value": "100%",
+     "line": 46
+    },
+    "deathDmgMod": {
+     "value": "100%",
+     "line": 47
+    },
+    "energyDmgMod": {
+     "value": "100%",
+     "line": 48
+    },
+    "holyDmgMod": {
+     "value": "100%",
+     "line": 49
+    },
+    "iceDmgMod": {
+     "value": "100%",
+     "line": 50
+    },
+    "healDmgMod": {
+     "value": "100%",
+     "line": 51
+    },
+    "immunities": {
+     "value": "Invisibility, Paralysis",
+     "line": 53
+    },
+    "ignoresfields": {
+     "value": "Poison, Fire, Energy",
+     "line": 54
+    },
+    "implemented": {
+     "value": "15.00.249ccc",
+     "line": 55
+    },
+    "loot": {
+     "value": "Nenhum.",
+     "line": 61
+    },
+    "notes": {
+     "value": "<noinclude><p><spoiler>\n* Faz parte da luta contra um dos bosses da [[Grave Danger Quest]].\n* Esse summon só irá aparecer na luta se tiver um [[Monk]] no time, sendo assim ao matá-lo apenas o Monk do time poderá usar o seu corpo no boss [[Count Vlarkorth]] para enfraquecê-lo.\n</spoiler></p></noinclu",
+     "line": 69
+    }
+   }
+  }
+ }
+}

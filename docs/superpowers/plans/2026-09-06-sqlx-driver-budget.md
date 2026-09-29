@@ -5,7 +5,7 @@
 The SAME frozen M03/M04 error boundary from #162/5656188739 has a bounded
 candidate decision at
 `docs/architecture/reviews/OTERYN_GAME_WP3_ERROR_CUSTODY_DECISION_2026-09-13.md`
-and exact scope at `docs/agents/programs/OTV2_WP3_ERROR_CUSTODY_AMENDMENT_20260913.md`.
+and exact scope at `docs/agents/programs/archive/OTV2_WP3_ERROR_CUSTODY_AMENDMENT_20260913.md`.
 They are **NOT_ACTIVE**. Only their protected integration/readback, decision
 acceptance and explicit exclusive Work activation may add the named
 `vendor/sqlx-core-0.9.0/src/error.rs` custody/consuming-API symbols to this plan's

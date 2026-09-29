@@ -1,10 +1,1 @@
-{
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/abilities/definitions/",
-  "kind": "static_content",
-  "owner": "Ability",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
-  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Spell/ability identities and authoring metadata."
-}
+{"attached_authoring_profiles":5841,"attached_source_bindings":0,"family":"Ability","legacy_source":{"git_blob_sha":"a8ff4494d714a02da659851ec98787cded12a9cc","path":"content/world/definitions/reference.json","schema":"OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1"},"record_count":5841,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/abilities/definitions/abilities-00000-00499.json","content/abilities/definitions/abilities-00500-00999.json","content/abilities/definitions/abilities-01000-01499.json","content/abilities/definitions/abilities-01500-01999.json","content/abilities/definitions/abilities-02000-02499.json","content/abilities/definitions/abilities-02500-02999.json","content/abilities/definitions/abilities-03000-03499.json","content/abilities/definitions/abilities-03500-03999.json","content/abilities/definitions/abilities-04000-04499.json","content/abilities/definitions/abilities-04500-04999.json","content/abilities/definitions/abilities-05000-05499.json","content/abilities/definitions/abilities-05500-05840.json"]}

@@ -1,0 +1,24 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/ragiaz",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/1949",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/22761",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/death_dragon",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

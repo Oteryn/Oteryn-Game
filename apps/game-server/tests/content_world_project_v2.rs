@@ -26,7 +26,7 @@ fn core() -> ProjectDraft {
         semantic_schema_version: "reference-schema-v1".into(),
         licensing_metadata: "license:project-owned-v1".into(),
         world_id: "0123456789ab70cd8ef0123456789abc".into(),
-        coordinate_frame: "global-target-2026-07-28".into(),
+        coordinate_frame: "global-target-2026-09-27".into(),
         records: vec![ProjectReferenceRecord::Generic {
             identity: DefinitionIdentityDocument {
                 family: "Presentation".into(),
@@ -91,6 +91,12 @@ fn candidate() -> ProjectV2Draft {
                 },
                 ProjectV2Declaration::Dialogue {
                     identity: identity("dialogue.courier"),
+                    greet: vec![],
+                    farewell: vec![],
+                    walkaway: vec![],
+                    send_trade: vec![],
+                    keywords: vec![],
+                    voices: None,
                     fields: vec![ProjectV2CandidateField {
                         field_path: "oteryn:source.dialogue-text".into(),
                         value: ProjectV2CandidateValue::Text("hello".into()),
@@ -100,6 +106,7 @@ fn candidate() -> ProjectV2Draft {
                     identity: identity("service.courier"),
                     offers: vec![],
                     recipes: vec![],
+                    routes: vec![],
                     fields: vec![],
                 },
                 ProjectV2Declaration::Interaction {
@@ -148,7 +155,7 @@ fn candidate() -> ProjectV2Draft {
                 area: None,
                 document: None,
                 parent_placement: None,
-                coordinate_frame: "global-target-2026-07-28".into(),
+                coordinate_frame: "global-target-2026-09-27".into(),
                 x: 100,
                 y: 200,
                 floor: 7,
@@ -756,8 +763,11 @@ fn item_candidate() -> ProjectV2Draft {
                 direction: ProjectV2ServiceOfferDirection::SellToPlayer,
                 unit_price: 125_000,
                 currency: None,
+                count: None,
+                sub_type: None,
             }],
             recipes: vec![],
+            routes: vec![],
             fields: vec![],
         });
     draft.state.item_authoring.push(ProjectV2ItemAuthoring {
@@ -1188,6 +1198,8 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
                     mana_cost: Some(300),
                     owner_speed_bonus: Some(10),
                 }),
+                details: None,
+                encounters: vec![],
                 fields: vec![],
             }),
         },
@@ -1210,6 +1222,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
                 damage_type: Some("Physical".into()),
                 acquisition_interactions: vec![interaction.clone()],
                 augments: vec![],
+                details: None,
                 fields: vec![],
             }),
         },
@@ -1259,6 +1272,20 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
                 cooldown_seconds: Some(3_600),
                 repeatable: Some(true),
                 interactions: vec![interaction.clone()],
+                details: Some(Box::new(
+                    serde_json::from_value(serde_json::json!({
+                        "display_name": "Courier raid",
+                        "participants": [{"role": "courier", "creatures": [{
+                            "family": "Creature",
+                            "key": "oteryn:reference.creature.wiki-alpha",
+                            "revision": "definition-r1"
+                        }]}],
+                        "state": {"flags": [{"name": "started", "initial": false}]},
+                        "rules": [{"key": "start", "trigger": {"kind": "encounter_started"},
+                                   "actions": [{"kind": "flag", "flag": "started", "value": true}]}]
+                    }))
+                    .expect("encounter details"),
+                )),
                 fields: vec![],
             }),
         },
@@ -1285,7 +1312,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
         area: Some(area.clone()),
         document: None,
         parent_placement: None,
-        coordinate_frame: "global-target-2026-07-28".into(),
+        coordinate_frame: "global-target-2026-09-27".into(),
         x: 101,
         y: 200,
         floor: 7,
@@ -1300,7 +1327,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
         area: Some(area),
         document: Some(document),
         parent_placement: Some(parent.key.clone()),
-        coordinate_frame: "global-target-2026-07-28".into(),
+        coordinate_frame: "global-target-2026-09-27".into(),
         x: 101,
         y: 200,
         floor: 7,

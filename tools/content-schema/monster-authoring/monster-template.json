@@ -82,7 +82,9 @@
       "prowess_kills": null,
       "expertise_kills": null,
       "mastery_kills": null,
-      "boss_points": null
+      "prowess_points": null,
+      "expertise_points": null,
+      "mastery_points": null
     },
     "corpse_item": {
       "family": null,
@@ -202,7 +204,12 @@
           "revision": null
         },
         "interval_ms": null,
-        "chance_percent": null
+        "chance_percent": null,
+        "magnitude": {
+          "minimum": null,
+          "maximum": null
+        },
+        "range_tiles": null
       }
     ],
     "defenses": [
@@ -213,7 +220,12 @@
           "revision": null
         },
         "interval_ms": null,
-        "chance_percent": null
+        "chance_percent": null,
+        "magnitude": {
+          "minimum": null,
+          "maximum": null
+        },
+        "range_tiles": null
       }
     ],
     "voices": {
@@ -274,6 +286,7 @@
     },
     "appearance": {
       "asset_binding": null,
+      "selection": null,
       "palette_bindings": [
         {
           "slot": null,

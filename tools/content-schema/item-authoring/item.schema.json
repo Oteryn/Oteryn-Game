@@ -1,0 +1,3136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:item-authoring:candidate:4",
+  "title": "Oteryn Item authoring candidate v4",
+  "description": "Portable Item definition only. Terrain, placed WorldObject and mutable ItemInstance state are outside this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "identity": {
+      "$ref": "#/$defs/identity"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "family_profile": {
+      "enum": [
+        "equipment_armor",
+        "equipment_offhand",
+        "container_equipment",
+        "weapon_melee",
+        "weapon_distance",
+        "weapon_magic",
+        "rune",
+        "document",
+        "container",
+        "decoration",
+        "event_collectible",
+        "progression_material",
+        "transformation_item",
+        "quest_item",
+        "material_valuable",
+        "trash",
+        "key",
+        "light_source",
+        "tool",
+        "food",
+        "fluid",
+        "plant"
+      ]
+    },
+    "family_profile_basis": {
+      "enum": [
+        "wiki_evidence_fallback",
+        "engine_wrap_target",
+        "owner_name_rule"
+      ]
+    },
+    "family_profile_evidence": {
+      "$ref": "#/$defs/familyProfileEvidence"
+    },
+    "delivery_task_eligible": {
+      "$ref": "#/$defs/bool"
+    },
+    "presentation": {
+      "$ref": "#/$defs/presentation"
+    },
+    "taxonomy": {
+      "$ref": "#/$defs/taxonomy"
+    },
+    "physical": {
+      "$ref": "#/$defs/physical"
+    },
+    "stack": {
+      "$ref": "#/$defs/stack"
+    },
+    "requirements": {
+      "$ref": "#/$defs/requirements"
+    },
+    "equipment": {
+      "$ref": "#/$defs/equipment"
+    },
+    "weapon": {
+      "$ref": "#/$defs/weapon"
+    },
+    "protection": {
+      "$ref": "#/$defs/protection"
+    },
+    "modifiers": {
+      "$ref": "#/$defs/modifiers"
+    },
+    "charges": {
+      "$ref": "#/$defs/charges"
+    },
+    "temporal": {
+      "$ref": "#/$defs/temporal"
+    },
+    "container": {
+      "$ref": "#/$defs/container"
+    },
+    "imbuement": {
+      "$ref": "#/$defs/imbuement"
+    },
+    "forge": {
+      "$ref": "#/$defs/forge"
+    },
+    "proficiency": {
+      "$ref": "#/$defs/proficiency"
+    },
+    "consumable": {
+      "$ref": "#/$defs/consumable"
+    },
+    "fluid": {
+      "$ref": "#/$defs/fluid"
+    },
+    "readable": {
+      "$ref": "#/$defs/readable"
+    },
+    "light": {
+      "$ref": "#/$defs/light"
+    },
+    "use": {
+      "$ref": "#/$defs/use"
+    },
+    "lifecycle": {
+      "$ref": "#/$defs/lifecycle"
+    },
+    "availability": {
+      "$ref": "#/$defs/availability"
+    },
+    "trade": {
+      "$ref": "#/$defs/trade"
+    },
+    "source_observations": {
+      "$ref": "#/$defs/sourceObservations"
+    },
+    "editor": {
+      "$ref": "#/$defs/editor"
+    }
+  },
+  "required": [
+    "identity",
+    "display_name",
+    "family_profile",
+    "delivery_task_eligible",
+    "taxonomy"
+  ],
+  "dependentRequired": {
+    "family_profile_basis": [
+      "family_profile_evidence"
+    ],
+    "family_profile_evidence": [
+      "family_profile_basis"
+    ]
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9_.-]+:[a-z0-9_.:/-]+$",
+      "maxLength": 512,
+      "description": "Namespaced Oteryn authoring key; source numeric IDs are provenance only."
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "maxLength": 512
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "key",
+        "revision"
+      ]
+    },
+    "ItemRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Item"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "AbilityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Ability"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "EffectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Effect"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "InteractionRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Interaction"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "DocumentRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Document"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "ProficiencyRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Proficiency"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "PresentationRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Presentation"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "bool": {
+      "type": "boolean"
+    },
+    "ms": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Positive duration in milliseconds; no implicit unit conversion."
+    },
+    "ratio": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numerator": {
+          "type": "integer"
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator"
+      ],
+      "description": "Exact rational in lowest terms."
+    },
+    "nonnegativeRatio": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numerator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator"
+      ],
+      "description": "Exact rational in lowest terms."
+    },
+    "positiveRatio": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numerator": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator"
+      ],
+      "description": "Exact rational in lowest terms."
+    },
+    "percent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numerator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator"
+      ],
+      "description": "Exact percentage points in [0,100], enforced semantically."
+    },
+    "damageType": {
+      "enum": [
+        "physical",
+        "energy",
+        "earth",
+        "fire",
+        "life_drain",
+        "mana_drain",
+        "drowning",
+        "ice",
+        "holy",
+        "death",
+        "agony",
+        "neutral",
+        "healing"
+      ]
+    },
+    "assetBinding": {
+      "$ref": "#/$defs/key"
+    },
+    "weight": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?:0|[1-9][0-9]*)\\.[0-9]{2}$",
+          "maxLength": 64
+        },
+        "unit": {
+          "enum": [
+            "oz",
+            "g"
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "unit"
+      ],
+      "description": "Exact nonnegative decimal string with exactly two fractional digits plus explicit unit; 42.00 oz is engine weight 4200 (centi-ounces)."
+    },
+    "displayWeight": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!-0\\.00$)-?(?:0|[1-9][0-9]*)\\.[0-9]{2}$",
+          "maxLength": 64
+        },
+        "unit": {
+          "enum": [
+            "oz",
+            "g"
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "unit"
+      ],
+      "description": "Signed source display override only; never gameplay mass."
+    },
+    "displayFlags": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stack_count": {
+          "$ref": "#/$defs/bool"
+        },
+        "duration": {
+          "$ref": "#/$defs/bool"
+        },
+        "attributes": {
+          "$ref": "#/$defs/bool"
+        },
+        "client_expiry_timer": {
+          "$ref": "#/$defs/bool"
+        },
+        "client_wear_counter": {
+          "$ref": "#/$defs/bool"
+        }
+      },
+      "required": []
+    },
+    "presentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "grammar": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "article": {
+              "type": "string",
+              "minLength": 0
+            },
+            "plural": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": []
+        },
+        "inspection_description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "flavor_text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sounds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/key"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "appearance_binding": {
+          "$ref": "#/$defs/PresentationRef"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/key"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "projectile_effect": {
+          "$ref": "#/$defs/key"
+        },
+        "attack_effect": {
+          "$ref": "#/$defs/key"
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ItemRef"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "display_weight": {
+          "$ref": "#/$defs/displayWeight"
+        },
+        "display_flags": {
+          "$ref": "#/$defs/displayFlags"
+        }
+      },
+      "required": []
+    },
+    "taxonomy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "item_class": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "primary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "secondary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tertiary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_.-]*$"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "item_class",
+        "primary"
+      ]
+    },
+    "physical": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "weight": {
+          "$ref": "#/$defs/weight"
+        },
+        "movable": {
+          "$ref": "#/$defs/bool"
+        },
+        "pickupable": {
+          "$ref": "#/$defs/bool"
+        }
+      },
+      "required": []
+    },
+    "stack": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stackable": {
+          "$ref": "#/$defs/bool"
+        },
+        "max_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "stackable",
+        "max_count"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "stackable": {
+                "const": true
+              }
+            },
+            "required": [
+              "stackable"
+            ]
+          },
+          "then": {
+            "properties": {
+              "max_count": {
+                "minimum": 2
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "max_count": {
+                "const": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "min_magic_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "vocations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "context": {
+          "type": "string",
+          "minLength": 1
+        },
+        "enforcement_mode": {
+          "enum": [
+            "on_equip",
+            "on_use",
+            "both"
+          ]
+        },
+        "premium_only": {
+          "$ref": "#/$defs/bool"
+        },
+        "level_magic_shortfall": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "policy": {
+              "const": "allow_with_multiplicative_damage_penalty"
+            },
+            "damage_multiplier_per_failed_check": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "numerator": {
+                  "const": 1
+                },
+                "denominator": {
+                  "const": 2
+                }
+              },
+              "required": [
+                "numerator",
+                "denominator"
+              ]
+            }
+          },
+          "required": [
+            "policy",
+            "damage_multiplier_per_failed_check"
+          ]
+        }
+      },
+      "required": [
+        "enforcement_mode"
+      ]
+    },
+    "equipmentPattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pattern_id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "slot": {
+          "enum": [
+            "head",
+            "neck",
+            "back",
+            "armor",
+            "right_hand",
+            "left_hand",
+            "legs",
+            "feet",
+            "ring",
+            "ammo",
+            "extra"
+          ]
+        },
+        "hands": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "reserved_slots": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "head",
+              "neck",
+              "back",
+              "armor",
+              "right_hand",
+              "left_hand",
+              "legs",
+              "feet",
+              "ring",
+              "ammo",
+              "extra"
+            ]
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "vocations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "min_level": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "pattern_id",
+        "slot",
+        "hands"
+      ]
+    },
+    "equipment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pattern_id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "slot": {
+          "enum": [
+            "head",
+            "neck",
+            "back",
+            "armor",
+            "right_hand",
+            "left_hand",
+            "legs",
+            "feet",
+            "ring",
+            "ammo",
+            "extra"
+          ]
+        },
+        "hands": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "reserved_slots": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "head",
+              "neck",
+              "back",
+              "armor",
+              "right_hand",
+              "left_hand",
+              "legs",
+              "feet",
+              "ring",
+              "ammo",
+              "extra"
+            ]
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "vocations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "min_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "patterns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/equipmentPattern"
+          },
+          "minItems": 1
+        },
+        "dual_wielding": {
+          "$ref": "#/$defs/bool"
+        },
+        "activation_events": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "equip",
+              "unequip"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "oneOf": [
+        {
+          "required": [
+            "slot",
+            "hands"
+          ],
+          "not": {
+            "required": [
+              "patterns"
+            ]
+          }
+        },
+        {
+          "required": [
+            "patterns"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "pattern_id"
+                ]
+              },
+              {
+                "required": [
+                  "slot"
+                ]
+              },
+              {
+                "required": [
+                  "hands"
+                ]
+              },
+              {
+                "required": [
+                  "reserved_slots"
+                ]
+              },
+              {
+                "required": [
+                  "groups"
+                ]
+              },
+              {
+                "required": [
+                  "vocations"
+                ]
+              },
+              {
+                "required": [
+                  "min_level"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "description": "Use the compact slot/hands form for one pattern or patterns[] when equip rules differ by vocation/level."
+    },
+    "elementalAttack": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "damage_type": {
+          "$ref": "#/$defs/damageType"
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "damage_type",
+        "amount"
+      ]
+    },
+    "damageRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "minimum": {
+          "type": "integer"
+        },
+        "maximum": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "minimum",
+        "maximum"
+      ]
+    },
+    "chainTargeting": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_targets": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "range_cells": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "falloff_percent": {
+          "$ref": "#/$defs/percent"
+        }
+      },
+      "required": [
+        "max_targets",
+        "range_cells"
+      ]
+    },
+    "chain": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "disabled"
+            }
+          },
+          "required": [
+            "mode"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "override"
+            },
+            "skill_formula_coefficient": {
+              "$ref": "#/$defs/positiveRatio"
+            },
+            "targeting": {
+              "$ref": "#/$defs/chainTargeting"
+            }
+          },
+          "required": [
+            "mode",
+            "skill_formula_coefficient"
+          ]
+        }
+      ],
+      "description": "Absent inherits engine defaults; disabled and explicit coefficient are distinct."
+    },
+    "weapon": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "weapon_type": {
+          "enum": [
+            "sword",
+            "axe",
+            "club",
+            "fist",
+            "distance_launcher",
+            "ammunition",
+            "thrown_missile",
+            "wand",
+            "rod",
+            "shield",
+            "spellbook"
+          ]
+        },
+        "ammunition_kind": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "attack": {
+          "type": "integer"
+        },
+        "attack_modifier": {
+          "type": "integer"
+        },
+        "defense": {
+          "type": "integer"
+        },
+        "extra_defense": {
+          "type": "integer"
+        },
+        "range_cells": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hit_chance_percent": {
+          "$ref": "#/$defs/percent"
+        },
+        "hit_chance_modifier_percent": {
+          "$ref": "#/$defs/ratio"
+        },
+        "max_hit_chance_percent": {
+          "$ref": "#/$defs/percent"
+        },
+        "damage_range": {
+          "$ref": "#/$defs/damageRange"
+        },
+        "damage_type": {
+          "$ref": "#/$defs/damageType"
+        },
+        "elemental_attack": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/elementalAttack"
+          },
+          "minItems": 0
+        },
+        "consumption_mode": {
+          "enum": [
+            "none",
+            "consume_ammunition",
+            "consume_charge",
+            "consume_item",
+            "move_item_to_impact_tile"
+          ]
+        },
+        "break_chance_percent": {
+          "$ref": "#/$defs/percent"
+        },
+        "chain": {
+          "$ref": "#/$defs/chain"
+        }
+      },
+      "required": [
+        "weapon_type"
+      ]
+    },
+    "resistance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "damage_type": {
+          "$ref": "#/$defs/damageType"
+        },
+        "reduction_percent": {
+          "$ref": "#/$defs/ratio"
+        },
+        "scope": {
+          "enum": [
+            "direct",
+            "field",
+            "all"
+          ]
+        }
+      },
+      "required": [
+        "damage_type",
+        "reduction_percent",
+        "scope"
+      ]
+    },
+    "conditionSuppression": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "scope": {
+          "enum": [
+            "direct",
+            "field",
+            "all"
+          ]
+        }
+      },
+      "required": [
+        "condition",
+        "scope"
+      ]
+    },
+    "protection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "armor": {
+          "type": "integer"
+        },
+        "resistances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/resistance"
+          },
+          "minItems": 0
+        },
+        "condition_suppressions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/conditionSuppression"
+          },
+          "minItems": 0
+        }
+      },
+      "required": []
+    },
+    "skillBoost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skill": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "amount": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "skill",
+        "amount"
+      ]
+    },
+    "capacityModifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource": {
+          "enum": [
+            "health",
+            "mana",
+            "capacity",
+            "soul"
+          ]
+        },
+        "flat": {
+          "type": "integer"
+        },
+        "percent": {
+          "$ref": "#/$defs/ratio"
+        }
+      },
+      "required": [
+        "resource"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "flat"
+          ]
+        },
+        {
+          "required": [
+            "percent"
+          ]
+        }
+      ]
+    },
+    "regenerationModifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource": {
+          "enum": [
+            "health",
+            "mana"
+          ]
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "interval_ms": {
+          "$ref": "#/$defs/ms"
+        }
+      },
+      "required": [
+        "resource",
+        "amount",
+        "interval_ms"
+      ]
+    },
+    "leechModifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource": {
+          "enum": [
+            "health",
+            "mana"
+          ]
+        },
+        "chance_percent": {
+          "$ref": "#/$defs/percent"
+        },
+        "amount_percent": {
+          "$ref": "#/$defs/percent"
+        }
+      },
+      "required": [
+        "resource",
+        "chance_percent",
+        "amount_percent"
+      ]
+    },
+    "magicLevelModifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "combat_type": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/damageType"
+            },
+            {
+              "const": "all"
+            }
+          ]
+        },
+        "amount": {
+          "type": "integer"
+        },
+        "percent": {
+          "$ref": "#/$defs/ratio"
+        }
+      },
+      "required": [
+        "combat_type"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "amount"
+          ],
+          "not": {
+            "required": [
+              "percent"
+            ]
+          }
+        },
+        {
+          "required": [
+            "percent"
+          ],
+          "not": {
+            "required": [
+              "amount"
+            ]
+          }
+        }
+      ]
+    },
+    "reflection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "damage_type": {
+          "$ref": "#/$defs/damageType"
+        },
+        "flat": {
+          "type": "integer"
+        },
+        "percent": {
+          "$ref": "#/$defs/percent"
+        }
+      },
+      "required": [
+        "damage_type"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "flat"
+          ]
+        },
+        {
+          "required": [
+            "percent"
+          ]
+        }
+      ]
+    },
+    "magicShieldCapacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "flat": {
+          "type": "integer"
+        },
+        "percent": {
+          "$ref": "#/$defs/ratio"
+        }
+      },
+      "required": [],
+      "anyOf": [
+        {
+          "required": [
+            "flat"
+          ]
+        },
+        {
+          "required": [
+            "percent"
+          ]
+        }
+      ]
+    },
+    "movementSpeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "flat": {
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 2147483647
+        },
+        "unit": {
+          "const": "speed_points"
+        }
+      },
+      "required": [
+        "flat",
+        "unit"
+      ]
+    },
+    "mantra": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "points": {
+          "type": "integer",
+          "minimum": -32768,
+          "maximum": 32767
+        },
+        "damage_types": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "energy",
+              "fire",
+              "earth",
+              "ice"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "points",
+        "damage_types"
+      ]
+    },
+    "elementalBond": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "damage_type": {
+          "enum": [
+            "physical",
+            "energy",
+            "earth"
+          ]
+        }
+      },
+      "required": [
+        "damage_type"
+      ]
+    },
+    "modifiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skill_boost": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/skillBoost"
+          },
+          "minItems": 0
+        },
+        "resource_capacity": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/capacityModifier"
+          },
+          "minItems": 0
+        },
+        "regeneration": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/regenerationModifier"
+          },
+          "minItems": 0
+        },
+        "critical_chance_percent": {
+          "$ref": "#/$defs/percent"
+        },
+        "critical_damage_percent": {
+          "$ref": "#/$defs/ratio"
+        },
+        "leech": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/leechModifier"
+          },
+          "minItems": 0
+        },
+        "magic_level": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/magicLevelModifier"
+          },
+          "minItems": 0
+        },
+        "mana_shield_enabled": {
+          "$ref": "#/$defs/bool"
+        },
+        "magic_shield_capacity": {
+          "$ref": "#/$defs/magicShieldCapacity"
+        },
+        "perfect_shot_bonus": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "range_cells": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "damage": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "range_cells",
+              "damage"
+            ]
+          },
+          "minItems": 0
+        },
+        "cleave_percent": {
+          "$ref": "#/$defs/percent"
+        },
+        "reflection": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reflection"
+          },
+          "minItems": 0
+        },
+        "movement_speed": {
+          "$ref": "#/$defs/movementSpeed"
+        },
+        "invisibility_enabled": {
+          "$ref": "#/$defs/bool"
+        },
+        "mantra": {
+          "$ref": "#/$defs/mantra"
+        },
+        "elemental_bond": {
+          "$ref": "#/$defs/elementalBond"
+        },
+        "editor_notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0,
+          "uniqueItems": true,
+          "description": "Non-executable bounded notes; not a gameplay attribute bag."
+        }
+      },
+      "required": []
+    },
+    "charges": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "show_count": {
+          "$ref": "#/$defs/bool"
+        }
+      },
+      "required": [
+        "count"
+      ]
+    },
+    "temporal": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "duration_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "consumption_mode": {
+          "enum": [
+            "on_use",
+            "on_equip",
+            "continuous"
+          ]
+        },
+        "stop_duration_while_unequipped": {
+          "$ref": "#/$defs/bool"
+        },
+        "decay_target": {
+          "$ref": "#/$defs/ItemRef"
+        }
+      },
+      "required": [
+        "duration_ms",
+        "consumption_mode"
+      ]
+    },
+    "container": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "capacity": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "content_kind": {
+          "enum": [
+            "items",
+            "ammunition",
+            "fluids"
+          ]
+        },
+        "accepts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_.-]*$"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "capacity",
+        "content_kind"
+      ]
+    },
+    "imbuementTier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "tier": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "family",
+        "tier"
+      ]
+    },
+    "imbuement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "slot_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "allowed_family_tiers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/imbuementTier"
+          },
+          "minItems": 0
+        },
+        "excluded_families": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "slot_count"
+      ]
+    },
+    "forge": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "enum": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "max_tier": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "classification",
+        "max_tier"
+      ]
+    },
+    "augmentValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "boolean"
+            },
+            "value": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "signed_points"
+            },
+            "value": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "rational_percent"
+            },
+            "value": {
+              "$ref": "#/$defs/ratio"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "milliseconds"
+            },
+            "value": {
+              "$ref": "#/$defs/ms"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "signed_milliseconds"
+            },
+            "value": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "cells"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "count"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        }
+      ]
+    },
+    "augmentTarget": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "ability"
+            },
+            "ability": {
+              "$ref": "#/$defs/AbilityRef"
+            }
+          },
+          "required": [
+            "kind",
+            "ability"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "auto_attack"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "skill_scaled_auto_attack"
+            },
+            "skill": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "kind",
+            "skill"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "skill_scaled_spell_healing"
+            },
+            "skill": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "kind",
+            "skill"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "weapon_shield_modifier"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "offensive_rune"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "creature_class"
+            },
+            "class_key": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "class_key"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "generic"
+            },
+            "target_key": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "target_key"
+          ]
+        }
+      ]
+    },
+    "augmentRankValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rank": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "value": {
+          "$ref": "#/$defs/augmentValue"
+        }
+      },
+      "required": [
+        "rank",
+        "value"
+      ]
+    },
+    "augment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "selection_slot": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_.-]*$"
+        },
+        "target": {
+          "$ref": "#/$defs/augmentTarget"
+        },
+        "effect": {
+          "$ref": "#/$defs/EffectRef"
+        },
+        "value": {
+          "$ref": "#/$defs/augmentValue"
+        },
+        "rank_values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/augmentRankValue"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "key",
+        "target"
+      ]
+    },
+    "proficiencyLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "selection_count": {
+          "const": 1
+        },
+        "perks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/augment"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "level",
+        "selection_count",
+        "perks"
+      ]
+    },
+    "proficiencyShaping": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_rank": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "replace_slots": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "refine_enabled": {
+          "$ref": "#/$defs/bool"
+        },
+        "reshape_enabled": {
+          "$ref": "#/$defs/bool"
+        },
+        "clear_enabled": {
+          "$ref": "#/$defs/bool"
+        },
+        "lunar_ascension_enabled": {
+          "$ref": "#/$defs/bool"
+        },
+        "cost_service": {
+          "$ref": "#/$defs/InteractionRef"
+        }
+      },
+      "required": [
+        "max_rank",
+        "replace_slots",
+        "refine_enabled",
+        "reshape_enabled",
+        "clear_enabled",
+        "lunar_ascension_enabled"
+      ]
+    },
+    "proficiency": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "profile_binding": {
+          "$ref": "#/$defs/ProficiencyRef"
+        },
+        "levels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/proficiencyLevel"
+          },
+          "minItems": 0
+        },
+        "shaping": {
+          "$ref": "#/$defs/proficiencyShaping"
+        },
+        "augments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/augment"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [],
+      "anyOf": [
+        {
+          "required": [
+            "profile_binding"
+          ]
+        },
+        {
+          "required": [
+            "levels"
+          ]
+        },
+        {
+          "required": [
+            "augments"
+          ]
+        }
+      ]
+    },
+    "consumable": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "edible": {
+          "$ref": "#/$defs/bool"
+        },
+        "regeneration_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "consume_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "edible",
+        "consume_count"
+      ]
+    },
+    "fluid": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "content",
+            "container"
+          ]
+        },
+        "fluid_type": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "default_content": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_]*$"
+        }
+      },
+      "required": [
+        "role"
+      ]
+    },
+    "readable": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "readable": {
+          "$ref": "#/$defs/bool"
+        },
+        "writable": {
+          "$ref": "#/$defs/bool"
+        },
+        "write_policy": {
+          "enum": [
+            "none",
+            "write_once",
+            "rewrite"
+          ]
+        },
+        "max_characters": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "distance_readable": {
+          "$ref": "#/$defs/bool"
+        },
+        "document_binding": {
+          "$ref": "#/$defs/DocumentRef"
+        },
+        "write_once_target": {
+          "$ref": "#/$defs/ItemRef"
+        }
+      },
+      "required": [
+        "readable",
+        "writable",
+        "write_policy"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "writable": {
+                "const": false
+              }
+            },
+            "required": [
+              "writable"
+            ]
+          },
+          "then": {
+            "properties": {
+              "write_policy": {
+                "const": "none"
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "write_once_target"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "properties": {
+              "write_policy": {
+                "enum": [
+                  "write_once",
+                  "rewrite"
+                ]
+              }
+            },
+            "required": [
+              "max_characters"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "write_policy": {
+                "const": "write_once"
+              }
+            },
+            "required": [
+              "write_policy"
+            ]
+          },
+          "then": {
+            "required": [
+              "write_once_target"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "write_once_target"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "writable": {
+                "const": true
+              }
+            },
+            "required": [
+              "writable"
+            ]
+          },
+          "then": {
+            "properties": {
+              "readable": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "light": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "emits": {
+          "$ref": "#/$defs/bool"
+        },
+        "color_binding": {
+          "$ref": "#/$defs/key"
+        },
+        "intensity": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "radius_cells": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "when_equipped": {
+          "$ref": "#/$defs/bool"
+        },
+        "toggleable": {
+          "$ref": "#/$defs/bool"
+        }
+      },
+      "required": [
+        "emits"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "emits": {
+                "const": true
+              }
+            },
+            "required": [
+              "emits"
+            ]
+          },
+          "then": {
+            "required": [
+              "color_binding",
+              "intensity"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "color_binding"
+                  ]
+                },
+                {
+                  "required": [
+                    "intensity"
+                  ]
+                },
+                {
+                  "required": [
+                    "radius_cells"
+                  ]
+                },
+                {
+                  "required": [
+                    "when_equipped"
+                  ]
+                },
+                {
+                  "required": [
+                    "toggleable"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "use": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "usable": {
+          "$ref": "#/$defs/bool"
+        },
+        "use_with": {
+          "$ref": "#/$defs/bool"
+        },
+        "interactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InteractionRef"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "ability": {
+          "$ref": "#/$defs/AbilityRef"
+        },
+        "effect": {
+          "$ref": "#/$defs/EffectRef"
+        },
+        "damage": {
+          "$ref": "#/$defs/damageRange"
+        },
+        "damage_type": {
+          "$ref": "#/$defs/damageType"
+        },
+        "mana_cost": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "default_action": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_.-]*$"
+        }
+      },
+      "required": [
+        "usable",
+        "use_with"
+      ]
+    },
+    "transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "trigger": {
+          "enum": [
+            "use",
+            "equip",
+            "unequip",
+            "decay",
+            "destroy",
+            "wrap",
+            "unwrap"
+          ]
+        },
+        "target": {
+          "$ref": "#/$defs/ItemRef"
+        }
+      },
+      "required": [
+        "trigger",
+        "target"
+      ]
+    },
+    "wrapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "wrap_target": {
+          "$ref": "#/$defs/ItemRef"
+        },
+        "unwrap_target": {
+          "$ref": "#/$defs/ItemRef"
+        },
+        "preserve_contents": {
+          "$ref": "#/$defs/bool"
+        },
+        "is_wrap_kit": {
+          "$ref": "#/$defs/bool"
+        },
+        "wrap_enabled": {
+          "$ref": "#/$defs/bool"
+        },
+        "unwrap_enabled": {
+          "$ref": "#/$defs/bool"
+        }
+      },
+      "required": [],
+      "anyOf": [
+        {
+          "required": [
+            "wrap_target"
+          ]
+        },
+        {
+          "required": [
+            "unwrap_target"
+          ]
+        },
+        {
+          "required": [
+            "is_wrap_kit"
+          ]
+        },
+        {
+          "required": [
+            "wrap_enabled"
+          ]
+        },
+        {
+          "required": [
+            "unwrap_enabled"
+          ]
+        }
+      ]
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enchantable": {
+          "$ref": "#/$defs/bool"
+        },
+        "enchanted_variant": {
+          "$ref": "#/$defs/ItemRef"
+        },
+        "destructible": {
+          "$ref": "#/$defs/bool"
+        },
+        "transforms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/transform"
+          },
+          "minItems": 0
+        },
+        "wrapping": {
+          "$ref": "#/$defs/wrapping"
+        }
+      },
+      "required": []
+    },
+    "availabilityEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "enum": [
+            "tibiawiki"
+          ]
+        },
+        "page_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revision_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "wiki_title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "match_basis": {
+          "enum": [
+            "itemid",
+            "title",
+            "appearance_title",
+            "actualname"
+          ]
+        }
+      },
+      "required": [
+        "source",
+        "page_id",
+        "revision_id",
+        "wiki_title",
+        "match_basis"
+      ]
+    },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "deprecated",
+            "event",
+            "ts-only",
+            "unavailable",
+            "unobtainable"
+          ]
+        },
+        "evidence": {
+          "$ref": "#/$defs/availabilityEvidence"
+        }
+      },
+      "required": [
+        "status",
+        "evidence"
+      ],
+      "description": "Owner decision 2026-09-28 (task f): whether TibiaWiki's own Infobox Object 'status' field asserted something about the exact page that decided this Item's family_profile. Present only when the wiki-evidence fallback resolved family_profile AND that page's own 'status' was non-empty (for a disambiguation, only when every candidate page agreed); absence means 'not asserted', never 'available' -- an Item with no wiki record, or one resolved some other way (engine attribute, wrap-target, dead-item, fluid-type, late-placeholder), never carries this field. 'status' never affects family classification, routing or any other outcome; it is observed fact only."
+    },
+    "trade": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tradeable": {
+          "$ref": "#/$defs/bool"
+        },
+        "marketable": {
+          "$ref": "#/$defs/bool"
+        },
+        "market_category": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_.-]*$"
+        },
+        "vocations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "anyOf": [
+        {
+          "required": [
+            "tradeable"
+          ]
+        },
+        {
+          "required": [
+            "marketable"
+          ]
+        },
+        {
+          "required": [
+            "market_category"
+          ]
+        },
+        {
+          "required": [
+            "vocations"
+          ]
+        }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "market_category"
+                ]
+              },
+              {
+                "required": [
+                  "vocations"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "marketable": {
+                "const": true
+              }
+            },
+            "required": [
+              "marketable"
+            ]
+          }
+        }
+      ]
+    },
+    "sourceObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "attributes_text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unparsed_clauses": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "unparsed_modifier_clauses": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "description": "Preserved non-executable source text; never interpreted as runtime logic."
+    },
+    "editor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "estimated_value": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+            },
+            "unit": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "amount",
+            "unit"
+          ]
+        }
+      },
+      "required": [],
+      "description": "Editor metadata only; not economy or durable value truth."
+    },
+    "wikiEvidenceSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "const": "fandom"
+        },
+        "page_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^https?://"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "revision_timestamp": {
+          "type": "string",
+          "minLength": 1,
+          "format": "date-time"
+        },
+        "captured_at": {
+          "type": "string",
+          "minLength": 1,
+          "format": "date-time"
+        },
+        "revision_sha1": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "content_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "source_id",
+        "page_id",
+        "title",
+        "url",
+        "revision",
+        "revision_timestamp",
+        "captured_at",
+        "revision_sha1",
+        "content_sha256"
+      ],
+      "description": "One captured English TibiaWiki (tibia.fandom.com) page revision cited as family_profile evidence; see items-family-fallback.json."
+    },
+    "wikiEvidenceCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "enum": [
+            "primarytype",
+            "objectclass",
+            "status"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "wiki_source": {
+          "$ref": "#/$defs/wikiEvidenceSource"
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "wiki_source"
+      ]
+    },
+    "familyProfileEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resolution": {
+          "enum": [
+            "direct",
+            "disambiguation"
+          ]
+        },
+        "match_basis": {
+          "enum": [
+            "itemid",
+            "title",
+            "appearance_title",
+            "actualname"
+          ]
+        },
+        "field": {
+          "enum": [
+            "primarytype",
+            "objectclass",
+            "status"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "wiki_source": {
+          "$ref": "#/$defs/wikiEvidenceSource"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/wikiEvidenceCandidate"
+          },
+          "minItems": 2,
+          "uniqueItems": true
+        },
+        "wrap_target_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "wrap_target_primarytype": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rule": {
+          "enum": [
+            "take_able_dead_creature",
+            "owner_leftover_review_2026_09_28"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [],
+      "description": "The admitted-mapping fact that resolved family_profile when no direct engine attribute did; the shape carried is exactly one of three mutually exclusive families, keyed by family_profile_basis. 'wiki_evidence_fallback' (resolution/match_basis/...): 'direct' cites the one matched TibiaWiki page's field/value; 'disambiguation' cites 2+ candidate pages that all resolved to the same profile (the family invariant across candidates). 'match_basis' is an audit field: 'itemid' when the pages were joined by the item's own exact numeric TibiaWiki 'itemid', which takes precedence and is authoritative over 'title' (the engine name matched against the wiki title index), 'appearance_title' (the item's own appearances.dat name, when it differs from its items.xml name, matched against the same title index), and 'actualname' (the item's own items.xml or appearance name matched against the wiki's own infobox 'actualname' field, tried only once none of the other three joins resolved). 'engine_wrap_target' (wrap_target_id/wrap_target_primarytype): this item's own items.xml 'wrapableto' names another items.xml id whose own engine primarytype resolved the family (one hop only, never chained, never through that id's own wiki fallback). 'owner_name_rule' (rule/name): the item's exact lower-cased engine name matched an explicit, reviewed owner table keyed by 'rule' -- 'take_able_dead_creature' (the small dead-item carcass table) or 'owner_leftover_review_2026_09_28' (the per-item leftover-family review of the ids that still stayed unresolved after every other classifier, lowest priority of all).",
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "resolution"
+            ]
+          },
+          "then": {
+            "required": [
+              "resolution",
+              "match_basis"
+            ],
+            "if": {
+              "properties": {
+                "resolution": {
+                  "const": "direct"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "field",
+                "value",
+                "wiki_source"
+              ],
+              "not": {
+                "required": [
+                  "candidates"
+                ]
+              }
+            },
+            "else": {
+              "required": [
+                "candidates"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "field"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "value"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "wiki_source"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "resolution"
+                  ]
+                },
+                {
+                  "required": [
+                    "match_basis"
+                  ]
+                },
+                {
+                  "required": [
+                    "field"
+                  ]
+                },
+                {
+                  "required": [
+                    "value"
+                  ]
+                },
+                {
+                  "required": [
+                    "wiki_source"
+                  ]
+                },
+                {
+                  "required": [
+                    "candidates"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "wrap_target_id"
+            ]
+          },
+          "then": {
+            "required": [
+              "wrap_target_id",
+              "wrap_target_primarytype"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "resolution"
+                  ]
+                },
+                {
+                  "required": [
+                    "match_basis"
+                  ]
+                },
+                {
+                  "required": [
+                    "field"
+                  ]
+                },
+                {
+                  "required": [
+                    "value"
+                  ]
+                },
+                {
+                  "required": [
+                    "wiki_source"
+                  ]
+                },
+                {
+                  "required": [
+                    "candidates"
+                  ]
+                },
+                {
+                  "required": [
+                    "rule"
+                  ]
+                },
+                {
+                  "required": [
+                    "name"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "wrap_target_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "wrap_target_primarytype"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "rule"
+            ]
+          },
+          "then": {
+            "required": [
+              "rule",
+              "name"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "resolution"
+                  ]
+                },
+                {
+                  "required": [
+                    "match_basis"
+                  ]
+                },
+                {
+                  "required": [
+                    "field"
+                  ]
+                },
+                {
+                  "required": [
+                    "value"
+                  ]
+                },
+                {
+                  "required": [
+                    "wiki_source"
+                  ]
+                },
+                {
+                  "required": [
+                    "candidates"
+                  ]
+                },
+                {
+                  "required": [
+                    "wrap_target_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "wrap_target_primarytype"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "rule"
+                  ]
+                },
+                {
+                  "required": [
+                    "name"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "anyOf": [
+            {
+              "required": [
+                "resolution"
+              ]
+            },
+            {
+              "required": [
+                "wrap_target_id"
+              ]
+            },
+            {
+              "required": [
+                "rule"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

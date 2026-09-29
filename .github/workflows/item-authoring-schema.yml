@@ -1,0 +1,119 @@
+name: Item Authoring Schema
+
+on:
+  pull_request:
+    paths:
+      - tools/content-schema/item-authoring/**
+      - tools/content-schema/world-object-authoring/**
+      - tools/content-schema/validate_item_master_schema.py
+      - tools/content-schema/test_validate_item_master_schema.py
+      - imports/tibiawiki/bindings/items.json
+      - imports/crystalserver/bindings/items.json
+      - imports/tibiawiki/facts/items-family-fallback.json
+      - imports/tibiawiki/batches.json
+      - imports/tibiawiki/sources.json
+      - tools/content-census/item_wiki_family_capture.py
+      - content/assets/files/appearances-*.dat
+      - .github/workflows/item-authoring-schema.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  item-authoring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/item-authoring
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned requirements
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Regenerate schemas, catalogs and templates byte-identically
+        run: |
+          set -euo pipefail
+          python build_formal_schema.py
+          git diff --exit-code -- .
+
+      - name: Focused schema and validator checks
+        run: |
+          set -euo pipefail
+          python verify_formal_schema.py
+          git diff --exit-code -- .
+          python validate_item.py synthetic-valid-item.json synthetic-valid-dependencies.json \
+            --manifest synthetic-valid-import-readiness.json
+
+      - name: Converter fixture tests
+        run: python test_engine_items.py
+
+      - name: Semantic promotion lowering fixture tests
+        run: python test_lower_promotion_packet.py
+
+      - name: Donor census fixture tests
+        run: python test_donor_census.py
+
+      - name: Client appearance census fixture tests
+        run: python test_client_appearance_census.py
+
+      - name: Client appearance census drift against the in-repo 15.30 appearances
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/engine-items-xml"
+          fetch() {
+            mkdir -p "$SRC/$1/data/items"
+            curl -fsSL --retry 5 --retry-delay 2 \
+              "https://raw.githubusercontent.com/$2/$3/data/items/items.xml" \
+              -o "$SRC/$1/data/items/items.xml"
+          }
+          # Revisions come from the tools' own pins; the census verifies each digest.
+          read -r CRYSTAL_REPO CRYSTAL_REV CANARY_REPO CANARY_REV DONOR_REV < <(python -c '
+          from engine_items import ENGINES
+          from donor_census import DONOR_COMMIT
+          c, k = ENGINES["crystal"], ENGINES["canary"]
+          print(c["repository"], c["revision"], k["repository"], k["revision"], DONOR_COMMIT)')
+          fetch crystal "$CRYSTAL_REPO" "$CRYSTAL_REV"
+          fetch donor "$CRYSTAL_REPO" "$DONOR_REV"
+          fetch canary "$CANARY_REPO" "$CANARY_REV"
+          python client_appearance_census.py --check \
+            --crystal-source "$SRC/crystal" --donor-source "$SRC/donor" --canary-source "$SRC/canary"
+
+      - name: WorldObject and Terrain authoring tests
+        working-directory: tools/content-schema/world-object-authoring
+        run: python test_world_objects.py
+
+      - name: Item Master census
+        working-directory: .
+        run: |
+          set -euo pipefail
+          python tools/content-schema/validate_item_master_schema.py
+          python tools/content-schema/test_validate_item_master_schema.py
+
+      - name: Ruff check and format
+        working-directory: .
+        run: |
+          set -euo pipefail
+          ruff check tools/content-schema/item-authoring tools/content-schema/world-object-authoring
+          ruff format --check tools/content-schema/item-authoring tools/content-schema/world-object-authoring
+
+      - name: Verify the checkout stayed clean
+        if: ${{ always() }}
+        working-directory: .
+        run: test -z "$(git status --short --untracked-files=all)"

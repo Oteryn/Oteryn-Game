@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate exact semantic equivalence of the successor Item/Mount tree."""
+"""Validate exact semantic equivalence of the successor Item/Mount/creature tree."""
 
 from __future__ import annotations
 
@@ -9,6 +9,27 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
+# Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
+CREATURE_FAMILY_COUNTS = {
+    "Creature": 1463, "Presentation": 2557, "Behavior": 2557, "Loot": 1026, "Ability": 5841, "Effect": 4447, "Formula": 4761,
+}
+CREATURE_FAMILY_NODES = {
+    "Creature": "content/creatures/definitions/",
+    "Presentation": "content/presentations/definitions/",
+    "Behavior": "content/behaviors/",
+    "Loot": "content/loot/",
+    "Ability": "content/abilities/definitions/",
+    "Effect": "content/abilities/effects/",
+    "Formula": "content/abilities/formulas/",
+}
+# NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
+NPC_COUNT = 1094
+NPC_BINDING_COUNT = 2344
+# Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
+ENCOUNTER_COUNT = 58
+DIALOGUE_COUNT = 707
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 322, "Service.Travel": 56}
+SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
 
 class ValidationError(RuntimeError):
     pass
@@ -113,6 +134,174 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
     return len(legacy_authoring), len(taxonomy["records"]), relation_count, fact_count
 
 
+def validate_creature_families(reference: Any, declarations: Any, sources: Any) -> tuple[int, int, int]:
+    """Round-trip the admitted creature families, their authoring profiles and source bindings."""
+    legacy_profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])
+                       if row["target"]["family"] != "Encounter"}
+    migrated_profiles: dict[tuple[str, str, str], Any] = {}
+    migrated_bindings: list[Any] = []
+    for family, node in CREATURE_FAMILY_NODES.items():
+        legacy = [row for row in reference["records"] if row["identity"]["family"] == family]
+        require(len(legacy) == CREATURE_FAMILY_COUNTS[family], f"LEGACY_{family.upper()}_COUNT")
+        index = load(ROOT / node / "index.json")
+        require(index["schema"] == "OTERYN_FAMILY_INDEX/v1" and index["family"] == family, f"{family.upper()}_INDEX")
+        require(index["record_count"] == len(legacy), f"{family.upper()}_INDEX_COUNT")
+        migrated: list[Any] = []
+        expected_start = 0
+        for shard_path in index["shards"]:
+            require(isinstance(shard_path, str) and shard_path.startswith(node), f"{family.upper()}_SHARD_REF")
+            payload = load(ROOT / shard_path)
+            require(payload["family"] == family and payload["shard"]["start"] == expected_start, f"{family.upper()}_SHARD_GAP")
+            require(payload["shard"]["count"] == len(payload["records"]), f"{family.upper()}_SHARD_COUNT")
+            for row in payload["records"]:
+                definition = row["definition"]
+                migrated.append(definition)
+                if "authoring" in row:
+                    migrated_profiles[target_id(definition["identity"])] = row["authoring"]
+                for binding in row.get("source_bindings", []):
+                    require(target_id(binding["target"]) == target_id(definition["identity"]), f"{family.upper()}_BINDING_TARGET")
+                    migrated_bindings.append(binding)
+            expected_start = payload["shard"]["end"] + 1
+        require(migrated == legacy, f"{family.upper()}_DEFINITION_ROUNDTRIP")
+    require(migrated_profiles == legacy_profiles, "CREATURE_AUTHORING_ROUNDTRIP")
+    legacy_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] in CREATURE_FAMILY_NODES]
+    require(canonical_sorted(migrated_bindings) == canonical_sorted(legacy_bindings), "CREATURE_BINDING_ROUNDTRIP")
+    require(len(legacy_bindings) == CREATURE_FAMILY_COUNTS["Creature"], "CREATURE_BINDING_COUNT")
+    canary_creatures = load(ROOT / "imports/canary/bindings/creatures.json")["bindings"]
+    wiki_creatures = load(ROOT / "imports/tibiawiki/bindings/creatures.json")["bindings"]
+    crystal_creatures = load(ROOT / "imports/crystalserver/bindings/creatures.json")["bindings"]
+    require(all(row["source_key"] == "oteryn:source.canary" for row in canary_creatures)
+            and all(row["source_key"] == "oteryn:source.tibiawiki" for row in wiki_creatures)
+            and all(row["source_key"] == "oteryn:source.crystalserver" for row in crystal_creatures)
+            and canonical_sorted(canary_creatures + wiki_creatures + crystal_creatures) == canonical_sorted(legacy_bindings),
+            "IMPORT_CREATURE_BINDINGS")
+    require(load(ROOT / "imports/canary/index.json")["population_state"] == "POPULATED", "IMPORT_CANARY_MARKER_STATE")
+    return sum(CREATURE_FAMILY_COUNTS.values()), len(migrated_profiles), len(migrated_bindings)
+
+
+def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, int]:
+    """Round-trip the admitted NPC declarations (with source bindings) and Service declarations."""
+    legacy_npcs = [row for row in declarations["records"] if row.get("kind") == "NPC"]
+    require(len(legacy_npcs) == NPC_COUNT, "LEGACY_NPC_COUNT")
+    legacy_npc_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "NPC"]
+    require(len(legacy_npc_bindings) == NPC_BINDING_COUNT, "LEGACY_NPC_BINDING_COUNT")
+
+    npc_index = load(ROOT / "content/npcs/definitions/index.json")
+    require(npc_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and npc_index["family"] == "NPC", "NPC_INDEX")
+    require(npc_index["record_count"] == len(legacy_npcs), "NPC_INDEX_COUNT")
+    migrated_npcs: list[Any] = []
+    migrated_npc_bindings: list[Any] = []
+    expected_start = 0
+    for shard_path in npc_index["shards"]:
+        require(isinstance(shard_path, str) and shard_path.startswith("content/npcs/definitions/"), "NPC_SHARD_REF")
+        payload = load(ROOT / shard_path)
+        require(payload["family"] == "NPC" and payload["shard"]["start"] == expected_start, "NPC_SHARD_GAP")
+        require(payload["shard"]["count"] == len(payload["records"]), "NPC_SHARD_COUNT")
+        for row in payload["records"]:
+            declaration = row["declaration"]
+            migrated_npcs.append(declaration)
+            target = {"family": "NPC", "key": declaration["identity"]["key"], "revision": declaration["identity"]["revision"]}
+            for binding in row.get("source_bindings", []):
+                require(target_id(binding["target"]) == target_id(target), "NPC_BINDING_TARGET")
+                migrated_npc_bindings.append(binding)
+        expected_start = payload["shard"]["end"] + 1
+    require(expected_start == NPC_COUNT, "NPC_SHARD_COVERAGE")
+    require(migrated_npcs == legacy_npcs, "NPC_DECLARATION_ROUNDTRIP")
+    require(canonical_sorted(migrated_npc_bindings) == canonical_sorted(legacy_npc_bindings), "NPC_BINDING_ROUNDTRIP")
+    require(npc_index["attached_source_bindings"] == len(migrated_npc_bindings), "NPC_INDEX_BINDING_COUNT")
+    require(len({(row["identity"]["key"], row["identity"]["revision"]) for row in migrated_npcs}) == NPC_COUNT, "NPC_IDENTITY_UNIQUENESS")
+
+    legacy_services = [row for row in declarations["records"] if row.get("kind") == "Service"]
+    require(len(legacy_services) == sum(SERVICE_FAMILY_COUNTS.values()), "LEGACY_SERVICE_COUNT")
+    migrated_service_count = 0
+    for family, count in SERVICE_FAMILY_COUNTS.items():
+        node, field = SERVICE_FAMILY_NODES[family]
+        legacy = [row for row in legacy_services if field in row]
+        require(len(legacy) == count, f"LEGACY_{family.upper()}_COUNT")
+        index = load(ROOT / node / "index.json")
+        require(index["schema"] == "OTERYN_FAMILY_INDEX/v1" and index["family"] == family, f"{family.upper()}_INDEX")
+        require(index["record_count"] == len(legacy), f"{family.upper()}_INDEX_COUNT")
+        migrated: list[Any] = []
+        expected_start = 0
+        for shard_path in index["shards"]:
+            require(isinstance(shard_path, str) and shard_path.startswith(node), f"{family.upper()}_SHARD_REF")
+            payload = load(ROOT / shard_path)
+            require(payload["family"] == family and payload["shard"]["start"] == expected_start, f"{family.upper()}_SHARD_GAP")
+            require(payload["shard"]["count"] == len(payload["records"]), f"{family.upper()}_SHARD_COUNT")
+            for row in payload["records"]:
+                require(set(row) == {"declaration"}, f"{family.upper()}_ROW_SHAPE")
+                migrated.append(row["declaration"])
+            expected_start = payload["shard"]["end"] + 1
+        require(expected_start == count, f"{family.upper()}_SHARD_COVERAGE")
+        require(migrated == legacy, f"{family.upper()}_DECLARATION_ROUNDTRIP")
+        migrated_service_count += len(migrated)
+    require(migrated_service_count == len(legacy_services), "SERVICE_ROUNDTRIP_TOTAL")
+    return len(migrated_npcs), len(migrated_npc_bindings), migrated_service_count
+
+
+def validate_encounters(declarations: Any, sources: Any) -> int:
+    """Round-trip the admitted Encounter declarations with their authoring profiles and source bindings."""
+    legacy = [row for row in declarations["records"] if row.get("kind") == "Encounter"]
+    require(len(legacy) == ENCOUNTER_COUNT, "LEGACY_ENCOUNTER_COUNT")
+    legacy_profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])
+                       if row["target"]["family"] == "Encounter"}
+    legacy_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Encounter"]
+    require(len(legacy_profiles) == len(legacy_bindings) == ENCOUNTER_COUNT, "LEGACY_ENCOUNTER_ATTACHMENTS")
+    index = load(ROOT / "content/encounters/definitions/index.json")
+    require(index["schema"] == "OTERYN_FAMILY_INDEX/v1" and index["family"] == "Encounter", "ENCOUNTER_INDEX")
+    require(index["record_count"] == len(legacy), "ENCOUNTER_INDEX_COUNT")
+    migrated: list[Any] = []
+    migrated_profiles: dict[tuple[str, str, str], Any] = {}
+    migrated_bindings: list[Any] = []
+    expected_start = 0
+    for shard_path in index["shards"]:
+        require(isinstance(shard_path, str) and shard_path.startswith("content/encounters/definitions/"), "ENCOUNTER_SHARD_REF")
+        payload = load(ROOT / shard_path)
+        require(payload["family"] == "Encounter" and payload["shard"]["start"] == expected_start, "ENCOUNTER_SHARD_GAP")
+        require(payload["shard"]["count"] == len(payload["records"]), "ENCOUNTER_SHARD_COUNT")
+        for row in payload["records"]:
+            declaration = row["declaration"]
+            migrated.append(declaration)
+            target = ("Encounter", declaration["identity"]["key"], declaration["identity"]["revision"])
+            if "authoring" in row:
+                migrated_profiles[target] = row["authoring"]
+            for binding in row.get("source_bindings", []):
+                require(target_id(binding["target"]) == target, "ENCOUNTER_BINDING_TARGET")
+                migrated_bindings.append(binding)
+        expected_start = payload["shard"]["end"] + 1
+    require(expected_start == ENCOUNTER_COUNT, "ENCOUNTER_SHARD_COVERAGE")
+    require(migrated == legacy, "ENCOUNTER_DECLARATION_ROUNDTRIP")
+    require(migrated_profiles == legacy_profiles, "ENCOUNTER_AUTHORING_ROUNDTRIP")
+    require(canonical_sorted(migrated_bindings) == canonical_sorted(legacy_bindings), "ENCOUNTER_BINDING_ROUNDTRIP")
+    return len(migrated)
+
+
+def validate_dialogue(declarations: Any) -> int:
+    """Round-trip the admitted Dialogue declarations (no source bindings exist for Dialogue)."""
+    legacy_dialogues = [row for row in declarations["records"] if row.get("kind") == "Dialogue"]
+    require(len(legacy_dialogues) == DIALOGUE_COUNT, "LEGACY_DIALOGUE_COUNT")
+
+    dialogue_index = load(ROOT / "content/dialogues/definitions/index.json")
+    require(dialogue_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and dialogue_index["family"] == "Dialogue", "DIALOGUE_INDEX")
+    require(dialogue_index["record_count"] == len(legacy_dialogues), "DIALOGUE_INDEX_COUNT")
+    migrated_dialogues: list[Any] = []
+    expected_start = 0
+    for shard_path in dialogue_index["shards"]:
+        require(isinstance(shard_path, str) and shard_path.startswith("content/dialogues/definitions/"), "DIALOGUE_SHARD_REF")
+        payload = load(ROOT / shard_path)
+        require(payload["family"] == "Dialogue" and payload["shard"]["start"] == expected_start, "DIALOGUE_SHARD_GAP")
+        require(payload["shard"]["count"] == len(payload["records"]), "DIALOGUE_SHARD_COUNT")
+        for row in payload["records"]:
+            require(set(row) == {"declaration"}, "DIALOGUE_ROW_SHAPE")
+            migrated_dialogues.append(row["declaration"])
+        expected_start = payload["shard"]["end"] + 1
+    require(expected_start == DIALOGUE_COUNT, "DIALOGUE_SHARD_COVERAGE")
+    require(migrated_dialogues == legacy_dialogues, "DIALOGUE_DECLARATION_ROUNDTRIP")
+    require(len({(row["identity"]["key"], row["identity"]["revision"]) for row in migrated_dialogues}) == DIALOGUE_COUNT,
+            "DIALOGUE_IDENTITY_UNIQUENESS")
+    return len(migrated_dialogues)
+
+
 def main() -> int:
     reference = load(LEGACY / "definitions" / "reference.json")
     declarations = load(LEGACY / "definitions" / "declarations.json")
@@ -132,7 +321,10 @@ def main() -> int:
         "legacy_mutated": False,
         "runtime_switch_authorized": False,
     }, "COMPATIBILITY_BOUNDARY")
-    require(lock["family_counts"] == {"Item": 38157, "Mount": 252}, "LOCK_COUNTS")
+    require(lock["family_counts"] == {"Item": 38157, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
+                                       "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS},
+            "LOCK_COUNTS")
+    require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
     require(item_index["record_count"] == 38157 and len(item_index["shards"]) == 77, "ITEM_INDEX")
     require(mount_index["record_count"] == 252 and len(mount_index["shards"]) == 1, "MOUNT_INDEX")
 
@@ -160,7 +352,8 @@ def main() -> int:
                 migrated_authoring[target_id(definition["identity"])] = {"item": definition["identity"], **row["authoring"]}
         expected_start = payload["shard"]["end"] + 1
 
-    require(migrated_items == reference["records"] and expected_start == 38157, "ITEM_DEFINITION_ROUNDTRIP")
+    legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
+    require(migrated_items == legacy_items and expected_start == 38157, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
     mount_payload = load(ROOT / mount_index["shards"][0])
@@ -203,9 +396,16 @@ def main() -> int:
 
     authoring_count, taxonomy_count, relation_count, fact_count = validate_item_enrichment(
         reference, declarations, sources, imports_batches(), migrated_authoring)
+    creature_records, creature_profiles, creature_bindings = validate_creature_families(reference, declarations, sources)
+    npc_records, npc_bindings, service_records = validate_npc_services(declarations, sources)
+    dialogue_records = validate_dialogue(declarations)
+    encounter_records = validate_encounters(declarations, sources)
     print(
         "PASS items=38157 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
-        f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count}"
+        f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
+        f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
+        f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "
+        f"encounter_records={encounter_records}"
     )
     return 0
 

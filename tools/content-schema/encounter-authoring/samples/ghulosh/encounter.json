@@ -1,0 +1,120 @@
+{
+  "identity": {
+    "key": "canary:encounter/ghulosh",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "The Secret Library: Ghulosh",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_book_of_death",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_book_of_death",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "concentrated_death",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/concentrated_death",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "book_of_death_spawn",
+      "kind": "point",
+      "description": "Canary (32755, 32716, 10).",
+      "location": {
+        "x": 32755,
+        "y": 32716,
+        "floor": 10
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": [
+      {
+        "name": "book_of_death_return",
+        "duration_ms": 12000,
+        "repeat": false
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "the_book_of_death_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_book_of_death"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/concentrated_death",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "concentrated_death",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "concentrated_death_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "concentrated_death"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "book_of_death_return",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "book_of_death_returns",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "book_of_death_return"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_book_of_death",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "the_book_of_death",
+          "count": 1,
+          "at": {
+            "anchor": "book_of_death_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

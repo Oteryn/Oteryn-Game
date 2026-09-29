@@ -1,0 +1,110 @@
+{
+  "encounter": "canary:encounter/ghulosh",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "ghuloshDeath": [
+      "canary:creature/the_book_of_death",
+      "canary:creature/concentrated_death"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/bosses/the_book_of_death.lua",
+      "blob_sha1": "53d37c0879536cdde462a33ce7e88b8c6f531bd6"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_secret_library/concentrated_death.lua",
+      "blob_sha1": "fb7ce6719709c87b8e7ea2cd77d145bfdacba929"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_ghulosh.lua",
+      "blob_sha1": "649217a86f5ced071360345cf809be7996fd02ff"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "The Book of Death is the the_book_of_death participant; its file registers ghuloshDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "Concentrated Death is the concentrated_death participant; its file registers ghuloshDeath.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        55,
+        56,
+        57,
+        58,
+        60
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of \"the book of death\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        61
+      ],
+      "status": "mapped",
+      "resolution": "Game.createMonster(\"Concentrated Death\", death position): full health, no owner.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        62,
+        63
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of \"concentrated death\": addEvent(doSpawn, 4000, ..., k = 1). doSpawn reschedules itself every 2000 ms while k <= 4 (k = 1..4) and creates the book at k = 5: 4000 + 4 * 2000 = 12000 ms.",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        45,
+        50,
+        51,
+        52,
+        53
+      ],
+      "status": "mapped",
+      "resolution": "Game.createMonster(\"The Book of Death\", Position(32755, 32716, 10)): full health, no owner.",
+      "destination": "/encounter/rules/2/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        46,
+        47,
+        48,
+        49
+      ],
+      "status": "approved_omission",
+      "resolution": "The teleport magic effect on the spawn tile every 2 s before the book returns is cosmetic."
+    }
+  ],
+  "outcome_evidence": []
+}

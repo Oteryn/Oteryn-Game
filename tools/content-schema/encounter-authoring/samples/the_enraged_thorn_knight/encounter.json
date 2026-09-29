@@ -1,0 +1,485 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_enraged_thorn_knight",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Forgotten Knowledge: The Enraged Thorn Knight",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_enraged_thorn_knight",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_enraged_thorn_knight",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "possessed_tree",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/possessed_tree",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "mounted_thorn_knight",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/mounted_thorn_knight",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_shielded_thorn_knight",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_shielded_thorn_knight",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_enraged_thorn_knight_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_enraged_thorn_knight"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_enraged_thorn_knight_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "possessed_tree_unleashes",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "possessed_tree"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/unbound_blightwalker",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "death_position",
+                  "owner": "none",
+                  "health": "full"
+                },
+                {
+                  "kind": "say",
+                  "subject": {
+                    "spawned": true
+                  },
+                  "text": "The destruction of the tree unleashes the unbound blightwalker!",
+                  "mode": "say"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/unbound_demon",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "death_position",
+                  "owner": "none",
+                  "health": "full"
+                },
+                {
+                  "kind": "say",
+                  "subject": {
+                    "spawned": true
+                  },
+                  "text": "The destruction of the tree unleashes the unbound demon!",
+                  "mode": "say"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/unbound_demon_outcast",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "death_position",
+                  "owner": "none",
+                  "health": "full"
+                },
+                {
+                  "kind": "say",
+                  "subject": {
+                    "spawned": true
+                  },
+                  "text": "The destruction of the tree unleashes the unbound demon outcast!",
+                  "mode": "say"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/unbound_defiler",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "death_position",
+                  "owner": "none",
+                  "health": "full"
+                },
+                {
+                  "kind": "say",
+                  "subject": {
+                    "spawned": true
+                  },
+                  "text": "The destruction of the tree unleashes the unbound defiler!",
+                  "mode": "say"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "possessed_tree_regrows",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "possessed_tree"
+      },
+      "delay_ms": 60000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/possessed_tree",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "possessed_tree",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "mounted_thorn_knight_unguarded_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "mounted_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "mounted_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "mounted_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "mounted_thorn_knight_unguarded_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "mounted_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "mounted_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "mounted_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_shielded_thorn_knight_unguarded_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "the_shielded_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "the_shielded_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_shielded_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_shielded_thorn_knight_unguarded_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "the_shielded_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "the_shielded_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_shielded_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_enraged_thorn_knight_unguarded_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "the_enraged_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "the_enraged_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_enraged_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_enraged_thorn_knight_unguarded_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "the_enraged_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "the_enraged_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_enraged_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "mounted_thorn_knight_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "mounted_thorn_knight"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "mounted_thorn_knight"
+          },
+          "text": "The thorn knight unmounts!",
+          "mode": "say"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_shielded_thorn_knight",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "the_shielded_thorn_knight",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/thorn_steed",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "the_shielded_thorn_knight_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_shielded_thorn_knight"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_enraged_thorn_knight",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "the_enraged_thorn_knight",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "mounted_thorn_knight_summons_a_minion",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "mounted_thorn_knight",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/thorn_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/thorn_minion",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "offset_tiles": 3
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "the_enraged_thorn_knight_defeated"
+  ]
+}

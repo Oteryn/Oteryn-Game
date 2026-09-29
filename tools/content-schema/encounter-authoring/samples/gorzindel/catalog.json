@@ -1,0 +1,44 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/gorzindel",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/mean_minion",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/stolen_knowledge_of_armor",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/stolen_knowledge_of_summoning",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/stolen_knowledge_of_lifesteal",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/stolen_knowledge_of_spells",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/stolen_knowledge_of_healing",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/stolen_tome_of_portals",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

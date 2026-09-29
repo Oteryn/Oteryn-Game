@@ -1,0 +1,5545 @@
+{
+ "schema": "OTERYN_QUEST_SOURCE_COVERAGE/v1",
+ "classification": "OTS_HYPOTHESIS_ONLY",
+ "wiki": {
+  "api": "https://tibia.fandom.com/api.php",
+  "license": "CC BY-SA; only facts are recorded",
+  "selection": "namespace-0 pages embedding Template:Infobox Quest with a non-empty infobox, excluding subpages",
+  "retrieved_at": "2026-09-27T10:10:10.567403+00:00"
+ },
+ "servers": {
+  "canary": {
+   "repository": "opentibiabr/canary",
+   "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+  },
+  "crystalserver": {
+   "repository": "zimbadev/crystalserver",
+   "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+  }
+ },
+ "method": [
+  "name match of the wiki title against quest-log quests and missions, Storage.Quest keys and quest script, world and monster directories of each server",
+  "unmatched titles searched by hand and by an assisting agent in chest/door/container tables, NPC dialogues and scripts; the assisting verdicts were re-checked and 16 corrected",
+  "IMPLEMENTED: a dedicated implementation exists; PARTIAL: pieces only (storage stub, outfit item, reward line); ABSENT: nothing specific found in Lua sources (a map-only container in world.otbm is not searched)",
+  "evidence keeps source locations only; quoted source text is removed (LICENSE-ASSETS.md reserves narrative text)"
+ ],
+ "tibiawiki_br": "not captured: www.tibiawiki.com.br answers the capture host with a Cloudflare challenge (HTTP 403)",
+ "quests": [
+  {
+   "title": "20 Years a Cook Quest",
+   "pageid": 104199,
+   "revid": 1048755,
+   "rev_timestamp": "2023-12-20T01:07:41Z",
+   "in_quest_log": true,
+   "implemented": "13.30.14423",
+   "premium": "yes",
+   "lvl": "",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "25 Years of Tibia Quest",
+   "pageid": 95773,
+   "revid": 1065598,
+   "rev_timestamp": "2024-06-28T20:03:59Z",
+   "in_quest_log": true,
+   "implemented": "12.85.11485",
+   "premium": "yes",
+   "lvl": "20",
+   "canary": "ABSENT",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "A Father's Burden Quest",
+   "pageid": 46483,
+   "revid": 903239,
+   "rev_timestamp": "2022-01-31T22:48:56Z",
+   "in_quest_log": true,
+   "implemented": "8.60",
+   "premium": "yes",
+   "lvl": "25",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "A Piece of Cake",
+   "pageid": 50850,
+   "revid": 1090661,
+   "rev_timestamp": "2025-02-10T02:20:19Z",
+   "in_quest_log": false,
+   "implemented": "8.70",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "A Pirate's Death to Me",
+   "pageid": 50861,
+   "revid": 1184996,
+   "rev_timestamp": "2026-05-14T09:48:23Z",
+   "in_quest_log": false,
+   "implemented": "8.70",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "PARTIAL",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/storages.lua:1619 APiratesDeathToMe = {}"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/storages.lua:1759 APiratesDeathToMe = {}"
+    ]
+   }
+  },
+  {
+   "title": "A Pirate's Tail Quest",
+   "pageid": 92766,
+   "revid": 1108681,
+   "rev_timestamp": "2025-07-06T16:09:53Z",
+   "in_quest_log": true,
+   "implemented": "12.60.10463",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Adorned UH Rune Quest",
+   "pageid": 3798,
+   "revid": 1090686,
+   "rev_timestamp": "2025-02-11T11:01:24Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:467 -- Adorned UH rune quest"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:766 -- Adorned UH rune quest"
+    ]
+   }
+  },
+  {
+   "title": "Adventures of Galthen Quest",
+   "pageid": 94718,
+   "revid": 1085045,
+   "rev_timestamp": "2024-12-05T23:26:42Z",
+   "in_quest_log": true,
+   "implemented": "12.70.10953",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Afflicted Outfits Quest",
+   "pageid": 54472,
+   "revid": 844677,
+   "rev_timestamp": "2021-05-26T21:04:46Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Against the Spider Cult Quest",
+   "pageid": 20036,
+   "revid": 842642,
+   "rev_timestamp": "2021-05-26T19:06:38Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "42?",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua:97-98 name/storageId AgainstTheSpiderCult"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:4511-4512 name/storageId AgainstTheSpiderCult"
+    ]
+   }
+  },
+  {
+   "title": "Alawar's Vault Quest",
+   "pageid": 3281,
+   "revid": 683774,
+   "rev_timestamp": "2016-11-28T14:08:56Z",
+   "in_quest_log": false,
+   "implemented": "6.5",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "An Interest In Botany Quest",
+   "pageid": 46758,
+   "revid": 844034,
+   "rev_timestamp": "2021-05-26T20:39:57Z",
+   "in_quest_log": false,
+   "implemented": "8.60",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "An Uneasy Alliance Quest",
+   "pageid": 41956,
+   "revid": 683776,
+   "rev_timestamp": "2016-11-28T14:09:02Z",
+   "in_quest_log": true,
+   "implemented": "8.54",
+   "premium": "yes",
+   "lvl": "0?",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Ancient Aucar Outfits Quest",
+   "pageid": 101462,
+   "revid": 1045730,
+   "rev_timestamp": "2023-11-17T12:08:36Z",
+   "in_quest_log": false,
+   "implemented": "13.10.12852",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Annual Autumn Vintage",
+   "pageid": 50853,
+   "revid": 976490,
+   "rev_timestamp": "2022-10-29T14:41:05Z",
+   "in_quest_log": false,
+   "implemented": "8.70",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Arito's Task Quest",
+   "pageid": 20494,
+   "revid": 1176671,
+   "rev_timestamp": "2026-04-21T16:20:21Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua:21-22 name/storageId AritosTask"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:4435-4436 name/storageId AritosTask"
+    ]
+   }
+  },
+  {
+   "title": "Assassin Outfits Quest",
+   "pageid": 8583,
+   "revid": 795595,
+   "rev_timestamp": "2020-03-09T17:01:43Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Asura Palace Quest",
+   "pageid": 75335,
+   "revid": 973725,
+   "rev_timestamp": "2022-10-11T16:36:49Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Awash World Change",
+   "pageid": 54563,
+   "revid": 1149363,
+   "rev_timestamp": "2025-12-11T07:28:09Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "no",
+   "lvl": "None",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Bank Robbery Mini World Change",
+   "pageid": 76142,
+   "revid": 891480,
+   "rev_timestamp": "2021-11-17T00:32:31Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Barbarian Arena Quest",
+   "pageid": 17003,
+   "revid": 842181,
+   "rev_timestamp": "2021-05-26T18:35:12Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Barbarian Axe Quest",
+   "pageid": 3784,
+   "revid": 683784,
+   "rev_timestamp": "2016-11-28T14:09:27Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:475 -- Barbarian axe quest"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:774 -- Barbarian axe quest"
+    ]
+   }
+  },
+  {
+   "title": "Barbarian Outfits Quest",
+   "pageid": 8573,
+   "revid": 683785,
+   "rev_timestamp": "2016-11-28T14:09:30Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Barbarian Test Quest",
+   "pageid": 16981,
+   "revid": 1101865,
+   "rev_timestamp": "2025-05-05T13:48:47Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Battle Axe Quest",
+   "pageid": 2830,
+   "revid": 683787,
+   "rev_timestamp": "2016-11-28T14:09:36Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1707 -- Battle Axe Quest"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1992 -- Battle Axe Quest"
+    ]
+   }
+  },
+  {
+   "title": "Battle Mage Outfits Quest",
+   "pageid": 85574,
+   "revid": 848685,
+   "rev_timestamp": "2021-05-27T09:04:21Z",
+   "in_quest_log": false,
+   "implemented": "11.80.7048",
+   "premium": "yes",
+   "lvl": "",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Bear Room Quest",
+   "pageid": 3158,
+   "revid": 1044894,
+   "rev_timestamp": "2023-11-11T01:10:36Z",
+   "in_quest_log": false,
+   "implemented": "5.2",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/scripts/actions/rookgaard/bear_room_quest/bear_room_quest_lever.lua:4-22 dedicated Action script"
+    ],
+    "crystalserver": [
+     "data-global/scripts/actions/rookgaard/bear_room_quest/bear_room_quest_lever.lua:4-22"
+    ]
+   }
+  },
+  {
+   "title": "Beggar Outfits Quest",
+   "pageid": 8559,
+   "revid": 1090688,
+   "rev_timestamp": "2025-02-11T11:01:57Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Behemoth Quest",
+   "pageid": 3785,
+   "revid": 886742,
+   "rev_timestamp": "2021-09-30T07:10:36Z",
+   "in_quest_log": false,
+   "implemented": "7.2",
+   "premium": "yes",
+   "lvl": "80",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Berserk Potion Quest",
+   "pageid": 17205,
+   "revid": 842195,
+   "rev_timestamp": "2021-05-26T18:35:40Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Berserker Treasure Quest",
+   "pageid": 3786,
+   "revid": 683792,
+   "rev_timestamp": "2016-11-28T14:09:53Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Between the Lines Quest",
+   "pageid": 108520,
+   "revid": 1126961,
+   "rev_timestamp": "2025-09-06T23:14:58Z",
+   "in_quest_log": true,
+   "implemented": "15.10.46b862",
+   "premium": "yes",
+   "lvl": "200",
+   "canary": "ABSENT",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Bewitched",
+   "pageid": 50849,
+   "revid": 1190949,
+   "rev_timestamp": "2026-06-21T19:16:43Z",
+   "in_quest_log": false,
+   "implemented": "8.70",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Bigfoot's Burden Quest",
+   "pageid": 59903,
+   "revid": 900153,
+   "rev_timestamp": "2022-01-15T09:16:32Z",
+   "in_quest_log": true,
+   "implemented": "9.60",
+   "premium": "partial",
+   "lvl": "80",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Black Knight Quest",
+   "pageid": 3760,
+   "revid": 683795,
+   "rev_timestamp": "2016-11-28T14:10:04Z",
+   "in_quest_log": false,
+   "implemented": "7.1",
+   "premium": "no",
+   "lvl": "50",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:633 -- Black knight quest (Blackknight1/2 questNames)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua Blackknight1/2 questNames"
+    ]
+   }
+  },
+  {
+   "title": "Blood Brothers Quest",
+   "pageid": 30623,
+   "revid": 843374,
+   "rev_timestamp": "2021-05-26T20:10:43Z",
+   "in_quest_log": true,
+   "implemented": "8.40",
+   "premium": "yes",
+   "lvl": "40",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Blood Herb Quest",
+   "pageid": 2730,
+   "revid": 1043409,
+   "rev_timestamp": "2023-10-23T09:19:37Z",
+   "in_quest_log": false,
+   "implemented": "6.1",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/npc/wyda.lua:73-76 blood herb dialogue + Storage.BloodHerbQuest"
+    ],
+    "crystalserver": [
+     "data-global/npc/wyda.lua:71-76 same dialogue + Storage.BloodHerbQuest"
+    ]
+   }
+  },
+  {
+   "title": "Bloody Tusks Quest",
+   "pageid": 108481,
+   "revid": 1204826,
+   "rev_timestamp": "2026-09-03T15:27:44Z",
+   "in_quest_log": true,
+   "implemented": "15.10.46b862",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "ABSENT",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Bored Mini World Change",
+   "pageid": 76210,
+   "revid": 845015,
+   "rev_timestamp": "2021-05-26T21:30:21Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Braindeath Quest",
+   "pageid": 38388,
+   "revid": 843765,
+   "rev_timestamp": "2021-05-26T20:24:40Z",
+   "in_quest_log": false,
+   "implemented": "8.50",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Brotherhood Outfits Quest",
+   "pageid": 19797,
+   "revid": 842661,
+   "rev_timestamp": "2021-05-26T19:08:19Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Captain Iglues Treasure Quest",
+   "pageid": 3215,
+   "revid": 1044895,
+   "rev_timestamp": "2023-11-11T01:10:44Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1181 -- Captain Iglues Treasure Quest (questName captainIglues)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1481 -- Captain Iglues Treasure Quest"
+    ]
+   }
+  },
+  {
+   "title": "Cartography 101 Quest",
+   "pageid": 75150,
+   "revid": 847006,
+   "rev_timestamp": "2021-05-26T22:44:12Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Cave Explorer Outfits Quest",
+   "pageid": 65476,
+   "revid": 846116,
+   "rev_timestamp": "2021-05-26T22:16:54Z",
+   "in_quest_log": false,
+   "implemented": "10.20",
+   "premium": "yes",
+   "lvl": "80",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "npc/gnommander.lua (outfit via Spike Tasks)"
+    ],
+    "crystalserver": [
+     "npc/gnommander.lua (outfit via Spike Tasks)"
+    ]
+   }
+  },
+  {
+   "title": "Chakoya Iceberg Mini World Change",
+   "pageid": 76212,
+   "revid": 847008,
+   "rev_timestamp": "2021-05-26T22:44:15Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Child of Destiny Quest",
+   "pageid": 67082,
+   "revid": 845727,
+   "rev_timestamp": "2021-05-26T21:59:07Z",
+   "in_quest_log": true,
+   "implemented": "9.80",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Children of the Revolution Quest",
+   "pageid": 41842,
+   "revid": 683807,
+   "rev_timestamp": "2016-11-28T14:10:38Z",
+   "in_quest_log": true,
+   "implemented": "8.54",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Chyllfroest Mini World Change",
+   "pageid": 76214,
+   "revid": 797728,
+   "rev_timestamp": "2020-04-01T15:42:23Z",
+   "in_quest_log": false,
+   "implemented": "10.37",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Circle Room Quest",
+   "pageid": 3269,
+   "revid": 683809,
+   "rev_timestamp": "2016-11-28T14:10:44Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "32",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1240 -- Circle Room Quest (circleroom1/2)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1525 -- Circle Room Quest (circleroom1/2)"
+    ]
+   }
+  },
+  {
+   "title": "Citizen of Issavi Outfits Quest",
+   "pageid": 95000,
+   "revid": 869594,
+   "rev_timestamp": "2021-07-12T23:24:31Z",
+   "in_quest_log": false,
+   "implemented": "12.70.10953",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Citizen Outfits Quest",
+   "pageid": 8591,
+   "revid": 795586,
+   "rev_timestamp": "2020-03-09T16:42:50Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Citizen Outfits Quest on Rook",
+   "pageid": 9741,
+   "revid": 683811,
+   "rev_timestamp": "2016-11-28T14:10:50Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/npc/amber.lua Storage.Quest.U7_8.CitizenOutfitsRook.MissionBackpackRook/AddonBackpackRook"
+    ],
+    "crystalserver": [
+     "data-global/npc/amber.lua same CitizenOutfitsRook storages"
+    ]
+   }
+  },
+  {
+   "title": "Combat Knife Quest",
+   "pageid": 3178,
+   "revid": 1043837,
+   "rev_timestamp": "2023-10-30T05:36:51Z",
+   "in_quest_log": false,
+   "implemented": "5.2",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1189 -- Combat Knife Quest (questName combatknife)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:563 -- Combat Knife Quest"
+    ]
+   }
+  },
+  {
+   "title": "Crusader Helmet Quest",
+   "pageid": 3396,
+   "revid": 771195,
+   "rev_timestamp": "2019-08-08T21:41:45Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "35",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua -- Crusader Helmet Quest (questName crusaderhelmet)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1865 -- Crusader Helmet Quest"
+    ]
+   }
+  },
+  {
+   "title": "Crystal Wand Quest",
+   "pageid": 3764,
+   "revid": 747235,
+   "rev_timestamp": "2018-11-21T17:12:38Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "60",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1255 -- Crystal Wand Quest (crystalwand1/2)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1540 -- Crystal Wand Quest (crystalwand1/2)"
+    ]
+   }
+  },
+  {
+   "title": "Crystal Warlord Outfits Quest",
+   "pageid": 60684,
+   "revid": 845400,
+   "rev_timestamp": "2021-05-26T21:43:05Z",
+   "in_quest_log": false,
+   "implemented": "9.60",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "npc/gnomally.lua token vouchers"
+    ],
+    "crystalserver": [
+     "npc/gnomally.lua token vouchers"
+    ]
+   }
+  },
+  {
+   "title": "Cults of Tibia Quest",
+   "pageid": 81510,
+   "revid": 1098561,
+   "rev_timestamp": "2025-04-10T00:26:02Z",
+   "in_quest_log": true,
+   "implemented": "11.40.5409",
+   "premium": "yes",
+   "lvl": "8",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Dangerous Depths Quest",
+   "pageid": 83368,
+   "revid": 889707,
+   "rev_timestamp": "2021-10-24T08:45:21Z",
+   "in_quest_log": true,
+   "implemented": "11.50.6055",
+   "premium": "yes",
+   "lvl": "100",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Darashia Dragon Quest",
+   "pageid": 38458,
+   "revid": 843783,
+   "rev_timestamp": "2021-05-26T20:25:13Z",
+   "in_quest_log": false,
+   "implemented": "8.50",
+   "premium": "yes",
+   "lvl": "40",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Dark Armor Quest",
+   "pageid": 3789,
+   "revid": 683817,
+   "rev_timestamp": "2016-11-28T14:11:08Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "startup/tables/chest.lua […] (canary:490, crystal:789)"
+    ],
+    "crystalserver": [
+     "startup/tables/chest.lua […] (canary:490, crystal:789)"
+    ]
+   }
+  },
+  {
+   "title": "Dark Trails Quest",
+   "pageid": 67961,
+   "revid": 846469,
+   "rev_timestamp": "2021-05-26T22:29:23Z",
+   "in_quest_log": true,
+   "implemented": "10.50",
+   "premium": "yes",
+   "lvl": "?",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Dawnport Quest",
+   "pageid": 68640,
+   "revid": 683819,
+   "rev_timestamp": "2016-11-28T14:11:14Z",
+   "in_quest_log": true,
+   "implemented": "10.55",
+   "premium": "no",
+   "lvl": "2 - 20",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Dead Archer Quest",
+   "pageid": 2732,
+   "revid": 763982,
+   "rev_timestamp": "2019-05-11T05:24:38Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1619 -- Dead Archer Quest (questName deadarcher)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1904 -- Dead Archer Quest (questName deadarcher)"
+    ]
+   }
+  },
+  {
+   "title": "Decaying Defender Outfits Quest",
+   "pageid": 103191,
+   "revid": 1010579,
+   "rev_timestamp": "2023-07-10T08:38:29Z",
+   "in_quest_log": false,
+   "implemented": "13.20.13560",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [
+     "canary: rotten_blood_quest/creaturescripts_bosses_killed.lua grants it; crystal: only outfits.xml entry"
+    ],
+    "crystalserver": [
+     "canary: rotten_blood_quest/creaturescripts_bosses_killed.lua grants it; crystal: only outfits.xml entry"
+    ]
+   }
+  },
+  {
+   "title": "Deeper Fibula Quest",
+   "pageid": 3762,
+   "revid": 1043370,
+   "rev_timestamp": "2023-10-23T06:29:48Z",
+   "in_quest_log": false,
+   "implemented": "5.0",
+   "premium": "no",
+   "lvl": "50",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Deeplings World Change",
+   "pageid": 56899,
+   "revid": 845058,
+   "rev_timestamp": "2021-05-26T21:31:39Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Demon Helmet Quest",
+   "pageid": 3790,
+   "revid": 1090692,
+   "rev_timestamp": "2025-02-11T11:02:39Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "100",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Demon Outfits Quest",
+   "pageid": 62985,
+   "revid": 845741,
+   "rev_timestamp": "2021-05-26T21:59:29Z",
+   "in_quest_log": false,
+   "implemented": "9.80",
+   "premium": "yes",
+   "lvl": "100",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "npc/avar_tar.lua"
+    ],
+    "crystalserver": [
+     "npc/avar_tar.lua"
+    ]
+   }
+  },
+  {
+   "title": "Demon Wars World Change",
+   "pageid": 54562,
+   "revid": 1090693,
+   "rev_timestamp": "2025-02-11T11:02:42Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Demon's Lullaby",
+   "pageid": 50852,
+   "revid": 891475,
+   "rev_timestamp": "2021-11-16T23:52:48Z",
+   "in_quest_log": false,
+   "implemented": "8.70",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Demona Ring Quest",
+   "pageid": 77627,
+   "revid": 764400,
+   "rev_timestamp": "2019-05-14T23:50:27Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "60",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1270 -- Demona Ring Quest (demonaring1/2)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1555 -- Demona Ring Quest (demonaring1/2)"
+    ]
+   }
+  },
+  {
+   "title": "Devil Helmet Quest",
+   "pageid": 3763,
+   "revid": 1043480,
+   "rev_timestamp": "2023-10-24T08:49:27Z",
+   "in_quest_log": false,
+   "implemented": "5.01",
+   "premium": "no",
+   "lvl": "30",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Devovorga's Essence Mini World Change",
+   "pageid": 76216,
+   "revid": 845419,
+   "rev_timestamp": "2021-05-26T21:43:35Z",
+   "in_quest_log": false,
+   "implemented": "9.60",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Double Hero Quest",
+   "pageid": 3834,
+   "revid": 1090694,
+   "rev_timestamp": "2025-02-11T11:02:45Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:520 -- Double hero quest (doublehero1/2)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:819 -- Double hero quest (doublehero1/2)"
+    ]
+   }
+  },
+  {
+   "title": "Doublet Quest",
+   "pageid": 3553,
+   "revid": 683831,
+   "rev_timestamp": "2016-11-28T14:11:51Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:2000 -- Doublet Quest (questName doublet)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua -- Doublet Quest (questName doublet), same location as canary"
+    ]
+   }
+  },
+  {
+   "title": "Down the Drain Mini World Change",
+   "pageid": 76218,
+   "revid": 891481,
+   "rev_timestamp": "2021-11-17T00:32:32Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Draccoon Herald Outfits Quest",
+   "pageid": 104206,
+   "revid": 1048240,
+   "rev_timestamp": "2023-12-14T12:56:27Z",
+   "in_quest_log": false,
+   "implemented": "13.30.14423",
+   "premium": "yes",
+   "lvl": "",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Draconia Quest",
+   "pageid": 3286,
+   "revid": 683833,
+   "rev_timestamp": "2016-11-28T14:11:57Z",
+   "in_quest_log": false,
+   "implemented": "6.2",
+   "premium": "no",
+   "lvl": "25",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Dragon Corpse Quest",
+   "pageid": 2481,
+   "revid": 1044896,
+   "rev_timestamp": "2023-11-11T01:11:40Z",
+   "in_quest_log": false,
+   "implemented": "5.2",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1555 -- Dragon Corpse Quest (questName dragoncorpse)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1840 -- Dragon Corpse Quest (questName dragoncorpse)"
+    ]
+   }
+  },
+  {
+   "title": "Dragon Slayer Outfits Quest",
+   "pageid": 103992,
+   "revid": 1041575,
+   "rev_timestamp": "2023-10-16T13:58:32Z",
+   "in_quest_log": false,
+   "implemented": "13.21.14040",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Dragon Tower Quest",
+   "pageid": 3765,
+   "revid": 683835,
+   "rev_timestamp": "2016-11-28T14:12:04Z",
+   "in_quest_log": false,
+   "implemented": "7.1",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Dream Warden Outfits Quest",
+   "pageid": 66771,
+   "revid": 846247,
+   "rev_timestamp": "2021-05-26T22:22:37Z",
+   "in_quest_log": false,
+   "implemented": "10.30",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Dream Warrior Outfits Quest",
+   "pageid": 87004,
+   "revid": 848563,
+   "rev_timestamp": "2021-05-27T08:54:19Z",
+   "in_quest_log": false,
+   "implemented": "12.00.7695",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "ABSENT",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Dreamer's Challenge Quest",
+   "pageid": 12354,
+   "revid": 869211,
+   "rev_timestamp": "2021-07-11T03:57:29Z",
+   "in_quest_log": false,
+   "implemented": "7.9",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Druid Outfits Quest",
+   "pageid": 8780,
+   "revid": 795584,
+   "rev_timestamp": "2020-03-09T16:35:58Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Druid Outfits Quest on Rook",
+   "pageid": 9744,
+   "revid": 683839,
+   "rev_timestamp": "2016-11-28T14:12:16Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "PARTIAL",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/item.lua:3373 -- Druid Outfits Quest - Ceirons Waterskin"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/item.lua Druid Outfits Quest - Ceirons Waterskin"
+    ]
+   }
+  },
+  {
+   "title": "Edron Goblin Quest",
+   "pageid": 2360,
+   "revid": 683840,
+   "rev_timestamp": "2016-11-28T14:12:19Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/scripts/game_migrations/20241715984294_quests_storages_to_kv.lua:45-46 questName edrongoblin1/2"
+    ],
+    "crystalserver": [
+     "data-global/scripts/game_migrations/20241715984294_quests_storages_to_kv.lua:45-46 same"
+    ]
+   }
+  },
+  {
+   "title": "Elemental Spheres Quest",
+   "pageid": 25542,
+   "revid": 1178813,
+   "rev_timestamp": "2026-04-25T17:49:36Z",
+   "in_quest_log": true,
+   "implemented": "8.20",
+   "premium": "yes",
+   "lvl": "80",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Elementalist Outfits Quest",
+   "pageid": 54199,
+   "revid": 844737,
+   "rev_timestamp": "2021-05-26T21:06:15Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "yes",
+   "lvl": "8",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Elephant Tusk Quest",
+   "pageid": 3832,
+   "revid": 683843,
+   "rev_timestamp": "2016-11-28T14:12:29Z",
+   "in_quest_log": false,
+   "implemented": "7.5",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Elvenbane Quest",
+   "pageid": 2733,
+   "revid": 683844,
+   "rev_timestamp": "2016-11-28T14:12:32Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "npc/eroth.lua scrying crystal ball mission"
+    ],
+    "crystalserver": [
+     "npc/eroth.lua scrying crystal ball mission"
+    ]
+   }
+  },
+  {
+   "title": "Emperor's Cookies Quest",
+   "pageid": 3160,
+   "revid": 683845,
+   "rev_timestamp": "2016-11-28T14:12:35Z",
+   "in_quest_log": false,
+   "implemented": "6.1",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Exchange Quests",
+   "pageid": 9667,
+   "revid": 692497,
+   "rev_timestamp": "2017-04-25T13:59:25Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "?",
+   "lvl": "0-35",
+   "canary": "PARTIAL",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/033_what_a_foolish_quest.lua:49 […]"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:3017-3074 djinn war lamp exchange missions implemented"
+    ]
+   }
+  },
+  {
+   "title": "Explorer Brooch Quest",
+   "pageid": 5040,
+   "revid": 683847,
+   "rev_timestamp": "2016-11-28T14:12:41Z",
+   "in_quest_log": false,
+   "implemented": "6.1",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:418 -- The Explorer Society - Explorer brooch (kazordoon)"
+    ],
+    "crystalserver": [
+     "data-global/npc/mortimer.lua:586-619 Storage.Quest.U7_6.ExplorerSociety.ExplorerBrooch dialogue"
+    ]
+   }
+  },
+  {
+   "title": "Falconer Outfits Quest",
+   "pageid": 96699,
+   "revid": 909040,
+   "rev_timestamp": "2022-03-10T13:24:39Z",
+   "in_quest_log": false,
+   "implemented": "12.30.9287",
+   "premium": "no",
+   "lvl": "",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Fanfare Quest",
+   "pageid": 2854,
+   "revid": 683848,
+   "rev_timestamp": "2016-11-28T14:12:44Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1395 -- Fanfare Quest (reward 2955 fanfare)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1680 -- Fanfare Quest"
+    ]
+   }
+  },
+  {
+   "title": "Feaster of Souls Quest",
+   "pageid": 89656,
+   "revid": 1051715,
+   "rev_timestamp": "2024-01-21T17:29:09Z",
+   "in_quest_log": true,
+   "implemented": "12.30.9287",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Feral Trappers Quest",
+   "pageid": 110524,
+   "revid": 1187332,
+   "rev_timestamp": "2026-05-26T19:21:55Z",
+   "in_quest_log": false,
+   "implemented": "15.20.7a5cc9",
+   "premium": "no",
+   "lvl": "",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": [
+     "data/scripts/lib/register_achievements.lua:577 […] achievement text (task-board hunting achievement, unrelated outfit-quest mechanic)"
+    ]
+   }
+  },
+  {
+   "title": "Ferumbras' Ascension Quest",
+   "pageid": 76901,
+   "revid": 1110095,
+   "rev_timestamp": "2025-07-13T11:48:30Z",
+   "in_quest_log": true,
+   "implemented": "10.90",
+   "premium": "yes",
+   "lvl": "150",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Festive Outfits Quest",
+   "pageid": 83163,
+   "revid": 849791,
+   "rev_timestamp": "2021-05-27T10:05:08Z",
+   "in_quest_log": false,
+   "implemented": "11.02.4128",
+   "premium": "yes",
+   "lvl": "40",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Fiend Slayer Outfits Quest",
+   "pageid": 107656,
+   "revid": 1177418,
+   "rev_timestamp": "2026-04-22T05:03:15Z",
+   "in_quest_log": false,
+   "implemented": "14.10.4e0c16",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "PARTIAL",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [
+     "data/scripts/actions/items/usable_outfit_items.lua addon items only"
+    ],
+    "crystalserver": [
+     "data/scripts/actions/items/usable_outfit_items.lua addon items only"
+    ]
+   }
+  },
+  {
+   "title": "Fire Axe Quest",
+   "pageid": 3791,
+   "revid": 683850,
+   "rev_timestamp": "2016-11-28T14:12:50Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "60",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:550 -- Fire axe quest (fireaxe1/2)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:849 -- Fire axe quest (fireaxe2)"
+    ]
+   }
+  },
+  {
+   "title": "Fire from the Earth Mini World Change",
+   "pageid": 76220,
+   "revid": 845085,
+   "rev_timestamp": "2021-05-26T21:32:24Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Fire-Fighter Outfits Quest",
+   "pageid": 98824,
+   "revid": 938141,
+   "rev_timestamp": "2022-07-18T14:25:38Z",
+   "in_quest_log": false,
+   "implemented": "12.90.12182",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "PARTIAL",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [
+     "usable_outfit_items.lua addon items only"
+    ],
+    "crystalserver": [
+     "usable_outfit_items.lua addon items only"
+    ]
+   }
+  },
+  {
+   "title": "Fishing Box Quest",
+   "pageid": 17081,
+   "revid": 842263,
+   "rev_timestamp": "2021-05-26T18:38:03Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Forgotten Knowledge Quest",
+   "pageid": 79436,
+   "revid": 1083592,
+   "rev_timestamp": "2024-11-25T09:08:34Z",
+   "in_quest_log": true,
+   "implemented": "11.02.4128",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Formal Dress Outfits Quest",
+   "pageid": 96197,
+   "revid": 898654,
+   "rev_timestamp": "2022-01-10T13:30:49Z",
+   "in_quest_log": false,
+   "implemented": "12.85.11485",
+   "premium": "yes",
+   "lvl": "20",
+   "canary": "ABSENT",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "crystal: 25_years_of _tibia_quest/lord_retro_death.lua unlocks it; canary lacks 25 Years quest"
+    ],
+    "crystalserver": [
+     "crystal: 25_years_of _tibia_quest/lord_retro_death.lua unlocks it; canary lacks 25 Years quest"
+    ]
+   }
+  },
+  {
+   "title": "Formorgar Mines Hoist Quest",
+   "pageid": 19679,
+   "revid": 842271,
+   "rev_timestamp": "2021-05-26T18:38:19Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:1-12 dedicated MoveEvent"
+    ],
+    "crystalserver": [
+     "data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:1-12"
+    ]
+   }
+  },
+  {
+   "title": "Formorgar Mines Quest",
+   "pageid": 17388,
+   "revid": 850221,
+   "rev_timestamp": "2021-05-28T03:28:19Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/022_the_ice_islands_quest.lua:133-182 Formorgar Mines 1-4 missions"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/storages.lua:890-905 FormorgarMines/Mission09-12 storages"
+    ]
+   }
+  },
+  {
+   "title": "Frost Dragon Quest",
+   "pageid": 17086,
+   "revid": 842275,
+   "rev_timestamp": "2021-05-26T18:38:26Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Fury Gates Mini World Change",
+   "pageid": 76237,
+   "revid": 1099676,
+   "rev_timestamp": "2025-04-19T20:55:44Z",
+   "in_quest_log": false,
+   "implemented": "10.10",
+   "premium": "yes",
+   "lvl": "60",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Geomancer Quest",
+   "pageid": 3767,
+   "revid": 683859,
+   "rev_timestamp": "2016-11-28T14:13:18Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua -- Geomancer Quest (questName geomancer)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1617 -- Geomancer Quest"
+    ]
+   }
+  },
+  {
+   "title": "Ghoul Room Quest",
+   "pageid": 3768,
+   "revid": 1043871,
+   "rev_timestamp": "2023-10-30T07:52:50Z",
+   "in_quest_log": false,
+   "implemented": "5.01",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1350 -- Ghoul Room Quest (ghoulroom1/2)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1635 -- Ghoul Room Quest (ghoulroom1/2)"
+    ]
+   }
+  },
+  {
+   "title": "Giant Smithhammer Quest",
+   "pageid": 3476,
+   "revid": 756268,
+   "rev_timestamp": "2019-03-06T02:02:17Z",
+   "in_quest_log": false,
+   "implemented": "7.24",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Glooth Engineer Outfits Quest",
+   "pageid": 67748,
+   "revid": 846508,
+   "rev_timestamp": "2021-05-26T22:30:36Z",
+   "in_quest_log": false,
+   "implemented": "10.50",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Goblin Merchant Quest",
+   "pageid": 61804,
+   "revid": 845754,
+   "rev_timestamp": "2021-05-26T21:59:50Z",
+   "in_quest_log": true,
+   "implemented": "9.80",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Goblin Temple Quest",
+   "pageid": 3574,
+   "revid": 683865,
+   "rev_timestamp": "2016-11-28T14:13:38Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/scripts/actions/rookgaard/goblin_temple_quest.lua:2-33 dedicated Action + questKV"
+    ],
+    "crystalserver": [
+     "data-global/scripts/actions/rookgaard/goblin_temple_quest.lua:2-14 same"
+    ]
+   }
+  },
+  {
+   "title": "Golden Outfits Quest",
+   "pageid": 88407,
+   "revid": 892279,
+   "rev_timestamp": "2021-11-25T19:29:37Z",
+   "in_quest_log": false,
+   "implemented": "12.15.8659",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Grave Danger Quest",
+   "pageid": 88736,
+   "revid": 993205,
+   "rev_timestamp": "2023-02-20T12:16:50Z",
+   "in_quest_log": true,
+   "implemented": "12.20.8834",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Griffin Shield Quest",
+   "pageid": 3769,
+   "revid": 841799,
+   "rev_timestamp": "2021-05-25T22:19:47Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "30",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1592 reward=3433 griffin shield (Griffin Shield Quest), questName griffinshield1/2/3"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua reward=3433 griffing shield (Griffin Shield Quest), questName griffinshield1/2/3"
+    ]
+   }
+  },
+  {
+   "title": "Grimvale Mini World Change",
+   "pageid": 76238,
+   "revid": 847053,
+   "rev_timestamp": "2021-05-26T22:45:27Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/door_quest.lua:762 Storage.Quest.U10_80.GrimvaleQuest.AncientFeudDoors"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/door_quest.lua:823 GrimvaleQuest.AncientFeudDoors"
+    ]
+   }
+  },
+  {
+   "title": "Grimvale Quest",
+   "pageid": 75169,
+   "revid": 1097792,
+   "rev_timestamp": "2025-04-04T19:18:34Z",
+   "in_quest_log": true,
+   "implemented": "10.80",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Hand of the Inquisition Outfits Quest",
+   "pageid": 89178,
+   "revid": 848187,
+   "rev_timestamp": "2021-05-27T08:37:23Z",
+   "in_quest_log": false,
+   "implemented": "12.20.8834",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "ABSENT"
+  },
+  {
+   "title": "Heart of Destruction Quest",
+   "pageid": 78242,
+   "revid": 1006191,
+   "rev_timestamp": "2023-06-19T08:49:32Z",
+   "in_quest_log": true,
+   "implemented": "10.94",
+   "premium": "yes",
+   "lvl": "150",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Heaven Blossom Quest",
+   "pageid": 67099,
+   "revid": 765024,
+   "rev_timestamp": "2019-05-22T13:36:24Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/npc/hugo.lua:86-95 […] fetch dialogue"
+    ],
+    "crystalserver": [
+     "data-global/npc/hugo.lua:84-93 same dialogue"
+    ]
+   }
+  },
+  {
+   "title": "Hero of Rathleton Quest",
+   "pageid": 69694,
+   "revid": 1078130,
+   "rev_timestamp": "2024-09-27T19:14:57Z",
+   "in_quest_log": true,
+   "implemented": "10.70",
+   "premium": "yes",
+   "lvl": "?",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Hidden Threats Quest",
+   "pageid": 83384,
+   "revid": 849215,
+   "rev_timestamp": "2021-05-27T09:29:05Z",
+   "in_quest_log": false,
+   "implemented": "11.50.6055",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Hive Born World Change",
+   "pageid": 56901,
+   "revid": 845113,
+   "rev_timestamp": "2021-05-26T21:33:13Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Hive Outpost Mini World Change",
+   "pageid": 76240,
+   "revid": 969491,
+   "rev_timestamp": "2022-09-02T08:29:24Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Horse Station World Change",
+   "pageid": 54701,
+   "revid": 844780,
+   "rev_timestamp": "2021-05-26T21:07:22Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Hot Cuisine Quest",
+   "pageid": 36952,
+   "revid": 843854,
+   "rev_timestamp": "2021-05-26T20:27:23Z",
+   "in_quest_log": true,
+   "implemented": "8.50",
+   "premium": "yes",
+   "lvl": "35",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Hunter Outfits Quest",
+   "pageid": 8571,
+   "revid": 740135,
+   "rev_timestamp": "2018-08-13T10:19:44Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Hunting for Tokens Quest",
+   "pageid": 64417,
+   "revid": 885774,
+   "rev_timestamp": "2021-09-18T10:00:13Z",
+   "in_quest_log": false,
+   "implemented": "10.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Hydra Egg Quest",
+   "pageid": 4964,
+   "revid": 692493,
+   "rev_timestamp": "2017-04-25T13:56:51Z",
+   "in_quest_log": false,
+   "implemented": "7.6",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Illuminated Warrior Outfits Quest",
+   "pageid": 111140,
+   "revid": 1197521,
+   "rev_timestamp": "2026-07-23T21:11:42Z",
+   "in_quest_log": false,
+   "implemented": "15.30.a30dad",
+   "premium": "yes",
+   "lvl": "1000+",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Illuminator Outfit Quest",
+   "pageid": 108929,
+   "revid": 1111818,
+   "rev_timestamp": "2025-07-21T08:29:38Z",
+   "in_quest_log": false,
+   "implemented": "15.10.46b862",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "ABSENT",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [],
+    "crystalserver": [
+     "data-global/npc/leonora.lua:13 […]"
+    ]
+   }
+  },
+  {
+   "title": "Illuminator Outfits Quest",
+   "pageid": 109146,
+   "revid": 1119520,
+   "rev_timestamp": "2025-08-04T10:51:49Z",
+   "in_quest_log": false,
+   "implemented": "15.10.46b862",
+   "premium": "yes",
+   "lvl": "200",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "In Service of Yalahar Quest",
+   "pageid": 30601,
+   "revid": 1178479,
+   "rev_timestamp": "2026-04-25T07:20:34Z",
+   "in_quest_log": true,
+   "implemented": "8.40",
+   "premium": "yes",
+   "lvl": "80",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Insectoid Invasion World Change",
+   "pageid": 54570,
+   "revid": 1106148,
+   "rev_timestamp": "2025-06-21T14:00:45Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Insectoid Outfits Quest",
+   "pageid": 57000,
+   "revid": 1091445,
+   "rev_timestamp": "2025-02-20T20:46:09Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Into The Bone Pit Quest",
+   "pageid": 20027,
+   "revid": 1091432,
+   "rev_timestamp": "2025-02-20T15:05:19Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua:138-139 name/storageId IntoTheBonePit"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:4552-4553"
+    ]
+   }
+  },
+  {
+   "title": "Inukaya Quest",
+   "pageid": 17223,
+   "revid": 842352,
+   "rev_timestamp": "2021-05-26T18:40:45Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/022_the_ice_islands_quest.lua:102 […]"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/storages.lua:886 Inukaya = 41271"
+    ]
+   }
+  },
+  {
+   "title": "Iron Hammer Quest",
+   "pageid": 3770,
+   "revid": 683884,
+   "rev_timestamp": "2016-11-28T14:14:39Z",
+   "in_quest_log": false,
+   "implemented": "6.61-6.97",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1647 -- Iron Hammer Quest (reward 3310 iron hammer)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1932 -- Iron Hammer Quest"
+    ]
+   }
+  },
+  {
+   "title": "Iron Helmet Quest",
+   "pageid": 3771,
+   "revid": 747234,
+   "rev_timestamp": "2018-11-21T17:10:57Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1894 -- Iron Helmet Quest (questName ironhelmet)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1894 -- Iron Helmet Quest"
+    ]
+   }
+  },
+  {
+   "title": "Iron Ore Quest",
+   "pageid": 55906,
+   "revid": 683886,
+   "rev_timestamp": "2016-11-28T14:14:45Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/012_outfit_and_addon_quests.lua:67 […]"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:2189 same Ajax fetch mission"
+    ]
+   }
+  },
+  {
+   "title": "Isle of the Mists Quest",
+   "pageid": 7991,
+   "revid": 896855,
+   "rev_timestamp": "2022-01-06T17:32:26Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1419 -- Isle of the Mists Quest (questName isleofthemists)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1704 -- Isle of the Mists Quest"
+    ]
+   }
+  },
+  {
+   "title": "Jack to the Future Quest",
+   "pageid": 50739,
+   "revid": 844537,
+   "rev_timestamp": "2021-05-26T20:58:26Z",
+   "in_quest_log": false,
+   "implemented": "8.70",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Jungle Camp Mini World Change",
+   "pageid": 76242,
+   "revid": 847067,
+   "rev_timestamp": "2021-05-26T22:45:46Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Katana Quest",
+   "pageid": 3179,
+   "revid": 1044887,
+   "rev_timestamp": "2023-11-11T01:07:06Z",
+   "in_quest_log": false,
+   "implemented": "5.2",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:200 Katana Quest (rookgaard) key 4603"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:475 key 4603"
+    ]
+   }
+  },
+  {
+   "title": "Killing in the Name of... Quest",
+   "pageid": 36695,
+   "revid": 843864,
+   "rev_timestamp": "2021-05-26T20:27:41Z",
+   "in_quest_log": true,
+   "implemented": "8.50",
+   "premium": "yes",
+   "lvl": "various",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Kilmaresh Quest",
+   "pageid": 88779,
+   "revid": 870415,
+   "rev_timestamp": "2021-07-16T15:23:53Z",
+   "in_quest_log": true,
+   "implemented": "12.20.8834",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Kingdom of Kormarak Quest",
+   "pageid": 56856,
+   "revid": 899526,
+   "rev_timestamp": "2022-01-12T21:45:32Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Kingsday Mini World Change",
+   "pageid": 76244,
+   "revid": 845148,
+   "rev_timestamp": "2021-05-26T21:34:05Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Kissing a Pig Quest",
+   "pageid": 20354,
+   "revid": 842826,
+   "rev_timestamp": "2021-05-26T19:27:51Z",
+   "in_quest_log": true,
+   "implemented": "8.10",
+   "premium": "no",
+   "lvl": "60",
+   "canary": "PARTIAL",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/storages.lua:867 KissingAPig = {} (empty)"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/storages.lua:932 KissingAPig = {} (empty)"
+    ]
+   }
+  },
+  {
+   "title": "Knight Outfits Quest",
+   "pageid": 8569,
+   "revid": 740136,
+   "rev_timestamp": "2018-08-13T10:26:12Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Koshei the Deathless Quest",
+   "pageid": 20496,
+   "revid": 842829,
+   "rev_timestamp": "2021-05-26T19:28:01Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "40",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Krailos Quest",
+   "pageid": 77018,
+   "revid": 851300,
+   "rev_timestamp": "2021-06-03T15:30:05Z",
+   "in_quest_log": true,
+   "implemented": "10.90",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Last Creep Standing",
+   "pageid": 50862,
+   "revid": 1184997,
+   "rev_timestamp": "2026-05-14T09:49:17Z",
+   "in_quest_log": false,
+   "implemented": "8.70",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Life Ring Quest",
+   "pageid": 2606,
+   "revid": 683899,
+   "rev_timestamp": "2016-11-28T14:15:26Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1307 -- Life Ring Quest (questName lifering)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1592 -- Life Ring Quest"
+    ]
+   }
+  },
+  {
+   "title": "Lion Trophy Quest",
+   "pageid": 17387,
+   "revid": 842366,
+   "rev_timestamp": "2021-05-26T18:41:15Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/npc/grizzly_adams.lua:77 storageKey=POINTSSTORAGE task/points system"
+    ],
+    "crystalserver": [
+     "data-global/npc/grizzly_adams.lua present (same mechanism)"
+    ]
+   }
+  },
+  {
+   "title": "Lion's Rock Quest",
+   "pageid": 69459,
+   "revid": 846852,
+   "rev_timestamp": "2021-05-26T22:39:59Z",
+   "in_quest_log": false,
+   "implemented": "10.70",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Liquid Black Quest",
+   "pageid": 56912,
+   "revid": 1091446,
+   "rev_timestamp": "2025-02-20T20:47:24Z",
+   "in_quest_log": true,
+   "implemented": "9.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Lone Medusa Quest",
+   "pageid": 52501,
+   "revid": 843873,
+   "rev_timestamp": "2021-05-26T20:27:56Z",
+   "in_quest_log": false,
+   "implemented": "8.50",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Longsword Quest",
+   "pageid": 3478,
+   "revid": 683904,
+   "rev_timestamp": "2016-11-28T14:15:44Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1427 -- Longsword Quest (longsword1/2/3)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1712 -- Longsword Quest (longsword1/2/3)"
+    ]
+   }
+  },
+  {
+   "title": "Loose Ends Quest",
+   "pageid": 54680,
+   "revid": 844805,
+   "rev_timestamp": "2021-05-26T21:07:59Z",
+   "in_quest_log": true,
+   "implemented": "9.10",
+   "premium": "yes",
+   "lvl": "8",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Lumberjack Mini World Change",
+   "pageid": 76246,
+   "revid": 845163,
+   "rev_timestamp": "2021-05-26T21:34:29Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Machinery of War Quest",
+   "pageid": 25543,
+   "revid": 843158,
+   "rev_timestamp": "2021-05-26T19:58:36Z",
+   "in_quest_log": false,
+   "implemented": "8.20",
+   "premium": "no",
+   "lvl": "50",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Mad Mage Room Quest",
+   "pageid": 3772,
+   "revid": 756290,
+   "rev_timestamp": "2019-03-06T02:04:57Z",
+   "in_quest_log": false,
+   "implemented": "7.24",
+   "premium": "no",
+   "lvl": "40",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Mage Outfits Quest",
+   "pageid": 8593,
+   "revid": 1090705,
+   "rev_timestamp": "2025-02-11T11:03:51Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/npc/dedoras.lua:204-216 Storage.Quest.U11_80.BattleMageOutfits.Addon1/2 dialogue"
+    ],
+    "crystalserver": [
+     "data-global/npc/dedoras.lua:202-214 same"
+    ]
+   }
+  },
+  {
+   "title": "Magic Sword Quest",
+   "pageid": 95154,
+   "revid": 875253,
+   "rev_timestamp": "2021-07-30T12:12:59Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:935 -- Demon armor"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1234 -- Demon armor"
+    ]
+   }
+  },
+  {
+   "title": "Make Believe Quest",
+   "pageid": 110962,
+   "revid": 1196603,
+   "rev_timestamp": "2026-07-16T19:48:58Z",
+   "in_quest_log": false,
+   "implemented": "15.30.a30dad",
+   "premium": "yes",
+   "lvl": "300",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Makeshift Warrior Outfits Quest",
+   "pageid": 83854,
+   "revid": 849124,
+   "rev_timestamp": "2021-05-27T09:22:48Z",
+   "in_quest_log": false,
+   "implemented": "11.50.6055",
+   "premium": "yes",
+   "lvl": "",
+   "canary": "PARTIAL",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [
+     "usable_outfit_items.lua addon items only"
+    ],
+    "crystalserver": [
+     "usable_outfit_items.lua addon items only"
+    ]
+   }
+  },
+  {
+   "title": "Marlin Trophy Quest",
+   "pageid": 21716,
+   "revid": 683910,
+   "rev_timestamp": "2016-11-28T14:16:02Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Mastermind Potion Quest",
+   "pageid": 17060,
+   "revid": 842378,
+   "rev_timestamp": "2021-05-26T18:41:41Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Measuring Tibia Quest",
+   "pageid": 85619,
+   "revid": 935112,
+   "rev_timestamp": "2022-07-05T20:23:06Z",
+   "in_quest_log": true,
+   "implemented": "11.80.7048",
+   "premium": "yes",
+   "lvl": "",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Medusa Shield Quest",
+   "pageid": 3793,
+   "revid": 771196,
+   "rev_timestamp": "2019-08-08T21:42:23Z",
+   "in_quest_log": false,
+   "implemented": "7.3",
+   "premium": "yes",
+   "lvl": "60",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/012_outfit_and_addon_quests.lua:244 […]"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:2366 same Lugri mission"
+    ]
+   }
+  },
+  {
+   "title": "Minotaur Hell Quest",
+   "pageid": 3212,
+   "revid": 1044888,
+   "rev_timestamp": "2023-11-11T01:07:25Z",
+   "in_quest_log": false,
+   "implemented": "5.2",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1216 -- Minotaur Hell Quest"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1508 -- Minotaur Hell Quest"
+    ]
+   }
+  },
+  {
+   "title": "Minotaur Leather Quest",
+   "pageid": 55520,
+   "revid": 683915,
+   "rev_timestamp": "2016-11-28T14:16:17Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1451 -- Minotaur Leather Quest (questName minotaurleatherquest)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1736 -- Minotaur Leather Quest"
+    ]
+   }
+  },
+  {
+   "title": "Mintwallin Cyclops Quest",
+   "pageid": 3773,
+   "revid": 683916,
+   "rev_timestamp": "2016-11-28T14:16:20Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1358 -- Mintwallin Cyclops Quest (questName mintwallincyclops)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1643 -- Mintwallin Cyclops Quest"
+    ]
+   }
+  },
+  {
+   "title": "Mystery of the Valley Quest",
+   "pageid": 107854,
+   "revid": 1092319,
+   "rev_timestamp": "2025-02-25T13:04:00Z",
+   "in_quest_log": true,
+   "implemented": "14.12.969405",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Naginata Quest",
+   "pageid": 3775,
+   "revid": 683917,
+   "rev_timestamp": "2016-11-28T14:16:23Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "40",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1342 -- Naginata Quest (reward 3314 naginata)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua -- Naginata Quest"
+    ]
+   }
+  },
+  {
+   "title": "Newhaven Legion Helmet Quest",
+   "pageid": 111269,
+   "revid": 1204291,
+   "rev_timestamp": "2026-09-01T00:36:53Z",
+   "in_quest_log": false,
+   "implemented": "15.12.c7d92c",
+   "premium": "no",
+   "lvl": "",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:323 -- Legion helmet quest (dawnport) (questName legiondawnport)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:622 -- Legion helmet quest (dawnport)"
+    ]
+   }
+  },
+  {
+   "title": "Newhaven Quest",
+   "pageid": 111293,
+   "revid": 1205104,
+   "rev_timestamp": "2026-09-05T23:17:24Z",
+   "in_quest_log": true,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "2",
+   "canary": "ABSENT",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Nightmare Isles Mini World Change",
+   "pageid": 76248,
+   "revid": 891482,
+   "rev_timestamp": "2021-11-17T00:32:33Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Nightmare Outfits Quest",
+   "pageid": 19796,
+   "revid": 842861,
+   "rev_timestamp": "2021-05-26T19:29:30Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Nightmare Teddy Quest",
+   "pageid": 75515,
+   "revid": 847098,
+   "rev_timestamp": "2021-05-26T22:46:27Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:2607 -- Nightmare Teddy Quest (questName NightmareTeddyQuest)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:2877 -- Nightmare Teddy Quest"
+    ]
+   }
+  },
+  {
+   "title": "Nimmersatt's Lair",
+   "pageid": 103960,
+   "revid": 1082105,
+   "rev_timestamp": "2024-11-14T07:23:50Z",
+   "in_quest_log": false,
+   "implemented": "13.21.14040",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "No Rest for the Wicked Quest",
+   "pageid": 107633,
+   "revid": 1177414,
+   "rev_timestamp": "2026-04-22T04:50:35Z",
+   "in_quest_log": true,
+   "implemented": "14.10.4e0c16",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Noble Armor Quest",
+   "pageid": 3283,
+   "revid": 683921,
+   "rev_timestamp": "2016-11-28T14:16:35Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "35",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1317 -- Noble Armor Quest (noblearmor1/2)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1602? (Noble Armor Quest chest entry)"
+    ]
+   }
+  },
+  {
+   "title": "Nobleman Outfits Quest",
+   "pageid": 8768,
+   "revid": 683922,
+   "rev_timestamp": "2016-11-28T14:16:38Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Nomads Land Quest",
+   "pageid": 20026,
+   "revid": 842864,
+   "rev_timestamp": "2021-05-26T19:29:36Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua:301-309 commented-out placeholder entry (storageId = PLACEHOLDER)"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:4715 same commented-out placeholder"
+    ]
+   }
+  },
+  {
+   "title": "Nomads Mini World Change",
+   "pageid": 76251,
+   "revid": 845176,
+   "rev_timestamp": "2021-05-26T21:34:46Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Noodles is Gone Mini World Change",
+   "pageid": 76253,
+   "revid": 891483,
+   "rev_timestamp": "2021-11-17T00:32:34Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Norseman Outfits Quest",
+   "pageid": 17073,
+   "revid": 842400,
+   "rev_timestamp": "2021-05-26T18:42:30Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/012_outfit_and_addon_quests.lua storageId NorsemanOutfit"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:2325-2326 name= […], storageId=NorsemanOutfit"
+    ]
+   }
+  },
+  {
+   "title": "Obsidian Knife Quest",
+   "pageid": 9098,
+   "revid": 683928,
+   "rev_timestamp": "2016-11-28T14:16:53Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Opticording Sphere Quest",
+   "pageid": 65056,
+   "revid": 1035096,
+   "rev_timestamp": "2023-08-12T01:14:55Z",
+   "in_quest_log": false,
+   "implemented": "10.10",
+   "premium": "yes",
+   "lvl": "100",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Oramond Quest",
+   "pageid": 67964,
+   "revid": 1040501,
+   "rev_timestamp": "2023-10-06T22:54:25Z",
+   "in_quest_log": true,
+   "implemented": "10.50",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Orc Fortress Quest",
+   "pageid": 3777,
+   "revid": 683931,
+   "rev_timestamp": "2016-11-28T14:17:05Z",
+   "in_quest_log": false,
+   "implemented": "6.1",
+   "premium": "no",
+   "lvl": "40",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Orc Shaman Quest",
+   "pageid": 3245,
+   "revid": 683932,
+   "rev_timestamp": "2016-11-28T14:17:08Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1459 -- Orc Shaman Quest (questName orcshaman)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1744 -- Orc Shaman Quest"
+    ]
+   }
+  },
+  {
+   "title": "Orcsoberfest",
+   "pageid": 89535,
+   "revid": 1041563,
+   "rev_timestamp": "2023-10-16T08:39:26Z",
+   "in_quest_log": false,
+   "implemented": "12.20.9066",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "ABSENT"
+  },
+  {
+   "title": "Oriental Outfits Quest",
+   "pageid": 8651,
+   "revid": 795588,
+   "rev_timestamp": "2020-03-09T16:45:52Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Oriental Trader Mini World Change",
+   "pageid": 76255,
+   "revid": 845183,
+   "rev_timestamp": "2021-05-26T21:34:58Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Ornamented Shield Quest",
+   "pageid": 3778,
+   "revid": 1043470,
+   "rev_timestamp": "2023-10-24T08:36:09Z",
+   "in_quest_log": false,
+   "implemented": "5.1",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Overhunting World Change",
+   "pageid": 54569,
+   "revid": 844823,
+   "rev_timestamp": "2021-05-26T21:08:25Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Panpipe Quest",
+   "pageid": 3779,
+   "revid": 683937,
+   "rev_timestamp": "2016-11-28T14:17:23Z",
+   "in_quest_log": false,
+   "implemented": "6.1",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Parchment Room Quest",
+   "pageid": 3794,
+   "revid": 1090710,
+   "rev_timestamp": "2025-02-11T11:04:12Z",
+   "in_quest_log": false,
+   "implemented": "7.2",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Pick Quest",
+   "pageid": 3180,
+   "revid": 1044889,
+   "rev_timestamp": "2023-11-11T01:08:02Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "npc/al_dee.lua […]"
+    ],
+    "crystalserver": [
+     "npc/al_dee.lua […]"
+    ]
+   }
+  },
+  {
+   "title": "Pilgrimage of Ashes Quest",
+   "pageid": 37207,
+   "revid": 843918,
+   "rev_timestamp": "2021-05-26T20:29:27Z",
+   "in_quest_log": false,
+   "implemented": "8.50",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Pirate Outfits Quest",
+   "pageid": 8585,
+   "revid": 743084,
+   "rev_timestamp": "2018-09-26T17:54:46Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Plate Armor Quest",
+   "pageid": 3795,
+   "revid": 898699,
+   "rev_timestamp": "2022-01-10T17:34:29Z",
+   "in_quest_log": false,
+   "implemented": "6.61-6.97",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1655 -- Plate Armor quest (questName platearmor)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1940 -- Plate Armor quest"
+    ]
+   }
+  },
+  {
+   "title": "Poacher Caves Mini World Change",
+   "pageid": 76257,
+   "revid": 1175804,
+   "rev_timestamp": "2026-04-19T15:41:04Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Podzilla Quest",
+   "pageid": 106902,
+   "revid": 1093989,
+   "rev_timestamp": "2025-03-05T19:07:58Z",
+   "in_quest_log": true,
+   "implemented": "13.40.54ea79",
+   "premium": "yes",
+   "lvl": "300",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Poison Daggers Quest",
+   "pageid": 3796,
+   "revid": 683944,
+   "rev_timestamp": "2016-11-28T14:17:44Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:789 -- Poison daggers quest (questName poisondaggers)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1088 -- Poison daggers quest"
+    ]
+   }
+  },
+  {
+   "title": "Poltergeist Outfits Quest",
+   "pageid": 89705,
+   "revid": 848011,
+   "rev_timestamp": "2021-05-27T08:31:18Z",
+   "in_quest_log": false,
+   "implemented": "12.30.9287",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Power Bolts Quest",
+   "pageid": 3780,
+   "revid": 683945,
+   "rev_timestamp": "2016-11-28T14:17:47Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1139 -- Power Bolts Quest (book)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1439 -- Power Bolts Quest (book)"
+    ]
+   }
+  },
+  {
+   "title": "Power Ring Quest",
+   "pageid": 3282,
+   "revid": 683946,
+   "rev_timestamp": "2016-11-28T14:17:51Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1469 -- Power Ring Quest (questName powerring1/2)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1754 -- Power Ring Quest (powerring1/2)"
+    ]
+   }
+  },
+  {
+   "title": "Present Quest",
+   "pageid": 3214,
+   "revid": 1044890,
+   "rev_timestamp": "2023-11-11T01:08:19Z",
+   "in_quest_log": false,
+   "implemented": "5.2",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1147 -- Present Quest (rookgaard) (questName presentBox)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1447 -- Present Quest (rookgaard)"
+    ]
+   }
+  },
+  {
+   "title": "Primal Ordeal Quest",
+   "pageid": 98587,
+   "revid": 1197351,
+   "rev_timestamp": "2026-07-22T18:00:42Z",
+   "in_quest_log": true,
+   "implemented": "12.90.12182",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Purple Tome Quest",
+   "pageid": 24696,
+   "revid": 815922,
+   "rev_timestamp": "2020-09-29T19:21:41Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "60",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1285 -- Purple Tome Quest (purpletome1/2/3)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1570 -- Purple Tome Quest"
+    ]
+   }
+  },
+  {
+   "title": "Rapier Quest",
+   "pageid": 3334,
+   "revid": 1043841,
+   "rev_timestamp": "2023-10-30T06:18:42Z",
+   "in_quest_log": false,
+   "implemented": "5.2",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "scripts/actions/rookgaard/rapier_quest.lua"
+    ],
+    "crystalserver": [
+     "scripts/actions/rookgaard/rapier_quest.lua"
+    ]
+   }
+  },
+  {
+   "title": "Rascoohan Outfits Quest",
+   "pageid": 93016,
+   "revid": 895793,
+   "rev_timestamp": "2021-12-23T18:20:00Z",
+   "in_quest_log": false,
+   "implemented": "12.60.10463",
+   "premium": "yes",
+   "lvl": "?",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Rathleton Quest",
+   "pageid": 68050,
+   "revid": 846610,
+   "rev_timestamp": "2021-05-26T22:33:44Z",
+   "in_quest_log": true,
+   "implemented": "10.50",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Ravenous Madness Quest",
+   "pageid": 107279,
+   "revid": 1206164,
+   "rev_timestamp": "2026-09-13T22:49:39Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "8",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Realm of Dreams Quest",
+   "pageid": 61230,
+   "revid": 683951,
+   "rev_timestamp": "2016-11-28T14:18:06Z",
+   "in_quest_log": false,
+   "implemented": "9.44",
+   "premium": "yes",
+   "lvl": "40",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/scripts/quests/chayenne_realm/movements_enter_realm.lua:1-14 dedicated MoveEvent"
+    ],
+    "crystalserver": [
+     "data-global/scripts/quests/chayenne_realm/movements_enter_realm.lua:1-14 same"
+    ]
+   }
+  },
+  {
+   "title": "Research and Development Quest",
+   "pageid": 50757,
+   "revid": 844599,
+   "rev_timestamp": "2021-05-26T20:59:33Z",
+   "in_quest_log": false,
+   "implemented": "8.70",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Rest in Hallowed Ground Quest",
+   "pageid": 20033,
+   "revid": 842882,
+   "rev_timestamp": "2021-05-26T19:30:19Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Revenant Outfits Quest",
+   "pageid": 92416,
+   "revid": 1008240,
+   "rev_timestamp": "2023-06-29T21:01:37Z",
+   "in_quest_log": false,
+   "implemented": "12.40.9997",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Rift Warrior Outfits Quest",
+   "pageid": 77049,
+   "revid": 683954,
+   "rev_timestamp": "2016-11-28T14:18:15Z",
+   "in_quest_log": false,
+   "implemented": "10.90",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "npc/cledwyn.lua"
+    ],
+    "crystalserver": [
+     "npc/cledwyn.lua"
+    ]
+   }
+  },
+  {
+   "title": "Ring Quest",
+   "pageid": 21743,
+   "revid": 1090712,
+   "rev_timestamp": "2025-02-11T11:04:25Z",
+   "in_quest_log": false,
+   "implemented": "7.1",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:558 -- Ring Quest (chest [6037])"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:857 -- Ring Quest (chest [6037])"
+    ]
+   }
+  },
+  {
+   "title": "Rise of Devovorga",
+   "pageid": 48435,
+   "revid": 1076762,
+   "rev_timestamp": "2024-09-01T22:19:57Z",
+   "in_quest_log": true,
+   "implemented": "8.61",
+   "premium": "partial",
+   "lvl": "20",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "River Runs Deep Mini World Change",
+   "pageid": 76259,
+   "revid": 845206,
+   "rev_timestamp": "2021-05-26T21:35:40Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Rootwalker Outfits Quest",
+   "pageid": 107080,
+   "revid": 1066862,
+   "rev_timestamp": "2024-07-01T09:34:26Z",
+   "in_quest_log": false,
+   "implemented": "13.40.54ea79",
+   "premium": "yes",
+   "lvl": "300",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Roshamuul Quest",
+   "pageid": 66027,
+   "revid": 846322,
+   "rev_timestamp": "2021-05-26T22:24:37Z",
+   "in_quest_log": true,
+   "implemented": "10.30",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Rotten Blood Quest",
+   "pageid": 102867,
+   "revid": 1081798,
+   "rev_timestamp": "2024-11-11T15:35:33Z",
+   "in_quest_log": true,
+   "implemented": "13.20.13560",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Rottin Wood and the Married Men Quest",
+   "pageid": 50684,
+   "revid": 844603,
+   "rev_timestamp": "2021-05-26T20:59:39Z",
+   "in_quest_log": true,
+   "implemented": "8.70",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Royal Bounacean Advisor Outfits Quest",
+   "pageid": 94850,
+   "revid": 869711,
+   "rev_timestamp": "2021-07-12T23:28:10Z",
+   "in_quest_log": false,
+   "implemented": "12.70.10953",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Royal Costume Outfits Quest",
+   "pageid": 95554,
+   "revid": 892593,
+   "rev_timestamp": "2021-11-29T09:37:05Z",
+   "in_quest_log": false,
+   "implemented": "12.80.11430",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Sam's Old Backpack Quest",
+   "pageid": 5118,
+   "revid": 788465,
+   "rev_timestamp": "2020-01-30T00:02:07Z",
+   "in_quest_log": false,
+   "implemented": "7.5",
+   "premium": "no",
+   "lvl": "35",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Sanctuary of the Lizard God Quest",
+   "pageid": 68839,
+   "revid": 1198612,
+   "rev_timestamp": "2026-08-01T21:41:29Z",
+   "in_quest_log": false,
+   "implemented": "10.55",
+   "premium": "no",
+   "lvl": "2 - 20",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Scale Armor Quest",
+   "pageid": 2753,
+   "revid": 683961,
+   "rev_timestamp": "2016-11-28T14:18:39Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1484 -- Scale Armor Quest (questName scalearmor)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1769 -- Scale Armor Quest"
+    ]
+   }
+  },
+  {
+   "title": "Sea of Light Quest",
+   "pageid": 41820,
+   "revid": 791161,
+   "rev_timestamp": "2020-02-29T11:44:41Z",
+   "in_quest_log": true,
+   "implemented": "8.54",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Secret Service Quest",
+   "pageid": 20024,
+   "revid": 1096988,
+   "rev_timestamp": "2025-03-30T19:01:26Z",
+   "in_quest_log": true,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "50",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Serpentine Tower Quest",
+   "pageid": 11239,
+   "revid": 835790,
+   "rev_timestamp": "2021-04-13T15:46:22Z",
+   "in_quest_log": false,
+   "implemented": "7.3",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Shadows of Yalahar Quest",
+   "pageid": 37117,
+   "revid": 843939,
+   "rev_timestamp": "2021-05-26T20:30:03Z",
+   "in_quest_log": true,
+   "implemented": "8.50",
+   "premium": "yes",
+   "lvl": "75",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Shaman Outfits Quest",
+   "pageid": 8587,
+   "revid": 683966,
+   "rev_timestamp": "2016-11-28T14:18:56Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Shaman Treasure Quest",
+   "pageid": 3797,
+   "revid": 683967,
+   "rev_timestamp": "2016-11-28T14:18:59Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:799 -- Shaman treasure quest (questName shamantreasure)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1098 -- Shaman treasure quest"
+    ]
+   }
+  },
+  {
+   "title": "Shards of a Broken Moon Quest",
+   "pageid": 110935,
+   "revid": 1195699,
+   "rev_timestamp": "2026-07-13T14:41:45Z",
+   "in_quest_log": false,
+   "implemented": "15.30.a30dad",
+   "premium": "yes",
+   "lvl": "?",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Short Sword Quest",
+   "pageid": 2729,
+   "revid": 1044891,
+   "rev_timestamp": "2023-11-11T01:08:35Z",
+   "in_quest_log": false,
+   "implemented": "5.2",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:375 -- Short sword quest (questName shortswordbook)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:674 -- Short sword quest"
+    ]
+   }
+  },
+  {
+   "title": "Silver Amulet Quest",
+   "pageid": 56020,
+   "revid": 1043983,
+   "rev_timestamp": "2023-10-30T18:24:09Z",
+   "in_quest_log": false,
+   "implemented": "5.2",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1494 -- Silver Amulet Quest (questName silveramulet)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1779 -- Silver Amulet Quest"
+    ]
+   }
+  },
+  {
+   "title": "Silver Brooch Quest",
+   "pageid": 3781,
+   "revid": 683970,
+   "rev_timestamp": "2016-11-28T14:19:08Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1502 -- Silver Brooch Quest (questName silverbrooch)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1787 -- Silver Brooch Quest"
+    ]
+   }
+  },
+  {
+   "title": "Sinatuki Quest",
+   "pageid": 67095,
+   "revid": 842457,
+   "rev_timestamp": "2021-05-26T18:44:29Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/npc/sinatuki.lua:1-54 dedicated NPC with […] keyword dialogue"
+    ],
+    "crystalserver": [
+     "data-global/npc/sinatuki.lua:1-52 same"
+    ]
+   }
+  },
+  {
+   "title": "Six Rubies Quest",
+   "pageid": 5572,
+   "revid": 1040418,
+   "rev_timestamp": "2023-10-05T04:51:33Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1512 -- Six Rubies Quest (questName sixrubies)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1797 -- Six Rubies Quest"
+    ]
+   }
+  },
+  {
+   "title": "Skeleton Decoration Quest",
+   "pageid": 17016,
+   "revid": 842459,
+   "rev_timestamp": "2021-05-26T18:44:32Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Skull of Ratha Quest",
+   "pageid": 3782,
+   "revid": 756266,
+   "rev_timestamp": "2019-03-06T02:01:09Z",
+   "in_quest_log": false,
+   "implemented": "7.24",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/npc/mortimer.lua:607-651 SKULL OF RATHA dialogue"
+    ],
+    "crystalserver": [
+     "data-global/npc/mortimer.lua:560-564 same"
+    ]
+   }
+  },
+  {
+   "title": "Small Health Potion Quest",
+   "pageid": 3154,
+   "revid": 1043985,
+   "rev_timestamp": "2023-10-30T18:29:29Z",
+   "in_quest_log": false,
+   "implemented": "8.20",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "PARTIAL",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/npc/hyacinth.lua:109 […]"
+    ],
+    "crystalserver": [
+     "data-global/npc/hyacinth.lua:107 same dialogue"
+    ]
+   }
+  },
+  {
+   "title": "Small Ruby Quest",
+   "pageid": 58565,
+   "revid": 813267,
+   "rev_timestamp": "2020-08-10T12:46:03Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Small Sapphire Quest",
+   "pageid": 77573,
+   "revid": 846043,
+   "rev_timestamp": "2021-05-26T22:11:49Z",
+   "in_quest_log": false,
+   "implemented": "10.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Soil Guardian Outfits Quest",
+   "pageid": 60686,
+   "revid": 845628,
+   "rev_timestamp": "2021-05-26T21:49:32Z",
+   "in_quest_log": false,
+   "implemented": "9.60",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "npc/gnomally.lua token vouchers"
+    ],
+    "crystalserver": [
+     "npc/gnomally.lua token vouchers"
+    ]
+   }
+  },
+  {
+   "title": "Soul War Quest",
+   "pageid": 91798,
+   "revid": 1192477,
+   "rev_timestamp": "2026-06-27T09:35:13Z",
+   "in_quest_log": true,
+   "implemented": "12.40.9997",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Spider Nest Mini World Change",
+   "pageid": 76261,
+   "revid": 891484,
+   "rev_timestamp": "2021-11-17T00:32:35Z",
+   "in_quest_log": false,
+   "implemented": "9.60",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Spike Sword Quest",
+   "pageid": 3157,
+   "revid": 683980,
+   "rev_timestamp": "2016-11-28T14:19:38Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "startup/tables/chest.lua […]"
+    ],
+    "crystalserver": [
+     "startup/tables/chest.lua […]"
+    ]
+   }
+  },
+  {
+   "title": "Spike Tasks Quest",
+   "pageid": 65390,
+   "revid": 885773,
+   "rev_timestamp": "2021-09-18T09:59:51Z",
+   "in_quest_log": true,
+   "implemented": "10.20",
+   "premium": "yes",
+   "lvl": "Varies",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Spirit Grounds Mini World Change",
+   "pageid": 76263,
+   "revid": 891485,
+   "rev_timestamp": "2021-11-17T00:32:36Z",
+   "in_quest_log": false,
+   "implemented": "10.20",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Spirithunters Quest",
+   "pageid": 50764,
+   "revid": 844628,
+   "rev_timestamp": "2021-05-26T21:00:14Z",
+   "in_quest_log": false,
+   "implemented": "8.70",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Spring into Life",
+   "pageid": 58901,
+   "revid": 845338,
+   "rev_timestamp": "2021-05-26T21:40:47Z",
+   "in_quest_log": false,
+   "implemented": "9.50",
+   "premium": "partial",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Stampede Mini World Change",
+   "pageid": 76265,
+   "revid": 845239,
+   "rev_timestamp": "2021-05-26T21:36:38Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Steal From Thieves Quest",
+   "pageid": 20034,
+   "revid": 842913,
+   "rev_timestamp": "2021-05-26T19:32:43Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/npc/ahmet.lua:121-154 StealFromThieves dialogue"
+    ],
+    "crystalserver": [
+     "data-global/npc/ahmet.lua:119-148 same"
+    ]
+   }
+  },
+  {
+   "title": "Stealth Ring Quest",
+   "pageid": 3230,
+   "revid": 683987,
+   "rev_timestamp": "2016-11-28T14:20:01Z",
+   "in_quest_log": false,
+   "implemented": "6.61-6.97",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1663 -- Stealth Ring Quest (stealhring1/2)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1948 -- Stealth Ring Quest"
+    ]
+   }
+  },
+  {
+   "title": "Steamship World Change",
+   "pageid": 54705,
+   "revid": 891478,
+   "rev_timestamp": "2021-11-17T00:26:44Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Steel Helmet Quest",
+   "pageid": 4647,
+   "revid": 683989,
+   "rev_timestamp": "2016-11-28T14:20:07Z",
+   "in_quest_log": false,
+   "implemented": "6.61-6.97",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1678 -- Steel Helmet Quest (steelhelmet1/2/3/4)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1963 -- Steel Helmet Quest (questName steelhelmet1)"
+    ]
+   }
+  },
+  {
+   "title": "Strong Potions Quest",
+   "pageid": 22477,
+   "revid": 1090714,
+   "rev_timestamp": "2025-02-11T11:04:45Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Studded Legs Quest",
+   "pageid": 3225,
+   "revid": 1044892,
+   "rev_timestamp": "2023-11-11T01:09:04Z",
+   "in_quest_log": false,
+   "implemented": "7.11 (2)",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Studded Shield Quest",
+   "pageid": 3213,
+   "revid": 1044893,
+   "rev_timestamp": "2023-11-11T01:09:23Z",
+   "in_quest_log": false,
+   "implemented": "6.0",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:401 -- Studded shield quest (rookgaard) (questName bananafree/bananapremium/explorerbrooch)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:700 -- Studded shield quest (rookgaard)"
+    ]
+   }
+  },
+  {
+   "title": "Summoner Outfits Quest",
+   "pageid": 8776,
+   "revid": 976543,
+   "rev_timestamp": "2022-10-30T02:03:25Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/npc/zoltan.lua:94-104 Storage.Quest.U7_8.MageAndSummonerOutfits.Addon1/2 dialogue"
+    ],
+    "crystalserver": [
+     "data-global/npc/zoltan.lua:92-101 same"
+    ]
+   }
+  },
+  {
+   "title": "Swamp Fever World Change",
+   "pageid": 54559,
+   "revid": 844892,
+   "rev_timestamp": "2021-05-26T21:10:08Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Targuna Quest",
+   "pageid": 110219,
+   "revid": 1172822,
+   "rev_timestamp": "2026-04-06T21:55:27Z",
+   "in_quest_log": true,
+   "implemented": "15.24.95dcf3",
+   "premium": "no",
+   "lvl": "10 / 12",
+   "canary": "ABSENT",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Thais Lighthouse Quest",
+   "pageid": 3159,
+   "revid": 1043475,
+   "rev_timestamp": "2023-10-24T08:45:04Z",
+   "in_quest_log": false,
+   "implemented": "3.0",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Thawing Mini World Change",
+   "pageid": 76267,
+   "revid": 845260,
+   "rev_timestamp": "2021-05-26T21:37:15Z",
+   "in_quest_log": false,
+   "implemented": "9.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Ancient Tombs Quest",
+   "pageid": 3792,
+   "revid": 756365,
+   "rev_timestamp": "2019-03-06T15:37:53Z",
+   "in_quest_log": true,
+   "implemented": "7.4",
+   "premium": "yes",
+   "lvl": "75",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Annihilator Quest",
+   "pageid": 2520,
+   "revid": 1090717,
+   "rev_timestamp": "2025-02-11T11:04:54Z",
+   "in_quest_log": false,
+   "implemented": "7.24",
+   "premium": "yes",
+   "lvl": "100",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Ape City Quest",
+   "pageid": 5573,
+   "revid": 683999,
+   "rev_timestamp": "2016-11-28T14:20:38Z",
+   "in_quest_log": true,
+   "implemented": "7.6",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Beginning Quest",
+   "pageid": 25540,
+   "revid": 843247,
+   "rev_timestamp": "2021-05-26T20:02:09Z",
+   "in_quest_log": true,
+   "implemented": "8.20",
+   "premium": "no",
+   "lvl": "1",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Blessed Stake Quest",
+   "pageid": 27471,
+   "revid": 684001,
+   "rev_timestamp": "2016-11-28T14:20:45Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/008_friends_and_traders.lua:33-34 name/storageId TheBlessedStake"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:684-685"
+    ]
+   }
+  },
+  {
+   "title": "The Colours of Magic",
+   "pageid": 50851,
+   "revid": 844647,
+   "rev_timestamp": "2021-05-26T21:00:48Z",
+   "in_quest_log": false,
+   "implemented": "8.70",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Cradle of Monsters Quest",
+   "pageid": 101100,
+   "revid": 981405,
+   "rev_timestamp": "2022-11-28T11:21:01Z",
+   "in_quest_log": true,
+   "implemented": "13.10.12852",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Cursed Crystal Quest",
+   "pageid": 69489,
+   "revid": 846958,
+   "rev_timestamp": "2021-05-26T22:41:56Z",
+   "in_quest_log": false,
+   "implemented": "10.70",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Demon Oak Quest",
+   "pageid": 25988,
+   "revid": 843256,
+   "rev_timestamp": "2021-05-26T20:02:17Z",
+   "in_quest_log": false,
+   "implemented": "8.20",
+   "premium": "yes",
+   "lvl": "120",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Desert Dungeon Quest",
+   "pageid": 2496,
+   "revid": 1103387,
+   "rev_timestamp": "2025-05-22T13:07:36Z",
+   "in_quest_log": true,
+   "implemented": "6.1",
+   "premium": "no",
+   "lvl": "20",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Djinn War - Efreet Faction",
+   "pageid": 3788,
+   "revid": 756363,
+   "rev_timestamp": "2019-03-06T15:36:06Z",
+   "in_quest_log": true,
+   "implemented": "7.4",
+   "premium": "yes",
+   "lvl": "40",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Djinn War - Marid Faction",
+   "pageid": 3787,
+   "revid": 756364,
+   "rev_timestamp": "2019-03-06T15:36:08Z",
+   "in_quest_log": true,
+   "implemented": "7.4",
+   "premium": "yes",
+   "lvl": "40",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Dream Courts Quest",
+   "pageid": 86673,
+   "revid": 930813,
+   "rev_timestamp": "2022-06-13T21:42:37Z",
+   "in_quest_log": true,
+   "implemented": "12.00.7695",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Explorer Society Quest",
+   "pageid": 4954,
+   "revid": 725344,
+   "rev_timestamp": "2018-01-18T13:29:31Z",
+   "in_quest_log": true,
+   "implemented": "7.6",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Exterminator Quest",
+   "pageid": 20028,
+   "revid": 842929,
+   "rev_timestamp": "2021-05-26T19:33:52Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua:166-167 name/storageId TheExterminator"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:4580-4581"
+    ]
+   }
+  },
+  {
+   "title": "The Fire-Feathered Serpent World Change",
+   "pageid": 85784,
+   "revid": 891479,
+   "rev_timestamp": "2021-11-17T00:26:46Z",
+   "in_quest_log": false,
+   "implemented": "10.70",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The First Dragon Quest",
+   "pageid": 80244,
+   "revid": 1048348,
+   "rev_timestamp": "2023-12-15T11:59:58Z",
+   "in_quest_log": true,
+   "implemented": "11.02.4128",
+   "premium": "yes",
+   "lvl": "40",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Gravedigger of Drefia Quest",
+   "pageid": 64408,
+   "revid": 846064,
+   "rev_timestamp": "2021-05-26T22:12:16Z",
+   "in_quest_log": true,
+   "implemented": "10.10",
+   "premium": "yes",
+   "lvl": "50",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Great Dragon Hunt Quest",
+   "pageid": 75167,
+   "revid": 847146,
+   "rev_timestamp": "2021-05-26T22:47:36Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Great Expedition",
+   "pageid": 111211,
+   "revid": 1199354,
+   "rev_timestamp": "2026-08-05T11:59:37Z",
+   "in_quest_log": false,
+   "implemented": "15.32.f84c0e",
+   "premium": "no",
+   "lvl": "20",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "The Hidden City of Beregar Quest",
+   "pageid": 30690,
+   "revid": 843688,
+   "rev_timestamp": "2021-05-26T20:19:28Z",
+   "in_quest_log": true,
+   "implemented": "8.40",
+   "premium": "yes",
+   "lvl": "0 (100 For The Firewalker Boots Part)",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Hunt for the Sea Serpent Quest",
+   "pageid": 25541,
+   "revid": 843261,
+   "rev_timestamp": "2021-05-26T20:02:26Z",
+   "in_quest_log": false,
+   "implemented": "8.20",
+   "premium": "yes",
+   "lvl": "61",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Ice Islands Quest",
+   "pageid": 16660,
+   "revid": 1071550,
+   "rev_timestamp": "2024-07-23T16:01:30Z",
+   "in_quest_log": true,
+   "implemented": "",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Inquisition Quest",
+   "pageid": 25383,
+   "revid": 1188871,
+   "rev_timestamp": "2026-06-11T19:43:09Z",
+   "in_quest_log": true,
+   "implemented": "8.20",
+   "premium": "yes",
+   "lvl": "100",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Isle of Evil Quest",
+   "pageid": 36716,
+   "revid": 843974,
+   "rev_timestamp": "2021-05-26T20:31:06Z",
+   "in_quest_log": true,
+   "implemented": "8.50",
+   "premium": "yes",
+   "lvl": "35",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Lightbearer",
+   "pageid": 50847,
+   "revid": 1090658,
+   "rev_timestamp": "2025-02-10T02:00:29Z",
+   "in_quest_log": false,
+   "implemented": "8.50",
+   "premium": "partial",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Lost Brother Quest",
+   "pageid": 75165,
+   "revid": 933445,
+   "rev_timestamp": "2022-06-25T15:42:00Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Mage's Tower World Change",
+   "pageid": 54564,
+   "revid": 844897,
+   "rev_timestamp": "2021-05-26T21:10:16Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Mermaid Marina Quest",
+   "pageid": 27470,
+   "revid": 684020,
+   "rev_timestamp": "2016-11-28T14:21:50Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/008_friends_and_traders.lua:20-21 name/storageId TheMermaidMarina"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:671-672"
+    ]
+   }
+  },
+  {
+   "title": "The Mummy's Curse World Change",
+   "pageid": 54567,
+   "revid": 844898,
+   "rev_timestamp": "2021-05-26T21:10:17Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "yes",
+   "lvl": "None",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The New Frontier Quest",
+   "pageid": 41754,
+   "revid": 1058656,
+   "rev_timestamp": "2024-04-22T23:12:09Z",
+   "in_quest_log": true,
+   "implemented": "8.54",
+   "premium": "yes",
+   "lvl": "77*(for the last mission only)",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Order of the Lion Quest",
+   "pageid": 91781,
+   "revid": 847762,
+   "rev_timestamp": "2021-05-27T08:11:06Z",
+   "in_quest_log": true,
+   "implemented": "12.40.9997",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Order of the Stag Quest",
+   "pageid": 109438,
+   "revid": 1194880,
+   "rev_timestamp": "2026-07-07T23:06:52Z",
+   "in_quest_log": true,
+   "implemented": "15.20.7a5cc9",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "ABSENT",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [],
+    "crystalserver": [
+     "data/scripts/lib/register_achievements.lua:575 [572] […] achievement: […] (Winter Update 2025)"
+    ]
+   }
+  },
+  {
+   "title": "The Outlaw Camp Quest",
+   "pageid": 3557,
+   "revid": 1043657,
+   "rev_timestamp": "2023-10-25T14:01:29Z",
+   "in_quest_log": true,
+   "implemented": "6.4",
+   "premium": "no",
+   "lvl": "45",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Paradox Tower Quest",
+   "pageid": 3231,
+   "revid": 889277,
+   "rev_timestamp": "2021-10-18T20:28:21Z",
+   "in_quest_log": true,
+   "implemented": "6.61-6.97",
+   "premium": "yes",
+   "lvl": "30",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Pits of Inferno Quest",
+   "pageid": 12220,
+   "revid": 1103332,
+   "rev_timestamp": "2025-05-21T16:00:21Z",
+   "in_quest_log": true,
+   "implemented": "7.9",
+   "premium": "yes",
+   "lvl": "80",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Postman Missions Quest",
+   "pageid": 2861,
+   "revid": 1013319,
+   "rev_timestamp": "2023-07-14T14:47:14Z",
+   "in_quest_log": true,
+   "implemented": "7.24",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Queen of the Banshees Quest",
+   "pageid": 3216,
+   "revid": 1038207,
+   "rev_timestamp": "2023-09-15T13:18:35Z",
+   "in_quest_log": true,
+   "implemented": "7.2",
+   "premium": "no",
+   "lvl": "60",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Repenters Quest",
+   "pageid": 64474,
+   "revid": 846070,
+   "rev_timestamp": "2021-05-26T22:12:26Z",
+   "in_quest_log": true,
+   "implemented": "10.10",
+   "premium": "no",
+   "lvl": "0?",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Rookie Guard Quest",
+   "pageid": 53931,
+   "revid": 891816,
+   "rev_timestamp": "2021-11-22T14:50:36Z",
+   "in_quest_log": true,
+   "implemented": "9.10",
+   "premium": "no",
+   "lvl": "0 - 5",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Roost of the Graveborn Quest",
+   "pageid": 109735,
+   "revid": 1195314,
+   "rev_timestamp": "2026-07-11T20:23:09Z",
+   "in_quest_log": true,
+   "implemented": "15.20.7a5cc9",
+   "premium": "yes",
+   "lvl": "450",
+   "canary": "ABSENT",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [],
+    "crystalserver": [
+     "data-global/monster/winter_update_2025/quests/bonelords_phylactery.lua, fatal_bug.lua, bosses/bone_overlord.lua etc — […] loot drops"
+    ]
+   }
+  },
+  {
+   "title": "The Scatterbrained Sorcerer Quest",
+   "pageid": 36950,
+   "revid": 843982,
+   "rev_timestamp": "2021-05-26T20:31:22Z",
+   "in_quest_log": true,
+   "implemented": "8.50",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Secret Library Quest",
+   "pageid": 85333,
+   "revid": 848922,
+   "rev_timestamp": "2021-05-27T09:11:07Z",
+   "in_quest_log": true,
+   "implemented": "11.80.7048",
+   "premium": "yes",
+   "lvl": "250",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Shattered Isles Quest",
+   "pageid": 8825,
+   "revid": 1006041,
+   "rev_timestamp": "2023-06-17T11:39:06Z",
+   "in_quest_log": true,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "20",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Spirit Will Get You Quest",
+   "pageid": 46745,
+   "revid": 844389,
+   "rev_timestamp": "2021-05-26T20:50:56Z",
+   "in_quest_log": false,
+   "implemented": "8.60",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Sweaty Cyclops Quest",
+   "pageid": 27469,
+   "revid": 684033,
+   "rev_timestamp": "2016-11-28T14:22:35Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/008_friends_and_traders.lua:7-8 name/storageId TheSweatyCyclops"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:658-659"
+    ]
+   }
+  },
+  {
+   "title": "The Tainted Souls Quest",
+   "pageid": 75168,
+   "revid": 847155,
+   "rev_timestamp": "2021-05-26T22:47:48Z",
+   "in_quest_log": false,
+   "implemented": "10.80",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Thieves Guild Quest",
+   "pageid": 25436,
+   "revid": 1090720,
+   "rev_timestamp": "2025-02-11T11:05:04Z",
+   "in_quest_log": true,
+   "implemented": "8.20",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Travelling Trader Quest",
+   "pageid": 20083,
+   "revid": 1159575,
+   "rev_timestamp": "2026-01-31T11:29:14Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The Ultimate Booze Quest",
+   "pageid": 20029,
+   "revid": 842934,
+   "rev_timestamp": "2021-05-26T19:34:06Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua:180-189 name/storageId UltimateBoozeQuest"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:4594-4603"
+    ]
+   }
+  },
+  {
+   "title": "The Way of the Monk Quest",
+   "pageid": 108376,
+   "revid": 1169052,
+   "rev_timestamp": "2026-03-21T20:57:33Z",
+   "in_quest_log": true,
+   "implemented": "15.00.249ccc",
+   "premium": "yes",
+   "lvl": "275",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "The White Raven Monastery Quest",
+   "pageid": 3766,
+   "revid": 756263,
+   "rev_timestamp": "2019-03-06T01:57:17Z",
+   "in_quest_log": true,
+   "implemented": "7.24",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Their Master's Voice World Change",
+   "pageid": 54568,
+   "revid": 1110635,
+   "rev_timestamp": "2025-07-15T18:05:53Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "yes",
+   "lvl": "8+",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Thornfire World Change",
+   "pageid": 54125,
+   "revid": 844903,
+   "rev_timestamp": "2021-05-26T21:10:26Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "no",
+   "lvl": "None",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Threatened Dreams Quest",
+   "pageid": 81362,
+   "revid": 1070008,
+   "rev_timestamp": "2024-07-12T18:08:18Z",
+   "in_quest_log": true,
+   "implemented": "11.40.5409",
+   "premium": "yes",
+   "lvl": "30",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Throwing Star Quest",
+   "pageid": 4774,
+   "revid": 684041,
+   "rev_timestamp": "2016-11-28T14:22:59Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:1537 -- Throwing Star Quest (reward 3287 throwing star)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:1822 -- Throwing Star Quest"
+    ]
+   }
+  },
+  {
+   "title": "Tibia Anniversary",
+   "pageid": 87455,
+   "revid": 896897,
+   "rev_timestamp": "2022-01-07T12:52:49Z",
+   "in_quest_log": false,
+   "implemented": "12.02.7746",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Tibia Tales",
+   "pageid": 22849,
+   "revid": 842968,
+   "rev_timestamp": "2021-05-26T19:39:52Z",
+   "in_quest_log": true,
+   "implemented": "8.10",
+   "premium": "partial",
+   "lvl": "0 - 61",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Time Ring Quest",
+   "pageid": 2731,
+   "revid": 684042,
+   "rev_timestamp": "2016-11-28T14:23:02Z",
+   "in_quest_log": false,
+   "implemented": "7.1",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:648 -- Time Ring Quest (timering1/2/3)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua -- Time Ring Quest (timering1/2/3), mirrors canary"
+    ]
+   }
+  },
+  {
+   "title": "Tinder Box Quest",
+   "pageid": 76271,
+   "revid": 791138,
+   "rev_timestamp": "2020-02-29T11:43:56Z",
+   "in_quest_log": false,
+   "implemented": "10.37",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/scripts/quests/tinder_box_quest_chyllfroest/actions_tinder_box.lua:7-19 dedicated Action"
+    ],
+    "crystalserver": [
+     "data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_tinder_box.lua:7-20"
+    ]
+   }
+  },
+  {
+   "title": "To Appease the Mighty Quest",
+   "pageid": 20030,
+   "revid": 842941,
+   "rev_timestamp": "2021-05-26T19:34:27Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "30",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua:7-8 name/storageId ToAppeaseTheMightyQuest"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:4421-4422"
+    ]
+   }
+  },
+  {
+   "title": "To Blind the Enemy Quest",
+   "pageid": 20031,
+   "revid": 1091434,
+   "rev_timestamp": "2025-02-20T15:15:24Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "To Outfox a Fox Quest",
+   "pageid": 20032,
+   "revid": 842943,
+   "rev_timestamp": "2021-05-26T19:34:42Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua:265-266 name/storageId ToOutfoxAFoxQuest"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:4679-4685"
+    ]
+   }
+  },
+  {
+   "title": "Tomes of Knowledge Quest",
+   "pageid": 42701,
+   "revid": 684047,
+   "rev_timestamp": "2016-11-28T14:23:17Z",
+   "in_quest_log": false,
+   "implemented": "8.54",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Too Hot to Handle Quest",
+   "pageid": 94741,
+   "revid": 1107074,
+   "rev_timestamp": "2025-06-28T20:16:03Z",
+   "in_quest_log": true,
+   "implemented": "12.70.10953",
+   "premium": "yes",
+   "lvl": "80",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "ABSENT"
+  },
+  {
+   "title": "Top of the City Quest",
+   "pageid": 30757,
+   "revid": 1059697,
+   "rev_timestamp": "2024-05-21T17:25:59Z",
+   "in_quest_log": false,
+   "implemented": "8.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Torch Quest",
+   "pageid": 3153,
+   "revid": 716096,
+   "rev_timestamp": "2017-11-21T22:09:08Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Tower Defence Quest",
+   "pageid": 20035,
+   "revid": 842945,
+   "rev_timestamp": "2021-05-26T19:34:54Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Treasure Hunt Quest",
+   "pageid": 37108,
+   "revid": 843992,
+   "rev_timestamp": "2021-05-26T20:31:40Z",
+   "in_quest_log": false,
+   "implemented": "8.50",
+   "premium": "yes",
+   "lvl": "35 (The Shattered Isles Quest)",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Treasure Island Quest",
+   "pageid": 9265,
+   "revid": 684052,
+   "rev_timestamp": "2016-11-28T14:23:33Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Triangle Tower Quest",
+   "pageid": 3170,
+   "revid": 1090723,
+   "rev_timestamp": "2025-02-11T11:05:13Z",
+   "in_quest_log": false,
+   "implemented": "",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Troll Cave Quest",
+   "pageid": 2847,
+   "revid": 684054,
+   "rev_timestamp": "2016-11-28T14:23:39Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:573 -- Troll cave quest (questName trollcave1)"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:5666 […]"
+    ]
+   }
+  },
+  {
+   "title": "Troll Sabotage Quest",
+   "pageid": 25544,
+   "revid": 1095877,
+   "rev_timestamp": "2025-03-19T12:20:19Z",
+   "in_quest_log": false,
+   "implemented": "8.20",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Tutorial",
+   "pageid": 66614,
+   "revid": 791148,
+   "rev_timestamp": "2020-02-29T11:44:15Z",
+   "in_quest_log": false,
+   "implemented": "10.32",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/018_the_beginning.lua:74-75 […]"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/storages.lua:298 Tutorial = 52276"
+    ]
+   }
+  },
+  {
+   "title": "Twenty Miles Beneath the Sea Quest",
+   "pageid": 69582,
+   "revid": 1023387,
+   "rev_timestamp": "2023-07-29T22:29:39Z",
+   "in_quest_log": true,
+   "implemented": "10.70",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Twisted Waters World Change",
+   "pageid": 54198,
+   "revid": 844910,
+   "rev_timestamp": "2021-05-26T21:10:34Z",
+   "in_quest_log": false,
+   "implemented": "9.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Unnatural Selection Quest",
+   "pageid": 41846,
+   "revid": 684058,
+   "rev_timestamp": "2016-11-28T14:23:52Z",
+   "in_quest_log": true,
+   "implemented": "8.54",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Vampire Hunter Quest",
+   "pageid": 26840,
+   "revid": 843291,
+   "rev_timestamp": "2021-05-26T20:03:22Z",
+   "in_quest_log": false,
+   "implemented": "8.20",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Vampire Shield Quest",
+   "pageid": 3799,
+   "revid": 1090729,
+   "rev_timestamp": "2025-02-11T11:05:29Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "70",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:588 -- Vampire shield quest (vampireshield2/3)"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:3482 same Demon Forge reference"
+    ]
+   }
+  },
+  {
+   "title": "Venore Daily Tasks Quest",
+   "pageid": 61789,
+   "revid": 845862,
+   "rev_timestamp": "2021-05-26T22:02:51Z",
+   "in_quest_log": true,
+   "implemented": "9.80",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Voodoo Doll Quest",
+   "pageid": 5234,
+   "revid": 1106155,
+   "rev_timestamp": "2025-06-21T16:20:58Z",
+   "in_quest_log": false,
+   "implemented": "7.24",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "War Against the Hive Quest",
+   "pageid": 56915,
+   "revid": 845288,
+   "rev_timestamp": "2021-05-26T21:38:04Z",
+   "in_quest_log": true,
+   "implemented": "9.40",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Warmaster Outfits Quest",
+   "pageid": 42269,
+   "revid": 795619,
+   "rev_timestamp": "2020-03-09T20:30:15Z",
+   "in_quest_log": false,
+   "implemented": "8.54",
+   "premium": "yes",
+   "lvl": "80",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "npc/cael.lua"
+    ],
+    "crystalserver": [
+     "npc/cael.lua"
+    ]
+   }
+  },
+  {
+   "title": "Warpath Mini World Change",
+   "pageid": 76269,
+   "revid": 845669,
+   "rev_timestamp": "2021-05-26T21:50:41Z",
+   "in_quest_log": false,
+   "implemented": "9.60",
+   "premium": "no",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Warrior Outfits Quest",
+   "pageid": 8778,
+   "revid": 684066,
+   "rev_timestamp": "2016-11-28T14:24:20Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Waterfall Quest",
+   "pageid": 20657,
+   "revid": 842957,
+   "rev_timestamp": "2021-05-26T19:35:38Z",
+   "in_quest_log": false,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Waterskin of Mead Quest",
+   "pageid": 23403,
+   "revid": 842524,
+   "rev_timestamp": "2021-05-26T18:46:27Z",
+   "in_quest_log": false,
+   "implemented": "8.00",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/022_the_ice_islands_quest.lua:87,192 Nilsor dogs / drinking challenge"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/storages.lua:713,881-882 same storages"
+    ]
+   }
+  },
+  {
+   "title": "Wayfarer Outfits Quest",
+   "pageid": 46398,
+   "revid": 844411,
+   "rev_timestamp": "2021-05-26T20:51:35Z",
+   "in_quest_log": false,
+   "implemented": "8.60",
+   "premium": "yes",
+   "lvl": "80",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Wedding Ring Quest",
+   "pageid": 12743,
+   "revid": 1090731,
+   "rev_timestamp": "2025-02-11T11:05:37Z",
+   "in_quest_log": false,
+   "implemented": "6.4",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/startup/tables/chest.lua:603 -- Wedding Ring Quest (weddingring1/2)"
+    ],
+    "crystalserver": [
+     "data-global/startup/tables/chest.lua:902 -- Wedding Ring Quest (weddingring1/2)"
+    ]
+   }
+  },
+  {
+   "title": "What a Foolish Quest",
+   "pageid": 19799,
+   "revid": 1094085,
+   "rev_timestamp": "2025-03-06T15:06:16Z",
+   "in_quest_log": true,
+   "implemented": "8.10",
+   "premium": "yes",
+   "lvl": "40*",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Winterlight Solstice",
+   "pageid": 87276,
+   "revid": 1048344,
+   "rev_timestamp": "2023-12-15T08:44:18Z",
+   "in_quest_log": false,
+   "implemented": "12.02.7746",
+   "premium": "yes",
+   "lvl": "",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Within the Tides Quest",
+   "pageid": 98526,
+   "revid": 1036406,
+   "rev_timestamp": "2023-08-21T16:17:03Z",
+   "in_quest_log": true,
+   "implemented": "12.90.12182",
+   "premium": "yes",
+   "lvl": "",
+   "canary": "ABSENT",
+   "crystalserver": "ABSENT",
+   "evidence": {
+    "canary": [],
+    "crystalserver": []
+   }
+  },
+  {
+   "title": "Wizard Outfits Quest",
+   "pageid": 8579,
+   "revid": 1097930,
+   "rev_timestamp": "2025-04-05T21:14:29Z",
+   "in_quest_log": false,
+   "implemented": "7.8",
+   "premium": "yes",
+   "lvl": "0",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Wrath of the Emperor Quest",
+   "pageid": 46607,
+   "revid": 1103764,
+   "rev_timestamp": "2025-05-31T18:39:57Z",
+   "in_quest_log": true,
+   "implemented": "8.60",
+   "premium": "yes",
+   "lvl": "80 (Expertise door during mission 8)",
+   "canary": "IMPLEMENTED",
+   "crystalserver": "IMPLEMENTED"
+  },
+  {
+   "title": "Yalaharian Outfits Quest",
+   "pageid": 68910,
+   "revid": 843726,
+   "rev_timestamp": "2021-05-26T20:20:42Z",
+   "in_quest_log": false,
+   "implemented": "8.40",
+   "premium": "yes",
+   "lvl": "80",
+   "canary": "PARTIAL",
+   "crystalserver": "PARTIAL",
+   "evidence": {
+    "canary": [
+     "data-otservbr-global/lib/core/quests/catalog/010_in_service_of_yalahar.lua:170 […] (faction-completion reward)"
+    ],
+    "crystalserver": [
+     "data-global/lib/core/quests.lua:924 same […] line"
+    ]
+   }
+  }
+ ],
+ "counts": {
+  "canary": {
+   "ABSENT": 40,
+   "IMPLEMENTED": 324,
+   "PARTIAL": 9
+  },
+  "crystalserver": {
+   "ABSENT": 32,
+   "IMPLEMENTED": 328,
+   "PARTIAL": 13
+  }
+ }
+}

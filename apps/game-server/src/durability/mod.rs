@@ -8,17 +8,140 @@ pub mod admission_authority_guards;
 mod admission_journal;
 pub mod character_authority;
 pub mod character_authority_audit;
+pub mod character_progression;
+pub mod content_activation;
 mod db;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
+pub mod item_decay_retire;
+pub mod item_decay_retire_audit;
+pub mod item_mint;
+pub mod item_mint_audit;
+pub mod item_transfer;
+pub mod item_transfer_audit;
 pub mod native_admission_source;
 pub mod recovery_evidence_composition;
+pub mod reward_claim_mint;
+pub mod reward_claim_mint_audit;
 pub mod runtime_scope_assignment;
 mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+
+#[cfg(test)]
+mod character_progression_linkage {
+    use super::DurabilityRoot;
+    use super::character_progression::{
+        CharacterProgressionError, CharacterProgressionState, CommittedExperienceAward,
+        CurrentCharacterGameplayFence, ExperienceAwardRequest, ExperienceCommitOutcome,
+        ExperienceRewardOccurrence, ProgressionInitializationOutcome,
+        ProgressionInitializationRequest,
+    };
+
+    #[test]
+    fn character_progression_api_is_linked() {
+        let _ = std::mem::size_of::<CharacterProgressionError>();
+        let _ = std::mem::size_of::<CharacterProgressionState>();
+        let _ = std::mem::size_of::<CommittedExperienceAward>();
+        let _ = std::mem::size_of::<CurrentCharacterGameplayFence>();
+        let _ = std::mem::size_of::<ExperienceAwardRequest<2>>();
+        let _ = std::mem::size_of::<ExperienceCommitOutcome>();
+        let _ = ExperienceRewardOccurrence::from_bytes;
+        let _ = ExperienceRewardOccurrence::as_bytes;
+        let _ = DurabilityRoot::commit_character_experience::<2>;
+        let _ = DurabilityRoot::reconcile_character_experience;
+        let _ = DurabilityRoot::read_character_progression;
+        let _ = std::mem::size_of::<ProgressionInitializationRequest<2>>();
+        let _ = std::mem::size_of::<ProgressionInitializationOutcome>();
+        let _ = DurabilityRoot::initialize_character_progression::<2>;
+    }
+}
+
+#[cfg(test)]
+mod item_mint_linkage {
+    use super::DurabilityRoot;
+    use super::item_mint::ItemMintCandidate;
+
+    #[test]
+    fn item_mint_api_is_linked() {
+        let _ = ItemMintCandidate::transaction_id;
+        let _ = ItemMintCandidate::event_id;
+        let _ = ItemMintCandidate::item_instance_id;
+        let _ = ItemMintCandidate::occurred_at_unix_ms;
+        let _ = ItemMintCandidate::envelope;
+        let _ = ItemMintCandidate::work_units_used;
+        let _ = DurabilityRoot::freeze_item_mint;
+        let _ = DurabilityRoot::commit_item_mint;
+        let _ = DurabilityRoot::reconcile_item_mint;
+        let _ = DurabilityRoot::read_item_instance;
+    }
+}
+
+#[cfg(test)]
+mod item_transfer_linkage {
+    use super::DurabilityRoot;
+    use super::item_transfer::ItemTransferCandidate;
+
+    #[test]
+    fn item_transfer_api_is_linked() {
+        let _ = ItemTransferCandidate::transaction_id;
+        let _ = ItemTransferCandidate::event_id;
+        let _ = ItemTransferCandidate::occurred_at_unix_ms;
+        let _ = ItemTransferCandidate::work_units_used;
+        let _ = DurabilityRoot::freeze_item_transfer;
+        let _ = DurabilityRoot::commit_item_transfer;
+        let _ = DurabilityRoot::reconcile_item_transfer;
+        let _ = DurabilityRoot::read_character_backpack;
+        let _ = DurabilityRoot::read_item_source_location;
+    }
+}
+
+#[cfg(test)]
+mod item_decay_retire_linkage {
+    use super::DurabilityRoot;
+    use super::item_decay_retire::{
+        CorpseDecayReport, CorpseDecaySchedule, DecayRetireCandidate, DecayRetireOutcome,
+    };
+
+    #[test]
+    fn item_decay_retire_api_is_linked() {
+        let _ = DecayRetireCandidate::step;
+        let _ = DecayRetireCandidate::transaction_id;
+        let _ = DecayRetireCandidate::event_id;
+        let _ = DecayRetireCandidate::occurred_at_unix_ms;
+        let _ = DecayRetireCandidate::deadline_unix_ms;
+        let _ = DecayRetireCandidate::envelope;
+        let _ = DecayRetireCandidate::work_units_used;
+        let _ = DecayRetireOutcome::into_committed;
+        let _ = std::mem::size_of::<CorpseDecayReport>();
+        let _ = std::mem::size_of::<CorpseDecaySchedule>();
+        let _ = DurabilityRoot::freeze_decay_retire;
+        let _ = DurabilityRoot::commit_decay_retire;
+        let _ = DurabilityRoot::reconcile_decay_retire;
+        let _ = DurabilityRoot::read_corpse_decay_schedule;
+        let _ = DurabilityRoot::retire_decayed_corpse;
+    }
+}
+
+#[cfg(test)]
+mod reward_claim_mint_linkage {
+    use super::DurabilityRoot;
+    use super::reward_claim_mint::RewardClaimMintCandidate;
+
+    #[test]
+    fn reward_claim_mint_api_is_linked() {
+        let _ = RewardClaimMintCandidate::transaction_id;
+        let _ = RewardClaimMintCandidate::event_id;
+        let _ = RewardClaimMintCandidate::item_instance_id;
+        let _ = RewardClaimMintCandidate::occurred_at_unix_ms;
+        let _ = RewardClaimMintCandidate::work_units_used;
+        let _ = DurabilityRoot::freeze_reward_claim_mint;
+        let _ = DurabilityRoot::commit_reward_claim_mint;
+        let _ = DurabilityRoot::reconcile_reward_claim_mint;
+    }
+}
 
 #[cfg(test)]
 mod fresh_admission_composition_linkage {
@@ -35,6 +158,7 @@ mod fresh_admission_composition_linkage {
         let _ = DurabilityRoot::publish_fresh_admission_sources;
         let _ = DurabilityRoot::compose_fresh_admission;
         let _ = DurabilityRoot::commit_composed_fresh_admission;
+        let _ = super::fresh_admission::FreshAdmissionStore::apply_registered_complete_reconnect;
     }
 }
 

@@ -17,7 +17,24 @@ struct Policy {
     test: BTreeSet<String>,
     tool: BTreeSet<String>,
     forbidden_fragments: Vec<String>,
+    /// Normal and build internal dependency edges: walked by `validate_acyclic` and
+    /// `validate_production_closure`.
     edges: BTreeMap<String, BTreeSet<String>>,
+    /// Dev-only internal dependency edges (`[dev-dependencies]` with a workspace `path`):
+    /// checked for exact equality against `cargo metadata`, like `edges`, but never walked by
+    /// `validate_production_closure` — a dev/qualification-only member reachable only through a
+    /// dev edge is not part of the shipped production closure. Unlisted members default to no
+    /// dev edges.
+    dev_edges: BTreeMap<String, BTreeSet<String>>,
+}
+
+/// One workspace member's internal dependency edges, split by `cargo metadata` dependency
+/// `kind`: `normal` covers `kind: null` (an ordinary `[dependencies]` entry) and `kind: "build"`
+/// (`[build-dependencies]`); `dev` covers `kind: "dev"` (`[dev-dependencies]`) only.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+struct MemberEdges {
+    normal: BTreeSet<String>,
+    dev: BTreeSet<String>,
 }
 
 struct MemberPathMapping {
@@ -32,18 +49,7 @@ pub fn validate_workspace(root: &Path) -> Result<(), String> {
     let metadata = cargo_metadata(root)?;
     let actual = validate_workspace_package_paths(&policy, &metadata)?;
     let actual_edges = internal_edges(&metadata, &actual)?;
-    for member in &policy.members {
-        let expected = policy
-            .edges
-            .get(member)
-            .ok_or_else(|| format!("missing edge declaration for {member}"))?;
-        let observed = actual_edges.get(member).cloned().unwrap_or_default();
-        if &observed != expected {
-            return Err(format!(
-                "internal edges differ for {member}: expected {expected:?}, actual {observed:?}"
-            ));
-        }
-    }
+    validate_declared_edges(&policy, &actual_edges)?;
     validate_acyclic(&policy.edges)?;
     validate_production_closure(&policy)?;
     for member in &policy.members {
@@ -81,20 +87,69 @@ fn validate_workspace_package_paths(
     Ok(actual)
 }
 
+/// Every member's declared `[edges]` (normal + build) and `[dev_edges]` (dev-only) must exactly
+/// equal what `cargo metadata` observes. A member absent from `[dev_edges]` is expected to have
+/// no dev-only internal edges.
+fn validate_declared_edges(
+    policy: &Policy,
+    actual_edges: &BTreeMap<String, MemberEdges>,
+) -> Result<(), String> {
+    for member in &policy.members {
+        let expected = policy
+            .edges
+            .get(member)
+            .ok_or_else(|| format!("missing edge declaration for {member}"))?;
+        let observed = actual_edges
+            .get(member)
+            .map(|edges| &edges.normal)
+            .cloned()
+            .unwrap_or_default();
+        if &observed != expected {
+            return Err(format!(
+                "internal edges differ for {member}: expected {expected:?}, actual {observed:?}"
+            ));
+        }
+        let expected_dev = policy.dev_edges.get(member).cloned().unwrap_or_default();
+        let observed_dev = actual_edges
+            .get(member)
+            .map(|edges| &edges.dev)
+            .cloned()
+            .unwrap_or_default();
+        if observed_dev != expected_dev {
+            return Err(format!(
+                "internal dev edges differ for {member}: expected {expected_dev:?}, actual {observed_dev:?}"
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Section {
+    None,
+    Edges,
+    DevEdges,
+}
+
 fn parse_policy(path: &Path) -> Result<Policy, String> {
     let content = fs::read_to_string(path)
         .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
     let mut arrays: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut forbidden_fragments = Vec::new();
     let mut edges = BTreeMap::new();
-    let mut in_edges = false;
+    let mut dev_edges = BTreeMap::new();
+    let mut section = Section::None;
     for raw_line in content.lines() {
         let line = raw_line.trim();
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
         if line == "[edges]" {
-            in_edges = true;
+            section = Section::Edges;
+            continue;
+        }
+        if line == "[dev_edges]" {
+            section = Section::DevEdges;
             continue;
         }
         let Some((key, value)) = line.split_once(" = ") else {
@@ -108,12 +163,19 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
         }
         let parsed: Vec<String> = serde_json::from_str(value)
             .map_err(|error| format!("invalid array for {key}: {error}"))?;
-        if in_edges {
-            edges.insert(key.to_owned(), parsed.into_iter().collect());
-        } else if key == "forbidden_package_fragments" {
-            forbidden_fragments = parsed;
-        } else {
-            arrays.insert(key.to_owned(), parsed);
+        match section {
+            Section::Edges => {
+                edges.insert(key.to_owned(), parsed.into_iter().collect());
+            }
+            Section::DevEdges => {
+                dev_edges.insert(key.to_owned(), parsed.into_iter().collect());
+            }
+            Section::None if key == "forbidden_package_fragments" => {
+                forbidden_fragments = parsed;
+            }
+            Section::None => {
+                arrays.insert(key.to_owned(), parsed);
+            }
         }
     }
     let take = |key: &str| {
@@ -137,6 +199,7 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
         tool: take_set("tool")?,
         forbidden_fragments,
         edges,
+        dev_edges,
     })
 }
 
@@ -215,6 +278,22 @@ fn validate_policy_shape(policy: &Policy) -> Result<(), String> {
     }
     if policy.edges.keys().cloned().collect::<BTreeSet<_>>() != policy.members {
         return Err("edge declarations do not cover every workspace member".to_owned());
+    }
+    // [dev_edges] is sparse (a member with no dev-only internal edge is simply absent), but
+    // every key and target it does name must still be a real workspace member.
+    for (member, targets) in &policy.dev_edges {
+        if !policy.members.contains(member) {
+            return Err(format!(
+                "dev edge declaration names unknown workspace member {member}"
+            ));
+        }
+        for target in targets {
+            if !policy.members.contains(target) {
+                return Err(format!(
+                    "dev edge from {member} names unknown workspace member {target}"
+                ));
+            }
+        }
     }
     Ok(())
 }
@@ -319,10 +398,15 @@ fn portable_relative_path(path: &Path) -> Result<String, String> {
     Ok(parts.join("/"))
 }
 
+/// Every workspace member's internal (`path`-based) dependency edges, split into `normal`
+/// (`kind: null` or `"build"`) and `dev` (`kind: "dev"`) by `cargo metadata`'s own dependency
+/// `kind`. A member's edge only ever needs the strongest kind it is declared at: a name that
+/// appears as both a normal and a dev-only internal dependency of the same member is folded into
+/// `normal`, since the normal edge already carries it through every closure walk.
 fn internal_edges(
     metadata: &Value,
     members: &BTreeSet<String>,
-) -> Result<BTreeMap<String, BTreeSet<String>>, String> {
+) -> Result<BTreeMap<String, MemberEdges>, String> {
     let packages = metadata
         .get("packages")
         .and_then(Value::as_array)
@@ -336,7 +420,7 @@ fn internal_edges(
         if !members.contains(name) {
             continue;
         }
-        let mut dependencies = BTreeSet::new();
+        let mut member_edges = MemberEdges::default();
         for dependency in package
             .get("dependencies")
             .and_then(Value::as_array)
@@ -347,12 +431,23 @@ fn internal_edges(
                     .get("name")
                     .and_then(Value::as_str)
                     .ok_or_else(|| format!("dependency in {name} lacks name"))?;
-                if members.contains(dependency_name) {
-                    dependencies.insert(dependency_name.to_owned());
+                if !members.contains(dependency_name) {
+                    continue;
+                }
+                let is_dev = dependency.get("kind").and_then(Value::as_str) == Some("dev");
+                if is_dev {
+                    member_edges.dev.insert(dependency_name.to_owned());
+                } else {
+                    member_edges.normal.insert(dependency_name.to_owned());
                 }
             }
         }
-        edges.insert(name.to_owned(), dependencies);
+        // A normal (or build) edge to the same target already carries it through every walk;
+        // do not also report it as a dev edge.
+        for target in &member_edges.normal {
+            member_edges.dev.remove(target);
+        }
+        edges.insert(name.to_owned(), member_edges);
     }
     Ok(edges)
 }
@@ -429,6 +524,7 @@ mod tests {
                 ("app".to_owned(), BTreeSet::from(["foundation".to_owned()])),
                 ("foundation".to_owned(), BTreeSet::new()),
             ]),
+            dev_edges: BTreeMap::new(),
         }
     }
 
@@ -449,6 +545,59 @@ mod tests {
                 }
             ]
         })
+    }
+
+    /// `structural_policy()`'s two members, plus a third `tool` package `app` may reach only
+    /// through an internal dependency of the given `kind` (`None` for a plain `[dependencies]`
+    /// entry, `Some("dev")` for `[dev-dependencies]`).
+    fn metadata_with_tool_dependency(kind: Option<&str>) -> Value {
+        serde_json::json!({
+            "workspace_root": "/workspace",
+            "workspace_members": ["app-id", "foundation-id", "tool-id"],
+            "packages": [
+                {
+                    "id": "app-id",
+                    "name": "app",
+                    "manifest_path": "/workspace/apps/app/Cargo.toml",
+                    "dependencies": [
+                        {
+                            "name": "foundation",
+                            "path": "/workspace/crates/foundation",
+                            "kind": Value::Null
+                        },
+                        {
+                            "name": "tool",
+                            "path": "/workspace/tools/tool",
+                            "kind": kind
+                        }
+                    ]
+                },
+                {
+                    "id": "foundation-id",
+                    "name": "foundation",
+                    "manifest_path": "/workspace/crates/foundation/Cargo.toml",
+                    "dependencies": []
+                },
+                {
+                    "id": "tool-id",
+                    "name": "tool",
+                    "manifest_path": "/workspace/tools/tool/Cargo.toml",
+                    "dependencies": []
+                }
+            ]
+        })
+    }
+
+    fn structural_policy_with_tool() -> Policy {
+        let mut policy = structural_policy();
+        policy.members.insert("tool".to_owned());
+        policy.paths.insert("tools/tool".to_owned());
+        policy
+            .member_paths
+            .insert("tool".to_owned(), "tools/tool".to_owned());
+        policy.tool.insert("tool".to_owned());
+        policy.edges.insert("tool".to_owned(), BTreeSet::new());
+        policy
     }
 
     #[test]
@@ -530,6 +679,84 @@ mod tests {
     fn production_root_must_have_production_role() {
         let mut policy = structural_policy();
         policy.production_roots = BTreeSet::from(["fixture".to_owned()]);
+        assert!(validate_policy_shape(&policy).is_err());
+    }
+
+    #[test]
+    fn internal_edges_splits_normal_build_and_dev_by_kind() -> Result<(), String> {
+        let members =
+            BTreeSet::from(["app".to_owned(), "foundation".to_owned(), "tool".to_owned()]);
+        for (kind, expect_dev) in [(None, false), (Some("build"), false), (Some("dev"), true)] {
+            let metadata = metadata_with_tool_dependency(kind);
+            let edges = internal_edges(&metadata, &members)?;
+            let app = edges.get("app").cloned().unwrap_or_default();
+            assert!(app.normal.contains("foundation"), "{kind:?}");
+            assert_eq!(app.normal.contains("tool"), !expect_dev, "{kind:?}");
+            assert_eq!(app.dev.contains("tool"), expect_dev, "{kind:?}");
+        }
+        Ok(())
+    }
+
+    /// A dev edge from a production root to a `tool` package is declared in `[dev_edges]` and
+    /// never walked by `validate_production_closure`, so it passes.
+    #[test]
+    fn declared_dev_edge_from_production_root_to_tool_passes_closure() -> Result<(), String> {
+        let metadata = metadata_with_tool_dependency(Some("dev"));
+        let members =
+            BTreeSet::from(["app".to_owned(), "foundation".to_owned(), "tool".to_owned()]);
+        let actual_edges = internal_edges(&metadata, &members)?;
+
+        let mut policy = structural_policy_with_tool();
+        policy
+            .dev_edges
+            .insert("app".to_owned(), BTreeSet::from(["tool".to_owned()]));
+
+        validate_declared_edges(&policy, &actual_edges)?;
+        assert!(validate_production_closure(&policy).is_ok());
+        Ok(())
+    }
+
+    /// The same dev edge, left undeclared in `[dev_edges]`, fails the exact-equality check
+    /// before closure is even considered.
+    #[test]
+    fn undeclared_dev_edge_fails() -> Result<(), String> {
+        let metadata = metadata_with_tool_dependency(Some("dev"));
+        let members =
+            BTreeSet::from(["app".to_owned(), "foundation".to_owned(), "tool".to_owned()]);
+        let actual_edges = internal_edges(&metadata, &members)?;
+
+        let policy = structural_policy_with_tool();
+        assert!(!policy.dev_edges.contains_key("app"));
+        assert!(validate_declared_edges(&policy, &actual_edges).is_err());
+        Ok(())
+    }
+
+    /// The same dependency as a *normal* (non-dev) edge from a production root to a `tool`
+    /// package still fails `validate_production_closure`, exactly as before this change: only
+    /// `[dev_edges]` is exempt, `[edges]` semantics are unchanged.
+    #[test]
+    fn normal_edge_from_production_root_to_tool_still_fails_closure() -> Result<(), String> {
+        let metadata = metadata_with_tool_dependency(None);
+        let members =
+            BTreeSet::from(["app".to_owned(), "foundation".to_owned(), "tool".to_owned()]);
+        let actual_edges = internal_edges(&metadata, &members)?;
+
+        let mut policy = structural_policy_with_tool();
+        if let Some(dependencies) = policy.edges.get_mut("app") {
+            dependencies.insert("tool".to_owned());
+        }
+
+        validate_declared_edges(&policy, &actual_edges)?;
+        assert!(validate_production_closure(&policy).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn dev_edge_naming_unknown_member_fails_shape() {
+        let mut policy = structural_policy();
+        policy
+            .dev_edges
+            .insert("app".to_owned(), BTreeSet::from(["ghost".to_owned()]));
         assert!(validate_policy_shape(&policy).is_err());
     }
 }

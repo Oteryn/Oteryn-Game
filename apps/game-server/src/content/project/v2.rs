@@ -3,6 +3,11 @@
 
 use super::*;
 
+mod creature;
+mod encounter;
+pub use creature::*;
+pub use encounter::*;
+
 pub const WORLD_PROJECT_V2_SOURCE_PROFILE: &str = "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v2";
 pub const WORLD_PROJECT_V2_ROOT_SCHEMA: &str = "OTERYN_WORLD_PROJECT_ROOT/v2";
 pub const WORLD_PROJECT_V2_MANIFEST_SCHEMA: &str = "OTERYN_WORLD_PROJECT_MANIFEST/v2";
@@ -78,7 +83,7 @@ pub enum ProjectV2Family {
 }
 
 impl ProjectV2Family {
-    fn from_reference(value: &str) -> Result<Self, ProjectError> {
+    pub(super) fn from_reference(value: &str) -> Result<Self, ProjectError> {
         Ok(match parse_family(value)? {
             DefinitionFamily::Terrain => Self::Terrain,
             DefinitionFamily::Presentation => Self::Presentation,
@@ -213,6 +218,19 @@ pub enum ProjectV2Declaration {
     },
     Dialogue {
         identity: ProjectV2Identity,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        greet: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        farewell: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        walkaway: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        send_trade: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        keywords: Vec<ProjectV2DialogueKeyword>,
+        /// Ambient lines, in authored order, with the source cadence.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        voices: Option<ProjectV2Voices>,
         fields: Vec<ProjectV2CandidateField>,
     },
     Service {
@@ -221,6 +239,8 @@ pub enum ProjectV2Declaration {
         offers: Vec<ProjectV2ServiceOffer>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         recipes: Vec<ProjectV2ServiceRecipe>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        routes: Vec<ProjectV2TravelRoute>,
         fields: Vec<ProjectV2CandidateField>,
     },
     Interaction {
@@ -331,10 +351,14 @@ impl ProjectV2Declaration {
             .sort_by(|left, right| left.field_path.cmp(&right.field_path));
         match self {
             Self::Service {
-                offers, recipes, ..
+                offers,
+                recipes,
+                routes,
+                ..
             } => {
                 offers.sort();
                 recipes.sort_by(|left, right| left.key.cmp(&right.key));
+                routes.sort_by(|left, right| left.key.cmp(&right.key));
                 for recipe in recipes {
                     recipe.canonicalize();
                 }
@@ -362,6 +386,7 @@ impl ProjectV2Declaration {
                         .sort_by(|left, right| left.field_path.cmp(&right.field_path));
                 }
             }
+            Self::Dialogue { keywords, .. } => canonicalize_v2_dialogue_keywords(keywords),
             _ => {}
         }
     }
@@ -483,6 +508,15 @@ impl ProjectV2Declaration {
             _ => {}
         }
         references
+    }
+}
+
+/// Sibling order is authored matching precedence (the first matching sibling answers), so only
+/// each node's all-of trigger set is sorted.
+fn canonicalize_v2_dialogue_keywords(keywords: &mut [ProjectV2DialogueKeyword]) {
+    for keyword in keywords.iter_mut() {
+        keyword.triggers.sort();
+        canonicalize_v2_dialogue_keywords(&mut keyword.children);
     }
 }
 
@@ -637,6 +671,13 @@ pub struct ProjectV2CreatureAuthoring {
     pub bosstiary: Option<ProjectV2BosstiaryProfile>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub familiar: Option<ProjectV2FamiliarProfile>,
+    /// Admission §5: the rest of the monster authoring creature section.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub details: Option<Box<ProjectV2CreatureDetails>>,
+    /// Encounter admission E3: the encounters that cover this creature. A later spawn, placement
+    /// or activation slice never activates the creature without them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub encounters: Vec<ProjectV2DefinitionRef>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<ProjectV2CandidateField>,
 }
@@ -670,6 +711,9 @@ pub struct ProjectV2AbilityAuthoring {
     pub acquisition_interactions: Vec<ProjectV2DefinitionRef>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub augments: Vec<ProjectV2AugmentBinding>,
+    /// Admission §5: geometry and authored effect order of a creature ability.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub details: Option<Box<ProjectV2AbilityDetails>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<ProjectV2CandidateField>,
 }
@@ -751,6 +795,9 @@ pub struct ProjectV2EncounterAuthoring {
     pub repeatable: Option<bool>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub interactions: Vec<ProjectV2DefinitionRef>,
+    /// Encounter admission E1: the whole encounter authoring format v1.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub details: Option<Box<ProjectV2EncounterDetails>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<ProjectV2CandidateField>,
 }
@@ -779,6 +826,11 @@ pub enum ProjectV2AuthoringProfileData {
     House(ProjectV2HouseAuthoring),
     Encounter(ProjectV2EncounterAuthoring),
     WorldObject(ProjectV2WorldObjectAuthoring),
+    Behavior(ProjectV2BehaviorAuthoring),
+    Presentation(ProjectV2PresentationAuthoring),
+    Effect(ProjectV2EffectAuthoring),
+    Formula(ProjectV2FormulaAuthoring),
+    Loot(ProjectV2LootAuthoring),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -797,8 +849,12 @@ impl ProjectV2AuthoringProfile {
                     .sort_by(|left, right| left.damage_type.cmp(&right.damage_type));
                 profile.immunities.sort();
                 profile.abilities.sort();
+                profile.encounters.sort();
                 if let Some(bestiary) = &mut profile.bestiary {
                     bestiary.kill_thresholds.sort();
+                }
+                if let Some(details) = &mut profile.details {
+                    details.canonicalize();
                 }
                 profile
                     .fields
@@ -812,6 +868,9 @@ impl ProjectV2AuthoringProfile {
                     .sort_by(|left, right| left.key.cmp(&right.key));
                 for augment in &mut profile.augments {
                     augment.canonicalize();
+                }
+                if let Some(details) = &mut profile.details {
+                    details.canonicalize();
                 }
                 profile
                     .fields
@@ -835,6 +894,9 @@ impl ProjectV2AuthoringProfile {
             ProjectV2AuthoringProfileData::Encounter(profile) => {
                 profile.areas.sort();
                 profile.interactions.sort();
+                if let Some(details) = &mut profile.details {
+                    details.canonicalize();
+                }
                 profile
                     .fields
                     .sort_by(|left, right| left.field_path.cmp(&right.field_path));
@@ -846,6 +908,10 @@ impl ProjectV2AuthoringProfile {
                     .fields
                     .sort_by(|left, right| left.field_path.cmp(&right.field_path));
             }
+            ProjectV2AuthoringProfileData::Behavior(profile) => profile.canonicalize(),
+            ProjectV2AuthoringProfileData::Presentation(profile) => profile.canonicalize(),
+            ProjectV2AuthoringProfileData::Effect(profile) => profile.canonicalize(),
+            ProjectV2AuthoringProfileData::Formula(_) | ProjectV2AuthoringProfileData::Loot(_) => {}
         }
     }
 }
@@ -1071,6 +1137,92 @@ pub struct ProjectV2ServiceOffer {
     pub unit_price: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub currency: Option<ProjectV2DefinitionRef>,
+    /// Units per trade row (a rune's charges, a stack); absent means one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub count: Option<u32>,
+    /// Fluid or charge subtype of the offered Item.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sub_type: Option<u16>,
+}
+
+impl ProjectV2ServiceOffer {
+    /// One row per Item, direction, currency, count and sub type; the price is the row's value.
+    fn row_key(
+        &self,
+    ) -> (
+        &ProjectV2DefinitionRef,
+        ProjectV2ServiceOfferDirection,
+        Option<&ProjectV2DefinitionRef>,
+        Option<u32>,
+        Option<u16>,
+    ) {
+        (
+            &self.item,
+            self.direction,
+            self.currency.as_ref(),
+            self.count,
+            self.sub_type,
+        )
+    }
+}
+
+/// A declarative travel route of an NPC travel Service. No runtime path executes it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2TravelRoute {
+    /// Destination keyword slug, unique within the Service.
+    pub key: String,
+    pub destination: ProjectV2TravelDestination,
+    pub price: u64,
+    pub premium: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_level: Option<u32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2TravelDestination {
+    pub coordinate_frame: String,
+    pub x: i32,
+    pub y: i32,
+    pub floor: i16,
+}
+
+/// A declarative NPC dialogue keyword node: the words that trigger it, the reply and the
+/// follow-up keywords. No runtime reader executes it. A dialogue message (a reply, greet,
+/// farewell, walk-away or send-trade message) is one or more parts sent in order.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2DialogueKeyword {
+    /// Lowercase slug, unique among sibling keywords.
+    pub key: String,
+    /// Literal words that must all occur in the player's message, as in the source keyword
+    /// handlers (whose Lua patterns are staged as literal words).
+    /// Empty exactly when `fallback` is set.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub triggers: Vec<String>,
+    /// Answers any words that no sibling keyword matches.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub fallback: bool,
+    pub reply: Vec<String>,
+    /// Answers only while the player is in conversation with the NPC.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub only_focus: bool,
+    /// Answers only while the player is not in conversation with the NPC.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub only_unfocus: bool,
+    /// Returns the conversation to the top-level keywords after replying.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub reset: bool,
+    /// Ends the conversation after replying.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub ungreet: bool,
+    /// Moves the conversation this many keyword levels up after replying; at most the node's
+    /// depth (1 for a top-level keyword).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub move_up: Option<u8>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub children: Vec<ProjectV2DialogueKeyword>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -1249,6 +1401,20 @@ struct DeclarationsDocument {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     authoring_profiles: Vec<ProjectV2AuthoringProfile>,
 }
+/// Declarations document of the native entry variant: the ordinary v2 fields plus the mandatory
+/// closed `native_first_entry` overlay (#937 §3). No default or null is accepted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeDeclarationsDocument {
+    schema: String,
+    records: Vec<ProjectV2Declaration>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    item_authoring: Vec<ProjectV2ItemAuthoring>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    authoring_profiles: Vec<ProjectV2AuthoringProfile>,
+    native_first_entry: NativeFirstEntryDocument,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct WorldsDocument {
@@ -1286,13 +1452,14 @@ struct EditorDocument {
 
 pub(super) fn validate_v2_roles(
     roles: &BTreeMap<String, Vec<&ManifestDocument>>,
+    admission: ProjectAdmission,
 ) -> Result<(), ProjectError> {
     if roles.len() != ROLE_SPECS.len() {
         return Err(ProjectError::InvalidProject(
             "unsupported v2 manifest role set",
         ));
     }
-    for (role, locator, schema) in ROLE_SPECS {
+    for (role, locator, schema) in role_specs(admission) {
         let prefix = locator
             .split_once('/')
             .ok_or(ProjectError::InvalidProject(
@@ -1308,6 +1475,16 @@ pub(super) fn validate_v2_roles(
         }
     }
     Ok(())
+}
+
+/// The native entry variant keeps the eight v2 roles and locators and changes only the
+/// declarations document schema.
+fn role_specs(admission: ProjectAdmission) -> [(&'static str, &'static str, &'static str); 8] {
+    let mut specs = ROLE_SPECS;
+    if admission == ProjectAdmission::NativeEntry {
+        specs[1].2 = NATIVE_ENTRY_DECLARATIONS_SCHEMA;
+    }
+    specs
 }
 
 fn role_bytes<'a>(
@@ -1329,15 +1506,35 @@ pub(super) fn parse_v2_snapshot(
     limits: ProjectEvidenceLimits,
     plan: ProjectCapturePlan,
     manifest_bytes: &[u8],
-) -> Result<WorldProject, ProjectError> {
+) -> Result<(WorldProject, Option<NativeFirstEntryDocument>), ProjectError> {
     let reference: ReferenceDocument =
         parse_strict(role_bytes(snapshot, &plan, "reference-records")?, limits)?;
     let imports: ImportDocument =
         parse_strict(role_bytes(snapshot, &plan, "import-candidates")?, limits)?;
-    let declarations: DeclarationsDocument = parse_strict(
-        role_bytes(snapshot, &plan, "declarative-definitions")?,
-        limits,
-    )?;
+    let declarations_bytes = role_bytes(snapshot, &plan, "declarative-definitions")?;
+    let (declarations, native_entry) = match plan.admission {
+        ProjectAdmission::Ordinary => (
+            parse_strict::<DeclarationsDocument>(declarations_bytes, limits)?,
+            None,
+        ),
+        ProjectAdmission::NativeEntry => {
+            let native: NativeDeclarationsDocument = parse_strict(declarations_bytes, limits)?;
+            if native.schema != NATIVE_ENTRY_DECLARATIONS_SCHEMA {
+                return Err(ProjectError::InvalidProject(
+                    "v2 managed document schema mismatch",
+                ));
+            }
+            (
+                DeclarationsDocument {
+                    schema: DECLARATIONS_SCHEMA.to_owned(),
+                    records: native.records,
+                    item_authoring: native.item_authoring,
+                    authoring_profiles: native.authoring_profiles,
+                },
+                Some(native.native_first_entry),
+            )
+        }
+    };
     let worlds: WorldsDocument =
         parse_strict(role_bytes(snapshot, &plan, "world-records")?, limits)?;
     let bindings: BindingsDocument = parse_strict(
@@ -1391,19 +1588,22 @@ pub(super) fn parse_v2_snapshot(
         editor: editor.entries,
     };
     validate_v2_state(&state, &reference.records, &imports.batches, limits)?;
-    Ok(WorldProject {
-        root: plan.root,
-        manifest: plan.manifest,
-        lock: plan.lock,
-        reference,
-        imports,
-        metadata: MetadataDocument {
-            schema: WORLD_PROJECT_METADATA_SCHEMA.to_owned(),
-            entries: editor.legacy_entries,
+    Ok((
+        WorldProject {
+            root: plan.root,
+            manifest: plan.manifest,
+            lock: plan.lock,
+            reference,
+            imports,
+            metadata: MetadataDocument {
+                schema: WORLD_PROJECT_METADATA_SCHEMA.to_owned(),
+                entries: editor.legacy_entries,
+            },
+            manifest_bytes: manifest_bytes.to_vec(),
+            v2: Some(state),
         },
-        manifest_bytes: manifest_bytes.to_vec(),
-        v2: Some(state),
-    })
+        native_entry,
+    ))
 }
 
 fn validate_v2_source_text(
@@ -1579,6 +1779,211 @@ fn validate_v2_item_quantities(
     Ok(())
 }
 
+fn validate_v2_service_offers(
+    offers: &[ProjectV2ServiceOffer],
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(
+        "v2 Service offers",
+        offers.len(),
+        limits.max_reference_records,
+    )?;
+    if offers.windows(2).any(|pair| pair[0] >= pair[1]) {
+        return Err(ProjectError::InvalidProject(
+            "v2 Service offers are not sorted and unique",
+        ));
+    }
+    let rows = offers
+        .iter()
+        .map(ProjectV2ServiceOffer::row_key)
+        .collect::<BTreeSet<_>>();
+    if rows.len() != offers.len() {
+        return Err(ProjectError::InvalidProject(
+            "v2 Service offers repeat an Item row with different prices",
+        ));
+    }
+    if offers.iter().any(|offer| offer.count == Some(0)) {
+        return Err(ProjectError::InvalidProject(
+            "v2 Service offer count must be positive",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_v2_travel_routes(
+    routes: &[ProjectV2TravelRoute],
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(
+        "v2 Service routes",
+        routes.len(),
+        limits.max_reference_records,
+    )?;
+    if routes.windows(2).any(|pair| pair[0].key >= pair[1].key) {
+        return Err(ProjectError::InvalidProject(
+            "v2 Service routes are not key sorted and unique",
+        ));
+    }
+    for route in routes {
+        if !is_v2_lowercase_slug(&route.key) {
+            return Err(ProjectError::InvalidProject(
+                "v2 Service route key is not a lowercase slug",
+            ));
+        }
+        let destination = &route.destination;
+        if destination.coordinate_frame.is_empty()
+            || !(0..=i32::from(u16::MAX)).contains(&destination.x)
+            || !(0..=i32::from(u16::MAX)).contains(&destination.y)
+            || !(0..=15).contains(&destination.floor)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Service route destination is out of range",
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Shared slug rule for `_`-joined lowercase-alphanumeric keys: Service travel route keys and
+/// Dialogue keyword keys.
+fn is_v2_lowercase_slug(key: &str) -> bool {
+    !key.is_empty()
+        && key.len() <= 64
+        && key.split('_').all(|part| {
+            !part.is_empty()
+                && part
+                    .bytes()
+                    .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
+        })
+}
+
+/// Dialogue text allows an embedded `\n` (unlike other v2 source text) but still forbids other
+/// ASCII control characters. `|PLAYERNAME|`-style placeholders and `{link}` braces are ordinary
+/// text bytes here.
+fn validate_v2_dialogue_text(
+    field: &'static str,
+    value: &str,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(field, value.len(), limits.max_string_bytes)?;
+    if value.trim() != value
+        || value.is_empty()
+        || value
+            .chars()
+            .any(|character| character.is_control() && character != '\n')
+    {
+        return Err(ProjectError::InvalidProject("invalid v2 dialogue text"));
+    }
+    Ok(())
+}
+
+const V2_DIALOGUE_MAX_DEPTH: usize = 8;
+
+fn validate_v2_dialogue_message(
+    field: &'static str,
+    parts: &[String],
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(field, parts.len(), limits.max_reference_records)?;
+    parts
+        .iter()
+        .try_for_each(|part| validate_v2_dialogue_text(field, part, limits))
+}
+
+fn validate_v2_dialogue_keywords(
+    keywords: &[ProjectV2DialogueKeyword],
+    depth: usize,
+    node_count: &mut usize,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    if !keywords.is_empty() && depth > V2_DIALOGUE_MAX_DEPTH {
+        return Err(ProjectError::InvalidProject(
+            "v2 Dialogue keyword nesting exceeds the maximum depth",
+        ));
+    }
+    limits.check(
+        "v2 Dialogue keywords",
+        keywords.len(),
+        limits.max_reference_records,
+    )?;
+    if keywords.iter().filter(|keyword| keyword.fallback).count() > 1 {
+        return Err(ProjectError::InvalidProject(
+            "v2 Dialogue keywords have more than one fallback",
+        ));
+    }
+    let mut keys = BTreeSet::new();
+    if !keywords
+        .iter()
+        .all(|keyword| keys.insert(keyword.key.as_str()))
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 Dialogue keyword keys are not unique",
+        ));
+    }
+    for keyword in keywords {
+        *node_count += 1;
+        limits.check("v2 Dialogue nodes", *node_count, limits.max_decoded_fields)?;
+        if !is_v2_lowercase_slug(&keyword.key) {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword key is not a lowercase slug",
+            ));
+        }
+        limits.check(
+            "v2 Dialogue keyword triggers",
+            keyword.triggers.len(),
+            limits.max_reference_records,
+        )?;
+        if keyword.fallback && !keyword.triggers.is_empty() {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue fallback keyword has triggers",
+            ));
+        }
+        if !keyword.fallback && keyword.triggers.is_empty() {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword triggers are empty",
+            ));
+        }
+        if keyword.triggers.windows(2).any(|pair| pair[0] >= pair[1]) {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword triggers are not sorted and unique",
+            ));
+        }
+        for trigger in &keyword.triggers {
+            let trigger_ok = !trigger.is_empty()
+                && trigger.len() <= 64
+                && trigger.trim() == trigger.as_str()
+                && !trigger.chars().any(|character| character.is_control())
+                && trigger.to_lowercase() == trigger.as_str();
+            if !trigger_ok {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Dialogue keyword trigger is not a trimmed lowercase word",
+                ));
+            }
+        }
+        if keyword.reply.is_empty() {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword reply is empty",
+            ));
+        }
+        validate_v2_dialogue_message("v2 Dialogue keyword reply", &keyword.reply, limits)?;
+        if keyword.only_focus && keyword.only_unfocus {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword is both focus-only and unfocus-only",
+            ));
+        }
+        if keyword
+            .move_up
+            .is_some_and(|levels| levels == 0 || usize::from(levels) > depth)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword move_up is out of range",
+            ));
+        }
+        validate_v2_dialogue_keywords(&keyword.children, depth + 1, node_count, limits)?;
+    }
+    Ok(())
+}
+
 fn validate_v2_declaration(
     declaration: &ProjectV2Declaration,
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
@@ -1682,7 +2087,14 @@ fn validate_v2_declaration(
                 validate_v2_candidate_fields(&rank.fields)?;
             }
         }
-        ProjectV2Declaration::Service { recipes, .. } => {
+        ProjectV2Declaration::Service {
+            offers,
+            recipes,
+            routes,
+            ..
+        } => {
+            validate_v2_service_offers(offers, limits)?;
+            validate_v2_travel_routes(routes, limits)?;
             limits.check(
                 "v2 Service recipes",
                 recipes.len(),
@@ -1717,7 +2129,139 @@ fn validate_v2_declaration(
                 }
             }
         }
+        ProjectV2Declaration::Dialogue {
+            greet,
+            farewell,
+            walkaway,
+            send_trade,
+            keywords,
+            voices,
+            ..
+        } => {
+            validate_v2_dialogue_message("v2 Dialogue greet", greet, limits)?;
+            validate_v2_dialogue_message("v2 Dialogue farewell", farewell, limits)?;
+            validate_v2_dialogue_message("v2 Dialogue walkaway", walkaway, limits)?;
+            validate_v2_dialogue_message("v2 Dialogue send_trade", send_trade, limits)?;
+            if let Some(voices) = voices {
+                validate_v2_voices(voices, limits)?;
+            }
+            let mut node_count = 0_usize;
+            validate_v2_dialogue_keywords(keywords, 1, &mut node_count, limits)?;
+        }
         _ => {}
+    }
+    Ok(())
+}
+
+fn require_target(
+    profile: &ProjectV2AuthoringProfile,
+    family: ProjectV2Family,
+) -> Result<(), ProjectError> {
+    if profile.target.family != family {
+        return Err(ProjectError::InvalidProject(
+            "v2 authoring profile target family mismatch",
+        ));
+    }
+    Ok(())
+}
+
+/// E3: every creature an encounter covers lists that encounter in its Creature profile, and every
+/// encounter a Creature profile lists covers it.
+fn validate_v2_encounter_bindings(
+    profiles: &[ProjectV2AuthoringProfile],
+) -> Result<(), ProjectError> {
+    let mut covered = std::collections::BTreeSet::new();
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Encounter(ProjectV2EncounterAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+        {
+            for creature in &details.covers {
+                covered.insert((&creature.key, &creature.revision, &profile.target));
+            }
+        }
+    }
+    let mut bound = std::collections::BTreeSet::new();
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Creature(creature) = &profile.data {
+            for encounter in &creature.encounters {
+                bound.insert((&profile.target.key, &profile.target.revision, encounter));
+            }
+        }
+    }
+    if covered != bound {
+        return Err(ProjectError::InvalidProject(
+            "v2 Creature encounters differ from the creatures their encounters cover",
+        ));
+    }
+    // An `ability_cast` rule can only fire when its role can be a creature that owns the ability.
+    let owned = profiles
+        .iter()
+        .filter_map(|profile| match &profile.data {
+            ProjectV2AuthoringProfileData::Creature(creature) => Some(
+                creature
+                    .abilities
+                    .iter()
+                    .map(move |ability| (&profile.target, ability)),
+            ),
+            _ => None,
+        })
+        .flatten()
+        .collect::<std::collections::BTreeSet<_>>();
+    // D45: an encounter-backed Ability has its effect only through an `ability_cast` rule of its encounter.
+    let mut cast = std::collections::BTreeSet::new();
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Encounter(ProjectV2EncounterAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+        {
+            for rule in &details.rules {
+                if let ProjectV2EncounterTrigger::AbilityCast { role, ability } = &rule.trigger {
+                    if !details
+                        .role_creatures(role)
+                        .into_iter()
+                        .any(|creature| owned.contains(&(creature, ability)))
+                    {
+                        return Err(ProjectError::InvalidProject(
+                            "v2 encounter ability_cast role has no creature that owns the ability",
+                        ));
+                    }
+                    cast.insert((&profile.target, ability));
+                }
+            }
+        }
+    }
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Ability(ProjectV2AbilityAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+            && let Some(encounter) = &details.encounter
+            && !cast.contains(&(encounter, &profile.target))
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 encounter-backed Ability has no ability_cast rule in its encounter",
+            ));
+        }
+    }
+    // E3: a creature that owns an encounter-backed Ability is bound to, and covered by, its encounter.
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Ability(ProjectV2AbilityAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+            && let Some(encounter) = &details.encounter
+            && owned.iter().any(|(creature, ability)| {
+                *ability == &profile.target
+                    && !bound.contains(&(&creature.key, &creature.revision, encounter))
+            })
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 creature owning an encounter-backed Ability is not bound to its encounter",
+            ));
+        }
     }
     Ok(())
 }
@@ -1784,6 +2328,14 @@ fn validate_v2_authoring_profile(
                 require_ref,
                 limits,
             )?;
+            validate_v2_ref_list(
+                &value.encounters,
+                ProjectV2Family::Encounter,
+                "v2 Creature encounters",
+                "v2 Creature encounters are invalid",
+                require_ref,
+                limits,
+            )?;
             if let Some(bestiary) = &value.bestiary {
                 validate_v2_source_text("v2 Bestiary difficulty", &bestiary.difficulty, limits)?;
                 if let Some(occurrence) = &bestiary.occurrence {
@@ -1831,6 +2383,9 @@ fn validate_v2_authoring_profile(
                         "v2 Familiar duration must be positive when present",
                     ));
                 }
+            }
+            if let Some(details) = &value.details {
+                validate_creature_details(details, require_ref, limits)?;
             }
             validate_v2_candidate_fields(&value.fields)?;
         }
@@ -1881,6 +2436,9 @@ fn validate_v2_authoring_profile(
             }
             for augment in &value.augments {
                 validate_v2_augment(augment, require_ref, limits)?;
+            }
+            if let Some(details) = &value.details {
+                validate_ability_details(details, require_ref, limits)?;
             }
             validate_v2_candidate_fields(&value.fields)?;
         }
@@ -1978,6 +2536,13 @@ fn validate_v2_authoring_profile(
                 require_ref,
                 limits,
             )?;
+            // E1: an admitted encounter carries its whole authored fight, never its identity alone.
+            let Some(details) = &value.details else {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Encounter authoring requires details",
+                ));
+            };
+            validate_encounter_details(details, require_ref, limits)?;
             validate_v2_candidate_fields(&value.fields)?;
         }
         ProjectV2AuthoringProfileData::WorldObject(value) => {
@@ -2019,6 +2584,26 @@ fn validate_v2_authoring_profile(
                 require_ref(document)?;
             }
             validate_v2_candidate_fields(&value.fields)?;
+        }
+        ProjectV2AuthoringProfileData::Behavior(value) => {
+            require_target(profile, ProjectV2Family::Behavior)?;
+            validate_behavior(value, require_ref, limits)?;
+        }
+        ProjectV2AuthoringProfileData::Presentation(value) => {
+            require_target(profile, ProjectV2Family::Presentation)?;
+            validate_presentation(value, limits)?;
+        }
+        ProjectV2AuthoringProfileData::Effect(value) => {
+            require_target(profile, ProjectV2Family::Effect)?;
+            validate_effect(value, require_ref, limits)?;
+        }
+        ProjectV2AuthoringProfileData::Formula(value) => {
+            require_target(profile, ProjectV2Family::Formula)?;
+            validate_formula(value)?;
+        }
+        ProjectV2AuthoringProfileData::Loot(value) => {
+            require_target(profile, ProjectV2Family::Loot)?;
+            validate_loot(value)?;
         }
     }
     Ok(())
@@ -2130,7 +2715,26 @@ fn validate_v2_state(
     }
     for profile in &state.authoring_profiles {
         validate_v2_authoring_profile(profile, &require_ref, limits)?;
+        if let ProjectV2AuthoringProfileData::Loot(loot) = &profile.data {
+            let entries = records.iter().find_map(|record| match record {
+                ProjectReferenceRecord::Loot {
+                    identity, entries, ..
+                } if identity.key == profile.target.key
+                    && identity.revision == profile.target.revision =>
+                {
+                    Some(entries.len())
+                }
+                _ => None,
+            });
+            if entries != Some(loot.entries.len()) {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Loot details must align with the entries of their Loot record",
+                ));
+            }
+        }
     }
+
+    validate_v2_encounter_bindings(&state.authoring_profiles)?;
 
     limits.check(
         "v2 item authoring",
@@ -2693,10 +3297,37 @@ fn validate_v2_state(
 
 impl CanonicalProjectDocuments {
     pub fn from_v2_draft(
-        mut draft: ProjectV2Draft,
+        draft: ProjectV2Draft,
         limits: ProjectEvidenceLimits,
     ) -> Result<Self, ProjectError> {
+        Self::from_v2_draft_for(draft, limits, None)
+    }
+
+    /// Canonical writer for the native entry variant (#937 §2): the ordinary v2 documents with the
+    /// native root profile and the native declarations document carrying `overlay`. The result is
+    /// re-admitted through [`ProjectSnapshot::parse_native_entry`] before it is returned.
+    pub fn from_native_entry_draft(
+        draft: ProjectV2Draft,
+        overlay: NativeFirstEntryDocument,
+    ) -> Result<Self, ProjectError> {
+        Self::from_v2_draft_for(
+            draft,
+            native_entry_first_slice_limits().project,
+            Some(overlay),
+        )
+    }
+
+    fn from_v2_draft_for(
+        mut draft: ProjectV2Draft,
+        limits: ProjectEvidenceLimits,
+        native: Option<NativeFirstEntryDocument>,
+    ) -> Result<Self, ProjectError> {
         let limits = limits.validate()?;
+        let admission = if native.is_some() {
+            ProjectAdmission::NativeEntry
+        } else {
+            ProjectAdmission::Ordinary
+        };
         draft.core.records = sorted_records(draft.core.records);
         draft.core.imports = sorted_imports(draft.core.imports);
         draft.core.metadata = sorted_metadata(draft.core.metadata);
@@ -2777,15 +3408,22 @@ impl CanonicalProjectDocuments {
                 records: draft.core.records,
             })?,
         );
-        managed.insert(
-            ROLE_SPECS[1].1.to_owned(),
-            budget.encode(&DeclarationsDocument {
+        let declarations = match native {
+            None => budget.encode(&DeclarationsDocument {
                 schema: DECLARATIONS_SCHEMA.to_owned(),
                 records: draft.state.declarations,
                 item_authoring: draft.state.item_authoring,
                 authoring_profiles: draft.state.authoring_profiles,
             })?,
-        );
+            Some(native_first_entry) => budget.encode(&NativeDeclarationsDocument {
+                schema: NATIVE_ENTRY_DECLARATIONS_SCHEMA.to_owned(),
+                records: draft.state.declarations,
+                item_authoring: draft.state.item_authoring,
+                authoring_profiles: draft.state.authoring_profiles,
+                native_first_entry,
+            })?,
+        };
+        managed.insert(ROLE_SPECS[1].1.to_owned(), declarations);
         managed.insert(
             ROLE_SPECS[2].1.to_owned(),
             budget.encode(&WorldsDocument {
@@ -2832,7 +3470,7 @@ impl CanonicalProjectDocuments {
             })?,
         );
         let mut inventory = Vec::new();
-        for (role, locator, schema) in ROLE_SPECS {
+        for (role, locator, schema) in role_specs(admission) {
             validate_locator(locator, limits)?;
             let bytes = managed
                 .get(locator)
@@ -2873,7 +3511,11 @@ impl CanonicalProjectDocuments {
         let lock_bytes = budget.encode(&lock)?;
         let root = RootDocument {
             schema: WORLD_PROJECT_V2_ROOT_SCHEMA.to_owned(),
-            source_profile: WORLD_PROJECT_V2_SOURCE_PROFILE.to_owned(),
+            source_profile: match admission {
+                ProjectAdmission::Ordinary => WORLD_PROJECT_V2_SOURCE_PROFILE,
+                ProjectAdmission::NativeEntry => NATIVE_ENTRY_SOURCE_PROFILE,
+            }
+            .to_owned(),
             project_revision: draft.core.project_revision,
             manifest_locator: MANIFEST_LOCATOR.to_owned(),
             manifest_sha256: digest_hex(&manifest_bytes),
@@ -2884,7 +3526,14 @@ impl CanonicalProjectDocuments {
         managed.insert(LOCK_LOCATOR.to_owned(), lock_bytes);
         managed.insert(PROJECT_LOCATOR.to_owned(), budget.encode(&root)?);
         let snapshot = ProjectSnapshot::new(managed.into_iter(), limits)?;
-        snapshot.parse(limits)?;
+        match admission {
+            ProjectAdmission::Ordinary => {
+                snapshot.parse(limits)?;
+            }
+            ProjectAdmission::NativeEntry => {
+                snapshot.parse_native_entry()?;
+            }
+        }
         Ok(Self {
             documents: snapshot.documents,
         })

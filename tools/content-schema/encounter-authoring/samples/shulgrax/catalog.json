@@ -1,0 +1,34 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/shulgrax",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/1949",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/22761",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/shulgrax_summon",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/sin_devourer",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/damned_soul",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

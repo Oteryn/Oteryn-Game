@@ -6,23 +6,42 @@ mod admission {
 }
 mod admission_facade;
 pub mod fnd04_verifier;
+// AI-1 (#162; GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.2): the Channel owner
+// timer lane (FND-03 §10). AI-3 (§4.4) is the first consumer outside this module's own tests
+// (`ai::think::{ThinkFamily, ThinkOccurrence, ThinkSequenceTracker, schedule_next_think}`), so
+// this module is now `pub(crate)` -- a pure visibility widening, no behavior change. Full live
+// wiring into `ChannelRuntimeV1`'s owner cycle still awaits a `foundation`-owned follow-up:
+// `ScopeRuntimeFence`'s own scope-bound constructor (`from_external_grant`/`with_scope`) stays
+// private to this module, so no outside caller can yet obtain a fence to schedule/drain with.
+#[allow(dead_code)]
+pub(crate) mod owner_timer;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
-#[cfg(test)]
-#[allow(unused_imports)] // Path-included Foundation test crates have no Movement module.
-pub(crate) use runtime_actor_carrier::MovementActorFixture;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
-    CarrierError, ChannelRuntimeV1, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup,
-    CurrentOwnerMovementPosition, ExactActorRef, MovementLocalPosition, MovementPositionContext,
-    MovementPositionSnapshot, OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation,
+    ABILITY01_EFFECT_PLAN_ENTRIES_MAX, AttackerCommand,
+    COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX,
+    COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX, CarrierError, ChannelContentPin,
+    ChannelRuntimeV1, CommittedLethalReceipt, ControlLossMark, CreatureDeathOccurrenceKey,
+    CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit,
+    CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition,
+    MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot, OwnerDamageCommand,
+    OwnerDamageResult, PlayerActorReservation, RuntimeCorpseProjection,
 };
+#[cfg(test)]
+#[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.
+pub(crate) use runtime_actor_carrier::{CombatDeathFixture, MovementActorFixture};
 #[cfg(test)]
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Standalone Foundation test crates lack the library root.
 #[path = "../ability/mod.rs"]
 mod exact_actor_test_ability;
+#[cfg(test)]
+#[allow(dead_code)]
+#[allow(clippy::duplicate_mod)] // Standalone Foundation test crates lack the library root.
+#[path = "../combat.rs"]
+mod exact_actor_test_combat;
 mod snapshot_facade;
 pub use admission::*;
 pub use admission_facade::{
@@ -37,12 +56,19 @@ pub use fnd04_verifier::{
 };
 pub use protocol::*;
 pub use snapshot_facade::SnapshotBarrier;
+// Shared-lease grant (#162), re-export of moved protocol error types: `FoundationProtocolError`,
+// `ProtocolDisposition`, `FrameLength` and `MAX_WIRE_FRAME_BYTES` moved to `oteryn-protocol-oteryn`
+// (task OTV2-20260928-protocol-oteryn-crate-c1a) so both the server and the future client share
+// exactly one definition. Re-exporting here keeps every existing `crate::foundation::*` consumer
+// unchanged: the type is the same type, now homed in the shared crate.
+pub use oteryn_protocol_oteryn::{
+    FoundationProtocolError, FrameLength, MAX_WIRE_FRAME_BYTES, ProtocolDisposition,
+};
 
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
-pub const MAX_WIRE_FRAME_BYTES: u32 = 1_048_576;
 pub const MAX_OUTSTANDING_COMMANDS: usize = 64;
 pub const MAX_RETAINED_TERMINAL_RECORDS: usize = 1;
 pub const MAX_RETAINED_TERMINAL_CHARGED_BYTES: u64 = 3_116;
@@ -51,132 +77,6 @@ const RETAINED_SEMANTIC_U64_FIELD_COUNT: u64 = 4;
 const RETAINED_SEMANTIC_U64_FIELD_BYTES: u64 = 8;
 const RETAINED_SEMANTIC_COMPONENT_COUNT: u64 = 6;
 const RETAINED_SEMANTIC_LENGTH_PREFIX_BYTES: u64 = 2;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum FoundationProtocolError {
-    MalformedFrame = 1001,
-    FrameTooLarge = 1002,
-    MalformedEnvelope = 1003,
-    UnknownMessageType = 1004,
-    ProtocolMajorMismatch = 1005,
-    TransportProfileMismatch = 1006,
-    CapabilityMismatch = 1007,
-    InvalidWireIdentifier = 1008,
-    PayloadLimitExceeded = 1009,
-    StaleConnectionGeneration = 1010,
-    CommandOutcomeExpired = 1020,
-    CommandSequenceGap = 1021,
-    TooManyOutstandingCommands = 1022,
-    ServerSequenceGap = 1030,
-    StateRevisionMismatch = 1031,
-    SnapshotAssemblyInvalid = 1032,
-    SnapshotLimitExceeded = 1033,
-    BootstrapLimitExceeded = 1040,
-    InvalidCapabilitySet = 1041,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum ProtocolDisposition {
-    OperationTerminal = 1,
-    ResyncRequired = 2,
-    SessionFatal = 3,
-    TransportFatal = 4,
-}
-
-impl FoundationProtocolError {
-    #[must_use]
-    pub const fn code(self) -> u32 {
-        self as u32
-    }
-
-    #[must_use]
-    pub const fn disposition(self) -> ProtocolDisposition {
-        match self {
-            Self::MalformedFrame
-            | Self::FrameTooLarge
-            | Self::MalformedEnvelope
-            | Self::StaleConnectionGeneration => ProtocolDisposition::TransportFatal,
-            Self::UnknownMessageType
-            | Self::ProtocolMajorMismatch
-            | Self::TransportProfileMismatch
-            | Self::CapabilityMismatch
-            | Self::InvalidWireIdentifier
-            | Self::SnapshotLimitExceeded
-            | Self::BootstrapLimitExceeded
-            | Self::InvalidCapabilitySet => ProtocolDisposition::SessionFatal,
-            Self::PayloadLimitExceeded | Self::TooManyOutstandingCommands => {
-                ProtocolDisposition::OperationTerminal
-            }
-            Self::CommandOutcomeExpired
-            | Self::CommandSequenceGap
-            | Self::ServerSequenceGap
-            | Self::StateRevisionMismatch
-            | Self::SnapshotAssemblyInvalid => ProtocolDisposition::ResyncRequired,
-        }
-    }
-}
-
-impl Display for FoundationProtocolError {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str(match self {
-            Self::MalformedFrame => "malformed protocol frame",
-            Self::FrameTooLarge => "protocol frame exceeds hard limit",
-            Self::MalformedEnvelope => "malformed protocol envelope",
-            Self::UnknownMessageType => "unknown foundation message type",
-            Self::ProtocolMajorMismatch => "protocol major mismatch",
-            Self::TransportProfileMismatch => "transport profile mismatch",
-            Self::CapabilityMismatch => "capability mismatch",
-            Self::InvalidWireIdentifier => "invalid wire identifier",
-            Self::PayloadLimitExceeded => "payload exceeds hard limit",
-            Self::StaleConnectionGeneration => "connection generation is stale",
-            Self::CommandOutcomeExpired => "command outcome is no longer retained",
-            Self::CommandSequenceGap => "command sequence contains a gap",
-            Self::TooManyOutstandingCommands => "too many commands are outstanding",
-            Self::ServerSequenceGap => "server sequence contains a gap",
-            Self::StateRevisionMismatch => "state revision mismatch",
-            Self::SnapshotAssemblyInvalid => "snapshot assembly is invalid",
-            Self::SnapshotLimitExceeded => "snapshot exceeds hard limit",
-            Self::BootstrapLimitExceeded => "bootstrap payload exceeds hard limit",
-            Self::InvalidCapabilitySet => "invalid capability set",
-        })
-    }
-}
-
-impl Error for FoundationProtocolError {}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct FrameLength(u32);
-
-impl FrameLength {
-    pub fn new(value: u32) -> Result<Self, FoundationProtocolError> {
-        if value == 0 {
-            return Err(FoundationProtocolError::MalformedFrame);
-        }
-        if value > MAX_WIRE_FRAME_BYTES {
-            return Err(FoundationProtocolError::FrameTooLarge);
-        }
-        Ok(Self(value))
-    }
-
-    pub fn from_prefix(prefix: &[u8]) -> Result<Self, FoundationProtocolError> {
-        let bytes: [u8; 4] = prefix
-            .try_into()
-            .map_err(|_error| FoundationProtocolError::MalformedFrame)?;
-        Self::new(u32::from_be_bytes(bytes))
-    }
-
-    #[must_use]
-    pub const fn get(self) -> u32 {
-        self.0
-    }
-
-    #[must_use]
-    pub const fn to_prefix(self) -> [u8; 4] {
-        self.0.to_be_bytes()
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommandIdError {
@@ -1013,6 +913,14 @@ impl RuntimeWorkStamp {
 #[derive(Debug, PartialEq, Eq)]
 pub struct ScopeRuntimeFence {
     generation: ScopeOwnershipGeneration,
+    /// The exact Channel/Instance scope this granted authority is bound to (owner_timer.rs P1:
+    /// FND-03 §10.3 current-owner authority must be scope-bound, not a bare generation number —
+    /// two different Channels can reach the same generation number independently). `None` for a
+    /// fence nobody has bound to a scope yet; such a fence never satisfies
+    /// `is_current_for_scope`. Only `owner_timer::OwnerTimerLane` construction uses `with_scope`
+    /// today; other fence owners (admission, reconnect) keep the unscoped grant and never call
+    /// `is_current_for_scope`.
+    scope: Option<RuntimeScopeRefV1>,
     next_ordinal: Option<u64>,
 }
 
@@ -1021,8 +929,20 @@ impl ScopeRuntimeFence {
     const fn from_external_grant(generation: ScopeOwnershipGeneration) -> Self {
         Self {
             generation,
+            scope: None,
             next_ordinal: Some(1),
         }
+    }
+
+    /// Binds this granted fence to one exact scope identity, so a caller-supplied scope claim
+    /// can be checked against the fence itself instead of trusted on its own. Only
+    /// `owner_timer`'s tests construct a scope-bound fence today (production wiring is AI-2's
+    /// `ChannelRuntimeV1` integration), so this is dead code outside `cfg(test)` for now.
+    #[must_use]
+    #[allow(dead_code)]
+    const fn with_scope(mut self, scope: RuntimeScopeRefV1) -> Self {
+        self.scope = Some(scope);
+        self
     }
 
     #[must_use]
@@ -1053,6 +973,25 @@ impl ScopeRuntimeFence {
     #[must_use]
     pub fn accepts_stamp(&self, stamp: RuntimeWorkStamp) -> bool {
         self.next_ordinal.is_some() && stamp.generation == self.generation
+    }
+
+    /// Whether `scope`/`generation` are this fence's *current* live owner authority for that
+    /// exact scope. This fence is the single mutated-in-place owner-cycle authority for one
+    /// Channel: a handoff advances it via `apply_external_grant` (or clears it via
+    /// `invalidate`), so any holder consulting it — including one still holding a superseded
+    /// copy of `generation` elsewhere — observes the move, unlike comparing two values that
+    /// were both fixed at some earlier point and never change afterward (for example
+    /// `OwnerTimerLane::schedule`/`drain_due`, FND-03 §10.3 current-owner authority). The scope
+    /// check is independent of the generation number: Channel A reaching the same generation
+    /// number as Channel B never authorizes Channel B's lane, because the fence must have been
+    /// bound (via `with_scope`) to that exact scope, not merely to a matching number.
+    #[must_use]
+    pub fn is_current_for_scope(
+        &self,
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+    ) -> bool {
+        self.next_ordinal.is_some() && self.generation == generation && self.scope == Some(scope)
     }
 
     fn invalidate(&mut self) {

@@ -21,6 +21,7 @@ jobs:
       rust: ${{ steps.lanes.outputs.rust }}
       windows: ${{ steps.lanes.outputs.windows }}
       surface: ${{ steps.lanes.outputs.surface }}
+      server_qualification: ${{ steps.lanes.outputs.server_qualification }}
     steps:
       - name: Validate exact merge-group identity
         shell: bash
@@ -56,7 +57,11 @@ jobs:
           HEAD_SHA: ${{ github.event.merge_group.head_sha }}
         run: |
           set -euo pipefail
+          if ! rustup toolchain install 1.94.0 --profile minimal || ! cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/queue-metadata.json"; then
+            printf '{}' > "$RUNNER_TEMP/queue-metadata.json"
+          fi
           python - <<'PY'
+          import json
           import os
           import re
           import subprocess
@@ -101,6 +106,7 @@ jobs:
                   raise ValueError('malformed merge-group diff')
               allowed_statuses = {b'A', b'M', b'D'}
               paths = []
+              records = []
               for index in range(0, len(fields), 2):
                   status = fields[index]
                   if status not in allowed_statuses:
@@ -109,6 +115,10 @@ jobs:
                   if not valid_path(path):
                       raise ValueError('invalid merge-group path')
                   paths.append(path)
+                  records.append({
+                      'filename': path,
+                      'status': {b'A': 'added', b'M': 'modified', b'D': 'removed'}[status],
+                  })
                   if status != b'D':
                       row = subprocess.check_output(['git', 'ls-tree', head, '--', path], text=True).strip()
                       parts = row.split(None, 3)
@@ -120,12 +130,56 @@ jobs:
                   result = {'rust': 'false', 'windows': 'false', 'surface': 'architecture-docs'}
           except (OSError, UnicodeDecodeError, ValueError, subprocess.SubprocessError):
               result = {'rust': 'true', 'windows': 'true', 'surface': 'full'}
+              paths = None
+              records = None
+
+          # Physical server qualification uses the protected-base PR classifier and
+          # fails closed: anything but a proven unrelated candidate selects it.
+          server_qualification = 'true'
+          try:
+              import importlib.util
+              spec = importlib.util.spec_from_file_location(
+                  'trusted_lanes', 'tools/repository/classify_pr_test_lanes.py'
+              )
+              module = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(module)
+              if isinstance(paths, list) and module.server_qualification_required(
+                  [{'filename': path} for path in paths], len(paths), True
+              ) is False:
+                  server_qualification = 'false'
+          except Exception:
+              server_qualification = 'true'
+
+          # A candidate whose changed files are all unconsumed auxiliary inputs skips
+          # the Rust and Windows lanes, using the protected-base exact-consumer routing
+          # and protected-base Cargo metadata that the PR gate uses. Any other routing
+          # result, and any classifier or metadata failure, stays FULL.
+          if result['surface'] == 'full' and isinstance(records, list) and records:
+              try:
+                  metadata_path = os.path.join(os.environ['RUNNER_TEMP'], 'queue-metadata.json')
+                  with open(metadata_path, encoding='utf-8') as handle:
+                      metadata = json.load(handle)
+                  routed = module.classify(
+                      records,
+                      len(records),
+                      metadata,
+                      candidate_modes_verified=module.candidate_modes_safe(head),
+                      candidate_sha=head,
+                  )
+                  if routed.get('rust') is False and routed.get('windows') is False:
+                      surface = routed.get('surface')
+                      if not isinstance(surface, str) or re.fullmatch(r'[a-z-]+', surface) is None:
+                          raise ValueError('invalid routed surface')
+                      result = {'rust': 'false', 'windows': 'false', 'surface': surface}
+              except Exception:
+                  result = {'rust': 'true', 'windows': 'true', 'surface': 'full'}
 
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write(f"rust={result['rust']}\n")
               output.write(f"windows={result['windows']}\n")
               output.write(f"surface={result['surface']}\n")
-          print(f"Merge-group lane classification: {result}")
+              output.write(f"server_qualification={server_qualification}\n")
+          print(f"Merge-group lane classification: {result} server_qualification={server_qualification}")
           PY
 
       - name: Check out exact merge-group candidate
@@ -247,7 +301,7 @@ jobs:
           )
           for package in ('oteryn-client', 'oteryn-game-server'):
               tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')
-              found = [name for name in forbidden if name in tree]
+              found = [name for name in forbidden if name in tree and (package, name) != ('oteryn-game-server', 'protocol-oteryn')]
               if found:
                   raise SystemExit(f'{package} production closure contains forbidden entries: {found}')
           PY
@@ -481,10 +535,117 @@ jobs:
           command: check
           arguments: --all-features
 
+  node_boot:
+    name: Merge Queue / Node boot against the real Platform
+    needs: candidate
+    # Fails closed: only an explicit protected-base `false` skips the physical qualification.
+    if: needs.candidate.outputs.server_qualification != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact merge-group candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact merge-group SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Run node boot qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+        run: |
+          set -euo pipefail
+          bash -n tools/qualification/node_boot/run.sh
+          evidence="$RUNNER_TEMP/node-boot-evidence.txt"
+          bash tools/qualification/node_boot/run.sh | tee "$evidence"
+          grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
+
+  server_seam:
+    name: Merge Queue / Server Seam over TCP+TLS
+    needs: candidate
+    # Fails closed: only an explicit protected-base `false` skips the physical qualification.
+    if: needs.candidate.outputs.server_qualification != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+        env:
+          POSTGRES_USER: oteryn_test_admin
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out exact merge-group candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact merge-group SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Run real composed qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+          OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          bash -n tools/qualification/wp5_s3b/run.sh
+          evidence="$RUNNER_TEMP/server-seam-evidence.txt"
+          WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh | tee "$evidence"
+          grep -Fxq 'S3B_RESULT=SEAM_PASS' "$evidence"
+
   game_gate:
     name: game-gate
     if: always()
-    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain]
+    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}
@@ -501,6 +662,9 @@ jobs:
           DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}
           RUST_WINDOWS: ${{ needs.rust_windows.result }}
           RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}
+          SERVER_QUALIFICATION_REQUIRED: ${{ needs.candidate.outputs.server_qualification }}
+          NODE_BOOT: ${{ needs.node_boot.result }}
+          SERVER_SEAM: ${{ needs.server_seam.result }}
         run: |
           set -euo pipefail
           RUST_REQUIRED="${RUST_REQUIRED:-true}"
@@ -528,4 +692,14 @@ jobs:
             test "$RUST_WINDOWS" = success
           else
             [[ "$RUST_WINDOWS" == success || "$RUST_WINDOWS" == skipped ]]
+          fi
+          # Physical server qualifications fail closed: only an explicit false skips them.
+          if [[ "${SERVER_QUALIFICATION_REQUIRED:-}" == "false" ]]; then
+            for result in "${NODE_BOOT:-}" "${SERVER_SEAM:-}"; do
+              [[ "$result" == success || "$result" == skipped ]]
+            done
+          else
+            for result in "${NODE_BOOT:-}" "${SERVER_SEAM:-}"; do
+              test "$result" = success
+            done
           fi

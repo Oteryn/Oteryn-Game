@@ -51,6 +51,18 @@ Current runtime selection:
 | Client/shared/simulation, including their consumed auxiliary inputs | FULL: Linux/PostgreSQL + Windows client/input/SIM + policy/supply chain |
 | Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | FULL |
 
+Physical server qualification is a separate selection. It runs the node boot and Server Seam qualifications against the real Platform (`Merge gate / Node boot against the real Platform`, `Merge gate / Server Seam over TCP+TLS`). These run when a change can reach the shipped server's boot, admission, transport, durability or reconnect paths:
+
+- `apps/game-server/src/**`, except `ability/`, `ai/`, `interaction/`, `combat.rs` and Content authoring;
+- the native entry room Content, its WorldProject/v2 model and its activation;
+- `apps/game-server/migrations/**`;
+- `tools/qualification/**`;
+- `vendor/**`;
+- Cargo/toolchain inputs;
+- `merge-gate.yml`.
+
+They also run when the changed-file evidence is incomplete or malformed, or when the trusted-base classifier emits no selection. Only an explicit `false` skips them. When selected, `Merge gate / validate` requires both to succeed.
+
 Reduced lanes are derived from the exact candidate tree. Cargo metadata owns package/reverse dependency closure; literal file/directory references from exact-candidate Cargo package sources attach non-Cargo files to their real consumers. Canonical product-CI workflows conservatively attach literal file and directory consumers too. Only explicitly audited routing-only directory predicates registered in the protected classifier may be omitted from consumer attachment; every unregistered or ambiguous workflow directory predicate/reference remains fail-closed/FULL. There is no historical document-consumer SHA or source-drift snapshot to refresh.
 
 `docs/agents/evidence/**` is not blanket runtime material. Evidence that current Rust source/tests actually consume through paths such as `include_str!` / `include_bytes!` inherits the consuming package lane; unconsumed evidence remains auxiliary.
@@ -65,6 +77,8 @@ The canonical Merge Queue workflow is `.github/workflows/merge-group-gate.yml`; 
 |---|---|
 | Complete valid diff containing only Markdown under `docs/architecture/**` | candidate/governance, dependency review and CodeQL; heavy Rust/PostgreSQL/Windows/supply-chain may be unselected |
 | Everything else, including agent-governance/docs, mixed, special-mode, malformed or incomplete evidence | FULL Linux workspace, PostgreSQL 17.6, Windows client/input/SIM and supply chain plus always-required gates |
+
+The physical server qualifications (`Merge Queue / Node boot against the real Platform`, `Merge Queue / Server Seam over TCP+TLS`) are selected separately on the exact queue diff. The selection uses the protected-base `server_qualification_required` classifier with the same path rules as the pull-request gate, so a batched candidate is re-qualified whenever any of its changes can reach the shipped server. It fails closed: anything but a proven-unrelated diff selects them.
 
 Selected jobs must succeed. Only genuinely unselected jobs may be `skipped`; missing, failed, cancelled or selected-skipped evidence cannot qualify the candidate.
 

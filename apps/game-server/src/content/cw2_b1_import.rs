@@ -1326,35 +1326,462 @@ pub fn protected_cw2_b1_full_item_family_import(
     })
 }
 
-pub const ITEM_SEMANTIC_PROMOTION_FIELD_COUNT: usize = 69;
-pub const ITEM_SEMANTIC_PROMOTION_ITEM_COUNT: usize = 23;
-pub const ITEM_SEMANTIC_PROMOTION_PACKET: &[u8] = include_bytes!(
-    "../../../../docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json"
+// ---------------------------------------------------------------------------------------------
+// Donor identity epoch 2 (decision `A8-DONOR-ITEM-IDENTITY-EPOCH-V1`, owner decisions D96/D97).
+//
+// Everything below is additive. The frozen epoch-1 function above, its constants, its evidence
+// pin and its allocation digest are not read for any purpose other than the epoch-2 closure
+// checks. Epoch 2 is a separate function with its own constants.
+// ---------------------------------------------------------------------------------------------
+
+pub const CW2_B1_DONOR_EPOCH2_SOURCE_REVISION: &str = "00ce02a57ca5a12e48f32a3476e37471167e4c3f";
+pub const CW2_B1_DONOR_EPOCH2_ITEMS_XML_SHA256: &str =
+    "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece";
+pub const CW2_B1_DONOR_EPOCH2_CENSUS_BYTES: usize = 66_770;
+pub const CW2_B1_DONOR_EPOCH2_CENSUS_SHA256: &str =
+    "60808a671734c9ef9e6488438bbf61326c3d5b9c9b8ac71e6db246e6361c14ab";
+pub const CW2_B1_DONOR_EPOCH2_CENSUS_ID_COUNT: usize = 412;
+pub const CW2_B1_DONOR_EPOCH2_CROSSWALK_BYTES: usize = 361_185;
+pub const CW2_B1_DONOR_EPOCH2_CROSSWALK_SHA256: &str =
+    "82530255b2f03e14012fd06caac00cd89cf5c4438fce3dfd3291e377201c2831";
+pub const CW2_B1_DONOR_EPOCH2_MINTED_COUNT: usize = 404;
+/// Epoch 2 continues after the highest sequence of every earlier epoch (38,093).
+pub const CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE: usize = CW2_B1_OPAQUE_ITEM_COUNT + 1;
+pub const CW2_B1_DONOR_EPOCH2_LAST_SEQUENCE: usize =
+    CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE + CW2_B1_DONOR_EPOCH2_MINTED_COUNT - 1;
+pub const CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256: &str =
+    "c9bd33992d40c0ac36405b3a0b429485905add8f54460cccec9e1e7790569d3c";
+pub const CW2_B1_DONOR_EPOCH2_REVISION: &str = "definition-r1";
+
+const DONOR_EPOCH2_AUTHORSHIP: &str = "OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_2";
+const DONOR_EPOCH2_BATCH_ID: &str = "cw2-b1-donor-identity-epoch-2-r1";
+const DONOR_EPOCH2_IMPORTER: &str = "OTERYN_CONTENT_ITEM_DONOR_IDENTITY_EPOCH/v2";
+const DONOR_EPOCH2_CENSUS_SCHEMA: &str = "OTERYN_ITEM_DONOR_CENSUS/v1";
+const DONOR_EPOCH2_CROSSWALK_SCHEMA: &str = "OTERYN_ITEM_DONOR_ALIAS_CROSSWALK/v1";
+const DONOR_EPOCH2_GATE_RULE: &str = "A8-ALIAS-GATE-V1";
+const DONOR_EPOCH2_ITEMS_XML_PATH: &str = "data/items/items.xml";
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtectedCw2B1DonorIdentityEpoch2Import {
+    /// One non-materializable Item pointer per `NO_MATCH` donor id.
+    pub records: Vec<ProjectReferenceRecord>,
+    pub batch: ImportBatch,
+    pub allocation_digest_sha256: String,
+    /// `(donor source id, existing epoch-1 key)` for `EXACT` / `ACCEPTED_ALIAS` ids. These mint
+    /// nothing; the binding targets the existing key.
+    pub alias_bindings: Vec<(u64, String)>,
+    /// Donor ids in `PROBABLE_MATCH`, `AMBIGUOUS` or `CONFLICT`: no key and no binding.
+    pub unbound_source_item_ids: Vec<u64>,
+}
+
+fn epoch2_mismatch<T>(field: &'static str) -> Result<T, ProtectedCw2B1ImportError> {
+    Err(ProtectedCw2B1ImportError::EvidenceMismatch(field))
+}
+
+fn epoch2_str<'a>(
+    value: &'a serde_json::Value,
+    pointer: &str,
+    field: &'static str,
+) -> Result<&'a str, ProtectedCw2B1ImportError> {
+    value
+        .pointer(pointer)
+        .and_then(serde_json::Value::as_str)
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(field))
+}
+
+fn epoch2_json(
+    bytes: &[u8],
+    expected_bytes: usize,
+    expected_sha256: &str,
+    field: &'static str,
+) -> Result<serde_json::Value, ProtectedCw2B1ImportError> {
+    if bytes.len() != expected_bytes || world_project_sha256(bytes) != expected_sha256 {
+        return epoch2_mismatch(field);
+    }
+    serde_json::from_slice(bytes).map_err(|_| ProtectedCw2B1ImportError::EvidenceMismatch(field))
+}
+
+/// Admit donor identity epoch 2: the donor-only Item ids of the Crystal `summer-update` census
+/// that pass the alias gate as `NO_MATCH`.
+///
+/// Inputs are the protected B1 catalogue (the epoch-1 denominator), the donor census bytes and
+/// the alias-gate crosswalk bytes; the last two are pinned by digest. Every census id has exactly
+/// one crosswalk row. Only `NO_MATCH` rows mint. They are numbered in ascending donor source id
+/// from `CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE`, so the key of an id is its rank among the minted
+/// ids after the highest epoch-1 sequence; the source id only orders the allocation. `EXACT` and
+/// `ACCEPTED_ALIAS` rows bind to an existing key and mint nothing; `PROBABLE_MATCH`, `AMBIGUOUS`
+/// and `CONFLICT` rows mint and bind nothing.
+pub fn protected_cw2_b1_donor_identity_epoch_2_import(
+    b1_evidence_bytes: &[u8],
+    census_bytes: &[u8],
+    crosswalk_bytes: &[u8],
+) -> Result<ProtectedCw2B1DonorIdentityEpoch2Import, ProtectedCw2B1ImportError> {
+    admit_donor_identity_epoch_2(
+        b1_evidence_bytes,
+        census_bytes,
+        crosswalk_bytes,
+        &DONOR_EPOCH2_FROZEN_PINS,
+    )
+}
+
+/// The digest-bound inputs of one epoch-2 admission. The public function always passes the
+/// frozen constants; the seam exists so the state handling can be exercised on other inputs.
+struct DonorEpoch2Pins {
+    census_bytes: usize,
+    census_sha256: &'static str,
+    census_id_count: usize,
+    crosswalk_bytes: usize,
+    crosswalk_sha256: &'static str,
+    minted_count: usize,
+    allocation_digest_sha256: &'static str,
+}
+
+const DONOR_EPOCH2_FROZEN_PINS: DonorEpoch2Pins = DonorEpoch2Pins {
+    census_bytes: CW2_B1_DONOR_EPOCH2_CENSUS_BYTES,
+    census_sha256: CW2_B1_DONOR_EPOCH2_CENSUS_SHA256,
+    census_id_count: CW2_B1_DONOR_EPOCH2_CENSUS_ID_COUNT,
+    crosswalk_bytes: CW2_B1_DONOR_EPOCH2_CROSSWALK_BYTES,
+    crosswalk_sha256: CW2_B1_DONOR_EPOCH2_CROSSWALK_SHA256,
+    minted_count: CW2_B1_DONOR_EPOCH2_MINTED_COUNT,
+    allocation_digest_sha256: CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256,
+};
+
+fn admit_donor_identity_epoch_2(
+    b1_evidence_bytes: &[u8],
+    census_bytes: &[u8],
+    crosswalk_bytes: &[u8],
+    pins: &DonorEpoch2Pins,
+) -> Result<ProtectedCw2B1DonorIdentityEpoch2Import, ProtectedCw2B1ImportError> {
+    let census = epoch2_json(
+        census_bytes,
+        pins.census_bytes,
+        pins.census_sha256,
+        "donor census bytes",
+    )?;
+    let crosswalk = epoch2_json(
+        crosswalk_bytes,
+        pins.crosswalk_bytes,
+        pins.crosswalk_sha256,
+        "donor alias crosswalk bytes",
+    )?;
+
+    // The frozen denominator: its source ids and every key any earlier epoch has bound.
+    let epoch1 = protected_cw2_b1_full_item_family_import(b1_evidence_bytes)?;
+    let mut epoch1_source_ids = BTreeSet::new();
+    for candidate in &epoch1.batch.candidates {
+        let Some(source_item_id) = candidate.source_numeric_id else {
+            return epoch2_mismatch("epoch 1 source item identity");
+        };
+        epoch1_source_ids.insert(source_item_id);
+    }
+    let mut earlier_keys = BTreeSet::new();
+    for record in &epoch1.records {
+        if let ProjectReferenceRecord::Item { identity, .. } = record {
+            earlier_keys.insert(identity.key.clone());
+        }
+    }
+    // R7-P04 re-keyed the gold coin; its retired number stays retired and its new key is bound.
+    let mut bound_keys = earlier_keys.clone();
+    bound_keys.remove(R7_P04_GOLD_COIN_OLD_KEY);
+    bound_keys.insert(R7_P04_GOLD_COIN_KEY.to_owned());
+    if earlier_keys.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT
+        || !earlier_keys.contains(&opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT))
+        || earlier_keys.contains(&opaque_item_key(CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE))
+    {
+        return epoch2_mismatch("epoch 1 highest sequence");
+    }
+
+    // Frozen census input.
+    if epoch2_str(&census, "/schema", "donor census schema")? != DONOR_EPOCH2_CENSUS_SCHEMA
+        || epoch2_str(&census, "/donor/commit", "donor commit")?
+            != CW2_B1_DONOR_EPOCH2_SOURCE_REVISION
+        || census
+            .pointer("/donor/artifact_digests")
+            .and_then(|digests| digests.get(DONOR_EPOCH2_ITEMS_XML_PATH))
+            .and_then(|artifact| artifact.get("sha256"))
+            .and_then(serde_json::Value::as_str)
+            != Some(CW2_B1_DONOR_EPOCH2_ITEMS_XML_SHA256)
+        || epoch2_str(&census, "/base/revision", "donor census base revision")?
+            != CW2_B1_SOURCE_REVISION
+    {
+        return epoch2_mismatch("donor census pins");
+    }
+    let census_items = census
+        .pointer("/items")
+        .and_then(serde_json::Value::as_object)
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "donor census items",
+        ))?;
+    let mut census_ids = Vec::with_capacity(census_items.len());
+    for key in census_items.keys() {
+        let Ok(source_item_id) = key.parse::<u64>() else {
+            return epoch2_mismatch("donor census source item identity");
+        };
+        if key != &source_item_id.to_string() {
+            return epoch2_mismatch("donor census source item identity");
+        }
+        census_ids.push(source_item_id);
+    }
+    census_ids.sort_unstable();
+    if census_ids.len() != pins.census_id_count
+        || census
+            .pointer("/totals/new_ids")
+            .and_then(serde_json::Value::as_u64)
+            != Some(pins.census_id_count as u64)
+    {
+        return epoch2_mismatch("donor census id count");
+    }
+    if census_ids
+        .iter()
+        .any(|source_item_id| epoch1_source_ids.contains(source_item_id))
+    {
+        return epoch2_mismatch("donor source id shared with epoch 1");
+    }
+
+    // Alias-gate evidence: exactly the census ids, each once, in ascending order.
+    if epoch2_str(&crosswalk, "/schema", "alias crosswalk schema")? != DONOR_EPOCH2_CROSSWALK_SCHEMA
+        || epoch2_str(&crosswalk, "/gate/rule", "alias gate rule")? != DONOR_EPOCH2_GATE_RULE
+        || epoch2_str(
+            &crosswalk,
+            "/census/sha256",
+            "alias crosswalk census binding",
+        )? != pins.census_sha256
+        || epoch2_str(&crosswalk, "/donor/commit", "alias crosswalk donor commit")?
+            != CW2_B1_DONOR_EPOCH2_SOURCE_REVISION
+        || epoch2_str(
+            &crosswalk,
+            "/epoch_2/allocation_digest_sha256",
+            "alias crosswalk allocation digest",
+        )? != pins.allocation_digest_sha256
+    {
+        return epoch2_mismatch("alias crosswalk pins");
+    }
+    let rows = crosswalk
+        .pointer("/rows")
+        .and_then(serde_json::Value::as_array)
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "alias crosswalk rows",
+        ))?;
+    if rows.len() != census_ids.len() {
+        return epoch2_mismatch("alias crosswalk row count");
+    }
+
+    let mut minting = Vec::new();
+    let mut alias_bindings = Vec::new();
+    let mut unbound_source_item_ids = Vec::new();
+    for (row, census_id) in rows.iter().zip(&census_ids) {
+        if row
+            .get("source_item_id")
+            .and_then(serde_json::Value::as_u64)
+            != Some(*census_id)
+        {
+            return epoch2_mismatch("alias crosswalk row identity");
+        }
+        match epoch2_str(row, "/state", "alias crosswalk state")? {
+            "NO_MATCH" => minting.push(*census_id),
+            "EXACT" | "ACCEPTED_ALIAS" => {
+                let target = epoch2_str(row, "/alias_target_key", "alias target key")?;
+                if !bound_keys.contains(target) {
+                    return epoch2_mismatch("alias target is not a bound epoch 1 key");
+                }
+                alias_bindings.push((*census_id, target.to_owned()));
+            }
+            "PROBABLE_MATCH" | "AMBIGUOUS" | "CONFLICT" => {
+                if row.get("alias_target_key").is_some() {
+                    return epoch2_mismatch("unbound state carries a target");
+                }
+                unbound_source_item_ids.push(*census_id);
+            }
+            _ => return epoch2_mismatch("alias crosswalk state"),
+        }
+    }
+
+    // Allocation: ascending donor source id, numbered after the highest earlier sequence.
+    let mut allocations = Vec::with_capacity(minting.len());
+    let mut epoch2_keys = BTreeSet::new();
+    let mut allocation_digest_input = Vec::with_capacity(minting.len() * 48);
+    for (rank, source_item_id) in minting.iter().enumerate() {
+        let key = opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT + rank + 1);
+        if earlier_keys.contains(&key)
+            || bound_keys.contains(&key)
+            || !epoch2_keys.insert(key.clone())
+        {
+            return epoch2_mismatch("donor epoch 2 key collision");
+        }
+        allocation_digest_input.extend_from_slice(source_item_id.to_string().as_bytes());
+        allocation_digest_input.push(0);
+        allocation_digest_input.extend_from_slice(key.as_bytes());
+        allocation_digest_input.push(b'\n');
+        allocations.push((*source_item_id, key));
+    }
+    if allocations.len() != pins.minted_count
+        || opaque_item_key(CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE + pins.minted_count - 1)
+            != allocations
+                .last()
+                .map(|(_, key)| key.clone())
+                .unwrap_or_default()
+    {
+        return epoch2_mismatch("donor epoch 2 closure");
+    }
+    let allocation_digest_sha256 = world_project_sha256(&allocation_digest_input);
+    if allocation_digest_sha256 != pins.allocation_digest_sha256 {
+        return epoch2_mismatch("donor epoch 2 allocation digest");
+    }
+
+    let mut records = Vec::with_capacity(allocations.len());
+    let mut candidates = Vec::with_capacity(allocations.len());
+    let mut reimport_states = Vec::with_capacity(allocations.len());
+    for (source_item_id, key) in &allocations {
+        let identity = DefinitionIdentityDocument {
+            family: "Item".to_owned(),
+            key: key.clone(),
+            revision: CW2_B1_DONOR_EPOCH2_REVISION.to_owned(),
+        };
+        records.push(ProjectReferenceRecord::Item {
+            identity: identity.clone(),
+            client_projection: ProjectionDocument::ClientSafe,
+            materializable: false,
+            stack_class: ItemStackDocument::Unknown,
+            semantics: Default::default(),
+        });
+        let source_id_value = CandidateValue::SourceId(*source_item_id);
+        candidates.push(ImportCandidate {
+            source_candidate_id: format!("crystal:item:{source_item_id}"),
+            source_label: format!("crystal:item:{source_item_id}"),
+            source_numeric_id: Some(*source_item_id),
+            candidate_family: ImportCandidateFamily::Item,
+            candidate_operation: ImportCandidateOperation::BindNativeItem,
+            candidate_target: format!("{}@{}", identity.key, identity.revision),
+            candidate_formula: "NOT_APPLICABLE".to_owned(),
+            evidence_class: "OTS_HYPOTHESIS_ONLY".to_owned(),
+            closure_disposition: CandidateDisposition::LocalNonProduction,
+            disposition_reason:
+                "DONOR_IDENTITY_EPOCH_2_IDENTITY_ONLY_GAMEPLAY_SEMANTICS_UNRESOLVED".to_owned(),
+            normalized_fields: vec![
+                field(
+                    "binding.native-item",
+                    CandidateValue::NativeItemBinding(NativeItemBindingDocument {
+                        identity: identity.clone(),
+                        disposition: NativeItemBindingDisposition::LocalNonProduction,
+                    }),
+                ),
+                text_field("evidence.alias-crosswalk-sha256", pins.crosswalk_sha256),
+                text_field("evidence.alias-crosswalk-state", "NO_MATCH"),
+                text_field("evidence.donor-census-sha256", pins.census_sha256),
+                text_field("source.native-key-authorship", DONOR_EPOCH2_AUTHORSHIP),
+                text_field("loss.source-values-as-gameplay-truth", "REJECTED"),
+            ],
+        });
+        reimport_states.push(ReimportFieldState {
+            stable_identity: identity.key.clone(),
+            field_path: "source.item-id".to_owned(),
+            baseline: Some(source_id_value.clone()),
+            upstream: Some(source_id_value.clone()),
+            local: Some(source_id_value),
+            decision: ReimportDecision::Unchanged,
+        });
+    }
+    // Ascending source id is also ascending key; keep the canonical orderings explicit.
+    candidates.sort_by(|left, right| left.source_candidate_id.cmp(&right.source_candidate_id));
+    for candidate in &mut candidates {
+        candidate
+            .normalized_fields
+            .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+    }
+    reimport_states.sort_by(|left, right| {
+        left.stable_identity
+            .cmp(&right.stable_identity)
+            .then_with(|| left.field_path.cmp(&right.field_path))
+    });
+    records.sort_by(|left, right| item_record_key(left).cmp(item_record_key(right)));
+
+    Ok(ProtectedCw2B1DonorIdentityEpoch2Import {
+        records,
+        allocation_digest_sha256,
+        alias_bindings,
+        unbound_source_item_ids,
+        batch: ImportBatch {
+            batch_id: DONOR_EPOCH2_BATCH_ID.to_owned(),
+            source_repository: CW2_B1_SOURCE_REPOSITORY.to_owned(),
+            source_revision: CW2_B1_DONOR_EPOCH2_SOURCE_REVISION.to_owned(),
+            source_artifact_sha256: CW2_B1_DONOR_EPOCH2_ITEMS_XML_SHA256.to_owned(),
+            access_disposition: "PENDING".to_owned(),
+            source_generation_profile: DONOR_EPOCH2_CENSUS_SCHEMA.to_owned(),
+            importer: DONOR_EPOCH2_IMPORTER.to_owned(),
+            mapper: DONOR_EPOCH2_GATE_RULE.to_owned(),
+            mapper_revision: CW2_B1_DONOR_EPOCH2_SOURCE_REVISION.to_owned(),
+            mapper_sha256: pins.crosswalk_sha256.to_owned(),
+            candidates,
+            reimport_states,
+        },
+    })
+}
+
+fn item_record_key(record: &ProjectReferenceRecord) -> &str {
+    match record {
+        ProjectReferenceRecord::Item { identity, .. } => identity.key.as_str(),
+        _ => "",
+    }
+}
+
+pub const R7_P04_GOLD_COIN_EVIDENCE_PACKET: &[u8] =
+    include_bytes!("../../../../docs/agents/evidence/OTV2-20260927-r7-p04-gold-coin.json");
+pub const R7_P04_GOLD_COIN_EVIDENCE_BYTES: usize = 4_982;
+pub const R7_P04_GOLD_COIN_EVIDENCE_SHA256: &str =
+    "53223cb967b6428c134729252930e4f351e0c25afb09bb36b7e4025c0631768e";
+pub const R7_P04_GOLD_COIN_SOURCE_ITEM_ID: u64 = 3_031;
+pub const R7_P04_GOLD_COIN_OPAQUE_SEQUENCE: usize = 2_921;
+pub const R7_P04_GOLD_COIN_OLD_KEY: &str = "oteryn:item.registry.i00002921";
+pub const R7_P04_GOLD_COIN_KEY: &str = "oteryn:item.currency.gold_coin";
+pub const R7_P04_UNRELATED_REGISTRY_KEY: &str = "oteryn:item.registry.i00003031";
+pub const R7_P04_UNRELATED_SOURCE_ITEM_ID: u64 = 3_147;
+
+/// Pinned #1018 v1 lowering *candidate* (`tools/content-schema/item-authoring/
+/// lower_promotion_packet.py`, `samples/promotion-crystal-ff7ede5.json`), copied
+/// byte-for-byte into this Content/World-owned evidence file so this importer never
+/// depends on the live, independently-evolving authoring tool tree. Distinct schema/
+/// profile/status/next_action literals from `ITEM_SEMANTIC_PROMOTION_*` above keep the
+/// two packets from ever being mistaken for one another.
+///
+/// Re-pinned three times (tasks OTV2-20260928-cw2-item-promotion-repin and
+/// OTV2-20260928-item-promotion-repin-v2) as
+/// `samples/promotion-crystal-ff7ede5.json` grew: first from 13,292/10,674 to
+/// 14,174/11,556 fields/items, then to 14,643/12,021, then again to
+/// 14,927/12,301 as of this pin, via the wiki-family-fallback and
+/// item-classification work landed in #1040/#1052/#1063/#1068 and subsequent
+/// content rounds (see `expected_item_semantic_promotion_lowering_v1_counts`
+/// for the exact per-field-path deltas each re-pin carried).
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET: &[u8] = include_bytes!(
+    "../../../../docs/agents/evidence/OTV2-20260928-item-promotion-lowering-v1.json"
 );
-const ITEM_SEMANTIC_PROMOTION_SCHEMA: &str = "OTERYN_ITEM_SEMANTIC_PROMOTION/v1";
-const ITEM_SEMANTIC_PROMOTION_PROFILE: &str = "OTERYN_ITEM_SEMANTIC_PROMOTION_COMPILER/v1";
-const ITEM_SEMANTIC_PROMOTION_STATUS: &str = "PARTIAL_CANONICAL_SEMANTIC_PROMOTION_PACKET";
-const ITEM_SEMANTIC_PROMOTION_COMPILER_SHA256: &str =
-    "1e479d22a94240705cc4a2190904e0a5fe99347ef17b4f3926177ff3b035ab2c";
-const ITEM_TARGET_CONTINUITY_COMPILER_SHA256: &str =
-    "3a3bd72f4c04c591c86764d7e2656d90bee051145a951de2848cef0a89d1f1d2";
-const ITEM_TARGET_CONTINUITY_MANIFEST_SHA256: &str =
-    "6f3ab3bc0799ec13c24c8939e0fde9636bfa8f6fff1ed3e507c6e6a730f47aac";
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_BYTES: usize = 3_947_571;
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_SHA256: &str =
+    "69d5c1ff24b979658fc24a310d6715c131cfca6abe759ff1fa29479da0ecffe2";
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT: usize = 14_927;
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT: usize = 12_301;
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SCHEMA: &str =
+    "OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING/v1";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PROFILE: &str =
+    "OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING_COMPILER/v1";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_STATUS: &str =
+    "CANDIDATE_ITEM_SEMANTIC_PROMOTION_LOWERING_PACKET";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_NEXT_ACTION: &str =
+    "REVIEW_AND_WIRE_INTO_CW2_B1_IMPORT_RUST_DECODER_IF_ACCEPTED";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_TARGET_DATE: &str = "2026-09-27";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_PATH: &str =
+    "tools/content-schema/item-authoring/lower_promotion_packet.py";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_SHA256: &str =
+    "72ffeaaf7841e8527c3a5661fdb0dd1e96837cd9c88b49bf2e129b095668c9fc";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SOURCE_PROFILE: &str =
+    "crystal_ff7ede5_item_definition_v1";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_BUNDLE_DIGEST: &str =
+    "2f0ae3016b09b05edae8d2336a3622c366fed189190bb7902c66e6f1283f541d";
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ItemSemanticPromotionCompiler {
     path: String,
     sha256: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ItemSemanticPromotionLineage {
-    continuity_compiler_sha256: String,
-    continuity_manifest_schema: String,
-    continuity_manifest_sha256: String,
-    eligible_field_count: usize,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1367,38 +1794,12 @@ struct ItemSemanticPromotionCounts {
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct ItemSemanticPromotionInvariants {
-    identity_reminted: bool,
-    mutable_wiki_revision_metadata_retained: bool,
-    name_only_identity_resolution: bool,
-    only_derived_eligible_fields_promoted: bool,
-    sibling_fields_default_unknown_or_existing_state: bool,
-    whole_item_promotion: bool,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
 struct ItemSemanticPromotionRow {
     field_path: String,
     native_key: String,
     source_item_id: u64,
     source_value: serde_json::Value,
     typed_value: serde_json::Value,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ItemSemanticPromotionPacket {
-    compiler: ItemSemanticPromotionCompiler,
-    counts: ItemSemanticPromotionCounts,
-    invariants: ItemSemanticPromotionInvariants,
-    next_action: String,
-    profile: String,
-    promotions: Vec<ItemSemanticPromotionRow>,
-    protected_lineage: ItemSemanticPromotionLineage,
-    schema: String,
-    status: String,
-    target_date: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1416,23 +1817,6 @@ enum ItemSemanticPromotionValue {
     RationalPercent(ReferenceRationalPercent),
     Count(u32),
     Capacity(u16),
-}
-
-fn expected_item_semantic_promotion_counts() -> BTreeMap<String, usize> {
-    [
-        ("charges.count", 1_usize),
-        ("container.capacity", 1),
-        ("presentation.name", 22),
-        ("protection.armor", 3),
-        ("weapon.attack", 16),
-        ("weapon.defense", 13),
-        ("weapon.extra_defense", 7),
-        ("weapon.hit_chance", 2),
-        ("weapon.range_cells", 4),
-    ]
-    .into_iter()
-    .map(|(field, count)| (field.to_owned(), count))
-    .collect()
 }
 
 fn exact_json_object<'a>(
@@ -1762,47 +2146,173 @@ fn apply_item_semantic_promotion(
     }
 }
 
-fn validate_item_semantic_promotion_packet(
-    packet: &ItemSemanticPromotionPacket,
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1ArtifactDigest {
+    digest_mode: String,
+    sha256: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1Lineage {
+    eligible_field_count: usize,
+    source_artifact_digests: BTreeMap<String, ItemSemanticPromotionLoweringV1ArtifactDigest>,
+    source_engine: String,
+    source_population_bundle_digest: String,
+    source_profile: String,
+    source_repository: String,
+    source_revision: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1Invariants {
+    identity_reminted: bool,
+    mutable_wiki_revision_metadata_retained: bool,
+    name_only_identity_resolution: bool,
+    only_derived_eligible_fields_promoted: bool,
+    sibling_fields_default_unknown_or_existing_state: bool,
+    whole_item_promotion: bool,
+    wired_into_rust_importer: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1Packet {
+    compiler: ItemSemanticPromotionCompiler,
+    counts: ItemSemanticPromotionCounts,
+    invariants: ItemSemanticPromotionLoweringV1Invariants,
+    next_action: String,
+    profile: String,
+    promotions: Vec<ItemSemanticPromotionRow>,
+    protected_lineage: ItemSemanticPromotionLoweringV1Lineage,
+    schema: String,
+    status: String,
+    target_date: String,
+}
+
+/// The 3 pinned source-file digests the #1018 lowering compiler bound this exact
+/// candidate to, keyed by repository-relative path to `(digest_mode, sha256)`. The
+/// `items.xml` entry is byte-identical to `CW2_B1_SOURCE_SHA256` above: the same
+/// pinned Crystal `items.xml` revision underlies both the existing wired packet and
+/// this lowering candidate.
+fn expected_item_semantic_promotion_lowering_v1_artifact_digests()
+-> BTreeMap<String, (&'static str, &'static str)> {
+    [
+        (
+            "data/items/appearances.dat",
+            (
+                "raw_bytes",
+                "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+            ),
+        ),
+        (
+            "data/items/items.xml",
+            ("text_lf_normalized", CW2_B1_SOURCE_SHA256),
+        ),
+        (
+            "data/scripts/lib/task_board_delivery_items.lua",
+            (
+                "text_lf_normalized",
+                "7b30362470893f6e3ce6bdc0237ac5d3f13d6e5288ce10591a93fde2013b688d",
+            ),
+        ),
+    ]
+    .into_iter()
+    .map(|(path, digest)| (path.to_owned(), digest))
+    .collect()
+}
+
+fn expected_item_semantic_promotion_lowering_v1_counts() -> BTreeMap<String, usize> {
+    [
+        ("charges.count", 126_usize),
+        ("container.capacity", 453),
+        ("presentation.name", 12_301),
+        ("protection.armor", 432),
+        ("weapon.attack", 621),
+        ("weapon.defense", 636),
+        ("weapon.extra_defense", 160),
+        ("weapon.hit_chance", 56),
+        ("weapon.range_cells", 142),
+    ]
+    .into_iter()
+    .map(|(field, count)| (field.to_owned(), count))
+    .collect()
+}
+
+/// Pin the embedded lowering candidate's exact whole-file bytes before any JSON
+/// decoding, mirroring `validate_r7_p04_gold_coin_evidence`'s byte-length-plus-digest
+/// style for a compiled-in evidence file.
+fn validate_item_semantic_promotion_lowering_v1_bytes() -> Result<(), ProtectedCw2B1ImportError> {
+    if ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET.len()
+        != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_BYTES
+        || world_project_sha256(ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET)
+            != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_SHA256
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 packet bytes",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_item_semantic_promotion_lowering_v1_packet(
+    packet: &ItemSemanticPromotionLoweringV1Packet,
 ) -> Result<(), ProtectedCw2B1ImportError> {
-    if packet.schema != ITEM_SEMANTIC_PROMOTION_SCHEMA
-        || packet.profile != ITEM_SEMANTIC_PROMOTION_PROFILE
-        || packet.status != ITEM_SEMANTIC_PROMOTION_STATUS
-        || packet.target_date != "2026-07-28"
-        || packet.next_action
-            != "APPLY_TO_EXISTING_REFERENCE_ITEM_SEMANTICS_AND_COMPILE_ARTIFACT_V4"
+    if packet.schema != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SCHEMA
+        || packet.profile != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PROFILE
+        || packet.status != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_STATUS
+        || packet.target_date != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_TARGET_DATE
+        || packet.next_action != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_NEXT_ACTION
     {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion packet identity",
+            "item semantic promotion lowering v1 packet identity",
         ));
     }
-    if packet.compiler.path != "tools/reference-world-corridor-census/item_semantic_promotion.py"
-        || packet.compiler.sha256 != ITEM_SEMANTIC_PROMOTION_COMPILER_SHA256
+    if packet.compiler.path != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_PATH
+        || packet.compiler.sha256 != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_SHA256
     {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion compiler binding",
+            "item semantic promotion lowering v1 compiler binding",
         ));
     }
-    if packet.protected_lineage.continuity_compiler_sha256 != ITEM_TARGET_CONTINUITY_COMPILER_SHA256
-        || packet.protected_lineage.continuity_manifest_schema
-            != "OTERYN_ITEM_TARGET_CONTINUITY_MANIFEST/v1"
-        || packet.protected_lineage.continuity_manifest_sha256
-            != ITEM_TARGET_CONTINUITY_MANIFEST_SHA256
-        || packet.protected_lineage.eligible_field_count != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+
+    let lineage = &packet.protected_lineage;
+    let expected_digests = expected_item_semantic_promotion_lowering_v1_artifact_digests();
+    let digests_match = lineage.source_artifact_digests.len() == expected_digests.len()
+        && lineage
+            .source_artifact_digests
+            .iter()
+            .all(|(path, digest)| {
+                expected_digests.get(path).is_some_and(|(mode, sha256)| {
+                    digest.digest_mode == *mode && digest.sha256 == *sha256
+                })
+            });
+    if lineage.eligible_field_count != 9
+        || lineage.source_engine != "crystal"
+        || lineage.source_profile != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SOURCE_PROFILE
+        || lineage.source_repository != CW2_B1_SOURCE_REPOSITORY
+        || lineage.source_revision != CW2_B1_SOURCE_REVISION
+        || lineage.source_population_bundle_digest
+            != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_BUNDLE_DIGEST
+        || !digests_match
     {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion lineage binding",
+            "item semantic promotion lowering v1 lineage binding",
         ));
     }
-    if packet.counts.promoted_fields != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
-        || packet.counts.promoted_items != ITEM_SEMANTIC_PROMOTION_ITEM_COUNT
-        || packet.counts.per_field != expected_item_semantic_promotion_counts()
-        || packet.promotions.len() != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+
+    if packet.counts.promoted_fields != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        || packet.counts.promoted_items != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        || packet.counts.per_field != expected_item_semantic_promotion_lowering_v1_counts()
+        || packet.promotions.len() != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
     {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion count partition",
+            "item semantic promotion lowering v1 count partition",
         ));
     }
+
     let invariants = &packet.invariants;
     if invariants.identity_reminted
         || invariants.mutable_wiki_revision_metadata_retained
@@ -1810,27 +2320,44 @@ fn validate_item_semantic_promotion_packet(
         || !invariants.only_derived_eligible_fields_promoted
         || !invariants.sibling_fields_default_unknown_or_existing_state
         || invariants.whole_item_promotion
+        || invariants.wired_into_rust_importer
     {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion invariant binding",
+            "item semantic promotion lowering v1 invariant binding",
         ));
     }
     Ok(())
 }
 
-/// Apply the exact protected #774-derived semantic promotion packet to the existing full Item
-/// family. Identity allocation, stack class and materialization are inherited byte-for-byte from
-/// the protected full-family importer; only the 69 admitted atomic semantic fields are mutated.
-pub fn protected_cw2_b1_promoted_item_family_import(
+/// Apply the pinned #1018 v1 lowering candidate (population-scale Crystal Item
+/// authored values, re-encoded for the same 9 typed field paths
+/// `decode_item_semantic_promotion_value` already accepts) to the full protected Item
+/// family. This is the single Item semantic-promotion pass over the protected
+/// full-family import's own Default (`Unknown`) semantics (#1048; it replaced the
+/// retired 69-field/23-item `protected_cw2_b1_promoted_item_family_import` pass).
+///
+/// The lowering candidate's own population census already resolves source item
+/// `3031` to its current, post-R7-P04 native key
+/// (`R7_P04_GOLD_COIN_KEY`/`oteryn:item.currency.gold_coin`), so this function applies
+/// that same pinned identity rename to its fresh full-family import before matching
+/// rows. `protected_r7_p04_gold_coin_item_family_import` delegates directly to this
+/// function (after independently validating its own `gold_coin_evidence_bytes`
+/// parameter) rather than reapplying the rename itself, since it is applied here.
+pub fn protected_cw2_b1_item_semantic_promotion_lowering_v1_import(
     evidence_bytes: &[u8],
 ) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
-    let packet: ItemSemanticPromotionPacket =
-        serde_json::from_slice(ITEM_SEMANTIC_PROMOTION_PACKET).map_err(|_| {
-            ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion packet JSON decoding")
+    validate_item_semantic_promotion_lowering_v1_bytes()?;
+    let packet: ItemSemanticPromotionLoweringV1Packet =
+        serde_json::from_slice(ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET).map_err(|_| {
+            ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 packet JSON decoding",
+            )
         })?;
-    validate_item_semantic_promotion_packet(&packet)?;
+    validate_item_semantic_promotion_lowering_v1_packet(&packet)?;
+    validate_r7_p04_gold_coin_evidence(R7_P04_GOLD_COIN_EVIDENCE_PACKET)?;
 
     let mut family = protected_cw2_b1_full_item_family_import(evidence_bytes)?;
+    apply_r7_p04_gold_coin_identity_rename(&mut family)?;
 
     let mut source_to_native = BTreeMap::<u64, String>::new();
     for candidate in &family.batch.candidates {
@@ -1838,7 +2365,7 @@ pub fn protected_cw2_b1_promoted_item_family_import(
             candidate
                 .source_numeric_id
                 .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
-                    "semantic promotion source identity binding",
+                    "item semantic promotion lowering v1 source identity binding",
                 ))?;
         let mut bindings = candidate.normalized_fields.iter().filter_map(|field| {
             if field.field_path == "binding.native-item"
@@ -1851,7 +2378,7 @@ pub fn protected_cw2_b1_promoted_item_family_import(
         let binding = bindings
             .next()
             .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion native identity binding",
+                "item semantic promotion lowering v1 native identity binding",
             ))?;
         if bindings.next().is_some()
             || binding.identity.family != "Item"
@@ -1863,13 +2390,13 @@ pub fn protected_cw2_b1_promoted_item_family_import(
                 .is_some()
         {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion native identity closure",
+                "item semantic promotion lowering v1 native identity closure",
             ));
         }
     }
     if source_to_native.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion source identity count",
+            "item semantic promotion lowering v1 source identity count",
         ));
     }
 
@@ -1877,18 +2404,18 @@ pub fn protected_cw2_b1_promoted_item_family_import(
     for (index, record) in family.records.iter().enumerate() {
         let ProjectReferenceRecord::Item { identity, .. } = record else {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion non-Item record",
+                "item semantic promotion lowering v1 non-Item record",
             ));
         };
         if record_index.insert(identity.key.clone(), index).is_some() {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion record identity duplicate",
+                "item semantic promotion lowering v1 record identity duplicate",
             ));
         }
     }
     if record_index.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion record identity count",
+            "item semantic promotion lowering v1 record identity count",
         ));
     }
 
@@ -1907,7 +2434,7 @@ pub fn protected_cw2_b1_promoted_item_family_import(
                 )
         {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion row ordering",
+                "item semantic promotion lowering v1 row ordering",
             ));
         }
         previous = Some((&row.native_key, &row.field_path, row.source_item_id));
@@ -1918,12 +2445,12 @@ pub fn protected_cw2_b1_promoted_item_family_import(
             != Some(row.native_key.as_str())
         {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion exact identity mismatch",
+                "item semantic promotion lowering v1 exact identity mismatch",
             ));
         }
         if !seen_atoms.insert((row.native_key.clone(), row.field_path.clone())) {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion duplicate atom",
+                "item semantic promotion lowering v1 duplicate atom",
             ));
         }
         seen_items.insert(row.native_key.clone());
@@ -1931,22 +2458,24 @@ pub fn protected_cw2_b1_promoted_item_family_import(
 
         let value = decode_item_semantic_promotion_value(row)?;
         let index = *record_index.get(&row.native_key).ok_or(
-            ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion record missing"),
+            ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 record missing",
+            ),
         )?;
         let ProjectReferenceRecord::Item { semantics, .. } = &mut family.records[index] else {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion record type drift",
+                "item semantic promotion lowering v1 record type drift",
             ));
         };
         apply_item_semantic_promotion(semantics, &row.field_path, value)?;
     }
 
-    if seen_atoms.len() != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
-        || seen_items.len() != ITEM_SEMANTIC_PROMOTION_ITEM_COUNT
-        || per_field != expected_item_semantic_promotion_counts()
+    if seen_atoms.len() != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        || seen_items.len() != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        || per_field != expected_item_semantic_promotion_lowering_v1_counts()
     {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion applied partition",
+            "item semantic promotion lowering v1 applied partition",
         ));
     }
 
@@ -1955,6 +2484,335 @@ pub fn protected_cw2_b1_promoted_item_family_import(
         promoted_fields: seen_atoms.len(),
         promoted_items: seen_items.len(),
     })
+}
+
+fn validate_r7_p04_gold_coin_evidence(
+    evidence_bytes: &[u8],
+) -> Result<(), ProtectedCw2B1ImportError> {
+    if evidence_bytes.len() > R7_P04_GOLD_COIN_EVIDENCE_BYTES {
+        return Err(ProtectedCw2B1ImportError::InputLimitExceeded {
+            actual: evidence_bytes.len(),
+            limit: R7_P04_GOLD_COIN_EVIDENCE_BYTES,
+        });
+    }
+    if evidence_bytes.len() != R7_P04_GOLD_COIN_EVIDENCE_BYTES
+        || world_project_sha256(evidence_bytes) != R7_P04_GOLD_COIN_EVIDENCE_SHA256
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin evidence bytes",
+        ));
+    }
+
+    let packet: serde_json::Value = serde_json::from_slice(evidence_bytes).map_err(|_| {
+        ProtectedCw2B1ImportError::EvidenceMismatch("R7 P04 Gold Coin evidence JSON")
+    })?;
+    let source =
+        packet
+            .get("source_identity")
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin source identity",
+            ))?;
+    let fields =
+        packet
+            .get("field_dispositions")
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin field dispositions",
+            ))?;
+    let invariants =
+        packet
+            .get("invariants")
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin invariants",
+            ))?;
+
+    if packet["schema"] != "OTERYN_R7_P04_GOLD_COIN_PROMOTION/v1"
+        || packet["status"] != "REFERENCE_CONTENT_ONLY"
+        || packet["authority"]["native_identity"] != "OTERYN_EDITORIAL_SELECTION"
+        || packet["authority"]["runtime_qualified"] != false
+        || packet["authority"]["global_parity"] != "UNKNOWN"
+        || source["source_item_id"] != R7_P04_GOLD_COIN_SOURCE_ITEM_ID
+        || source["protected_catalog_index"] != 2_948
+        || source["opaque_sequence"] != R7_P04_GOLD_COIN_OPAQUE_SEQUENCE
+        || source["current_native_key"] != R7_P04_GOLD_COIN_OLD_KEY
+        || source["target_native_key"] != R7_P04_GOLD_COIN_KEY
+        || source["target_revision"] != CW2_B1_FULL_ITEM_REVISION
+        || source["source_node_sha256"]
+            != "9528fadc4f8fdf66e7937d15e3843b3f39b35ae47ae8a737d93ca76efe652124"
+        || source["field_profile_sha256"]
+            != "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0"
+        || source["numeric_coordinate_is_native_identity"] != false
+        || fields["materializable"] != "ADMITTED_TRUE_REFERENCE_CARRIER_ONLY"
+        || fields["stack_class"] != "ADMITTED_STACK_CAPABLE"
+        || fields["typed_stackable"] != "UNKNOWN_NOT_EMITTED"
+        || fields["max_stack"] != "UNKNOWN_NOT_EMITTED"
+        || fields["weight"] != "CONFLICT_RETAINED_NOT_EMITTED"
+        || fields["runtime_activation"] != "NOT_AUTHORIZED"
+        || fields["mint_transfer"] != "NOT_IMPLEMENTED"
+        || fields["global_parity"] != "UNKNOWN"
+        || invariants["full_item_family_count"] != CW2_B1_FULL_ITEM_FAMILY_COUNT
+        || invariants["replace_exactly_one_opaque_identity"] != true
+        || invariants["preserve_unrelated_registry_key_i00003031"] != true
+        || invariants["all_typed_semantics_remain_unknown"] != true
+        || invariants["source_id_never_used_as_native_key"] != true
+        || invariants["no_tibiawiki_binding_from_server_item_id"] != true
+        || invariants["no_runtime_or_durability_claim"] != true
+        || packet["source_evidence"]["canary"]["revision"]
+            != "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+        || packet["source_evidence"]["canary"]["item_node_sha256"]
+            != "a13fff4efd0edccee26f5b37c8f7b131aa85acbe5ac34779f0e475c5cc16ac9e"
+        || packet["source_evidence"]["crystalserver"]["revision"]
+            != "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+        || packet["source_evidence"]["crystalserver"]["item_node_sha256"]
+            != "5684fce5eea620260f5d0dbc2ed9645fc61bd164d88e3ab2fea7425bda4c3ed0"
+        || packet["source_evidence"]["tibiawiki_br"]["revision_id"] != 429_156
+        || packet["source_evidence"]["tibia_fandom"]["revision_id"] != 1_175_624
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin evidence contract",
+        ));
+    }
+    Ok(())
+}
+
+/// Apply the R7 P04 editorial identity decision to one protected full-family source slot.
+///
+/// Source item `3031` remains provenance only. The resulting Reference carrier is
+/// materializable and stack-capable, while every typed semantic field remains unknown. In
+/// particular, this function does not admit a stack maximum, weight, value, exchange rate,
+/// runtime activation, transaction behavior or Global parity.
+///
+/// Shared by `protected_cw2_b1_item_semantic_promotion_lowering_v1_import` (the #1018
+/// lowering candidate's own population census already reflects this rename) and by
+/// `protected_r7_p04_gold_coin_item_family_import`'s historical direct callers; the
+/// latter now delegates straight to the lowering import instead of calling this
+/// function a second time, since a second rename on an already-renamed family would
+/// fail the "target identity already exists" / "opaque record" checks below.
+fn apply_r7_p04_gold_coin_identity_rename(
+    family: &mut ProtectedCw2B1FullItemFamilyImport,
+) -> Result<(), ProtectedCw2B1ImportError> {
+    if family.records.iter().any(|record| {
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_KEY)
+    }) {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin target identity already exists",
+        ));
+    }
+
+    let mut matching_records = family.records.iter_mut().filter(|record| {
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_OLD_KEY)
+    });
+    let record = matching_records
+        .next()
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin opaque record",
+        ))?;
+    if matching_records.next().is_some() {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin opaque record uniqueness",
+        ));
+    }
+    let ProjectReferenceRecord::Item {
+        identity,
+        materializable,
+        stack_class,
+        semantics,
+        ..
+    } = record
+    else {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin record family",
+        ));
+    };
+    if identity.family != "Item"
+        || identity.revision != CW2_B1_FULL_ITEM_REVISION
+        || *materializable
+        || *stack_class != ItemStackDocument::Unknown
+        || !semantics.is_all_unknown()
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin opaque record baseline",
+        ));
+    }
+    identity.key = R7_P04_GOLD_COIN_KEY.to_owned();
+    *materializable = true;
+    *stack_class = ItemStackDocument::StackCapable;
+
+    let mut matching_candidates =
+        family.batch.candidates.iter_mut().filter(|candidate| {
+            candidate.source_numeric_id == Some(R7_P04_GOLD_COIN_SOURCE_ITEM_ID)
+        });
+    let candidate =
+        matching_candidates
+            .next()
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin source candidate",
+            ))?;
+    if matching_candidates.next().is_some() {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin source candidate uniqueness",
+        ));
+    }
+    let mut bindings = candidate.normalized_fields.iter_mut().filter_map(|field| {
+        if field.field_path == "binding.native-item"
+            && let CandidateValue::NativeItemBinding(binding) = &mut field.value
+        {
+            return Some(binding);
+        }
+        None
+    });
+    let binding = bindings
+        .next()
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin native binding",
+        ))?;
+    if bindings.next().is_some()
+        || binding.identity.family != "Item"
+        || binding.identity.key != R7_P04_GOLD_COIN_OLD_KEY
+        || binding.identity.revision != CW2_B1_FULL_ITEM_REVISION
+        || candidate.candidate_target
+            != format!("{R7_P04_GOLD_COIN_OLD_KEY}@{CW2_B1_FULL_ITEM_REVISION}")
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin native binding baseline",
+        ));
+    }
+    binding.identity.key = R7_P04_GOLD_COIN_KEY.to_owned();
+    candidate.candidate_target = format!("{R7_P04_GOLD_COIN_KEY}@{CW2_B1_FULL_ITEM_REVISION}");
+    candidate.disposition_reason =
+        "R7_P04_REFERENCE_CONTENT_PROMOTION_RUNTIME_UNQUALIFIED".to_owned();
+    let authorship = candidate
+        .normalized_fields
+        .iter_mut()
+        .find(|field| field.field_path == "source.native-key-authorship")
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin authorship field",
+        ))?;
+    if authorship.value
+        != CandidateValue::Text("OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_1".to_owned())
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin authorship baseline",
+        ));
+    }
+    authorship.value = CandidateValue::Text(
+        "OTERYN_EDITORIAL_SELECTION_R7_P04_SOURCE_ID_PROVENANCE_ONLY".to_owned(),
+    );
+
+    let mut matching_reimports = family
+        .batch
+        .reimport_states
+        .iter_mut()
+        .filter(|state| state.stable_identity == R7_P04_GOLD_COIN_OLD_KEY);
+    let reimport = matching_reimports
+        .next()
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin reimport identity",
+        ))?;
+    if matching_reimports.next().is_some()
+        || reimport.field_path != "source.item-id"
+        || reimport.baseline != Some(CandidateValue::SourceId(R7_P04_GOLD_COIN_SOURCE_ITEM_ID))
+        || reimport.upstream != Some(CandidateValue::SourceId(R7_P04_GOLD_COIN_SOURCE_ITEM_ID))
+        || reimport.local != Some(CandidateValue::SourceId(R7_P04_GOLD_COIN_SOURCE_ITEM_ID))
+        || reimport.decision != ReimportDecision::Unchanged
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin reimport baseline",
+        ));
+    }
+    reimport.stable_identity = R7_P04_GOLD_COIN_KEY.to_owned();
+
+    let unrelated = family
+        .batch
+        .candidates
+        .iter()
+        .find(|candidate| candidate.source_numeric_id == Some(R7_P04_UNRELATED_SOURCE_ITEM_ID))
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 unrelated registry source",
+        ))?;
+    let unrelated_binding = unrelated
+        .normalized_fields
+        .iter()
+        .find_map(|field| match &field.value {
+            CandidateValue::NativeItemBinding(binding) => Some(binding),
+            _ => None,
+        })
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 unrelated registry binding",
+        ))?;
+    if unrelated_binding.identity.key != R7_P04_UNRELATED_REGISTRY_KEY {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 unrelated registry identity drift",
+        ));
+    }
+
+    let mut allocations = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    for candidate in &family.batch.candidates {
+        let source_item_id =
+            candidate
+                .source_numeric_id
+                .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "R7 P04 allocation source identity",
+                ))?;
+        let binding = candidate
+            .normalized_fields
+            .iter()
+            .find_map(|field| match &field.value {
+                CandidateValue::NativeItemBinding(binding) => Some(binding),
+                _ => None,
+            })
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 allocation native identity",
+            ))?;
+        allocations.push((source_item_id, binding.identity.key.as_str()));
+    }
+    allocations.sort_unstable_by_key(|(source_item_id, _)| *source_item_id);
+    let mut digest_input = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT * 48);
+    for (source_item_id, native_key) in allocations {
+        digest_input.extend_from_slice(source_item_id.to_string().as_bytes());
+        digest_input.push(0);
+        digest_input.extend_from_slice(native_key.as_bytes());
+        digest_input.push(b'\n');
+    }
+    family.allocation_digest_sha256 = world_project_sha256(&digest_input);
+
+    family.records.sort_by(|left, right| {
+        let ProjectReferenceRecord::Item {
+            identity: left_identity,
+            ..
+        } = left
+        else {
+            unreachable!("protected full Item family contains only Item records")
+        };
+        let ProjectReferenceRecord::Item {
+            identity: right_identity,
+            ..
+        } = right
+        else {
+            unreachable!("protected full Item family contains only Item records")
+        };
+        left_identity.key.cmp(&right_identity.key)
+    });
+    family.batch.reimport_states.sort_by(|left, right| {
+        left.stable_identity
+            .cmp(&right.stable_identity)
+            .then_with(|| left.field_path.cmp(&right.field_path))
+    });
+
+    Ok(())
+}
+
+/// Validate the caller-supplied Gold Coin evidence bytes, then delegate to the single
+/// Item semantic-promotion pass (`protected_cw2_b1_item_semantic_promotion_lowering_v1_import`),
+/// which already applies `apply_r7_p04_gold_coin_identity_rename` internally using its
+/// own pinned `R7_P04_GOLD_COIN_EVIDENCE_PACKET`. This function does not call the
+/// rename a second time: doing so on an already-renamed family would fail the
+/// "target identity already exists" check.
+pub fn protected_r7_p04_gold_coin_item_family_import(
+    b1_evidence_bytes: &[u8],
+    gold_coin_evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
+    validate_r7_p04_gold_coin_evidence(gold_coin_evidence_bytes)?;
+    protected_cw2_b1_item_semantic_promotion_lowering_v1_import(b1_evidence_bytes)
 }
 
 fn validate_protected_evidence(evidence_bytes: &[u8]) -> Result<(), ProtectedCw2B1ImportError> {
@@ -2009,5 +2867,445 @@ fn field(path: &str, value: CandidateValue) -> NamedCandidateField {
     NamedCandidateField {
         field_path: path.to_owned(),
         value,
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
+mod donor_identity_epoch_2_tests {
+    use super::*;
+    use serde_json::Value;
+
+    const B1_EVIDENCE: &[u8] = include_bytes!(
+        "../../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
+    );
+    const DONOR_CENSUS: &[u8] = include_bytes!(
+        "../../../../tools/content-schema/item-authoring/samples/donor-census-crystal-summer-update-00ce02a5.json"
+    );
+    const ALIAS_CROSSWALK: &[u8] = include_bytes!(
+        "../../../../docs/agents/evidence/OTV2-20260928-item-donor-identity-b1b-alias-crosswalk.json"
+    );
+    const CRYSTAL_BINDINGS: &[u8] =
+        include_bytes!("../../../../imports/crystalserver/bindings/items.json");
+    const FROZEN_FULL_FAMILY_ALLOCATION_DIGEST: &str =
+        "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
+
+    /// Donor ids held by the alias gate: 35500 and 54610 are `PROBABLE_MATCH` (a unique
+    /// counterpart differing only in sprite), the other six are `AMBIGUOUS` (several).
+    const HELD_DONOR_IDS: [u64; 8] = [35500, 53380, 54609, 54610, 54613, 54614, 54615, 54616];
+
+    fn epoch2() -> ProtectedCw2B1DonorIdentityEpoch2Import {
+        protected_cw2_b1_donor_identity_epoch_2_import(B1_EVIDENCE, DONOR_CENSUS, ALIAS_CROSSWALK)
+            .expect("donor identity epoch 2")
+    }
+
+    fn record_key(record: &ProjectReferenceRecord) -> &str {
+        item_record_key(record)
+    }
+
+    fn binding_key(candidate: &ImportCandidate) -> &str {
+        candidate
+            .candidate_target
+            .split('@')
+            .next()
+            .expect("candidate target key")
+    }
+
+    /// `(source id, key)` pairs of the epoch-2 batch, ascending by source id.
+    fn minted(imported: &ProtectedCw2B1DonorIdentityEpoch2Import) -> Vec<(u64, String)> {
+        let mut minted = imported
+            .batch
+            .candidates
+            .iter()
+            .map(|candidate| {
+                (
+                    candidate.source_numeric_id.expect("source id"),
+                    binding_key(candidate).to_owned(),
+                )
+            })
+            .collect::<Vec<_>>();
+        minted.sort();
+        minted
+    }
+
+    fn bindings_file() -> Vec<Value> {
+        let file: Value = serde_json::from_slice(CRYSTAL_BINDINGS).expect("bindings JSON");
+        file["bindings"].as_array().expect("bindings array").clone()
+    }
+
+    #[test]
+    fn epoch_2_mints_exactly_the_pinned_range_in_ascending_source_id_order() {
+        let imported = epoch2();
+        assert_eq!(imported.records.len(), CW2_B1_DONOR_EPOCH2_MINTED_COUNT);
+        assert_eq!(imported.records.len(), 404);
+        assert_eq!(CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE, 38_094);
+        assert_eq!(CW2_B1_DONOR_EPOCH2_LAST_SEQUENCE, 38_497);
+        assert_eq!(
+            imported.allocation_digest_sha256,
+            CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256
+        );
+
+        let minted = minted(&imported);
+        assert_eq!(minted.len(), 404);
+        for (rank, (_, key)) in minted.iter().enumerate() {
+            assert_eq!(
+                key,
+                &format!("oteryn:item.registry.i{:08}", 38_094 + rank),
+                "rank {rank}"
+            );
+        }
+        assert!(minted.windows(2).all(|pair| pair[0].0 < pair[1].0));
+        assert_eq!(minted[0].1, "oteryn:item.registry.i00038094");
+        assert_eq!(minted[403].1, "oteryn:item.registry.i00038497");
+
+        let mut record_keys = imported.records.iter().map(record_key).collect::<Vec<_>>();
+        let batch_keys = minted
+            .iter()
+            .map(|(_, key)| key.as_str())
+            .collect::<Vec<_>>();
+        record_keys.sort_unstable();
+        assert_eq!(record_keys, batch_keys);
+
+        // Identity-only pointers, as for epoch-1 opaque keys; no other change of state.
+        assert!(imported.records.iter().all(|record| matches!(
+            record,
+            ProjectReferenceRecord::Item {
+                materializable: false,
+                stack_class: ItemStackDocument::Unknown,
+                ..
+            }
+        )));
+        assert!(imported.alias_bindings.is_empty());
+        // Eight same-name donors match an existing Item on article/plural and the full
+        // attribute set and differ at most in sprite: held, with neither a key nor an alias.
+        assert_eq!(
+            imported.unbound_source_item_ids,
+            HELD_DONOR_IDS.to_vec(),
+            "sprite-only differences are held, never minted"
+        );
+        let minted_ids = minted.iter().map(|(id, _)| *id).collect::<BTreeSet<_>>();
+        assert!(HELD_DONOR_IDS.iter().all(|id| !minted_ids.contains(id)));
+        assert_eq!(minted.len() + HELD_DONOR_IDS.len(), 412);
+        assert!(imported.batch.candidates.iter().all(|candidate| {
+            candidate.normalized_fields.iter().any(|field| {
+                field.field_path == "source.native-key-authorship"
+                    && field.value
+                        == CandidateValue::Text(
+                            "OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_2".to_owned(),
+                        )
+            })
+        }));
+    }
+
+    #[test]
+    fn epoch_2_is_deterministic_and_leaves_the_frozen_epoch_1_import_untouched() {
+        let first = epoch2();
+        let second = epoch2();
+        assert_eq!(first, second);
+
+        let frozen =
+            protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("frozen full item family");
+        assert_eq!(
+            frozen.allocation_digest_sha256,
+            FROZEN_FULL_FAMILY_ALLOCATION_DIGEST
+        );
+        assert_eq!(frozen.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+        assert_eq!(CW2_B1_OPAQUE_ITEM_COUNT, 38_093);
+        assert_eq!(
+            frozen.allocation_digest_sha256,
+            protected_cw2_b1_full_item_family_import(B1_EVIDENCE)
+                .expect("frozen full item family")
+                .allocation_digest_sha256
+        );
+
+        // No key and no source id is shared with epoch 1, and retired 2,921 stays retired.
+        let frozen_keys = frozen
+            .records
+            .iter()
+            .map(record_key)
+            .collect::<BTreeSet<_>>();
+        let frozen_source_ids = frozen
+            .batch
+            .candidates
+            .iter()
+            .filter_map(|candidate| candidate.source_numeric_id)
+            .collect::<BTreeSet<_>>();
+        let minted = minted(&first);
+        assert!(
+            minted
+                .iter()
+                .all(|(source_id, key)| !frozen_keys.contains(key.as_str())
+                    && !frozen_source_ids.contains(source_id))
+        );
+        assert!(
+            !minted
+                .iter()
+                .any(|(_, key)| key == R7_P04_GOLD_COIN_OLD_KEY)
+        );
+        assert!(!minted.iter().any(|(_, key)| key == R7_P04_GOLD_COIN_KEY));
+        assert_eq!(
+            minted
+                .iter()
+                .map(|(_, key)| key.as_str())
+                .collect::<BTreeSet<_>>()
+                .len(),
+            minted.len()
+        );
+    }
+
+    #[test]
+    fn committed_bindings_carry_epoch_1_unchanged_and_exactly_the_epoch_2_allocation() {
+        let imported = epoch2();
+        let frozen =
+            protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("frozen full item family");
+        let bindings = bindings_file();
+        assert_eq!(
+            bindings.len(),
+            CW2_B1_FULL_ITEM_FAMILY_COUNT + CW2_B1_DONOR_EPOCH2_MINTED_COUNT
+        );
+
+        // Epoch 1: the 38,157 base-revision rows are the frozen allocation, with only the
+        // R7-P04 gold coin at its promoted key.
+        let mut expected_epoch1 = frozen
+            .batch
+            .candidates
+            .iter()
+            .map(|candidate| {
+                let key = binding_key(candidate);
+                let key = if key == R7_P04_GOLD_COIN_OLD_KEY {
+                    R7_P04_GOLD_COIN_KEY
+                } else {
+                    key
+                };
+                (
+                    candidate.source_numeric_id.expect("source id").to_string(),
+                    key.to_owned(),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let epoch1_rows = bindings
+            .iter()
+            .filter(|row| row["source_revision"] == CW2_B1_SOURCE_REVISION)
+            .collect::<Vec<_>>();
+        assert_eq!(epoch1_rows.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+        for row in &epoch1_rows {
+            assert_eq!(row["disposition"], "EXACT");
+            assert_eq!(row["identity_namespace"], "ots/item_server_id");
+            assert_eq!(row["source_key"], "oteryn:source.crystalserver");
+            let external_id = row["external_id"].as_str().expect("external id");
+            let key = expected_epoch1
+                .remove(external_id)
+                .expect("epoch-1 source id in the frozen allocation");
+            assert_eq!(row["target"]["key"], key.as_str());
+        }
+        assert!(expected_epoch1.is_empty());
+
+        // Epoch 2: one EXACT row per minted id at the donor commit, in ascending source id
+        // order after every epoch-1 row, at exactly the keys the function mints.
+        let epoch2_rows = &bindings[CW2_B1_FULL_ITEM_FAMILY_COUNT..];
+        assert!(
+            bindings[..CW2_B1_FULL_ITEM_FAMILY_COUNT]
+                .iter()
+                .all(|row| row["source_revision"] == CW2_B1_SOURCE_REVISION)
+        );
+        assert_eq!(epoch2_rows.len(), CW2_B1_DONOR_EPOCH2_MINTED_COUNT);
+        let minted = minted(&imported);
+        for (row, (source_id, key)) in epoch2_rows.iter().zip(&minted) {
+            assert_eq!(row["disposition"], "EXACT");
+            assert_eq!(row["identity_namespace"], "ots/item_server_id");
+            assert_eq!(row["source_key"], "oteryn:source.crystalserver");
+            assert_eq!(row["source_revision"], CW2_B1_DONOR_EPOCH2_SOURCE_REVISION);
+            assert_eq!(row["external_id"], source_id.to_string().as_str());
+            assert_eq!(row["target"]["family"], "Item");
+            assert_eq!(row["target"]["key"], key.as_str());
+            assert_eq!(row["target"]["revision"], CW2_B1_DONOR_EPOCH2_REVISION);
+        }
+
+        // No collision anywhere in the file: every key and every (revision, id) is unique.
+        let keys = bindings
+            .iter()
+            .map(|row| row["target"]["key"].as_str().expect("key"))
+            .collect::<BTreeSet<_>>();
+        assert_eq!(keys.len(), bindings.len());
+        assert!(!keys.contains(R7_P04_GOLD_COIN_OLD_KEY));
+    }
+
+    #[test]
+    fn epoch_2_inputs_are_pinned_by_exact_bytes() {
+        let mut census = DONOR_CENSUS.to_vec();
+        census.push(b' ');
+        assert!(matches!(
+            protected_cw2_b1_donor_identity_epoch_2_import(B1_EVIDENCE, &census, ALIAS_CROSSWALK),
+            Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "donor census bytes"
+            ))
+        ));
+        let mut crosswalk = ALIAS_CROSSWALK.to_vec();
+        crosswalk.push(b' ');
+        assert!(matches!(
+            protected_cw2_b1_donor_identity_epoch_2_import(B1_EVIDENCE, DONOR_CENSUS, &crosswalk),
+            Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "donor alias crosswalk bytes"
+            ))
+        ));
+        assert!(
+            protected_cw2_b1_donor_identity_epoch_2_import(
+                &B1_EVIDENCE[..B1_EVIDENCE.len() - 1],
+                DONOR_CENSUS,
+                ALIAS_CROSSWALK
+            )
+            .is_err()
+        );
+    }
+
+    /// Re-pin a modified crosswalk so its state handling can be exercised: the modified bytes
+    /// and the resulting allocation are bound by digest exactly as the frozen ones are.
+    fn admit_modified(
+        edit: impl FnOnce(&mut Vec<Value>),
+        minted_count: usize,
+        allocation: &[(u64, String)],
+    ) -> Result<ProtectedCw2B1DonorIdentityEpoch2Import, ProtectedCw2B1ImportError> {
+        let mut crosswalk: Value = serde_json::from_slice(ALIAS_CROSSWALK).expect("crosswalk");
+        edit(crosswalk["rows"].as_array_mut().expect("rows"));
+        let mut digest_input = Vec::new();
+        for (source_id, key) in allocation {
+            digest_input.extend_from_slice(source_id.to_string().as_bytes());
+            digest_input.push(0);
+            digest_input.extend_from_slice(key.as_bytes());
+            digest_input.push(b'\n');
+        }
+        let digest = world_project_sha256(&digest_input);
+        crosswalk["epoch_2"]["allocation_digest_sha256"] = Value::String(digest.clone());
+        let bytes = serde_json::to_vec(&crosswalk).expect("crosswalk bytes");
+        let pins = DonorEpoch2Pins {
+            census_bytes: CW2_B1_DONOR_EPOCH2_CENSUS_BYTES,
+            census_sha256: CW2_B1_DONOR_EPOCH2_CENSUS_SHA256,
+            census_id_count: CW2_B1_DONOR_EPOCH2_CENSUS_ID_COUNT,
+            crosswalk_bytes: bytes.len(),
+            crosswalk_sha256: Box::leak(world_project_sha256(&bytes).into_boxed_str()),
+            minted_count,
+            allocation_digest_sha256: Box::leak(digest.into_boxed_str()),
+        };
+        admit_donor_identity_epoch_2(B1_EVIDENCE, DONOR_CENSUS, &bytes, &pins)
+    }
+
+    fn set_state(row: &mut Value, state: &str, target: Option<&str>) {
+        row["state"] = Value::String(state.to_owned());
+        if let Some(target) = target {
+            row["alias_target_key"] = Value::String(target.to_owned());
+        }
+    }
+
+    #[test]
+    fn only_no_match_rows_mint_and_aliases_bind_to_existing_keys() {
+        let baseline = minted(&epoch2());
+        // Minted ids 1 (alias), 2 (ambiguous) and 3 (conflict) mint nothing; every later rank
+        // shifts down, so the key is the rank among the minted ids and not the census position.
+        let expected = std::iter::once(baseline[0].clone())
+            .chain(baseline[4..].iter().enumerate().map(|(offset, (id, _))| {
+                (*id, opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT + 2 + offset))
+            }))
+            .collect::<Vec<_>>();
+        let (alias_id, ambiguous_id, conflict_id) = (baseline[1].0, baseline[2].0, baseline[3].0);
+        let imported = admit_modified(
+            |rows| {
+                for row in rows.iter_mut() {
+                    match row["source_item_id"].as_u64() {
+                        Some(id) if id == alias_id => set_state(
+                            row,
+                            "ACCEPTED_ALIAS",
+                            Some("oteryn:item.registry.i00000001"),
+                        ),
+                        Some(id) if id == ambiguous_id => set_state(row, "AMBIGUOUS", None),
+                        Some(id) if id == conflict_id => set_state(row, "CONFLICT", None),
+                        _ => {}
+                    }
+                }
+            },
+            expected.len(),
+            &expected,
+        )
+        .expect("modified crosswalk");
+        assert_eq!(minted(&imported), expected);
+        assert_eq!(
+            imported.alias_bindings,
+            vec![(alias_id, "oteryn:item.registry.i00000001".to_owned())]
+        );
+        let mut unbound = HELD_DONOR_IDS.to_vec();
+        unbound.extend([ambiguous_id, conflict_id]);
+        unbound.sort_unstable();
+        assert_eq!(imported.unbound_source_item_ids, unbound);
+        assert_eq!(imported.records.len(), expected.len());
+        assert_eq!(
+            imported.records.last().map(record_key),
+            Some("oteryn:item.registry.i00038494")
+        );
+
+        // The gold coin's retired key is not an alias target; its promoted key is.
+        for (target, admitted) in [
+            (R7_P04_GOLD_COIN_OLD_KEY, false),
+            (R7_P04_GOLD_COIN_KEY, true),
+            ("oteryn:item.registry.i00038094", false),
+            ("oteryn:item.registry.i99999999", false),
+        ] {
+            let result = admit_modified(
+                |rows| set_state(&mut rows[0], "ACCEPTED_ALIAS", Some(target)),
+                baseline.len() - 1,
+                &baseline[1..]
+                    .iter()
+                    .enumerate()
+                    .map(|(offset, (id, _))| {
+                        (*id, opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT + 1 + offset))
+                    })
+                    .collect::<Vec<_>>(),
+            );
+            assert_eq!(result.is_ok(), admitted, "{target}");
+        }
+    }
+
+    #[test]
+    fn a_state_that_carries_a_target_or_is_unknown_fails_closed() {
+        let baseline = minted(&epoch2());
+        let shifted = baseline[1..]
+            .iter()
+            .enumerate()
+            .map(|(offset, (id, _))| (*id, opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT + 1 + offset)))
+            .collect::<Vec<_>>();
+        assert!(matches!(
+            admit_modified(
+                |rows| set_state(
+                    &mut rows[0],
+                    "AMBIGUOUS",
+                    Some("oteryn:item.registry.i00000001")
+                ),
+                shifted.len(),
+                &shifted
+            ),
+            Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "unbound state carries a target"
+            ))
+        ));
+        assert!(matches!(
+            admit_modified(
+                |rows| set_state(&mut rows[0], "MINT_ME", None),
+                shifted.len(),
+                &shifted
+            ),
+            Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "alias crosswalk state"
+            ))
+        ));
+        // A missing row, or rows out of census order, are not the frozen census ids.
+        assert!(
+            admit_modified(
+                |rows| {
+                    rows.pop();
+                },
+                baseline.len(),
+                &baseline
+            )
+            .is_err()
+        );
+        assert!(admit_modified(|rows| rows.swap(0, 1), baseline.len(), &baseline).is_err());
     }
 }

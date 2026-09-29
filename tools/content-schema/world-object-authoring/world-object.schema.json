@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:world-object-authoring:candidate:1",
+  "title": "Oteryn WorldObject definition (WO-0 §4.3)",
+  "description": "One static WorldObject catalog record per D93 family key: what an object is. The stateful placement behaviour stays with the runtime LocalObject overlay. Facts use the KNOWN/UNKNOWN wrapper; an unknown fact is never defaulted.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "WorldObject"
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^oteryn:world-object\\.registry\\.i[0-9]{8}$"
+        },
+        "revision": {
+          "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "kind": {
+      "oneOf": [
+        {
+          "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/unknown"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "const": "KNOWN"
+            },
+            "value": {
+              "enum": [
+                "object",
+                "door",
+                "ladder",
+                "bed",
+                "container_fixture",
+                "teleport",
+                "corpse",
+                "decoration"
+              ]
+            }
+          },
+          "required": [
+            "state",
+            "value"
+          ]
+        }
+      ]
+    },
+    "collision": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "blocks_movement": {
+          "$ref": "#/$defs/knownBool"
+        },
+        "avoid": {
+          "$ref": "#/$defs/knownBool"
+        },
+        "blocks_projectile": {
+          "$ref": "#/$defs/knownBool"
+        },
+        "blocks_sight": {
+          "$ref": "#/$defs/knownBool"
+        }
+      },
+      "required": [
+        "blocks_movement",
+        "avoid",
+        "blocks_projectile",
+        "blocks_sight"
+      ]
+    },
+    "movable": {
+      "$ref": "#/$defs/knownBool"
+    },
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hangable": {
+          "$ref": "#/$defs/knownBool"
+        },
+        "hook_direction": {
+          "$ref": "#/$defs/knownText"
+        },
+        "rotatable": {
+          "$ref": "#/$defs/knownBool"
+        },
+        "rotate_to": {
+          "$ref": "#/$defs/knownSourceRef"
+        },
+        "elevation": {
+          "$ref": "#/$defs/knownNonNegativeInteger"
+        },
+        "walk_stack": {
+          "$ref": "#/$defs/knownBool"
+        }
+      },
+      "required": [
+        "hangable",
+        "hook_direction",
+        "rotatable",
+        "rotate_to",
+        "elevation",
+        "walk_stack"
+      ]
+    },
+    "floor_change": {
+      "$ref": "#/$defs/knownText"
+    },
+    "bed": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "part": {
+          "$ref": "#/$defs/knownText"
+        },
+        "part_of": {
+          "$ref": "#/$defs/knownSourceRef"
+        },
+        "partner_direction": {
+          "$ref": "#/$defs/knownText"
+        },
+        "male_sleeper": {
+          "$ref": "#/$defs/knownSourceRef"
+        },
+        "female_sleeper": {
+          "$ref": "#/$defs/knownSourceRef"
+        },
+        "male_transform_to": {
+          "$ref": "#/$defs/knownSourceRef"
+        },
+        "female_transform_to": {
+          "$ref": "#/$defs/knownSourceRef"
+        }
+      },
+      "required": [
+        "part",
+        "part_of",
+        "partner_direction",
+        "male_sleeper",
+        "female_sleeper",
+        "male_transform_to",
+        "female_transform_to"
+      ]
+    },
+    "fluid_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fluid_name": {
+          "$ref": "#/$defs/knownText"
+        },
+        "liquid_pool": {
+          "$ref": "#/$defs/knownBool"
+        }
+      },
+      "required": [
+        "fluid_name",
+        "liquid_pool"
+      ]
+    },
+    "corpse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "corpse": {
+          "$ref": "#/$defs/knownBool"
+        },
+        "player_corpse": {
+          "$ref": "#/$defs/knownBool"
+        }
+      },
+      "required": [
+        "corpse",
+        "player_corpse"
+      ]
+    },
+    "door": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "$ref": "#/$defs/knownNonNegativeInteger"
+        },
+        "house_guests": {
+          "$ref": "#/$defs/knownBool"
+        }
+      },
+      "required": [
+        "level",
+        "house_guests"
+      ]
+    },
+    "client_projection": {
+      "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/clientProjection"
+    },
+    "provenance": {
+      "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/provenance"
+    }
+  },
+  "required": [
+    "identity",
+    "kind",
+    "collision",
+    "movable",
+    "placement",
+    "floor_change",
+    "fluid_source",
+    "client_projection",
+    "provenance"
+  ],
+  "$defs": {
+    "knownBool": {
+      "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/knownBool"
+    },
+    "knownText": {
+      "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/knownText"
+    },
+    "knownNonNegativeInteger": {
+      "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/knownNonNegativeInteger"
+    },
+    "knownSourceRef": {
+      "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/knownSourceRef"
+    }
+  }
+}

@@ -1,0 +1,3249 @@
+{
+ "classification": "DERIVED from committed samples and the pinned Canary/CrystalServer checkouts",
+ "source_revisions": {
+  "canary": "opentibiabr/canary@04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "crystalserver": "zimbadev/crystalserver@9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+ },
+ "rules": {
+  "owner_pending": {
+   "named_reasons": {
+    "kv write without an accepted owner": "kv_state",
+    "condition without an accepted owner": "condition",
+    "boss cooldown without an accepted owner": "boss_cooldown",
+    "creature removal without an accepted owner": "creature_removal",
+    "delayed callback (addEvent) without a scheduler owner": "scheduler"
+   },
+   "same_owner_extensions": {
+    "kv_state": ":kv\\(\\)|\\w*[Kk][Vv]\\w*[.:](get|set|remove)\\(",
+    "boss_cooldown": ":canFightBoss\\(|:setBossCooldown\\(",
+    "condition": ":(addCondition|removeCondition)\\("
+   }
+  },
+  "shared_mechanism": {
+   "boss_portal_spectator_gate": {
+    "definition": "A step-in mini-boss portal: the `Spectators()` builder screens the room (setOnlyPlayer/setCheckPosition/check), gates entry on cooldown and level, teleports the player in, spawns the boss, and later removes players and monsters (removeMonsters/removePlayers/clearCreaturesCache) once the fight window (addEvent) elapses.",
+    "rule": "\\bSpectators\\(\\)|:(setOnlyPlayer|setRemoveDestination|setCheckPosition|check|removeMonsters|removePlayers|clearCreaturesCache)\\(",
+    "owner_lane": "encounter/boss-room entry -- not yet in OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md SS1-3; GAME-AI-01 covers the spawn half only"
+   },
+   "kill_reward_fanout": {
+    "definition": "A creature-death callback delegates to the shared `onDeathForDamagingPlayers`/`onDeathForParty` library helper, which the engine already fans out to every damaging player or the whole party; only the per-player callback body is quest-specific (it is transcribed on its own, statement by statement).",
+    "rule": "\\bon(DeathForDamagingPlayers|DeathForParty)\\(",
+    "owner_lane": "no owner yet fans a single kill out to multiple credited players/party members; sits above the existing per-effect owners (Quest/Item/Experience/Achievement), which the per-player body still delegates to once expanded"
+   },
+   "boss_room_entry_gate": {
+    "definition": "The shared `roomIsOccupied`/`Player:doCheckBossRoom` library checks (both servers define each once in data/libs/functions/functions.lua) gate a lever or portal on room occupancy/an active boss before the encounter opens.",
+    "rule": "\\b(roomIsOccupied|doCheckBossRoom)\\(",
+    "owner_lane": "encounter/boss-room entry -- same open lane as boss_portal_spectator_gate"
+   }
+  },
+  "rejected_mechanisms": [
+   {
+    "name": "boss-room lever tile-scan + kickerPlayerRoomAfterMin",
+    "reason": "the exact shape the task named (players on N tiles scanned in a loop, teleported, kicked after a timer via the shared `kickerPlayerRoomAfterMin` library function) is real (cults_of_tibia/actions_bosses_levers.lua, repeated per boss lever) but occurs in exactly 1 quest on the pinned sources; below the >=3-quest bar."
+   },
+   {
+    "name": "area cleanup on exit (isPlayer -> teleport, isMonster -> remove, in a bounded room)",
+    "reason": "real in heart_of_destruction (`clearArea`, 3 lever scripts, all reached from the transcribed callback), but the similarly-named helpers in hero_of_rathleton, the_order_of_lion and a_pirates_tail_quest either do something else entirely (item-only cleanup) or their call site is never reached by the converter at all -- no explicit call-shape rule reaches a second quest without guessing."
+   },
+   {
+    "name": "generic getSpectators()/isInRange() room-occupancy loops",
+    "reason": "used in 60+ quest scripts for wildly different purposes (damage tallies, area combat, teleport screening, puzzle triggers); no single call shape distinguishes \"room occupancy check\" from the rest without guessing at intent."
+   },
+   {
+    "name": "combat damage application (doTargetCombatHealth/doAreaCombatHealth)",
+    "reason": "recurring (~15 quests) but each call carries its own formula/area/target selection; there is no accepted owner for scripted combat damage to delegate to, so this is a new-owner question for a later task, not a shared mechanism -- stays bespoke."
+   },
+   {
+    "name": "random reward/position picks (`list[math.random(#list)]`)",
+    "reason": "only 2 quests on the pinned sources; below the >=3-quest bar."
+   },
+   {
+    "name": "timed world-object revert (revert_after_ms)",
+    "reason": "already decided (D38 SS7); not a triage candidate."
+   }
+  ]
+ },
+ "counts": {
+  "unresolved_lines": 1902,
+  "unresolved_conditions": 1786,
+  "total_unresolved_items": 3688,
+  "by_bucket": {
+   "owner_pending": 467,
+   "shared_mechanism": 145,
+   "bespoke": 3076
+  },
+  "quests_triaged": 204,
+  "quests_with_bespoke_work": 92,
+  "quests_fully_covered_by_owners_and_mechanisms": 1,
+  "interactions_unlinked_to_a_quest": 29
+ },
+ "owners_ranked_by_quests": [
+  {
+   "owner": "scheduler",
+   "lines": 287,
+   "interactions": 183,
+   "quests": 44
+  },
+  {
+   "owner": "condition",
+   "lines": 26,
+   "interactions": 25,
+   "quests": 18
+  },
+  {
+   "owner": "creature_removal",
+   "lines": 43,
+   "interactions": 32,
+   "quests": 17
+  },
+  {
+   "owner": "boss_cooldown",
+   "lines": 43,
+   "interactions": 28,
+   "quests": 15
+  },
+  {
+   "owner": "kv_state",
+   "lines": 68,
+   "interactions": 29,
+   "quests": 9
+  }
+ ],
+ "mechanisms_ranked_by_quests": [
+  {
+   "mechanism": "kill_reward_fanout",
+   "lines": 67,
+   "interactions": 66,
+   "quests": 36,
+   "definition": "A creature-death callback delegates to the shared `onDeathForDamagingPlayers`/`onDeathForParty` library helper, which the engine already fans out to every damaging player or the whole party; only the per-player callback body is quest-specific (it is transcribed on its own, statement by statement).",
+   "rule": "\\bon(DeathForDamagingPlayers|DeathForParty)\\(",
+   "owner_lane": "no owner yet fans a single kill out to multiple credited players/party members; sits above the existing per-effect owners (Quest/Item/Experience/Achievement), which the per-player body still delegates to once expanded"
+  },
+  {
+   "mechanism": "boss_room_entry_gate",
+   "lines": 21,
+   "interactions": 20,
+   "quests": 9,
+   "definition": "The shared `roomIsOccupied`/`Player:doCheckBossRoom` library checks (both servers define each once in data/libs/functions/functions.lua) gate a lever or portal on room occupancy/an active boss before the encounter opens.",
+   "rule": "\\b(roomIsOccupied|doCheckBossRoom)\\(",
+   "owner_lane": "encounter/boss-room entry -- same open lane as boss_portal_spectator_gate"
+  },
+  {
+   "mechanism": "boss_portal_spectator_gate",
+   "lines": 57,
+   "interactions": 7,
+   "quests": 4,
+   "definition": "A step-in mini-boss portal: the `Spectators()` builder screens the room (setOnlyPlayer/setCheckPosition/check), gates entry on cooldown and level, teleports the player in, spawns the boss, and later removes players and monsters (removeMonsters/removePlayers/clearCreaturesCache) once the fight window (addEvent) elapses.",
+   "rule": "\\bSpectators\\(\\)|:(setOnlyPlayer|setRemoveDestination|setCheckPosition|check|removeMonsters|removePlayers|clearCreaturesCache)\\(",
+   "owner_lane": "encounter/boss-room entry -- not yet in OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md SS1-3; GAME-AI-01 covers the spawn half only"
+  }
+ ],
+ "unlock_order": [
+  {
+   "adds": "owner:scheduler",
+   "quests_owner_mechanism_complete": 11,
+   "of_which_still_have_bespoke_gaps": 11
+  },
+  {
+   "adds": "mechanism:kill_reward_fanout",
+   "quests_owner_mechanism_complete": 23,
+   "of_which_still_have_bespoke_gaps": 22
+  },
+  {
+   "adds": "owner:condition",
+   "quests_owner_mechanism_complete": 30,
+   "of_which_still_have_bespoke_gaps": 29
+  },
+  {
+   "adds": "owner:creature_removal",
+   "quests_owner_mechanism_complete": 36,
+   "of_which_still_have_bespoke_gaps": 35
+  },
+  {
+   "adds": "owner:kv_state",
+   "quests_owner_mechanism_complete": 44,
+   "of_which_still_have_bespoke_gaps": 43
+  },
+  {
+   "adds": "owner:boss_cooldown",
+   "quests_owner_mechanism_complete": 51,
+   "of_which_still_have_bespoke_gaps": 50
+  },
+  {
+   "adds": "mechanism:boss_room_entry_gate",
+   "quests_owner_mechanism_complete": 60,
+   "of_which_still_have_bespoke_gaps": 59
+  },
+  {
+   "adds": "mechanism:boss_portal_spectator_gate",
+   "quests_owner_mechanism_complete": 64,
+   "of_which_still_have_bespoke_gaps": 63
+  }
+ ],
+ "quests": [
+  {
+   "quest": "canary:quest/a_father_s_burden_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 3
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:3"
+   ]
+  },
+  {
+   "quest": "canary:quest/a_pirates_tail",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 128
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:128"
+   ]
+  },
+  {
+   "quest": "canary:quest/adorned_uh_rune_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/adventurers_guild",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 1,
+    "bespoke": 4
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "mechanism:kill_reward_fanout",
+    "bespoke:4"
+   ]
+  },
+  {
+   "quest": "canary:quest/adventures_of_galthen_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 3,
+    "shared_mechanism": 0,
+    "bespoke": 10
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "kv_state"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:kv_state",
+    "bespoke:10"
+   ]
+  },
+  {
+   "quest": "canary:quest/alawar_s_vault_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 1
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:1"
+   ]
+  },
+  {
+   "quest": "canary:quest/an_interest_in_botany_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/an_uneasy_alliance_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 1,
+    "bespoke": 1
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:1"
+   ]
+  },
+  {
+   "quest": "canary:quest/assassin_outfit",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 1
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:1"
+   ]
+  },
+  {
+   "quest": "canary:quest/barbarian_arena_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/barbarian_axe_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/battle_axe_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/bear_room_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/beggar_outfits_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/behemoth_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 1
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:1"
+   ]
+  },
+  {
+   "quest": "canary:quest/berserker_treasure_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/bigfoot_s_burden_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 20,
+    "shared_mechanism": 2,
+    "bespoke": 67
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "condition",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:condition",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:67"
+   ]
+  },
+  {
+   "quest": "canary:quest/black_knight_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/blood_brothers_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 5,
+    "shared_mechanism": 0,
+    "bespoke": 49
+   },
+   "owners_needed": [
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:creature_removal",
+    "owner:scheduler",
+    "bespoke:49"
+   ]
+  },
+  {
+   "quest": "canary:quest/blood_herb_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/captain_iglues_treasure_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/children_of_the_revolution_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 5,
+    "shared_mechanism": 0,
+    "bespoke": 26
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:26"
+   ]
+  },
+  {
+   "quest": "canary:quest/circle_room_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/combat_knife_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/cradle_of_monsters",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 9
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:9"
+   ]
+  },
+  {
+   "quest": "canary:quest/crusader_helmet_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/crystal_wand_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/cults_of_tibia_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 31,
+    "shared_mechanism": 3,
+    "bespoke": 199
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "condition",
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:condition",
+    "owner:creature_removal",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:199"
+   ]
+  },
+  {
+   "quest": "canary:quest/dangerous_depths_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 16,
+    "shared_mechanism": 2,
+    "bespoke": 89
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:creature_removal",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:89"
+   ]
+  },
+  {
+   "quest": "canary:quest/darashia_dragon_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/dark_armor_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/dark_trails_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/dawnport_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 3,
+    "bespoke": 14
+   },
+   "owners_needed": [
+    "kv_state"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:kv_state",
+    "mechanism:kill_reward_fanout",
+    "bespoke:14"
+   ]
+  },
+  {
+   "quest": "canary:quest/dead_archer_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/deeper_fibula_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/deeplings_worldchange",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 4
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:4"
+   ]
+  },
+  {
+   "quest": "canary:quest/demon_helmet_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 9
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:9"
+   ]
+  },
+  {
+   "quest": "canary:quest/demon_oak",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 18
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:18"
+   ]
+  },
+  {
+   "quest": "canary:quest/demona_ring_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/desert_dungeon_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 3
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:3"
+   ]
+  },
+  {
+   "quest": "canary:quest/devil_helmet_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 4
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:4"
+   ]
+  },
+  {
+   "quest": "canary:quest/double_hero_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/doublet_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/draconia_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 4
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:4"
+   ]
+  },
+  {
+   "quest": "canary:quest/dragon_corpse_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/dragon_tower_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/dreamer_s_challenge_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 8,
+    "shared_mechanism": 0,
+    "bespoke": 89
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:89"
+   ]
+  },
+  {
+   "quest": "canary:quest/druid_outfits_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/edron_goblin_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/elemental_spheres_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 2,
+    "shared_mechanism": 1,
+    "bespoke": 49
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:49"
+   ]
+  },
+  {
+   "quest": "canary:quest/elephant_tusk_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/emperor_s_cookies_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/explorer_brooch_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/factions",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/fanfare_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/feaster_of_souls_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/ferumbras_ascension_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 52,
+    "shared_mechanism": 8,
+    "bespoke": 162
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "boss_room_entry_gate",
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:creature_removal",
+    "owner:scheduler",
+    "mechanism:boss_room_entry_gate",
+    "mechanism:kill_reward_fanout",
+    "bespoke:162"
+   ]
+  },
+  {
+   "quest": "canary:quest/fire_axe_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/fishing_box_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/forgotten_knowledge_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 24,
+    "shared_mechanism": 7,
+    "bespoke": 117
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "boss_room_entry_gate",
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:creature_removal",
+    "owner:scheduler",
+    "mechanism:boss_room_entry_gate",
+    "mechanism:kill_reward_fanout",
+    "bespoke:117"
+   ]
+  },
+  {
+   "quest": "canary:quest/formogar_mine_hoist",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 2
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:2"
+   ]
+  },
+  {
+   "quest": "canary:quest/friends_and_traders",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/geomancer_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/ghoul_room_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/giant_smithhammer_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 2
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:2"
+   ]
+  },
+  {
+   "quest": "canary:quest/goblin_temple_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/grave_danger_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 9,
+    "shared_mechanism": 14,
+    "bespoke": 109
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "condition",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "boss_portal_spectator_gate",
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:condition",
+    "owner:scheduler",
+    "mechanism:boss_portal_spectator_gate",
+    "mechanism:kill_reward_fanout",
+    "bespoke:109"
+   ]
+  },
+  {
+   "quest": "canary:quest/griffin_shield_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/grimvale_mini_world_change",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 3,
+    "shared_mechanism": 18,
+    "bespoke": 17
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "condition"
+   ],
+   "mechanisms_needed": [
+    "boss_portal_spectator_gate"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:condition",
+    "mechanism:boss_portal_spectator_gate",
+    "bespoke:17"
+   ]
+  },
+  {
+   "quest": "canary:quest/grimvale_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/heart_of_destruction_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 21,
+    "shared_mechanism": 0,
+    "bespoke": 156
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:creature_removal",
+    "owner:scheduler",
+    "bespoke:156"
+   ]
+  },
+  {
+   "quest": "canary:quest/heaven_blossom_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/hero_of_rathleton_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 21,
+    "shared_mechanism": 0,
+    "bespoke": 14
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:14"
+   ]
+  },
+  {
+   "quest": "canary:quest/hidden_threats_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/hot_cuisine_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 4
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:4"
+   ]
+  },
+  {
+   "quest": "canary:quest/hunter_outfits_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 3
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:3"
+   ]
+  },
+  {
+   "quest": "canary:quest/in_service_of_yalahar_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 7,
+    "shared_mechanism": 3,
+    "bespoke": 32
+   },
+   "owners_needed": [
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:creature_removal",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:32"
+   ]
+  },
+  {
+   "quest": "canary:quest/inukaya_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/iron_hammer_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/iron_helmet_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/iron_ore_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/isle_of_the_mists_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/katana_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/killing_in_the_name_of_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 2,
+    "bespoke": 5
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:5"
+   ]
+  },
+  {
+   "quest": "canary:quest/kilmaresh_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 13,
+    "bespoke": 36
+   },
+   "owners_needed": [
+    "boss_cooldown"
+   ],
+   "mechanisms_needed": [
+    "boss_portal_spectator_gate",
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "mechanism:boss_portal_spectator_gate",
+    "mechanism:kill_reward_fanout",
+    "bespoke:36"
+   ]
+  },
+  {
+   "quest": "canary:quest/knight_outfits_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/koshei_the_deathless_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 0,
+    "bespoke": 9
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:9"
+   ]
+  },
+  {
+   "quest": "canary:quest/krailos_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 1
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:1"
+   ]
+  },
+  {
+   "quest": "canary:quest/life_ring_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/lion_trophy_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/liquid_black_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 1,
+    "bespoke": 5
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "mechanism:kill_reward_fanout",
+    "bespoke:5"
+   ]
+  },
+  {
+   "quest": "canary:quest/lone_medusa_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/longsword_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/mad_mage_room_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/medusa_shield_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/minotaur_hell_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/minotaur_leather_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/mintwallin_cyclops_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/naginata_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/newhaven_legion_helmet_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/nightmare_teddy_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/no_rest_for_the_wicked_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 2,
+    "shared_mechanism": 1,
+    "bespoke": 13
+   },
+   "owners_needed": [
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:creature_removal",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:13"
+   ]
+  },
+  {
+   "quest": "canary:quest/noble_armor_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/oramond_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 9,
+    "shared_mechanism": 4,
+    "bespoke": 27
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "boss_room_entry_gate",
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:scheduler",
+    "mechanism:boss_room_entry_gate",
+    "mechanism:kill_reward_fanout",
+    "bespoke:27"
+   ]
+  },
+  {
+   "quest": "canary:quest/orc_fortress_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/orc_shaman_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/oriental_outfits_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/ornamented_shield_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/outfit_and_addon_quests",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/panpipe_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/parchment_room_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/plate_armor_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/poison_daggers_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/poltergeist_outfits_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 2,
+    "shared_mechanism": 10,
+    "bespoke": 23
+   },
+   "owners_needed": [
+    "boss_cooldown"
+   ],
+   "mechanisms_needed": [
+    "boss_portal_spectator_gate",
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "mechanism:boss_portal_spectator_gate",
+    "mechanism:kill_reward_fanout",
+    "bespoke:23"
+   ]
+  },
+  {
+   "quest": "canary:quest/power_bolts_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/power_ring_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/present_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/primal_ordeal_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 2,
+    "bespoke": 23
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "mechanism:kill_reward_fanout",
+    "bespoke:23"
+   ]
+  },
+  {
+   "quest": "canary:quest/purple_tome_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/ring_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/roshamuul_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 5,
+    "shared_mechanism": 1,
+    "bespoke": 29
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:29"
+   ]
+  },
+  {
+   "quest": "canary:quest/rotten_blood_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 10,
+    "shared_mechanism": 2,
+    "bespoke": 65
+   },
+   "owners_needed": [
+    "creature_removal",
+    "kv_state",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:creature_removal",
+    "owner:kv_state",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:65"
+   ]
+  },
+  {
+   "quest": "canary:quest/rottin_wood_and_the_married_men_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 8,
+    "shared_mechanism": 0,
+    "bespoke": 7
+   },
+   "owners_needed": [
+    "creature_removal",
+    "kv_state",
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:creature_removal",
+    "owner:kv_state",
+    "owner:scheduler",
+    "bespoke:7"
+   ]
+  },
+  {
+   "quest": "canary:quest/sam_s_old_backpack_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/scale_armor_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/sea_of_light_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 1
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:1"
+   ]
+  },
+  {
+   "quest": "canary:quest/secret_service_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 4,
+    "shared_mechanism": 1,
+    "bespoke": 13
+   },
+   "owners_needed": [
+    "condition",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:condition",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:13"
+   ]
+  },
+  {
+   "quest": "canary:quest/serpentine_tower_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/shadows_of_yalahar_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 21,
+    "shared_mechanism": 0,
+    "bespoke": 36
+   },
+   "owners_needed": [
+    "condition",
+    "kv_state"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:condition",
+    "owner:kv_state",
+    "bespoke:36"
+   ]
+  },
+  {
+   "quest": "canary:quest/shaman_treasure_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/short_sword_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/silver_amulet_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/silver_brooch_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/six_rubies_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/soul_war_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 21,
+    "shared_mechanism": 0,
+    "bespoke": 101
+   },
+   "owners_needed": [
+    "condition",
+    "creature_removal",
+    "kv_state",
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:condition",
+    "owner:creature_removal",
+    "owner:kv_state",
+    "owner:scheduler",
+    "bespoke:101"
+   ]
+  },
+  {
+   "quest": "canary:quest/spike_sword_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/spike_task",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 3,
+    "bespoke": 47
+   },
+   "owners_needed": [
+    "condition"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:condition",
+    "mechanism:kill_reward_fanout",
+    "bespoke:47"
+   ]
+  },
+  {
+   "quest": "canary:quest/spirithunters_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 7
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:7"
+   ]
+  },
+  {
+   "quest": "canary:quest/stealth_ring_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/steel_helmet_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/strong_potions_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/studded_shield_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/thais_lighthouse_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 7
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:7"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_ancient_tombs_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 3,
+    "shared_mechanism": 0,
+    "bespoke": 37
+   },
+   "owners_needed": [
+    "condition",
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:condition",
+    "owner:scheduler",
+    "bespoke:37"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_annihilator_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 2,
+    "bespoke": 5
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [
+    "boss_room_entry_gate"
+   ],
+   "to_finish": [
+    "mechanism:boss_room_entry_gate",
+    "bespoke:5"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_ape_city_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 0,
+    "bespoke": 13
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:13"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_beginning_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/the_desert_dungeon_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/the_djinn_war_efreet_faction",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/the_djinn_war_marid_faction",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/the_dream_courts_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 30,
+    "shared_mechanism": 1,
+    "bespoke": 150
+   },
+   "owners_needed": [
+    "condition",
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:condition",
+    "owner:creature_removal",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:150"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_explorer_society_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 11
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:11"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_first_dragon_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 6,
+    "shared_mechanism": 2,
+    "bespoke": 41
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "boss_room_entry_gate",
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:creature_removal",
+    "owner:scheduler",
+    "mechanism:boss_room_entry_gate",
+    "mechanism:kill_reward_fanout",
+    "bespoke:41"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_gravedigger_of_drefia_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 1,
+    "bespoke": 19
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "mechanism:kill_reward_fanout",
+    "bespoke:19"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_hidden_city_of_beregar_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 1,
+    "bespoke": 32
+   },
+   "owners_needed": [
+    "creature_removal"
+   ],
+   "mechanisms_needed": [
+    "boss_room_entry_gate"
+   ],
+   "to_finish": [
+    "owner:creature_removal",
+    "mechanism:boss_room_entry_gate",
+    "bespoke:32"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_ice_islands_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 4,
+    "shared_mechanism": 1,
+    "bespoke": 21
+   },
+   "owners_needed": [
+    "condition",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:condition",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:21"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_inquisition_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 2,
+    "shared_mechanism": 1,
+    "bespoke": 31
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:31"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_isle_of_evil_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 10,
+    "shared_mechanism": 0,
+    "bespoke": 8
+   },
+   "owners_needed": [
+    "kv_state"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:kv_state",
+    "bespoke:8"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_new_frontier_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 3,
+    "shared_mechanism": 2,
+    "bespoke": 23
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "boss_room_entry_gate",
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:scheduler",
+    "mechanism:boss_room_entry_gate",
+    "mechanism:kill_reward_fanout",
+    "bespoke:23"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_order_of_the_lion_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 10,
+    "shared_mechanism": 4,
+    "bespoke": 51
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:creature_removal",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:51"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_outlaw_camp_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 11
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:11"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_paradox_tower_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 2,
+    "shared_mechanism": 0,
+    "bespoke": 22
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:22"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_pits_of_inferno_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 5,
+    "shared_mechanism": 0,
+    "bespoke": 56
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:56"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_postman_missions_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/the_queen_of_the_banshees_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 2,
+    "shared_mechanism": 0,
+    "bespoke": 14
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:14"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_rookie_guard_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 11,
+    "shared_mechanism": 1,
+    "bespoke": 94
+   },
+   "owners_needed": [
+    "condition",
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:condition",
+    "owner:creature_removal",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:94"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_secret_library_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 12,
+    "shared_mechanism": 0,
+    "bespoke": 106
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "condition",
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:condition",
+    "owner:scheduler",
+    "bespoke:106"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_shattered_isles_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 3,
+    "shared_mechanism": 0,
+    "bespoke": 20
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:20"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_tainted_soul",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 1
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:1"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_thieves_guild_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 2,
+    "shared_mechanism": 2,
+    "bespoke": 3
+   },
+   "owners_needed": [
+    "condition",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:condition",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:3"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_travelling_trader_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/the_ultimate_challenges",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 0,
+    "bespoke": 25
+   },
+   "owners_needed": [
+    "condition"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:condition",
+    "bespoke:25"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_way_of_the_monk_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 8,
+    "shared_mechanism": 0,
+    "bespoke": 22
+   },
+   "owners_needed": [
+    "kv_state"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:kv_state",
+    "bespoke:22"
+   ]
+  },
+  {
+   "quest": "canary:quest/the_white_raven_monastery_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/their_masters_voice",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/threatened_dreams_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 8,
+    "shared_mechanism": 4,
+    "bespoke": 82
+   },
+   "owners_needed": [
+    "boss_cooldown",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "boss_room_entry_gate",
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:boss_cooldown",
+    "owner:scheduler",
+    "mechanism:boss_room_entry_gate",
+    "mechanism:kill_reward_fanout",
+    "bespoke:82"
+   ]
+  },
+  {
+   "quest": "canary:quest/throwing_star_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/tibia_tales",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 9,
+    "shared_mechanism": 1,
+    "bespoke": 75
+   },
+   "owners_needed": [
+    "condition",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "boss_room_entry_gate"
+   ],
+   "to_finish": [
+    "owner:condition",
+    "owner:scheduler",
+    "mechanism:boss_room_entry_gate",
+    "bespoke:75"
+   ]
+  },
+  {
+   "quest": "canary:quest/time_ring_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/tinder_box_quest_chyllfroest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 2,
+    "shared_mechanism": 0,
+    "bespoke": 10
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:10"
+   ]
+  },
+  {
+   "quest": "canary:quest/to_blind_the_enemy_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 0,
+    "bespoke": 1
+   },
+   "owners_needed": [
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:scheduler",
+    "bespoke:1"
+   ]
+  },
+  {
+   "quest": "canary:quest/to_outfox_a_fox_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/tomes_of_knowledge_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/tower_defence_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 1,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "mechanism:kill_reward_fanout"
+   ]
+  },
+  {
+   "quest": "canary:quest/triangle_tower_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 1
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:1"
+   ]
+  },
+  {
+   "quest": "canary:quest/troll_cave_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/troll_sabotage_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 5
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:5"
+   ]
+  },
+  {
+   "quest": "canary:quest/unnatural_selection_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 6
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:6"
+   ]
+  },
+  {
+   "quest": "canary:quest/vampire_hunter_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/vampire_shield_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/waterfall_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 6
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:6"
+   ]
+  },
+  {
+   "quest": "canary:quest/wedding_ring_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "canary:quest/what_a_foolish_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 2,
+    "shared_mechanism": 0,
+    "bespoke": 5
+   },
+   "owners_needed": [
+    "condition",
+    "scheduler"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:condition",
+    "owner:scheduler",
+    "bespoke:5"
+   ]
+  },
+  {
+   "quest": "canary:quest/wrath_of_the_emperor_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 17,
+    "shared_mechanism": 2,
+    "bespoke": 57
+   },
+   "owners_needed": [
+    "condition",
+    "creature_removal",
+    "scheduler"
+   ],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "owner:condition",
+    "owner:creature_removal",
+    "owner:scheduler",
+    "mechanism:kill_reward_fanout",
+    "bespoke:57"
+   ]
+  },
+  {
+   "quest": "crystalserver:quest/25_years_of_tibia_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 1,
+    "bespoke": 7
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "mechanism:kill_reward_fanout",
+    "bespoke:7"
+   ]
+  },
+  {
+   "quest": "crystalserver:quest/a_piece_of_cake",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 1,
+    "shared_mechanism": 0,
+    "bespoke": 24
+   },
+   "owners_needed": [
+    "kv_state"
+   ],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "owner:kv_state",
+    "bespoke:24"
+   ]
+  },
+  {
+   "quest": "crystalserver:quest/berserk_potion_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/between_the_lines_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 7
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:7"
+   ]
+  },
+  {
+   "quest": "crystalserver:quest/bloody_tusks_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/frost_dragon_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/newhaven_quest",
+   "kind": "script_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 9
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": [
+    "bespoke:9"
+   ]
+  },
+  {
+   "quest": "crystalserver:quest/skeleton_decoration_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/studded_legs_quest",
+   "kind": "reward_only",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 0,
+    "bespoke": 0
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [],
+   "to_finish": []
+  },
+  {
+   "quest": "crystalserver:quest/targuna_quest",
+   "kind": "storyline",
+   "counts": {
+    "owner_pending": 0,
+    "shared_mechanism": 3,
+    "bespoke": 27
+   },
+   "owners_needed": [],
+   "mechanisms_needed": [
+    "kill_reward_fanout"
+   ],
+   "to_finish": [
+    "mechanism:kill_reward_fanout",
+    "bespoke:27"
+   ]
+  }
+ ],
+ "interactions_unlinked": [
+  "canary:interaction/chayenne_realm/actions_lever",
+  "canary:interaction/chayenne_realm/actions_reward",
+  "canary:interaction/chayenne_realm/movements_enter_realm",
+  "canary:interaction/edron_rope/movements_rope",
+  "canary:interaction/extension_mota/movements_extension_mota",
+  "canary:interaction/marapur/actions_boss_timira_fight_corrupted_water",
+  "canary:interaction/marapur/actions_boss_timira_fight_timira_bucket",
+  "canary:interaction/marapur/actions_boss_timira_fight_timira_chest",
+  "canary:interaction/marapur/actions_teleports_timira",
+  "canary:interaction/marapur/movements_ramp_to_north_temple",
+  "canary:interaction/mysterious_ornate/actions_mysterious_metal_egg",
+  "canary:interaction/others/actions_calassa_comb_door",
+  "canary:interaction/others/actions_gooey_mass",
+  "canary:interaction/others/actions_hellgate_lever",
+  "canary:interaction/others/actions_orc_edron_lever",
+  "canary:interaction/others/actions_serpentine_tower_lever",
+  "canary:interaction/others/actions_serpentine_tower_torch",
+  "canary:interaction/raging_mage_tower/creaturescripts_energized_raging_mage_kill",
+  "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_1",
+  "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_2",
+  "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_kill",
+  "canary:interaction/raging_mage_tower/creaturescripts_yielothax_kill",
+  "canary:interaction/soulpit/exalted_core",
+  "canary:interaction/soulpit/soul_prism",
+  "canary:interaction/soulpit/soulpit_fight",
+  "canary:interaction/thais_quest/actions_life_ring_lever",
+  "canary:interaction/white_pearl/movements_white_pearl",
+  "crystalserver:interaction/candia_bosses/sugar_daddy_teleports",
+  "crystalserver:interaction/rookgaard_quests/quiver"
+ ]
+}

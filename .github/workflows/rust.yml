@@ -118,7 +118,7 @@ jobs:
           )
           for package in ('oteryn-client', 'oteryn-game-server'):
               tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')
-              found = [name for name in forbidden if name in tree]
+              found = [name for name in forbidden if name in tree and (package, name) != ('oteryn-game-server', 'protocol-oteryn')]
               if found:
                   raise SystemExit(f'{package} production closure contains forbidden entries: {found}')
               print(f'{package} production closure: PASS')
@@ -144,6 +144,18 @@ jobs:
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+      - name: Cache Cargo dependencies and build output for merge gates
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-1.94.0-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            rust-linux-1.94.0-
 
       - name: Build workspace
         run: cargo +1.94.0 build --locked --workspace --all-targets

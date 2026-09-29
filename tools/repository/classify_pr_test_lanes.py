@@ -58,6 +58,47 @@ ATLAS_INTENTIONALLY_FULL_PREFIXES = (
     "tools/game-atlas-semantic-search/",
     "tools/game-atlas-thais-fixture/",
 )
+# Physical server qualifications (node boot and Server Seam against the real
+# Platform) exercise the shipped game server's boot, admission, transport,
+# durability and reconnect paths. They run only when a change can reach those
+# paths; unrelated gameplay, content authoring and test-only changes skip them.
+SERVER_QUALIFICATION_PREFIXES = (
+    "apps/game-server/src/",
+    "apps/game-server/migrations/",
+    "tools/qualification/",
+    "vendor/",
+)
+SERVER_QUALIFICATION_FILES = {
+    "Cargo.toml",
+    "Cargo.lock",
+    "rust-toolchain.toml",
+    "apps/game-server/Cargo.toml",
+    "apps/game-server/build.rs",
+    ".github/workflows/merge-gate.yml",
+}
+SERVER_QUALIFICATION_EXCLUDED_PREFIXES = (
+    "apps/game-server/src/ability/",
+    "apps/game-server/src/ai/",
+    "apps/game-server/src/interaction/",
+    "apps/game-server/src/content/",
+)
+SERVER_QUALIFICATION_EXCLUDED_FILES = {
+    "apps/game-server/src/combat.rs",
+}
+# The native entry room and its activation are the Content the qualifications serve.
+SERVER_QUALIFICATION_CONTENT = (
+    "apps/game-server/src/content/mod.rs",
+    "apps/game-server/src/content/activation.rs",
+    "apps/game-server/src/content/digest.rs",
+    "apps/game-server/src/content/model.rs",
+    "apps/game-server/src/content/production.rs",
+    "apps/game-server/src/content/project.rs",
+    "apps/game-server/src/content/static_cell_engine.rs",
+    "apps/game-server/src/content/reference_static_cell.rs",
+    "apps/game-server/src/content/project/native_entry",
+    # The native entry room parses and validates through the WorldProject/v2 model.
+    "apps/game-server/src/content/project/v2",
+)
 DEGRADED_ROUTING_REASONS = {
     "classifier-input-failure",
     "classifier-or-metadata-failure",
@@ -239,12 +280,15 @@ def routing_surface(roots: dict[str, str], path: str) -> str:
 
 
 def file_reference_patterns(path: str) -> tuple[str, ...]:
-    """Return conservative literals for an exact repository-file consumer."""
-    parts = PurePosixPath(path).parts
-    patterns = {path, parts[-1]}
-    if len(parts) >= 2:
-        patterns.add("/".join(parts[-2:]))
-    return tuple(sorted(patterns, key=lambda value: (-len(value), value)))
+    """Return the repository-rooted literal for an exact file consumer.
+
+    Basename and short-suffix matching conflates unrelated auxiliary files such
+    as authoring samples named ``manifest.json`` with product-owned files that
+    happen to use the same conventional name. References that cross from a
+    Cargo package into an auxiliary top-level root retain this repository path
+    after any leading ``../`` components, so the rooted literal is sufficient.
+    """
+    return (path,)
 
 
 def directory_reference_patterns(path: str) -> tuple[str, ...]:
@@ -695,6 +739,35 @@ def classify(
         return full("classifier-input-failure")
 
 
+def server_qualification_path(path: str) -> bool:
+    if path in SERVER_QUALIFICATION_FILES:
+        return True
+    if path.startswith(SERVER_QUALIFICATION_CONTENT):
+        return True
+    if path in SERVER_QUALIFICATION_EXCLUDED_FILES or path.startswith(SERVER_QUALIFICATION_EXCLUDED_PREFIXES):
+        return False
+    return path.startswith(SERVER_QUALIFICATION_PREFIXES)
+
+
+def server_qualification_required(files, changed_count, complete=True) -> bool:
+    """Select the physical server qualification lanes, failing closed on malformed evidence."""
+    try:
+        if complete is not True or type(changed_count) is not int or not isinstance(files, list) or len(files) != changed_count or not files:
+            return True
+        for item in files:
+            if not isinstance(item, dict):
+                return True
+            for key in ("filename", "previous_filename"):
+                path = item.get(key)
+                if path is None and key == "previous_filename":
+                    continue
+                if not valid_path(path) or server_qualification_path(path):
+                    return True
+        return False
+    except (TypeError, ValueError, AttributeError):
+        return True
+
+
 def classify_post_merge(event, metadata) -> dict:
     """Apply the same exact-candidate routing semantics to protected-main pushes."""
     try:
@@ -748,6 +821,7 @@ def classify_post_merge(event, metadata) -> dict:
 def main() -> int:
     post_merge = False
     atlas_fullworld = True
+    server_qualification = True
     try:
         post_merge = sys.argv[1] == "--post-merge"
         metadata = json.loads(
@@ -761,6 +835,7 @@ def main() -> int:
         else:
             files, changed_count, complete = pr_file_records()
             atlas_fullworld = atlas_fullworld_required(files, changed_count, complete)
+            server_qualification = server_qualification_required(files, changed_count, complete)
             expected_head = os.environ["EXPECTED_HEAD"].strip().lower()
             result = classify(
                 files,
@@ -788,6 +863,7 @@ def main() -> int:
         output.write(f"windows={str(result['windows']).lower()}\n")
         if not post_merge:
             output.write(f"atlas_fullworld={str(atlas_fullworld).lower()}\n")
+            output.write(f"server_qualification={str(server_qualification).lower()}\n")
             output.write(f"surface={result['surface']}\n")
             output.write(f"reason={result['reason']}\n")
             output.write(f"routing_health={health}\n")

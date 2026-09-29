@@ -1,0 +1,1483 @@
+{
+  "schema": "oteryn.spell-wheel-augments.v1",
+  "note": "Evidence for the Wheel of Destiny spell augments and revelation perks of player spells at the target date (S6, S24): official tibia.com news (TibiaData API) > TibiaWiki Fandom at the target date > Canary 99902524 (hypothesis). An entry whose source is canary only is a hypothesis. Not a runtime contract: the Wheel owner decides the Wheel model; the spell bundles keep wheel_unlock fail-closed.",
+  "target_date": "2026-09-27",
+  "sources": {
+    "official_news": {
+      "8783": {
+        "date": "2026-05-05",
+        "note": "Vocation Adjustments, TEST SERVER stage 1, not final",
+        "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8783"
+      },
+      "8833": {
+        "date": "2026-06-02",
+        "note": "Vocation Adjustments release state (live 2026-06-16)",
+        "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8833"
+      },
+      "8872": {
+        "date": "2026-07-07",
+        "note": "Vocation Adjustments Changes (balancing)",
+        "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8872"
+      },
+      "8944": {
+        "date": "2026-09-01",
+        "note": "Monk Adjustments",
+        "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8944"
+      },
+      "input_file": "news-spell-changes.json (rows with field=wheel_augment; the file uses 'field', not 'wheel_augment' as a column)"
+    },
+    "fandom": {
+      "Wheel of Destiny/Conviction Perks": {
+        "revid": 1206174,
+        "timestamp": "2026-09-14T01:41:28Z",
+        "use": "augment tables per vocation (primary Fandom source)"
+      },
+      "Wheel of Destiny/Revelation Perks": {
+        "revid": 1204680,
+        "timestamp": "2026-09-01T12:08:10Z",
+        "use": "revelation perks"
+      },
+      "Wheel of Destiny": {
+        "revid": 1151969,
+        "timestamp": "2025-12-24T09:16:57Z",
+        "use": "overview only, no augment values"
+      },
+      "Augments": {
+        "revid": 1059668,
+        "timestamp": "2024-05-20T08:01:59Z",
+        "use": "generic augment types only, no values"
+      },
+      "query": "rvdir=older&rvstart=2026-09-27T23:59:59Z"
+    },
+    "canary": {
+      "repo": "opentibiabr/canary",
+      "commit": "99902524e052f37574194466c2949c576e4ab269",
+      "commit_date": "2026-07-28",
+      "files": [
+        "src/io/io_wheel.cpp",
+        "src/creatures/players/components/wheel/player_wheel.cpp",
+        "data/scripts/spells/**"
+      ],
+      "status": "hypothesis only; snapshot predates 8944 (2026-09-01)",
+      "canary_groups": {
+        "Forked Spells": [
+          "Forked Glacier",
+          "Forked Thorns"
+        ],
+        "Special Spells": [
+          "Lightning",
+          "Strong Energy Strike",
+          "Strong Flame Strike"
+        ],
+        "Any_Focus_Mage_Spell": [
+          "Eternal Winter",
+          "Hell's Core",
+          "Rage of the Skies",
+          "Wrath of Nature"
+        ]
+      }
+    }
+  },
+  "notes": [
+    "Tiers: augment 1 = Canary grade[1] / Fandom 'Stage 1' / news 'I'; augment 2 = grade[2] / 'Stage 2' / 'II'.",
+    "Multi-effect augments are emitted as several entries with the same (spell, augment).",
+    "value for bool_area / qualitative effects is null.",
+    "'superseded' lists differing values from lower-priority sources plus earlier official/test-server values that were replaced.",
+    "No wheel_augment row exists only in 8783; every 8783 augment row is covered by 8833."
+  ],
+  "augments": [
+    {
+      "vocation": "druid",
+      "spell": "Strong Ice Wave",
+      "augment": 1,
+      "effect": "base damage +6%",
+      "value": 6,
+      "unit": "percent_base_damage",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [
+        {
+          "source": "official:8783 (test server, not final)",
+          "effect": "cooldown -2 s",
+          "value": -2,
+          "unit": "seconds"
+        }
+      ]
+    },
+    {
+      "vocation": "druid",
+      "spell": "Strong Ice Wave",
+      "augment": 2,
+      "effect": "area increased",
+      "value": null,
+      "unit": "bool_area",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "druid",
+      "spell": "Mass Healing",
+      "augment": 1,
+      "effect": "base healing +4%",
+      "value": 4,
+      "unit": "percent_base_heal",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "druid",
+      "spell": "Mass Healing",
+      "augment": 2,
+      "effect": "area increased",
+      "value": null,
+      "unit": "bool_area",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "druid",
+      "spell": "Forked Spells",
+      "members": [
+        "Forked Glacier",
+        "Forked Thorns"
+      ],
+      "augment": 1,
+      "effect": "cooldown -2 s",
+      "value": -2,
+      "unit": "seconds",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "druid",
+      "spell": "Forked Spells",
+      "members": [
+        "Forked Glacier",
+        "Forked Thorns"
+      ],
+      "augment": 2,
+      "effect": "additional target +1",
+      "value": 1,
+      "unit": "targets",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "druid",
+      "spell": "Terra Wave",
+      "augment": 1,
+      "effect": "base damage +6.5%",
+      "value": 6.5,
+      "unit": "percent_base_damage",
+      "source": "fandom:1206174",
+      "corroborated_by": [],
+      "superseded": [
+        {
+          "source": "canary",
+          "value": 7,
+          "unit": "percent_base_damage"
+        }
+      ],
+      "notes": "Canary stores int via static_cast<int>(std::round(6.5)) = 7; Fandom 6.5 (official news silent on tier I)."
+    },
+    {
+      "vocation": "druid",
+      "spell": "Terra Wave",
+      "augment": 2,
+      "effect": "life leech +10%",
+      "value": 10,
+      "unit": "percent_life_leech",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [],
+      "notes": "8833: tier II is 10% life leech instead of 5% (previous live value 5; 8783 test-server said the same change)."
+    },
+    {
+      "vocation": "druid",
+      "spell": "Heal Friend",
+      "augment": 1,
+      "effect": "base healing +4%",
+      "value": 4,
+      "unit": "percent_base_heal",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "druid",
+      "spell": "Heal Friend",
+      "augment": 2,
+      "effect": "base healing +6%",
+      "value": 6,
+      "unit": "percent_base_heal",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "knight",
+      "spell": "Front Sweep",
+      "augment": 1,
+      "effect": "base power +40%",
+      "value": 40,
+      "unit": "percent_base_power",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [
+        {
+          "source": "official:8783 (test server, not final)",
+          "effect": "life leech +15%",
+          "value": 15,
+          "unit": "percent_life_leech"
+        }
+      ],
+      "notes": "Canary field increase.damage=40."
+    },
+    {
+      "vocation": "knight",
+      "spell": "Front Sweep",
+      "augment": 2,
+      "effect": "area: hits 2 additional squares to the sides (5 squares total)",
+      "value": 2,
+      "unit": "squares_added",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174"
+      ],
+      "superseded": [],
+      "notes": "Canary only has increase.area=true (no number)."
+    },
+    {
+      "vocation": "knight",
+      "spell": "Groundshaker",
+      "augment": 1,
+      "effect": "cooldown -2 s",
+      "value": -2,
+      "unit": "seconds",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": [],
+      "notes": "Official 8833: 'Augment I and augment II have been switched' (no values given). Fandom/Canary agree on the post-switch order: I = cooldown, II = base damage."
+    },
+    {
+      "vocation": "knight",
+      "spell": "Groundshaker",
+      "augment": 2,
+      "effect": "base damage +12.5%",
+      "value": 12.5,
+      "unit": "percent_base_damage",
+      "source": "fandom:1206174",
+      "corroborated_by": [],
+      "superseded": [
+        {
+          "source": "canary",
+          "value": 13,
+          "unit": "percent_base_damage"
+        }
+      ],
+      "notes": "Canary stores int via round(12.5) = 13; Fandom 12.5. Official 8833 confirms I/II were switched only."
+    },
+    {
+      "vocation": "knight",
+      "spell": "Shield Slam",
+      "augment": 1,
+      "effect": "life leech +15%",
+      "value": 15,
+      "unit": "percent_life_leech",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "knight",
+      "spell": "Shield Slam",
+      "augment": 2,
+      "effect": "damage reduction +25% (75% total)",
+      "value": 25,
+      "unit": "percent_damage_reduction",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "knight",
+      "spell": "Intense Wound Cleansing",
+      "augment": 1,
+      "effect": "base healing +125%",
+      "value": 125,
+      "unit": "percent_base_heal",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "knight",
+      "spell": "Intense Wound Cleansing",
+      "augment": 2,
+      "effect": "cooldown -60 s",
+      "value": -60,
+      "unit": "seconds",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": [],
+      "notes": "Official 8833: all cooldown-reducing augments of this spell were adjusted by 80% when base cooldown went 10 min -> 2 min (no number in news). Value 60 s from Fandom/Canary; consistent with 300 s * 0.2."
+    },
+    {
+      "vocation": "knight",
+      "spell": "Fierce Berserk",
+      "augment": 1,
+      "effect": "mana cost -30",
+      "value": -30,
+      "unit": "mana",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "knight",
+      "spell": "Fierce Berserk",
+      "augment": 2,
+      "effect": "base damage +10%",
+      "value": 10,
+      "unit": "percent_base_damage",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Ethereal Barrage",
+      "augment": 1,
+      "effect": "life leech +10%",
+      "value": 10,
+      "unit": "percent_life_leech",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [
+        {
+          "source": "official:8783 (test server, not final)",
+          "effect": "area increased",
+          "value": null,
+          "unit": "bool_area"
+        }
+      ]
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Ethereal Barrage",
+      "augment": 2,
+      "effect": "critical hit chance +10%",
+      "value": 10,
+      "unit": "percent_crit_chance",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Strong Ethereal Spear",
+      "augment": 1,
+      "effect": "cooldown -2 s",
+      "value": -2,
+      "unit": "seconds",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Strong Ethereal Spear",
+      "augment": 2,
+      "effect": "base damage +380%",
+      "value": 380,
+      "unit": "percent_base_damage",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Divine Dazzle",
+      "augment": 1,
+      "effect": "additional chained targets +2",
+      "value": 2,
+      "unit": "targets",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Divine Dazzle",
+      "augment": 2,
+      "effect": "cooldown -8 s",
+      "value": -8,
+      "unit": "seconds",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [],
+      "notes": "8833: reduces cooldown by 8 s instead of 4 s."
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Divine Dazzle",
+      "augment": 2,
+      "effect": "duration +4 s",
+      "value": 4,
+      "unit": "seconds",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": [],
+      "notes": "Official news silent on the duration part; Fandom/Canary agree."
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Divine Barrage",
+      "augment": 1,
+      "effect": "base damage +8%",
+      "value": 8,
+      "unit": "percent_base_damage",
+      "source": "official:8872",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [
+        {
+          "source": "official:8833",
+          "value": 10,
+          "unit": "percent_base_damage",
+          "note": "earlier official value, replaced by 8872"
+        },
+        {
+          "source": "official:8783 (test server, not final)",
+          "value": 10,
+          "unit": "percent_base_damage"
+        }
+      ]
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Divine Barrage",
+      "augment": 2,
+      "effect": "base damage +12%",
+      "value": 12,
+      "unit": "percent_base_damage",
+      "source": "official:8872",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [
+        {
+          "source": "official:8833",
+          "value": 15,
+          "unit": "percent_base_damage",
+          "note": "earlier official value, replaced by 8872"
+        },
+        {
+          "source": "official:8783 (test server, not final)",
+          "effect": "mana leech +5%",
+          "value": 5,
+          "unit": "percent_mana_leech"
+        }
+      ]
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Divine Caldera",
+      "augment": 1,
+      "effect": "mana cost -20",
+      "value": -20,
+      "unit": "mana",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Divine Caldera",
+      "augment": 2,
+      "effect": "base damage +10%",
+      "value": 10,
+      "unit": "percent_base_damage",
+      "source": "official:8872",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [
+        {
+          "source": "official:pre-8872 (as stated in 8872)",
+          "value": 8.5,
+          "unit": "percent_base_damage",
+          "note": "previous live value"
+        }
+      ],
+      "notes": "8872: increased from +8.5% to +10%."
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Special Spells",
+      "members": [
+        "Lightning",
+        "Strong Energy Strike",
+        "Strong Flame Strike"
+      ],
+      "augment": 1,
+      "effect": "cooldown -4 s",
+      "value": -4,
+      "unit": "seconds",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Special Spells",
+      "members": [
+        "Lightning",
+        "Strong Energy Strike",
+        "Strong Flame Strike"
+      ],
+      "augment": 1,
+      "effect": "secondary group cooldown -4 s",
+      "value": -4,
+      "unit": "seconds",
+      "source": "canary",
+      "corroborated_by": [],
+      "superseded": [],
+      "notes": "Canary-only hypothesis (decrease.secondaryGroupCooldown=4); not in official news or Fandom."
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Special Spells",
+      "members": [
+        "Lightning",
+        "Strong Energy Strike",
+        "Strong Flame Strike"
+      ],
+      "augment": 2,
+      "effect": "base damage +50%",
+      "value": 50,
+      "unit": "percent_base_damage",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Death Echo",
+      "augment": 1,
+      "effect": "cooldown -2 s",
+      "value": -2,
+      "unit": "seconds",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [
+        {
+          "source": "official:8783 (test server, not final)",
+          "effect": "base damage +5%",
+          "value": 5,
+          "unit": "percent_base_damage"
+        }
+      ]
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Death Echo",
+      "augment": 2,
+      "effect": "base damage +12%",
+      "value": 12,
+      "unit": "percent_base_damage",
+      "source": "official:8872",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [
+        {
+          "source": "official:8833",
+          "value": 8,
+          "unit": "percent_base_damage",
+          "note": "earlier official value, replaced by 8872"
+        },
+        {
+          "source": "official:8783 (test server, not final)",
+          "effect": "delay of second blast 2 s -> 1 s",
+          "value": -1,
+          "unit": "seconds"
+        }
+      ]
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Energy Wave",
+      "augment": 1,
+      "effect": "area increased",
+      "value": null,
+      "unit": "bool_area",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [],
+      "notes": "8833: tiers I and II switched vs. earlier state."
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Energy Wave",
+      "augment": 2,
+      "effect": "base damage +10%",
+      "value": 10,
+      "unit": "percent_base_damage",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [],
+      "notes": "8833: +10% instead of 5%."
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Great Fire Wave",
+      "augment": 1,
+      "effect": "critical hit chance +10%",
+      "value": 10,
+      "unit": "percent_crit_chance",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Great Fire Wave",
+      "augment": 1,
+      "effect": "critical extra damage +15%",
+      "value": 15,
+      "unit": "percent_crit_extra_damage",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Great Fire Wave",
+      "augment": 2,
+      "effect": "base damage +5%",
+      "value": 5,
+      "unit": "percent_base_damage",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Focus Spells",
+      "members": [
+        "Eternal Winter",
+        "Hell's Core",
+        "Rage of the Skies",
+        "Wrath of Nature"
+      ],
+      "augment": 1,
+      "effect": "base damage +5%",
+      "value": 5,
+      "unit": "percent_base_damage",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": [],
+      "notes": "Canary registers 'Any_Focus_Mage_Spell' -> Eternal Winter, Hell's Core, Rage of the Skies, Wrath of Nature. Fandom names the group 'Focus Spells' without listing members."
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Focus Spells",
+      "members": [
+        "Eternal Winter",
+        "Hell's Core",
+        "Rage of the Skies",
+        "Wrath of Nature"
+      ],
+      "augment": 2,
+      "effect": "focus secondary group cooldown -4 s",
+      "value": -4,
+      "unit": "seconds",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Focus Spells",
+      "members": [
+        "Eternal Winter",
+        "Hell's Core",
+        "Rage of the Skies",
+        "Wrath of Nature"
+      ],
+      "augment": 2,
+      "effect": "cooldown -4 s",
+      "value": -4,
+      "unit": "seconds",
+      "source": "canary",
+      "corroborated_by": [],
+      "superseded": [],
+      "notes": "Canary-only: tier II also sets decrease.cooldown=4 in addition to secondaryGroupCooldown=4. Fandom lists only the secondary cooldown reduction, so treat primary cooldown -4 s as unconfirmed."
+    },
+    {
+      "vocation": "monk",
+      "spell": "Mass Spirit Mend",
+      "augment": 1,
+      "effect": "base healing +8%",
+      "value": 8,
+      "unit": "percent_base_heal",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "monk",
+      "spell": "Mass Spirit Mend",
+      "augment": 2,
+      "effect": "cooldown -4 s",
+      "value": -4,
+      "unit": "seconds",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [],
+      "notes": "8833: reduces cooldown by 4 s instead of enlarging the area."
+    },
+    {
+      "vocation": "monk",
+      "spell": "Mystic Repulse",
+      "augment": 1,
+      "effect": "cooldown -4 s",
+      "value": -4,
+      "unit": "seconds",
+      "source": "official:8944",
+      "corroborated_by": [],
+      "superseded": [
+        {
+          "source": "fandom:1206174",
+          "value": -6,
+          "unit": "seconds"
+        },
+        {
+          "source": "canary",
+          "value": -6,
+          "unit": "seconds"
+        },
+        {
+          "source": "official:8833",
+          "value": -6,
+          "unit": "seconds",
+          "note": "earlier official value, replaced by 8944 (Sept 2026)"
+        },
+        {
+          "source": "official:8783 (test server, not final)",
+          "value": -6,
+          "unit": "seconds",
+          "note": "test server, changed from -4 to -6"
+        }
+      ]
+    },
+    {
+      "vocation": "monk",
+      "spell": "Mystic Repulse",
+      "augment": 2,
+      "effect": "base damage +40%",
+      "value": 40,
+      "unit": "percent_base_damage",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "monk",
+      "spell": "Chained Penance",
+      "augment": 1,
+      "effect": "additional chained target +1",
+      "value": 1,
+      "unit": "targets",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "monk",
+      "spell": "Chained Penance",
+      "augment": 2,
+      "effect": "base damage +18%",
+      "value": 18,
+      "unit": "percent_base_damage",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "monk",
+      "spell": "Flurry of Blows",
+      "augment": 1,
+      "effect": "area increased",
+      "value": null,
+      "unit": "bool_area",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [],
+      "notes": "8833: enlarges area instead of the earlier 5% life leech."
+    },
+    {
+      "vocation": "monk",
+      "spell": "Flurry of Blows",
+      "augment": 2,
+      "effect": "base damage +15%",
+      "value": 15,
+      "unit": "percent_base_damage",
+      "source": "fandom:1206174",
+      "corroborated_by": [
+        "canary"
+      ],
+      "superseded": []
+    },
+    {
+      "vocation": "monk",
+      "spell": "Thousand Fist Blows",
+      "augment": 1,
+      "effect": "critical extra damage +40%",
+      "value": 40,
+      "unit": "percent_crit_extra_damage",
+      "source": "official:8833",
+      "corroborated_by": [
+        "fandom:1206174",
+        "canary"
+      ],
+      "superseded": [
+        {
+          "source": "official:8783 (test server, not final)",
+          "value": 25,
+          "unit": "percent_crit_extra_damage"
+        }
+      ]
+    },
+    {
+      "vocation": "monk",
+      "spell": "Thousand Fist Blows",
+      "augment": 2,
+      "effect": "cooldown -4 s",
+      "value": -4,
+      "unit": "seconds",
+      "source": "official:8944",
+      "corroborated_by": [],
+      "superseded": [
+        {
+          "source": "fandom:1206174",
+          "value": -6,
+          "unit": "seconds"
+        },
+        {
+          "source": "canary",
+          "value": -6,
+          "unit": "seconds"
+        },
+        {
+          "source": "official:8833",
+          "value": -6,
+          "unit": "seconds",
+          "note": "earlier official value, replaced by 8944 (Sept 2026)"
+        },
+        {
+          "source": "official:8783 (test server, not final)",
+          "value": -6,
+          "unit": "seconds",
+          "note": "test server"
+        }
+      ]
+    }
+  ],
+  "revelation_spells": [
+    {
+      "vocation": "all",
+      "spell": "Damage and healing increase (each revelation perk stage)",
+      "type": "passive",
+      "stages": {
+        "1": 4,
+        "2": 9,
+        "3": 20
+      },
+      "unit": "flat damage & healing bonus",
+      "source": "fandom:1204680",
+      "corroborated_by": [
+        "canary"
+      ],
+      "notes": "Stacks across perks; Canary revelation.stats {4,4},{9,9},{20,20} (damage,healing). Unlock points 250/500/1000 per domain (Fandom)."
+    },
+    {
+      "vocation": "all",
+      "spell": "Gift of Life",
+      "type": "passive",
+      "stages": {
+        "1": {
+          "heal_pct_of_max_hp_mana": 20,
+          "cooldown_hours": 30
+        },
+        "2": {
+          "heal_pct_of_max_hp_mana": 25,
+          "cooldown_hours": 20
+        },
+        "3": {
+          "heal_pct_of_max_hp_mana": 30,
+          "cooldown_hours": 10
+        }
+      },
+      "source": "canary",
+      "note_source": "hypothesis",
+      "superseded": [],
+      "notes": "Fandom Revelation Perks page gives no numbers (links to the Gift of Life page, not fetched). Canary getGiftOfLifeValue/TotalCooldown (cooldown expressed as 1*60*60*N)."
+    },
+    {
+      "vocation": "knight",
+      "spell": "Avatar of Steel",
+      "type": "spell",
+      "stages": {
+        "1": {
+          "cooldown_min": 120
+        },
+        "2": {
+          "cooldown_min": 90
+        },
+        "3": {
+          "cooldown_min": 60
+        }
+      },
+      "common": {
+        "duration_s": 15,
+        "damage_reduction_pct_by_stage": [
+          5,
+          10,
+          15
+        ],
+        "crit_extra_damage_pct_by_stage": [
+          5,
+          10,
+          15
+        ],
+        "crit_chance_pct": 100,
+        "spell_group_cooldown_s": 2
+      },
+      "source": "canary",
+      "note_source": "hypothesis",
+      "notes": "Canary: base cooldown 2 h, -30 min at stage>=2 and again at >=3; duration 15 s (lua); effects from checkAvatarSkill. Fandom Revelation page only says 'turns the player into an avatar' (per-vocation avatar pages not fetched)."
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Avatar of Light",
+      "type": "spell",
+      "stages": {
+        "1": {
+          "cooldown_min": 120
+        },
+        "2": {
+          "cooldown_min": 90
+        },
+        "3": {
+          "cooldown_min": 60
+        }
+      },
+      "common": {
+        "duration_s": 15,
+        "damage_reduction_pct_by_stage": [
+          5,
+          10,
+          15
+        ],
+        "crit_extra_damage_pct_by_stage": [
+          5,
+          10,
+          15
+        ],
+        "crit_chance_pct": 100,
+        "spell_group_cooldown_s": 2
+      },
+      "source": "canary",
+      "note_source": "hypothesis",
+      "notes": "Canary: base cooldown 2 h, -30 min at stage>=2 and again at >=3; duration 15 s (lua); effects from checkAvatarSkill. Fandom Revelation page only says 'turns the player into an avatar' (per-vocation avatar pages not fetched).",
+      "mana": 1500
+    },
+    {
+      "vocation": "druid",
+      "spell": "Avatar of Nature",
+      "type": "spell",
+      "stages": {
+        "1": {
+          "cooldown_min": 120
+        },
+        "2": {
+          "cooldown_min": 90
+        },
+        "3": {
+          "cooldown_min": 60
+        }
+      },
+      "common": {
+        "duration_s": 15,
+        "damage_reduction_pct_by_stage": [
+          5,
+          10,
+          15
+        ],
+        "crit_extra_damage_pct_by_stage": [
+          5,
+          10,
+          15
+        ],
+        "crit_chance_pct": 100,
+        "spell_group_cooldown_s": 2
+      },
+      "source": "canary",
+      "note_source": "hypothesis",
+      "notes": "Canary: base cooldown 2 h, -30 min at stage>=2 and again at >=3; duration 15 s (lua); effects from checkAvatarSkill. Fandom Revelation page only says 'turns the player into an avatar' (per-vocation avatar pages not fetched)."
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Avatar of Storm",
+      "type": "spell",
+      "stages": {
+        "1": {
+          "cooldown_min": 120
+        },
+        "2": {
+          "cooldown_min": 90
+        },
+        "3": {
+          "cooldown_min": 60
+        }
+      },
+      "common": {
+        "duration_s": 15,
+        "damage_reduction_pct_by_stage": [
+          5,
+          10,
+          15
+        ],
+        "crit_extra_damage_pct_by_stage": [
+          5,
+          10,
+          15
+        ],
+        "crit_chance_pct": 100,
+        "spell_group_cooldown_s": 2
+      },
+      "source": "canary",
+      "note_source": "hypothesis",
+      "notes": "Canary: base cooldown 2 h, -30 min at stage>=2 and again at >=3; duration 15 s (lua); effects from checkAvatarSkill. Fandom Revelation page only says 'turns the player into an avatar' (per-vocation avatar pages not fetched)."
+    },
+    {
+      "vocation": "monk",
+      "spell": "Avatar of Balance",
+      "type": "spell",
+      "stages": {
+        "1": {
+          "cooldown_min": 120
+        },
+        "2": {
+          "cooldown_min": 90
+        },
+        "3": {
+          "cooldown_min": 60
+        }
+      },
+      "common": {
+        "duration_s": 15,
+        "damage_reduction_pct_by_stage": [
+          5,
+          10,
+          15
+        ],
+        "crit_extra_damage_pct_by_stage": [
+          5,
+          10,
+          15
+        ],
+        "crit_chance_pct": 100,
+        "spell_group_cooldown_s": 2
+      },
+      "source": "canary",
+      "note_source": "hypothesis",
+      "notes": "Canary: base cooldown 2 h, -30 min at stage>=2 and again at >=3; duration 15 s (lua); effects from checkAvatarSkill. Fandom Revelation page only says 'turns the player into an avatar' (per-vocation avatar pages not fetched).",
+      "mana": 1200
+    },
+    {
+      "vocation": "knight",
+      "spell": "Executioner's Throw",
+      "type": "spell",
+      "stages": {
+        "1": {
+          "chain_extra_targets": 2,
+          "bonus_dmg_vs_target_below_30pct_hp": 100,
+          "cooldown_s": 18
+        },
+        "2": {
+          "chain_extra_targets": 3,
+          "bonus_dmg_vs_target_below_30pct_hp": 125,
+          "cooldown_s": 14
+        },
+        "3": {
+          "chain_extra_targets": 4,
+          "bonus_dmg_vs_target_below_30pct_hp": 150,
+          "cooldown_s": 10
+        }
+      },
+      "source": "fandom:1204680",
+      "corroborated_by": [
+        "canary"
+      ],
+      "notes": "Canary: chain total 3/4/5 (incl. primary), cooldown 18 -4 -4, bonus dmg 100/125/150 at <=30% HP. Red domain."
+    },
+    {
+      "vocation": "knight",
+      "spell": "Combat Mastery",
+      "type": "passive",
+      "stages": {
+        "1": {
+          "pct_per_missing_hp_pct": 14
+        },
+        "2": {
+          "pct_per_missing_hp_pct": 12
+        },
+        "3": {
+          "pct_per_missing_hp_pct": 10
+        }
+      },
+      "source": "fandom:1204680",
+      "corroborated_by": [
+        "canary"
+      ],
+      "notes": "1% damage taken reduction / 1% damage dealt increase per N% missing HP (doubling with shield / two-hander per Fandom). Blue domain."
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Divine Grenade",
+      "type": "spell",
+      "stages": {
+        "1": {
+          "cooldown_s": 26,
+          "base_damage_bonus_pct": 0
+        },
+        "2": {
+          "cooldown_s": 20,
+          "base_damage_bonus_pct": 16
+        },
+        "3": {
+          "cooldown_s": 14,
+          "base_damage_bonus_pct": 32
+        }
+      },
+      "source": "fandom:1204680",
+      "superseded": [
+        {
+          "source": "canary",
+          "value": {
+            "damage_multiplier_by_stage": [
+              1.3,
+              1.6,
+              2.0
+            ]
+          },
+          "unit": "multiplier"
+        }
+      ],
+      "notes": "Fandom: '+16% base damage per additional stage' (cumulative reading 0/16/32 is an interpretation). Cooldown 26/20/14 agrees with Canary lua. Red domain, 3 s delayed explosion."
+    },
+    {
+      "vocation": "paladin",
+      "spell": "Divine Empowerment",
+      "type": "spell",
+      "stages": {
+        "1": {
+          "cooldown_s": 32,
+          "damage_bonus_pct": 8
+        },
+        "2": {
+          "cooldown_s": 28,
+          "damage_bonus_pct": 10
+        },
+        "3": {
+          "cooldown_s": 24,
+          "damage_bonus_pct": 12
+        }
+      },
+      "source": "fandom:1204680",
+      "corroborated_by": [
+        "canary (cooldown only)"
+      ],
+      "notes": "3x3 field, 5 s, mana 500 (Canary). Canary damage bonus not captured. Blue domain."
+    },
+    {
+      "vocation": "druid",
+      "spell": "Blessing of the Grove",
+      "type": "passive",
+      "stages": {
+        "1": {
+          "heal_bonus_target_30_60pct_hp": 5,
+          "heal_bonus_target_below_30pct_hp": 10
+        },
+        "2": {
+          "heal_bonus_target_30_60pct_hp": 7.5,
+          "heal_bonus_target_below_30pct_hp": 15
+        },
+        "3": {
+          "heal_bonus_target_30_60pct_hp": 10,
+          "heal_bonus_target_below_30pct_hp": 20
+        }
+      },
+      "source": "fandom:1204680",
+      "corroborated_by": [
+        "canary"
+      ],
+      "notes": "Also lets Heal Friend and Nature's Embrace critically heal. Red domain."
+    },
+    {
+      "vocation": "druid",
+      "spell": "Twin Bursts (Ice Burst, Terra Burst)",
+      "type": "spell",
+      "members": [
+        "Ice Burst",
+        "Terra Burst"
+      ],
+      "stages": {
+        "1": {
+          "cooldown_s": 22,
+          "bonus_dmg_vs_target_above_60pct_hp": 20
+        },
+        "2": {
+          "cooldown_s": 18,
+          "bonus_dmg_vs_target_above_60pct_hp": 40
+        },
+        "3": {
+          "cooldown_s": 14,
+          "bonus_dmg_vs_target_above_60pct_hp": 60
+        }
+      },
+      "source": "fandom:1204680",
+      "corroborated_by": [
+        "canary"
+      ],
+      "notes": "Canary: base cooldown 22 s, -4 s (cooldown and secondary group) at stage>=2 and >=3; mana 230. Blue domain."
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Beam Mastery",
+      "type": "passive",
+      "stages": {
+        "1": {
+          "dmg_per_central_target_pct": 10,
+          "max_pct": 30,
+          "adjacent_beam_dmg_pct": 25,
+          "cooldown_reduction_per_target_s": 1
+        },
+        "2": {
+          "dmg_per_central_target_pct": 12,
+          "max_pct": 36,
+          "adjacent_beam_dmg_pct": 40,
+          "cooldown_reduction_per_target_s": 1
+        },
+        "3": {
+          "dmg_per_central_target_pct": 14,
+          "max_pct": 42,
+          "adjacent_beam_dmg_pct": 70,
+          "cooldown_reduction_per_target_s": 1
+        }
+      },
+      "source": "fandom:1204680",
+      "corroborated_by": [
+        "canary (damage 10/12/14, adjacent 25/40/70)"
+      ],
+      "notes": "Cooldown reduction max 3 s (Fandom). Canary beams: Energy Beam, Great Energy Beam, Great Death Beam. Red domain."
+    },
+    {
+      "vocation": "sorcerer",
+      "spell": "Lord of Destruction",
+      "type": "passive",
+      "stages": {
+        "1": {
+          "fire_base_power_pct": 2,
+          "energy_crit_chance_pct": 2,
+          "death_crit_extra_damage_pct": 15
+        },
+        "2": {
+          "fire_base_power_pct": 3,
+          "energy_crit_chance_pct": 3,
+          "death_crit_extra_damage_pct": 25.5
+        },
+        "3": {
+          "fire_base_power_pct": 4,
+          "energy_crit_chance_pct": 4,
+          "death_crit_extra_damage_pct": 30
+        }
+      },
+      "source": "fandom:1204680",
+      "superseded": [
+        {
+          "source": "canary",
+          "value": {
+            "death_crit_extra_damage_pct_stage2": 22.5
+          },
+          "unit": "percent"
+        }
+      ],
+      "notes": "Only difference: stage-2 Decay crit extra damage, Fandom 25.5 vs Canary 22.5 (2250 bp); Fandom value may be a typo. Blue domain."
+    },
+    {
+      "vocation": "monk",
+      "spell": "Spiritual Outburst",
+      "type": "spell",
+      "stages": {
+        "1": {
+          "cooldown_s": 24,
+          "recast_dmg_pct": 37.5
+        },
+        "2": {
+          "cooldown_s": 20,
+          "recast_dmg_pct": 50
+        },
+        "3": {
+          "cooldown_s": 16,
+          "recast_dmg_pct": 62.5
+        }
+      },
+      "source": "fandom:1204680",
+      "corroborated_by": [
+        "canary"
+      ],
+      "notes": "Consumes Harmony; chains to 7 additional enemies; recast after 1 s at full Harmony. Canary mana 425, cooldown 24 -4/-4. Red domain."
+    },
+    {
+      "vocation": "monk",
+      "spell": "Ascetic",
+      "type": "passive",
+      "stages": {
+        "1": {
+          "harmony_base_bonus_pct": 1,
+          "auto_attack_bonus_pct_of_mantra": 100
+        },
+        "2": {
+          "harmony_base_bonus_pct": 2,
+          "auto_attack_bonus_pct_of_mantra": 200
+        },
+        "3": {
+          "harmony_base_bonus_pct": 3,
+          "auto_attack_bonus_pct_of_mantra": 300
+        }
+      },
+      "source": "fandom:1204680",
+      "corroborated_by": [
+        "canary (mantra*stage on fist attacks only)"
+      ],
+      "notes": "Blue domain."
+    }
+  ]
+}

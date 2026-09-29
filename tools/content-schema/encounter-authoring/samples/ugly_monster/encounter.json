@@ -1,0 +1,674 @@
+{
+  "identity": {
+    "key": "canary:encounter/ugly_monster",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Cobra Bastion: Ugly Monster",
+  "scope": "channel_shared",
+  "participants": [
+    {
+      "role": "ugly_monster",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/ugly_monster",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "gaffir",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/gaffir",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "guard_captain_quaid",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/guard_captain_quaid",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [
+      {
+        "name": "ugly_monster_present",
+        "initial": false
+      },
+      {
+        "name": "gaffir_called_ugly_monster",
+        "initial": false
+      },
+      {
+        "name": "guard_captain_quaid_called_ugly_monster",
+        "initial": false
+      }
+    ],
+    "timers": [
+      {
+        "name": "ugly_monster_leaves",
+        "duration_ms": 60000,
+        "repeat": false
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "ugly_monster_drops_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "ugly_monster",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "chance_percent",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3577",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3582",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/836",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3587",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3591",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3593",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3586",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3601",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 8,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/30059",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 8,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/30060",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 8,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/30061",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ugly_monster_drops_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "ugly_monster",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "chance_percent",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3577",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3582",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/836",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3587",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3591",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3593",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3586",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 97,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/3601",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 8,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/30059",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 8,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/30060",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            },
+            {
+              "weight": 8,
+              "actions": [
+                {
+                  "kind": "drop_item",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/30061",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "subject_position"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "gaffir_calls_ugly_monster_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "gaffir",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "gaffir_called_ugly_monster",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
+        },
+        {
+          "kind": "chance_from_amount",
+          "per": 1000000
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/ugly_monster",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "ugly_monster",
+          "count": 1,
+          "at": "subject_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "flag",
+          "flag": "gaffir_called_ugly_monster",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "ugly_monster_leaves",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "gaffir_calls_ugly_monster_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "gaffir",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "gaffir_called_ugly_monster",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
+        },
+        {
+          "kind": "chance_from_amount",
+          "per": 1000000
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/ugly_monster",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "ugly_monster",
+          "count": 1,
+          "at": "subject_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "flag",
+          "flag": "gaffir_called_ugly_monster",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "ugly_monster_leaves",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "guard_captain_quaid_calls_ugly_monster_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "guard_captain_quaid",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "guard_captain_quaid_called_ugly_monster",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
+        },
+        {
+          "kind": "chance_from_amount",
+          "per": 1000000
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/ugly_monster",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "ugly_monster",
+          "count": 1,
+          "at": "subject_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "flag",
+          "flag": "guard_captain_quaid_called_ugly_monster",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "ugly_monster_leaves",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "guard_captain_quaid_calls_ugly_monster_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "guard_captain_quaid",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "guard_captain_quaid_called_ugly_monster",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
+        },
+        {
+          "kind": "chance_from_amount",
+          "per": 1000000
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/ugly_monster",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "ugly_monster",
+          "count": 1,
+          "at": "subject_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "flag",
+          "flag": "guard_captain_quaid_called_ugly_monster",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "ugly_monster_leaves",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "ugly_monster_leaves",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "ugly_monster_leaves"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "ugly_monster"
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "ugly_monster_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "ugly_monster"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "ugly_monster_leaves",
+          "operation": "stop"
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

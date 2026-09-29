@@ -174,6 +174,7 @@ jobs:
       rust: ${{ steps.classify.outputs.rust }}
       windows: ${{ steps.classify.outputs.windows }}
       atlas_fullworld: ${{ steps.classify.outputs.atlas_fullworld }}
+      server_qualification: ${{ steps.classify.outputs.server_qualification }}
       surface: ${{ steps.classify.outputs.surface }}
       reason: ${{ steps.classify.outputs.reason }}
       routing_health: ${{ steps.classify.outputs.routing_health }}
@@ -214,6 +215,7 @@ jobs:
           RUST: ${{ steps.classify.outputs.rust }}
           WINDOWS: ${{ steps.classify.outputs.windows }}
           ATLAS_FULLWORLD: ${{ steps.classify.outputs.atlas_fullworld }}
+          SERVER_QUALIFICATION: ${{ steps.classify.outputs.server_qualification }}
           SURFACE: ${{ steps.classify.outputs.surface }}
           REASON: ${{ steps.classify.outputs.reason }}
           ROUTING_HEALTH: ${{ steps.classify.outputs.routing_health }}
@@ -224,6 +226,7 @@ jobs:
             printf -- '- Rust: `%s`\n' "$RUST"
             printf -- '- Windows: `%s`\n' "$WINDOWS"
             printf -- '- Atlas fullworld: `%s`\n' "$ATLAS_FULLWORLD"
+            printf -- '- Server qualification: `%s`\n' "$SERVER_QUALIFICATION"
             printf -- '- Surface: `%s`\n' "$SURFACE"
             printf -- '- Reason: `%s`\n' "$REASON"
             printf -- '- Routing health: `%s`\n' "$ROUTING_HEALTH"
@@ -521,7 +524,7 @@ jobs:
           )
           for package in ('oteryn-client', 'oteryn-game-server'):
               tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')
-              found = [name for name in forbidden if name in tree]
+              found = [name for name in forbidden if name in tree and (package, name) != ('oteryn-game-server', 'protocol-oteryn')]
               if found:
                   raise SystemExit(f'{package} production closure contains forbidden entries: {found}')
               print(f'{package} production closure: PASS')
@@ -746,6 +749,18 @@ jobs:
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
 
+      - name: Restore Cargo cache saved by protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-1.94.0-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            rust-linux-1.94.0-
+
       - name: Build workspace
         run: cargo +1.94.0 build --locked --workspace --all-targets
 
@@ -937,6 +952,119 @@ jobs:
           command: check
           arguments: --all-features
 
+  node_boot:
+    name: Merge gate / Node boot against the real Platform
+    needs: [scope, lanes]
+    # Fails closed: only an explicit protected-base `false` skips the physical qualification.
+    if: needs.lanes.outputs.server_qualification != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.target_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Validate harness
+        run: bash -n tools/qualification/node_boot/run.sh
+
+      - name: Run node boot qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/node-boot-evidence.txt"
+          bash tools/qualification/node_boot/run.sh | tee "$evidence"
+          grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
+          grep -E '^(NODE_BOOT_EVIDENCE |SEAM_EVIDENCE |NODE_BOOT_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
+
+  server_seam:
+    name: Merge gate / Server Seam over TCP+TLS
+    needs: [scope, lanes]
+    # Fails closed: only an explicit protected-base `false` skips the physical qualification.
+    if: needs.lanes.outputs.server_qualification != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+        env:
+          POSTGRES_USER: oteryn_test_admin
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.target_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Validate harness
+        run: bash -n tools/qualification/wp5_s3b/run.sh
+
+      - name: Run real composed qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+          OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/server-seam-evidence.txt"
+          WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh | tee "$evidence"
+          grep -Fxq 'S3B_RESULT=SEAM_PASS' "$evidence"
+          grep -E '^(S3B_EVIDENCE |SEAM_EVIDENCE |S3B_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
+
   validate:
     name: Merge gate / validate
     if: always()
@@ -952,6 +1080,8 @@ jobs:
       - rust_linux
       - rust_windows
       - rust_supply_chain
+      - node_boot
+      - server_seam
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -973,6 +1103,9 @@ jobs:
           RUST_LINUX: ${{ needs.rust_linux.result }}
           RUST_WINDOWS: ${{ needs.rust_windows.result }}
           RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}
+          SERVER_QUALIFICATION_REQUIRED: ${{ needs.lanes.outputs.server_qualification }}
+          NODE_BOOT: ${{ needs.node_boot.result }}
+          SERVER_SEAM: ${{ needs.server_seam.result }}
         run: |
           python - <<'PY'
           import os
@@ -996,6 +1129,16 @@ jobs:
               allowed = {'success'} if os.environ[flag] == 'true' else {'success', 'skipped'}
               for name in names:
                   if os.environ[name] not in allowed:
+                      failures.append(f'{name}={os.environ[name]}')
+          # Physical server qualifications fail closed: anything but an explicit
+          # protected-base `false` (including an older classifier) requires them.
+          if os.environ.get('SERVER_QUALIFICATION_REQUIRED', '') != 'false':
+              for name in ('NODE_BOOT', 'SERVER_SEAM'):
+                  if os.environ[name] != 'success':
+                      failures.append(f'{name}={os.environ[name]}')
+          else:
+              for name in ('NODE_BOOT', 'SERVER_SEAM'):
+                  if os.environ[name] not in {'success', 'skipped'}:
                       failures.append(f'{name}={os.environ[name]}')
 
           if failures:

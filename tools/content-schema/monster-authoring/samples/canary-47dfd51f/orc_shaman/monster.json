@@ -17,8 +17,8 @@
       "defense": 10,
       "critical_chance_percent": 0,
       "mitigation_percent": {
-        "numerator": 1,
-        "denominator": 4
+        "numerator": 2,
+        "denominator": 5
       }
     },
     "resistances": [
@@ -265,7 +265,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 0.52,
+        "probability_percent": 0.4356,
         "skip_later_same_item_after_success": false
       },
       {
@@ -276,7 +276,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 1,
+        "probability_percent": 1.0675,
         "skip_later_same_item_after_success": false
       },
       {
@@ -287,7 +287,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 1,
+        "probability_percent": 2.1411,
         "skip_later_same_item_after_success": false
       },
       {
@@ -298,7 +298,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 2.1,
+        "probability_percent": 2.1963,
         "skip_later_same_item_after_success": false
       },
       {
@@ -320,7 +320,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 4.85,
+        "probability_percent": 5.1534,
         "skip_later_same_item_after_success": false
       },
       {
@@ -331,7 +331,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 6.86,
+        "probability_percent": 7.0307,
         "skip_later_same_item_after_success": false
       },
       {
@@ -342,7 +342,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 8.75,
+        "probability_percent": 9.0859,
         "skip_later_same_item_after_success": false
       },
       {
@@ -353,7 +353,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 10.3,
+        "probability_percent": 9.9571,
         "skip_later_same_item_after_success": false
       },
       {
@@ -364,7 +364,7 @@
         },
         "min_count": 1,
         "max_count": 2,
-        "probability_percent": 10.6,
+        "probability_percent": 11.2086,
         "skip_later_same_item_after_success": false
       },
       {
@@ -375,7 +375,7 @@
         },
         "min_count": 1,
         "max_count": 5,
-        "probability_percent": 90,
+        "probability_percent": 90.1411,
         "skip_later_same_item_after_success": false
       }
     ]

@@ -1865,6 +1865,7 @@ dependencies = [
  "oteryn-identity",
  "oteryn-input-actions",
  "oteryn-input-platform",
+ "oteryn-placeholder-assets",
  "oteryn-platform-client",
  "oteryn-platform-contracts",
  "oteryn-renderer",
@@ -1896,6 +1897,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-dev-client"
+version = "0.1.0"
+dependencies = [
+ "oteryn-protocol-oteryn",
+ "oteryn-session",
+ "oteryn-session-tcp",
+ "rcgen",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
+]
+
+[[package]]
 name = "oteryn-diagnostics"
 version = "0.1.0"
 dependencies = [
@@ -1917,7 +1931,9 @@ dependencies = [
  "cap-fs-ext",
  "cap-std",
  "ed25519-dalek",
+ "oteryn-dev-client",
  "oteryn-foundation",
+ "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "prost",
  "rcgen",
@@ -1956,6 +1972,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-placeholder-assets"
+version = "0.1.0"
+
+[[package]]
 name = "oteryn-platform-client"
 version = "0.1.0"
 dependencies = [
@@ -1983,6 +2003,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-protocol-oteryn"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "oteryn-renderer"
 version = "0.1.0"
 dependencies = [
@@ -2001,6 +2028,24 @@ dependencies = [
  "oteryn-identity",
  "oteryn-platform-client",
  "tokio",
+]
+
+[[package]]
+name = "oteryn-session"
+version = "0.1.0"
+dependencies = [
+ "oteryn-protocol-oteryn",
+ "tokio",
+]
+
+[[package]]
+name = "oteryn-session-tcp"
+version = "0.1.0"
+dependencies = [
+ "oteryn-session",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]
@@ -2033,10 +2078,16 @@ version = "0.1.0"
 dependencies = [
  "oteryn-client-domain",
  "oteryn-client-simulation",
+ "oteryn-dev-client",
  "oteryn-foundation",
  "oteryn-input-actions",
+ "oteryn-protocol-oteryn",
  "oteryn-renderer",
  "oteryn-synthetic-assets",
+ "rcgen",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]
@@ -3172,9 +3223,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-rustls"
-version = "0.26.4"
+version = "0.26.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1729aa945f29d91ba541258c8df89027d5792d85a8841fb65e8bf0f4ede4ef61"
+checksum = "b0c85f2c3ef0b1cd58b36682f4b17aaa995f0e5db534d85692b4903abce21f67"
 dependencies = [
  "rustls",
  "tokio",

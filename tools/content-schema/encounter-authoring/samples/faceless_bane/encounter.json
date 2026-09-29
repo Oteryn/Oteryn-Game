@@ -1,0 +1,53 @@
+{
+  "identity": {
+    "key": "canary:encounter/faceless_bane",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Dream Courts: Faceless Bane",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "faceless_bane",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/faceless_bane",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "faceless_bane_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "faceless_bane"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "faceless_bane",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "faceless_bane_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "faceless_bane_defeated"
+  ]
+}

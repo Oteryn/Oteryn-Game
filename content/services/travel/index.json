@@ -1,10 +1,1 @@
-{
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/services/travel/",
-  "kind": "static_content",
-  "owner": "Service/Interaction",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
-  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Travel service definitions."
-}
+{"family":"Service.Travel","legacy_source":{"git_blob_sha":"6a33422567b425ce1bf5de4b7c7142dc22b2e413","path":"content/world/definitions/declarations.json","schema":"OTERYN_WORLD_PROJECT_DECLARATIONS/v2"},"record_count":56,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/services/travel/travel-00000-00055.json"]}

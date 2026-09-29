@@ -5,6 +5,7 @@
 - Decision owners: Oteryn project
 - Applies to: `FND-01`, `VSL-02`, the atomic Rust-client destination migration, `FND-02`, `FND-03` and `FND-04`
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
+- Amended by: ADR-0020 (native client gameplay entry), sections 2 and 3, once ADR-0020 is accepted
 
 ## Context
 
@@ -58,6 +59,8 @@ The production dependency graph and release artifacts in `pre-native-protocol` c
 The migration must not preserve Canary as a temporary fallback and must not rename, wrap or translate Canary behavior into a nominally native crate.
 
 A future `protocol-oteryn` member may enter the canonical workspace only when its immediate consumer and accepted gate authorize real contract work. An empty layering crate created only to make the target tree look complete is forbidden.
+
+Amendment 2026-09-28 (owner decision A6-a, coordinator issue #162): `crates/protocol-oteryn` (`oteryn-protocol-oteryn`) enters the workspace as the real, already-accepted FND-02 wire codecs (framing, `USE-WIRE-V1` world-spatial and world-object codecs) extracted from `apps/game-server`, with `oteryn-game-server` as its immediate consumer. It is a production member of the game-server closure. The native client production entry defined in §3 is unchanged and remains fail-closed; `oteryn-client` must not depend on it until a later accepted gate.
 
 ### 3. Production gameplay entry is explicitly unavailable and fail-closed
 

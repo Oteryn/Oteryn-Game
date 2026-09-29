@@ -1,0 +1,850 @@
+{
+  "encounter": "canary:encounter/world_devourer",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "HeartMinionDeath": [
+      "canary:creature/frenzy",
+      "canary:creature/disruption",
+      "canary:creature/charged_disruption",
+      "canary:creature/overcharged_disruption",
+      "canary:creature/the_hunger",
+      "canary:creature/the_destruction",
+      "canary:creature/the_rage"
+    ],
+    "HeartBossDeath": [
+      "canary:creature/world_devourer"
+    ],
+    "DisruptionTransform": [
+      "canary:creature/disruption"
+    ],
+    "ChargedDisruptionTransform": [
+      "canary:creature/charged_disruption"
+    ],
+    "spell.rage summon": [
+      "canary:creature/the_rage"
+    ],
+    "spell.destruction summon": [
+      "canary:creature/the_destruction"
+    ],
+    "spell.devourer summon": [
+      "canary:creature/world_devourer"
+    ],
+    "spell.hunger summon": [
+      "canary:creature/the_hunger"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/actions_final_lever.lua",
+      "blob_sha1": "c2d74bbf885aaaea8e39d37e6c286643bd5e166a"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/frenzy.lua",
+      "blob_sha1": "f43a94866306dd89384d52d7d7400ff629f5d33d"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_heart_minion_death.lua",
+      "blob_sha1": "0c5901d5861e0a5ac8bb5fb137bad149434721e2"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/disruption.lua",
+      "blob_sha1": "347fb9eadedbe92eaf724139694ca9605d478e21"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/charged_disruption.lua",
+      "blob_sha1": "a3bcb2b524a93fcafd17d1790bcefa06742c6151"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/overcharged_disruption.lua",
+      "blob_sha1": "27cf76fd1140891d785c5b2fa47915a4cf661829"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/the_hunger.lua",
+      "blob_sha1": "e796dbcd2a86452761919008bb0752a66a0c5c53"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/the_destruction.lua",
+      "blob_sha1": "b80789846b51200cc1ce1647ad0236d205998cd5"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/the_rage.lua",
+      "blob_sha1": "9a5c3dc1124805a3d2d9d99a868e4e01cc43f9ff"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/world_devourer.lua",
+      "blob_sha1": "6bf55bf348d765d717fe36c4088b7cc0356c0e85"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_heart_boss_death.lua",
+      "blob_sha1": "2c90381a9bb2f15408373edb35a50992d844eadd"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_disruption_transform.lua",
+      "blob_sha1": "f314db0d226eff4ad0bc12b29bc6461d2e7c2bff"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_charged_disruption_transform.lua",
+      "blob_sha1": "b80a485ac64ebd30a40cb6a21ac1eca9e551fb2b"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/rage_summon.lua",
+      "blob_sha1": "266e3c272a9caad2ccf068b6e8fc7e6414b60a8d"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/destruction_summon.lua",
+      "blob_sha1": "67433c26331cb5791bbf1f49e88d1395c457b088"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/devourer_summon.lua",
+      "blob_sha1": "823dd5cb247832086cb73300bb465b62ca8ae452"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/greed.lua",
+      "blob_sha1": "31d99df683f946843e94c8450131cb8bf6c56995"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/hunger_summon.lua",
+      "blob_sha1": "751d38126f32378624948f3e21bb3f8b612dd895"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/movements_vortex_hunger.lua",
+      "blob_sha1": "7d62640fce86b071d8922f6dc180ab1e1ffe3992"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        457,
+        458,
+        459,
+        460,
+        462,
+        463,
+        464,
+        465
+      ],
+      "status": "mapped",
+      "resolution": "The final lever starts the fight with every counter at 0 and every boss flag false.",
+      "destination": "/encounter/state"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        56
+      ],
+      "status": "mapped",
+      "resolution": "Frenzy is the frenzy participant; its file registers HeartMinionDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "status": "mapped",
+      "resolution": "The death of a frenzy lowers the rage_summons and devourer_summons counters by one.",
+      "destination": "/encounter/rules/0/actions"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        51
+      ],
+      "status": "mapped",
+      "resolution": "Disruption is the disruption participant; its file registers HeartMinionDeath.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        12,
+        13,
+        14
+      ],
+      "status": "mapped",
+      "resolution": "The death of a disruption lowers the destruction_summons and devourer_summons counters by one.",
+      "destination": "/encounter/rules/1/actions"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        51
+      ],
+      "status": "mapped",
+      "resolution": "Charged Disruption is the charged_disruption participant; its file registers HeartMinionDeath.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        12,
+        13,
+        14
+      ],
+      "status": "mapped",
+      "resolution": "The death of a charged disruption lowers the destruction_summons and devourer_summons counters by one.",
+      "destination": "/encounter/rules/2/actions"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        50
+      ],
+      "status": "mapped",
+      "resolution": "Overcharged Disruption is the overcharged_disruption participant; its file registers HeartMinionDeath.",
+      "destination": "/encounter/participants/3/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        12,
+        13,
+        14
+      ],
+      "status": "mapped",
+      "resolution": "The death of a overcharged disruption lowers the destruction_summons and devourer_summons counters by one.",
+      "destination": "/encounter/rules/3/actions"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        56
+      ],
+      "status": "mapped",
+      "resolution": "The Hunger is the the_hunger participant; its file registers HeartMinionDeath.",
+      "destination": "/encounter/participants/4/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        15,
+        16,
+        17
+      ],
+      "status": "mapped",
+      "resolution": "The death of the hunger raises bosses_killed and sets its killed flag.",
+      "destination": "/encounter/rules/4/actions"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        56
+      ],
+      "status": "mapped",
+      "resolution": "The Destruction is the the_destruction participant; its file registers HeartMinionDeath.",
+      "destination": "/encounter/participants/5/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        18,
+        19,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "The death of the destruction raises bosses_killed and sets its killed flag.",
+      "destination": "/encounter/rules/5/actions"
+    },
+    {
+      "source_index": 8,
+      "source_lines": [
+        56
+      ],
+      "status": "mapped",
+      "resolution": "The Rage is the the_rage participant; its file registers HeartMinionDeath.",
+      "destination": "/encounter/participants/6/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        21,
+        22,
+        23
+      ],
+      "status": "mapped",
+      "resolution": "The death of the rage raises bosses_killed and sets its killed flag.",
+      "destination": "/encounter/rules/6/actions"
+    },
+    {
+      "source_index": 9,
+      "source_lines": [
+        61
+      ],
+      "status": "mapped",
+      "resolution": "World Devourer is the world_devourer participant; its file registers HeartBossDeath.",
+      "destination": "/encounter/participants/7/creatures"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        113,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        138,
+        139,
+        141
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of World Devourer (the name is looked up in lower case).",
+      "destination": "/encounter/rules/7/trigger"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        129,
+        130,
+        131,
+        132,
+        133,
+        134
+      ],
+      "status": "mapped",
+      "resolution": "The vortex 23483 on the room vortex tile becomes vortex 23482 with action id 14354, which movements_teleport_heart.lua sends to the reward room (32112, 31375, 14) (interaction domain). The lever made it 23483 when the fight started.",
+      "destination": "/encounter/rules/7/actions/0"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        135
+      ],
+      "status": "mapped",
+      "resolution": "Every player standing in the room is credited (D27): the quest domain sets their storage 60835, 60814, 60828 to 1.",
+      "destination": "/encounter/rules/7/actions/1"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        136
+      ],
+      "status": "mapped",
+      "resolution": "clearDevourer removes every monster in the room.",
+      "destination": "/encounter/rules/7/actions/2"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        21,
+        22,
+        23,
+        24
+      ],
+      "status": "approved_omission",
+      "resolution": "stopEvent cancels the room-change, room-clear and spark timers of the final lever (actions_final_lever.lua lines 23, 178, 218, 219). Those belong to the lever transcription; the encounter ends with the boss."
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        50
+      ],
+      "status": "mapped",
+      "resolution": "Disruption is the disruption participant; its file registers DisruptionTransform.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 11,
+      "source_lines": [
+        1,
+        2,
+        4,
+        5,
+        6,
+        7,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        25,
+        26,
+        27,
+        28,
+        30
+      ],
+      "status": "mapped",
+      "resolution": "onThink counts the thinks of each disruption (one per second); the first think records 1 and at 12 a fresh charged disruption replaces it on its tile. The first think falls within the first second, so the change comes 12-13 s after the disruption appears.",
+      "destination": "/encounter/rules/8"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        50
+      ],
+      "status": "mapped",
+      "resolution": "Charged Disruption is the charged_disruption participant; its file registers ChargedDisruptionTransform.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 12,
+      "source_lines": [
+        1,
+        2,
+        4,
+        5,
+        6,
+        7,
+        9,
+        10,
+        12,
+        13,
+        14,
+        15,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        25,
+        26,
+        27,
+        28,
+        30
+      ],
+      "status": "mapped",
+      "resolution": "onThink counts the thinks of each charged disruption (one per second); the first think records 1 and at 18 a fresh overcharged disruption replaces it on its tile. The first think falls within the first second, so the change comes 18-19 s after the charged disruption appears.",
+      "destination": "/encounter/rules/9"
+    },
+    {
+      "source_index": 8,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "The Rage is the the_rage participant.",
+      "destination": "/encounter/participants/6/creatures"
+    },
+    {
+      "source_index": 8,
+      "source_lines": [
+        80
+      ],
+      "status": "mapped",
+      "resolution": "The Rage casts the registered spell \"rage summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 13,
+      "source_lines": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell creates a Frenzy on a random tile next to The Rage (x and y each -1..1) while the rage_summons counter is below three, then raises it. The spell's own combat has type COMBAT_NONE and no effect. The reference-date wiki says the Frenzy appears with The Rage.",
+      "destination": "/encounter/rules/10"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "The Destruction is the the_destruction participant.",
+      "destination": "/encounter/participants/5/creatures"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        80
+      ],
+      "status": "mapped",
+      "resolution": "The Destruction casts the registered spell \"destruction summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 14,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell creates a Disruption on a random tile next to The Destruction (x and y each -1..1) while the destruction_summons counter is below three, then raises it and blocks the next summon for 15 s (the file-level delay flag becomes an encounter flag and timer). The spell's own combat has type COMBAT_NONE and no effect. The reference-date wiki says the Disruption appears with The Destruction.",
+      "destination": "/encounter/rules/11"
+    },
+    {
+      "source_index": 14,
+      "source_lines": [
+        8,
+        9,
+        10,
+        23
+      ],
+      "status": "mapped",
+      "resolution": "removeDelay clears the flag after 15 s.",
+      "destination": "/encounter/rules/12"
+    },
+    {
+      "source_index": 9,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "World Devourer is the world_devourer participant.",
+      "destination": "/encounter/participants/7/creatures"
+    },
+    {
+      "source_index": 9,
+      "source_lines": [
+        109
+      ],
+      "status": "mapped",
+      "resolution": "World Devourer casts the registered spell \"devourer summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 15,
+      "source_lines": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell: while the devourerSummon counter is below three, one of Greed, Frenzy or Disruption (uniform) appears on a random tile next to the World Devourer (x and y each -1..1) and the counter rises; the deaths of Frenzies and Disruptions already lower it. The spell's own combat has type COMBAT_NONE and no effect. The reference-date wiki (Fandom World Devourer rev 1086448) names all three minions in the fight.",
+      "destination": "/encounter/rules/13"
+    },
+    {
+      "source_index": 16,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Greed is the greed participant.",
+      "destination": "/encounter/participants/8/creatures"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "The Hunger is the the_hunger participant.",
+      "destination": "/encounter/participants/4/creatures"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        78
+      ],
+      "status": "mapped",
+      "resolution": "The Hunger casts the registered spell \"hunger summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 17,
+      "source_lines": [
+        1,
+        10,
+        11,
+        12,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        27
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell: unless the 15 s delay runs, while the hungerSummon counter is below three a Greed appears on a random tile next to The Hunger (x and y each -1..1), the counter rises and the delay starts. The spell's own combat has type COMBAT_NONE and no effect. The reference-date wiki (Fandom World Devourer rev 1086448) describes the Greed and the teleport that removes it.",
+      "destination": "/encounter/rules/14"
+    },
+    {
+      "source_index": 17,
+      "source_lines": [
+        10,
+        11,
+        12,
+        23
+      ],
+      "status": "mapped",
+      "resolution": "removeDelay clears the flag after 15 s.",
+      "destination": "/encounter/rules/15"
+    },
+    {
+      "source_index": 18,
+      "source_lines": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        36,
+        39,
+        40,
+        41
+      ],
+      "status": "mapped",
+      "resolution": "A the hunger stepping on a closed vortex (23469) opens the vortex at its fixed tile (23470). decay() does nothing: items.xml gives the vortex no decay, so it stays open. The reference-date wiki says to \"walk the boss over the teleport so that it changes its color\".",
+      "destination": "/encounter/rules/16"
+    },
+    {
+      "source_index": 18,
+      "source_lines": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        9,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        36,
+        39,
+        40,
+        41
+      ],
+      "status": "mapped",
+      "resolution": "A world devourer stepping on a closed vortex (23469) opens the vortex at its fixed tile (23470). decay() does nothing: items.xml gives the vortex no decay, so it stays open. The reference-date wiki says to \"walk the boss over the teleport so that it changes its color\".",
+      "destination": "/encounter/rules/17"
+    },
+    {
+      "source_index": 18,
+      "source_lines": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "status": "mapped",
+      "resolution": "A Greed stepping on an open vortex (23470) disappears and lowers both summon counters. The reference-date wiki: \"walk the Greed on the teleport so it disappears\".",
+      "destination": "/encounter/rules/18"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "world_devourer_defeated",
+      "credited": "players_in_anchor",
+      "quest_domain": {
+        "canary_storage": [
+          "60835",
+          "60814",
+          "60828"
+        ],
+        "raise_to_at_least": 1
+      }
+    }
+  ]
+}

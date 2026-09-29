@@ -1,20 +1,21 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use oteryn_game_server::content::{
-    CW2_B1_FULL_ITEM_FAMILY_COUNT, CanonicalProjectDocuments, ImportBatch, ProjectDraft,
-    ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2Declaration, ProjectV2DefinitionRef,
-    ProjectV2Draft, ProjectV2EditorEntry, ProjectV2EvidenceClass, ProjectV2Family,
-    ProjectV2Identity, ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle,
-    ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
-    ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
+    CW2_B1_FULL_ITEM_FAMILY_COUNT, CandidateValue, CanonicalProjectDocuments, ImportBatch,
+    ProjectDraft, ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2AuthoringProfile,
+    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry,
+    ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring,
+    ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle,
+    ProjectV2ItemTaxonomy, ProjectV2Source, ProjectV2SourceIdentityBinding,
+    ProjectV2SourceIdentityDisposition, ProjectV2State, R7_P04_GOLD_COIN_EVIDENCE_PACKET,
     ReferenceCells, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation,
     ReferenceItemSemantics, ReferenceItemStack, ReferenceItemTradeRestrictions,
     ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType,
-    protected_cw2_b1_promoted_item_family_import,
+    ReimportDecision, ReimportFieldState, protected_r7_p04_gold_coin_item_family_import,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -59,6 +60,73 @@ const OUTFIT_CROSSWALK_SHA256: &str =
     "1d3c8944bf68c63814942578ac07fe232eff900d6d261476d46bb742e64c5396";
 const OUTFIT_SOURCE_REVISION: &str = MOUNT_SOURCE_REVISION;
 const OUTFIT_SOURCE_SHA256: &str = MOUNT_SOURCE_SHA256;
+const CREATURE_STAGED: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
+);
+const CREATURE_STAGED_SHA256: &str =
+    "0c5fe49325cefec7e56ab75f09bda6a4d7a248f839b9137eee9659d2a9b06c3d";
+const CREATURE_STAGE_TOOL_SHA256: &str =
+    "5f90ac7acfd4611633a8c6c936061b9e13cec6cbd4a7cbceaca07635c67430f8";
+const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
+/// D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki (`wiki_authored.py`).
+const CREATURE_WIKI_SAMPLE_SHA256: &str =
+    "88d21c748283df4cf059dbf1bd04cbcf7b9d00ca6cd14dc1e913e947f0242c8c";
+const CREATURE_WIKI_REVISION: &str = "tibiawiki-wiki-authored-creature-88d21c748283df4c";
+const CREATURE_WIKI_COUNT: usize = 1;
+const CREATURE_WIKI_BINDINGS: [(&str, &str); CREATURE_WIKI_COUNT] =
+    [("108320", "oteryn:creature.dark_merudri")];
+/// Game version 15.30: creatures CrystalServer has at its pinned 15.30 commit and Canary lacks (`crystal_batch.py`).
+const CREATURE_CRYSTAL_REVISION: &str = "00ce02a57ca5a12e48f32a3476e37471167e4c3f";
+/// A v2 source is unique per key and revision and names one import batch; the NPC summer supplement
+/// already holds `crystalserver` at the commit itself. The creature batch therefore gets its own
+/// source revision, which keeps the commit, as the TibiaWiki batches of one source do.
+const CREATURE_CRYSTAL_SOURCE_REVISION: &str =
+    "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f";
+const CREATURE_CRYSTAL_COUNT: usize = 13;
+const CANARY_BUNDLE_INDEX_SHA256: &str =
+    "5251e62c7009a12a4d10d85a7a6ff59aa9526f169ec8c6d27fbdd7a687b571d9";
+const ITEM_ALLOCATION_SHA256: &str =
+    "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
+const NPC_STAGED: &[u8] =
+    include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
+const NPC_STAGED_SHA256: &str = "44d11c4cb3075c7bf54d43f968e9d366da1e985bafdafc0fe342571f095c898b";
+const NPC_STAGE_TOOL_SHA256: &str =
+    "2fef36beedc640c202aa44558049c2ab40dc63d4905c4160ba59955884e670f6";
+const NPC_CANDIDATES_SHA256: &str =
+    "16e6ec0b41e228176da0c021c1278801c09e48f0378a9820541c698924b48589";
+const NPC_WIKI_SNAPSHOT_SHA256: &str =
+    "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42";
+const NPC_ITEM_MAP_SHA256: &str =
+    "83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a";
+const NPC_WIKI_REVISION: &str = "tibiawiki-npc-52f87d29eddd1a4e";
+/// D12: offer prices TibiaWiki Fandom and TibiaWiki BR agree on also come from the committed BR facts.
+const NPC_BR_FACTS_SHA256: &str =
+    "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a";
+const NPC_BR_REVISION: &str = "tibiawiki-br-npc-0773232ddd356be2";
+/// D13: offer prices two of Fandom, TibiaWiki BR and Tibiopedia agree on also come from the committed Tibiopedia facts.
+const NPC_TIBIOPEDIA_FACTS_SHA256: &str =
+    "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651";
+const NPC_TIBIOPEDIA_REVISION: &str = "tibiopedia-npc-43bfc91ec7721df1";
+const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
+/// D14: NPC files Crystal added after `CRYSTAL_REVISION` come from one more pinned commit (`summer-update`).
+const CRYSTAL_SUPPLEMENT_REVISION: &str = "00ce02a57ca5a12e48f32a3476e37471167e4c3f";
+const CRYSTAL_SUPPLEMENT_BUNDLES_SHA256: &str =
+    "154083cc71de6e41d73c13854307c4c2cbc134df5afdd1e1c899cfc12f5b3fb5";
+const NPC_COUNT: usize = 1094;
+const NPC_RECORDS: usize = 2188;
+const NPC_DECLARATIONS: usize = 2179;
+const NPC_DIALOGUE_STAGED: &[u8] =
+    include_bytes!("../../../docs/agents/evidence/OTV2-20260928-npc-dialogue-wave-a-staged.json");
+const NPC_DIALOGUE_STAGED_SHA256: &str =
+    "bb1f72f371b86ebd294d4eea20d623f94c858b3155a203cedf9a6b262536cc68";
+const NPC_DIALOGUES: usize = 707;
+const NPC_DIALOGUE_NODES: usize = 6375;
+const NPC_BINDINGS: usize = 2344;
+const CREATURE_COUNT: usize = 1463;
+const CREATURE_RECORDS: usize = 20464;
+const CREATURE_PROFILES: usize = 19519;
+/// Encounter admission E1-E5: encounters admitted with the creatures they cover.
+const ENCOUNTER_COUNT: usize = 58;
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -70,9 +138,9 @@ fn limits() -> ProjectEvidenceLimits {
         max_string_bytes: FULL_FAMILY_MAX_STRING_BYTES,
         max_locator_bytes: 160,
         max_locator_segments: 8,
-        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
-        max_import_records: 4,
-        max_reimport_states: 1,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
+        max_import_records: 11,
+        max_reimport_states: ENCOUNTER_COUNT,
     }
 }
 
@@ -152,6 +220,83 @@ fn promote<T: PartialEq>(
     }
 }
 
+/// Exactly the 8 `presentation.name` disagreements between the G4 165-item wiki census
+/// (`populate_items`) and the #1048 Item semantic-promotion lowering v1 packet that
+/// ASCII-case-insensitive equality does not resolve. Owner decision: the lowering
+/// value is the single promotion source and wins verbatim for exactly these pinned
+/// `(native_key, wiki census title, lowering items.xml value)` triples, nowhere else.
+/// `i00037538` and `i00037526` are tracked as a separate data-quality finding (their
+/// names look like crosswalk/identity drift, not a formatting difference, even though
+/// their `weapon.*` facts agree exactly) — see the task record.
+const ITEM_NAME_LOWERING_OVERRIDES: &[(&str, &str, &str)] = &[
+    (
+        "oteryn:item.registry.i00037538",
+        "Staff",
+        "pair of monk fists",
+    ),
+    ("oteryn:item.registry.i00006361", "The Avenger", "avenger"),
+    ("oteryn:item.registry.i00007913", "The Epiphany", "epiphany"),
+    (
+        "oteryn:item.registry.i00007205",
+        "The Justice Seeker",
+        "justice seeker",
+    ),
+    ("oteryn:item.registry.i00007835", "The Devileye", "devileye"),
+    (
+        "oteryn:item.registry.i00021963",
+        "Ferumbras' Staff (Club)",
+        "Ferumbras' staff",
+    ),
+    (
+        "oteryn:item.registry.i00032484",
+        "Souleater (Axe)",
+        "souleater",
+    ),
+    (
+        "oteryn:item.registry.i00037526",
+        "Crypt Strike",
+        "falcon sai",
+    ),
+];
+
+/// `promote`'s `presentation.name` counterpart. The #1048 Item semantic-promotion
+/// lowering pass now runs ahead of this wiki census and already sets `presentation.name`
+/// to the lowercase `items.xml` text for any item it covers, so a wiki-sourced Title
+/// Case candidate that agrees with the existing value save for ASCII case is treated as
+/// the same fact rather than a contradiction; the existing lowercase value is kept
+/// unchanged. A residual disagreement is a no-op (the existing lowering value is kept)
+/// only when it exactly matches a pinned `ITEM_NAME_LOWERING_OVERRIDES` entry — no
+/// generic "The " or parenthetical stripping. Every other disagreement still errors
+/// exactly as `promote` does.
+fn promote_name(
+    slot: &mut ReferenceItemField<String>,
+    native_key: &str,
+    value: String,
+    overrides_hit: &mut BTreeSet<&'static str>,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    match slot {
+        ReferenceItemField::Unknown => {
+            *slot = ReferenceItemField::Known(value);
+            Ok(true)
+        }
+        ReferenceItemField::Known(existing) if existing.eq_ignore_ascii_case(&value) => Ok(false),
+        ReferenceItemField::Known(existing) => {
+            match ITEM_NAME_LOWERING_OVERRIDES
+                .iter()
+                .find(|(key, wiki, lowering)| {
+                    *key == native_key && *wiki == value && *lowering == existing.as_str()
+                }) {
+                Some((key, _, _)) => {
+                    overrides_hit.insert(key);
+                    Ok(false)
+                }
+                None => Err("Item candidate contradicts an existing field state".into()),
+            }
+        }
+        _ => Err("Item candidate contradicts an existing field state".into()),
+    }
+}
+
 fn presentation(
     semantics: &mut ReferenceItemSemantics,
 ) -> Result<&mut ReferenceItemPresentation, Box<dyn std::error::Error>> {
@@ -204,6 +349,8 @@ fn apply_field(
     semantics: &mut ReferenceItemSemantics,
     field: &Value,
     title: &str,
+    native_key: &str,
+    overrides_hit: &mut BTreeSet<&'static str>,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     let path = field["field_path"]
         .as_str()
@@ -216,7 +363,12 @@ fn apply_field(
             if field["source_value"] != value || value != title {
                 return Err("Item name disagrees with source page".into());
             }
-            promote(&mut presentation(semantics)?.name, value.to_owned())
+            promote_name(
+                &mut presentation(semantics)?.name,
+                native_key,
+                value.to_owned(),
+                overrides_hit,
+            )
         }
         "weapon.attack" | "weapon.defense" | "weapon.extra_defense" => {
             let value = candidate_value(field, "SIGNED_POINTS")?["value"]
@@ -310,6 +462,7 @@ fn populate_items(
     let mut promoted_count = 0;
     let mut equal_count = 0;
     let mut post_cut_count = 0;
+    let mut overrides_hit = BTreeSet::new();
     for row in selected {
         let binding: ProjectV2SourceIdentityBinding =
             serde_json::from_value(row["binding"].clone())?;
@@ -366,11 +519,23 @@ fn populate_items(
             }
             if timestamp > "2026-07-28T23:59:59Z" {
                 // The sole later revision has fields already present in the protected cut.
-                if apply_field(semantics, field, title)? {
+                if apply_field(
+                    semantics,
+                    field,
+                    title,
+                    &binding.target.key,
+                    &mut overrides_hit,
+                )? {
                     return Err("post-cut Item field cannot be promoted".into());
                 }
                 post_cut_count += 1;
-            } else if apply_field(semantics, field, title)? {
+            } else if apply_field(
+                semantics,
+                field,
+                title,
+                &binding.target.key,
+                &mut overrides_hit,
+            )? {
                 promoted_count += 1;
             } else {
                 equal_count += 1;
@@ -387,7 +552,18 @@ fn populate_items(
         });
         bindings.push(binding);
     }
-    if promoted_count != 526 || equal_count != 32 || post_cut_count != 3 {
+    if overrides_hit.len() != ITEM_NAME_LOWERING_OVERRIDES.len() {
+        let unused = ITEM_NAME_LOWERING_OVERRIDES
+            .iter()
+            .filter(|(key, _, _)| !overrides_hit.contains(key))
+            .map(|(key, _, _)| *key)
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(
+            format!("Item name lowering override table entries never hit: {unused}").into(),
+        );
+    }
+    if promoted_count != 12 || equal_count != 546 || post_cut_count != 3 {
         return Err(format!("Item field partition drifted: promoted={promoted_count} equal={equal_count} post_cut={post_cut_count}").into());
     }
     let import = ImportBatch {
@@ -985,9 +1161,493 @@ fn populate_outfits(
     })
 }
 
+struct CreaturePopulation {
+    import: ImportBatch,
+    source: ProjectV2Source,
+    wiki_import: ImportBatch,
+    wiki_source: ProjectV2Source,
+    crystal_import: ImportBatch,
+    crystal_source: ProjectV2Source,
+    records: Vec<ProjectReferenceRecord>,
+    declarations: Vec<ProjectV2Declaration>,
+    profiles: Vec<ProjectV2AuthoringProfile>,
+    bindings: Vec<ProjectV2SourceIdentityBinding>,
+}
+
+fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>> {
+    if hex_sha256(CREATURE_STAGED) != CREATURE_STAGED_SHA256 {
+        return Err("staged creature admission input digest drifted".into());
+    }
+    let packet: Value = serde_json::from_slice(CREATURE_STAGED)?;
+    let counts = &packet["counts"];
+    if packet["schema"] != "OTERYN_CREATURE_ADMISSION_STAGED/v1"
+        || packet["wave"] != "A"
+        || packet["source"]["repository"] != "opentibiabr/canary"
+        || packet["source"]["revision"] != CANARY_REVISION
+        || packet["source"]["census_index_sha256"] != CANARY_BUNDLE_INDEX_SHA256
+        || packet["source"]["item_allocation_sha256"] != ITEM_ALLOCATION_SHA256
+        || counts["creatures"] != CREATURE_COUNT
+        || counts["records"] != CREATURE_RECORDS
+        || counts["profiles"] != CREATURE_PROFILES
+        || counts["encounters"] != ENCOUNTER_COUNT
+        || packet["source"]["wiki_authored"]["revision"] != CREATURE_WIKI_REVISION
+        || packet["source"]["wiki_authored"]["sample_sha256"] != CREATURE_WIKI_SAMPLE_SHA256
+        || packet["source"]["crystal"]["repository"] != "zimbadev/crystalserver"
+        || packet["source"]["crystal"]["revision"] != CREATURE_CRYSTAL_REVISION
+        || packet["source"]["crystal"]["creatures"]
+            .as_array()
+            .is_none_or(|creatures| creatures.len() != CREATURE_CRYSTAL_COUNT)
+    {
+        return Err("staged creature admission source identity drifted".into());
+    }
+    let records: Vec<ProjectReferenceRecord> = serde_json::from_value(packet["records"].clone())?;
+    let profiles: Vec<ProjectV2AuthoringProfile> =
+        serde_json::from_value(packet["authoring_profiles"].clone())?;
+    let mut bindings: Vec<ProjectV2SourceIdentityBinding> =
+        serde_json::from_value(packet["source_identity_bindings"].clone())?;
+    let declarations: Vec<ProjectV2Declaration> =
+        serde_json::from_value(packet["declarations"].clone())?;
+    if declarations.len() != ENCOUNTER_COUNT
+        || declarations
+            .iter()
+            .any(|declaration| !matches!(declaration, ProjectV2Declaration::Encounter { .. }))
+    {
+        return Err("staged encounter declarations drifted".into());
+    }
+    let creatures = records
+        .iter()
+        .filter(|record| matches!(record, ProjectReferenceRecord::Creature { .. }))
+        .count();
+    if records.len() != CREATURE_RECORDS
+        || profiles.len() != CREATURE_PROFILES
+        || creatures != CREATURE_COUNT
+        || bindings.len() != CREATURE_COUNT + ENCOUNTER_COUNT
+        || bindings
+            .iter()
+            .filter(|binding| binding.source_key == "oteryn:source.tibiawiki")
+            .count()
+            != CREATURE_WIKI_COUNT
+        || bindings
+            .iter()
+            .filter(|binding| binding.source_key == "oteryn:source.crystalserver")
+            .count()
+            != CREATURE_CRYSTAL_COUNT
+        || bindings.iter().any(|binding| {
+            !matches!(
+                (
+                    binding.target.family,
+                    binding.source_key.as_str(),
+                    binding.source_revision.as_str(),
+                    binding.identity_namespace.as_str()
+                ),
+                (
+                    ProjectV2Family::Creature,
+                    "oteryn:source.canary",
+                    CANARY_REVISION,
+                    "canary/monster-file"
+                ) | (
+                    ProjectV2Family::Encounter,
+                    "oteryn:source.canary",
+                    CANARY_REVISION,
+                    "canary/encounter"
+                ) | (
+                    ProjectV2Family::Creature,
+                    "oteryn:source.tibiawiki",
+                    CREATURE_WIKI_REVISION,
+                    "mediawiki/page_id"
+                ) | (
+                    ProjectV2Family::Creature,
+                    "oteryn:source.crystalserver",
+                    CREATURE_CRYSTAL_REVISION,
+                    "crystalserver/monster-file"
+                )
+            )
+        })
+    {
+        return Err("staged creature admission counts drifted".into());
+    }
+    let wiki_bindings: Vec<(&str, &str)> = bindings
+        .iter()
+        .filter(|binding| binding.source_key == "oteryn:source.tibiawiki")
+        .map(|binding| (binding.external_id.as_str(), binding.target.key.as_str()))
+        .collect();
+    if wiki_bindings != CREATURE_WIKI_BINDINGS
+        || bindings
+            .iter()
+            .any(|binding| binding.disposition != ProjectV2SourceIdentityDisposition::Exact)
+    {
+        return Err("wiki-authored creature page binding drifted".into());
+    }
+    // The staged Crystal bindings name the commit; they resolve to the creature batch's own source.
+    for binding in &mut bindings {
+        if binding.source_key == "oteryn:source.crystalserver" {
+            binding.source_revision = CREATURE_CRYSTAL_SOURCE_REVISION.to_owned();
+        }
+    }
+    // E5: each admitted encounter keeps the digest of the manifest it was mapped from as its reimport baseline.
+    let manifests = packet["encounter_manifests"]
+        .as_object()
+        .ok_or("staged encounter manifests are missing")?;
+    let mut reimport_states = Vec::with_capacity(ENCOUNTER_COUNT);
+    for binding in bindings
+        .iter()
+        .filter(|binding| binding.target.family == ProjectV2Family::Encounter)
+    {
+        let digest = manifests
+            .get(&binding.external_id)
+            .and_then(Value::as_str)
+            .filter(|digest| {
+                digest.len() == 64
+                    && digest
+                        .bytes()
+                        .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+            })
+            .ok_or("staged encounter manifest digest is missing")?;
+        let value = Some(CandidateValue::Text(digest.to_owned()));
+        reimport_states.push(ReimportFieldState {
+            stable_identity: binding.target.key.clone(),
+            field_path: "encounter_manifest_sha256".to_owned(),
+            baseline: value.clone(),
+            upstream: value.clone(),
+            local: value,
+            decision: ReimportDecision::Unchanged,
+        });
+    }
+    if manifests.len() != ENCOUNTER_COUNT || reimport_states.len() != ENCOUNTER_COUNT {
+        return Err("staged encounter manifests drifted".into());
+    }
+    reimport_states.sort_by(|left, right| left.stable_identity.cmp(&right.stable_identity));
+    let import = ImportBatch {
+        batch_id: "g4-creature-canary-wave-a-r1".to_owned(),
+        source_repository: "opentibiabr/canary".to_owned(),
+        source_revision: CANARY_REVISION.to_owned(),
+        source_artifact_sha256: CANARY_BUNDLE_INDEX_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_MONSTER_AUTHORING_BUNDLE/v1".to_owned(),
+        importer: "OTERYN_CANARY_MONSTER_POPULATION_CENSUS/v1".to_owned(),
+        mapper: "OTERYN_CREATURE_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "creature-admission-r1".to_owned(),
+        mapper_sha256: CREATURE_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states,
+    };
+    let source = ProjectV2Source {
+        key: "oteryn:source.canary".to_owned(),
+        import_batch_id: import.batch_id.clone(),
+        revision: import.source_revision.clone(),
+        sha256: import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::OtsHypothesisOnly,
+    };
+    let wiki_import = ImportBatch {
+        batch_id: "g4-wiki-authored-creature-d44-r1".to_owned(),
+        source_repository: "tibia.fandom.com".to_owned(),
+        source_revision: CREATURE_WIKI_REVISION.to_owned(),
+        source_artifact_sha256: CREATURE_WIKI_SAMPLE_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_WIKI_AUTHORED_MONSTER/v1".to_owned(),
+        importer: "OTERYN_CANARY_MONSTER_POPULATION_CENSUS/v1".to_owned(),
+        mapper: "OTERYN_CREATURE_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "creature-admission-r1".to_owned(),
+        mapper_sha256: CREATURE_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let wiki_source = ProjectV2Source {
+        key: "oteryn:source.tibiawiki".to_owned(),
+        import_batch_id: wiki_import.batch_id.clone(),
+        revision: wiki_import.source_revision.clone(),
+        sha256: wiki_import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::Derived,
+    };
+    let crystal_import = ImportBatch {
+        batch_id: "g4-creature-crystal-1530-r1".to_owned(),
+        source_repository: "zimbadev/crystalserver".to_owned(),
+        source_revision: CREATURE_CRYSTAL_SOURCE_REVISION.to_owned(),
+        source_artifact_sha256: CANARY_BUNDLE_INDEX_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_MONSTER_AUTHORING_BUNDLE/v1".to_owned(),
+        importer: "OTERYN_CANARY_MONSTER_POPULATION_CENSUS/v1".to_owned(),
+        mapper: "OTERYN_CREATURE_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "creature-admission-r1".to_owned(),
+        mapper_sha256: CREATURE_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let crystal_source = ProjectV2Source {
+        key: "oteryn:source.crystalserver".to_owned(),
+        import_batch_id: crystal_import.batch_id.clone(),
+        revision: crystal_import.source_revision.clone(),
+        sha256: crystal_import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::OtsHypothesisOnly,
+    };
+    Ok(CreaturePopulation {
+        import,
+        source,
+        wiki_import,
+        wiki_source,
+        crystal_import,
+        crystal_source,
+        records,
+        declarations,
+        profiles,
+        bindings,
+    })
+}
+
+struct NpcPopulation {
+    import: ImportBatch,
+    source: ProjectV2Source,
+    br_import: ImportBatch,
+    br_source: ProjectV2Source,
+    tibiopedia_import: ImportBatch,
+    tibiopedia_source: ProjectV2Source,
+    supplement_import: ImportBatch,
+    supplement_source: ProjectV2Source,
+    records: Vec<ProjectReferenceRecord>,
+    declarations: Vec<ProjectV2Declaration>,
+    profiles: Vec<ProjectV2AuthoringProfile>,
+    bindings: Vec<ProjectV2SourceIdentityBinding>,
+}
+
+/// Every admitted Dialogue must be exactly the declaration in the pinned dialogue evidence.
+fn verify_npc_dialogues(
+    declarations: &[ProjectV2Declaration],
+) -> Result<(), Box<dyn std::error::Error>> {
+    if hex_sha256(NPC_DIALOGUE_STAGED) != NPC_DIALOGUE_STAGED_SHA256 {
+        return Err("staged NPC dialogue input digest drifted".into());
+    }
+    let packet: Value = serde_json::from_slice(NPC_DIALOGUE_STAGED)?;
+    if packet["schema"] != "OTERYN_NPC_DIALOGUE_STAGED/v1"
+        || packet["source"]["canary_revision"] != CANARY_REVISION
+        || packet["source"]["crystal_revision"] != CRYSTAL_REVISION
+        || packet["source"]["candidates_sha256"] != NPC_CANDIDATES_SHA256
+    {
+        return Err("staged NPC dialogue source identity drifted".into());
+    }
+    let mut staged = BTreeMap::new();
+    let mut staged_by_npc = BTreeMap::new();
+    for entry in packet["dialogues"]
+        .as_array()
+        .ok_or("staged NPC dialogues missing")?
+    {
+        let declaration: ProjectV2Declaration =
+            serde_json::from_value(entry["declaration"].clone())?;
+        let ProjectV2Declaration::Dialogue { identity, .. } = &declaration else {
+            return Err("staged NPC dialogue is not a Dialogue".into());
+        };
+        let npc = entry["npc"]
+            .as_str()
+            .ok_or("staged NPC dialogue names no NPC")?;
+        staged_by_npc.insert(npc.to_owned(), identity.key.clone());
+        staged.insert(identity.key.clone(), declaration);
+    }
+    for declaration in declarations {
+        match declaration {
+            ProjectV2Declaration::Dialogue { identity, .. }
+                if staged.get(&identity.key) != Some(declaration) =>
+            {
+                return Err(
+                    "admitted NPC dialogue differs from the staged dialogue evidence".into(),
+                );
+            }
+            ProjectV2Declaration::Npc {
+                identity, dialogue, ..
+            } if dialogue.as_ref().map(|reference| &reference.key)
+                != staged_by_npc.get(&identity.key) =>
+            {
+                return Err(
+                    "NPC dialogue reference differs from the staged dialogue evidence".into(),
+                );
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
+    if hex_sha256(NPC_STAGED) != NPC_STAGED_SHA256 {
+        return Err("staged NPC admission input digest drifted".into());
+    }
+    let packet: Value = serde_json::from_slice(NPC_STAGED)?;
+    let source = &packet["source"];
+    let counts = &packet["counts"];
+    if packet["schema"] != "OTERYN_NPC_ADMISSION_STAGED/v1"
+        || packet["wave"] != "A"
+        || source["canary_revision"] != CANARY_REVISION
+        || source["crystal_revision"] != CRYSTAL_REVISION
+        || source["crystal_supplement_revision"] != CRYSTAL_SUPPLEMENT_REVISION
+        || source["crystal_supplement_bundles_sha256"] != CRYSTAL_SUPPLEMENT_BUNDLES_SHA256
+        || source["candidates_sha256"] != NPC_CANDIDATES_SHA256
+        || source["item_map_sha256"] != NPC_ITEM_MAP_SHA256
+        || source["wiki_snapshot_sha256"] != NPC_WIKI_SNAPSHOT_SHA256
+        || source["wiki_revision"] != NPC_WIKI_REVISION
+        || source["br_facts_sha256"] != NPC_BR_FACTS_SHA256
+        || source["br_revision"] != NPC_BR_REVISION
+        || source["tibiopedia_facts_sha256"] != NPC_TIBIOPEDIA_FACTS_SHA256
+        || source["tibiopedia_revision"] != NPC_TIBIOPEDIA_REVISION
+        || counts["npcs"] != NPC_COUNT
+        || counts["records"] != NPC_RECORDS
+        || counts["declarations"] != NPC_DECLARATIONS
+        || counts["bindings"] != NPC_BINDINGS
+        || source["dialogue_staged_sha256"] != NPC_DIALOGUE_STAGED_SHA256
+        || counts["dialogues"] != NPC_DIALOGUES
+        || counts["dialogue_nodes"] != NPC_DIALOGUE_NODES
+    {
+        return Err("staged NPC admission source identity drifted".into());
+    }
+    let records: Vec<ProjectReferenceRecord> = serde_json::from_value(packet["records"].clone())?;
+    let declarations: Vec<ProjectV2Declaration> =
+        serde_json::from_value(packet["declarations"].clone())?;
+    verify_npc_dialogues(&declarations)?;
+    let profiles: Vec<ProjectV2AuthoringProfile> =
+        serde_json::from_value(packet["authoring_profiles"].clone())?;
+    let bindings: Vec<ProjectV2SourceIdentityBinding> =
+        serde_json::from_value(packet["source_identity_bindings"].clone())?;
+    let npcs = declarations
+        .iter()
+        .filter(|declaration| matches!(declaration, ProjectV2Declaration::Npc { .. }))
+        .count();
+    let dialogues = declarations
+        .iter()
+        .filter(|declaration| matches!(declaration, ProjectV2Declaration::Dialogue { .. }))
+        .count();
+    if records.len() != NPC_RECORDS
+        || profiles.len() != NPC_RECORDS
+        || declarations.len() != NPC_DECLARATIONS
+        || npcs != NPC_COUNT
+        || dialogues != NPC_DIALOGUES
+        || bindings.len() != NPC_BINDINGS
+        || bindings.iter().any(|binding| {
+            binding.target.family != ProjectV2Family::Npc
+                || !matches!(
+                    (
+                        binding.source_key.as_str(),
+                        binding.source_revision.as_str(),
+                        binding.identity_namespace.as_str()
+                    ),
+                    ("oteryn:source.canary", CANARY_REVISION, "canary/npc-file")
+                        | (
+                            "oteryn:source.crystalserver",
+                            CRYSTAL_REVISION | CRYSTAL_SUPPLEMENT_REVISION,
+                            "crystalserver/npc-file"
+                        )
+                        | (
+                            "oteryn:source.tibiawiki",
+                            NPC_WIKI_REVISION,
+                            "mediawiki/page_id"
+                        )
+                )
+        })
+    {
+        return Err("staged NPC admission counts drifted".into());
+    }
+    let import = ImportBatch {
+        batch_id: "g4-npc-wave-a-tibiawiki-r7".to_owned(),
+        source_repository: "tibia.fandom.com".to_owned(),
+        source_revision: NPC_WIKI_REVISION.to_owned(),
+        source_artifact_sha256: NPC_WIKI_SNAPSHOT_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_NPC_FANDOM_SNAPSHOT/v1".to_owned(),
+        importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
+        mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "npc-admission-r7".to_owned(),
+        mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let source = ProjectV2Source {
+        key: "oteryn:source.tibiawiki".to_owned(),
+        import_batch_id: import.batch_id.clone(),
+        revision: import.source_revision.clone(),
+        sha256: import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::Derived,
+    };
+    let br_import = ImportBatch {
+        batch_id: "g4-npc-prices-tibiawiki-br-r1".to_owned(),
+        source_repository: "tibiawiki.com.br".to_owned(),
+        source_revision: NPC_BR_REVISION.to_owned(),
+        source_artifact_sha256: NPC_BR_FACTS_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_NPC_TIBIAWIKI_BR_FACTS/v1".to_owned(),
+        importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
+        mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "npc-admission-r7".to_owned(),
+        mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let br_source = ProjectV2Source {
+        key: "oteryn:source.tibiawiki".to_owned(),
+        import_batch_id: br_import.batch_id.clone(),
+        revision: br_import.source_revision.clone(),
+        sha256: br_import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::Derived,
+    };
+    let tibiopedia_import = ImportBatch {
+        batch_id: "g4-npc-prices-tibiopedia-r1".to_owned(),
+        source_repository: "tibiopedia.pl".to_owned(),
+        source_revision: NPC_TIBIOPEDIA_REVISION.to_owned(),
+        source_artifact_sha256: NPC_TIBIOPEDIA_FACTS_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_NPC_TIBIOPEDIA_FACTS/v1".to_owned(),
+        importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
+        mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "npc-admission-r7".to_owned(),
+        mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let tibiopedia_source = ProjectV2Source {
+        key: "oteryn:source.tibiawiki".to_owned(),
+        import_batch_id: tibiopedia_import.batch_id.clone(),
+        revision: tibiopedia_import.source_revision.clone(),
+        sha256: tibiopedia_import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::Derived,
+    };
+    let supplement_import = ImportBatch {
+        batch_id: "g4-npc-crystal-summer-supplement-r1".to_owned(),
+        source_repository: "zimbadev/crystalserver".to_owned(),
+        source_revision: CRYSTAL_SUPPLEMENT_REVISION.to_owned(),
+        source_artifact_sha256: CRYSTAL_SUPPLEMENT_BUNDLES_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_NPC_AUTHORING_CANDIDATE/v1".to_owned(),
+        importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
+        mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "npc-admission-r7".to_owned(),
+        mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let supplement_source = ProjectV2Source {
+        key: "oteryn:source.crystalserver".to_owned(),
+        import_batch_id: supplement_import.batch_id.clone(),
+        revision: supplement_import.source_revision.clone(),
+        sha256: supplement_import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::OtsHypothesisOnly,
+    };
+    Ok(NpcPopulation {
+        import,
+        source,
+        br_import,
+        br_source,
+        tibiopedia_import,
+        tibiopedia_source,
+        supplement_import,
+        supplement_source,
+        records,
+        declarations,
+        profiles,
+        bindings,
+    })
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = output_root()?;
-    let promoted = protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)?;
+    let promoted = protected_r7_p04_gold_coin_item_family_import(
+        B1_EVIDENCE,
+        R7_P04_GOLD_COIN_EVIDENCE_PACKET,
+    )?;
     if promoted.family.records.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
         return Err("protected promoted Item family count drifted".into());
     }
@@ -1031,25 +1691,83 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     declarations.extend(outfit_declarations);
     bindings.extend(outfit_bindings);
     editor.extend(outfit_editor);
+    let CreaturePopulation {
+        import: creature_import,
+        source: creature_source,
+        wiki_import: creature_wiki_import,
+        wiki_source: creature_wiki_source,
+        crystal_import: creature_crystal_import,
+        crystal_source: creature_crystal_source,
+        records: creature_records,
+        declarations: encounter_declarations,
+        profiles: mut authoring_profiles,
+        bindings: creature_bindings,
+    } = populate_creatures()?;
+    records.extend(creature_records);
+    declarations.extend(encounter_declarations);
+    bindings.extend(creature_bindings);
+    let NpcPopulation {
+        import: npc_import,
+        source: npc_source,
+        br_import: npc_br_import,
+        br_source: npc_br_source,
+        tibiopedia_import: npc_tibiopedia_import,
+        tibiopedia_source: npc_tibiopedia_source,
+        supplement_import: npc_supplement_import,
+        supplement_source: npc_supplement_source,
+        records: npc_records,
+        declarations: npc_declarations,
+        profiles: npc_profiles,
+        bindings: npc_bindings,
+    } = populate_npcs()?;
+    records.extend(npc_records);
+    declarations.extend(npc_declarations);
+    authoring_profiles.extend(npc_profiles);
+    bindings.extend(npc_bindings);
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-item-wave1-r1".to_owned(),
+                project_revision: "g4-npc-wave-a-r7".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),
                 world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
-                coordinate_frame: "global-target-2026-07-28".to_owned(),
+                coordinate_frame: "global-target-2026-09-27".to_owned(),
                 records,
-                imports: vec![provenance, wiki_import, wave1_import, mount_import],
+                imports: vec![
+                    provenance,
+                    wiki_import,
+                    wave1_import,
+                    mount_import,
+                    creature_import,
+                    creature_wiki_import,
+                    creature_crystal_import,
+                    npc_import,
+                    npc_br_import,
+                    npc_tibiopedia_import,
+                    npc_supplement_import,
+                ],
                 metadata: Vec::new(),
             },
             state: ProjectV2State {
-                sources: vec![source, wiki_source, wave1_source, mount_source],
+                sources: vec![
+                    source,
+                    wiki_source,
+                    wave1_source,
+                    mount_source,
+                    creature_source,
+                    creature_wiki_source,
+                    creature_crystal_source,
+                    npc_source,
+                    npc_br_source,
+                    npc_tibiopedia_source,
+                    npc_supplement_source,
+                ],
                 declarations,
                 source_identity_bindings: bindings,
                 editor,
                 item_authoring,
+                authoring_profiles,
                 ..ProjectV2State::default()
             },
         },
@@ -1060,7 +1778,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=526 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
         promoted.promoted_items, promoted.promoted_fields
     );
     Ok(())
