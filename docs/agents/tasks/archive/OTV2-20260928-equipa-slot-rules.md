@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-equipa-slot-rules
 title: EQUIP-a - pure Reference equipment-slot rules
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1176
@@ -15,7 +15,7 @@ base_sha: 9b3f84846e7057098ee6497e2a1858b07b738288  # stacked on PR 1172 -> 1171
 head_sha: null
 owner: "Oteryn: impl domains" (Claude Code)
 created_at: 2026-09-28T22:00:00Z
-updated_at: 2026-09-28T22:00:00Z
+updated_at: 2026-09-29T07:40:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/domain/equipment.rs
