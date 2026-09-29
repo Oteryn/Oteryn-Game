@@ -39,7 +39,7 @@
 - Revision note (2026-09-29, post-review, round 3, final): a Codex review of head `c9dada4` found
   2 more P1s, both fixed — `COMBAT01-CORPSES-PER-SCOPE`'s enforcement moved from an unserialized
   freeze-time count (several deaths could each observe room and all commit, overshooting 64) to a
-  per-scope `FOR UPDATE`-locked, commit-time recount (freeze-time stays advisory only), with a
+  per-scope advisory-locked, commit-time recount (freeze-time stays advisory only), with a
   required D3-1 concurrency test (N commits at 63 produce exactly one success); and `DECAY_RETIRE`
   now has an admitted audit aggregate (DUR-03 §39.1 closed its aggregate to MINT/TRANSFER and
   excluded burn), added additively to §39.1/§39.3 with an exact before/after/cause/event/evidence
@@ -264,25 +264,29 @@ MINT is refused; no corpse and no loot exist for that death. **The authoritative
 serialized, not a freeze-time-only preflight.** A count read once at `freeze_item_mint` time
 cannot, by itself, prevent several deaths' concurrent freezes from all observing 63 live corpses,
 all passing, and all committing — overshooting 64. The corpse's `commit_item_mint` pass instead
-takes `SELECT ... FOR UPDATE` on the scope's own assignment row (`game_runtime_scope_assignments`,
-keyed by `scope_key` — the same row the existing fence check already reads, now locked
-specifically for this recount) immediately before its own insert, then recounts live corpses for
-that scope; a count already ≥ 64 refuses (`CapacityExceeded`) and inserts nothing, in the same
-transaction as the corpse's own insert, so two concurrent commits for one scope can never both
-observe room and both succeed. Any earlier freeze-time count is **advisory only** — a cheap early
-rejection for the obvious case — never the authority. On refusal, because D111 gives loot no
-destination other than the corpse it belongs to, refusing the corpse refuses its whole loot plan
-with it; the creature's death itself still commits (death and loot are independent descendants,
-§11/§24.1), and the lost loot is exactly the class of loss D52 already accepts for a death whose
-descendant never commits — **never duplicated, never silently retried into a different corpse or
-onto the ground**. No already-committed corpse or its already-committed loot is ever touched by
-another death's overflow: this is a refusal of the *new* arrival, never an eviction of an existing
-one, so no already-materialized loot is ever lost outside this one stated rule. **D3-1 must prove
-a concurrency test**: N concurrent corpse-MINT commits against a scope already holding 63 live
-corpses produce exactly one success and N-1 `CapacityExceeded` refusals, never more than 64 live
-corpses and never a lost update. A future party/shared-loot or higher-throughput slice that finds
-64 insufficient re-decides `COMBAT01-CORPSES-PER-SCOPE` itself (owned by the VSL resource-rows
-decision); this document does not raise it.
+takes a per-scope transaction advisory lock,
+`pg_advisory_xact_lock(hashtextextended('oteryn:corpse-cap:' || <scope_key hex>, 0))`, *before*
+`fence_is_live` and before its own insert (not `FOR UPDATE` on `game_runtime_scope_assignments`:
+`fence_is_live` already holds `FOR SHARE` on that row, so two corpse commits upgrading to `FOR
+UPDATE` would deadlock, and an exclusive row lock would also serialize every other MINT, TRANSFER
+and XP writer of the scope). Only corpse MINT commits take this key, so it serializes exactly the
+corpse-cap recount. It then recounts live corpses for that scope; a count already ≥ 64 refuses
+(`CapacityExceeded`) and inserts nothing, in the same transaction as the corpse's own insert, so
+two concurrent commits for one scope can never both observe room and both succeed. Any earlier
+freeze-time count is **advisory only** — a cheap early rejection for the obvious case — never the
+authority. On refusal, because D111 gives loot no destination other than the corpse it belongs to,
+refusing the corpse refuses its whole loot plan with it; the creature's death itself still commits
+(death and loot are independent descendants, §11/§24.1), and the lost loot is exactly the class of
+loss D52 already accepts for a death whose descendant never commits — **never duplicated, never
+silently retried into a different corpse or onto the ground**. No already-committed corpse or its
+already-committed loot is ever touched by another death's overflow: this is a refusal of the *new*
+arrival, never an eviction of an existing one, so no already-materialized loot is ever lost
+outside this one stated rule. **D3-1 must prove a concurrency test**: N concurrent corpse-MINT
+commits against a scope already holding 63 live corpses produce exactly one success and N-1
+`CapacityExceeded` refusals, never more than 64 live corpses and never a lost update. A future
+party/shared-loot or higher-throughput slice that finds 64 insufficient re-decides
+`COMBAT01-CORPSES-PER-SCOPE` itself (owned by the VSL resource-rows decision); this document does
+not raise it.
 
 ### 4.3 D132 — Top-damage attribution locus
 
@@ -613,7 +617,7 @@ destination, which §39.4 is the first to define beyond Ground.
 
 | Child | Scope | Depends on |
 |---|---|---|
-| D3-1 | Migration: two additive nullable columns on the corpse's own `game_item_mint_receipts` row (`corpse_top_damage_character_id`, `materialized_at`, both `NOT NULL` only for the `CORPSE_MATERIALIZATION` receipt), the `materialized_at`-writing deferred constraint trigger and its narrow immutability exception, the corpse-container MINT-into-`Container` destination and its parent-carries-a-live-receipt check (extends `game_item_mint_consistency_guard`), the whole-plan preflight's corpse-row locking, the **per-scope `FOR UPDATE` lock on `game_runtime_scope_assignments` plus commit-time live-corpse recount** that authoritatively enforces `COMBAT01-CORPSES-PER-SCOPE` (freeze-time count is advisory only, §4.2), `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX`/`-PLACEMENT-DEPTH`/`-REACHABLE-ITEMS` registration (16/1/17); **required test**: N concurrent corpse-MINT commits against a scope already at 63 produce exactly one success | This decision |
+| D3-1 | Migration: two additive nullable columns on the corpse's own `game_item_mint_receipts` row (`corpse_top_damage_character_id`, `materialized_at`, both `NOT NULL` only for the `CORPSE_MATERIALIZATION` receipt), the `materialized_at`-writing deferred constraint trigger and its narrow immutability exception, the corpse-container MINT-into-`Container` destination and its parent-carries-a-live-receipt check (extends `game_item_mint_consistency_guard`), the whole-plan preflight's corpse-row locking, the **per-scope `oteryn:corpse-cap:` advisory transaction lock (taken before `fence_is_live`) plus commit-time live-corpse recount** that authoritatively enforces `COMBAT01-CORPSES-PER-SCOPE` (freeze-time count is advisory only, §4.2), `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX`/`-PLACEMENT-DEPTH`/`-REACHABLE-ITEMS` registration (16/1/17); **required test**: N concurrent corpse-MINT commits against a scope already at 63 produce exactly one success | This decision |
 | D3-2 | `combat/death_reward.rs`: mint the corpse first (`CORPSE_MATERIALIZATION` cause), then mint each loot entry into its `Container` entry instead of Ground; carry the owner's already-tie-broken top-damage `CharacterId` (D132) into the corpse MINT request | D3-1 |
 | D3-3 | GAME-ABILITY/Combat: runtime per-attacker damage accumulation for a live creature actor (capped at `COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE` = 16, new row registered by this decision, overflow = untracked, not refused), the D132 deterministic tie-break, exposed to `settle_creature_death_rewards` as the top-damage `CharacterId` at death-commit time (§4.3); max/max+1 and equal-damage tie-break boundary tests | none (parallel to D3-1/D3-2) |
 | D3-4 | Migration + `durability/item_transfer.rs`: admit TRANSFER source `Container(parent=corpse)` gated by the D133 window (`ItemTransferRefusal::CorpseExclusiveWindow`), and the new `ItemTransferRefusal::CorpseNotPickupable` refusal for the corpse item itself as a source (§4.5); widen `OneItemTransferV1.source` beyond `Ground`-only (§4.7, §5.2) | D3-1 |
@@ -674,7 +678,7 @@ governance; none may merge ahead of D3-1's resource-row registration for the row
 - Enforcing `COMBAT01-CORPSES-PER-SCOPE` with a freeze-time-only count (rejected: not serialized
   against concurrent freezes for the same scope; several deaths could each observe room and all
   commit, overshooting 64. The authoritative check moves to the corpse's own commit, under a
-  per-scope `FOR UPDATE` lock plus a fresh recount in the same transaction as the insert, §4.2).
+  per-scope advisory lock plus a fresh recount in the same transaction as the insert, §4.2).
 - Leaving `DECAY_RETIRE` (and the corpse-loot MINT's and corpse-container TRANSFER's widened
   location families) without an admitted audit aggregate, on the theory that §5.2's structural
   description already implied one (rejected: DUR-03 §39.1 explicitly closes its aggregate to MINT
@@ -749,7 +753,7 @@ implementation_may_resume: true   # D3-1 and D3-3/D3-7 may be allocated now on t
 required_fresh_allocation: true
 required_independent_review: "exact-head independent review (DUR-03 §39.1/§39.3 amendments including the restructured N+1-step DECAY_RETIRE and its new admitted audit aggregate, the corpse-loot MINT and corpse-container TRANSFER pointer amendments, the per-scope-locked commit-time COMBAT01-CORPSES-PER-SCOPE recount, the materialized_at deferred-trigger mechanism and its bounded-earliness claim, VSL-COMBAT-01 §9.1/§17/§21/§24.1 amendments, corpse/loot MINT conservation, the D52-aligned partial-corpse-loss statement, resource rows including COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE)"
 required_revalidation:
-  - "D3-1: corpse MINT commits with no loot custody; materialized_at is set only by the deferred constraint trigger's clock_timestamp(), never by the Rust candidate, and stays NULL until then; a loot MINT commits only with a live corpse Container parent already committed for the same death; the 17th corpse entry is rejected under a row-locked count; N concurrent corpse-MINT commits against a scope already at 63 live corpses produce exactly one success and N-1 CapacityExceeded refusals under the per-scope FOR UPDATE lock, never more than 64 and never a lost update"
+  - "D3-1: corpse MINT commits with no loot custody; materialized_at is set only by the deferred constraint trigger's clock_timestamp(), never by the Rust candidate, and stays NULL until then; a loot MINT commits only with a live corpse Container parent already committed for the same death; the 17th corpse entry is rejected under a row-locked count; N concurrent corpse-MINT commits against a scope already at 63 live corpses produce exactly one success and N-1 CapacityExceeded refusals under the per-scope corpse-cap advisory lock, with no deadlock against concurrent fence FOR SHARE readers, never more than 64 and never a lost update"
   - "D3-2/D3-3: a replayed death (same generation) produces the same corpse ItemInstanceId and the same top-damage CharacterId; a generation that ends mid-plan leaves the remaining entries terminally uncommitted, never retried by a later generation, and the corpse holds only the entries that did commit; a death with zero loot entries still materializes a corpse; the 17th distinct damage contributor is not tracked and cannot win the window while the creature's damage taken is unaffected; two contributors tied at the same total resolve to the one that reached it at the earlier owner ordinal, and a same-ordinal tie resolves to the lower CharacterId"
   - "D3-4/D3-5: pickup by the top-damage character succeeds before 10 s; pickup by any other character is refused before 10 s and succeeds at/after 10 s, both within materialized_at's accepted early-by-at-most-DFR-DB-PASS-MS bound; a stale/duplicate pickup command transfers at most once; TRANSFER of the corpse item itself is refused (CorpseNotPickupable) whether or not it currently has live entries"
   - "D3-6: a corpse decays at materialized_at + 60 s, never later, and early by at most the accepted DFR-DB-PASS-MS bound; DECAY_RETIRE commits as separate one-item steps, never one multi-item transaction, each producing its own admitted CorpseDecay-caused audit event; the corpse's own step is admitted only once zero live entries remain under it; a restart or handoff after only some entries retired resumes and completes the remaining steps from the durable Ground-only recovery query alone, with no in-memory progress state; an entry legitimately picked up before decay reaches it is never retired a second time; the corpse-loot MINT's and corpse-container TRANSFER's widened OneItemMintV1.destination/OneItemTransferV1.source fields round-trip losslessly against the existing Ground-only shapes"

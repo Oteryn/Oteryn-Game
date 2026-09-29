@@ -1081,9 +1081,14 @@ conservation) is unchanged.
   count read at `freeze_item_mint` time alone cannot serialize against another death's concurrent
   freeze for the same scope: several deaths can each observe 63 live corpses, each pass that
   freeze-time check, and all commit, overshooting 64. The corpse's `commit_item_mint` pass instead
-  takes `SELECT ... FOR UPDATE` on the scope's own `game_runtime_scope_assignments` row (keyed by
-  `scope_key`, the same row `fence_is_live` already reads, now under an exclusive lock for this
-  check specifically) *before* its own insert, then recounts live corpses for that scope (live
+  takes a per-scope transaction advisory lock,
+  `pg_advisory_xact_lock(hashtextextended('oteryn:corpse-cap:' || <scope_key hex>, 0))`, *before*
+  `fence_is_live` and before its own insert (not `FOR UPDATE` on `game_runtime_scope_assignments`:
+  `fence_is_live` already holds `FOR SHARE` on that row, so two corpse commits upgrading to `FOR
+  UPDATE` would deadlock, and an exclusive row lock would also serialize every other MINT,
+  TRANSFER and XP writer of the scope). Only corpse MINT commits take this key, so it serializes
+  exactly the corpse-cap recount.
+  It then recounts live corpses for that scope (live
   `game_item_ground_locations` rows joined to a `CORPSE_MATERIALIZATION` receipt, scoped to the
   same `world_id`/`channel_id`); if the count is already ≥ 64, the commit pass refuses
   (`CapacityExceeded`) and inserts nothing, all inside the same transaction as the corpse's own
