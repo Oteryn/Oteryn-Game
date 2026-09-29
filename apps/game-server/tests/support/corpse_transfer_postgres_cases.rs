@@ -8,6 +8,10 @@
 // loot-into-corpse caller exists before D3-2/D3-6), exactly as D3-1's own
 // cases do.
 
+// `pub(crate)` on the corpse fixture helpers below (mint_corpse, put_loot,
+// set_materialized_ago, equip_backpack, take, ...) lets the D3-6 decay cases
+// (`corpse_decay_postgres_cases.rs`) reuse them; behavior is unchanged.
+
 use crate::domain::CharacterId;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -31,14 +35,14 @@ use crate::item_transfer_postgres_cases::{
 use std::time::Duration;
 
 /// A top-damage identity that is not any fenced Character of these cases.
-const OTHER_TOP: u8 = 150;
+pub(crate) const OTHER_TOP: u8 = 150;
 const SECOND_ACCOUNT: u8 = 60;
 const SECOND_CHARACTER: u8 = 61;
 const SECOND_SESSION: u8 = 62;
 /// The death's runtime-scope ownership generation of every corpse below.
-const GENERATION: u64 = 1;
+pub(crate) const GENERATION: u64 = 1;
 
-fn typed(family: &str, key: &str, revision: &str) -> TypedDefinitionRef {
+pub(crate) fn typed(family: &str, key: &str, revision: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: family.into(),
         production_key: key.into(),
@@ -56,7 +60,7 @@ fn corpse_facts() -> ItemDefinitionFacts {
 }
 
 /// The loot entry definition forged by `forge_loot_entry`.
-fn loot_facts() -> ItemDefinitionFacts {
+pub(crate) fn loot_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
         definition: typed("ItemType", "fixture:corpse-loot", "rev-1"),
         stack: ItemStackClass::NonStackable,
@@ -65,7 +69,7 @@ fn loot_facts() -> ItemDefinitionFacts {
     }
 }
 
-fn command_of(session: u8, value: u64) -> TestResult<CommandRef> {
+pub(crate) fn command_of(session: u8, value: u64) -> TestResult<CommandRef> {
     Ok(CommandRef::new(
         GameSessionId::decode(&id(session)).map_err(debug)?,
         CommandId::new(value).map_err(debug)?,
@@ -195,7 +199,7 @@ async fn seed_second_character(pool: &sqlx::PgPool) -> TestResult {
 
 /// One corpse through the real D3-1 MINT path, its top-damage Character fixed
 /// at materialization. `actor` is the death's actor slot (unique per corpse).
-async fn mint_corpse(
+pub(crate) async fn mint_corpse(
     harness: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     actor: u32,
@@ -309,7 +313,7 @@ fn forge_loot_entry(actor: u32, corpse: [u8; 16], ordinal: u64, seed: u8) -> Vec
 }
 
 /// Commit `statements` as one physical transaction.
-async fn run_statements(pool: &sqlx::PgPool, statements: Vec<String>) -> TestResult {
+pub(crate) async fn run_statements(pool: &sqlx::PgPool, statements: Vec<String>) -> TestResult {
     let mut tx = pool.begin().await?;
     for statement in &statements {
         sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
@@ -320,7 +324,7 @@ async fn run_statements(pool: &sqlx::PgPool, statements: Vec<String>) -> TestRes
     Ok(())
 }
 
-async fn put_loot(
+pub(crate) async fn put_loot(
     harness: &Harness,
     corpse: [u8; 16],
     actor: u32,
@@ -338,7 +342,11 @@ async fn put_loot(
 /// Move a corpse's `materialized_at` to `age_ms` before the database's own
 /// clock now, outside the runtime guards (test-only time travel; the runtime
 /// itself can never write the column).
-async fn set_materialized_ago(harness: &Harness, corpse: [u8; 16], age_ms: i64) -> TestResult {
+pub(crate) async fn set_materialized_ago(
+    harness: &Harness,
+    corpse: [u8; 16],
+    age_ms: i64,
+) -> TestResult {
     harness
         .tamper(&format!(
             "UPDATE game_item_mint_receipts \
@@ -351,7 +359,7 @@ async fn set_materialized_ago(harness: &Harness, corpse: [u8; 16], age_ms: i64) 
 }
 
 /// Equip a fresh backpack for `fence`'s Character through the real TRANSFER.
-async fn equip_backpack(
+pub(crate) async fn equip_backpack(
     harness: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     fence: CurrentCharacterItemFence,
@@ -372,7 +380,7 @@ async fn equip_backpack(
     }
 }
 
-fn take(session: u8, command: u64, item: [u8; 16]) -> TestResult<ItemTransferRequest> {
+pub(crate) fn take(session: u8, command: u64, item: [u8; 16]) -> TestResult<ItemTransferRequest> {
     Ok(to_backpack(
         command_of(session, command)?,
         item,
@@ -380,7 +388,7 @@ fn take(session: u8, command: u64, item: [u8; 16]) -> TestResult<ItemTransferReq
     ))
 }
 
-async fn locations(harness: &Harness, item: [u8; 16]) -> TestResult<i64> {
+pub(crate) async fn locations(harness: &Harness, item: [u8; 16]) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT (SELECT count(*) FROM game_item_ground_locations WHERE item_instance_id = \
                    encode($1,'hex')::uuid) \
@@ -396,7 +404,7 @@ async fn locations(harness: &Harness, item: [u8; 16]) -> TestResult<i64> {
     .await?)
 }
 
-async fn in_corpse(harness: &Harness, item: [u8; 16]) -> TestResult<bool> {
+pub(crate) async fn in_corpse(harness: &Harness, item: [u8; 16]) -> TestResult<bool> {
     Ok(sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_item_corpse_container_entries \
                          WHERE item_instance_id = encode($1,'hex')::uuid)",

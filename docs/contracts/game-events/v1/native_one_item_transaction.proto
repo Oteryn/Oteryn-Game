@@ -31,8 +31,14 @@ package oteryn.events.v1;
 // The D3 corpse-loot MINT (D3-2, DUR-03 §39.4) is the same `mint` operation
 // with its destination carried in `corpse_container_entry` (field 5) instead of
 // the Ground `destination` (field 2): exactly one of the two is set, and the
-// corpse's own MINT stays a Ground MINT. The D3-6 DECAY_RETIRE cause and the
-// D3-4 TRANSFER source widening are separate additive changes.
+// corpse's own MINT stays a Ground MINT. The D3-4 TRANSFER source widening is
+// `OneItemTransferV1.corpse_source` (field 7).
+// The D3-6 DECAY_RETIRE (operation tag 5, DUR-03 §39.1/§39.4, decision D136)
+// retires one live corpse ItemInstance or one live entry of its container to
+// RETIRED, quantity 0 and no location, under the closed `CorpseDecay` cause;
+// a corpse decays as N+1 such one-item events (each entry, then the corpse
+// once no live entry remains), never one multi-item event. It is server
+// originated: no CommandRef, session or causation exists for it.
 // Historical game-events/v1/item_transaction.proto and
 // game-events/v2/item_transaction.proto remain unchanged.
 
@@ -42,6 +48,7 @@ message OneItemTransactionV1 {
     OneItemMintV1 mint = 2;
     OneItemTransferV1 transfer = 3; // B3 destinations only (see above)
     OneItemRewardClaimMintV1 reward_claim_mint = 4; // CHEST-1 only (see above)
+    OneItemDecayRetireV1 decay_retire = 5; // D3-6 corpse decay only (see above)
   }
 }
 
@@ -201,4 +208,34 @@ message OneItemRewardClaimMintV1 {
   OneItemRewardClaimCauseV1 source = 3;
   // Explicit semantic absence of a prior item; not a nil or zero identifier.
   bool before_semantically_absent = 4;
+}
+
+// D3-6 `CorpseDecay { corpse_item, deadline }` (DUR-03 §39.4): the only admitted
+// retire cause; no caller-chosen reason, burn cause or free-form label exists.
+message OneItemCorpseDecayV1 {
+  // The corpse this retirement belongs to: the retired item itself for the
+  // corpse's own step, its parent corpse for an entry's step.
+  bytes corpse_item_instance_id = 1; // exactly 16-byte non-nil UUIDv7
+  // The exact corpse `materialized_at + 60_000` (unix ms) that authorized the
+  // retirement; the event's occurred_at is never before it.
+  uint64 deadline_unix_ms = 2;
+}
+
+// D3-6 DECAY_RETIRE step: one live item (identity, type and quantity before)
+// retires to RETIRED, quantity 0, no location (after), from exactly one live
+// location. Touches 1 ItemInstance with 1 location line (DUR03-RL-01/-RL-06
+// defaults; no new resource row).
+message OneItemDecayRetireV1 {
+  OneItemStateV1 before = 1; // LIVE, quantity > 0
+  OneItemStateV1 after = 2;  // RETIRED, quantity 0; same identity, World and definition
+  // Exactly one before-location: the corpse's own live Ground (`ground`, the
+  // corpse's own step, admitted only once no live entry remains under it) or
+  // a direct entry of that corpse (`corpse_entry`, carrying the corpse's live
+  // Ground as scope authority exactly as a D3-4 TRANSFER source does).
+  OneItemGroundV1 ground = 3;
+  OneItemCorpseSourceV1 corpse_entry = 4;
+  OneItemCorpseDecayV1 cause = 5;
+  // Safe fence reference: the retiring owner's runtime-scope ownership
+  // generation (non-zero); it may be later than the corpse's own generation.
+  uint64 runtime_scope_ownership_generation = 6;
 }
