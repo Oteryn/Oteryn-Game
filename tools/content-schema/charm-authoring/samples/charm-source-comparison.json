@@ -1,0 +1,57 @@
+{
+  "agreeing": 20,
+  "charms": 25,
+  "differing": [
+    {
+      "differences": [
+        {
+          "canary": 10,
+          "field": "effect_percent",
+          "tibiawiki": null
+        }
+      ],
+      "name": "Bless"
+    },
+    {
+      "differences": [
+        {
+          "canary": "neutral",
+          "field": "element",
+          "tibiawiki": "physical"
+        }
+      ],
+      "name": "Carnage"
+    },
+    {
+      "differences": [
+        {
+          "canary": "neutral",
+          "field": "element",
+          "tibiawiki": "physical"
+        }
+      ],
+      "name": "Overflux"
+    },
+    {
+      "differences": [
+        {
+          "canary": "neutral",
+          "field": "element",
+          "tibiawiki": "physical"
+        }
+      ],
+      "name": "Overpower"
+    },
+    {
+      "differences": [
+        {
+          "canary": "physical",
+          "field": "element",
+          "tibiawiki": null
+        }
+      ],
+      "name": "Parry"
+    }
+  ],
+  "schema": "OTERYN_CHARM_SOURCE_COMPARISON/v1"
+}
