@@ -36,14 +36,14 @@ Run the checks selected by changed paths and preserve `game-gate`, repository pr
 ## Work in batches
 
 - **Defect finding and audits:** one sweep per lane or module produces one findings list (one Issue or one comment), not an Issue or PR per finding.
-- **Fixes:** group the findings of one module into one fix PR. Only a P0 (security, data loss, broken `main`) gets its own PR at once.
-- **Review:** request review once, on the final frozen head with every known fix in. Answer all findings of a review round in one push; later non-blocking findings go to the next batch.
+- **Fixes:** group the findings of one module into one fix PR, within one lane's owned paths and one writer. Keep a batch reviewable: at most about five findings or 500 changed lines of hand-written code (generated data excluded); split larger batches. Only a P0 (security, data loss, broken `main`) gets its own PR at once.
+- **Review:** request review on the final frozen head with every known fix in, not on intermediate heads. Answer all findings of a review round in one push; later non-blocking findings go to the next batch. This never removes a review or re-review that the bound review policy requires, including after a materially risk-bearing repair.
 - **CI:** run the local checks for every changed path before pushing, and fix all failures of a run in one push.
-- **Task records:** a task that ends with one PR moves its record to `docs/agents/tasks/archive/`, closeout filled, in that PR's final authoring commit. The record reaches `main` only if the PR merges, so no separate archive PR is needed.
+- **Task records:** a task that ends with one PR moves its record to `docs/agents/tasks/archive/` in that PR's final authoring commit (`docs/agents/tasks/archive/README.md`). The record reaches `main` only if the PR merges, so no separate archive PR is needed.
 
 ## Owner questions in batches
 
-Do not ask the owner one question at a time. Collect open owner questions and decisions, and keep working on everything they do not block; for a reversible, ungoverned detail, proceed on a stated assumption and list it. Workers and lane leads send questions to the active control plane (in their report or the `STATE` decision queue on the coordination Issue), never to the owner. The control plane asks the owner at most twice a day, in one message: numbered questions, each with one line of context, lettered options and a recommendation, so the owner can answer `1a 2b`. Ask at once only when all remaining work is blocked, or the step is destructive, spends owner funds outside standing authorization, or touches production, credentials or safety.
+Do not ask the owner one question at a time. Collect open owner questions and decisions, and keep working on everything they do not block; for a reversible, ungoverned detail, proceed on a stated assumption and list it. Workers and lane leads send questions to the active control plane (in their report or the `STATE` decision queue on the coordination Issue) instead of asking the owner; with no control plane, collect them into one message of your own. When the owner writes to you directly, answer, and put any question back to them in that same reply. The control plane asks the owner at most twice a day, in one message: numbered questions, each with one line of context, lettered options and a recommendation, so the owner can answer `1a 2b`. Ask at once only when all remaining work is blocked, or the step is destructive, spends owner funds outside standing authorization, or touches production, credentials or safety.
 
 ## Jira programme coordination
 
