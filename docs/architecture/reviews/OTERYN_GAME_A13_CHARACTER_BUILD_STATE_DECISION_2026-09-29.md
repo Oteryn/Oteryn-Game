@@ -3,17 +3,42 @@
 - Decision: `A13-CHARACTER-BUILD-STATE-V1`
 - Status: **CANDIDATE with owner decisions D150-D151 (§2)**. Acceptance requires exact-head
   validation, independent review and protected integration.
-- Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
+- Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: #162 comment 5896414182 (`ARCHITECTURE_ESCALATION_REQUIRED`, SPELL-CASTER-FACTS) and
   the owner question in 5896342127
 - Ruling posted: #162 comment 5896480875
 - Repaired after the independent review of `d4e97ce` (#1265 5897183488; #162 A13-RECEIPT-CHAIN,
-  5897202372)
+  5897202372), then by the successor architect after the repaired head `ee21804d` was checked
+  against `0016`, the STANCE-0 migration `0017` (#1270) and the before-freeze checklist (§9)
 - Decides: the "Magic-level training" item in
   `OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md` §10
 - Migration, runtime, content and production authority: **NONE**. Each lane in §5 changes code
   under its own allocation and review.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
+
+## Implementation brief
+
+- **CHAR-BUILD-1** (durability lane, `oteryn-hard-worker`, persistence review). Owned paths: the
+  next free migration, `apps/game-server/src/durability/**` for the writer and reconcile, the
+  admission load, and its `*_postgres` tests. It builds:
+  - `game_character_build_state` and `game_character_build_receipts` (§4.1-§4.2). No row means
+    (`none`, 0, 0). No creation insert, no backfill.
+  - The build kind in the shared `0009` guards, in the same migration or in whichever of STANCE-0
+    and H-1 merges after it (§4.2 "Shared guard").
+  - `commit_character_build` and `reconcile_character_build` (§4.2 "Writer").
+  - The admission load into the live Character (§4.1).
+  - Tests: a row-only write fails; a revision-1 Character has no build receipt; the chain holds
+    across XP, death, stance and build; the stance chain counts only a build receipt whose stance
+    fields differ (§4.2 "Stance fields"); replay, conflict and a stale fence; one red run per
+    guard branch.
+- **W2b** (spell lane, after CHAR-BUILD-1). `CasterState` reads build state, adds
+  `Vocation::None` (§4.3), accumulates training and commits checkpoints through
+  `commit_character_build` (§4.5). The formula is cited from Reference evidence.
+- **DAWNPORT-1** (content lane). The choice interaction calls the vocation writer with the combined
+  stance fields (§4.4).
+- **DEATH ML loss** (DEATH lane, after CHAR-BUILD-1 and DEATH-1). The composite death transaction
+  (§4.6), including retry and reconcile of its revisions.
+- Binding sections: §4.1-§4.6 of this document; STANCE-0 §4.3 and §4.6; DEATH-0 §3.1-§3.2 and §3.5.
 
 ## 1. Question
 
@@ -45,6 +70,14 @@ The owner confirmed these directly in this session on 2026-09-29.
   `Vocation` enum has no "none" value.
 - The spell cast contract §10 left magic-level training undecided.
 - DEATH-0 (#1264, migration `0016`), STANCE-0 and H-1 all rewrite the same `0009` guard functions.
+- At root revision 1 the consistency guard rejects every receipt of any kind (`0009`; `0016`;
+  `0017` on #1270 head `ff7ba430`, "initial Character progression is inconsistent"). For
+  revision > 1 the receipts of all kinds total `revision − 1`.
+- The D88 progression initializer inserts the progression row without a receipt and without
+  advancing `CharacterRevision` (`apps/game-server/src/durability/character_progression.rs`).
+- In `0017`, `game_character_stance.last_stance_occurrence_id` is a UUIDv7 with no foreign key to
+  the stance receipts, and the row is checked against a `stance_chain` view that a later receipt
+  kind can join.
 
 **UNKNOWN**, to be settled from Reference evidence by the lanes in §5:
 
@@ -62,38 +95,70 @@ The owner confirmed these directly in this session on 2026-09-29.
   - `mana_spent`: mana spent toward the next magic level. It resets on an advance (the
     Canary/Crystal `manaspent` semantics). This is not the cumulative total; W2b confirms it
     against Reference evidence.
-- **Initializer.** One idempotent initializer creates the row and its first build receipt
-  (`none`, `0`, `0`, cause `initialize`, no before values). It has the same shape as the D88
-  progression initializer.
-  - It runs at Character creation.
-  - It runs at the first admission of an existing Character that has no row (backfill), in the
-    admission transaction.
-  - A replay finds the row and changes nothing.
-  - After it, the row always has a matching receipt.
-- **Admission.** Admission loads the row into the live Character, and `CasterState` reads from it.
+- **Absence.** No row means `none`, 0 and 0, as in STANCE-0 §4.1. The row is created by the
+  first build receipt. It is never deleted, and truncate is rejected. Character creation inserts
+  nothing, and existing Characters need no backfill.
+  - Why not an initializer receipt: at revision 1 the chain admits no receipt (§3), and a receipt
+    that advances no revision breaks the rule that receipts total `revision − 1`. An initializer
+    that advanced the revision at admission would move the revision under the admission fence.
+  - The first build receipt has `vocation_before = none`, `magic_level_before = 0` and
+    `mana_spent_before = 0`.
+- **Admission.** Admission loads the row, or the absent-row values, into the live Character, and
+  `CasterState` reads from it. It writes nothing.
 
 ### 4.2 Receipt chain
 
-- **Revisions and receipts.** Every change to the row is a CharacterRevision with exactly one
+- **Revisions and receipts.** Every change to build state is a CharacterRevision with exactly one
   receipt of a new kind, `game_character_build_receipts`, in the `0009` chain.
   - One revision carries one receipt of one kind (STANCE-0 §4.3, DEATH-0 §3.1-§3.2).
   - The receipt is immutable, and the chain cannot be truncated.
-  - Writes are session-generation fenced.
+  - A build receipt needs an initialized progression row, as a stance receipt does.
 - **Receipt shape.** CHAR-BUILD-1 defines the columns. Each receipt holds:
-  - the before and after values of `vocation`, `magic_level` and `mana_spent`;
-  - `stance_before` and `stance_after`: equal unless the revision is a vocation change (§4.4);
+  - `build_occurrence_id` (UUIDv7, the key), `character_id`, `original_character_revision` and
+    `committed_character_revision` = original + 1;
+  - the before and after values of `vocation`, `magic_level` and `mana_spent`. At least one of
+    them changes, so a no-op is not a receipt;
   - level and total experience before and after, which are equal, as in STANCE-0;
-  - a cause: `initialize`, `training`, `vocation_choice`, `promotion` or `death_loss`, plus the
-    death receipt reference for `death_loss`;
-  - the UUIDv7 occurrence key, `command_binding` and `policy_digest`.
-- **Retry.** A retry follows the replay-or-conflict rule of `commit_character_experience`: the same
-  occurrence key and content replays, and different content conflicts.
+  - `stance_before` and `stance_after` (see "Stance fields");
+  - a cause: `training`, `vocation_choice`, `promotion` or `death_loss`;
+  - for `death_loss` only, the typed death reference `{family: death, key: death_occurrence_id,
+    revision}`. The guard checks that this death receipt exists for the same Character and that its
+    `committed_character_revision` equals this receipt's `original_character_revision`;
+  - `command_binding` (1..1,024 B), `policy_digest` (32 B), the revision fields of an XP receipt and
+    `committed_at`.
+- **Stance fields.** Both are NULL unless the revision is a stance transition. A transition is
+  allowed only for `vocation_choice` and `promotion`, and its two values must differ.
+  - Only a receipt with differing stance values joins the STANCE-0 §4.3 stance chain.
+  - When one does, the `game_character_stance` row takes its `stance_after`, its revision and its
+    `build_occurrence_id` as `last_stance_occurrence_id`, in the same revision.
+  - Any other build receipt leaves the stance row unchanged.
+- **Occurrence key.** The owning session mints one UUIDv7 per commit attempt. It keeps the key
+  until the outcome is known, and puts it in `command_binding`. The binding is a digest of the
+  complete intent: character, expected revision, occurrence, cause, the before and after values,
+  the stance fields, the death reference and the content and policy revisions.
+- **Writer.** `commit_character_build` mirrors `commit_character_experience`:
+  - It takes the same recovery fence, admission-relation locks, reconnect-session row,
+    runtime-scope assignment, session-generation fence and `character_root` row lock.
+  - The revision comes from `fence.expected_character_revision`.
+  - XP, death, stance and build commits serialize on the `character_root` lock. The loser's fence
+    is stale, so it writes nothing. For a training checkpoint, the runtime keeps the pending
+    `mana_spent` and retries at the next revision with a new occurrence.
+  - A retry with the same occurrence and binding returns the first receipt. The same occurrence
+    with a different binding conflicts. The binding is compared before replay.
+  - `reconcile_character_build` resolves an ambiguous outcome by occurrence.
 - **State guard.** The equal-XP-and-level branch is shared with STANCE-0 and is told apart by the
   receipt kind.
 - **Shared guard.** Build state joins the guard-rewrite chain of DEATH-0, STANCE-0 and H-1.
   Whichever of these migrations merges last carries every receipt kind in the shared guards. The
-  migration takes the next free number when it is allocated.
-- **Deferred guard.** The row must equal the latest build receipt.
+  migration takes the next free number when it is allocated. The consistency guard counts build
+  receipts in the `revision − 1` total and chains their level and experience.
+- **Row guard.** `game_character_build_state` has a deferred constraint trigger on insert, update
+  and delete, like the stance row.
+  - A delete is rejected.
+  - The row must equal the latest build receipt's after values and revision. It is absent when no
+    build receipt exists.
+  - So a write that touches only the row fails at commit, and so does an XP, death or stance commit
+    that changes it.
 
 ### 4.3 No vocation
 
@@ -106,10 +171,12 @@ The owner confirmed these directly in this session on 2026-09-29.
 - **The choice.** The Dawnport vocation choice is one revision that carries:
   - exactly one build receipt (cause `vocation_choice`). This is the vocation lane's own receipt
     from STANCE-0 §4.6;
-  - `stance_before` and `stance_after` in that receipt. The receipt prunes a stance that no longer
-    fits, and the STANCE-0 §4.3 stance chain counts it.
+  - `stance_before` and `stance_after` in that receipt, when the stored stance no longer fits. The
+    receipt prunes it, and the STANCE-0 §4.3 stance chain counts it (§4.2 "Stance fields").
 
-  There is no separate stance receipt, and the stance row is updated in the same revision.
+  There is no separate stance receipt, and the stance row is updated in the same revision. When no
+  stance is pruned, both stance fields are NULL and the stance row is unchanged. The fit rule stays
+  UNKNOWN (STANCE-0 §4.6).
 - **Content.** The Dawnport island, the choice interaction and the departure rule come from
   Reference evidence. They belong to their own content lane.
 - **Promotion.** Promotion (level 20, Premium, NPC) uses the same vocation writer in a later slice.
@@ -135,22 +202,35 @@ The owner confirmed these directly in this session on 2026-09-29.
 
 - Death loss of magic-level progress follows Global. The loss amounts come from Reference evidence
   in the DEATH lane.
-- A death commits three consecutive revisions in one database transaction:
+- A death commits up to three consecutive revisions in one database transaction:
   1. revision N-1: the pending `mana_spent` flush (build receipt, cause `training`), skipped when
      nothing is pending;
   2. revision N: the unchanged DEATH-0 death receipt;
-  3. revision N+1: the magic-level loss (build receipt, cause `death_loss`, referencing N).
-- Either all three commit or none does. Each revision still carries exactly one receipt, so DEATH-0
-  needs no amendment.
+  3. revision N+1: the magic-level loss (build receipt, cause `death_loss`, referencing N), skipped
+     when the loss changes nothing.
+- Either every revision commits or none does. Each revision still carries exactly one receipt, so
+  DEATH-0 needs no amendment.
+- **One fence.** The composite takes the death writer's fence at expected revision R. The death
+  receipt's `original_character_revision` is R + 1 after a flush and R without one, and its binding
+  uses that value.
+- **Retry.** A retry first looks up the death occurrence. If the death receipt exists, it returns the
+  committed revisions and writes nothing:
+  - the flush is the `training` build receipt committed at the death receipt's original revision;
+  - the loss is found through its typed death reference.
+
+  An attempt that did not commit left nothing, so a retry mints new build occurrences.
+- **Reconcile.** `reconcile_character_death` reports every revision by the same lookup.
+- **Before CHAR-BUILD-1.** DEATH-1 commits only the death receipt. The flush and the loss are added
+  by the DEATH ML loss child.
 
 ## 5. Delivery
 
 | Child | Scope | Depends on |
 |---|---|---|
-| CHAR-BUILD-1 | Migration and writers: the table, the receipt kind, creation insert, admission load, vocation writer, training commit, guards (§4.1-§4.2). It needs a persistence review. | this decision; the guard chain order |
+| CHAR-BUILD-1 | Migration, writer and reconcile: the table, the receipt kind, admission load, row and chain guards (§4.1-§4.2). It needs a persistence review. | this decision; the guard chain order |
 | W2b | `CasterState` facts from build state, `Vocation::None`, training accumulation and the Reference formula. Allocated only after CHAR-BUILD-1, which tightens ruling 5896480875. | CHAR-BUILD-1 |
 | DAWNPORT-1 | Dawnport content and the vocation-choice interaction | CHAR-BUILD-1 |
-| DEATH ML loss | Magic-level progress loss at death | CHAR-BUILD-1, DEATH lane |
+| DEATH ML loss | Magic-level progress loss at death and the composite of §4.6 | CHAR-BUILD-1, DEATH-1 |
 
 ## 6. Rejected options
 
@@ -158,6 +238,11 @@ The owner confirmed these directly in this session on 2026-09-29.
 - **A dev-only starter profile (option c).** It is not durable and would be replaced anyway.
 - **Columns on `game_character_progression_state`.** Build state changes on its own events. A
   separate row and receipt kind keep the XP receipts unchanged, following the A11 pattern.
+- **An initializer receipt at creation or first admission.** The chain admits no receipt at
+  revision 1, and advancing the revision at admission would move it under the admission fence
+  (§4.1).
+- **Equal non-NULL stance fields on every build receipt.** The guard would have to check them
+  against the stance chain on every build commit, for no information.
 - **A receipt per cast.** It adds a durable write to every cast, which costs too much for
   mana-spent progress. The checkpoint bound (§4.5) caps the loss instead.
 
@@ -189,3 +274,17 @@ remaining_unknowns:
   - death loss amounts
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates CHAR-BUILD-1."
 ```
+
+## 9. Before-freeze checklist
+
+1. Contract amendments: the spell cast contract §10 points here. STANCE-0 and DEATH-0 need no
+   amendment: the vocation receipt is STANCE-0 §4.6's combined receipt, and each revision carries
+   one receipt.
+2. Serialization: `character_root` row lock and the session-generation fence. The losing writer
+   writes nothing (§4.2 "Writer").
+3. Restart: the row and the receipts hold every committed fact. At most one checkpoint of
+   `mana_spent` is lost (§4.5). A death composite is recovered by its death occurrence (§4.6).
+4. Typed references: the death reference is `{family, key, revision}` (§4.2).
+5. Wire: no wire or schema change for clients in this decision.
+6. Split work: the death composite is one transaction under one fence, observed and reconciled by
+   the death occurrence (§4.6).

@@ -7,14 +7,14 @@ mode: CONTRACT
 status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: claude/gifted-rubin-a0axzx
+branch: claude/laughing-goldberg-4gwjfq
 issue: 162
-pr: 1265
+pr: "successor of #1265; exact PR in the #162 FREEZE_SHA entry"
 base_sha: 48de3868
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_frozen_at: null
-owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
+owner: claude-code-session-01KbqAgmFfAYDSKHKkFmWKWW (successor Sol Supervising Architect; the first owner, session 01XdHJyZNPJMcmMnmSDgwQvZ, is archived)
 created_at: 2026-09-29
 updated_at: 2026-09-29
 execution_policy: continuous_progress
@@ -46,7 +46,8 @@ No code, migration or content change is made.
 
 ## Architecture and source of truth
 
-- `PROVEN`: #162 5896414182; migrations `0001`-`0015`; `CasterState`; the spell cast contract §10.
+- `PROVEN`: #162 5896414182; migrations `0001`-`0016`; `0017` on #1270 head `ff7ba430`;
+  `CasterState`; the spell cast contract §10.
 - `UNKNOWN`: the Dawnport choice details, the magic-level formula and multipliers, and the death
   loss amounts. These are for the implementation lanes.
 
@@ -73,7 +74,8 @@ persistence review.
 
 ## Closeout
 
-- PR #1265. Merge commit/result: squash merge of #1265 (`git log --grep "(#1265)"`).
+- PR: the successor of #1265 named in the #162 FREEZE_SHA entry; #1265 is superseded. Merge
+  commit/result: its squash merge.
 - Review: Codex could not review (quota exhausted, 5896518704). The control plane routed a separate
   non-authoring agent, which reviewed `d4e97ce` (5897183488) with disposition FIX. The repair
   commit carries these dispositions:
@@ -89,6 +91,18 @@ persistence review.
   - Findings 5-7: the live magic level changes only after its receipt commits; unchanged
     checkpoints are skipped; `mana_spent` is progress toward the next magic level; and W2b follows
     CHAR-BUILD-1.
+  - Successor architect repair of `ee21804d` (the frozen head was not rewritten; the successor
+    branch continues its history):
+    1. §4.1: no initializer receipt. At revision 1 the chain admits no receipt, and an
+       initializer that advanced the revision would move it under the admission fence. No row
+       means (`none`, 0, 0), as in STANCE-0 §4.1; no creation insert and no backfill.
+    2. §4.2: stance fields are NULL unless a `vocation_choice` or `promotion` receipt prunes the
+       stance; only those join the stance chain and update the stance row.
+    3. §4.2: the writer, fence, `character_root` serialization, occurrence key and binding,
+       reconcile, the typed death reference and the row guard are stated.
+    4. §4.6: the death composite runs under one fence and is retried and reconciled by the death
+       occurrence; an empty loss is skipped.
+    5. An implementation brief and the before-freeze checklist (§9) are added.
   - Re-review of the successor head goes through the control plane.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
@@ -97,8 +111,8 @@ persistence review.
 ```yaml
 last_progress: final authoring commit; archived before freeze
 status: completed
-branch: claude/gifted-rubin-a0axzx
-pr: 1265
+branch: claude/laughing-goldberg-4gwjfq
+pr: "successor of #1265"
 owner_action_required: null
 blocker: null
 next_action: null
