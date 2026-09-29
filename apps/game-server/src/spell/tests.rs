@@ -513,7 +513,7 @@ fn a_positional_spell_is_not_admitted() {
 }
 
 #[test]
-fn a_chain_spell_is_not_admitted() {
+fn a_chain_spell_is_admitted_and_needs_the_world_facts() {
     let (spell, dependencies) = STARTER[0];
     let spell: Value = serde_json::from_str(spell).expect("spell");
     let mut dependencies: Value = serde_json::from_str(dependencies).expect("dependencies");
@@ -525,8 +525,21 @@ fn a_chain_spell_is_not_admitted() {
             "backtracking": false,
         });
     }
-    let error = spell_from_bundle(&spell, &dependencies).expect_err("chain admitted");
-    assert!(error.to_string().contains("chain"), "{error}");
+    let chained = spell_from_bundle(&spell, &dependencies).expect("chain admitted");
+    let chain = chained.chain.as_ref().expect("chain");
+    assert_eq!((chain.max_targets, chain.initial_range_tiles), (4, 4));
+    // Cast without the world facts, a chain would silently hit one creature.
+    assert_eq!(
+        resolve_cast(
+            &chained,
+            &caster(Vocation::Druid, 8, 0, 20),
+            &Cooldowns::default(),
+            at(0),
+            false,
+            &mut lowest
+        ),
+        Err(CastRejection::ChainWorldRequired)
+    );
 }
 
 #[test]
