@@ -1,0 +1,66 @@
+name: House Authoring Schema
+
+on:
+  pull_request:
+    paths:
+      - tools/content-schema/house-authoring/**
+      - tools/content-schema/monster-authoring/monster.schema.json
+      - imports/cipsoft-staticdata/houses/**
+      - .github/workflows/house-authoring-schema.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  house-authoring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/house-authoring
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned requirements
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Focused schema and validator checks
+        run: |
+          set -euo pipefail
+          python verify_formal_schema.py
+          git diff --exit-code -- .
+          python validate_houses.py synthetic-valid-house.json
+
+      - name: All staged houses convert and validate
+        run: python convert_houses.py convert --check
+
+      - name: Ruff check and format
+        working-directory: .
+        run: |
+          set -euo pipefail
+          ruff check tools/content-schema/house-authoring
+          ruff format --check tools/content-schema/house-authoring
+
+      - name: Verify the checkout stayed clean
+        if: ${{ always() }}
+        working-directory: .
+        run: test -z "$(git status --short --untracked-files=all)"
+
+  # `convert_houses.py extract-crystal --check` needs a pinned CrystalServer checkout,
+  # which this repository's CI does not fetch; it is run locally by whoever changes the
+  # extractor and its result is the committed samples/crystal-world-house-00ce02a5.json.

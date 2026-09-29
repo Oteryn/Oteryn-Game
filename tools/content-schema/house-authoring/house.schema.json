@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:house-authoring:candidate:1",
+  "title": "House authoring schema candidate v1 — structural validation",
+  "description": "CANDIDATE authoring schema for static House definitions (content/houses/). Not a WorldProject/v2 contract or runtime activation. Runtime House state (owner, rent payment, ACL, auction, custody) is excluded by the content tree contract. Semantic rules live in validate_houses.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "houses"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_HOUSE_AUTHORING/candidate-1"
+    },
+    "houses": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/House"
+      },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "House": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "name",
+        "kind",
+        "town",
+        "entrance",
+        "map_marker",
+        "size_sqm",
+        "beds",
+        "rent_gold",
+        "entry_restriction",
+        "footprint",
+        "provenance"
+      ],
+      "properties": {
+        "identity": {
+          "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/identity"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Display name from the official client, whitespace-normalized (the verbatim form is provenance.source_name).",
+          "pattern": "^\\S+( \\S+)*$"
+        },
+        "kind": {
+          "enum": [
+            "private_house",
+            "guildhall",
+            "shop"
+          ],
+          "description": "Mutually exclusive in all 995 observed 15.30 houses."
+        },
+        "town": {
+          "$ref": "#/$defs/AreaRef"
+        },
+        "entrance": {
+          "$ref": "#/$defs/Position",
+          "description": "Tile a player is placed on when entering or being moved into the House (engine entry). Sourced from CrystalServer world-house.xml; the official client does not ship it."
+        },
+        "map_marker": {
+          "$ref": "#/$defs/Position",
+          "description": "Official client House marker position (staticdata field 6, staged as `entrance` by HOUSES-1); observed at or next to the footprint centre."
+        },
+        "size_sqm": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "beds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rent_gold": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Rent amount per rent period; the period, payment and eviction rules are rulesets/economy/."
+        },
+        "entry_restriction": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "vocations"
+              ],
+              "properties": {
+                "vocations": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "enum": [
+                      "knight",
+                      "paladin",
+                      "sorcerer",
+                      "druid",
+                      "monk"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "footprint": {
+          "$ref": "#/$defs/Footprint"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      }
+    },
+    "AreaRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family",
+        "key"
+      ],
+      "properties": {
+        "family": {
+          "const": "Area"
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^oteryn:content\\.area\\.city\\.[a-z0-9_]+$",
+          "maxLength": 512
+        }
+      }
+    },
+    "Position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "z": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        }
+      }
+    },
+    "Footprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Bounding box of the House layout (origin is the lowest x/y and lowest z). Tile membership, doors and bed placements are world placement content, not modeled here.",
+      "required": [
+        "origin",
+        "width",
+        "height",
+        "floors"
+      ],
+      "properties": {
+        "origin": {
+          "$ref": "#/$defs/Position"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "floors": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        }
+      }
+    },
+    "Provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "client_version",
+        "source_id",
+        "source_name",
+        "staticdata_sha256",
+        "staticmapdata_sha256",
+        "restrictions_text",
+        "engine_house"
+      ],
+      "properties": {
+        "source": {
+          "const": "cipsoft/staticdata/house_id"
+        },
+        "client_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        },
+        "source_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "staticdata_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "staticmapdata_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "restrictions_text": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Verbatim source restriction text; entry_restriction is its structured form."
+        },
+        "source_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Verbatim official name."
+        },
+        "engine_house": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "engine",
+            "revision",
+            "house_id"
+          ],
+          "description": "Engine House id joined by engine clientid == source_id; it is the id carried by House tiles in the engine map and is not an Oteryn identity.",
+          "properties": {
+            "engine": {
+              "const": "crystalserver"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "house_id": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

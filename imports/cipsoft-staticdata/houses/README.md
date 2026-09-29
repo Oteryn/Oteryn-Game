@@ -21,7 +21,7 @@ Thais, 361 sqm, 17 beds, guildhall):
 | 3 | `restrictions` | free text, usually empty |
 | 4 | `rent_gold` | |
 | 5 | `beds` | |
-| 6 | `entrance` | x, y, z |
+| 6 | `entrance` | x, y, z; at or next to the layout centre, so a map marker rather than the door (see `tools/content-schema/house-authoring/`) |
 | 7 | `size_sqm` | |
 | 8 | `guildhall` | 0/1 |
 | 9 | `town` | |

@@ -1,0 +1,159 @@
+{
+  "schema": "OTERYN_HOUSE_AUTHORING/candidate-1",
+  "houses": [
+    {
+      "identity": {
+        "key": "oteryn:content.house.example_lane_1",
+        "revision": "definition-r1"
+      },
+      "name": "Example Lane 1",
+      "kind": "private_house",
+      "town": {
+        "family": "Area",
+        "key": "oteryn:content.area.city.example_town"
+      },
+      "entrance": {
+        "x": 1000,
+        "y": 1000,
+        "z": 7
+      },
+      "map_marker": {
+        "x": 1002,
+        "y": 1001,
+        "z": 7
+      },
+      "size_sqm": 20,
+      "beds": 2,
+      "rent_gold": 50000,
+      "entry_restriction": null,
+      "footprint": {
+        "origin": {
+          "x": 999,
+          "y": 999,
+          "z": 6
+        },
+        "width": 6,
+        "height": 4,
+        "floors": 2
+      },
+      "provenance": {
+        "source": "cipsoft/staticdata/house_id",
+        "client_version": "15.30",
+        "source_id": 1,
+        "source_name": "Example Lane 1",
+        "staticdata_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "staticmapdata_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "restrictions_text": "",
+        "engine_house": {
+          "engine": "crystalserver",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "house_id": 11
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:content.house.example_lane_2_shop",
+        "revision": "definition-r1"
+      },
+      "name": "Example Lane 2 (Shop)",
+      "kind": "shop",
+      "town": {
+        "family": "Area",
+        "key": "oteryn:content.area.city.example_town"
+      },
+      "entrance": {
+        "x": 1000,
+        "y": 1000,
+        "z": 7
+      },
+      "map_marker": {
+        "x": 1002,
+        "y": 1001,
+        "z": 7
+      },
+      "size_sqm": 20,
+      "beds": 0,
+      "rent_gold": 50000,
+      "entry_restriction": null,
+      "footprint": {
+        "origin": {
+          "x": 999,
+          "y": 999,
+          "z": 6
+        },
+        "width": 6,
+        "height": 4,
+        "floors": 2
+      },
+      "provenance": {
+        "source": "cipsoft/staticdata/house_id",
+        "client_version": "15.30",
+        "source_id": 2,
+        "source_name": "Example Lane 2 (Shop)",
+        "staticdata_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "staticmapdata_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "restrictions_text": "",
+        "engine_house": {
+          "engine": "crystalserver",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "house_id": 12
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:content.house.mage_row_1",
+        "revision": "definition-r1"
+      },
+      "name": "Mage Row 1",
+      "kind": "private_house",
+      "town": {
+        "family": "Area",
+        "key": "oteryn:content.area.city.example_town"
+      },
+      "entrance": {
+        "x": 1000,
+        "y": 1000,
+        "z": 7
+      },
+      "map_marker": {
+        "x": 1002,
+        "y": 1001,
+        "z": 7
+      },
+      "size_sqm": 20,
+      "beds": 2,
+      "rent_gold": 50000,
+      "entry_restriction": {
+        "vocations": [
+          "sorcerer"
+        ]
+      },
+      "footprint": {
+        "origin": {
+          "x": 999,
+          "y": 999,
+          "z": 6
+        },
+        "width": 6,
+        "height": 4,
+        "floors": 2
+      },
+      "provenance": {
+        "source": "cipsoft/staticdata/house_id",
+        "client_version": "15.30",
+        "source_id": 3,
+        "source_name": "Mage Row 1",
+        "staticdata_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "staticmapdata_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "restrictions_text": "Only Sorcerers can enter.",
+        "engine_house": {
+          "engine": "crystalserver",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "house_id": 13
+        }
+      }
+    }
+  ]
+}
