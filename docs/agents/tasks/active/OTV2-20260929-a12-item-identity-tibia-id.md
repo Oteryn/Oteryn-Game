@@ -56,7 +56,7 @@ No code, content, key or registry change is made. The ITEM-ID-1 migration lane f
   - A8 and WO-0 D93;
   - durable `definition_production_key` rows (`0010`, `0011`, `0014`);
   - D4 (#1218) holding D140-D144.
-- `UNKNOWN`: which OT or donor ids lie outside the pinned client.
+- `UNKNOWN`: which OT or donor ids lie outside the admitted CipSoft id set.
 
 ## High-risk authority/recovery qualification
 
@@ -72,6 +72,19 @@ independent exact-head identity review. ITEM-ID-1 needs its own review.
 ## Excluded scope
 
 - Code, content, keys, bindings, migrations and WO-2.
+
+## Finding dispositions
+
+The Codex review of `225b350` raised four P1 findings. All were accepted and fixed in the repair
+commit.
+
+- 4135141605, removed ids: §4.1 defines the admitted CipSoft id set, which only grows. Current and
+  retired keys follow from it, so 53161 keeps `oteryn:item.tibia.i53161` as a retired key.
+- 4135141623, named-key ban: the ban covers authored content, code and new writes only. Historical
+  durable rows keep named keys and resolve through the alias table.
+- 4135141616, `EXACT` bindings: `EXACT` needs G4 identity evidence. Equal numbers only corroborate.
+- 4135141634, alias totality: every retired key has exactly one entry. Each alias is derived from
+  that key's own recorded Tibia-id evidence, and an unproven referenced key blocks ITEM-ID-1.
 
 ## Validation
 

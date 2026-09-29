@@ -66,16 +66,25 @@ Crystal and donor `.dat` files)
     exactly one key string.
   - Authorship is `OTERYN_TIBIA_ID_KEY_RULE_V1`. There is no allocator and no epoch: a key is the
     rule applied to the id.
-- **Which id.** `<id>` is the appearance object id in the pinned Tibia client. Today that is client
-  15.30 `2dfa943b`, the B3 pin. A later client pin changes only which ids exist, never what an
-  existing key means.
-- **Ids outside the client.** An OT server or donor id that is not an appearance object id in the
-  pinned client gets no Tibia key. It stays `UNKNOWN`, and loading or minting it fails closed until
-  it is bound to a Tibia id (`ACCEPTED_ALIAS`) or authored in the D148 namespace.
-- **Retired ids.** A Tibia id removed from the client, such as 53161, keeps its key as retired. It
-  can no longer be minted, and the key is never re-meant. If CipSoft ever reuses an id for a
-  different item, the change stops with `ARCHITECTURE_ESCALATION_REQUIRED`; no key is re-meant
-  silently.
+- **Which id.** `<id>` is a CipSoft appearance object id in the **admitted CipSoft id set**. The
+  set is the union of the appearance object ids in every CipSoft appearance file Oteryn has admitted
+  as evidence:
+  - client 15.30 `2dfa943b` (the B3 pin);
+  - the CipSoft appearance files pinned by the Canary, Crystal and donor corpora compared in
+    5892865958.
+
+  The set only grows. A later admitted client adds ids and never changes what an existing key
+  means.
+- **Current and retired ids.** A key is *current* while its id is in the newest admitted client.
+  Otherwise it is *retired*.
+  - For example, 53161 is in an admitted older CipSoft file and absent from 15.30, so
+    `oteryn:item.tibia.i53161` exists as a retired key.
+  - A retired key resolves for history and existing rows, but no new Item can be minted with it.
+  - If CipSoft ever reuses an id for a different item, the change stops with
+    `ARCHITECTURE_ESCALATION_REQUIRED`; no key is re-meant silently.
+- **Ids outside the set.** An OT server or donor id that is not a CipSoft appearance object id in
+  the admitted set gets no Tibia key. It stays `UNKNOWN`, and loading or minting it fails closed
+  until it is bound to a Tibia id (`ACCEPTED_ALIAS`) or authored in the D148 namespace.
 
 ### 4.2 G4 amendment
 
@@ -83,8 +92,13 @@ Crystal and donor `.dat` files)
   canonical identity, not as a source numeric id. This is the only exception to G4's "never from a
   source numeric id" rule.
 - Canary, Crystal, donors, TibiaWiki and every other source keep G4 unchanged. Their ids are
-  bindings (`ots/item_server_id` and the like) that target the Tibia key. Where their number equals
-  the Tibia id, the binding disposition is `EXACT`, but the binding still exists.
+  bindings (`ots/item_server_id` and the like) that target the Tibia key.
+  - `EXACT` needs G4 identity evidence that both records are the same item, for example the
+    source row's appearance reference resolving to that CipSoft appearance record, with name and
+    flags corroborating it.
+  - Equal numbers only corroborate that evidence and never prove it (G4 rule 3).
+  - A source row without that evidence is not bound `EXACT`, and it stays in the G4
+    ambiguous/conflict path.
 - The four-layer separation stays in force: canonical key, source id, presentation identity and
   runtime or wire id. For CipSoft items the canonical number and the wire number coincide by rule,
   not by merging the two layers.
@@ -93,8 +107,10 @@ Crystal and donor `.dat` files)
 
 - Each named key (such as `gold_coin`) becomes a code constant, for example
   `GOLD_COIN: ItemKey = "oteryn:item.tibia.i3031"`, in the module that owns the name today.
-- The named key string is retired together with the registry keys (§4.5). No content file or durable
-  row may name it as a key after the migration.
+- The named key string is retired together with the registry keys (§4.5).
+  - After the migration, no authored content, code or new write may name it as a key.
+  - Historical durable rows and receipts that already hold it keep it, and they resolve through the
+    alias table (§4.5).
 - The R7-P04 re-key and the "2921 never reused" rule become history. The gold coin's canonical key is
   its Tibia key.
 
@@ -111,10 +127,16 @@ Crystal and donor `.dat` files)
 
 - **Retired keys.** Every `oteryn:item.registry.iNNNNNNNN` key (epochs 1 and 2) and every named
   Item key is retired. None is ever reassigned or re-meant.
-- **Alias table.** An append-only alias table maps each retired key to exactly one canonical key.
-  It lives with the Item registry, and its digest is recorded.
-  - An old key with no Tibia id gets a `retired_without_successor` entry instead. This covers ids
-    outside the pinned client (§4.1).
+- **Alias table.** An append-only alias table holds exactly one entry for every retired key. It lives
+  with the Item registry, and its digest is recorded.
+- **Successor entries.** An entry is either an alias or a terminal disposition:
+  - An alias names the Tibia key derived from that retired key's own proven Tibia id. The proof is
+    the §4.2 identity evidence for the source row that produced the old key, and each entry records
+    it. For a named key, the proof is the Tibia id of the item the name stood for.
+  - `retired_without_successor` applies when the old key has no proven CipSoft id in the admitted
+    set (§4.1).
+- **Referenced keys without proof.** A retired key without a proven Tibia id that authored content
+  or code still references blocks ITEM-ID-1 (fail-closed). It is never guessed.
 - **Durable rows.** Durable rows are not rewritten:
   - A stored row or receipt that holds a retired key keeps it, because it was true when written.
   - Readers resolve it through the alias table.
@@ -139,9 +161,12 @@ Crystal and donor `.dat` files)
 ITEM-ID-1 must prove all of the following:
 
 - Every canonical key follows §4.1.
-- The alias table maps each retired key to at most one canonical key, and no two retired keys that
-  meant different items map to the same key.
-- Every key reference is rewritten, and no content or code names a retired key.
+- The alias table is total: every retired key has exactly one entry, either an alias or
+  `retired_without_successor`.
+- Every alias target exists in the canonical set and is derived from that retired key's own recorded
+  Tibia-id evidence, never from a positional or bulk mapping.
+- No two retired keys that meant different items map to the same key.
+- Every key reference in authored content and code is rewritten, and none names a retired key.
 - Every durable row with a retired key resolves through the alias table.
 - The G4 bindings target the new keys, with no binding lost.
 - Semantic constants resolve to existing Tibia keys.
@@ -191,6 +216,6 @@ required_fresh_allocation: true
 required_independent_review: "exact-head identity review of this decision; ITEM-ID-1 identity and migration review"
 implementation_lanes: [ITEM-ID-1, WO-2]
 remaining_unknowns:
-  - which OT or donor ids lie outside the pinned client (they get no Tibia key)
+  - which OT or donor ids lie outside the admitted CipSoft id set (they get no Tibia key)
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates ITEM-ID-1."
 ```
