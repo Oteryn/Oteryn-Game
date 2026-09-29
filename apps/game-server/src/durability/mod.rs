@@ -94,6 +94,7 @@ mod item_transfer_linkage {
         let _ = DurabilityRoot::commit_item_transfer;
         let _ = DurabilityRoot::reconcile_item_transfer;
         let _ = DurabilityRoot::read_character_backpack;
+        let _ = DurabilityRoot::read_item_source_location;
     }
 }
 

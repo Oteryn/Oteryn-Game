@@ -10,6 +10,7 @@ use crate::ability::{
 };
 
 use super::chain::TilePosition;
+use super::target::{AllowedTargets, CheckedTarget};
 use super::{CastResolution, ResolvedEffect, SpellDefinition};
 
 /// Calculation stages of a player cast, in the order the core ran them.
@@ -33,6 +34,8 @@ pub(crate) enum CastPlanError {
     /// A chain cast needs [`chain_plans`], a party buff [`party_plans`], any other cast
     /// [`effect_plan`].
     WrongPlanKind,
+    /// The plan names a target other than the one the cast was checked against (part D.3).
+    TargetMismatch,
     Ability(AbilityError),
 }
 
@@ -44,6 +47,8 @@ impl From<AbilityError> for CastPlanError {
 
 /// Build the Ability plan of one accepted cast by `caster` on `target` (both exact actor atoms).
 /// A heal of a self-target spell, or of a spell cast without a target, applies to the caster.
+/// A cast checked against a target, and any cast of a spell with `allowed_targets`, plans only on
+/// the checked target (none when the cast had no target).
 pub(crate) fn effect_plan(
     spell: &SpellDefinition,
     resolution: &CastResolution,
@@ -54,6 +59,10 @@ pub(crate) fn effect_plan(
 ) -> Result<CastPlan, CastPlanError> {
     if !resolution.chain.is_empty() || !resolution.party.is_empty() {
         return Err(CastPlanError::WrongPlanKind);
+    }
+    let checked = resolution.target.as_ref().map(CheckedTarget::actor);
+    if (checked.is_some() || spell.allowed_targets != AllowedTargets::Any) && target != checked {
+        return Err(CastPlanError::TargetMismatch);
     }
     plan(
         &resolution.effects,

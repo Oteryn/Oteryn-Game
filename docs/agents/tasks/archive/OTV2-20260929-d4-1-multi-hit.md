@@ -4,14 +4,14 @@
 task_id: OTV2-20260929-d4-1-multi-hit
 title: D4-1 - bounded multi-hit damage receipts per creature generation
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: "D140-D144, OTERYN_GAME_D4_MULTI_HIT_DAMAGE_RECEIPT_DECISION_2026-09-29.md section 5"
 base_branch: main
 branch: claude/d4-1-multi-hit
 base_sha: 4ebb1bf
-head_sha: null
+head_sha: c80739597cb56ef9356f3ca1ec16e5c3d580926e
 owner: "Oteryn: impl combat" (Claude Code)
 created_at: 2026-09-29
 updated_at: 2026-09-29
@@ -77,3 +77,8 @@ supplies a `CommandRef` yet; composing it is later work, decision section 7), th
 
 - `cargo fmt`, `cargo clippy --quiet --all-targets -- -D warnings`, `cargo test --quiet --lib`
 - `python tools/agents/validate_governance.py`, `git diff --check`
+
+## Closeout
+
+- merge commit/result: `623de05` on protected `main` (#1223); every file the PR changed is byte-identical to `c807395`
+- ownership release: all leases released at merge
