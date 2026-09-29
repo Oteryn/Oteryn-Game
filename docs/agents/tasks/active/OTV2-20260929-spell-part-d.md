@@ -7,7 +7,7 @@ mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1228
 allocation_comment: "#162 5888930608"
 base_branch: main
 branch: claude/spell-part-d
