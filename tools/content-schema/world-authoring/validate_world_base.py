@@ -18,6 +18,7 @@ from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
+import edron_rework as edron
 import world_region_codec as codec
 from convert_world_base import (
     DONOR_PREFIX,
@@ -29,6 +30,7 @@ from convert_world_base import (
     TERRAIN_DIRECTORY,
     TERRAIN_KEY_PREFIX,
     TERRAIN_NAMESPACE,
+    world_otbm_totals,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -188,6 +190,7 @@ def check_index(index: dict, summary: dict, errors: list[str]) -> None:
         errors.append(f"{INDEX}: source differs from the capture summary")
     check_fill(index, summary, errors)
     check_replace(index, summary, errors)
+    check_edron(index, summary, errors)
     frame = index.get("coordinate_frame")
     if frame != "global-target-2026-09-27":
         errors.append(f"{INDEX}: unexpected coordinate_frame {frame!r}")
@@ -292,6 +295,138 @@ def check_replace(index: dict, summary: dict, errors: list[str]) -> None:
             errors.append(
                 f"{SUMMARY}: floor {floor} replaces {count} tiles outside the pinned rule"
             )
+
+
+EDRON_KEYS = {
+    "applied",
+    "entrances",
+    "items_added",
+    "reachability",
+    "replaced_items_added",
+    "replaced_items_removed",
+    "rule1",
+    "rule2",
+    "tibiamaps_walkable_by_floor",
+    "tiles_added",
+    "tiles_added_by_floor",
+    "tiles_replaced",
+    "tiles_replaced_by_floor",
+}
+EDRON_ZERO_KEYS = {
+    "applied",
+    "items_added",
+    "replaced_items_added",
+    "replaced_items_removed",
+    "tiles_added",
+    "tiles_replaced",
+}
+
+
+def check_edron(index: dict, summary: dict, errors: list[str]) -> None:
+    """The Edron rework record matches its pin (tibiamaps sha256s) and every count adds up."""
+    rework = summary.get("edron")
+    pin = (index.get("source") or {}).get("edron")
+    if not isinstance(rework, dict):
+        errors.append(f"{SUMMARY}: the edron record is required")
+        return
+    if pin is None:
+        if set(rework) != EDRON_ZERO_KEYS or rework != {
+            "applied": False,
+            "items_added": 0,
+            "replaced_items_added": 0,
+            "replaced_items_removed": 0,
+            "tiles_added": 0,
+            "tiles_replaced": 0,
+        }:
+            errors.append(
+                f"{SUMMARY}: edron changes tiles but the index pins no rework"
+            )
+        return
+    if pin != edron.PIN:
+        errors.append(
+            f"{INDEX}: source.edron differs from the pinned rework (tibiamaps pins)"
+        )
+    if set(rework) != EDRON_KEYS or rework["applied"] is not True:
+        errors.append(f"{SUMMARY}: edron record has the wrong keys")
+        return
+    try:
+        problems = edron_counts(rework, summary)
+    except (KeyError, TypeError, AttributeError) as error:
+        problems = [f"malformed record ({error!r})"]
+    errors.extend(f"{SUMMARY}: edron {problem}" for problem in problems)
+
+
+def edron_counts(rework: dict, summary: dict) -> list[str]:
+    problems: list[str] = []
+    box_floors = {str(z) for z in edron.RULE2_FLOORS}
+    rule1, rule2 = rework["rule1"], rework["rule2"]
+    if rule1["floor"] != edron.RULE1_FLOOR or set(rule2) != box_floors:
+        problems.append("rules name floors outside the pin")
+    if rule1["filled"] != rule1["filled_walkable"] + rule1["filled_blocked"]:
+        problems.append("rule 1 fill counts do not add up")
+    if (
+        rule1["replaced"]
+        != rule1["replaced_to_walkable"] + rule1["replaced_to_blocked"]
+    ):
+        problems.append("rule 1 replace counts do not add up")
+    if rule1["included"] != rule1["filled"] + rule1["replaced"] + rule1["kept_base"]:
+        problems.append("rule 1 included tiles do not add up")
+    if (
+        rule1["core"] > rule1["included"]
+        or rule1["included"] > rule1["summer_tiles_in_box"]
+    ):
+        problems.append("rule 1 core or included tiles exceed their bounds")
+    added = {str(z): 0 for z in edron.RULE2_FLOORS}
+    replaced = dict(added)
+    added["10"] += rule1["filled"]
+    replaced["10"] += rule1["replaced"]
+    for floor, row in rule2.items():
+        if row["targets"] != row["walkable_added"] + row["walkable_replaced"]:
+            problems.append(f"rule 2 floor {floor} targets do not add up")
+        if row["walkable_ground"] == row["blocking_ground"]:
+            problems.append(f"rule 2 floor {floor} uses one ground for both")
+        added[floor] += row["walkable_added"] + row["rock_added"]
+        replaced[floor] += row["walkable_replaced"]
+    for key, expected in (("added", added), ("replaced", replaced)):
+        by_floor = rework[f"tiles_{key}_by_floor"]
+        if by_floor != {f: n for f, n in expected.items() if n}:
+            problems.append(f"tiles_{key}_by_floor differs from the rule counts")
+        if sum(by_floor.values()) != rework[f"tiles_{key}"]:
+            problems.append(f"tiles_{key} differs from its floors")
+    floors = summary.get("tiles_by_floor", {})
+    if any(n > floors.get(f, 0) for f, n in rework["tiles_added_by_floor"].items()):
+        problems.append("adds more tiles on a floor than exist")
+    entrances = rework["entrances"]
+    marker_floors = {str(z) for z in edron.MARKER_FLOORS}
+    if not (set(entrances["markers"]) == set(entrances["connected"]) == marker_floors):
+        problems.append("entrance floors differ from the pin")
+        return problems
+    unresolved = entrances["unresolved_entrances"]
+    if unresolved != sorted(unresolved, key=lambda p: (p[2], p[1], p[0])) or len(
+        {tuple(p) for p in unresolved}
+    ) != len(unresolved):
+        problems.append("unresolved entrances are unsorted or repeated")
+    for floor in marker_floors:
+        here = sum(1 for p in unresolved if str(p[2]) == floor)
+        if entrances["connected"][floor] + here != entrances["markers"][floor]:
+            problems.append(f"entrances of floor {floor} do not add up")
+    if any(
+        len(p) != 3 or not edron.in_box(p[0], p[1]) or str(p[2]) not in marker_floors
+        for p in unresolved
+    ):
+        problems.append("an unresolved entrance lies outside the box or the floors")
+    reach = rework["reachability"]
+    if (
+        reach["floor10_walkable_reached_from_surface"] > reach["floor10_walkable"]
+        or reach["floor10_new_walkable_reached_from_surface"]
+        > reach["floor10_new_walkable"]
+        or reach["floor10_new_walkable"] > reach["floor10_walkable"]
+        or reach["floor10_largest_component"] > reach["floor10_walkable"]
+        or reach["floor10_components_reached_from_surface"]
+        > reach["floor10_components"]
+    ):
+        problems.append("reachability counts exceed their totals")
+    return problems
 
 
 def terrain_bindings(root: Path, errors: list[str]) -> dict[int, set[str]]:
@@ -550,14 +685,7 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
     if summary.get("map", {}).get("floors") != [0, codec.MAX_FLOOR]:
         errors.append(f"{SUMMARY}: map floors must be [0, {codec.MAX_FLOOR}]")
     fill = summary.get("fill", {})
-    replace = summary.get("replace", {})
-    base = {
-        "items": index["totals"]["items"]
-        - fill.get("items_added", 0)
-        - replace.get("items_added", 0)
-        + replace.get("items_removed", 0),
-        "tiles": index["totals"]["tiles"] - fill.get("tiles_added", 0),
-    }
+    base = world_otbm_totals(index["totals"], summary)
     if pinned is not None and {k: base[k] for k in pinned} != pinned:
         errors.append(
             f"{INDEX}: world.otbm totals differ from the pinned source {pinned}"

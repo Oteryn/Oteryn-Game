@@ -74,6 +74,7 @@ jobs:
           set -euo pipefail
           python test_world_authoring.py
           python test_world_base.py
+          python test_edron_rework.py
           python test_world_record.py
           python test_floor_changes.py
           python test_islands.py
@@ -99,4 +100,6 @@ jobs:
   # samples/source-capture-v1.json, samples/world-base-capture-v1.json and
   # samples/floor-changes-capture-v1.json (`convert_terrain.py` also writes
   # samples/terrain-capture-v1.json). `convert_world_base.py` also reads
-  # data-global/world/maps.7z (fill) and needs py7zr from requirements-regenerate.txt.
+  # data-global/world/maps.7z (fill) and needs py7zr from requirements-regenerate.txt; the
+  # Edron rework also needs Pillow (same file) and the pinned tibiamaps files in a directory
+  # given as --tibiamaps-root.

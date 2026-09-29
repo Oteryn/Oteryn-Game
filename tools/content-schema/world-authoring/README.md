@@ -12,7 +12,7 @@ format selected by measurement (see "Base map (step 3)" below).
 | `Area.Island` | `content/world/areas/islands/` | 59 | `OTERYN_AREA_AUTHORING_SHARD/v1` (`island.schema.json`) |
 | `Area.Region` | `content/world/areas/regions/` | 465 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `House` | `content/houses/` | 995 | `OTERYN_HOUSE_AUTHORING_SHARD/v1` |
-| `Terrain` | `content/world/terrain/` | 5,948 | `OTERYN_TERRAIN_AUTHORING_SHARD/v1` (`terrain-appearance.schema.json`) |
+| `Terrain` | `content/world/terrain/` | 5,949 | `OTERYN_TERRAIN_AUTHORING_SHARD/v1` (`terrain-appearance.schema.json`) |
 | `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
 | `World` | `content/world/worlds/` | 1 | `OTERYN_WORLD_AUTHORING_SHARD/v1` (`world-record.schema.json`) |
 | `WorldObject.FloorChange` | `content/world/objects/` | 447 | `OTERYN_WORLD_OBJECT_AUTHORING_SHARD/v1` (`floor-change.schema.json`) |
@@ -346,8 +346,8 @@ python fandom_island_snapshot.py fetch && python convert_islands.py
 ## Base map (step 3)
 
 `WorldPlacement.Base` holds every tile and item of `world.otbm` (19,325,129 tiles,
-24,925,845 items, floors 0-15) plus the fills from `maps.7z` below (19,345,022 tiles,
-24,948,876 items in all) in `content/world/placements/`. JSON is not used: the same
+24,925,845 items, floors 0-15) plus the fills from `maps.7z` and the Edron rework below
+(19,350,541 tiles, 24,958,513 items in all) in `content/world/placements/`. JSON is not used: the same
 data is 3.25 GB as JSON sectors and about 22 MB in the format below.
 
 - **Layout:** `index.json` (`OTERYN_FAMILY_INDEX/v1`, family `WorldPlacement.Base`) plus one
@@ -391,7 +391,7 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   palette entries in `index.json` only. The 22 MB of region files do not change. The
   capture summary counts provisional entries and occurrences, split into ids that
   `items.xml` declares at the pinned revision and appearance-only ids, and the Terrain-keyed
-  entries. Current counts: 25,983 palette entries; 5,948 Terrain keys (760,247
+  entries. Current counts: 25,984 palette entries; 5,949 Terrain keys (760,248
   occurrences); 5 provisional (24 occurrences): 4 ids that `items.xml` declares and id 99,
   which neither `items.xml` nor the client declares.
   `validate_world_base.py` accepts a non-provisional key that is an Item binding target or
@@ -438,7 +438,7 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   counts per floor and skipped tiles. `totals` and `tiles_by_floor` include the fill;
   `totals` minus the fill equals the pinned `world.otbm` totals (19,325,129 tiles,
   24,925,845 items). Reading the archive needs `py7zr` (`requirements-regenerate.txt`, not
-  installed by CI); `--check` reproduces everything from the pinned checkout.
+  installed by CI; the Edron rework needs Pillow from the same file); `--check` reproduces everything from the pinned checkout.
 - **Partial fill from `summer-update-2025.otbm`** (owner decision 2b; second `FILL` entry,
   same archive, member sha256 `d4b4baee...`, 2,964,786 bytes, 286,241 tiles on floors 0-15,
   absolute coordinates). Nothing in CrystalServer loads this file. The rule is computed by
@@ -448,8 +448,8 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   - **Floors 8-15:** 4-connected components per floor. A component is included whole unless
     one of its tiles lies in the exclusion box `edron-underground`: x 33274-33456, y
     31786-31884, floors 8-12 (the bounds of the Edron Surroundings/Stonehome clusters). Edron
-    is **deferred** as a cave rework (the base already has Edron caves, so a fill-only mix
-    would combine two layouts). Components below a size threshold are kept: the research
+    is not part of this fill: the base already has Edron caves, so a fill-only mix would
+    combine two layouts; the rework below handles it. Components below a size threshold are kept: the research
     found no noise, so there is no threshold. Result: 127 components included (16,777 tiles:
     floor 8 1,913, 9 5,678, 10 584, 11 611, 12 169, 13 3,608, 14 3,619, 15 595) and 16
     excluded (27,359 tiles: floor 8 1,816, 9 6,567, 10 7,901, 11 8,822, 12 2,253). By area
@@ -475,6 +475,52 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   Still to draw (no source): Blue Valley north-east, east and south blocks, Temple of
   Light, Great Expedition Island and Wharf, Marapur/Thalassara floors 2-6, Nargor floors
   4-6, Upper Roshamuul floor 6, Great Expedition floors 3-6.
+- **Edron underground rework** (owner decision 1a; `edron_rework.py`, the `edron` object of
+  the summary and `source.edron` of the index; evidence class **reference-derived**). The
+  base and the summer file disagree on the Edron caves, so the player-recorded real-Tibia
+  minimap decides what is real: `github.com/tibiamaps/tibia-map-data`, files
+  `floor-09/10/11-path.png` and `-map.png` plus `bounds.json` (one pixel per tile, frame
+  `xMin` 31744, `yMin` 30976, identity with the project frame, verified). The files are not
+  committed. They are pinned like `maps.7z`: `source.edron.tibiamaps` records the fetch URL
+  (`raw.githubusercontent.com/.../main/data/`, branch head, commit id not retrievable), the
+  fetch date 2026-09-29 and the sha256 of every file used, and the converter reads them from
+  `--tibiamaps-root` (`--check` reproduces the result; reading the PNGs needs Pillow,
+  `requirements-regenerate.txt`). Everything is confined to the box x33274-33456,
+  y31786-31884. Walkable means no item of the tile has the client `unpass` flag (solid rock
+  is `unpass` ground); a tibiamaps pixel is walkable if its path pixel is grey.
+  - **Rule 1 (floor 10):** the core is every summer tile that is walkable where tibiamaps is
+    walkable; the included set is the core plus every summer tile in its 8-neighbourhood
+    whose walkability agrees with tibiamaps. Where the base has no tile the summer tile is
+    **filled**. A base tile is **replaced** only where its walkability disagrees with
+    tibiamaps and the summer tile agrees; a base tile that agrees is kept, so a base tile
+    that tibiamaps shows walkable is never removed. Result: 3,982 filled (2,785 walkable,
+    1,197 wall and rock), 699 replaced (645 to walkable, 54 to blocked), 423 kept, from 5,104
+    included tiles (3,534 core).
+  - **Rule 2 (floors 9 and 10, after rule 1):** a position that tibiamaps shows walkable and
+    that is walkable in neither the map so far nor the summer file gets a plain ground tile
+    (the most common walkable ground of that floor in the box; recorded: id 22795 on floor 9,
+    4394 on floor 10), and every non-walkable 8-neighbour without a tile gets the most common
+    blocking ground (101 on both floors) so the cave stays closed. A blocked tile at a target
+    position is replaced, a walkable tile never is. Result: floor 9 765 targets (761 added, 4
+    replaced) and 379 rock; floor 10 265 targets (262 added, 3 replaced) and 135 rock.
+  - **Rule 3 (entrances, report only):** a yellow pixel of the map image on floors 9-11 is a
+    floor-change marker, unless the tile carries a yellow-automap item that is no floor change
+    (yellow ground) or the pixel lies in a yellow area of more than 2 pixels (ground colour).
+    A marker is connected if the final map has a floor-change item (FloorChange record ids
+    plus the rope spots 386 and 21965) at that position or at the same (x, y) one floor above
+    or below. Otherwise the position is listed in `unresolved_entrances`; **no item is
+    invented**. Result: 15 markers (floor 9 5, floor 10 3, floor 11 7), 5 connected, 10
+    unresolved. The summary also records the reachability of floor 10 (BFS over walkable
+    tiles and floor-change links): the new floor-10 cave (3,534 tile main component) is **not
+    reachable** from the surface or from the other floors. Its only link, the summer floor
+    change `1080` at (33295, 31819, 9) to floor 10, is on a floor-9 tile the base does not
+    have (floor 9 keeps the base) and is listed as unresolved.
+  - Totals: 5,519 tiles added and 706 replaced (floor 9 1,140 added and 4 replaced, floor 10
+    4,379 added and 702 replaced). Floors 8, 11 and 12 keep the base, as tibiamaps agrees
+    with the base there and the summer file adds nothing real (floor 9 outside rule 2 as
+    well). `world.otbm` totals equal the index totals minus the fills and this rework's added
+    tiles and item changes (`world_otbm_totals`). The validator checks the pins, that every
+    count adds up and the entrance lists.
 - **Not imported / deferred:** `access.otbm`, `asura_resp.otbm`, `boss_rooms_-_part_2.otbm`
   and `final.otbm` of `data-global/world/15.30/` are unreferenced local-coordinate drafts (x
   about 945-1173, y about 999-1096, floors 5-7, 17,801 tiles, absent from the base). No
@@ -495,14 +541,16 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   shared immutable base for all channels). An edit rewrites one sector but changes the
   region file as a whole, so git stores it as a binary diff (`.b3` is marked `binary`).
   Runtime loading and the per-channel overlay are out of scope here.
-- **Speed:** `convert_world_base.py` takes about 2.2 minutes. `validate_world_base.py`
+- **Speed:** `convert_world_base.py` takes about 3.5 minutes. `validate_world_base.py`
   decodes all 1,208 regions in about 13 s on four cores (about 50 s of CPU).
 
 ```bash
 python validate_world_base.py              # committed family: sha256, decode, counts, palette
 python test_world_base.py                  # codec round trips, converter, validator, negatives
 # Regenerate (needs the pinned crystalserver checkout, not fetched by CI):
-python convert_world_base.py --crystal-root /path/to/crystalserver [--check]
+python convert_world_base.py --crystal-root /path/to/crystalserver \
+    --tibiamaps-root /path/to/tibiamaps-data [--check]
+python test_edron_rework.py                # the Edron rework rules, pins and validator negatives
 ```
 
 Region files are compressed by libzstd through the pinned `zstandard` package. The capture
@@ -546,7 +594,7 @@ Item business.
   agrees: the water and lava ids of the island ground classes (501) all have appearances,
   ids named `grass` carry bank speed 150 most often, `stone wall` ids are `unpass` (913 of
   934) and water ground is `unpass`. No id is shifted.
-- **Records:** one per appearance-only palette id that has an appearance: 5,948 (id 99 has
+- **Records:** one per appearance-only palette id that has an appearance: 5,949 (id 99 has
   none and stays provisional). Key `oteryn:terrain.a<id, six digits>`, fields only from the
   appearance: `appearance_id`, `class`, `flags` (the subset of `bank`, `clip`, `unmove`,
   `unpass` the appearance sets), `speed` (bank waypoints, ground only), `name` (7 records),

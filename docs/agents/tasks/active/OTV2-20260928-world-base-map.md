@@ -43,7 +43,7 @@ jira: KAN-16
 
 Step 3 of the owner's world-map plan: the whole base map of `world.otbm` in
 `zimbadev/crystalserver@00ce02a5` (`summer-update`) becomes `WorldPlacement.Base`:
-19,325,129 tiles and 24,925,845 items on floors 0-15 (plus the 19,893 tile `maps.7z` fills),
+19,325,129 tiles and 24,925,845 items on floors 0-15 (plus 19,893 `maps.7z` fill and 5,519 Edron tiles),
 in 1,208 region files
 (`OTERYN_WORLD_REGION_B3/v1`, about 21.6 MB) plus a 2.5 MB `index.json`. The source is
 sha256-pinned and `OtsHypothesisOnly`.
@@ -56,7 +56,7 @@ sha256-pinned and `OtsHypothesisOnly`.
   - A bound id (`imports/crystalserver/bindings/items.json`, `ots/item_server_id`) takes its
     binding target key, registry or named, with `provisional: false`.
   - An appearance-only id (declared by the official client, not by `items.xml`) takes the
-    `oteryn:terrain.a<id>` key of its `Terrain` record with `provisional: false` (5,948 ids).
+    `oteryn:terrain.a<id>` key of its `Terrain` record with `provisional: false` (5,949 ids).
   - Any other id takes `donor:crystalserver@00ce02a5:item/<id>` with `provisional: true`
     (4 items that `items.xml` declares and the appearance-less id 99).
   - **Ownership rule: ids present in `items.xml` -> Item registry (item agent, B1b);
@@ -98,19 +98,12 @@ sha256-pinned and `OtsHypothesisOnly`.
 - [x] `Area.Island` holds only islands the base map confirms (owner rule): 59 records
       (55 island, 3 archipelago, 1 continent; 2 event-only; 1 underground) computed by
       `convert_islands.py --check` from the committed region files, the pinned TibiaWiki
-      snapshot (`imports/tibiawiki/islands/fandom-snapshot-v1.json`, 67 candidate pages),
-      `island-ground-classes.json` (water and lava ids from the pinned `items.xml` names) and
-      `island-evidence-anchors.json` (owner-approved start tiles from pinned CrystalServer
-      NPC/monster spawns or a committed teleport destination for pages without a usable wiki
-      coordinate: Tutorial Island, Isle of Evil, Rascacoon, Ingol, Oskayaat, Isle of the
-      Mists, Robson's Isle (floor 14, `underground`) and the Newhaven main island; each
-      record keeps `anchor_source`). Each record has a map-computed footprint and anchor, the
-      cities whose temple lies in the component, page-id bindings and the wiki evidence
+      snapshot (`imports/tibiawiki/islands/fandom-snapshot-v1.json`),
+      `island-ground-classes.json` and the owner-approved `island-evidence-anchors.json`
+      (each record keeps `anchor_source`). Each record has a map-computed footprint and anchor,
+      the cities whose temple lies in the component, page-id bindings and the wiki evidence
       sentence. Percht Island merges into Orcsoberfest Island; Fibula uses the map-corrected
-      9,196 tile island (`anchor_corrected_from_wiki`); Newhaven is one island of two
-      components (9,189 tile main island, 50 tile temple islet in `additional_components`;
-      no committed teleport links them). 7 candidates are excluded with a reason
-      (3 without coordinates, 2 part of the landmass, 2 event-only not on the map) in
+      island; Newhaven has two components. 7 candidates are excluded with a reason in
       `samples/islands-capture-v1.json`. `validate_islands.py` and `test_islands.py` pass.
 - [x] Blue Valley is partially filled from `maps.7z:blue_valley.otbm` (fill-only: a tile is
       added only where the base map has no tile at that position, nothing existing is
@@ -120,8 +113,8 @@ sha256-pinned and `OtsHypothesisOnly`.
       `convert_world_base.py --check` (needs `py7zr`, `requirements-regenerate.txt`).
 - [x] `maps.7z:summer-update-2025.otbm` is partially filled (owner decision 2b, fill-only,
       pinned, `--check`): the converter takes fragment tiles the base lacks, floors 8-15 by
-      4-connected component except the deferred Edron underground (box x33274-33456,
-      y31786-31884, floors 8-12; a cave rework), floors 0-7 only where the official 15.30
+      4-connected component except the Edron underground (box x33274-33456, y31786-31884,
+      floors 8-12; reworked by the next item), floors 0-7 only where the official 15.30
       minimap shows land. 16,928 tiles, 19,667 items (floors 2-6 151, floor 8 1,913, 9 5,678,
       10 584, 11 611, 12 169, 13 3,608, 14 3,619, 15 595), 6 palette and 6 `Terrain` entries.
 - [x] Blue Valley floor 7 (owner decision 1a): the `replace` rule of the same pin swaps a
@@ -131,19 +124,27 @@ sha256-pinned and `OtsHypothesisOnly`.
       grows to 10,427 tiles. Nothing else is replaced.
       Still to draw: Blue Valley NE/E/S blocks, Temple of Light, Great Expedition Island and
       Wharf, Marapur/Thalassara floors 2-6, Nargor floors 4-6, Upper Roshamuul floor 6,
-      Great Expedition floors 3-6, Edron floors 8-12 (deferred).
-- [x] `Terrain` holds 5,948 records (`oteryn:terrain.a<id>`), one per appearance-only palette
-      id that the official 15.30 client `appearances-2dfa943b….dat` declares (owner-confirmed
+      Great Expedition floors 3-6.
+- [x] Edron underground (owner decision 1a, evidence class reference-derived): floors 9 and
+      10 of the box are imported from the summer file and repaired with the player-recorded
+      real-Tibia minimap (tibiamaps/tibia-map-data, files sha256-pinned in `source.edron`,
+      read from `--tibiamaps-root`, not committed; `edron_rework.py`). Rule 1 (floor 10, summer
+      tiles that agree with tibiamaps: walkable core plus its 8-neighbourhood): 3,982 filled,
+      699 replaced, 423 base tiles kept, no walkable base tile that tibiamaps shows walkable
+      removed. Rule 2 (tibiamaps-walkable, walkable in neither map nor summer): floor 9 761
+      added, 4 replaced, 379 rock; floor 10 262 added, 3 replaced, 135 rock (grounds recorded).
+      Rule 3: 5+3+7 markers on floors 9-11, 10 `unresolved_entrances` reported, none invented.
+      Floor 10 is not reachable from the surface. z8, z9 (outside rule 2), z11, z12 keep the
+      base. Totals 5,519 tiles added, 706 replaced. `test_edron_rework.py` and validator pass.
+- [x] `Terrain` holds one record (`oteryn:terrain.a<id>`) per appearance-only palette id
+      that the official 15.30 client `appearances-2dfa943b….dat` declares (owner-confirmed
       redistribution), from `convert_terrain.py --check` and `client_appearance_reader.py`.
       Ownership rule: ids present in `items.xml` -> Item registry (item agent, B1b);
-      appearance-only ids -> Terrain (world). Fields come only from the appearance: `class`
-      by the documented rule (ground 740, border 1,534, blocking 2,613, decoration 1,061),
-      `flags`, `speed`, `name`, `automap_color` and `occurrences_on_base_map`. Client ids
-      equal server ids (checked against `items.xml` names and ground evidence). The base map
-      palette switched those 5,948 keys from `donor:` to Terrain keys (region files
-      byte-identical; 5 provisional remain: 4 `items.xml` ids for B1b and id 99). Validators
-      `validate_terrain.py` and `validate_world_base.py` (a non-provisional key is an Item
-      binding target or a Terrain key of that id) and `test_terrain.py` pass.
+      appearance-only ids -> Terrain (world). Fields come only from the appearance (`class`,
+      `flags`, `speed`, `name`, `automap_color`, occurrences). Client ids equal server ids.
+      The palette switched those keys from `donor:` to Terrain keys (region files
+      byte-identical; provisional remain: `items.xml` ids for B1b and id 99).
+      `validate_terrain.py`, `validate_world_base.py` and `test_terrain.py` pass.
 - [ ] Required checks pass on the frozen PR head.
 
 ## Excluded scope
@@ -157,14 +158,11 @@ sha256-pinned and `OtsHypothesisOnly`.
   and no boss uses their coordinates; they overlap the Movement Trainer area of
   `custom/global-custom.otbm` (off by default, `toggleMapCustom=false`). Owner decision: not
   imported, deferred.
-- The other members of `maps.7z`: `newheaven` and `winter-update-2025` add one tile each
-  (not imported).
-- The other six `15.30/` fragment maps (Thalassara, castle, asura_sanctuary,
-  asura_sanctuary_boss, mimar_haffar, werepanther_boss_map) are already contained in
-  `world.otbm` (0 missing tiles); only water ground and decoration variants differ and the
-  base wins. Nothing to import. All 57 BossLever rooms at the pin are present in the base
-  map. Known data gap: the General Murius raid spawn (32427,31131,15) has no tile in the
-  base (tiles exist there only on floors 7-11).
+- The other members of `maps.7z` (`newheaven`, `winter-update-2025`: one tile each) and the
+  six `15.30/` fragment maps already contained in `world.otbm` (0 missing tiles; the base
+  wins). All 57 BossLever rooms are present in the base map. Known data gap: the General
+  Murius raid spawn (32427,31131,15) has no tile in the base (tiles exist only on floors
+  7-11).
 
 ## Validation
 
@@ -184,8 +182,8 @@ sha256-pinned and `OtsHypothesisOnly`.
 
 ## Handover
 
-Owner decisions 1a (Blue Valley floor 7) and 2b (summer-update-2025, Edron deferred),
-research results and next steps: `docs/agents/reports/OTV2-20260929-world-map-handover.md`.
+Owner decisions 1a (Blue Valley floor 7; Edron underground) and 2b (summer-update-2025),
+research results, unresolved Edron entrances and next steps: `docs/agents/reports/OTV2-20260929-world-map-handover.md`.
 
 ## Independent review
 

@@ -18,7 +18,11 @@ nothing existing is overwritten or merged. Reading the archive needs `py7zr`
 (`requirements-regenerate.txt`); the fill is pinned by the sha256 of the archive and of the
 member, and its counts are recorded in the capture summary.
 
-    python convert_world_base.py --crystal-root /path/to/crystalserver [--check]
+After the fills, the Edron underground box is reworked from the summer file and the
+real-Tibia minimap (`edron_rework.py`, pinned tibiamaps files read from `--tibiamaps-root`).
+
+    python convert_world_base.py --crystal-root /path/to/crystalserver \
+        --tibiamaps-root /path/to/tibiamaps-data [--check]
 """
 
 from __future__ import annotations
@@ -36,6 +40,7 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 import convert_world_metadata as metadata
+import edron_rework as edron
 import otbm_reader
 import world_region_codec as codec
 import zstandard
@@ -527,6 +532,41 @@ class Replacer:
         self.collector(x, y, z, flags, house, zones, items)
 
 
+class Overrider:
+    """Feeds the base tiles to `inner`, swapping in the Edron rework's replacement tiles."""
+
+    def __init__(self, inner, replacements: dict):
+        self.inner, self.replacements = inner, replacements
+        self.seen = self.items_added = self.items_removed = 0
+
+    def __call__(self, x, y, z, flags, house, zones, items) -> None:
+        tile = self.replacements.get((x, y, z))
+        if tile is not None:
+            self.seen += 1
+            self.items_removed += len(items)
+            self.items_added += len(tile[3])
+            flags, house, zones, items = tile
+        self.inner(x, y, z, flags, house, zones, items)
+
+
+def apply_edron(collector: Collector, adds: dict) -> int:
+    """Add the Edron rework's tiles, each at a position that has no tile yet. Returns items."""
+    items = 0
+    for (x, y, z), tile in sorted(
+        adds.items(), key=lambda kv: (kv[0][2], kv[0][0], kv[0][1])
+    ):
+        sector = collector.sectors.get(
+            (z, x // codec.SECTOR_SIZE, y // codec.SECTOR_SIZE)
+        )
+        if sector and sector_slot(x, y) in sector[0]:
+            raise ConvertError(
+                f"edron tile ({x}, {y}, {z}) is added over an existing tile"
+            )
+        collector(x, y, z, *tile)
+        items += len(tile[3])
+    return items
+
+
 def replace_summary(row: dict | None, replacer: Replacer | None) -> dict:
     by_floor = replacer.by_floor if replacer else Counter()
     return {
@@ -635,6 +675,24 @@ def fill_summary(row: dict, raw: bytes, stats: dict) -> dict:
     return summary
 
 
+def edron_summary(plan, tibiamaps, sets, overrider, items_added) -> dict:
+    counts = {
+        "items_added": 0,
+        "replaced_items_added": 0,
+        "replaced_items_removed": 0,
+        "tiles_added": 0,
+        "tiles_replaced": 0,
+    }
+    if plan is None:
+        return {"applied": False, **counts}
+    return {
+        **edron.summarize(plan, tibiamaps, *sets),
+        "items_added": items_added,
+        "replaced_items_added": overrider.items_added,
+        "replaced_items_removed": overrider.items_removed,
+    }
+
+
 def zstd_info() -> dict:
     return {
         "backend": zstandard.backend,
@@ -649,10 +707,16 @@ def build(
     previous: list[dict] | None = None,
     terrain: dict[int, str] | None = None,
     land=None,
+    tibiamaps=None,
+    blocking: set[int] | None = None,
+    kinds: dict[int, str] | None = None,
+    yellow: set[int] | None = None,
 ) -> dict[str, bytes]:
     """Build every output; `previous` is the committed palette to extend, if any and
     `terrain` the committed Terrain keys of appearance-only ids and `land` the minimap land
-    test of a partial fill (default: the committed 15.30 minimap)."""
+    test of a partial fill (default: the committed 15.30 minimap). The Edron rework runs when
+    `tibiamaps` (decoded, default: the pinned files among `blobs`) is available, with the
+    `blocking` ids and floor-change `kinds` of the committed assets and objects."""
     if bindings is None:
         bindings = ITEM_BINDINGS.read_bytes()
     bound = bound_keys(bindings)
@@ -671,7 +735,28 @@ def build(
             ),
             grounds[0],
         )
-    facts = otbm_reader.read_tiles(blobs[OTBM], replacer or collector)
+    edron_key = fill_key(FILL[1])
+    plan = None
+    if tibiamaps is None and edron.tibiamaps_blob_key("bounds.json") in blobs:
+        tibiamaps = edron.decode_tibiamaps(blobs)
+    if tibiamaps is not None:
+        if edron_key not in blobs:
+            raise ConvertError("the Edron rework needs the summer-update-2025 member")
+        if blocking is None or yellow is None:
+            found = edron.appearance_ids()
+            blocking = found[0] if blocking is None else blocking
+            yellow = found[1] if yellow is None else yellow
+        kinds = edron.floor_change_kinds() if kinds is None else kinds
+        plan = edron.plan_rules(
+            edron.read_box(blobs[OTBM], edron.BASE_FLOORS),
+            edron.read_box(blobs[edron_key], edron.SUMMER_FLOORS),
+            tibiamaps,
+            blocking,
+        )
+    overrider = Overrider(replacer or collector, plan.replace if plan else {})
+    facts = otbm_reader.read_tiles(blobs[OTBM], overrider)
+    if plan and overrider.seen != len(plan.replace):
+        raise ConvertError("an Edron replacement has no base tile to replace")
     if facts.unknown_item_attrs or facts.unknown_tile_attrs:
         raise ConvertError(
             f"unknown OTBM attributes: items {dict(facts.unknown_item_attrs)}, "
@@ -694,8 +779,11 @@ def build(
         )
         fills.append(fill_summary(row, raw, stats))
         applied.append(row)
+    edron_items = apply_edron(collector, plan.add) if plan else 0
     collector.check()
     source = {**SOURCE, "fill": applied}
+    if plan:
+        source["edron"] = edron.PIN
     palette = build_palette(bound, collector.occurrences, previous, terrain)
     collector.remap({row["source_item_id"]: i for i, row in enumerate(palette)})
     declared = items_xml_ids(blobs[ITEMS_XML])
@@ -808,6 +896,9 @@ def build(
             },
         },
         "rejected_items": {"unsupported_attributes": len(collector.unsupported)},
+        "edron": edron_summary(
+            plan, tibiamaps, (blocking, kinds, yellow), overrider, edron_items
+        ),
         "replace": replace_summary(replace_row, replacer),
         "fill": {
             "items_added": sum(f["items_added"] for f in fills),
@@ -826,8 +917,12 @@ def build(
     return out
 
 
-def read_source(crystal_root: Path) -> dict[str, bytes]:
+def read_source(
+    crystal_root: Path, tibiamaps_root: Path | None = None
+) -> dict[str, bytes]:
     blobs = {}
+    if tibiamaps_root is not None:
+        blobs.update(edron.read_tibiamaps_root(tibiamaps_root))
     for row in SOURCE["files"]:
         data = (crystal_root / row["path"]).read_bytes()
         if hashlib.sha256(data).hexdigest() != row["sha256"]:
@@ -860,27 +955,49 @@ def extract_member(archive: bytes, name: str) -> bytes:
         return (Path(tmp) / name).read_bytes()
 
 
+def world_otbm_totals(totals: dict, summary: dict) -> dict:
+    """The `world.otbm` totals: the index totals minus every fill and rework change."""
+    fill = summary.get("fill", {})
+    replace = summary.get("replace", {})
+    rework = summary.get("edron", {})
+
+    def count(row: dict, key: str) -> int:
+        return row.get(key, 0)
+
+    return {
+        "items": totals["items"]
+        - count(fill, "items_added")
+        - count(replace, "items_added")
+        - count(rework, "items_added")
+        - count(rework, "replaced_items_added")
+        + count(replace, "items_removed")
+        + count(rework, "replaced_items_removed"),
+        "tiles": totals["tiles"]
+        - count(fill, "tiles_added")
+        - count(rework, "tiles_added"),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--crystal-root", type=Path, required=True)
+    parser.add_argument(
+        "--tibiamaps-root",
+        type=Path,
+        required=True,
+        help="directory holding the pinned tibiamaps files (see edron_rework.py)",
+    )
     parser.add_argument("--check", action="store_true", help="fail instead of writing")
     args = parser.parse_args()
     try:
         out = build(
-            read_source(args.crystal_root),
+            read_source(args.crystal_root, args.tibiamaps_root),
             previous=committed_palette(),
             terrain=terrain_keys(),
         )
         totals = json.loads(out[f"{DIRECTORY}/index.json"])["totals"]
         summary = json.loads(out[str(SUMMARY.relative_to(ROOT))])
-        fill, replace = summary["fill"], summary["replace"]
-        base = {
-            "items": totals["items"]
-            - fill["items_added"]
-            - replace["items_added"]
-            + replace["items_removed"],
-            "tiles": totals["tiles"] - fill["tiles_added"],
-        }
+        base = world_otbm_totals(totals, summary)
         if base != PINNED_TOTALS:
             raise ConvertError(
                 f"world.otbm totals {base} differ from the pinned source {PINNED_TOTALS}"

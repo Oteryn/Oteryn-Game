@@ -22,11 +22,30 @@ The owner asked for a handover to the next agent. State at handover:
 2. `maps.7z:summer-update-2025.otbm`: answered **2b** (owner). Imported as a partial fill:
    underground components that the base lacks (16,777 tiles on floors 8-15) plus the 151
    floor 2-6 tiles that the official minimap shows as land; the Edron underground (floors
-   8-12, box x33274-33456, y31786-31884, 27,359 tiles) is **deferred** as a cave rework, so a
-   fill-only mix does not combine two layouts. The underground cannot be proven by the
+   8-12, box x33274-33456, y31786-31884, 27,359 tiles) is excluded from that fill, so a
+   fill-only mix does not combine two layouts; owner decision 1a below reworks it. The underground cannot be proven by the
    official client map images (`minimap-*` and `satellite-*` in `content/assets/files/` hold
    floors 00-07 only); floor numbering is the same as OTS (07 is ground level), proven by the
    city temples and the Thalassara floor-7 fit.
+
+3. Edron underground: answered **1a** (owner). The floor-10 cave is imported from the summer
+   file and repaired with the player-recorded real-Tibia minimap (tibiamaps/tibia-map-data;
+   sha256-pinned in `source.edron`, files read from `--tibiamaps-root`, never committed;
+   evidence class reference-derived). `edron_rework.py` and the README have the exact rules.
+   **Edron z10 is imported and repaired; z8, z9 (except the rule 2 repair), z11 and z12 keep
+   the base**, as tibiamaps agrees with the base there. Counts: rule 1 3,982 filled, 699
+   replaced; rule 2 floor 9 761 added, 4 replaced, 379 rock, floor 10 262 added, 3
+   replaced, 135 rock; 5,519 tiles added and 706 replaced in all.
+   - The new floor-10 cave (3,534 tile main component) is **not reachable** from the surface
+     or from other floors: no floor change leads into it in the merged map.
+   - `unresolved_entrances` (tibiamaps markers without a floor-change item at the position or
+     one floor apart; none was invented), `[x, y, z]`: (33295, 31819, 9), (33433, 31821, 9),
+     (33341, 31880, 9), (33436, 31797, 10), (33441, 31797, 10), (33436, 31797, 11),
+     (33440, 31797, 11), (33441, 31797, 11), (33439, 31807, 11), (33439, 31808, 11).
+     The first is the summer file's floor change `1080` (33295, 31819, 9) down into the cave;
+     floor 9 keeps the base, which has no tile there, so it is the link to decide.
+   - Open for the owner or the item agent: place a floor-change item at (33295, 31819, 9)
+     (then the cave joins the base), or accept the cave as a sealed area for now.
 
 ## Research results (the session scratchpad is not kept)
 
@@ -61,7 +80,7 @@ The owner asked for a handover to the next agent. State at handover:
    - Nargor floors 4-6;
    - Upper Roshamuul floor 6;
    - Great Expedition floors 3-6;
-   - Edron floors 8-12 (deferred cave rework, decision 2b).
+   - Edron floors 8-12: done for z10 (decision 1a), the entrances above stay unresolved.
 3. Outside this task:
    - item B1b: 4 provisional `items.xml` ids plus id 99, owned by the item agent;
    - ladders, ropes and sewer grates: floor-change use rules, owned by the item/interactions
@@ -73,7 +92,10 @@ The owner asked for a handover to the next agent. State at handover:
 ## Working notes
 
 - Sources: `zimbadev/crystalserver` at `00ce02a5`. A blobless or sparse clone of
-  `data-global/world/` is enough. `maps.7z` needs `py7zr` from `requirements-regenerate.txt`.
+  `data-global/world/` is enough. `maps.7z` needs `py7zr` and the Edron rework Pillow, both
+  from `requirements-regenerate.txt`; the tibiamaps files (`bounds.json`,
+  `floor-09/10/11-map.png` and `-path.png` of `raw.githubusercontent.com/tibiamaps/tibia-map-data/main/data/`,
+  sha256 in `edron_rework.py`) are fetched by hand into a directory passed as `--tibiamaps-root`.
 - Lint with the CI version: `python3 -m ruff` 0.16.1 from `requirements-dev.txt`, run from
   the repository root. A plain `ruff` on PATH may be older. New scripts with a shebang need
   `chmod +x` (EXE001).
