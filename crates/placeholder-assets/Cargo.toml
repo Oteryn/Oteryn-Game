@@ -1,0 +1,16 @@
+[package]
+name = "oteryn-placeholder-assets"
+version.workspace = true
+description = "Repository-owned procedural placeholder atlas for the Oteryn client renderer"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "placeholder-assets"
+release-role = "production"
+
+[lints]
+workspace = true

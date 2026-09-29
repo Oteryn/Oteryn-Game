@@ -2,11 +2,19 @@
 use oteryn_foundation::ProcessGeneration;
 use std::fmt::{self, Display, Formatter};
 
+mod batch;
 mod resources;
 
 #[cfg(windows)]
+mod scene_gpu;
+#[cfg(windows)]
 mod windows;
 
+pub use batch::{
+    AtlasImage, BatchError, MAX_ATLAS_DIMENSION, MAX_BATCH_QUADS, MAX_VIEW_PIXELS,
+    QUAD_INSTANCE_BYTES, QuadInstance, SpriteBatch, TileBatch, TileCoord, TileView,
+    VERTICES_PER_QUAD, instance_bytes,
+};
 pub use resources::ResourceCache;
 
 #[cfg(windows)]
