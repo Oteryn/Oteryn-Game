@@ -11,7 +11,7 @@ pr: null
 allocation_comment: "#162 5895497246"
 base_branch: main
 branch: claude/spell-cast-composition-w2a
-base_sha: c91055f66dd2c5724f17e226c7b7da2430a1a914
+base_sha: c91055f66dd2c5724f17e226c7b7da2430a1a914  # main 48de3868 merged in before freeze
 head_sha: null  # the frozen head is the one in the FREEZE_SHA entry; a commit cannot hold its own SHA
 owner: "Oteryn: spell cast lane" (Claude Code, oteryn-hard-worker)
 created_at: 2026-09-29T19:00:00Z
@@ -28,8 +28,7 @@ owned_paths:
   - apps/game-server/src/content/activation.rs  # allocated; left unchanged
   - apps/game-server/src/ability/**  # allocated; left unchanged
   - docs/agents/tasks/archive/OTV2-20260929-spell-cast-composition-w2a.md
-  - docs/agents/tasks/active/OTV2-20260929-spell-cast-wire-w1.md  # closeout move
-  - docs/agents/tasks/archive/OTV2-20260929-spell-cast-wire-w1.md
+  - docs/agents/tasks/archive/OTV2-20260929-spell-cast-wire-w1.md  # closeout: main #1259 archived it; this adds merge_pr and merge_sha
 public_contracts:
   - docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto  # consumed, unchanged
 depends_on:
@@ -145,9 +144,11 @@ record_derived_matching_helper:
 ## Validation
 
 - `cargo fmt --all --check`; `cargo clippy --workspace --all-targets --quiet -- -D warnings`: pass.
-- `cargo test --quiet -p oteryn-game-server --lib`: 1037 passed, 0 failed, 2 ignored.
-- `cargo test --quiet -p oteryn-protocol-oteryn`: pass.
-- `python3 tools/agents/validate_governance.py`; `python3 tools/repository/validate_repository_policy.py`: pass.
+- `cargo test --quiet -p oteryn-game-server`: 9403 passed, 0 failed, 7 ignored (lib: 1021 passed, 2 ignored). The
+  PostgreSQL targets ran without a local PostgreSQL 17.6 and are left to CI.
+- `cargo test --quiet -p oteryn-protocol-oteryn`: 64 passed, 0 failed.
+- `python3 tools/agents/validate_governance.py`, `python -m unittest discover -s tools/agents/tests` (36) and
+  `python3 tools/repository/validate_repository_policy.py`: pass.
 
 ## Remaining for W2b
 

@@ -17,7 +17,7 @@ head_sha: 6b10381a04ea44ed9e63d85e24b87dd1bf3ebeae
 merge_sha: c91055f66dd2c5724f17e226c7b7da2430a1a914
 owner: "Oteryn: content" (Claude Code)
 created_at: 2026-09-29T16:58:00Z
-updated_at: 2026-09-29T20:00:00Z
+updated_at: 2026-09-29T18:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto
@@ -80,9 +80,8 @@ client (§9 step 3), `.github/**` and any `docs/architecture/**` text.
 Required (§8.1: protocol and security, independent exact-byte fixtures). The control plane triggers it on the
 frozen head.
 
-## Terminal evidence
+## Closeout
 
-- merged: PR #1254, head `6b10381a04ea44ed9e63d85e24b87dd1bf3ebeae`, squash merge
-  `c91055f66dd2c5724f17e226c7b7da2430a1a914` on protected `main`.
-- closeout: archived by the §9 step 2 composition task `OTV2-20260929-spell-cast-composition-w2a` (#162 allocation
-  5895497246), which consumes these codecs.
+- PR #1254 merged via Merge Queue: final head `6b10381a04ea44ed9e63d85e24b87dd1bf3ebeae`, merge commit `c91055f66dd2c5724f17e226c7b7da2430a1a914`.
+- Protected-main readback: all 7 files the merge changed are byte-identical between the final head and the merge commit.
+- Ownership released on merge. The record stayed in `tasks/active/` and turned `Agent governance` on `main` red; archived by the Work coordinator in a P0 archive batch.
