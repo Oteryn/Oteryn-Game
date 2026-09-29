@@ -76,7 +76,7 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D9 | A boss is a monster with the optional `bosstiary`, `reward_boss` and `reward_encounter`; arena, phases, timers, cooldowns, reward chest and combat-changing boss scripts belong to the referenced Encounter. | Canary/Crystal register bosses as ordinary monster types; the boss logic lives in quest scripts (e.g. Forgotten Knowledge `HealthForgotten`, boss-kill cooldowns). |
 | D10 | The importer resolves a monster spell name as Canary does: registered rune spell, then registered instant spell (case-insensitive), then built-in kind. The resolved script is recorded in the manifest. | `Monsters::deserializeSpell` calls `Spells::getSpellByName` before building a built-in kind; §8. |
 | D11 | Every monster spell is an `Ability` (+ `Effect`s, `Formula`) under `content/abilities/**`. A player spell or rune used by a monster is the one shared Ability; a monster-only script gets its own Ability keyed by the source spell name. The monster attack entry keeps interval, chance, range and its damage magnitude, which overrides the Ability formula. | `Combat::getCombatDamage` uses `Monster::getCombatValues` whenever the monster entry has a non-zero min/max; §8. |
-| D12 | Spell schema extensions are added in census order, each with a batch monster that needs it: area matrix with explicit centre and directional rotation; constant-tick DoT (count, interval, per-tick amount); attribute-modifier condition (skill/stat, percent or absolute); `Ability.variants` with a uniform pick; chain targeting (count, range, backtracking). The damage distribution is a world combat rule, not a per-formula field. | Census frequencies in §8. Canary draws all monster damage with `normal_random`; whether Tibia Global does the same is unproven, so the rule is an OTS hypothesis until checked. |
+| D12 | Spell schema extensions are added in census order, each with a batch monster that needs it: area matrix with explicit centre and directional rotation; constant-tick DoT (count, interval, per-tick amount); attribute-modifier condition (skill/stat, percent or absolute); `Ability.variants` with a uniform pick; chain targeting (further-creature count, range, backtracking; player-spell extensions in §8.6, S23). The damage distribution is a world combat rule, not a per-formula field. | Census frequencies in §8. Canary draws all monster damage with `normal_random`; whether Tibia Global does the same is unproven, so the rule is an OTS hypothesis until checked. |
 | D13 | A spell with custom logic becomes an `Ability` with a `native_behavior` key and its data parameters. Native behaviours are shared and parameterized by pattern (e.g. one path-chain behaviour with an element parameter), not one per source script. The content compiler rejects a key without an implementation. No Lua is admitted; an implementation is written only when a playable monster needs it, and until then the manifest row stays `unresolved_semantics`. | 44 custom-logic scripts cluster into recurring patterns (path chains, summon-N, cast-then-remove-self); §8. |
 | D14 | A spell reference that has no effect in Canary is recorded as `approved_omission`; when the reference-date wiki shows that attack, it is authored as an ordinary Ability from the wiki instead. | `energy beam` returns false for a non-player caster (4 monsters). |
 | D15 | Where the reference-date (the programme target date, D33) wiki differs from Canary, the wiki value replaces it. So far this is applied to mitigation, `pushable`, loot items missing in Canary and loot probabilities. Loot rate rule: use the highest-version `Loot Statistics` block at the cut (the largest-sample source; other sites such as Tibiopedia are cross-checks only); estimate = drops / kills rounded half-even to 1 ppm, with a 95% Wilson interval recorded. At 10 or more drops the estimate replaces the Canary probability; below 10 the Canary probability is kept and marked low confidence (an item missing in Canary is still added, marked low confidence). An item the infobox lists but the statistics block does not show keeps its Canary probability (probably added after that version). An ambiguous item name is resolved by the item page `itemid`. | The wiki tracks Tibia Global more closely than OTS sources. Batch 1 comparison: `samples/canary-47dfd51f/wiki-2026-07-28.json`. |
@@ -322,13 +322,20 @@ player in a protection zone (`combat.cpp` `canDoCombat`), so the only effect of 
 chain skips other creatures, such as player summons. Any other picker body stays unresolved. This
 resolves Quara Looter, Rootthing Bug Tracker, Mould Phantom and Rotten Golem.
 
-`Ability.chain` gained optional fields for player spells (spell rule S23, owner 2026-09-28):
-- `shape` (`sequential`/`fork`), `initial_range_tiles`, `damage_step_percent`;
-- the `ranged_monsters` filter.
+`Ability.chain` (D12) gained optional fields for player spells (spell rule S23, owner 2026-09-28; behaviour and
+sources in `OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md` §3-§5):
+- `shape`: `sequential` (default; each jump starts at the last creature hit) or `fork` (every further creature is
+  chosen within `range_tiles` of the first creature);
+- `initial_range_tiles`: search radius for the first creature of a cast without a target; absent means `range_tiles`;
+- `damage_step_percent`: integer; creature at step `i` gets `(100 + i * damage_step_percent)%` of the rolled value,
+  at least 0; absent means 0;
+- `target_filter` gained `ranged_monsters` (monsters that are not summons, not reward bosses and prefer a target
+  distance above 1), next to `players`.
 
-`max_targets` counts the further creatures after the first. This is what the stored Canary value already means:
-Canary hits that many creatures plus one. No monster uses the new fields, and the creature admission does not
-accept them yet (see `OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md`).
+`max_targets` counts the further creatures after the first, so one cast hits at most `1 + max_targets` creatures.
+This is what the stored Canary value already means (Canary hits the returned value plus one), so no monster data
+changes; the D12 wording "up to `max_targets` creatures" was one short. No monster uses the new fields, and the
+creature admission does not accept them yet.
 
 `area_damage_named_target` is probed like `heal_allies_in_area`. A `CALLBACK_PARAM_TARGETTILE` callback that, on each
 tile of the ability area, takes a fixed or rolled amount of health from the top creature through `Creature:addHealth`
