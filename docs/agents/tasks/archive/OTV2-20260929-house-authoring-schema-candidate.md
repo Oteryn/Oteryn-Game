@@ -58,8 +58,10 @@ Item identity is touched. Runtime House state stays out by the tree contract.
   for 975 houses, i.e. the tile in front of the door.
 - DERIVED: a local run of the wiki comparison on four Fandom pages agreed on rent, size,
   beds (supports official `size_sqm` over the engine value).
-- PENDING: TibiaWiki BR challenges agent containers; `house-tibiawiki-br-capture.yml`
-  captures it on the runner. Facts are committed after its first run.
+- DERIVED: TibiaWiki BR, captured on the runner by `house-tibiawiki-br-capture.yml` (head
+  `a6900ccb`): 916 of 963 pages joined by name; rent 898, size 885, beds 889 of 916 and
+  town 915/915 agree with the official values. Disagreements are mostly houses the 15.30
+  client lays out differently (Kazordoon barracks, Outlaw Camp); official values kept.
 
 ## Owner decisions (2026-09-29)
 

@@ -56,6 +56,14 @@ A local run against four Fandom pages joined on `houseid` and agreed on rent, si
 beds (4/4), which supports the official `size_sqm` over the engine value. The snapshot
 stays a CI artifact; the facts file may be committed from it.
 
+First runner capture (head `a6900ccb`, artifact
+`house-tibiawiki-br-snapshot-a6900ccbed77168436e8c2d6b86350c8e8f20c5f`): 963 pages with an
+infobox; no House id parameter, so 916 joined by name. Agreement with the official values:
+rent 898/916, `size_sqm` 885/916 (vs 183/995 for the engine), beds 889/916, town
+(`payrent`) 915/915. Most disagreements and the 47 unjoined pages (Lower/Upper Barracks,
+Outlaw Camp, Tunnel Gardens 10-12, ...) are Kazordoon and Thais/Carlin flats that the 15.30
+client lays out differently; the official client values are kept.
+
 ## Files
 
 | File | Purpose |
