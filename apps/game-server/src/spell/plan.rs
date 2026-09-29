@@ -1,12 +1,15 @@
 //! Hands a resolved cast to the Ability pipeline (GAME-ABILITY-01: one typed pipeline for every
 //! origin). Damage and heal become an [`EffectPlan`] for the owner commit; effects the Ability
 //! pipeline does not type yet (condition removal, conjure) are returned beside it, unchanged.
+//! A chain cast becomes one plan per creature hit, each its own occurrence resolving at the hit's
+//! delay.
 
 use crate::ability::{
     AbilityError, AbilityIntent, AbilityOccurrence, CalculationStage, CommitGroup, Effect,
     EffectPlan, ProposalSource,
 };
 
+use super::chain::TilePosition;
 use super::{CastResolution, ResolvedEffect, SpellDefinition};
 
 /// Calculation stages of a player cast, in the order the core ran them.
@@ -27,6 +30,8 @@ pub(crate) struct CastPlan {
 pub(crate) enum CastPlanError {
     /// A damage effect needs a resolved target.
     MissingTarget,
+    /// A chain cast needs [`chain_plans`]; a cast that does not chain needs [`effect_plan`].
+    WrongPlanKind,
     Ability(AbilityError),
 }
 
@@ -46,9 +51,75 @@ pub(crate) fn effect_plan(
     occurrence: AbilityOccurrence,
     owner_scope: &str,
 ) -> Result<CastPlan, CastPlanError> {
+    if !resolution.chain.is_empty() {
+        return Err(CastPlanError::WrongPlanKind);
+    }
+    plan(
+        spell,
+        &resolution.effects,
+        caster,
+        target,
+        occurrence,
+        owner_scope,
+    )
+}
+
+/// The plan of one creature a chain reaches.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ChainHitPlan {
+    /// Resolve this long after the cast (chain §3 step 9).
+    pub(crate) delay_micros: u64,
+    /// Tiles showing the spell's `chain_asset_binding` when this hit resolves (chain §3 step 10).
+    pub(crate) effect_tiles: Vec<TilePosition>,
+    pub(crate) plan: CastPlan,
+}
+
+/// Build the plans of an accepted chain cast, one per creature in hit order. Hit `n` is the
+/// occurrence `<occurrence id>/chain-<n>` with the cast's revisions.
+pub(crate) fn chain_plans(
+    spell: &SpellDefinition,
+    resolution: &CastResolution,
+    caster: &str,
+    occurrence: &AbilityOccurrence,
+    owner_scope: &str,
+) -> Result<Vec<ChainHitPlan>, CastPlanError> {
+    if resolution.chain.is_empty() {
+        return Err(CastPlanError::WrongPlanKind);
+    }
+    resolution
+        .chain
+        .iter()
+        .enumerate()
+        .map(|(index, hit)| {
+            let id = format!("{}/chain-{index}", occurrence.id().as_str());
+            let hit_occurrence = AbilityOccurrence::new(&id, occurrence.revisions().clone())?;
+            Ok(ChainHitPlan {
+                delay_micros: hit.hit.delay_micros,
+                effect_tiles: hit.hit.effect_tiles.clone(),
+                plan: plan(
+                    spell,
+                    &hit.effects,
+                    caster,
+                    Some(&hit.hit.actor),
+                    hit_occurrence,
+                    owner_scope,
+                )?,
+            })
+        })
+        .collect()
+}
+
+fn plan(
+    spell: &SpellDefinition,
+    resolved_effects: &[ResolvedEffect],
+    caster: &str,
+    target: Option<&str>,
+    occurrence: AbilityOccurrence,
+    owner_scope: &str,
+) -> Result<CastPlan, CastPlanError> {
     let mut effects = Vec::new();
     let mut side_effects = Vec::new();
-    for resolved in &resolution.effects {
+    for resolved in resolved_effects {
         match resolved {
             ResolvedEffect::Damage { magnitude, .. } if *magnitude > 0 => {
                 effects.push(Effect::damage(

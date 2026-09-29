@@ -11,6 +11,9 @@
 //! lowering of P3b.
 
 pub(crate) mod authoring;
+pub(crate) mod chain;
+#[cfg(test)]
+mod chain_tests;
 pub(crate) mod formula;
 pub(crate) mod plan;
 #[cfg(test)]
@@ -22,6 +25,7 @@ use std::fmt::{self, Display, Formatter};
 
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
+use chain::{ChainHit, ChainSpec, ChainStart, ChainWorld, pick_chain, step_value};
 pub(crate) use formula::{Formula, FormulaError, FormulaInputs};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -124,11 +128,27 @@ pub(crate) struct SpellDefinition {
     pub(crate) cooldown_micros: u64,
     pub(crate) groups: Vec<CooldownGroup>,
     pub(crate) needs_target: bool,
+    /// Cast at a target or, without one, in the looking direction (Canary `needCasterTargetOrDirection`).
+    pub(crate) target_or_direction: bool,
     pub(crate) self_target: bool,
     pub(crate) aggressive: bool,
     pub(crate) range_tiles: Option<u32>,
     pub(crate) base_power: Option<i64>,
     pub(crate) execution: Execution,
+    /// The ability hits a chain of creatures (D12, S23).
+    pub(crate) chain: Option<ChainSpec>,
+}
+
+impl SpellDefinition {
+    /// Whether a cast chains: a chain spell cast by direction, without a target, hits the tile in
+    /// front and does not chain (Canary `lightning.lua`).
+    pub(crate) fn chains(&self, has_target: bool) -> bool {
+        self.chain.is_some() && (has_target || !self.target_or_direction)
+    }
+
+    fn takes_target(&self) -> bool {
+        self.needs_target || self.target_or_direction
+    }
 }
 
 /// Two admitted spells claim the same words, rune item or key.
@@ -289,6 +309,10 @@ pub(crate) enum CastRejection {
     VocationCannotUse,
     PremiumRequired,
     TargetRequired,
+    /// A chain cast found no first creature (chain §3 step 2); nothing is spent.
+    NoChainTarget,
+    /// A chain cast was resolved without the world facts it needs ([`resolve_chain_cast`]).
+    ChainWorldRequired,
     TimeOverflow,
     Formula(FormulaError),
 }
@@ -312,6 +336,8 @@ impl Display for CastRejection {
             Self::VocationCannotUse => formatter.write_str("the vocation cannot use this spell"),
             Self::PremiumRequired => formatter.write_str("a premium account is required"),
             Self::TargetRequired => formatter.write_str("the spell needs a target"),
+            Self::NoChainTarget => formatter.write_str("no valid creature is in range"),
+            Self::ChainWorldRequired => formatter.write_str("a chain cast needs the world facts"),
             Self::TimeOverflow => formatter.write_str("cooldown time overflow"),
             Self::Formula(error) => write!(formatter, "formula: {error}"),
         }
@@ -342,12 +368,22 @@ pub(crate) enum ResolvedEffect {
     },
 }
 
+/// One creature of a chain cast and the spell's effects on it, scaled by its step.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ChainHitResolution {
+    pub(crate) hit: ChainHit,
+    pub(crate) effects: Vec<ResolvedEffect>,
+}
+
 /// The outcome of an accepted cast; nothing is applied yet.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CastResolution {
     pub(crate) mana_spent: u32,
     pub(crate) soul_spent: u32,
+    /// Effects of a cast that does not chain.
     pub(crate) effects: Vec<ResolvedEffect>,
+    /// Creatures of a chain cast in hit order, each with its own effects; empty otherwise.
+    pub(crate) chain: Vec<ChainHitResolution>,
     pub(crate) cooldowns: Cooldowns,
 }
 
@@ -362,12 +398,56 @@ pub(crate) fn mana_cost(spell: &SpellDefinition, caster: &CasterState) -> u32 {
 }
 
 /// Check and resolve one cast at `now`. `draw(minimum, maximum)` is the world damage distribution.
+/// A cast that chains needs [`resolve_chain_cast`].
 pub(crate) fn resolve_cast(
     spell: &SpellDefinition,
     caster: &CasterState,
     cooldowns: &Cooldowns,
     now: SemanticTimeMicros,
     has_target: bool,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<CastResolution, CastRejection> {
+    if spell.chains(has_target) {
+        return Err(CastRejection::ChainWorldRequired);
+    }
+    resolve(spell, caster, cooldowns, now, has_target, None, draw)
+}
+
+/// [`resolve_cast`] for any spell, with the world facts a chain reads (chain §3). The cast checks
+/// run first; a chain with no first creature then fails the cast before anything is spent. Each
+/// creature hit draws its own value (Canary `doCombat` per chain target), scaled by its step.
+pub(crate) fn resolve_chain_cast(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    world: &dyn ChainWorld,
+    start: ChainStart,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<CastResolution, CastRejection> {
+    // A spell that takes no target starts from the attacked or the nearest creature (§3 step 1).
+    let start = ChainStart {
+        target: start.target.filter(|_| spell.takes_target()),
+        ..start
+    };
+    resolve(
+        spell,
+        caster,
+        cooldowns,
+        now,
+        start.target.is_some(),
+        Some((world, start)),
+        draw,
+    )
+}
+
+fn resolve(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    has_target: bool,
+    world: Option<(&dyn ChainWorld, ChainStart)>,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<CastResolution, CastRejection> {
     // Order of Canary Spell::playerSpellCheck (group, spell, secondary group cooldowns first).
@@ -419,6 +499,20 @@ pub(crate) fn resolve_cast(
     if spell.needs_target && !has_target {
         return Err(CastRejection::TargetRequired);
     }
+    let hits = match (&spell.chain, world) {
+        (Some(chain), Some((world, start))) if spell.chains(has_target) => {
+            let target_range = spell.range_tiles.unwrap_or(chain.initial_range_tiles);
+            let hits = pick_chain(chain, world, start, target_range);
+            if hits.is_empty() {
+                return Err(CastRejection::NoChainTarget);
+            }
+            hits
+        }
+        (Some(_), None) if spell.chains(has_target) => {
+            return Err(CastRejection::ChainWorldRequired);
+        }
+        _ => Vec::new(),
+    };
     let inputs = FormulaInputs {
         level: caster.level,
         magic_level: caster.magic_level,
@@ -428,23 +522,40 @@ pub(crate) fn resolve_cast(
         attack_factor: caster.attack_factor,
         shielding_skill: caster.shielding_skill,
     };
-    let effects = match &spell.execution {
+    let resolve_effects = |draw: &mut dyn FnMut(i64, i64) -> i64| match &spell.execution {
         Execution::Conjure {
             reagent,
             result,
             count,
-        } => {
-            vec![ResolvedEffect::Conjure {
-                reagent: *reagent,
-                result: *result,
-                count: *count,
-            }]
-        }
+        } => Ok(vec![ResolvedEffect::Conjure {
+            reagent: *reagent,
+            result: *result,
+            count: *count,
+        }]),
         Execution::Effects(effects) => effects
             .iter()
             .map(|effect| resolve_effect(effect, &inputs, draw))
-            .collect::<Result<_, _>>()
-            .map_err(CastRejection::Formula)?,
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(CastRejection::Formula),
+    };
+    let step_percent = spell
+        .chain
+        .as_ref()
+        .map_or(0, |chain| chain.damage_step_percent);
+    let (effects, chain) = if hits.is_empty() {
+        (resolve_effects(draw)?, Vec::new())
+    } else {
+        let chain = hits
+            .into_iter()
+            .map(|hit| {
+                let effects = resolve_effects(draw)?
+                    .into_iter()
+                    .map(|effect| scale(effect, hit.step, step_percent))
+                    .collect();
+                Ok(ChainHitResolution { hit, effects })
+            })
+            .collect::<Result<Vec<_>, CastRejection>>()?;
+        (Vec::new(), chain)
     };
     let mut after = cooldowns.clone();
     let ready = |delay: u64| {
@@ -463,8 +574,26 @@ pub(crate) fn resolve_cast(
         mana_spent: mana,
         soul_spent: spell.soul,
         effects,
+        chain,
         cooldowns: after,
     })
+}
+
+/// A chain step scales the rolled damage or heal value (chain §3 step 8; D12 rounding).
+fn scale(effect: ResolvedEffect, step: u32, step_percent: i32) -> ResolvedEffect {
+    match effect {
+        ResolvedEffect::Damage {
+            damage_type,
+            magnitude,
+        } => ResolvedEffect::Damage {
+            damage_type,
+            magnitude: step_value(magnitude, step, step_percent),
+        },
+        ResolvedEffect::Heal { magnitude } => ResolvedEffect::Heal {
+            magnitude: step_value(magnitude, step, step_percent),
+        },
+        other => other,
+    }
 }
 
 fn check_group(

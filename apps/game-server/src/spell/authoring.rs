@@ -9,6 +9,7 @@ use std::fmt::{self, Display, Formatter};
 
 use serde_json::Value;
 
+use super::chain::{ChainShape, ChainSpec};
 use super::formula::{Binary, Expression, Extremum, Formula, Input, MAX_EXPRESSION_DEPTH, Unary};
 use super::{Carrier, CooldownGroup, Execution, ManaCost, SpellDefinition, SpellEffect, Vocation};
 
@@ -149,6 +150,7 @@ pub(crate) fn spell_from_bundle(
         .map(|_| number(targeting, "range_tiles"))
         .transpose()?;
     let execution = field(spell, "execution")?;
+    let mut chain = None;
     let execution = if let Some(conjure) = execution.get("conjure") {
         Execution::Conjure {
             reagent: conjure.get("reagent").map(item_id).transpose()?,
@@ -156,10 +158,10 @@ pub(crate) fn spell_from_bundle(
             count: number(conjure, "count")?,
         }
     } else if let Some(ability) = execution.get("ability") {
-        Execution::Effects(ability_effects(
-            reference_key(ability, "Ability")?,
-            dependencies,
-        )?)
+        let (effects, ability_chain) =
+            ability_effects(reference_key(ability, "Ability")?, dependencies)?;
+        chain = ability_chain;
+        Execution::Effects(effects)
     } else {
         return fail("the execution is a native behaviour, which this core does not resolve");
     };
@@ -176,28 +178,29 @@ pub(crate) fn spell_from_bundle(
         cooldown_micros: u64::from(number(spell, "cooldown_ms")?) * 1000,
         groups,
         needs_target: flag(targeting, "needs_target")?,
+        target_or_direction: targeting.get("target_or_direction").is_some()
+            && flag(targeting, "target_or_direction")?,
         self_target: flag(targeting, "self_target")?,
         aggressive: flag(targeting, "aggressive")?,
         range_tiles,
         base_power,
         execution,
+        chain,
     })
 }
 
-fn ability_effects(key: &str, dependencies: &Value) -> Result<Vec<SpellEffect>, AuthoringError> {
+/// The effects of an Ability and its chain, if any.
+type AbilityEffects = (Vec<SpellEffect>, Option<ChainSpec>);
+
+fn ability_effects(key: &str, dependencies: &Value) -> Result<AbilityEffects, AuthoringError> {
     let ability = find(field(dependencies, "abilities")?, key)?;
     if ability.get("variants").is_some() {
         return fail(format!(
             "{key} picks random variants, which this core does not resolve"
         ));
     }
-    // A chain would otherwise be cast on the first creature only (OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md).
-    if ability.get("chain").is_some() {
-        return fail(format!(
-            "{key} hits a chain of creatures, which this core does not resolve yet"
-        ));
-    }
-    field(ability, "effects")?
+    let chain = ability.get("chain").map(chain_spec).transpose()?;
+    let effects = field(ability, "effects")?
         .as_array()
         .ok_or_else(|| AuthoringError("effects is not an array".into()))?
         .iter()
@@ -223,7 +226,76 @@ fn ability_effects(key: &str, dependencies: &Value) -> Result<Vec<SpellEffect>, 
                 },
             })
         })
-        .collect()
+        .collect::<Result<_, AuthoringError>>()?;
+    Ok((effects, chain))
+}
+
+/// `Ability.chain` of a player spell (D12, S23). Backtracking and the target filters are not
+/// resolved: no plain player chain spell uses them, and the support chains need a per-creature
+/// behaviour of their own (chain §4.2).
+fn chain_spec(chain: &Value) -> Result<ChainSpec, AuthoringError> {
+    const FIELDS: [&str; 8] = [
+        "max_targets",
+        "range_tiles",
+        "backtracking",
+        "chain_asset_binding",
+        "target_filter",
+        "shape",
+        "initial_range_tiles",
+        "damage_step_percent",
+    ];
+    let object = chain
+        .as_object()
+        .ok_or_else(|| AuthoringError("chain is not an object".into()))?;
+    if let Some(unknown) = object.keys().find(|key| !FIELDS.contains(&key.as_str())) {
+        return fail(format!("unknown chain field {unknown}"));
+    }
+    if flag(chain, "backtracking")? {
+        return fail("a backtracking chain is not resolved by this core");
+    }
+    if chain.get("target_filter").is_some() {
+        return fail(
+            "a chain target filter needs a per-creature behaviour, which has no owner yet",
+        );
+    }
+    let positive = |name: &str| match number(chain, name)? {
+        0 => fail(format!("chain {name} must be positive")),
+        value => Ok(value),
+    };
+    let range_tiles = positive("range_tiles")?;
+    let shape = match chain
+        .get("shape")
+        .map(|_| text(chain, "shape"))
+        .transpose()?
+    {
+        None | Some("sequential") => ChainShape::Sequential,
+        Some("fork") => ChainShape::Fork,
+        Some(other) => return fail(format!("unknown chain shape {other}")),
+    };
+    let damage_step_percent = match chain.get("damage_step_percent") {
+        None => 0,
+        Some(value) => value
+            .as_i64()
+            .filter(|percent| (-100..=100).contains(percent))
+            .and_then(|percent| i32::try_from(percent).ok())
+            .ok_or_else(|| {
+                AuthoringError("chain damage_step_percent is not in -100..=100".into())
+            })?,
+    };
+    Ok(ChainSpec {
+        max_targets: positive("max_targets")?,
+        range_tiles,
+        initial_range_tiles: match chain.get("initial_range_tiles") {
+            None => range_tiles,
+            Some(_) => positive("initial_range_tiles")?,
+        },
+        shape,
+        damage_step_percent,
+        asset_binding: chain
+            .get("chain_asset_binding")
+            .map(|_| text(chain, "chain_asset_binding").map(str::to_owned))
+            .transpose()?,
+    })
 }
 
 fn effect_formula(effect: &Value, dependencies: &Value) -> Result<Formula, AuthoringError> {
