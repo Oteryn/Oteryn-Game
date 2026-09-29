@@ -103,6 +103,10 @@ persistence review.
     4. §4.6: the death composite runs under one fence and is retried and reconciled by the death
        occurrence; an empty loss is skipped.
     5. An implementation brief and the before-freeze checklist (§9) are added.
+    6. Read-only `oteryn-hard-worker` self-review of the complete draft: its material finding (a
+       flush found by revision could be an earlier checkpoint) is fixed by the `death_flush` cause
+       and typed reference; per-cause direction CHECKs, the advisory lock, the stance prune
+       shape, the guard order, growth measurement and the retry binding are added.
   - Re-review of the successor head goes through the control plane.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
