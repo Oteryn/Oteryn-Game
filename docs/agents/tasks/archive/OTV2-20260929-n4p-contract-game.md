@@ -10,12 +10,12 @@ base_branch: main
 branch: claude/n4p-contract-game
 pr: 1291
 base_sha: 50d75c6573344be02984b38ea79e32fc9a9caf1f
-head_sha: 9e1616fe8efb9e56fe3b3f0649e958660ea91673
+head_sha: 1f782b4b4dac857afa19babe0dcc360029ea3704
 final_head_sha: null
 final_head_frozen_at: null
 owner: "N4P-CONTRACT design writer (Claude Code)"
 created_at: 2026-09-29T23:00:00Z
-updated_at: 2026-09-29T23:50:00Z
+updated_at: 2026-09-30T00:45:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md
@@ -35,7 +35,7 @@ external_repositories:
   - repository: Oteryn/Oteryn-Platform
     pr: 1420
     branch: claude/n4p-native-gateway-contract
-    frozen_head: 050df7491852d40e9d19f23dad38fc5d6b1b4268
+    frozen_head: 892d640d7dbf5497811901d250d384b19e639556
 ```
 
 ## Outcome
@@ -43,10 +43,10 @@ external_repositories:
 Design-only contract candidates for native login (ADR-0020 §7 N4-P and N4), acceptance by the architect and the owner (#162 Q15a):
 
 - Platform `docs/contracts/OTERYN_V2_NATIVE_GATEWAY_LOGIN_CONTRACT.md` (Oteryn/Oteryn-Platform PR #1420): native `/v1/login`, native ticket redemption to canonical AccountId, Character selection over the Game projection, route selection over NativeTopologyRegistry and reported runtime status, FND-04 grant issuance, signing-key custody, `attempt_ref` idempotency, error mapping, rate limits, Canary-only list, unknowns U1–U14.
-- Game `OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md` (Q16b): the node reports its committed readiness publication, revisions and gameplay endpoint over the existing `native_admission_source` mTLS client, with heartbeat.
-- Game `OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md` (Q17a): per-account snapshot push with `(epoch, revision)` ordering and a transactional outbox, consistent with `CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md`.
+- Game `OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md` (Q16b): the node reports its committed readiness publication and revisions (no endpoint; the World Registry owns the route) with a heartbeat; `oteryn-game-ops` reports each assignment so Platform binds node reports to the ownership authority; `assignment_epoch` resets after a restore; a separate client certificate per purpose.
+- Game `OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md` (Q17a): per-account snapshot push from Character Authority hosts with `(epoch, revision)` ordering, a transactional outbox, a liveness watermark (issuance fails closed when stale) and a full resync on epoch raise, consistent with `CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md`; push accepted for Q18a internal builds, release choice push-with-bound vs pull.
 - Lock entry `OTV2-20260929-N4P-NATIVE-GATEWAY-LOGIN` in `PENDING_CANONICAL_MERGE`, pinning the Platform path, PR #1420, frozen head and file digest as pending evidence only.
-- ADR-0020 factual notes: the "#1083" batch-partner reference is wrong; pointer from N4-P to the Platform candidate.
+- ADR-0020 factual notes: the "#1083" batch-partner reference is wrong (#1083 is the merged capture tool; #1275 carried N5 and the #1249 CodeQL bump); pointer from N4-P to the Platform candidate.
 
 Q18a is recorded only as an internal-build allowance in the scope of the Platform contract and in the lock entry note.
 
@@ -55,7 +55,7 @@ Q18a is recorded only as an internal-build allowance in the scope of the Platfor
 - PROVEN: FND-04 profile claims and error subset (`FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md`, `FND-04A_AUTHORITY_FRESH_ADMISSION_CONTRACT.md` §11); node readiness publication fields (`apps/game-server/src/node/serve.rs`, node-boot decision D3/D5); mTLS client shape (`native_admission_source`).
 - PROVEN (Platform `main@db9ce970`): ticket issuance requires a Canary binding today; `identities.account_id` UUIDv7 and `native_security_generation` exist; `NativeTopologyRegistry` is testing/preproduction only; `NativeSigningTrustRegistry` holds public keys only.
 - DERIVED: deterministic Ed25519 re-signing gives byte-identical retries without storing tokens.
-- UNKNOWN: Platform U1–U14; Game U-RS1–U-RS4 and U-LC1–U-LC5.
+- UNKNOWN: Platform U1–U18; Game U-RS1–U-RS5 and U-LC1–U-LC6.
 
 ## High-risk authority/recovery qualification
 
@@ -75,6 +75,6 @@ Code, migrations, workflows, `RESOURCE_LIMITS_REGISTRY.json` entries (proposed i
 ## Closeout
 
 - Validation: `python tools/agents/validate_governance.py` PASS; `python tools/repository/validate_repository_policy.py` PASS; `python -m unittest discover -s tools/agents/tests` PASS; `git diff --check` clean.
-- Review: not requested by this worker; review packet returned to the lead.
+- Review: independent security/architecture review round 1 on `1f782b4b` (Game) and `050df749` (Platform) returned FIX. The Material findings (route owned by the World Registry; identity per purpose) and all evidence gaps and hardening items were fixed in one push per repository. Re-review is returned to the lead.
 - Merge commit/result: squash merge of #1291.
 - Follow-ups: after Platform PR #1420 merges, set the lock entry to `LOCKED` with the merge commit and digest; resource-limit registry entries; implementation lanes per #162 plan step 2.

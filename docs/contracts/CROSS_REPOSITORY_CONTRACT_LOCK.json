@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T23:45:00Z",
+  "updated_at": "2026-09-30T00:45:00Z",
   "policy": {
     "canonical_revisions_must_be_merged": true,
     "mutable_pr_heads_are_canonical": false,
@@ -165,8 +165,8 @@
       "pending_pull_request": 1420,
       "pending_pull_request_repository": "Oteryn/Oteryn-Platform",
       "pending_contract_path": "docs/contracts/OTERYN_V2_NATIVE_GATEWAY_LOGIN_CONTRACT.md",
-      "pending_head_commit": "050df7491852d40e9d19f23dad38fc5d6b1b4268",
-      "pending_contract_file_sha256": "8e62204c9a80831ca83e378cb95c934d872eeb6cc902c392fb2bbd00185bd32d",
+      "pending_head_commit": "892d640d7dbf5497811901d250d384b19e639556",
+      "pending_contract_file_sha256": "3e0e56f4536ba609144835115cb2a71b273e019511fe1727ece134c3f21066cd",
       "pending_head_is_canonical": false,
       "contract_status": "CANDIDATE_ACCEPTANCE_BY_ARCHITECT_AND_OWNER_REQUIRED",
       "governing_issues": [
