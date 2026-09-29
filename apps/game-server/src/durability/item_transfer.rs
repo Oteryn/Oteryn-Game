@@ -868,7 +868,7 @@ struct Reservation {
     work_units_used: u8,
 }
 
-fn scope_of(fence: &CurrentCharacterItemFence) -> Result<(WorldId, ChannelId)> {
+pub(crate) fn scope_of(fence: &CurrentCharacterItemFence) -> Result<(WorldId, ChannelId)> {
     match fence.runtime_scope {
         RuntimeScopeRefV1::Channel {
             world_id,
@@ -878,28 +878,35 @@ fn scope_of(fence: &CurrentCharacterItemFence) -> Result<(WorldId, ChannelId)> {
     }
 }
 
-/// The complete current fence, the binding checks, the `character_root` row
-/// lock, the authoritative before-state and the D80-D83 plan, in the XP
-/// writer's lock order. Writes nothing.
-async fn admit(
+/// The complete current Character item fence in the XP writer's lock order,
+/// shared by every CommandRef-keyed Character item transaction (B3-1
+/// TRANSFER, CHEST-1 reward-claim MINT): the CommandRef belongs to the fenced
+/// GameSession, the cause is keyed to the fenced Character and the fenced
+/// scope is the reserved one; then the reconnect-session row, the
+/// runtime-scope assignment and current node incarnation, the admission
+/// guards, and finally the `character_root` row lock (never an UPDATE, so
+/// CharacterRevision stays unchanged). `false` means the fence rejected.
+/// Writes nothing.
+pub(crate) async fn character_item_fence_is_current(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
-    request: &ItemTransferRequest,
-    reservation: &Reservation,
-) -> Pass<Admitted> {
-    let (world_id, channel_id) = match scope_of(fence) {
-        Ok(scope) => scope,
-        Err(error) => return Ok(Err(error)),
+    command: CommandRef,
+    reserved_character_id: CharacterId,
+    reserved_world_id: [u8; 16],
+    reserved_channel_id: [u8; 16],
+) -> std::result::Result<bool, DurabilityError> {
+    let Ok((world_id, channel_id)) = scope_of(fence) else {
+        return Ok(false);
     };
     // Binding: the CommandRef belongs to the fenced GameSession, the cause is
     // keyed to the fenced Character and the fenced scope is the reserved one.
-    if request.command.game_session_id() != fence.game_session_id
-        || reservation.character_id != fence.character_id
-        || reservation.world_id != *world_id.as_bytes()
-        || reservation.channel_id != *channel_id.as_bytes()
+    if command.game_session_id() != fence.game_session_id
+        || reserved_character_id != fence.character_id
+        || reserved_world_id != *world_id.as_bytes()
+        || reserved_channel_id != *channel_id.as_bytes()
     {
-        return Ok(Err(ItemTransferError::AuthorityRejected));
+        return Ok(false);
     }
     let session = sqlx::query(
         "SELECT account_id::text FROM game_durability_reconnect_sessions \
@@ -925,7 +932,7 @@ async fn admit(
     .fetch_optional(&mut **tx)
     .await?;
     let Some(session) = session else {
-        return Ok(Err(ItemTransferError::AuthorityRejected));
+        return Ok(false);
     };
     let account_text: String = session.try_get("account_id")?;
 
@@ -949,7 +956,7 @@ async fn admit(
     .fetch_optional(&mut **tx)
     .await?;
     if assignment.is_none() || !prove_current_incarnation(tx, node).await? {
-        return Ok(Err(ItemTransferError::AuthorityRejected));
+        return Ok(false);
     }
 
     let guards_ok: bool = sqlx::query_scalar(
@@ -980,7 +987,7 @@ async fn admit(
     .fetch_one(&mut **tx)
     .await?;
     if !guards_ok {
-        return Ok(Err(ItemTransferError::AuthorityRejected));
+        return Ok(false);
     }
 
     // Per-Character serialization: a row lock, never an UPDATE, so the 0009
@@ -993,10 +1000,40 @@ async fn admit(
     .fetch_optional(&mut **tx)
     .await?;
     let Some(root) = root else {
-        return Ok(Err(ItemTransferError::AuthorityRejected));
+        return Ok(false);
     };
     if root.try_get::<String, _>("account_id")? != account_text
         || uuid_text(root.try_get("world_id")?)? != *world_id.as_bytes()
+    {
+        return Ok(false);
+    }
+    Ok(true)
+}
+
+/// The complete current fence, the binding checks, the `character_root` row
+/// lock, the authoritative before-state and the D80-D83 plan, in the XP
+/// writer's lock order. Writes nothing.
+async fn admit(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    request: &ItemTransferRequest,
+    reservation: &Reservation,
+) -> Pass<Admitted> {
+    let (world_id, channel_id) = match scope_of(fence) {
+        Ok(scope) => scope,
+        Err(error) => return Ok(Err(error)),
+    };
+    if !character_item_fence_is_current(
+        tx,
+        node,
+        fence,
+        request.command,
+        reservation.character_id,
+        reservation.world_id,
+        reservation.channel_id,
+    )
+    .await?
     {
         return Ok(Err(ItemTransferError::AuthorityRejected));
     }
@@ -1101,7 +1138,7 @@ async fn load_source(
     }))
 }
 
-async fn load_slot(
+pub(crate) async fn load_slot(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character_id: CharacterId,
 ) -> std::result::Result<Option<InventoryItem>, DurabilityError> {
@@ -1127,7 +1164,7 @@ async fn load_slot(
 
 /// Direct entries of `parent`, newest first; bounded by the registered
 /// container ceiling (a larger stored set is invalid state).
-async fn load_entries(
+pub(crate) async fn load_entries(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     parent: [u8; 16],
 ) -> std::result::Result<Vec<BackpackEntry>, DurabilityError> {
@@ -1163,7 +1200,7 @@ async fn load_entries(
         .collect()
 }
 
-fn decode_definition(
+pub(crate) fn decode_definition(
     row: &sqlx::postgres::PgRow,
 ) -> std::result::Result<TypedDefinitionRef, DurabilityError> {
     Ok(TypedDefinitionRef {
@@ -1173,12 +1210,14 @@ fn decode_definition(
     })
 }
 
-fn decode_quantity(row: &sqlx::postgres::PgRow) -> std::result::Result<u32, DurabilityError> {
+pub(crate) fn decode_quantity(
+    row: &sqlx::postgres::PgRow,
+) -> std::result::Result<u32, DurabilityError> {
     u32::try_from(row.try_get::<i64, _>("quantity")?)
         .map_err(|_| DurabilityError::InvalidStoredState)
 }
 
-fn definition_message(value: &TypedDefinitionRef) -> OneItemTypedDefinitionRevisionV1 {
+pub(crate) fn definition_message(value: &TypedDefinitionRef) -> OneItemTypedDefinitionRevisionV1 {
     OneItemTypedDefinitionRevisionV1 {
         family: value.family.clone(),
         production_key: value.production_key.clone(),
@@ -1186,7 +1225,7 @@ fn definition_message(value: &TypedDefinitionRef) -> OneItemTypedDefinitionRevis
     }
 }
 
-fn entry_message(position: ContainerEntryPosition) -> OneItemContainerEntryV1 {
+pub(crate) fn entry_message(position: ContainerEntryPosition) -> OneItemContainerEntryV1 {
     OneItemContainerEntryV1 {
         parent_item_instance_id: position.parent_item_instance_id.to_vec(),
         placement_ordinal: position.placement_ordinal,
@@ -1615,7 +1654,7 @@ fn decode_receipt(
     })
 }
 
-fn validate_facts(value: &ItemDefinitionFacts) -> Result<()> {
+pub(crate) fn validate_facts(value: &ItemDefinitionFacts) -> Result<()> {
     mint_audit::check_technical_text(&value.definition.family)?;
     mint_audit::check_content_key(&value.definition.production_key)?;
     mint_audit::check_content_key(&value.definition.revision_ref)?;
@@ -1640,14 +1679,14 @@ fn validate_request(request: &ItemTransferRequest) -> Result<()> {
     Ok(())
 }
 
-fn push_text(out: &mut Vec<u8>, value: &[u8]) -> Result<()> {
+pub(crate) fn push_text(out: &mut Vec<u8>, value: &[u8]) -> Result<()> {
     let length = u16::try_from(value.len()).map_err(|_| ItemTransferError::InvalidInput)?;
     out.extend_from_slice(&length.to_be_bytes());
     out.extend_from_slice(value);
     Ok(())
 }
 
-fn push_facts(out: &mut Vec<u8>, value: &ItemDefinitionFacts) -> Result<()> {
+pub(crate) fn push_facts(out: &mut Vec<u8>, value: &ItemDefinitionFacts) -> Result<()> {
     push_text(out, value.definition.family.as_bytes())?;
     push_text(out, value.definition.production_key.as_bytes())?;
     push_text(out, value.definition.revision_ref.as_bytes())?;

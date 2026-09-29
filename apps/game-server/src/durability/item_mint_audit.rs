@@ -153,20 +153,24 @@ pub struct OneItemMintV1 {
     pub before_semantically_absent: bool,
 }
 
-/// `mint` (tag 2) and the B3 `transfer` (tag 3, [`super::item_transfer_audit`]).
+/// `mint` (tag 2), the B3 `transfer` (tag 3, [`super::item_transfer_audit`])
+/// and the CHEST-1 `reward_claim_mint` (tag 4,
+/// [`super::reward_claim_mint_audit`]).
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum OneItemOperationV1 {
     #[prost(message, tag = "2")]
     Mint(OneItemMintV1),
     #[prost(message, tag = "3")]
     Transfer(super::item_transfer_audit::OneItemTransferV1),
+    #[prost(message, tag = "4")]
+    RewardClaimMint(super::reward_claim_mint_audit::OneItemRewardClaimMintV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2, 3")]
+    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4")]
     pub operation: Option<OneItemOperationV1>,
 }
 
