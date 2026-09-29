@@ -4,10 +4,10 @@
 task_id: OTV2-20260929-spell-cast-wire-w1
 title: Spell cast wire and own-actor vitals - registries and codecs (§9 step 1, SPELL-D8 H-3)
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1254
 allocation_comment: "#162 5894588548"
 base_branch: main
 branch: claude/spell-cast-wire-w1
@@ -15,7 +15,7 @@ base_sha: 37a06b5cd45c33cab961652882b074b23a09dd1f
 head_sha: null
 owner: "Oteryn: content" (Claude Code)
 created_at: 2026-09-29T16:58:00Z
-updated_at: 2026-09-29T16:58:00Z
+updated_at: 2026-09-29T17:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto
