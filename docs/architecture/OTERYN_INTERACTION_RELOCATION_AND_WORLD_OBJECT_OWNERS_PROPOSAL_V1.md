@@ -2225,14 +2225,20 @@ comment 5875958040, both "as Global":
 
 ## 10. Created local objects: runtime placements at `death_position` (OD8) and pre-authored `CREATE` teleporters (OD9)
 
-- DecisionStatus: CANDIDATE, pending independent review. The owner decided on issue #162
-  (comment 5879299188, "OWNER DECISIONS: Content/World batch", 2026-09-28) that open decision 8 is
-  designed now (item 1), that the open decision 9 teleporters are admitted as a §9 transform from a
-  synthesized absent state (item 2), and that a boss kill while a teleporter is open is a no-op
-  (item 3). The standing rule (item 6) applies: this section follows the CrystalServer/Canary
-  behaviour where it is clear, and lists each deviation as an owner question at the end. Nothing
-  here is implemented; `encounter_map_item.rs` keeps rejecting both shapes until this section is
-  accepted.
+- DecisionStatus: split by part (2026-09-29, #162 allocation amendment 5884393736).
+  - **§10.2 and §10.4 (OD9): ACCEPTED.** #1182 was merged with no P1 open, and
+    `OTV2-20260929-cw1-od9-create-teleporters` implements them in `encounter_map_item.rs`.
+    Owner decision Q2=b (#162 comment 5884513528) replaces the kill-while-open no-op for these
+    teleporters: see §10.4. It supersedes the no-op wording in §10.6 and §10.7 Q2.
+  - **§10.3 (OD8): CANDIDATE.** It is blocked on the protocol lane's dynamic-placement delivery
+    (D2a) and the interaction lane's typed `triggering_object` target. `encounter_map_item.rs` keeps
+    rejecting `at: death_position` fail-closed.
+  - Background: the owner decided on issue #162 (comment 5879299188, "OWNER DECISIONS:
+    Content/World batch", 2026-09-28) that open decision 8 is designed now (item 1), that the open
+    decision 9 teleporters are admitted as a §9 transform from a synthesized absent state (item 2),
+    and that a boss kill while a teleporter is open is a no-op (item 3). The standing rule (item 6)
+    applies: this section follows the CrystalServer/Canary behaviour where it is clear, and lists
+    each deviation as an owner question at the end.
 - Scope: exactly the six samples §7 open decisions 8 and 9 name. OD8: `mazzinor`, `gaz_haragoth`,
   `cult_soul_remains` and `azerus`. OD9: `death_priest_shargon` and `the_ravager`.
 - The mandatory decision test (`docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`) and the options
@@ -2664,8 +2670,11 @@ same packet amends the `WOBJ-RL-04` allocation note for D3's record release.
   where the authored forward matches again. `select_timed_forward`
   (`apps/game-server/src/world_object_revert.rs` ~90-106) then behaves as follows:
   - it returns the create edge from absent;
-  - it returns `None` while the teleporter is present, so a kill while open commits nothing, mints
-    no ordinal and extends or resets nothing (owner decision 3);
+  - it returns `None` while the teleporter is present. A kill while open instead re-arms the
+    pending present→absent revert to the full `revert_after_ms`, counted from the new kill: the
+    teleporter stays, and no second object or record is created (owner decision Q2=b, #162). The
+    owning event does this through `ScopeRevertDriver::rearm_open_create` under its own D91 owner;
+    the re-kill mints one ordinal. The duke's TRANSFORM teleporter keeps owner decision 3's no-op;
   - it returns the create edge again after the revert.
 
   No `/rearm` edge is lowered; D90's synthesized C→B edge exists only for the

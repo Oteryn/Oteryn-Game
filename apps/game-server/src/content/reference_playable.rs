@@ -816,6 +816,12 @@ pub struct LocalObjectStateDefinition {
     /// fail-closed by `validate_definition_shape`: the named base must be declared by the same
     /// vocabulary and carry the same collision presence.
     pub attribute_variant_of: Option<ProductionKey>,
+    /// #162 §10.2: a synthesized absent state of a created object (`<action id>/absent`). The
+    /// projection renders no object for it. `false` for every authored state. Validated
+    /// fail-closed: an absent state declares `collision: Absent` and no `attribute_variant_of`
+    /// (`validate_definition_shape`), and no placement carries attributes for it
+    /// (`validate_local_object_placement_attributes`).
+    pub absent: bool,
 }
 
 /// #162 §9 (design point 1): the per-placement attribute values a `LocalObject` exposes while it
@@ -2076,6 +2082,24 @@ fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), Con
                         "reference-playable local object attribute variant must share its base state's collision presence",
                     ));
                 }
+                if base.absent {
+                    return Err(ContentError::InvalidArtifact(
+                        "reference-playable local object attribute variant must not name an absent base state",
+                    ));
+                }
+            }
+            // #162 §10.2: an absent state renders nothing and occupies nothing.
+            for state in states.iter().filter(|state| state.absent) {
+                if state.collision != LocalObjectCollisionPresence::Absent {
+                    return Err(ContentError::InvalidArtifact(
+                        "reference-playable local object absent state must declare collision Absent",
+                    ));
+                }
+                if state.attribute_variant_of.is_some() {
+                    return Err(ContentError::InvalidArtifact(
+                        "reference-playable local object absent state must not be an attribute variant",
+                    ));
+                }
             }
             Ok(())
         }
@@ -2282,11 +2306,18 @@ pub(crate) fn validate_local_object_placement_attributes(
         return Ok(());
     };
     for (state, attributes) in &placement.local_object_state_attributes {
-        if !states.iter().any(|declared| &declared.key == state) {
-            return Err(ContentError::MissingReference {
+        let declared = states
+            .iter()
+            .find(|declared| &declared.key == state)
+            .ok_or_else(|| ContentError::MissingReference {
                 owner: placement.key.as_str().to_owned(),
                 target: state.as_str().to_owned(),
-            });
+            })?;
+        // #162 §10.2: an absent state carries no per-placement attributes.
+        if declared.absent {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable placement declares attributes for an absent local object state",
+            ));
         }
         // #1133 review: a destination resolves to exactly one placement, in the bound world and
         // coordinate frame, before it can be exposed or consumed; anything else fails closed.

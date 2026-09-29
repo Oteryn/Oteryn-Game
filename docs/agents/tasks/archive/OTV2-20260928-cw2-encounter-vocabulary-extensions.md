@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-cw2-encounter-vocabulary-extensions
 title: CW2 encounter vocabulary extension candidates for the remaining unresolved_semantics rows
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw2-encounter-vocabulary-extensions
 pr: 1183
 base_sha: 3dcf3c82
-head_sha: null
-final_head_sha: null
+head_sha: be0b122964f88892f5b7c2e4f36e73f33455e5d9
+final_head_sha: be0b122964f88892f5b7c2e4f36e73f33455e5d9
 final_head_frozen_at: null
 owner: "Oteryn: content world import"
 created_at: 2026-09-28T22:00:00Z
-updated_at: 2026-09-28T22:00:00Z
+updated_at: 2026-09-29T06:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md
@@ -107,7 +107,19 @@ Labels follow `docs/agents/AGENTS.md` and apply to CrystalServer `ff7ede59`, pat
 - `python3 tools/agents/validate_governance.py` and `python3 tools/repository/validate_repository_policy.py`: see
   the PR.
 
+## Terminal integration
+
+- **Final head:** `be0b122964f88892f5b7c2e4f36e73f33455e5d9`.
+- **Integration:** merged into main as PR #1183, merge commit
+  `86116adf` (2026-09-28T22:36:01Z).
+- **Closeout:** the record was archived by `OTV2-20260929-cw1-od9-create-teleporters` (issue #162,
+  allocation comment 5884353101).
+- **Owned paths:** released.
+- **Follow-up:** §12 of `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` was merged as CANDIDATE and
+  awaited owner acceptance at merge. Its implementation (schema, samples, tools, Rust) follows the
+  §12.5 order after acceptance, in its own allocation.
+
 ## Context checkpoint
 
-last_progress: review round 4 on #1183 addressed (evidence classified PROVEN/DERIVED/UNKNOWN/CONFLICT)
+last_progress: merged as 86116adf via PR #1183; archived as completed
 jira: pending (no mapped Story resolved in this worker session)

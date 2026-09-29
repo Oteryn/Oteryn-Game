@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-cw1-od8-od9-design
 title: OD8/OD9 design - runtime-created local objects at death_position and pre-authored CREATE teleporters (proposal §10)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: 5879302658
@@ -12,12 +12,12 @@ base_branch: main
 branch: claude/cw1-od8-od9-design
 pr: 1182
 base_sha: 3dcf3c82abc5d424542388a9f65ca1507e8746a4
-head_sha: null
-final_head_sha: null
+head_sha: 88e77d24a3869ebe7da29c54bd603962c98df758
+final_head_sha: 88e77d24a3869ebe7da29c54bd603962c98df758
 final_head_frozen_at: null
 owner: Oteryn: content world architecture
 created_at: 2026-09-28T22:00:00Z
-updated_at: 2026-09-28T23:00:00Z
+updated_at: 2026-09-29T06:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md (new §10; §7 open decisions 8/9 status; §8 item 7 and §9 pointers; owner decision 3 in §9)
@@ -113,7 +113,22 @@ This task adds a docs-only design as §10 of
 - `python3 tools/agents/validate_governance.py`
 - `python3 tools/repository/validate_repository_policy.py`
 
+## Terminal integration
+
+- **Final head:** `88e77d24a3869ebe7da29c54bd603962c98df758`.
+- **Integration:** merged into main as PR #1182, merge commit
+  `4758b981` (2026-09-28T22:45:22Z).
+- **Closeout:** the record was archived by `OTV2-20260929-cw1-od9-create-teleporters` (issue #162,
+  allocation comment 5884353101).
+- **Owned paths:** released.
+- **Follow-up (binding carry-over):** the `delay_ms` rejection for OD8 is binding. An `at:
+  death_position` action stays rejected fail-closed in every rule, delayed or not, until §10.3's
+  prerequisites land.
+- **Implementation:** `OTV2-20260929-cw1-od9-create-teleporters` implements §10.2/§10.4 (OD9) and
+  marks §10.4 ACCEPTED. It also records owner decision Q2=b (#162 comment 5884513528): a re-kill
+  while open re-arms the revert. §10.3 (OD8) stays CANDIDATE.
+
 ## Context checkpoint
 
-last_progress: Round 6 repair (Codex P1 4127619230) on PR #1182; new candidate head pending freeze
+last_progress: merged as 4758b981 via PR #1182; archived as completed
 jira: pending (no mapped Story resolved in this worker session)
