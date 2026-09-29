@@ -100,6 +100,8 @@ if __name__=='__main__':
         Draft202012Validator.check_schema(s)
         results.append({'name':'meta-schema '+name,'passed':True})
     case('minimal complete synthetic fixture',expected=True)
+    case('optional Bestiary notes accepted',set_value(['m','creature','bestiary','notes'],'A short Oteryn-authored account.'),True)
+    case('empty Bestiary notes rejected',set_value(['m','creature','bestiary','notes'],''))
     case('condition with ticks',condition,True)
     case('speed formula closure',lambda m,d,c:(
         d['formulas'].append({'identity':ident('speed'),'kind':'speed_modifier','speed':{'minimum_multiplier':{'numerator':1,'denominator':4},
