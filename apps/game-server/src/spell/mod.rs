@@ -219,7 +219,13 @@ impl SpellBook {
             }
             match &spell.carrier {
                 Carrier::Instant { words, .. } => {
-                    if book.by_words.insert(words.clone(), index).is_some() {
+                    // Spoken words match case-insensitively, so they are indexed and deduplicated
+                    // that way too.
+                    if book
+                        .by_words
+                        .insert(words.to_ascii_lowercase(), index)
+                        .is_some()
+                    {
                         return Err(SpellBookError::Words(words.clone()));
                     }
                 }
@@ -238,9 +244,10 @@ impl SpellBook {
     /// `getInstantSpell` and `playerSaySpell`). Whitespace runs collapse to one space and the ends
     /// are trimmed. The spell whose words are the longest case-insensitive prefix is chosen; a
     /// spell without a parameter must match exactly, one with a parameter needs a space and at
-    /// least one more character after its words. The parameter is the text between the first
-    /// two quotes (an unclosed quote runs to the end; text after the closing quote makes the
-    /// message chat) or, without quotes, a single word (two words make it chat). It keeps the
+    /// least one more character after its words. A parameter that opens with a quote is the text
+    /// up to the next quote (an unclosed quote runs to the end; text after the closing quote makes
+    /// the message chat); any other parameter is a single word kept as spoken, quotes included
+    /// (two words make it chat). It keeps the
     /// spoken case; an empty parameter is `None`. `None` means the message is chat.
     pub(crate) fn spoken(&self, message: &str) -> Option<SpokenSpell<'_>> {
         let message = message.split_whitespace().collect::<Vec<_>>().join(" ");
@@ -270,15 +277,12 @@ impl SpellBook {
             });
         }
         let parameter = rest.strip_prefix(' ').filter(|_| takes_parameter)?;
-        let parameter = match parameter.find('"') {
-            Some(open) => {
-                let quoted = &parameter[open + 1..];
-                match quoted.find('"') {
-                    None => quoted,
-                    Some(close) if close + 1 == quoted.len() => &quoted[..close],
-                    Some(_) => return None,
-                }
-            }
+        let parameter = match parameter.strip_prefix('"') {
+            Some(quoted) => match quoted.find('"') {
+                None => quoted,
+                Some(close) if close + 1 == quoted.len() => &quoted[..close],
+                Some(_) => return None,
+            },
             None if parameter.contains(' ') => return None,
             None => parameter,
         };

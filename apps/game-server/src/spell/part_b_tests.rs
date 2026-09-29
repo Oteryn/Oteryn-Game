@@ -369,6 +369,29 @@ fn the_spoken_parameter_follows_the_quote_rules() {
         heard(&book, "exura sio \"Bubble"),
         cast("heal_friend", Some("Bubble"))
     );
+    // Quoting applies only when the parameter opens with a quote.
+    assert_eq!(heard(&book, "exiva Foo \"Bar\""), None);
+    assert_eq!(
+        heard(&book, "exiva Foo\"Bar\""),
+        cast("find_person", Some("Foo\"Bar\""))
+    );
+    assert_eq!(
+        heard(&book, "exiva Foo\""),
+        cast("find_person", Some("Foo\""))
+    );
+}
+
+/// Spoken words match case-insensitively, so words that differ only in case are one spell.
+#[test]
+fn spoken_words_are_unique_ignoring_case() {
+    let error = SpellBook::new(vec![
+        instant("find_person", "exiva", true),
+        instant("shouted_find_person", "EXIVA", true),
+    ])
+    .expect_err("duplicate words");
+    assert_eq!(error, SpellBookError::Words("EXIVA".to_owned()));
+    let book = SpellBook::new(vec![instant("find_person", "Exiva", true)]).expect("one spell");
+    assert_eq!(heard(&book, "exiva Foo"), cast("find_person", Some("Foo")));
 }
 
 fn phrase(dx: i32, dy: i32, dz: i32) -> String {
