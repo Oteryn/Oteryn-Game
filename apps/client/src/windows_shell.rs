@@ -1,12 +1,14 @@
+use oteryn_client::input::{ClickWalk, MouseActions, click_tile};
 use oteryn_client::pre_native_status;
 use oteryn_client::scene::PlaceholderScene;
 use oteryn_foundation::ProcessGeneration;
+use oteryn_input_platform::InputPlatformAdapter;
 use oteryn_renderer::{SurfacePhase, WindowsRenderer};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
-use winit::event::WindowEvent;
+use winit::event::{DeviceEvent, DeviceId, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
 
@@ -15,6 +17,7 @@ pub enum ShellError {
     EventLoopCreation,
     EventLoopRun,
     WindowCreation,
+    InputInitialization,
     RendererInitialization,
     RendererResume,
     RendererSuspend,
@@ -29,6 +32,7 @@ impl Display for ShellError {
             Self::EventLoopCreation => "client event loop creation failed",
             Self::EventLoopRun => "client event loop failed",
             Self::WindowCreation => "client window creation failed",
+            Self::InputInitialization => "client input initialization failed",
             Self::RendererInitialization => "client renderer initialization failed",
             Self::RendererResume => "client renderer resume failed",
             Self::RendererSuspend => "client renderer suspend failed",
@@ -47,18 +51,44 @@ struct Application {
     renderer: Option<WindowsRenderer<Arc<Window>>>,
     scene: Option<PlaceholderScene>,
     generation: ProcessGeneration,
+    input: InputPlatformAdapter,
+    actions: MouseActions,
+    walk: ClickWalk,
     fatal_error: Option<ShellError>,
 }
 
 impl Application {
-    fn new(smoke: bool) -> Self {
-        Self {
+    fn new(smoke: bool) -> Result<Self, ShellError> {
+        Ok(Self {
             smoke,
             window: None,
             renderer: None,
             scene: None,
             generation: ProcessGeneration::new(1),
+            input: InputPlatformAdapter::new(),
+            actions: MouseActions::new().map_err(|_error| ShellError::InputInitialization)?,
+            walk: ClickWalk::new(),
             fatal_error: None,
+        })
+    }
+
+    fn handle_input(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        events: &[oteryn_input_actions::NormalizedInputEvent],
+    ) {
+        for click in self.actions.route(events) {
+            let picked = self.scene.as_mut().and_then(|scene| {
+                let tile = click_tile(scene.view(), click.x, click.y)?;
+                Some((tile, scene.select_tile(tile)))
+            });
+            // A visible entity or object becomes the target; any other tile becomes the walk
+            // goal. N4 drives `walk` through the session's `step`.
+            match picked {
+                Some((_, Ok(Some(_)))) | None => {}
+                Some((tile, Ok(None))) => self.walk.set_goal(tile),
+                Some((_, Err(_error))) => self.fail(event_loop, ShellError::RendererRender),
+            }
         }
     }
 
@@ -135,12 +165,28 @@ impl ApplicationHandler for Application {
         }
     }
 
+    fn device_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _device_id: DeviceId,
+        event: DeviceEvent,
+    ) {
+        if let Ok(events) = self.input.process_device_event(&event) {
+            self.handle_input(event_loop, &events);
+        }
+    }
+
     fn window_event(
         &mut self,
         event_loop: &ActiveEventLoop,
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        // Every window event goes through the adapter and router first; select or walk is
+        // triggered only by the routed gameplay action.
+        if let Ok(events) = self.input.process_window_event(&event) {
+            self.handle_input(event_loop, &events);
+        }
         match event {
             WindowEvent::CloseRequested => {
                 if let Some(renderer) = &mut self.renderer
@@ -190,7 +236,7 @@ impl ApplicationHandler for Application {
 pub fn run() -> Result<(), ShellError> {
     let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
     let smoke = std::env::args().any(|argument| argument == "--smoke");
-    let mut application = Application::new(smoke);
+    let mut application = Application::new(smoke)?;
     let run_result = event_loop
         .run_app(&mut application)
         .map_err(|_error| ShellError::EventLoopRun);
