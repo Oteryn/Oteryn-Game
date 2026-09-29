@@ -24,7 +24,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_WO0_WORLD_OBJECT_AND_TERRAIN_AUTHORING_FORMAT_DECISION_2026-09-28.md
   - docs/architecture/reviews/OTERYN_GAME_STANCE0_CHARACTER_STANCE_PERSISTENCE_DECISION_2026-09-29.md
   - docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md
-  - docs/agents/tasks/active/OTV2-20260929-a12-item-identity-tibia-id.md
+  - docs/agents/tasks/archive/OTV2-20260929-a12-item-identity-tibia-id.md
   - docs/agents/tasks/active/OTV2-20260929-a11-stance-persistence-decision.md   # archive move after #1225
   - docs/agents/tasks/archive/OTV2-20260929-a11-stance-persistence-decision.md
 public_contracts: []
@@ -110,7 +110,8 @@ and fixed in the second repair commit.
   - All were fixed by `eed1967`, and the owner decided to merge after green CI.
 - Protected-main readback: all seven owned files are byte-identical to `eed1967`.
 - The coordinator's clarification request (5893830130) and owner decision D149 are recorded in the
-  follow-up task `OTV2-20260929-a12-clarification-d149`, which archives this record.
+  follow-up task `OTV2-20260929-a12-clarification-d149`. The Work coordinator archived this record
+  in #1250, and the follow-up adds these review details.
 
 ## Context checkpoint
 
@@ -124,3 +125,9 @@ owner_action_required: null
 blocker: null
 next_action: null
 ```
+
+## Closeout
+
+- PR #1237 merged via Merge Queue: final head `eed19673d77c90c22d4c457361f6a494ed378ab0`, merge commit `8af7f88e031333b4f243287c58be7a8c9d4578ad`.
+- Protected-main readback: all 7 files the merge changed are byte-identical between the final head and the merge commit.
+- Ownership released on merge. Archived by the Work coordinator in the 2026-09-29 batch.

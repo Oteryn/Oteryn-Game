@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-chest1-reward-claim-mint
 title: CHEST-1 DUR-03 reward-claim MINT into a main-backpack entry with a once RewardClaim
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
@@ -25,7 +25,7 @@ owned_paths:
   - apps/game-server/src/durability/reward_claim_mint_audit.rs
   - apps/game-server/tests/reward_claim_mint_postgres.rs
   - apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs
-  - docs/agents/tasks/active/OTV2-20260928-chest1-reward-claim-mint.md
+  - docs/agents/tasks/archive/OTV2-20260928-chest1-reward-claim-mint.md
   - apps/game-server/src/durability/mod.rs                  # shared: module wiring + linkage test
   - apps/game-server/src/durability/item_transfer.rs        # shared: fence helper extraction and pub(crate) visibility, no behaviour change
   - apps/game-server/src/durability/item_mint_audit.rs      # shared: oneof tag 4 only
@@ -185,3 +185,9 @@ production.
 last_progress: PR #1190 merged via Merge Queue as 69d85f33 (frozen head 5c36eaad, Codex clean)
 next_action: follow-up PR #1217 (worker-review P2 repairs) through Merge Queue, then archive this record
 ```
+
+## Closeout
+
+- PR #1217 merged via Merge Queue: final head `59a5031512c626a1fdccfa7653e0f1da99b09998`, merge commit `67ca37ada0621fa2a976f736e98071dae3800324`.
+- Protected-main readback: all 4 files the merge changed are byte-identical between the final head and the merge commit.
+- Ownership released on merge. Archived by the Work coordinator in the 2026-09-29 batch.

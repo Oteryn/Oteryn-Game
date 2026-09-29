@@ -746,47 +746,47 @@
     },
     {
       "prompt_id": "OTV2_DEFECT_DISCOVERY_SUPERVISOR",
-      "path": "docs/agents/prompts/OTV2_DEFECT_DISCOVERY_SUPERVISOR.md",
+      "path": "docs/agents/prompts/retired/OTV2_DEFECT_DISCOVERY_SUPERVISOR.md",
       "version": "1.1",
-      "status": "reusable",
+      "status": "retired",
       "owner": "defect-discovery-programme",
       "scope": "Read-only technical supervision and exact next-allocation proposal for OTERYN_DEFECT_DISCOVERY_V1; no second control plane or implementation authority.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "supersession_rule": "Retired 2026-09-29 by owner decision: the Defect Discovery programme has been dormant since its 2026-09-15 P0-P3 allocation. Retained as provenance; a restart needs a new owner decision and a live #162 allocation."
     },
     {
       "prompt_id": "OTV2_DEFECT_DISCOVERY_P0_P3_LEAD",
-      "path": "docs/agents/prompts/OTV2_DEFECT_DISCOVERY_P0_P3_LEAD.md",
+      "path": "docs/agents/prompts/retired/OTV2_DEFECT_DISCOVERY_P0_P3_LEAD.md",
       "version": "1.0",
-      "status": "reusable",
+      "status": "retired",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "First Defect Discovery proof-package implementation lead for P0-P3; writes require a current merged exact allocation.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "supersession_rule": "Retired 2026-09-29 by owner decision: the Defect Discovery programme has been dormant since its 2026-09-15 P0-P3 allocation. Retained as provenance; a restart needs a new owner decision and a live #162 allocation."
     },
     {
       "prompt_id": "OTV2_DEFECT_DISCOVERY_TOOL_QUALIFIER",
-      "path": "docs/agents/prompts/OTV2_DEFECT_DISCOVERY_TOOL_QUALIFIER.md",
+      "path": "docs/agents/prompts/retired/OTV2_DEFECT_DISCOVERY_TOOL_QUALIFIER.md",
       "version": "1.0",
-      "status": "reusable",
+      "status": "retired",
       "owner": "defect-discovery-programme",
       "scope": "Bounded Oteryn-specific qualification of optional Defect Discovery tooling after protected P0-P3 proof; no broad adoption without exact allocation.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "supersession_rule": "Retired 2026-09-29 by owner decision: the Defect Discovery programme has been dormant since its 2026-09-15 P0-P3 allocation. Retained as provenance; a restart needs a new owner decision and a live #162 allocation."
     },
     {
       "prompt_id": "OTV2_DEFECT_DISCOVERY_MODULE_LEAD",
-      "path": "docs/agents/prompts/OTV2_DEFECT_DISCOVERY_MODULE_LEAD.md",
+      "path": "docs/agents/prompts/retired/OTV2_DEFECT_DISCOVERY_MODULE_LEAD.md",
       "version": "1.0",
-      "status": "reusable",
+      "status": "retired",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Parameterized Defect Discovery implementation lead for one exact allocated product module after the protected core proof.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "supersession_rule": "Retired 2026-09-29 by owner decision: the Defect Discovery programme has been dormant since its 2026-09-15 P0-P3 allocation. Retained as provenance; a restart needs a new owner decision and a live #162 allocation."
     },
     {
       "prompt_id": "OTV2_FULL_CONTENT_CENSUS_PROGRAMME",

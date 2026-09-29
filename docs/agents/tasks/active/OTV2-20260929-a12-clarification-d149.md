@@ -21,7 +21,6 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_A12_ITEM_IDENTITY_TIBIA_ID_DECISION_2026-09-29.md
   - docs/agents/tasks/active/OTV2-20260929-a12-clarification-d149.md
-  - docs/agents/tasks/active/OTV2-20260929-a12-item-identity-tibia-id.md   # archive move after #1237
   - docs/agents/tasks/archive/OTV2-20260929-a12-item-identity-tibia-id.md
 public_contracts: []
 depends_on: []
@@ -43,7 +42,7 @@ request on #162 (5893830130). The ruling is 5894110248.
   - A repurposed id becomes `CONFLICT`.
   - §5 "no binding lost" means every binding row survives with a disposition.
 
-The task also archives the #1237 task record. No code, content or key change is made.
+The task also adds review details to the #1237 task record, which the coordinator archived in #1250. No code, content or key change is made.
 
 ## Architecture and source of truth
 
