@@ -39,6 +39,18 @@
         "docs/architecture/OTERYN_FIRST_REFERENCE_NPC_SERVICE_BOUNDARY_2026-09-09.md",
         "live GitHub Issue #504 / PR #641 / control-plane #162 / CI state"
       ]
+    },
+    {
+      "handover_id": "OTV2-20260929-spell-death-control-plane-handoff",
+      "path": "docs/agents/evidence/OTV2-20260929-spell-death-control-plane-handoff.md",
+      "status": "historical",
+      "authoritative": false,
+      "expiry_rule": "Expired for current-state authority as soon as any recorded branch, PR, head, ownership, blocker, or accepted programme state changes; always re-resolve from live GitHub and current main before continuation.",
+      "superseded_by": [
+        "live GitHub Issue #162 / PR #1263 / PR #1264 / CI state",
+        "docs/architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md",
+        "docs/architecture/reviews/OTERYN_GAME_DEATH0_CHARACTER_DEATH_RECEIPT_DECISION_2026-09-28.md"
+      ]
     }
   ]
 }
