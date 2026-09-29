@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-death1c-fresh-bag
 title: DEATH-1c - empty bag after a lost container
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1178
@@ -15,7 +15,7 @@ base_sha: df2dd464ceb97287fea0bdcc717911c4c8ef182c
 head_sha: null
 owner: "Oteryn: impl domains" (Claude Code)
 created_at: 2026-09-28T22:20:00Z
-updated_at: 2026-09-28T22:20:00Z
+updated_at: 2026-09-29T06:40:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/domain/death.rs

@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-prem2a-promotion-soul-rules
 title: PREM-2a - pure promotion-benefit and soul-maximum rules
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1171
@@ -15,7 +15,7 @@ base_sha: df2dd464ceb97287fea0bdcc717911c4c8ef182c  # main after PR 1154 (DEATH-
 head_sha: null
 owner: "Oteryn: impl domains" (Claude Code)
 created_at: 2026-09-28T21:00:00Z
-updated_at: 2026-09-28T21:00:00Z
+updated_at: 2026-09-29T06:40:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/domain/premium.rs
