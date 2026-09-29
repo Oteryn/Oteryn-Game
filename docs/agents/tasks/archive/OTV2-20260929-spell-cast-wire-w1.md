@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-spell-cast-wire-w1
 title: Spell cast wire and own-actor vitals - registries and codecs (§9 step 1, SPELL-D8 H-3)
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1254
@@ -12,10 +12,10 @@ allocation_comment: "#162 5894588548"
 base_branch: main
 branch: claude/spell-cast-wire-w1
 base_sha: 37a06b5cd45c33cab961652882b074b23a09dd1f
-head_sha: null
+head_sha: 6b10381a04ea44ed9e63d85e24b87dd1bf3ebeae
 owner: "Oteryn: content" (Claude Code)
 created_at: 2026-09-29T16:58:00Z
-updated_at: 2026-09-29T17:10:00Z
+updated_at: 2026-09-29T18:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto
@@ -77,3 +77,9 @@ client (§9 step 3), `.github/**` and any `docs/architecture/**` text.
 
 Required (§8.1: protocol and security, independent exact-byte fixtures). The control plane triggers it on the
 frozen head.
+
+## Closeout
+
+- PR #1254 merged via Merge Queue: final head `6b10381a04ea44ed9e63d85e24b87dd1bf3ebeae`, merge commit `c91055f66dd2c5724f17e226c7b7da2430a1a914`.
+- Protected-main readback: all 7 files the merge changed are byte-identical between the final head and the merge commit.
+- Ownership released on merge. The record stayed in `tasks/active/` and turned `Agent governance` on `main` red; archived by the Work coordinator in a P0 archive batch.

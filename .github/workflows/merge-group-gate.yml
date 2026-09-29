@@ -57,7 +57,11 @@ jobs:
           HEAD_SHA: ${{ github.event.merge_group.head_sha }}
         run: |
           set -euo pipefail
+          if ! rustup toolchain install 1.94.0 --profile minimal || ! cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/queue-metadata.json"; then
+            printf '{}' > "$RUNNER_TEMP/queue-metadata.json"
+          fi
           python - <<'PY'
+          import json
           import os
           import re
           import subprocess
@@ -102,6 +106,7 @@ jobs:
                   raise ValueError('malformed merge-group diff')
               allowed_statuses = {b'A', b'M', b'D'}
               paths = []
+              records = []
               for index in range(0, len(fields), 2):
                   status = fields[index]
                   if status not in allowed_statuses:
@@ -110,6 +115,10 @@ jobs:
                   if not valid_path(path):
                       raise ValueError('invalid merge-group path')
                   paths.append(path)
+                  records.append({
+                      'filename': path,
+                      'status': {b'A': 'added', b'M': 'modified', b'D': 'removed'}[status],
+                  })
                   if status != b'D':
                       row = subprocess.check_output(['git', 'ls-tree', head, '--', path], text=True).strip()
                       parts = row.split(None, 3)
@@ -122,6 +131,7 @@ jobs:
           except (OSError, UnicodeDecodeError, ValueError, subprocess.SubprocessError):
               result = {'rust': 'true', 'windows': 'true', 'surface': 'full'}
               paths = None
+              records = None
 
           # Physical server qualification uses the protected-base PR classifier and
           # fails closed: anything but a proven unrelated candidate selects it.
@@ -139,6 +149,30 @@ jobs:
                   server_qualification = 'false'
           except Exception:
               server_qualification = 'true'
+
+          # A candidate whose changed files are all unconsumed auxiliary inputs skips
+          # the Rust and Windows lanes, using the protected-base exact-consumer routing
+          # and protected-base Cargo metadata that the PR gate uses. Any other routing
+          # result, and any classifier or metadata failure, stays FULL.
+          if result['surface'] == 'full' and isinstance(records, list) and records:
+              try:
+                  metadata_path = os.path.join(os.environ['RUNNER_TEMP'], 'queue-metadata.json')
+                  with open(metadata_path, encoding='utf-8') as handle:
+                      metadata = json.load(handle)
+                  routed = module.classify(
+                      records,
+                      len(records),
+                      metadata,
+                      candidate_modes_verified=module.candidate_modes_safe(head),
+                      candidate_sha=head,
+                  )
+                  if routed.get('rust') is False and routed.get('windows') is False:
+                      surface = routed.get('surface')
+                      if not isinstance(surface, str) or re.fullmatch(r'[a-z-]+', surface) is None:
+                          raise ValueError('invalid routed surface')
+                      result = {'rust': 'false', 'windows': 'false', 'surface': surface}
+              except Exception:
+                  result = {'rust': 'true', 'windows': 'true', 'surface': 'full'}
 
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write(f"rust={result['rust']}\n")

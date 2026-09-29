@@ -39,6 +39,7 @@ from engine_items import (
 )
 
 ROOT = Path(__file__).resolve().parent
+REPO_ROOT = ROOT.parents[2]
 DEFAULT_SAMPLE = ROOT / "samples" / "client-appearance-census-15-30-2dfa943b.json"
 
 # The owner's local 15.30 client appearances, as pinned by the owner-supplied client
@@ -48,6 +49,10 @@ CLIENT_APPEARANCES_SHA256 = (
     "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 )
 CLIENT_APPEARANCES_BYTES = 5_017_996
+# The owner-staged 15.30 client assets (#1251-#1253) carry the pinned file in-repo.
+DEFAULT_APPEARANCES = (
+    REPO_ROOT / "content/assets/files" / f"appearances-{CLIENT_APPEARANCES_SHA256}.dat"
+)
 # The 15.30 client's own new appearance-id range (donor census, owner-measured).
 NEW_APPEARANCE_FIRST_ID = 52977
 FACT_FLAGS = (
@@ -215,7 +220,7 @@ def membership_document_bytes(
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--appearances", type=Path, required=True)
+    parser.add_argument("--appearances", type=Path, default=DEFAULT_APPEARANCES)
     parser.add_argument("--crystal-source", type=Path)
     parser.add_argument("--donor-source", type=Path)
     parser.add_argument("--canary-source", type=Path)

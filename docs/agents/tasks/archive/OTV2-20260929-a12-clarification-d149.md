@@ -4,19 +4,19 @@
 task_id: OTV2-20260929-a12-clarification-d149
 title: "A12 clarifications: D149 and binding evidence"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1245
 base_sha: cf7777d7
-head_sha: null
-final_head_sha: null
+head_sha: f60efa612a2c9fa25499f5ba52b96bc104e384e2
+final_head_sha: f60efa612a2c9fa25499f5ba52b96bc104e384e2
 final_head_frozen_at: null
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-29
-updated_at: 2026-09-29
+updated_at: 2026-09-29T18:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_A12_ITEM_IDENTITY_TIBIA_ID_DECISION_2026-09-29.md
@@ -98,12 +98,18 @@ in the second repair commit.
 ## Context checkpoint
 
 ```yaml
-last_progress: amendment authored
-status: validating
+last_progress: protected-integrated as 2065ad86; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
-head_sha: null
+head_sha: f60efa612a2c9fa25499f5ba52b96bc104e384e2
 pr: 1245
 owner_action_required: null
 blocker: null
-next_action: "open the PR, bind it, freeze, request review"
+next_action: null
 ```
+
+## Closeout
+
+- PR #1245 merged via Merge Queue: final head `f60efa612a2c9fa25499f5ba52b96bc104e384e2`, merge commit `2065ad86b411a8ed0c4b1953999acb41ca119492`.
+- Protected-main readback: all 3 files the merge changed are byte-identical between the final head and the merge commit.
+- Ownership released on merge. The record stayed in `tasks/active/` and turned `Agent governance` on `main` red; archived by the Work coordinator in a P0 archive batch.
