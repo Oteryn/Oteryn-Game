@@ -33,6 +33,14 @@ Run the checks selected by changed paths and preserve `game-gate`, repository pr
 
 `docs/agents/CONTEXT_ROUTING.md` is a cost boundary as well as a correctness router: read the smallest authoritative slice for the current decision, never a recursive or full-history fetch (whole Issue/PR timelines, all open PRs, the full prompt lifecycle registry). Its live-state read budget, large-document rules and subagent routing apply to every session.
 
+## Work in batches
+
+- **Defect finding and audits:** one sweep per lane or module produces one findings list (one Issue or one comment), not an Issue or PR per finding.
+- **Fixes:** group the findings of one module into one fix PR. Only a P0 (security, data loss, broken `main`) gets its own PR at once.
+- **Review:** request review once, on the final frozen head with every known fix in. Answer all findings of a review round in one push; later non-blocking findings go to the next batch.
+- **CI:** run the local checks for every changed path before pushing, and fix all failures of a run in one push.
+- **Task records:** a task that ends with one PR moves its record to `docs/agents/tasks/archive/`, closeout filled, in that PR's final authoring commit. The record reaches `main` only if the PR merges, so no separate archive PR is needed.
+
 ## Owner questions in batches
 
 Do not ask the owner one question at a time. Collect open owner questions and decisions, and keep working on everything they do not block; for a reversible, ungoverned detail, proceed on a stated assumption and list it. Workers and lane leads send questions to the active control plane (in their report or the `STATE` decision queue on the coordination Issue), never to the owner. The control plane asks the owner at most twice a day, in one message: numbered questions, each with one line of context, lettered options and a recommendation, so the owner can answer `1a 2b`. Ask at once only when all remaining work is blocked, or the step is destructive, spends owner funds outside standing authorization, or touches production, credentials or safety.
