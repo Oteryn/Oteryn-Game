@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
-"""Generate the append-only Item key alias table and the D149 tombstones (ITEM-ID-1a).
+"""Verify the append-only Item key alias table and the D149 tombstones as frozen history.
 
 Decision `A12-ITEM-IDENTITY-TIBIA-ID-V1` (§4.5) retires every `oteryn:item.registry.i*`
-key (epochs 1 and 2) and every named Item key. Each retired key gets exactly one current
+key (epochs 1 and 2) and every named Item key. Each retired key has exactly one current
 entry in `content/items/aliases.json`:
 
 - `ALIAS` to `oteryn:item.tibia.i<id>`, where `<id>` is the retired key's own source row id
-  and the §4.2 identity evidence holds: the id is an appearance object in the source row's
-  pinned CipSoft file (Crystal `items.xml` carries no `clientid`, so the server id is the
-  appearance object id), and its identity projection digest there equals the one in the
-  comparison file (the newest admitted file, or for a retired id the last file holding it);
-- `RETIRED_WITHOUT_SUCCESSOR` when the id is not in the admitted CipSoft id set (D149). Its
-  last authored definition and that definition's digest are kept in the tombstone archive
-  outside authored content.
+  and the §4.2 identity evidence recorded in the entry holds;
+- `RETIRED_WITHOUT_SUCCESSOR` for a D149 key; its last authored definition and that
+  definition's digest are kept in the tombstone archive outside authored content.
 
-The retired keys and their source rows are not read from the committed bindings: they are
-re-derived by `g4_item_crystal_binding_generator.generate()` from the protected CW2-B1
-catalogue, the epoch-2 crosswalk and the Rust pins, plus each declared identity promotion
-(R7-P04: `i00002921` was Crystal 3031 before it became `currency.gold_coin`). Nothing is
-mapped by position or in bulk. A continuity break stops with
-`ARCHITECTURE_ESCALATION_REQUIRED`. `--check` regenerates both files in memory and
-requires the committed bytes.
+ITEM-ID-1a derived version 1 of every entry from the CW2-B1 catalogue, the epoch-2
+crosswalk and the membership manifests (#1279, independently reproduced). Since ITEM-ID-1b
+those inputs no longer name the retired keys, so the table is never re-derived: it is
+history. This tool only verifies it:
+
+- the version-1 entries and the tombstone records match the digests recorded below;
+- with `--base-ref`, every entry and tombstone of that revision is still present unchanged
+  (append-only);
+- the §4.5 rules: one current entry per key, versions numbered from 1, a later version only
+  supersedes `RETIRED_WITHOUT_SUCCESSOR` with an alias, every alias target is the key's own
+  recorded id in the admitted CipSoft set, and no two retired keys share a target except the
+  allowlisted R7-P04 pair;
+- totality over the retired key space: registry sequences 1..38,497 and the named keys.
 """
 
 from __future__ import annotations
@@ -29,6 +31,7 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -37,12 +40,10 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools/content-schema/item-authoring"))
 
-import g4_item_crystal_binding_generator as bindings_generator  # noqa: E402
-from appearance_membership import INDEX_NAME, OUT_DIR, load_admitted  # noqa: E402
+from appearance_membership import INDEX_NAME, OUT_DIR, load_admitted
 
 ALIAS_TABLE = ROOT / "content/items/aliases.json"
 TOMBSTONES = ROOT / "docs/agents/evidence/OTV2-20260929-item-id-1-d149-tombstones.json"
-DEFINITIONS_GLOB = "content/items/definitions/items-*.json"
 
 ALIAS_SCHEMA = "OTERYN_ITEM_KEY_ALIAS_TABLE/v1"
 TOMBSTONE_SCHEMA = "OTERYN_ITEM_TOMBSTONE_ARCHIVE/v1"
@@ -50,17 +51,32 @@ DECISION = "A12-ITEM-IDENTITY-TIBIA-ID-V1"
 KEY_RULE = "OTERYN_TIBIA_ID_KEY_RULE_V1"
 TIBIA_KEY_PREFIX = "oteryn:item.tibia.i"
 OTERYN_KEY_PREFIX = "oteryn:item.oteryn."
-REGISTRY_KEY = re.compile(r"^oteryn:item\.registry\.i\d{8}$")
+TIBIA_KEY = re.compile(r"^oteryn:item\.tibia\.i([1-9][0-9]*)$")
+REGISTRY_KEY = re.compile(r"^oteryn:item\.registry\.i(\d{8})$")
+NAMED_KEY = re.compile(r"^oteryn:item\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$")
 ALIAS = "ALIAS"
 RETIRED = "RETIRED_WITHOUT_SUCCESSOR"
-# A12 §2 D149 and §3: the counts the decision was taken on.
-EXPECTED_RETIRED_KEYS = 38_562
-EXPECTED_WITHOUT_SUCCESSOR = 4_590
 
-# Pinned CipSoft appearance file of each source revision (appearance_membership labels).
-SOURCE_APPEARANCES = {
-    "ff7ede593c69d4c658b382c97443e8155926924a": "crystal-ff7ede5",
-    "00ce02a57ca5a12e48f32a3476e37471167e4c3f": "crystal-donor-00ce02a5",
+# Frozen by ITEM-ID-1a (#1279): the version-1 entries and the tombstone records.
+GENESIS_ENTRIES = 38_562
+GENESIS_ENTRIES_SHA256 = (
+    "fdf99248ed956b946c8fa4ceb081e6234c5d63eb39681a859bfc1cc63a5275e7"
+)
+GENESIS_TOMBSTONES = 4_590
+GENESIS_TOMBSTONE_RECORDS_SHA256 = (
+    "eec726dd36a60c045560e9e57e15b86ed7b382741a3406ff4366958a11f627fc"
+)
+# Epoch 1 allocated 1..38,093 and epoch 2 38,094..38,497 (cw2_b1_import.rs).
+REGISTRY_SEQUENCES = range(1, 38_498)
+# Epoch 1's 64 protected semantic keys plus R7-P04 `currency.gold_coin`.
+NAMED_KEYS = 65
+# The only target two retired keys may share: registry i00002921 was Crystal 3031 before
+# R7-P04 renamed it to `currency.gold_coin`, one source row under two historical keys.
+SHARED_TARGETS = {
+    "oteryn:item.tibia.i3031": {
+        "oteryn:item.currency.gold_coin",
+        "oteryn:item.registry.i00002921",
+    }
 }
 
 
@@ -84,172 +100,72 @@ def tibia_key(object_id: int) -> str:
     return f"{TIBIA_KEY_PREFIX}{object_id}"
 
 
-def source_rows() -> list[dict[str, Any]]:
-    """Every retired key with its own source row: `{key, source_revision, source_item_id, basis}`."""
-    output, _payload = bindings_generator.generate()
-    rows = []
-    for binding in output["bindings"]:
-        if binding["disposition"] != "EXACT":
-            raise AliasTableError(
-                f"UNEXPECTED_BINDING_DISPOSITION:{binding['disposition']}"
-            )
-        rows.append(
-            {
-                "key": binding["target"]["key"],
-                "source_revision": binding["source_revision"],
-                "source_item_id": int(binding["external_id"]),
-                "basis": "binding",
-            }
-        )
-    text = bindings_generator.read_text(bindings_generator.RUST_SOURCE)
-    revision = bindings_generator.parse_source_revision(text)
-    for source_id, (old_key, new_key) in sorted(
-        bindings_generator.parse_identity_promotions(text).items()
-    ):
-        promoted = [row for row in rows if row["key"] == new_key]
-        if len(promoted) != 1 or promoted[0]["source_item_id"] != source_id:
-            raise AliasTableError(f"PROMOTION_ROW_MISMATCH:{old_key}")
-        rows.append(
-            {
-                "key": old_key,
-                "source_revision": revision,
-                "source_item_id": source_id,
-                "basis": f"promotion:{new_key}",
-            }
-        )
-    keys = [row["key"] for row in rows]
-    if len(set(keys)) != len(keys):
-        raise AliasTableError("RETIRED_KEY_DUPLICATE")
-    return sorted(rows, key=lambda row: row["key"])
-
-
-def manifest_views(manifests: dict[str, dict]) -> dict[str, dict[int, list]]:
-    return {
-        label: {entry[0]: entry for entry in document["entries"]}
-        for label, document in manifests.items()
-    }
-
-
-def comparison_label(object_id: int, index: dict, views: dict) -> str | None:
-    """The newest admitted file holding the id (the newest file for a current id)."""
-    for file in reversed(index["files"]):
-        if object_id in views[file["label"]]:
-            return file["label"]
-    return None
-
-
-def entry_for(row: dict, index: dict, views: dict, tombstones: dict) -> dict[str, Any]:
-    source_label = SOURCE_APPEARANCES.get(row["source_revision"])
-    if source_label is None:
-        raise AliasTableError(f"UNPINNED_SOURCE_REVISION:{row['source_revision']}")
-    object_id = row["source_item_id"]
-    source_entry = views[source_label].get(object_id)
-    comparison = comparison_label(object_id, index, views)
-    evidence: dict[str, Any] = {
-        "basis": row["basis"],
-        "source_appearances": source_label,
-        "source_item_id": object_id,
-        "source_revision": row["source_revision"],
-    }
-    if source_entry is None:
-        if comparison is not None:
-            # Absent from its own pinned file but present elsewhere: not proven, never guessed.
-            raise AliasTableError(f"UNPROVEN_ADMITTED_ID:{row['key']}:{object_id}")
-        if row["key"] not in tombstones:
-            raise AliasTableError(f"TOMBSTONE_MISSING:{row['key']}")
-        evidence["admitted_set"] = "ABSENT"
-        return {
-            "key": row["key"],
-            "version": 1,
-            "state": RETIRED,
-            "evidence": evidence,
-            "tombstone_sha256": tombstones[row["key"]]["definition_sha256"],
-        }
-    comparison_entry = views[comparison][object_id]
-    if source_entry[1] != comparison_entry[1]:
-        raise AliasTableError(
-            f"ARCHITECTURE_ESCALATION_REQUIRED:CONTINUITY_BREAK:{row['key']}:{object_id}"
-        )
-    evidence["comparison_appearances"] = comparison
-    evidence["identity_projection_sha256"] = source_entry[1]
-    evidence["record"] = (
-        "UNCHANGED" if source_entry[2] == comparison_entry[2] else "EVOLVED"
-    )
-    return {
-        "key": row["key"],
-        "version": 1,
-        "state": ALIAS,
-        "target": tibia_key(object_id),
-        "evidence": evidence,
-    }
-
-
-def definitions() -> dict[str, dict[str, Any]]:
-    records: dict[str, dict[str, Any]] = {}
-    for path in sorted(ROOT.glob(DEFINITIONS_GLOB)):
-        for record in json.loads(path.read_text(encoding="utf-8"))["records"]:
-            key = record["definition"]["identity"]["key"]
-            if key in records:
-                raise AliasTableError(f"DEFINITION_DUPLICATE:{key}")
-            records[key] = record
-    return records
-
-
-def build_tombstones(rows: list[dict], views: dict) -> tuple[dict, bytes]:
-    union = set().union(*(set(view) for view in views.values()))
-    records = definitions()
-    tombstones = {}
-    for row in rows:
-        if row["source_item_id"] in union:
-            continue
-        record = records.get(row["key"])
-        if record is None:
-            raise AliasTableError(f"TOMBSTONE_DEFINITION_MISSING:{row['key']}")
-        tombstones[row["key"]] = {
-            "key": row["key"],
-            "definition": record,
-            "definition_sha256": sha256_hex(canonical_bytes(record)),
-        }
-    ordered = [tombstones[key] for key in sorted(tombstones)]
-    payload = canonical_bytes(
-        {
-            "schema": TOMBSTONE_SCHEMA,
-            "decision": DECISION,
-            "owner_decision": "D149",
-            "record_count": len(ordered),
-            "records_sha256": sha256_hex(canonical_bytes(ordered)),
-            "records": ordered,
-        }
-    )
-    return tombstones, payload
-
-
-def verify_table(entries: list[dict], index: dict) -> dict[str, int]:
-    union_retired = set(index["retired_ids"])
-    by_target: dict[str, set[int]] = defaultdict(set)
-    counts = {ALIAS: 0, RETIRED: 0}
+def current_entries(entries: list[dict]) -> dict[str, dict]:
+    """The latest entry of every retired key, after checking the version chain."""
+    chains: dict[str, list[dict]] = defaultdict(list)
     for entry in entries:
-        key = entry["key"]
-        if not (REGISTRY_KEY.match(key) or key.startswith("oteryn:item.")):
-            raise AliasTableError(f"RETIRED_KEY_FORMAT:{key}")
+        chains[entry["key"]].append(entry)
+    current = {}
+    for key, chain in chains.items():
+        versions = [entry["version"] for entry in chain]
+        if versions != list(range(1, len(chain) + 1)):
+            raise AliasTableError(f"VERSION_CHAIN:{key}:{versions}")
+        for older in chain[:-1]:
+            if older["state"] != RETIRED:
+                raise AliasTableError(
+                    f"ARCHITECTURE_ESCALATION_REQUIRED:ALIAS_SUPERSEDED:{key}"
+                )
+        if len(chain) > 1 and chain[-1]["state"] != ALIAS:
+            raise AliasTableError(f"SUPERSEDED_WITHOUT_ALIAS:{key}")
+        current[key] = chain[-1]
+    return current
+
+
+def verify_table(entries: list[dict], index: dict, union: set[int]) -> dict[str, int]:
+    union_retired = set(index["retired_ids"])
+    if [entry["key"] for entry in entries] != sorted(
+        entry["key"] for entry in entries
+    ) or [(e["key"], e["version"]) for e in entries] != sorted(
+        (e["key"], e["version"]) for e in entries
+    ):
+        raise AliasTableError("ENTRY_ORDER")
+    current = current_entries(entries)
+    by_target: dict[str, set[str]] = defaultdict(set)
+    counts = {ALIAS: 0, RETIRED: 0}
+    sequences = set()
+    named = 0
+    for key, entry in current.items():
         if key.startswith((TIBIA_KEY_PREFIX, OTERYN_KEY_PREFIX)):
             raise AliasTableError(f"CANONICAL_KEY_RETIRED:{key}")
+        registry = REGISTRY_KEY.match(key)
+        if registry:
+            sequences.add(int(registry.group(1)))
+        elif NAMED_KEY.match(key):
+            named += 1
+        else:
+            raise AliasTableError(f"RETIRED_KEY_FORMAT:{key}")
+        if entry["state"] not in counts:
+            raise AliasTableError(f"STATE:{key}:{entry['state']}")
         counts[entry["state"]] += 1
         if entry["state"] == ALIAS:
             object_id = entry["evidence"]["source_item_id"]
             if entry["target"] != tibia_key(object_id):
                 raise AliasTableError(f"ALIAS_TARGET_NOT_OWN_ID:{key}")
-            by_target[entry["target"]].add(object_id)
-    for target, ids in by_target.items():
-        if len(ids) != 1:
-            raise AliasTableError(f"ALIAS_TARGET_COLLISION:{target}")
-    if (
-        len(entries) != EXPECTED_RETIRED_KEYS
-        or counts[RETIRED] != EXPECTED_WITHOUT_SUCCESSOR
-    ):
-        raise AliasTableError(f"COUNT_MISMATCH:{len(entries)}:{counts}")
+            if object_id not in union:
+                raise AliasTableError(f"ALIAS_TARGET_NOT_ADMITTED:{key}")
+            by_target[entry["target"]].add(key)
+        elif "target" in entry:
+            raise AliasTableError(f"RETIRED_CARRIES_TARGET:{key}")
+    for target, keys in by_target.items():
+        if len(keys) > 1 and SHARED_TARGETS.get(target) != keys:
+            raise AliasTableError(f"ALIAS_TARGET_COLLISION:{target}:{sorted(keys)}")
+    for target, keys in SHARED_TARGETS.items():
+        if by_target.get(target) != keys:
+            raise AliasTableError(f"SHARED_TARGET_ALLOWLIST_STALE:{target}")
+    if sequences != set(REGISTRY_SEQUENCES) or named != NAMED_KEYS:
+        raise AliasTableError(f"RETIRED_KEY_SPACE:{len(sequences)}:{named}")
     return {
-        "retired_keys": len(entries),
+        "retired_keys": len(current),
         "alias": counts[ALIAS],
         "retired_without_successor": counts[RETIRED],
         "alias_targets": len(by_target),
@@ -261,50 +177,111 @@ def verify_table(entries: list[dict], index: dict) -> dict[str, int]:
     }
 
 
-def generate() -> tuple[bytes, bytes]:
+def verify_tombstones(
+    table: dict, archive_bytes: bytes, current: dict[str, dict]
+) -> None:
+    if sha256_hex(archive_bytes) != table["tombstones"]["archive_sha256"]:
+        raise AliasTableError("TOMBSTONE_ARCHIVE_DIGEST")
+    archive = json.loads(archive_bytes)
+    records = archive["records"]
+    if (
+        archive["schema"] != TOMBSTONE_SCHEMA
+        or archive["decision"] != DECISION
+        or archive["record_count"] != len(records)
+        or archive["records_sha256"] != sha256_hex(canonical_bytes(records))
+        or archive_bytes != canonical_bytes(archive)
+    ):
+        raise AliasTableError("TOMBSTONE_ARCHIVE_HEADER")
+    genesis = records[:GENESIS_TOMBSTONES]
+    if sha256_hex(canonical_bytes(genesis)) != GENESIS_TOMBSTONE_RECORDS_SHA256:
+        raise AliasTableError("TOMBSTONE_GENESIS_DIGEST")
+    archived = {}
+    for record in records:
+        if sha256_hex(canonical_bytes(record["definition"])) != record[
+            "definition_sha256"
+        ] or (record["key"] in archived):
+            raise AliasTableError(f"TOMBSTONE_RECORD:{record['key']}")
+        archived[record["key"]] = record
+    for key, entry in current.items():
+        if entry["state"] == RETIRED and (
+            archived.get(key, {}).get("definition_sha256") != entry["tombstone_sha256"]
+        ):
+            raise AliasTableError(f"TOMBSTONE_MISSING:{key}")
+
+
+def verify_append_only(entries: list[dict], base: dict, base_archive: dict) -> None:
+    present = {(entry["key"], entry["version"]): entry for entry in entries}
+    for entry in base["entries"]:
+        if present.get((entry["key"], entry["version"])) != entry:
+            raise AliasTableError(f"APPEND_ONLY:{entry['key']}:{entry['version']}")
+    archive = json.loads(TOMBSTONES.read_bytes())["records"]
+    if archive[: len(base_archive["records"])] != base_archive["records"]:
+        raise AliasTableError("APPEND_ONLY:TOMBSTONES")
+
+
+def git_show(ref: str, path: Path) -> bytes:
+    relative = path.relative_to(ROOT).as_posix()
+    return subprocess.run(
+        ["git", "show", f"{ref}:{relative}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+
+
+def verify(base_ref: str | None = None) -> dict[str, int]:
+    table_bytes = ALIAS_TABLE.read_bytes()
+    table = json.loads(table_bytes)
+    entries = table["entries"]
+    if (
+        table["schema"] != ALIAS_SCHEMA
+        or table["decision"] != DECISION
+        or table["key_rule"] != KEY_RULE
+        or table_bytes != canonical_bytes(table)
+        or table["entries_sha256"] != sha256_hex(canonical_bytes(entries))
+        or table["admitted_set"]["index"]
+        != f"imports/official/appearance-membership/{INDEX_NAME}"
+        or table["admitted_set"]["index_sha256"]
+        != sha256_hex((OUT_DIR / INDEX_NAME).read_bytes())
+        or table["tombstones"]["archive"] != TOMBSTONES.relative_to(ROOT).as_posix()
+    ):
+        raise AliasTableError("ALIAS_TABLE_HEADER")
+    genesis = [entry for entry in entries if entry["version"] == 1]
+    if (
+        len(genesis) != GENESIS_ENTRIES
+        or sha256_hex(canonical_bytes(genesis)) != GENESIS_ENTRIES_SHA256
+    ):
+        raise AliasTableError("ALIAS_GENESIS_DIGEST")
     index, manifests = load_admitted()
-    views = manifest_views(manifests)
-    rows = source_rows()
-    tombstones, tombstone_payload = build_tombstones(rows, views)
-    entries = [entry_for(row, index, views, tombstones) for row in rows]
-    counts = verify_table(entries, index)
-    table = {
-        "schema": ALIAS_SCHEMA,
-        "decision": DECISION,
-        "key_rule": KEY_RULE,
-        "append_only": "an entry is never edited; a later version supersedes a RETIRED_WITHOUT_SUCCESSOR entry only with new Tibia-id evidence",
-        "admitted_set": {
-            "index": f"imports/official/appearance-membership/{INDEX_NAME}",
-            "index_sha256": sha256_hex((OUT_DIR / INDEX_NAME).read_bytes()),
-        },
-        "tombstones": {
-            "archive": TOMBSTONES.relative_to(ROOT).as_posix(),
-            "archive_sha256": sha256_hex(tombstone_payload),
-        },
-        "counts": counts,
-        "entries_sha256": sha256_hex(canonical_bytes(entries)),
-        "entries": entries,
-    }
-    return canonical_bytes(table), tombstone_payload
+    union = set().union(
+        *({entry[0] for entry in doc["entries"]} for doc in manifests.values())
+    )
+    counts = verify_table(entries, index, union)
+    if table["counts"] != counts:
+        raise AliasTableError(f"COUNTS:{counts}")
+    verify_tombstones(table, TOMBSTONES.read_bytes(), current_entries(entries))
+    if base_ref is not None:
+        verify_append_only(
+            entries,
+            json.loads(git_show(base_ref, ALIAS_TABLE)),
+            json.loads(git_show(base_ref, TOMBSTONES)),
+        )
+    return counts
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "--check", action="store_true", help="verify instead of writing"
+        "--check", action="store_true", help="verify (the only mode; kept for CI)"
+    )
+    parser.add_argument(
+        "--base-ref", help="git revision whose table must survive unchanged"
     )
     args = parser.parse_args()
-    table, tombstones = generate()
-    if args.check:
-        for path, payload in ((ALIAS_TABLE, table), (TOMBSTONES, tombstones)):
-            if not path.is_file() or path.read_bytes() != payload:
-                raise AliasTableError(f"DRIFT:{path.relative_to(ROOT).as_posix()}")
-    else:
-        ALIAS_TABLE.write_bytes(table)
-        TOMBSTONES.write_bytes(tombstones)
-    counts = json.loads(table)["counts"]
+    counts = verify(args.base_ref)
     print(
-        f"item_id_alias_table{' --check' if args.check else ''}: PASS {json.dumps(counts, sort_keys=True)}"
+        f"item_id_alias_table --check: PASS {json.dumps(counts, sort_keys=True)}"
+        + (f" append_only_vs={args.base_ref}" if args.base_ref else "")
     )
     return 0
 
