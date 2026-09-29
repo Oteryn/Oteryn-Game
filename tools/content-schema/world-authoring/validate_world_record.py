@@ -68,17 +68,19 @@ def family_positions(root: Path, family: str) -> list[tuple[str, dict]]:
             rows.extend((key, pos) for pos in positions(declaration))
             footprint = declaration.get("footprint")
             if footprint:
-                # The footprint box corners, on each floor the house occupies.
-                for row in footprint["floors"]:
+                # The footprint box corners, on each floor the footprint occupies
+                # (a house lists `floors`, a region footprint has one `floor`).
+                for row in footprint.get("floors") or [footprint]:
                     for x in (footprint["min_x"], footprint["max_x"]):
                         for y in (footprint["min_y"], footprint["max_y"]):
                             rows.append(
                                 (
                                     key,
                                     {
-                                        "coordinate_frame": declaration["entry"][
+                                        "coordinate_frame": footprint.get(
                                             "coordinate_frame"
-                                        ],
+                                        )
+                                        or declaration["entry"]["coordinate_frame"],
                                         "floor": row["floor"],
                                         "x": x,
                                         "y": y,

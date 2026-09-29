@@ -95,6 +95,18 @@ def make_root(root: Path) -> None:
         },
         "Transition.Teleport": {"from": pos(800, 800, 7), "to": pos(900, 1000, 9)},
         "Area.HuntingPlace": {"position": pos(1000, 1480, 7)},
+        "Area.Region": {
+            "anchor": pos(800, 800, 7),
+            "footprint": {
+                "coordinate_frame": FRAME,
+                "floor": 7,
+                "max_x": 802,
+                "max_y": 802,
+                "min_x": 800,
+                "min_y": 800,
+                "tile_count": 4,
+            },
+        },
     }
     for family, declaration in families.items():
         directory = validate.FAMILIES[family][0]
