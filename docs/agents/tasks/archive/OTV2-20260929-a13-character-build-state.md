@@ -4,15 +4,15 @@
 task_id: OTV2-20260929-a13-character-build-state
 title: "A13 Character build state: vocation and magic level (D150-D151)"
 mode: CONTRACT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1265
 base_sha: 48de3868
-head_sha: null
-final_head_sha: null
+head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
+final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_frozen_at: null
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-29
@@ -57,7 +57,7 @@ persistence review.
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
+- [x] The decision document is on an exact frozen head with passing validators.
 - [ ] Independent exact-head review.
 - [ ] Protected Merge Queue integration.
 
@@ -67,19 +67,25 @@ persistence review.
 
 ## Validation
 
-- `python3 tools/agents/validate_governance.py`
-- `python3 tools/repository/validate_repository_policy.py`
-- `git diff --check`
+- `python3 tools/agents/validate_governance.py`: PASS on the final authoring tree.
+- `python3 tools/repository/validate_repository_policy.py`: PASS on the final authoring tree.
+- `git diff --check`: clean.
+
+## Closeout
+
+- PR #1265. Merge commit/result: squash merge of #1265 (`git log --grep "(#1265)"`).
+- Review: Codex review requested on the frozen head. Its outcome and any repair are recorded on
+  #162 and in the PR threads.
+- This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ## Context checkpoint
 
 ```yaml
-last_progress: decision authored
-status: implementing
+last_progress: final authoring commit; archived before freeze
+status: completed
 branch: claude/gifted-rubin-a0axzx
-head_sha: null
-pr: null
+pr: 1265
 owner_action_required: null
 blocker: null
-next_action: "open the PR, request review, archive this record in the final authoring commit"
+next_action: null
 ```
