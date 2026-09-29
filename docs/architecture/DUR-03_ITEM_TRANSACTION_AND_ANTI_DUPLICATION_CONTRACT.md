@@ -1076,6 +1076,11 @@ conservation) is unchanged.
   alternative — is not defined or registered here; it lands in the D3-6 implementation child
   alongside the corpse-loot MINT's and `DECAY_RETIRE`'s own registration, under the same
   non-candidate, no-`_fixture`-field-names conditions.
+  **Allocation note (D3-4):** the control plane allocated this TRANSFER-source widening to D3-4, not
+  D3-6. It landed additively as `OneItemTransferV1.corpse_source` (field 7,
+  `OneItemCorpseSourceV1 { corpse_item_instance_id, placement_ordinal, corpse_ground }`), exactly one
+  of `source`/`corpse_source` present, no existing field changed; the MINT `destination` widening and
+  `DECAY_RETIRE` stay with D3-6.
 - **`COMBAT01-CORPSES-PER-SCOPE` (already accepted at 64,
   `reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md` §4.1 row 6, "reject the
   projection; the death still commits and loot follows D52") is the one bound on concurrent
