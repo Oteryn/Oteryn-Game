@@ -49,7 +49,9 @@
 //!   `ThinkOccurrence`'s sequence is derived from: it advances monotonically per actor and never
 //!   re-issues a value, so `(actor, sequence)` can never repeat across the tracker's lifetime.
 //!   `OwnerTimerLane::schedule` independently refuses a duplicate `(family, occurrence)` pair as
-//!   a second guarantee.
+//!   a second guarantee. `ThinkSequenceTracker::retire` bounds the tracker's size across
+//!   respawns: the owner calls it on an actor's death/despawn, so the table holds an entry per
+//!   currently live/pending actor, never one per past generation forever (Codex P2 on `#1196`).
 //! - **(b) unforgeable stamp provenance.** `schedule_next_think` fabricates no
 //!   `RuntimeWorkStamp`: it only forwards one the caller's `&ScopeRuntimeFence` already issued,
 //!   and `OwnerTimerLane::schedule` itself is what checks `accepts_stamp`.
@@ -416,6 +418,15 @@ pub struct ThinkOccurrence {
 /// across this tracker's lifetime. `ExactActorRef` derives no `Hash` (its fields are private to
 /// `foundation`), so this is a small linear table rather than a hash map -- bounded by the D57
 /// envelope (64 live creatures), not a concern at that size.
+///
+/// Bounded across respawns (Codex P2 on `#1196`): each respawn's new actor-local generation is a
+/// distinct `ExactActorRef` (`foundation`'s own doc: "never decoded from a client handle", so
+/// this module cannot itself compare two refs' generations to tell "the same slot, a newer
+/// generation" from "an unrelated actor" -- `ExactActorRef`'s fields are private to
+/// `foundation`). Without `retire`, a dead generation's entry would never be removed and the
+/// table would grow one stale entry per past generation forever. `retire` is the bounded
+/// alternative: the owner (which does hold generation identity) calls it on that actor's death
+/// or despawn, so the entry count tracks currently live/pending actors, never total history.
 #[derive(Debug, Default)]
 pub struct ThinkSequenceTracker {
     next: Vec<(ExactActorRef, u64)>,
@@ -440,6 +451,29 @@ impl ThinkSequenceTracker {
             self.next.push((actor, 1));
             ThinkOccurrence { actor, sequence: 0 }
         }
+    }
+
+    /// Removes `actor`'s entry, if any. The owner calls this exactly once per actor death or
+    /// despawn (before or independent of a respawn's fresh `ExactActorRef`), which is what
+    /// bounds this tracker's size to currently live/pending actors. A safe no-op (returns
+    /// `false`, changes nothing) for an actor that was never scheduled or was already retired.
+    pub fn retire(&mut self, actor: ExactActorRef) -> bool {
+        let before = self.next.len();
+        self.next.retain(|(candidate, _)| *candidate != actor);
+        self.next.len() != before
+    }
+
+    /// The number of actors this tracker currently holds a sequence for. Bounded by the D57
+    /// envelope (64) as long as the owner retires every dead/despawned actor.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.next.len()
+    }
+
+    /// Whether this tracker currently holds no entries.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.next.is_empty()
     }
 }
 
@@ -723,6 +757,68 @@ mod tests {
         );
         assert_eq!(third.sequence, 0);
         assert_eq!(third.actor, actor_b);
+    }
+
+    #[test]
+    fn think_sequence_tracker_sequence_is_monotonic_within_one_generation() {
+        let actor = ExactActorRef::transport_fixture(world_id(), channel_id(1));
+        let mut tracker = ThinkSequenceTracker::new();
+        let first = tracker.next_occurrence(actor);
+        let second = tracker.next_occurrence(actor);
+        let third = tracker.next_occurrence(actor);
+        assert_eq!([first.sequence, second.sequence, third.sequence], [0, 1, 2]);
+        assert_eq!(
+            tracker.len(),
+            1,
+            "still one entry: the same live generation"
+        );
+    }
+
+    #[test]
+    fn think_sequence_tracker_stays_bounded_across_many_respawn_generations_of_one_slot() {
+        // Codex P2 on #1196: without `retire`, this tracker would grow one stale entry per past
+        // generation forever. Each iteration here stands in for one respawn's fresh
+        // `ExactActorRef` (a distinct generation is, by construction, a distinct ref) of what is
+        // conceptually the same spawn slot: schedule its think, then retire it on death, exactly
+        // as the owner would across many respawn cycles of one cell.
+        let mut tracker = ThinkSequenceTracker::new();
+        for generation_seed in 1_u8..=200 {
+            let actor = ExactActorRef::transport_fixture(world_id(), channel_id(generation_seed));
+            let occurrence = tracker.next_occurrence(actor);
+            assert_eq!(
+                occurrence.sequence, 0,
+                "a fresh generation starts a new sequence"
+            );
+            assert_eq!(
+                tracker.len(),
+                1,
+                "at most one entry while this generation is live"
+            );
+            assert!(
+                tracker.retire(actor),
+                "retire removes the dead generation's entry"
+            );
+        }
+        assert!(
+            tracker.is_empty(),
+            "no stale entries survive 200 respawn generations"
+        );
+    }
+
+    #[test]
+    fn think_sequence_tracker_retire_is_a_safe_no_op_for_an_untracked_or_already_retired_actor() {
+        let tracked = ExactActorRef::transport_fixture(world_id(), channel_id(1));
+        let untracked = ExactActorRef::transport_fixture(world_id(), channel_id(2));
+        let mut tracker = ThinkSequenceTracker::new();
+        assert!(!tracker.retire(untracked), "nothing was ever scheduled");
+
+        tracker.next_occurrence(tracked);
+        assert!(tracker.retire(tracked));
+        assert!(
+            !tracker.retire(tracked),
+            "retiring an already-retired actor changes nothing"
+        );
+        assert!(tracker.is_empty());
     }
 
     #[test]
