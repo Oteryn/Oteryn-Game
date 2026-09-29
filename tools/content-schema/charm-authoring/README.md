@@ -14,7 +14,7 @@ None of these is modelled here. The package writes nothing under `content/` and 
 
 | File | Purpose |
 |---|---|
-| `charm.schema.json` | One catalogue (`OTERYN_CHARM_AUTHORING_CATALOGUE/v1`), JSON Schema 2020-12, closed shapes. The effect is a `oneOf` over typed shapes: `attack_proc_damage`, `attack_proc_resource_damage`, `kill_area_damage`, the timed effects (paralyse, haste, prevent flee) and the parameterless effects (dodge, parry, leech, critical and so on). |
+| `charm.schema.json` | One catalogue (`OTERYN_CHARM_AUTHORING_CATALOGUE/v1`), JSON Schema 2020-12, closed shapes. The effect is a `oneOf` over typed shapes: `attack_proc_damage`, `attack_proc_resource_damage`, `kill_area_damage`, `reflect_damage_taken` (each damage shape says whether it ignores resistances and whether armor reduces it), the timed effects (paralyse, haste, prevent flee) and the parameterless effects (dodge, leech, critical and so on). |
 | `charm_authoring.py` | `capture` writes the source facts. `build` derives the catalogue and the comparison report from them, and `build --check` diffs an in-memory build against the committed samples. `validate` runs the schema and semantic checks. |
 | `test_charm_authoring.py` | No-network tests: infobox parsing and its rejections, the pinned Canary digest, the committed build, and one negative case per validator rule. |
 | `samples/charm-sources-2026-09-29.json` | The captured source facts (details below). |
@@ -26,9 +26,10 @@ None of these is modelled here. The package writes nothing under `content/` and 
 - **TibiaWiki (tibia.fandom.com), `Derived`, primary.** The 25 pages of `Category:Charms` (`Infobox Charm`).
   - Stored per page: page id, revision id, timestamp, SHA-256 of the raw wikitext, and the infobox name, type, cost,
     the per-stage percent triple and the `implemented` version. No wiki prose is stored.
-  - Parameters that do not vary by stage (5% of the creature's maximum health, the damage cap of 2× level, the 8%
-    cap, the 10 s and 30 s durations, 15%, 2.5%) are written in `CHARMS` in the code. Capture rejects the page unless
-    its text contains the phrases listed next to each entry; those phrases are stored as `confirmed_phrases`.
+  - Parameters that do not vary by stage (5% of the creature's maximum health, the damage caps of 2× and 6× level, the
+    8% cap, resistance and armor behaviour, the 10 s and 30 s durations, 15%, 2.5%) are written in `CHARMS` in the
+    code. Capture rejects the page unless its text contains the phrases listed next to each entry; those phrases are
+    stored as `confirmed_phrases`.
   - Currency (major charms cost Charm Points, minor charms cost Minor Charm Echoes) is from the wiki pages
     `Major Charms` and `Minor Charms`.
 - **Canary `47dfd51f`, `OtsHypothesisOnly`, cross-check.** `data/scripts/systems/bestiary_charms.lua`, pinned by
@@ -48,13 +49,21 @@ None of these is modelled here. The package writes nothing under `content/` and 
 
 ## Wiki and Canary comparison (2026-09-29)
 
-All 25 charms agree on name, category, stage costs and stage values; 20 also agree on element and effect percent.
-The catalogue follows the wiki; the 5 open points are for the rules layer:
+All 25 charms agree on name, category, stage costs and stage values. The catalogue follows the wiki, including its notes:
 
-- **Bless:** Canary also carries `percent = 10`. The wiki gives 6/9/12% as the loss reduction itself.
-- **Carnage, Overpower, Overflux:** Canary deals `NEUTRAL` damage; the wiki says Physical.
-- **Parry:** Canary reflects `PHYSICAL`. Parry has no element in the catalogue: the wiki notes say the damage is
-  shown as physical but is neutral.
+- **Overpower and Overflux:** shown as physical, but the damage ignores the creature's resistances (`ignores_resistances`). This
+  matches Canary's neutral damage.
+- **Parry:** shown as physical, ignores resistances, and is reduced by the creature's armor. Canary's Lua table says `PHYSICAL`,
+  but its C++ handler (`iobestiary.cpp`) deals `COMBAT_NEUTRALDAMAGE` blocked by armor, which matches the wiki.
+- **Carnage:** capped at 6× the character's level and reduced by armor; Canary and Crystal use the same cap.
+
+2 points stay open for the rules layer:
+
+- **Bless:** Canary also carries `percent = 10`, but its death-loss code uses only the 6/9/12% stage values, like the wiki.
+- **Carnage:** the wiki calls it Physical Damage and says nothing about resistances. Canary deals it as neutral.
+  The catalogue keeps the wiki (`ignores_resistances: false`) until verified in the live game.
+
+Crystal (`00ce02a`) has the same charm table and handlers as Canary.
 
 ```sh
 pip install -r requirements.txt

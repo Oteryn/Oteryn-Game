@@ -510,7 +510,9 @@
       {
         "confirmed_phrases": [
           "killing a monster",
-          "physical damage equal to 15% of its maximum health to all monsters"
+          "physical damage equal to 15% of its maximum health to all monsters",
+          "damage is limited up to 6 times the character level",
+          "the damage from this charm is reduced by creatures' armor"
         ],
         "cost": [
           600,
@@ -581,7 +583,8 @@
       {
         "confirmed_phrases": [
           "5% of its maximum hit points as death damage",
-          "damage is limited to 2 times the character's level"
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
         ],
         "cost": [
           360,
@@ -605,7 +608,8 @@
       {
         "confirmed_phrases": [
           "5% of its maximum hit points as holy damage",
-          "damage is limited to 2 times the character's level"
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
         ],
         "cost": [
           600,
@@ -653,7 +657,8 @@
       {
         "confirmed_phrases": [
           "5% of its maximum hit points as fire damage",
-          "damage is limited to 2 times the character's level"
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
         ],
         "cost": [
           400,
@@ -701,7 +706,8 @@
       {
         "confirmed_phrases": [
           "5% of its maximum hit points as ice damage",
-          "damage is limited to 2 times the character's level"
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
         ],
         "cost": [
           320,
@@ -795,7 +801,8 @@
       {
         "confirmed_phrases": [
           "physical damage equal to 2.5% of your maximum mana",
-          "limited up to 8% of the creature's maximum health"
+          "limited up to 8% of the creature's maximum health",
+          "it is neutral and will damage the creature regardless of its resistances"
         ],
         "cost": [
           600,
@@ -819,7 +826,8 @@
       {
         "confirmed_phrases": [
           "physical damage equal to 5% of your maximum health",
-          "limited up to 8% of the creature's maximum health"
+          "limited up to 8% of the creature's maximum health",
+          "it is neutral and will damage the creature regardless of its resistances"
         ],
         "cost": [
           600,
@@ -842,7 +850,9 @@
       },
       {
         "confirmed_phrases": [
-          "reflected to the aggressor"
+          "reflected to the aggressor",
+          "it is neutral and will damage the creature regardless of its resistances",
+          "it will, however, be affected by the creature's armor"
         ],
         "cost": [
           400,
@@ -866,7 +876,8 @@
       {
         "confirmed_phrases": [
           "5% of its maximum hit points as earth damage",
-          "damage is limited to 2 times the character's level"
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
         ],
         "cost": [
           240,
@@ -1005,7 +1016,8 @@
       {
         "confirmed_phrases": [
           "5% of its maximum hit points as physical damage",
-          "damage is limited to 2 times the character's level"
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
         ],
         "cost": [
           240,
@@ -1029,7 +1041,8 @@
       {
         "confirmed_phrases": [
           "5% of its maximum hit points as energy damage",
-          "damage is limited to 2 times the character's level"
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
         ],
         "cost": [
           320,
