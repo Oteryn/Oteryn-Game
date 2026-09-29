@@ -115,8 +115,7 @@ sha256-pinned and `OtsHypothesisOnly`.
 - [x] Blue Valley is partially filled from `maps.7z:blue_valley.otbm` (fill-only: a tile is
       added only where the base map has no tile at that position, nothing existing is
       overwritten or merged): 2,965 tiles and 3,364 items added (floor 2 118, floor 3 219,
-      floor 4 685, floor 5 918, floor 6 1,025; floor 7 none because the base already has a
-      tile at every fragment position, 905 of them land over base water), pinned by the
+      floor 4 685, floor 5 918, floor 6 1,025; floor 7 none from the fill), pinned by the
       sha256 of the archive and member, counts in the capture summary `fill`, reproduced by
       `convert_world_base.py --check` (needs `py7zr`, `requirements-regenerate.txt`).
 - [x] `maps.7z:summer-update-2025.otbm` is partially filled (owner decision 2b, fill-only,
@@ -125,6 +124,11 @@ sha256-pinned and `OtsHypothesisOnly`.
       y31786-31884, floors 8-12; a cave rework), floors 0-7 only where the official 15.30
       minimap shows land. 16,928 tiles, 19,667 items (floors 2-6 151, floor 8 1,913, 9 5,678,
       10 584, 11 611, 12 169, 13 3,608, 14 3,619, 15 595), 6 palette and 6 `Terrain` entries.
+- [x] Blue Valley floor 7 (owner decision 1a): the `replace` rule of the same pin swaps a
+      base tile for the fragment tile only where the base ground is water, the fragment
+      ground is land and the 15.30 minimap ZZ07 shows land: 905 tiles (896 inside the Blue
+      Valley box), capture summary `replace`, validated and tested; the island footprint
+      grows to 10,427 tiles. Nothing else is replaced.
       Still to draw: Blue Valley NE/E/S blocks, Temple of Light, Great Expedition Island and
       Wharf, Marapur/Thalassara floors 2-6, Nargor floors 4-6, Upper Roshamuul floor 6,
       Great Expedition floors 3-6, Edron floors 8-12 (deferred).

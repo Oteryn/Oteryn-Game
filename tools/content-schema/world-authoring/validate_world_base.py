@@ -25,6 +25,7 @@ from convert_world_base import (
     FILL_RULE,
     ITEM_NAMESPACE,
     PINNED_TOTALS,
+    REPLACE_RULE,
     TERRAIN_DIRECTORY,
     TERRAIN_KEY_PREFIX,
     TERRAIN_NAMESPACE,
@@ -186,6 +187,7 @@ def check_index(index: dict, summary: dict, errors: list[str]) -> None:
     if index.get("source") != summary.get("source"):
         errors.append(f"{INDEX}: source differs from the capture summary")
     check_fill(index, summary, errors)
+    check_replace(index, summary, errors)
     frame = index.get("coordinate_frame")
     if frame != "global-target-2026-09-27":
         errors.append(f"{INDEX}: unexpected coordinate_frame {frame!r}")
@@ -246,6 +248,50 @@ def check_fill(index: dict, summary: dict, errors: list[str]) -> None:
         "items_added"
     ] != sum(s.get("items_added", 0) for s in sources):
         errors.append(f"{SUMMARY}: fill totals differ from the sources")
+
+
+def check_replace(index: dict, summary: dict, errors: list[str]) -> None:
+    """The recorded replacement matches its pin and stays inside what the fill skipped."""
+    replace = summary.get("replace")
+    pins = [p for p in (index.get("source") or {}).get("fill", []) if "replace" in p]
+    if not isinstance(replace, dict) or set(replace) != {
+        "items_added",
+        "items_removed",
+        "member",
+        "rule",
+        "tiles_replaced",
+        "tiles_replaced_by_floor",
+    }:
+        errors.append(f"{SUMMARY}: replace record is missing or has the wrong keys")
+        return
+    if replace["rule"] != REPLACE_RULE:
+        errors.append(f"{SUMMARY}: replace rule differs from the documented one")
+    by_floor = replace["tiles_replaced_by_floor"]
+    if (
+        not isinstance(by_floor, dict)
+        or sum(by_floor.values()) != replace["tiles_replaced"]
+    ):
+        errors.append(f"{SUMMARY}: replaced tiles do not add up")
+        return
+    if not pins:
+        if replace["tiles_replaced"] or replace["member"] is not None:
+            errors.append(f"{SUMMARY}: tiles are replaced but no fill pins a rule")
+        return
+    pin = pins[0]
+    low, high = pin["replace"]["floors"]
+    sources = {
+        s.get("member", {}).get("name"): s
+        for s in summary.get("fill", {}).get("sources", [])
+    }
+    source = sources.get(pin["member"]["name"], {})
+    skipped = source.get("tiles_skipped_existing_by_floor", {})
+    if replace["member"] != pin["member"]["name"]:
+        errors.append(f"{SUMMARY}: replace member differs from the pinned fill")
+    for floor, count in by_floor.items():
+        if not low <= int(floor) <= high or count > skipped.get(floor, 0):
+            errors.append(
+                f"{SUMMARY}: floor {floor} replaces {count} tiles outside the pinned rule"
+            )
 
 
 def terrain_bindings(root: Path, errors: list[str]) -> dict[int, set[str]]:
@@ -504,8 +550,12 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
     if summary.get("map", {}).get("floors") != [0, codec.MAX_FLOOR]:
         errors.append(f"{SUMMARY}: map floors must be [0, {codec.MAX_FLOOR}]")
     fill = summary.get("fill", {})
+    replace = summary.get("replace", {})
     base = {
-        "items": index["totals"]["items"] - fill.get("items_added", 0),
+        "items": index["totals"]["items"]
+        - fill.get("items_added", 0)
+        - replace.get("items_added", 0)
+        + replace.get("items_removed", 0),
         "tiles": index["totals"]["tiles"] - fill.get("tiles_added", 0),
     }
     if pinned is not None and {k: base[k] for k in pinned} != pinned:

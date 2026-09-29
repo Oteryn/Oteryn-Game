@@ -62,6 +62,11 @@ MAPS_ARCHIVE = "data-global/world/maps.7z"
 # coordinates, the frame of `world.otbm`, so no offset. A tile is added only where the base
 # map has no tile at that position: nothing existing is overwritten or merged.
 FILL_RULE = "a tile is added only where the base map has no tile at that position"
+REPLACE_RULE = (
+    "a base tile is replaced only where its ground is water, the fragment tile's ground is "
+    "land and the official minimap shows land"
+)
+GROUND_CLASSES = HERE / "island-ground-classes.json"
 FILL = [
     {
         "archive": {
@@ -71,6 +76,15 @@ FILL = [
         "member": {
             "name": "blue_valley.otbm",
             "sha256": "9f0bd617651de2219b5f4227d8e34166fd143eeb519a3bdde6658346ba68d63d",
+        },
+        # The one place a base tile is replaced, by `replacement_candidates`: on these
+        # floors a base tile whose ground is water becomes the fragment tile where that
+        # tile's ground is land and the official 15.30 minimap shows land.
+        "replace": {
+            "base_ground": "water",
+            "floors": [7, 7],
+            "fragment_ground": "land",
+            "official": "official-minimap-land",
         },
     },
     {
@@ -446,6 +460,85 @@ def select_tiles(pending: dict, select: dict, land) -> tuple[set, dict]:
     return taken, stats
 
 
+def ground_ids(path: Path = GROUND_CLASSES) -> tuple[set[int], set[int]]:
+    """The water and the lava ground item ids of the committed island ground classes."""
+    classes = json.loads(path.read_bytes())
+    found = []
+    for name in ("water", "lava"):
+        ids: set[int] = set()
+        for text in classes[name].values():
+            for part in text.split(","):
+                low, _, high = part.partition("-")
+                ids.update(range(int(low), int(high or low) + 1))
+        found.append(ids)
+    return found[0], found[1]
+
+
+def has_destination(items) -> bool:
+    return any(
+        (attrs or {}).get(DEST_KEY, UNSET_DEST) != UNSET_DEST for *_, attrs in items
+    )
+
+
+def replacement_candidates(raw: bytes, replace: dict, grounds, land) -> dict:
+    """The fragment tiles that may replace a base tile: `{(x, y, z): tile}`.
+
+    Land ground (present, neither water nor lava) on the floors of `replace`, where the
+    official minimap shows land. A candidate with a house, zone or teleport is refused.
+    """
+    water, lava = grounds
+    low, high = replace["floors"]
+    found: dict = {}
+
+    def on_tile(x, y, z, flags, house, zones, items) -> None:
+        if not low <= z <= high or not items or items[0][0] in water | lava:
+            return
+        if not land(x, y, z):
+            return
+        if house is not None or zones or has_destination(items):
+            raise ConvertError(
+                f"replacement tile ({x}, {y}, {z}) carries a house, zone or teleport"
+            )
+        found.setdefault((x, y, z), (flags, house, zones, items))
+
+    otbm_reader.read_tiles(raw, on_tile)
+    return found
+
+
+class Replacer:
+    """Feeds the base tiles to the collector, swapping in the candidates over water."""
+
+    def __init__(self, collector: Collector, candidates: dict, water: set[int]):
+        self.collector, self.candidates, self.water = collector, candidates, water
+        self.by_floor: Counter = Counter()
+        self.items_added = self.items_removed = 0
+
+    def __call__(self, x, y, z, flags, house, zones, items) -> None:
+        tile = self.candidates.get((x, y, z))
+        if tile is not None and items and items[0][0] in self.water:
+            if house is not None or zones or has_destination(items):
+                raise ConvertError(
+                    f"replaced base tile ({x}, {y}, {z}) carries a house, zone or teleport"
+                )
+            self.by_floor[z] += 1
+            self.items_removed += len(items)
+            self.items_added += len(tile[3])
+            flags, house, zones, items = tile
+        self.collector(x, y, z, flags, house, zones, items)
+
+
+def replace_summary(row: dict | None, replacer: Replacer | None) -> dict:
+    by_floor = replacer.by_floor if replacer else Counter()
+    return {
+        "items_added": replacer.items_added if replacer else 0,
+        "items_removed": replacer.items_removed if replacer else 0,
+        "member": row["member"]["name"] if row else None,
+        "rule": REPLACE_RULE,
+        "tiles_replaced": sum(by_floor.values()),
+        "tiles_replaced_by_floor": {str(z): n for z, n in sorted(by_floor.items())},
+    }
+
+
 def apply_fill(
     collector: Collector,
     raw: bytes,
@@ -476,14 +569,7 @@ def apply_fill(
     }
 
     def add(x, y, z, flags, house, zones, items) -> None:
-        if (
-            house is not None
-            or zones
-            or any(
-                (attrs or {}).get(DEST_KEY, UNSET_DEST) != UNSET_DEST
-                for *_, attrs in items
-            )
-        ):
+        if house is not None or zones or has_destination(items):
             raise ConvertError(
                 f"fill tile ({x}, {y}, {z}) carries a house, zone or teleport"
             )
@@ -571,7 +657,21 @@ def build(
         bindings = ITEM_BINDINGS.read_bytes()
     bound = bound_keys(bindings)
     collector = Collector()
-    facts = otbm_reader.read_tiles(blobs[OTBM], collector)
+    replace_row = next(
+        (r for r in FILL if "replace" in r and fill_key(r) in blobs), None
+    )
+    replacer = None
+    if replace_row is not None:
+        land = land or minimap_land()
+        grounds = ground_ids()
+        replacer = Replacer(
+            collector,
+            replacement_candidates(
+                blobs[fill_key(replace_row)], replace_row["replace"], grounds, land
+            ),
+            grounds[0],
+        )
+    facts = otbm_reader.read_tiles(blobs[OTBM], replacer or collector)
     if facts.unknown_item_attrs or facts.unknown_tile_attrs:
         raise ConvertError(
             f"unknown OTBM attributes: items {dict(facts.unknown_item_attrs)}, "
@@ -708,6 +808,7 @@ def build(
             },
         },
         "rejected_items": {"unsupported_attributes": len(collector.unsupported)},
+        "replace": replace_summary(replace_row, replacer),
         "fill": {
             "items_added": sum(f["items_added"] for f in fills),
             "rule": FILL_RULE,
@@ -771,9 +872,13 @@ def main() -> int:
             terrain=terrain_keys(),
         )
         totals = json.loads(out[f"{DIRECTORY}/index.json"])["totals"]
-        fill = json.loads(out[str(SUMMARY.relative_to(ROOT))])["fill"]
+        summary = json.loads(out[str(SUMMARY.relative_to(ROOT))])
+        fill, replace = summary["fill"], summary["replace"]
         base = {
-            "items": totals["items"] - fill["items_added"],
+            "items": totals["items"]
+            - fill["items_added"]
+            - replace["items_added"]
+            + replace["items_removed"],
             "tiles": totals["tiles"] - fill["tiles_added"],
         }
         if base != PINNED_TOTALS:

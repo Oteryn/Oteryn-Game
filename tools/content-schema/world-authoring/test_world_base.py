@@ -480,6 +480,123 @@ class ConvertAndValidateTest(unittest.TestCase):
         with self.assertRaises(convert.ConvertError):
             self.build_with_fill(raw)
 
+    def test_replacement_swaps_water_for_official_land_and_nothing_else(self):
+        water, water2, land_id = 4597, 4598, 555
+        base = self.fill_map(
+            (
+                7,
+                [
+                    (1, 1, [self.item(water), self.item(1234)]),  # replaced (2 items)
+                    (2, 1, [self.item(water)]),  # minimap shows water: kept
+                    (3, 1, [self.item(land_id)]),  # base land: never replaced
+                    (5, 1, [self.item(water)]),  # fragment water: kept
+                    (6, 1, [self.item(water)]),  # replaced on another tile
+                ],
+            ),
+            (6, [(1, 1, [self.item(water)])]),  # outside the floors of the rule
+        )
+        fragment = self.fill_map(
+            (
+                7,
+                [
+                    (1, 1, [self.item(100)]),
+                    (2, 1, [self.item(100)]),
+                    (3, 1, [self.item(100)]),
+                    (4, 1, [self.item(100)]),  # base has no tile: ordinary fill
+                    (5, 1, [self.item(water2)]),
+                    (6, 1, [self.item(100), self.item(555)]),
+                ],
+            ),
+            (6, [(1, 1, [self.item(100)])]),
+        )
+        shown = {(1001, 1001, 7), (1003, 1001, 7), (1005, 1001, 7), (1006, 1001, 7)}
+        out = convert.build(
+            {
+                convert.OTBM: base,
+                convert.ITEMS_XML: ITEMS_XML,
+                self.FILL_KEY: fragment,
+            },
+            ITEMS_BY_SERVER_ID,
+            land=lambda x, y, z: (x, y, z) in shown or (x, y, z) == (1001, 1001, 6),
+        )
+        summary = self.summary(out)
+        self.assertEqual(
+            summary["replace"],
+            {
+                "items_added": 3,
+                "items_removed": 3,
+                "member": "blue_valley.otbm",
+                "rule": convert.REPLACE_RULE,
+                "tiles_replaced": 2,
+                "tiles_replaced_by_floor": {"7": 2},
+            },
+        )
+        self.assertEqual(summary["fill"]["tiles_added"], 1)
+        self.assertEqual(summary["totals"]["tiles"], 6 + 1)
+        palette = [
+            r["source_item_id"] for r in json.loads(out[validate.INDEX])["palette"]
+        ]
+        _z, _rx, _ry, sectors = codec.decode_region(self.decode_path(out, 7))
+        tiles = {
+            (x, y): [palette[i] for i, _d, _a in items]
+            for _local, rows in sectors
+            for x, y, _f, _h, _z, items in rows
+        }
+        self.assertEqual(
+            tiles,
+            {
+                (1001, 1001): [100],
+                (1002, 1001): [water],
+                (1003, 1001): [land_id],
+                (1004, 1001): [100],
+                (1005, 1001): [water],
+                (1006, 1001): [100, 555],
+            },
+        )
+        floor6 = codec.decode_region(self.decode_path(out, 6))[3]
+        self.assertEqual(
+            [
+                palette[i]
+                for _l, rows in floor6
+                for *_r, items in rows
+                for i, *_ in items
+            ],
+            [water],
+        )
+        root = self.install(out)
+        self.assertEqual(validate.validate(root, workers=1), [])
+        # the world.otbm totals stay checkable: 6 base tiles with 7 items in all
+        self.assertEqual(validate.validate(root, {"items": 7, "tiles": 6}), [])
+        tampered = json.loads(out[str(convert.SUMMARY.relative_to(convert.ROOT))])
+        tampered["replace"]["tiles_replaced"] = 9
+        tampered["replace"]["tiles_replaced_by_floor"] = {"7": 9}
+        (root / convert.SUMMARY.relative_to(convert.ROOT)).write_bytes(
+            validate.canonical(tampered)
+        )
+        self.assertTrue(
+            any(
+                "outside the pinned rule" in e
+                for e in validate.validate(root, workers=1)
+            )
+        )
+
+    def test_a_replaced_base_tile_with_a_house_is_refused(self):
+        house = fixtures.node(14, bytes([1, 1]) + struct.pack("<I", 9), self.item(4597))
+        area = fixtures.node(4, struct.pack("<HHB", 1000, 1000, 7), house)
+        base = b"\x00\x00\x00\x00" + fixtures.node(
+            0,
+            struct.pack("<IHHII", 4, 2048, 2048, 3, 57),
+            fixtures.node(2, bytes([1]) + fixtures.string("b"), area),
+        )
+        fragment = self.fill_map((7, [(1, 1, [self.item(100)])]))
+        blobs = {convert.OTBM: base, convert.ITEMS_XML: ITEMS_XML}
+        with self.assertRaises(convert.ConvertError):
+            convert.build(
+                {**blobs, self.FILL_KEY: fragment},
+                ITEMS_BY_SERVER_ID,
+                land=lambda *_: True,
+            )
+
     def selected_fill(self, exclude_box):
         """The summer-style partial fill with its exclusion box moved onto the fixture."""
         row = json.loads(json.dumps(convert.FILL[1]))

@@ -413,11 +413,27 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   the fill are appended at the end of the palette. Result (capture summary `fill`):
   2,965 tiles and 3,364 items added: floor 2 118, floor 3 219, floor 4 685, floor 5 918,
   floor 6 1,025, floor 7 0, floor 1 0; 19,837 fragment tiles skipped as already present.
-  Floor 7 gains nothing because the base map already has a tile at every fragment position:
-  measured against the committed regions, 905 of the 10,747 floor-7 fragment tiles are land
-  where the base has water ground (the roughly 900 tiles of the coverage study), 529 are
-  water on both, 10 water over land and 9,303 land on both. Replacing those would overwrite
-  existing tiles, which the fill rule forbids; only an explicit owner rule can change that.
+  Floor 7 gains nothing from the fill because the base map already has a tile at every
+  fragment position: 905 of the 10,747 floor-7 fragment tiles are land where the base has
+  water ground, 529 are water on both, 10 water over land and 9,303 land on both. The 905
+  are handled by the replacement below, the only place a base tile changes.
+- **Replacement of Blue Valley floor-7 water** (owner decision 1a; the `replace` object of
+  the `blue_valley.otbm` pin, `replacement_candidates` and `Replacer`). A base tile is
+  **replaced** by the fragment tile (ground and items, mapped to keys as above) only where
+  all three hold: the base tile's ground (first item) is water in
+  `island-ground-classes.json`; the fragment tile's ground is neither water nor lava; and
+  the official 15.30 minimap (floor 07) shows land at that position. Nothing else is ever
+  replaced: base land, water on both sides and positions the minimap shows as water keep the
+  base tile; a base tile to replace that carries a house, zone or teleport, or a candidate
+  that does, is refused. Result (capture summary `replace`): 905 tiles on floor 7 (896 of
+  them inside the Blue Valley box x33508-33654, y31378-31537), removing 1,100 base items
+  and adding 962; the base ground ids were the water ids 4597-4601. The tile count is
+  unchanged (the fill counts the replaced positions as skipped, the base already has a tile
+  there); `world.otbm` item totals equal the index totals minus the fill
+  items minus the replacement's `items_added` plus its `items_removed`. The validator
+  checks the record against the pin (floors, member, at most the tiles the fill skipped per
+  floor); `--check` recomputes the count. The islands family follows: the Blue Valley
+  footprint grows from 9,522 to 10,427 tiles.
   The index `source.fill` pins the archive and member; the summary `fill` records the rule,
   counts per floor and skipped tiles. `totals` and `tiles_by_floor` include the fill;
   `totals` minus the fill equals the pinned `world.otbm` totals (19,325,129 tiles,

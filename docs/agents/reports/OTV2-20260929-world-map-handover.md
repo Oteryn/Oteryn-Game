@@ -13,12 +13,12 @@ The owner asked for a handover to the next agent. State at handover:
   branch into this one; never rebase or force-push.
 - Both PRs are waiting on review and owner decisions. Independent review is not yet decided.
 
-## Open owner decisions
+## Owner decisions (answered)
 
-1. Blue Valley floor 7: replace the 905 base water tiles by the land of
-   `maps.7z:blue_valley.otbm`, only where the official 15.30 minimap shows land? Recommended
-   yes. That needs a replace rule beside the fill-only rule, limited to base water with
-   official land, and pinned, counted and tested like the fill.
+1. Blue Valley floor 7: answered **1a** (owner). The base water tiles are replaced by the land
+   of `maps.7z:blue_valley.otbm` where the official 15.30 minimap shows land: 905 tiles (896
+   inside the Blue Valley box), limited to base water, pinned, counted and tested like the
+   fill; the island footprint grows from 9,522 to 10,427 tiles.
 2. `maps.7z:summer-update-2025.otbm`: answered **2b** (owner). Imported as a partial fill:
    underground components that the base lacks (16,777 tiles on floors 8-15) plus the 151
    floor 2-6 tiles that the official minimap shows as land; the Edron underground (floors
@@ -51,8 +51,8 @@ The owner asked for a handover to the next agent. State at handover:
 
 ## Next work (in order)
 
-1. Apply the owner answers to decisions 1 and 2. Both change only this branch, through
-   `convert_world_base.py`, with the pins, `--check`, validators and tests.
+1. Done: decisions 1a and 2b are applied on this branch through `convert_world_base.py`,
+   with the pins, `--check`, validators and tests.
 2. Record the drawing list as the remaining map gap:
    - Blue Valley NE/E/S;
    - Temple of Light;
