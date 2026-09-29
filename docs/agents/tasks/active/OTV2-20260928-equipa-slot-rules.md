@@ -39,6 +39,9 @@ external_repositories: []
   shield/spellbook/quiver (left hand), extra (the `Ammo` slot).
 - `check_equip`: the slot must be free; a two-handed weapon and a shield-slot item exclude each
   other in either order, except a two-handed distance weapon with a quiver.
+  Review fix (Codex P2): `EquipCategory::pattern` exposes each item's complete `EquipPattern` claim
+  (both hands for two-handed; right hand plus a non-quiver left-hand group for distance weapons), and
+  `check_equip` derives the hands conflict from claim overlap.
 
 ## Excluded scope
 

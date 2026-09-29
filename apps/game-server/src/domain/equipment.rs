@@ -4,9 +4,10 @@
 //! Item categories come from content, and vocation or level requirements are typed item
 //! requirements checked elsewhere; the move itself is DUR-03-owned.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::death::EquipmentSlot;
+use super::{DomainError, EquipPattern};
 
 /// What an equippable item is, as far as slot occupancy is concerned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -49,29 +50,68 @@ impl EquipCategory {
             Self::Extra => EquipmentSlot::Ammo,
         }
     }
-
-    const fn is_two_handed(self) -> bool {
-        matches!(self, Self::TwoHandedWeapon | Self::TwoHandedDistanceWeapon)
+    /// The item's complete occupancy claim (GAME-ITEM-01 §6.2): its primary slot plus every
+    /// further resource it reserves.
+    ///
+    /// A two-handed weapon reserves both hands. A two-handed distance weapon reserves the right
+    /// hand and the non-quiver left-hand group, so only a quiver may share the left hand with it
+    /// (manual §3.4.1). Shields and spellbooks reserve that same group with the left hand.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DomainError::MissingPrimarySlot`] only if a claim omitted its primary slot,
+    /// which the fixed patterns below never do.
+    pub fn pattern(self) -> Result<EquipPattern<EquipResource>, DomainError> {
+        use EquipResource::{NonQuiverLeftHand, Slot};
+        let primary = Slot(self.slot());
+        match self {
+            Self::TwoHandedWeapon => EquipPattern::new(
+                primary,
+                [
+                    Slot(EquipmentSlot::RightHand),
+                    Slot(EquipmentSlot::LeftHand),
+                ],
+            ),
+            Self::TwoHandedDistanceWeapon => {
+                EquipPattern::new(primary, [Slot(EquipmentSlot::RightHand), NonQuiverLeftHand])
+            }
+            Self::Shield | Self::Spellbook => {
+                EquipPattern::new(primary, [Slot(EquipmentSlot::LeftHand), NonQuiverLeftHand])
+            }
+            _ => EquipPattern::new(primary, [primary]),
+        }
     }
+}
+
+/// A resource an equipped item can reserve: a slot, or an occupancy group shared by several
+/// slot-holders.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum EquipResource {
+    Slot(EquipmentSlot),
+    /// Reserved by everything in the left hand except a quiver, and by a distance weapon so that
+    /// only a quiver may join it there.
+    NonQuiverLeftHand,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EquipRejection {
     /// The item's slot already holds an item.
     SlotOccupied(EquipmentSlot),
-    /// A two-handed weapon and the shield-slot item cannot be worn together.
+    /// The item's occupancy claim overlaps another equipped item's claim, such as a two-handed
+    /// weapon against the shield slot.
     HandsConflict,
+    /// An item category produced a pattern without its primary slot.
+    MalformedPattern,
 }
 
 /// Whether an item of `category` may be equipped against the currently equipped items. A swap
 /// is checked against the equipment without the item it displaces.
 ///
-/// A two-handed weapon blocks the shield slot, except that a two-handed distance weapon may be
-/// worn with a quiver (manual §3.4.1).
+/// The item's complete claim must be disjoint from the union of the equipped items' claims.
 ///
 /// # Errors
 ///
-/// Returns the occupied slot or the two-handed conflict.
+/// Returns the occupied slot, the claim conflict, or a malformed pattern.
 pub fn check_equip(
     category: EquipCategory,
     equipped: &BTreeMap<EquipmentSlot, EquipCategory>,
@@ -80,32 +120,21 @@ pub fn check_equip(
     if equipped.contains_key(&slot) {
         return Err(EquipRejection::SlotOccupied(slot));
     }
-    let compatible = match slot {
-        EquipmentSlot::RightHand => match equipped.get(&EquipmentSlot::LeftHand) {
-            Some(left) if category.is_two_handed() => hands_compatible(category, *left),
-            _ => true,
-        },
-        EquipmentSlot::LeftHand => match equipped.get(&EquipmentSlot::RightHand) {
-            Some(right) if right.is_two_handed() => hands_compatible(*right, category),
-            _ => true,
-        },
-        _ => true,
-    };
-    if compatible {
+    let mut occupied = BTreeSet::new();
+    for item in equipped.values() {
+        let pattern = item
+            .pattern()
+            .map_err(|_| EquipRejection::MalformedPattern)?;
+        occupied.extend(pattern.claims().copied());
+    }
+    let pattern = category
+        .pattern()
+        .map_err(|_| EquipRejection::MalformedPattern)?;
+    if pattern.is_legal_against(&occupied) {
         Ok(())
     } else {
         Err(EquipRejection::HandsConflict)
     }
-}
-
-const fn hands_compatible(two_handed: EquipCategory, left: EquipCategory) -> bool {
-    matches!(
-        (two_handed, left),
-        (
-            EquipCategory::TwoHandedDistanceWeapon,
-            EquipCategory::Quiver
-        )
-    )
 }
 
 #[cfg(test)]
@@ -219,5 +248,46 @@ mod tests {
         ] {
             assert_eq!(check_equip(category, &equipped), Ok(()));
         }
+    }
+
+    #[test]
+    fn a_two_handed_claim_occupies_both_hands() -> Result<(), DomainError> {
+        let claim: BTreeSet<_> = EquipCategory::TwoHandedWeapon
+            .pattern()?
+            .claims()
+            .copied()
+            .collect();
+        assert_eq!(
+            claim,
+            BTreeSet::from([
+                EquipResource::Slot(EquipmentSlot::RightHand),
+                EquipResource::Slot(EquipmentSlot::LeftHand),
+            ])
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_shield_and_a_two_handed_weapon_conflict_through_the_claim() -> Result<(), DomainError> {
+        let shield = EquipCategory::Shield.pattern()?;
+        let two_handed = EquipCategory::TwoHandedWeapon.pattern()?;
+        let occupied: BTreeSet<_> = shield.claims().copied().collect();
+        assert!(!two_handed.is_legal_against(&occupied));
+        let occupied: BTreeSet<_> = two_handed.claims().copied().collect();
+        assert!(!shield.is_legal_against(&occupied));
+        Ok(())
+    }
+
+    #[test]
+    fn a_distance_weapon_claim_leaves_the_left_hand_to_a_quiver_only() -> Result<(), DomainError> {
+        let bow: BTreeSet<_> = EquipCategory::TwoHandedDistanceWeapon
+            .pattern()?
+            .claims()
+            .copied()
+            .collect();
+        assert!(EquipCategory::Quiver.pattern()?.is_legal_against(&bow));
+        assert!(!EquipCategory::Shield.pattern()?.is_legal_against(&bow));
+        assert!(!EquipCategory::Spellbook.pattern()?.is_legal_against(&bow));
+        Ok(())
     }
 }
