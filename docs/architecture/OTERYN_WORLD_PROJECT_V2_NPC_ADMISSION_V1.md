@@ -214,7 +214,7 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
 4g. Crystal summer-update supplement (D14): `OTV2-20260929-npc-crystal-supplement`. Seven NPC files Crystal added after
    `ff7ede59` come from the pinned `summer-update` commit `00ce02a5`: Captain Corsarah, Javala, Mayor Pocaro,
    Pescadu, Thorim and Wayland Smythers are new, and Uzon Back gains its Crystal file. Thirteen new files are held
-   `SUPPLEMENT_HELD` (a placeholder outfit, dialogue Crystal wrote itself, or not an NPC on the wiki). Wave A
+   `SUPPLEMENT_HELD` (a placeholder outfit, dialogue Crystal wrote itself, or a boss rather than an NPC on the wikis). Wave A
    becomes 1,094 NPCs with 707 Dialogues, 322 trade and 56 travel Services and 2,344 bindings. The supplement is
    its own Crystal import (`g4-npc-crystal-summer-supplement-r1`).
 5. Later:

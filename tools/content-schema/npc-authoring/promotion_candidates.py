@@ -128,7 +128,7 @@ SUPPLEMENT_HELD = {
        for stem in ('dhira', 'nilavarna', 'niral', 'saraki', 'sharai', 'tarisu', 'udu')},
     **{f'crystal:npc/{stem}': 'dialogue written by Crystal, not Tibia text (TODO(text))'
        for stem in ('g_ezkho', 'goldro', 'nekaret', 'omar', 'zofia_bolter')},
-    'crystal:npc/doctor_marrow': 'not an NPC on TibiaWiki',
+    'crystal:npc/doctor_marrow': 'a boss, not an NPC, on TibiaWiki and Tibiopedia',
 }
 REMOVED_FROM_GAME = {
     f'{source}:npc/{stem}': DUELLING_ARENA_REMOVED

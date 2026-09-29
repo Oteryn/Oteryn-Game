@@ -65,7 +65,7 @@ from one more pinned commit, `00ce02a5`.
 - Thirteen are held `SUPPLEMENT_HELD`, each with the reason found in review:
   - a placeholder outfit: Dhira, Nilavarna, Niral, Saraki, Sharai, Tarisu, Udu;
   - dialogue Crystal wrote itself: G'ezkho, Goldro, Nekaret, Omar, Zofia Bolter;
-  - not an NPC on the wiki: Doctor Marrow.
+  - a boss, not an NPC, on TibiaWiki and Tibiopedia: Doctor Marrow.
 - Provenance of a supplement file records its revision, and its NPC file binding names that revision.
 - The dialogue stage authenticates the supplement reference bundles by the census-style digest the candidates
   record.
