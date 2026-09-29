@@ -86,6 +86,15 @@ commit.
 - 4135141634, alias totality: every retired key has exactly one entry. Each alias is derived from
   that key's own recorded Tibia-id evidence, and an unproven referenced key blocks ITEM-ID-1.
 
+The owner-requested re-review of `448b8f1` raised one P1 and one P2 finding. Both were accepted
+and fixed in the second repair commit.
+
+- 4135209759, current-id membership: every admitted CipSoft file needs a digest-bound membership
+  manifest, derived from the exact file bytes. A difference-only census is not enough. ITEM-ID-1
+  must prove the current and retired partition from these manifests.
+- 4135209769, terminal aliases: entries are versioned. A `retired_without_successor` entry may be
+  superseded by an alias that records new evidence. An alias entry is never superseded.
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`

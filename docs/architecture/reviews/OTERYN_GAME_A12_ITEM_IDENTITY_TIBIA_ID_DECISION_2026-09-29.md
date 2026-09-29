@@ -75,6 +75,13 @@ Crystal and donor `.dat` files)
 
   The set only grows. A later admitted client adds ids and never changes what an existing key
   means.
+- **Membership manifests.** Each admitted CipSoft file has a membership manifest:
+  - the complete list of its appearance object ids;
+  - derived from the exact file bytes, bound to that file's digest, with its own digest recorded.
+
+  A census that emits only the difference (for example the B3 "undefined ids" output) is not a
+  manifest. The admitted set is the union of the manifests, and the current set is the manifest of
+  the newest admitted client.
 - **Current and retired ids.** A key is *current* while its id is in the newest admitted client.
   Otherwise it is *retired*.
   - For example, 53161 is in an admitted older CipSoft file and absent from 15.30, so
@@ -129,12 +136,19 @@ Crystal and donor `.dat` files)
   Item key is retired. None is ever reassigned or re-meant.
 - **Alias table.** An append-only alias table holds exactly one entry for every retired key. It lives
   with the Item registry, and its digest is recorded.
-- **Successor entries.** An entry is either an alias or a terminal disposition:
+- **Successor entries.** Each retired key has exactly one *current* entry, which is either an alias
+  or a terminal disposition:
   - An alias names the Tibia key derived from that retired key's own proven Tibia id. The proof is
     the §4.2 identity evidence for the source row that produced the old key, and each entry records
     it. For a named key, the proof is the Tibia id of the item the name stood for.
   - `retired_without_successor` applies when the old key has no proven CipSoft id in the admitted
     set (§4.1).
+- **Versioned entries.** The table is append-only and versioned, and the current entry for a key is
+  its latest entry.
+  - A `retired_without_successor` entry may be superseded by a later alias entry that records new
+    Tibia-id evidence, for example after a newly admitted CipSoft file.
+  - An alias entry is never superseded. A contradiction stops with
+    `ARCHITECTURE_ESCALATION_REQUIRED`.
 - **Referenced keys without proof.** A retired key without a proven Tibia id that authored content
   or code still references blocks ITEM-ID-1 (fail-closed). It is never guessed.
 - **Durable rows.** Durable rows are not rewritten:
@@ -161,7 +175,11 @@ Crystal and donor `.dat` files)
 ITEM-ID-1 must prove all of the following:
 
 - Every canonical key follows §4.1.
-- The alias table is total: every retired key has exactly one entry, either an alias or
+- A digest-bound membership manifest exists for every admitted CipSoft file.
+  - Every id in the newest manifest is current.
+  - Every other admitted id is retired and cannot be minted.
+  - No id outside the union has a Tibia key.
+- The alias table is total: every retired key has exactly one current entry, either an alias or
   `retired_without_successor`.
 - Every alias target exists in the canonical set and is derived from that retired key's own recorded
   Tibia-id evidence, never from a positional or bulk mapping.
