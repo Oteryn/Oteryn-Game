@@ -888,13 +888,25 @@ fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_packag
         assert_eq!(payload["path"], path);
         assert_eq!(payload["kind"], node["kind"], "{path}");
         assert_eq!(payload["owner"], node["owner"], "{path}");
+        let state = payload["population_state"].as_str();
         assert!(
             matches!(
-                payload["population_state"].as_str(),
-                Some("READY_UNPOPULATED" | "LEGACY_COMPAT_PRESENT")
+                state,
+                Some("READY_UNPOPULATED" | "LEGACY_COMPAT_PRESENT" | "POPULATED")
             ),
             "{path}"
         );
+        // A populated successor directory installs its definitions catalog; an unpopulated one has none.
+        if state != Some("LEGACY_COMPAT_PRESENT") {
+            assert_eq!(
+                repository
+                    .join(path)
+                    .join("definitions/index.json")
+                    .is_file(),
+                state == Some("POPULATED"),
+                "{path}"
+            );
+        }
         world_markers.push(format!("{locator}index.json"));
     }
     world_markers.sort();

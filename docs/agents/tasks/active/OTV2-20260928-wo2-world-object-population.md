@@ -23,6 +23,7 @@ owned_paths:
   - tools/content-schema/world-object-authoring/**   # one new emitter and its test only
   - docs/agents/tasks/active/OTV2-20260928-wo2-world-object-population.md
   - apps/game-server/tests/content_world_project_repository.rs   # narrow lease, this one file only; see Leases
+  - tools/content-schema/validate_materialized_game_tree.py   # marker population_state lease; see Leases
 public_contracts: []
 depends_on:
   - "docs/architecture/reviews/OTERYN_GAME_WO0_WORLD_OBJECT_AND_TERRAIN_AUTHORING_FORMAT_DECISION_2026-09-28.md"
@@ -73,6 +74,7 @@ committed files against an in-memory regeneration. The WO-1 census `--check` is 
 ## Leases
 
 - `apps/game-server/tests/content_world_project_repository.rs` (this one file only): required by the D93/D94 population, and granted by the coordinator on #162. The edit excludes populated successor `definitions/` catalogs from the legacy package inventory assertion. No other `apps/game-server/**` path is leased.
+- `tools/content-schema/validate_materialized_game_tree.py` and the marker check in `apps/game-server/tests/content_world_project_repository.rs`: granted by the coordinator on #162 for the Terrain marker `population_state` flip to `POPULATED`, which requires `definitions/index.json`.
 
 ## Excluded scope and follow-ups
 
@@ -80,10 +82,10 @@ committed files against an in-memory regeneration. The WO-1 census `--check` is 
   the 104 Terrain fields.
 - **Item `routed_to` pointers.** They need the Rust `ProjectReferenceRecord::Item` amendment and
   `DefinitionFamily::WorldObject`: `SHARED_LEASE_REQUIRED` (`apps/game-server/**`; the narrow test-file lease above does not cover `src/`).
-- **Marker state.** `content/world/terrain/index.json` stays `READY_UNPOPULATED`. Only its notes are
-  updated, because `validate_materialized_game_tree.py`, the Rust tree test and the materialization
-  evidence admit only `READY_UNPOPULATED` or `LEGACY_COMPAT_PRESENT`. A populated state needs a
-  shared lease.
+- **Marker state.** `content/world/terrain/index.json` is `POPULATED` (was `READY_UNPOPULATED`). The
+  validator and the Rust tree test admit `POPULATED` only with `definitions/index.json` present, and
+  `READY_UNPOPULATED` only without it. The materialization evidence is a historical snapshot with no
+  marker digest and is unchanged.
 - **CI wiring.** `test_populate_content.py` is not yet a CI step, since that needs `.github/**`.
 - **Relations.** `source_item_id` relations (rotateto, bed parts) resolve in the WorldObject slice.
 - **Donor ids.** B1b epoch-2 donor ids are outside this Crystal slice.

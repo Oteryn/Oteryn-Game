@@ -8,7 +8,7 @@ CONTRACT=ROOT/"docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree
 EVIDENCE=ROOT/"docs/agents/evidence/OTV2-20260925-full-game-tree-materialization-v1.json"
 CLOSURE=ROOT/"docs/agents/evidence/OTV2-20260925-world-successor-tree-closure-v1.json"
 LEGACY_ROOT="content/world/"
-WORLD_STATES={"READY_UNPOPULATED","LEGACY_COMPAT_PRESENT"}
+WORLD_STATES={"READY_UNPOPULATED","LEGACY_COMPAT_PRESENT","POPULATED"}
 class ValidationError(RuntimeError): pass
 def req(ok: bool, code: str)->None:
     if not ok: raise ValidationError(code)
@@ -49,6 +49,8 @@ def main()->int:
             req(payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1",f"WORLD_MARKER_SCHEMA:{path}")
             req(payload.get("kind")==node["kind"],f"KIND_MISMATCH:{path}")
             req(payload.get("population_state") in WORLD_STATES,f"WORLD_MARKER_STATE:{path}")
+            if payload["population_state"]!="LEGACY_COMPAT_PRESENT":
+                req((ROOT/path/"definitions/index.json").is_file()==(payload["population_state"]=="POPULATED"),f"WORLD_MARKER_CATALOG:{path}")
         if payload.get("schema")=="OTERYN_GAME_TREE_DIRECTORY/v1":
             req(payload.get("path")==path,f"PATH_MISMATCH:{path}")
             req(payload.get("owner")==node["owner"],f"OWNER_MISMATCH:{path}")
