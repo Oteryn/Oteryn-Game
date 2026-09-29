@@ -151,9 +151,10 @@ shapes of the game server. It also lists every deferred monster with its reason.
 materializer (`materialize_content_world_project_v2`) pins the staged file by SHA-256, adds it
 to the project with the `oteryn:source.canary` import batch, and writes the canonical v2
 documents with their manifest and Content Lock. Creatures of game version 15.30 that only
-CrystalServer has (`crystal_batch.py`) are bound to their Crystal file under their own
-`oteryn:source.crystalserver` import batch `g4-creature-crystal-1530-r1`. The same census index is
-their source artifact. The content tree is then regenerated from v2. Rust admission (`ProjectV2Draft` load, validation and
+CrystalServer has (`crystal_batch.py`) are recorded in their own import batch
+`g4-creature-crystal-1530-r1`, whose source artifact is the same census index. Their bindings to
+their Crystal files use the one `oteryn:source.crystalserver` source at that revision, which the NPC
+summer supplement batch declares, because a v2 source is unique per key and revision. The content tree is then regenerated from v2. Rust admission (`ProjectV2Draft` load, validation and
 `link_reference_playable`) is the acceptance check, together with focused tests over one pilot
 monster of each profile shape.
 

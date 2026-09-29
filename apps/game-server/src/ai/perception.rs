@@ -8,6 +8,17 @@ impl CandidateId {
     pub const fn new(value: u64) -> Self {
         Self(value)
     }
+
+    /// AI-3 (`ai_think.rs`, a sibling composition root over this module's public API): maps a
+    /// canonicalized `Candidate` back to the caller-supplied perceived-player identity it was
+    /// built from (`PerceivedPlayerId`'s raw value), so it needs its numeric identity back out;
+    /// the bootstrap never did. Unused within `tests/ai_bootstrap.rs`'s standalone build of this
+    /// module tree alone (that crate has no `ai_think`), hence the explicit allow.
+    #[must_use]
+    #[allow(dead_code)]
+    pub const fn get(self) -> u64 {
+        self.0
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

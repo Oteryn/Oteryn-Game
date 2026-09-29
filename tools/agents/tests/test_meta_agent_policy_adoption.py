@@ -355,7 +355,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertEqual(retired_to_implementation, [])
 
         for prompt_id, version in {
-            "OTV2_REFERENCE_INVESTIGATOR": "1.1",
+            "OTV2_REFERENCE_INVESTIGATOR": "1.2",
             "OTV2_OWNER_EXECUTION_STATUS_ADVISOR": "1.1",
             "OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT": "1.1",
             "OTV2_DEFECT_DISCOVERY_SUPERVISOR": "1.1",

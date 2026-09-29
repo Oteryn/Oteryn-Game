@@ -115,8 +115,8 @@ file creates: 49 files, 8 of them bosses.
   (`samples/official-library-crystal-00ce02a5-2026-09-28.json`, from the same TibiaData captures) are adopted over
   the Crystal values.
 - `population_census.py` adds the result to the census as its own group, `crystal_*` counts. The admission binds
-  each admitted creature to its Crystal file under the `oteryn:source.crystalserver` import batch
-  `g4-creature-crystal-1530-r1`.
+  each admitted creature to its Crystal file (source `oteryn:source.crystalserver`) and records it in the import
+  batch `g4-creature-crystal-1530-r1`.
 
 ## 4. Carried semantics
 

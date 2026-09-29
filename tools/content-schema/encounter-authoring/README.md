@@ -6,8 +6,8 @@ read these files, and every Canary-derived output is `OTS_HYPOTHESIS_ONLY`.
 
 | File | Purpose |
 |---|---|
-| `build_schema.py` | Generates `encounter.schema.json` (the closed v1 vocabulary, D28). |
-| `validate_encounter.py` | JSON Schema plus semantic checks (roles, anchors, state, phases, outcomes, `prevent_death` placement, killer scope, declared references) and the import manifest. |
+| `build_schema.py` | Generates `encounter.schema.json` (the closed v1 vocabulary, D28, with the accepted §12 CW2-1..4 widenings). Never edit the JSON by hand. |
+| `validate_encounter.py` | JSON Schema plus semantic checks (roles, anchors, state, phases, outcomes, `prevent_death` placement, killer scope, `triggering` and `corpse_of` scope, declared references) and the import manifest. |
 | `verify_encounter_schema.py` | Focused positive/negative cases on synthetic fixtures. |
 | `canary_encounters.py` | Transcribes Canary creature events into encounters with a manifest that maps every source line; participants come from the monster files that register the event. |
 | `samples/<encounter>/` | `encounter.json`, `catalog.json` and `manifest.json` per transcribed encounter. |

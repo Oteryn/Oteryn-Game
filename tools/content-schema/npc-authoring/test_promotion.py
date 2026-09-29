@@ -232,7 +232,7 @@ class PromotionValidatorTests(unittest.TestCase):
 
     def test_base_name_variant_promoted_via_wiki(self):
         report = load_sample()
-        candidate = find_candidate(report, 'Uzon Back')
+        candidate = find_candidate(report, 'Anaztassja Moroia Init')
         self.assertEqual(len(candidate['provenance']), 1)
         self.assertIsNotNone(candidate['wiki'])
         self.assertIn({'fact': 'identity', 'rule': 'WIKI_BASE_NAME', 'chosen': 'wiki'}, candidate['arbitration'])
@@ -277,7 +277,7 @@ class PromotionValidatorTests(unittest.TestCase):
 
     def test_bad_arbitration_rule_fails(self):
         report = load_sample()
-        candidate = find_candidate(report, 'Uzon Back')
+        candidate = find_candidate(report, 'Anaztassja Moroia Init')
         candidate['arbitration'][0]['rule'] = 'WIKI_GUESS'
         errs = validate_promotion.errors(report)
         self.assertTrue(any("rule 'WIKI_GUESS' not in" in e for e in errs))
@@ -562,7 +562,6 @@ class PromotionValidatorTests(unittest.TestCase):
     def majority_report(self, price, wikis=('fandom', 'tibiopedia')):
         report = load_sample()
         report['tibiopedia_facts_sha256'] = 'a' * 64
-        report['decisions'] = validate_promotion.DECISIONS + ['D12', 'D13']
         ahmet = find_candidate(report, 'Ahmet')
         offer = next(o for o in ahmet['trade_service']['offers'] if o['count'] is None and o['sub_type'] is None)
         offer['unit_price'] = price
@@ -738,6 +737,31 @@ class PromotionValidatorTests(unittest.TestCase):
                 offer.pop('origin', None)
             self.assertEqual(validate_promotion.rebuild_errors(report, 'c', 'x', b'', b'', b'', b''),
                              ["the report is not what the pinned inputs build (differing candidates: ['Ahmet'])"])
+
+
+    # -- D14: the Crystal supplement revision ----------------------------------------------------
+
+    def supplement_report(self, key='crystal:npc/thorim', revision=promotion_candidates.CRYSTAL_SUPPLEMENT_REVISION):
+        report = load_sample()
+        report['crystal_supplement'] = {'revision': promotion_candidates.CRYSTAL_SUPPLEMENT_REVISION,
+                                        'bundles_sha256': 'b' * 64}
+        candidate = next(c for c in report['candidates'] if set(c['provenance']) == {'crystal'})
+        candidate['provenance']['crystal'].update(key=key, revision=revision)
+        return report
+
+    def test_supplement_revision_only_on_listed_files(self):
+        self.assertEqual([e for e in validate_promotion.errors(self.supplement_report()) if 'revision' in e], [])
+        for report in (self.supplement_report('crystal:npc/omar'), self.supplement_report(revision='0' * 40)):
+            self.assertTrue(any('not the D14 supplement revision' in e for e in validate_promotion.errors(report)))
+        report = self.supplement_report()
+        del report['crystal_supplement']
+        report['decisions'] = report['decisions'][:-1]
+        self.assertIn('a provenance revision without crystal_supplement (D14)', validate_promotion.errors(report))
+
+    def test_supplement_lists_are_disjoint(self):
+        self.assertEqual(len(promotion_candidates.SUPPLEMENT_ADMITTED), 7)
+        self.assertEqual(len(promotion_candidates.SUPPLEMENT_HELD), 13)
+        self.assertFalse(promotion_candidates.SUPPLEMENT_ADMITTED & set(promotion_candidates.SUPPLEMENT_HELD))
 
 
 if __name__ == '__main__':

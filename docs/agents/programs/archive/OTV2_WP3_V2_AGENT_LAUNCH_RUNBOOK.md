@@ -130,4 +130,4 @@ Prefer no more than 2-3 active agents at once. Only one mutating agent may own a
 
 ## Full programme reference
 
-Use `docs/agents/programs/OTV2_WP3_V2_MULTI_AGENT_DELIVERY_PROGRAMME.md` for the dependency DAG, gates, scope boundaries and terminal criteria.
+Use `docs/agents/programs/archive/OTV2_WP3_V2_MULTI_AGENT_DELIVERY_PROGRAMME.md` for the dependency DAG, gates, scope boundaries and terminal criteria.

@@ -161,6 +161,22 @@ A corpse may exist as an immediate current-runtime world/container projection ow
 
 Corpse semantic identity is derived from the death occurrence and exact corpse/content definition revision. A corpse runtime slot/pointer is not durable identity.
 
+**D3 corpse-container amendment.** For the single named shape `D3-CORPSE-CONTAINER-LOOT-WINDOW-
+DECAY-V1` admits (owner decisions D111-D113,
+`reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md` §4.1), a
+creature's own corpse is a durable Ground `ItemInstance`, minted under the unamended §39.1/§39.2
+MINT shape (DUR-03 §39.4) exactly like any other item — the *one* location that `ItemInstance`
+durably has. This is not a second durable location for anything else: creature loot mints
+directly into a DUR-03 `Container` entry whose parent is that same corpse `ItemInstance`, so each
+loot item likewise has exactly one authoritative location. "Not a second durable item/value
+store" above bars a corpse from being a competing second location for an item already durably
+located elsewhere, or from being treated as durable identity from a bare runtime slot/pointer; it
+does not bar the corpse `ItemInstance` itself from being the one MINTed location a loot item
+durably receives via `Container(parent=corpse)`. A corpse `ItemInstance` is never itself a legal
+TRANSFER source (DUR-03 §39.4): it can leave Ground only by full retirement (`DECAY_RETIRE`), so
+its identity and its single Ground location are stable for the whole recovery/decay/window
+surface below. Outside this named shape, §9.1's general runtime-projection posture is unchanged.
+
 ### 9.2 Loot plan
 
 Loot eligibility/selection is a deterministic bounded descendant of the death occurrence and exact loot/content/ruleset/SIM revisions.
@@ -319,6 +335,14 @@ If player death is exercised, exact persistent Character death/protection conseq
 
 Exact corpse lifetime, owner-only loot windows, decay timing and cleanup policy are deliberately not frozen here unless required by the first fixture scenario.
 
+**D3 resolution (rat corpse only).** `D3-CORPSE-CONTAINER-LOOT-WINDOW-DECAY-V1` (owner decisions
+D111-D113) is that required first fixture scenario. It fixes, for the rat corpse
+(`oteryn:item.registry.i00005801`) only: a 10 s pickup window exclusive to the creature's
+top-damage dealer (§4.4 of that decision), a 60 s durable-absolute-deadline decay (§4.6), and
+`DECAY_RETIRE` as the decay effect on unlooted contents (§4.7, expressly under the "accepted
+DUR-03/domain policy" clause below). Corpse ownership/decay product rules for any other creature,
+and general cleanup policy beyond this named shape, remain open.
+
 Any exercised VSL value must be an explicit fixture policy with no Reference claim.
 
 Cleanup/recovery must never duplicate durable loot or retire live acknowledged item value without an accepted DUR-03/domain policy.
@@ -393,7 +417,8 @@ Tier 1 must cross Platform/Gateway/protocol/server/persistence boundaries applic
 - PvP/skull/blessing/death-loss behavior;
 - party/shared XP/multi-contributor loot attribution;
 - boss/raid/event reward semantics;
-- corpse ownership/decay product rules;
+- corpse ownership/decay product rules (resolved for the rat corpse only by D3, §17 above; open
+  for every other creature);
 - concrete combat/RNG libraries;
 - physical Rust types/module layout;
 - concrete protocol message IDs/fields;
@@ -450,6 +475,16 @@ candidate and atomic boundaries, consistent with DUR-03 §§39.1-39.2. A corpse 
 a runtime projection, never a second durable location. Unsupported shapes reject;
 this admission adds no event/field IDs, source/root grammar, security purpose,
 schema/API layout or production maximum.
+
+**D3 chain amendment.** For creature-death loot under `D3-CORPSE-CONTAINER-LOOT-WINDOW-DECAY-V1`
+(§9.1 above, DUR-03 §39.4), the chain from "deterministic... loot output" through "eligible
+pickup intent" is instead: MINT the corpse to typed Ground exactly as line 437 describes (its own
+cause, unamended) -> MINT each loot entry directly into a `Container` entry of that corpse (no
+Ground custody, no separate TRANSFER for placement) -> eligible pickup intent gated by the D112/
+D133 exclusivity window -> TRANSFER from that `Container` entry to native direct-root
+`CharacterInventory` (D80-D83). The corpse `ItemInstance` itself is never a TRANSFER source. This
+does not change the chain for any non-corpse MINT (reward chest, future non-creature loot), which
+keeps line 437-439's Ground-then-TRANSFER shape unamended.
 
 XP is a separate descendant through integrated R7 P03 Character APIs. Reuse the
 single accepted Character progression calculator and owning commit/reconciliation
