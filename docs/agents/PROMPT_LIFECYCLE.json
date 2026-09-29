@@ -10,7 +10,7 @@
     {
       "prompt_id": "OTV2_ARCHITECTURE_CONTINUATION_AGENT",
       "path": "docs/agents/prompts/OTV2_ARCHITECTURE_CONTINUATION_AGENT.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "architecture-programme",
       "scope": "Architecture analysis and bounded continuation under current repository governance.",
@@ -43,7 +43,7 @@
     {
       "prompt_id": "OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT",
       "path": "docs/agents/prompts/OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "architecture-programme",
       "scope": "Coordinator-allocated bounded domain architecture design worker.",
@@ -54,7 +54,7 @@
     {
       "prompt_id": "OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md",
-      "version": "1.2",
+      "version": "1.3",
       "status": "reusable",
       "owner": "architecture-programme",
       "scope": "Global architecture decision coordination and audit within approved repository authority.",
@@ -87,7 +87,7 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md",
-      "version": "1.5",
+      "version": "1.6",
       "status": "reusable",
       "owner": "independent-audit-role",
       "scope": "Independent high-effort forensic audit of OTV2_WORK_DELIVERY_COORDINATOR or a uniquely identified requested Game delivery target, with bounded non-dispositive GitHub audit-evidence COMMENT write authority only; no tracked-file, implementation/fix, control-plane, merge/close/approve, workflow-dispatch, architecture, production or cross-repository write authority.",
@@ -98,7 +98,7 @@
     {
       "prompt_id": "OTV2_OWNER_EXECUTION_STATUS_ADVISOR",
       "path": "docs/agents/prompts/OTV2_OWNER_EXECUTION_STATUS_ADVISOR.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "owner-execution-guidance",
       "scope": "Read-only live-GitHub owner execution/status guidance for Work-vs-chat launch, model/effort selection and DONE/ACTIVE/BLOCKED/READY_NEXT/DO_NOT_LAUNCH reconciliation; no coordinator, implementation, review, audit, merge, production or external-repository authority.",
@@ -208,7 +208,7 @@
     {
       "prompt_id": "OTV2_IMPL_NATIVE_CLIENT",
       "path": "docs/agents/prompts/OTV2_IMPL_NATIVE_CLIENT.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded native-client implementation worker; writes require a current merged allocation.",
@@ -218,25 +218,25 @@
     },
     {
       "prompt_id": "OTV2_IMPL_QA_E2E",
-      "path": "docs/agents/prompts/OTV2_IMPL_QA_E2E.md",
+      "path": "docs/agents/prompts/retired/OTV2_IMPL_QA_E2E.md",
       "version": "1.1",
-      "status": "reusable",
+      "status": "retired",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded QA/E2E evidence worker template; a completed prior task does not grant new write authority.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_SOL_CLIENT_QA_LEAD.md",
+      "supersession_rule": "Retired 2026-09-29 (prompt optimization): its unique content was folded into OTV2_SOL_CLIENT_QA_LEAD, which the owner invokes for this lane. Retained as provenance."
     },
     {
       "prompt_id": "OTV2_IMPL_SERVER_SEAM",
-      "path": "docs/agents/prompts/OTV2_IMPL_SERVER_SEAM.md",
+      "path": "docs/agents/prompts/retired/OTV2_IMPL_SERVER_SEAM.md",
       "version": "1.1",
-      "status": "reusable",
+      "status": "retired",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded production gameplay server-seam executor; no mutation without the merged exact allocation required by the prompt.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
+      "supersession_rule": "Retired 2026-09-29 (prompt optimization): its unique content was folded into OTV2_SOL_SERVER_SEAM_LEAD, which the owner invokes for this lane. Retained as provenance."
     },
     {
       "prompt_id": "OTV2_IMPL_SIMULATION",
@@ -251,14 +251,14 @@
     },
     {
       "prompt_id": "OTV2_IMPL_VSL_COMBAT",
-      "path": "docs/agents/prompts/OTV2_IMPL_VSL_COMBAT.md",
+      "path": "docs/agents/prompts/retired/OTV2_IMPL_VSL_COMBAT.md",
       "version": "1.2",
-      "status": "reusable",
+      "status": "retired",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded authoritative combat implementation worker; writes require a current merged allocation.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_SOL_COMBAT_LEAD.md",
+      "supersession_rule": "Retired 2026-09-29 (prompt optimization): its unique content was folded into OTV2_SOL_COMBAT_LEAD, which the owner invokes for this lane. Retained as provenance."
     },
     {
       "prompt_id": "OTV2_IMPL_VSL_CONTENT",
@@ -273,14 +273,14 @@
     },
     {
       "prompt_id": "OTV2_IMPL_VSL_MOVEMENT",
-      "path": "docs/agents/prompts/OTV2_IMPL_VSL_MOVEMENT.md",
+      "path": "docs/agents/prompts/retired/OTV2_IMPL_VSL_MOVEMENT.md",
       "version": "1.3",
-      "status": "reusable",
+      "status": "retired",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded movement implementation worker; writes require a current merged allocation.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_SOL_MOVEMENT_LEAD.md",
+      "supersession_rule": "Retired 2026-09-29 (prompt optimization): its unique content was folded into OTV2_SOL_MOVEMENT_LEAD, which the owner invokes for this lane. Retained as provenance."
     },
     {
       "prompt_id": "OTV2_IMPL_WORKSPACE_BOOTSTRAP",
@@ -296,7 +296,7 @@
     {
       "prompt_id": "OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT",
       "path": "docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md",
-      "version": "1.3",
+      "version": "1.4",
       "status": "reusable",
       "owner": "independent-audit-role",
       "scope": "Read-only independent programme architecture audit.",
@@ -384,7 +384,7 @@
     {
       "prompt_id": "OTV2_SOL_SUPERVISING_ARCHITECT",
       "path": "docs/agents/prompts/OTV2_SOL_SUPERVISING_ARCHITECT.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "architecture-programme",
       "scope": "Material Game architecture escalation resolver; no implicit runtime implementation, merge, production or cross-repository write authority.",
@@ -395,7 +395,7 @@
     {
       "prompt_id": "OTV2_SOL_DURABILITY_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_DURABILITY_LEAD.md",
-      "version": "1.2",
+      "version": "1.3",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Durability lane lead and single mutating writer for its canonical branch/PR; writes require the current exact merged Durability allocation and owned paths, and parallel analyst packets remain advisory.",
@@ -472,7 +472,7 @@
     {
       "prompt_id": "OTV2_SOL_SERVER_SEAM_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Server Seam lane lead; read-only until exact prerequisites/allocation are proven, then writes only within owned paths.",
@@ -483,7 +483,7 @@
     {
       "prompt_id": "OTV2_SOL_CLIENT_QA_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_CLIENT_QA_LEAD.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol native Client/QA lane lead; writes require current compatible Server Seam and exact merged allocation.",
@@ -494,7 +494,7 @@
     {
       "prompt_id": "OTV2_SOL_MOVEMENT_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_MOVEMENT_LEAD.md",
-      "version": "1.4",
+      "version": "1.5",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Movement lane lead; writes require exact coordinator allocation and prerequisites for the allocated stage; production activation requires terminal resource and Client/QA gates.",
@@ -505,7 +505,7 @@
     {
       "prompt_id": "OTV2_SOL_COMBAT_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_COMBAT_LEAD.md",
-      "version": "1.3",
+      "version": "1.4",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Combat lane lead; writes require merged Movement or an explicitly accepted non-exercising child, physical owner prerequisites and exact Combat allocation.",
@@ -571,7 +571,7 @@
     {
       "prompt_id": "OTV2_REFERENCE_INVESTIGATOR",
       "path": "docs/agents/prompts/OTV2_REFERENCE_INVESTIGATOR.md",
-      "version": "1.2",
+      "version": "1.3",
       "status": "reusable",
       "owner": "reference-first-read-only-investigation",
       "scope": "Parameterized read-only Global Reference investigation across world, combat, character, NPC, movement, durability, evidence and QA lanes; may use public primary/structured/community/OTS sources according to the #486 source registry but grants no tracked-file, control-plane, implementation, merge, production or cross-repository write authority.",
@@ -791,7 +791,7 @@
     {
       "prompt_id": "OTV2_FULL_CONTENT_CENSUS_PROGRAMME",
       "path": "docs/agents/prompts/OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md",
-      "version": "1.4",
+      "version": "1.5",
       "status": "reusable",
       "owner": "implementation-programme-scoped-dispatch-alias",
       "scope": "Scoped Full Tibia content population dispatch alias that resolves to the same OTV2_WORK_DELIVERY_COORDINATOR control-plane profile identity. Canonical invocation is `Oteryn: full content population`; legacy `Oteryn: full content census` remains a compatibility invocation. After protected census/classification prerequisites, the programme is population-first: use existing WorldProject/v2 storage, source-identity bindings, tags/aliases and compile/test paths to create/match canonical identities, promote exact fields and relationships, and defer analysis-only slices unless they directly unblock a named population batch. It is not a second coordinator and adds no authority.",
@@ -802,7 +802,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_LEAD",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_LEAD.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "content-world-technical-lead",
       "scope": "Subordinate Content/World technical coordination and exact next-increment proposal; read-only without documentary authority, no allocation, runtime or merge authority.",
@@ -813,7 +813,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_ARCHITECTURE",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_ARCHITECTURE.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "content-world-architecture",
       "scope": "Allocated Content/World source/binding/format decision work; no self-acceptance, production implementation or registry authority.",
@@ -824,7 +824,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_IMPORT",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_IMPORT.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "content-world-import",
       "scope": "Allocated Game-owned source extraction, semantic mapping and candidate catalogue import; no implicit source redistribution, runtime or parity-promotion authority.",
@@ -835,7 +835,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_BUILD",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_BUILD.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "content-world-build",
       "scope": "Allocated shared Content model, compiler, indexed artifacts and loader/activation implementation through existing boundaries; read-only without exact custody and required decisions.",
@@ -846,7 +846,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_RUNTIME",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_RUNTIME.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "content-world-runtime",
       "scope": "Allocated world-object/current-owner/FND/Movement composition; preserves canonical domain workers and requires actual owner/wire dependencies.",
@@ -857,7 +857,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_CLIENT",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_CLIENT.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "content-world-client-authoring",
       "scope": "Allocated native world projection/reconciliation and later Studio integration on the shared model; no alternate client, server or control-plane authority.",
@@ -868,7 +868,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_QA",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_QA.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "content-world-qualification",
       "scope": "Allocated focused Content/World tests and real client/server/value/recovery qualification; no product repair, formal independent review or merge authority.",
@@ -879,7 +879,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "independent-audit-role",
       "scope": "Read-only independent end-to-end Content/World architecture, data-model, import, project-storage, compiler/bundle/loader, runtime/client and evidence audit; proposes bounded corrective packets but has no implementation, allocation, control-plane, merge, production or cross-repository authority.",
