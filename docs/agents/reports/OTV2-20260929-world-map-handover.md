@@ -80,4 +80,3 @@ The owner asked for a handover to the next agent. State at handover:
 - Before each push run the package `test_*.py` and `validate_*.py`,
   `validate_materialized_game_tree.py`, `tools/agents/validate_governance.py`, and, for
   placements, the Rust `content_world_project_repository` test.
-
