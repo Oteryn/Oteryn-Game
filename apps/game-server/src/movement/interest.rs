@@ -314,9 +314,11 @@ impl InterestIndex {
                             return;
                         };
                         if let Some(ids) = self.cells.get(&(floor, x, y)) {
-                            for id in ids.iter().filter(|id| *id != observer) {
-                                insert_bounded(&mut group, *id, budget);
-                            }
+                            extend_bounded(
+                                &mut group,
+                                ids.iter().filter(|id| *id != observer),
+                                budget,
+                            );
                         }
                     });
                 }
@@ -336,6 +338,19 @@ impl InterestIndex {
             }
         }
         Ok(VisibilityQuery { entities, examined })
+    }
+}
+
+/// Merges at most `cap` identities from one cell, visited in ascending order, into a group. A
+/// cell can only contribute its `cap` smallest identities to the group's `cap` smallest, so the
+/// scan of a dense cell stops after `cap` visits instead of walking the whole cell.
+fn extend_bounded<'a>(
+    group: &mut Vec<EntityIdentity>,
+    ids: impl Iterator<Item = &'a EntityIdentity>,
+    cap: usize,
+) {
+    for id in ids.take(cap) {
+        insert_bounded(group, *id, cap);
     }
 }
 
@@ -778,6 +793,41 @@ mod tests {
         })?;
         let expected: Vec<_> = (0..1023_u32).map(id).collect();
         assert_eq!(seen, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn dense_cell_scan_visits_at_most_the_budget_and_keeps_the_canonical_first() -> TestResult {
+        let dense = 5000_u32;
+        let mut index = index_with_observer()?;
+        for n in (0..dense).rev() {
+            index.upsert(entity(n, 100, 100, 7)?);
+        }
+        let mut seen = Vec::new();
+        let result = index.query_with(&id(u32::MAX), VisibilitySettings::REFERENCE, |e| {
+            seen.push(e.identity);
+            false
+        })?;
+        assert!(result.examined() <= VISIBILITY_QUERY_CANDIDATES_MAX);
+        let expected: Vec<_> = (0..(VISIBILITY_QUERY_CANDIDATES_MAX as u32 - 1))
+            .map(id)
+            .collect();
+        assert_eq!(seen, expected);
+
+        // The cell scan itself is bounded: a dense cell is not walked past the budget.
+        let cell: BTreeSet<_> = (0..dense).map(id).collect();
+        let mut visited = 0_usize;
+        let mut group = Vec::new();
+        extend_bounded(
+            &mut group,
+            cell.iter().inspect(|_| visited += 1),
+            VISIBILITY_QUERY_CANDIDATES_MAX,
+        );
+        assert_eq!(visited, VISIBILITY_QUERY_CANDIDATES_MAX);
+        let expected: Vec<_> = (0..VISIBILITY_QUERY_CANDIDATES_MAX as u32)
+            .map(id)
+            .collect();
+        assert_eq!(group, expected);
         Ok(())
     }
 

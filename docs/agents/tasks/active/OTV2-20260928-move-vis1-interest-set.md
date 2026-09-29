@@ -84,6 +84,8 @@ registry change is six inserted rows after `MOVE-RL-11`.
 - The optional `accept` filter of `query_with` is the only way a candidate can be examined and
   rejected; it makes the 1,024 ceiling reachable and testable ahead of VIS-2.
 - No module-level `dead_code` allow: `movement` is already allowed in `lib.rs`.
+- Codex P1 (unbounded dense-cell scan) accepted and fixed: each cell contributes at most the remaining
+  candidate budget of its smallest identities (`extend_bounded`); result order and semantics unchanged.
 
 ## Registry rows
 
