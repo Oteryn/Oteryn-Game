@@ -44,6 +44,12 @@ ALTER TABLE game_item_mint_receipts
     ADD CONSTRAINT game_item_mint_receipts_corpse_top_damage_scoped CHECK (
         (loot_purpose_key = 'CORPSE_MATERIALIZATION')
         = (corpse_top_damage_character_id IS NOT NULL));
+-- D3 §4.1: the corpse's own MINT is always the reserved draw_ordinal = 0
+-- sentinel; no ordinary loot entry's own cause ever reuses it. Rust
+-- (`commit_corpse_mint`) validates this too, but the DB is the ground truth.
+ALTER TABLE game_item_mint_receipts
+    ADD CONSTRAINT game_item_mint_receipts_corpse_draw_ordinal_zero CHECK (
+        loot_purpose_key <> 'CORPSE_MATERIALIZATION' OR draw_ordinal = 0);
 
 -- D133/D135: the latest pre-commit anchor, written only by the deferred
 -- trigger below (never by the runtime candidate, never by
@@ -173,6 +179,7 @@ BEGIN
          WHERE r.item_instance_id = NEW.item_instance_id
            AND r.transaction_id = NEW.minted_transaction_id
            AND r.death_world_id = NEW.world_id
+           AND r.destination_parent_item_instance_id IS NULL
            AND g.world_id = NEW.world_id
            AND g.channel_id = r.death_channel_id
            AND g.runtime_scope_ownership_generation = r.death_scope_ownership_generation
@@ -285,6 +292,15 @@ BEGIN
         RAISE EXCEPTION 'corpse container placement must commit with its loot MINT receipt'
             USING ERRCODE = '23514';
     END IF;
+    -- An item is never both a corpse container entry and on Ground (the
+    -- single-location invariant): refuse if a Ground row for it already
+    -- exists (whichever insertion lands second within the transaction).
+    IF EXISTS (
+        SELECT 1 FROM game_item_ground_locations g
+         WHERE g.item_instance_id = NEW.item_instance_id) THEN
+        RAISE EXCEPTION 'corpse container entry must not also hold a Ground location'
+            USING ERRCODE = '23514';
+    END IF;
     -- Lock the corpse's own receipt row (its unique CORPSE_MATERIALIZATION /
     -- draw_ordinal = 0 cause, found by the unique item_instance_id) before
     -- counting, so concurrent loot MINTs into the same corpse serialize
@@ -317,18 +333,58 @@ CREATE TRIGGER game_item_corpse_container_entries_no_truncate BEFORE TRUNCATE
     ON game_item_corpse_container_entries
     FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
 
+-- 0011/0012's guard admitted a Ground location for a live, never-transferred
+-- item with a MINT receipt of the current transaction, provided it is no
+-- reward-claim item and holds no (character-scoped) container slot or entry.
+-- A corpse container entry is the same kind of hazard (single-location
+-- invariant): a forged Ground row for an item that already has a
+-- game_item_corpse_container_entries row must also be refused.
+CREATE OR REPLACE FUNCTION game_item_ground_insertion_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM game_item_instances i
+         WHERE i.item_instance_id = NEW.item_instance_id
+           AND i.world_id = NEW.world_id
+           AND i.lifecycle = 1
+           AND i.last_transaction_id IS NULL)
+       OR NOT EXISTS (
+        SELECT 1 FROM game_item_mint_receipts r
+         WHERE r.item_instance_id = NEW.item_instance_id
+           AND r.created_xact_id = pg_current_xact_id())
+       OR EXISTS (
+        SELECT 1 FROM game_reward_claim_mint_receipts rr
+         WHERE rr.item_instance_id = NEW.item_instance_id)
+       OR EXISTS (
+        SELECT 1 FROM game_item_container_entries e
+         WHERE e.item_instance_id = NEW.item_instance_id)
+       OR EXISTS (
+        SELECT 1 FROM game_item_container_slots s
+         WHERE s.item_instance_id = NEW.item_instance_id)
+       OR EXISTS (
+        SELECT 1 FROM game_item_corpse_container_entries ce
+         WHERE ce.item_instance_id = NEW.item_instance_id) THEN
+        RAISE EXCEPTION 'Ground placement must be the item MINT of the current transaction'
+            USING ERRCODE = '23514';
+    END IF;
+    RETURN NULL;
+END;
+$$;
+
 DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_item_mint_receipt_materialize_corpse() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_mint_receipt_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_mint_consistency_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_corpse_container_entry_proven() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_item_ground_insertion_guard() SET search_path = %I, pg_temp', current_schema());
 END $$;
 
 REVOKE ALL ON game_item_corpse_container_entries FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_item_mint_receipt_materialize_corpse(),
     game_item_mint_receipt_guard(),
-    game_item_corpse_container_entry_proven()
+    game_item_corpse_container_entry_proven(),
+    game_item_ground_insertion_guard()
 FROM PUBLIC;
 GRANT SELECT, INSERT ON game_item_corpse_container_entries TO oteryn_game_runtime;
 GRANT SELECT ON game_item_corpse_container_entries TO oteryn_game_control;

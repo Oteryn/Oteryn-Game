@@ -4,11 +4,12 @@
 task_id: OTV2-20260929-d3-1-corpse-migration
 title: D3-1 corpse receipt migration, materialized_at trigger and corpse-cap enforcement
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/d3-1-corpse-migration
 issue: 162
+pr: 1213
 allocation: "#162 D3 slice; D3-1 row, docs/architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md §6"
 base_sha: 4a828159fe854c66901f3d25ac0d7f39b4fbc63d
 owner: "Oteryn: impl durability"
@@ -86,9 +87,29 @@ at 63 live corpses; exactly one success, N-1 `CapacityExceeded`, never more than
 `corpse_container_entry_enforces_the_capacity_ceiling` (16th admitted, 17th rejected),
 `corpse_container_entry_requires_a_live_parent_receipt_for_the_same_death`.
 
+## Fix round (independent review on PR #1213, applied same branch)
+
+- Single-location invariant: the Ground branch of `game_item_mint_consistency_guard` now also requires
+  `destination_parent_item_instance_id IS NULL`; `game_item_ground_insertion_guard` now also refuses an
+  item already holding a `game_item_corpse_container_entries` row; `game_item_corpse_container_entry_
+  proven` now also refuses an item already holding a Ground location. New tests
+  `forged_ground_location_for_a_corpse_container_entry_item_is_rejected_at_commit` and
+  `forged_corpse_container_entry_for_a_ground_item_is_rejected_at_commit` cover both insertion orders.
+- Top-damage replay binding: `commit_corpse_mint`'s already-committed branch now compares the caller's
+  `top_damage_character_id` against the committed receipt's own column and returns `ConflictingCause`
+  on a mismatch, so a replay carrying a different declared winner can never silently return the first
+  winner's outcome. New test `commit_corpse_mint_rejects_a_replay_with_a_different_top_damage_winner`.
+- `draw_ordinal` must be 0 for a `CORPSE_MATERIALIZATION` cause: enforced both in
+  `commit_corpse_mint` (before ever reaching the database) and by a new DB CHECK constraint
+  (`game_item_mint_receipts_corpse_draw_ordinal_zero`). New test `corpse_mint_draw_ordinal_must_be_zero`.
+- CI's real PG run additionally caught two `uuid = bytea` bind mistakes (missing `encode($n,'hex')::
+  uuid`) in `corpse_receipt_row` and the `materialized_at` immutability probe in
+  `corpse_mint_writes_top_damage_and_materialized_at_only_via_trigger`; both fixed in this round and
+  every new bind in this migration's Rust/test SQL re-audited for the same mistake.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: branch pushed; local validation complete; no PR opened per instruction
+last_progress: PR #1213 open on claude/d3-1-corpse-migration; single-location, top-damage-replay-binding and corpse-draw-ordinal fixes applied and locally validated
 next_action: "#162 allocates D3-2/D3-4/D3-6 against this migration; requires independent review before Merge Queue"
 ```

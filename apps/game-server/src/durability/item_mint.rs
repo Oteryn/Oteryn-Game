@@ -683,6 +683,12 @@ impl DurabilityRoot {
         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
             return Err(ItemMintError::InvalidInput);
         }
+        // D3 §4.1: the corpse's own MINT is always draw_ordinal = 0, the
+        // reserved sentinel ordinal no ordinary loot entry's own cause ever
+        // uses; the DB's own CHECK (migration 0013) enforces this too.
+        if candidate.request.cause.draw_ordinal != 0 {
+            return Err(ItemMintError::InvalidInput);
+        }
         audit::check_uuid_v7(&top_damage_character_id)?;
         let recovery = authority
             .record_for(self)
@@ -703,6 +709,19 @@ impl DurabilityRoot {
                     if let Some(row) = load_receipt(&mut tx, &frozen.request.cause).await? {
                         let stored: Vec<u8> = row.try_get("intent_binding")?;
                         if stored != frozen.intent_binding {
+                            return Ok(Err(ItemMintError::ConflictingCause));
+                        }
+                        // D132/§4.3: the committed top-damage CharacterId is
+                        // part of this corpse's frozen intent even though it
+                        // is bound only at commit; a replay carrying another
+                        // winner must never silently return the first
+                        // winner's outcome as its own.
+                        let stored_top_damage: Option<String> =
+                            row.try_get("corpse_top_damage_character_id")?;
+                        let stored_top_damage = stored_top_damage
+                            .map(|value| uuid_text(&value))
+                            .transpose()?;
+                        if stored_top_damage != Some(top_damage_character_id) {
                             return Ok(Err(ItemMintError::ConflictingCause));
                         }
                         let committed = decode_receipt(&row)?;
@@ -1025,7 +1044,8 @@ async fn load_receipt(
     Ok(bind_cause!(
         sqlx::query(concat!(
             "SELECT intent_binding, transaction_id::text, event_id::text, \
-                    item_instance_id::text, occurred_at, envelope_sha256 \
+                    item_instance_id::text, occurred_at, envelope_sha256, \
+                    corpse_top_damage_character_id::text \
                FROM game_item_mint_receipts WHERE ",
             cause_key!()
         )),
