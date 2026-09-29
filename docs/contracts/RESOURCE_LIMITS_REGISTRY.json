@@ -6131,6 +6131,72 @@
         "apps/game-server/src/ability/commit.rs (commit_exact_owner_damage)"
       ],
       "notes": "D140-D144, D4 multi-hit damage receipt decision. Ephemeral, per-creature-generation state only, dropped with the slot (D52). The replay identity of an attributed commit is carrier-derived from (CharacterId, GameSessionId, CommandId sequence, sub_ordinal); sub_ordinal is bounded by the already-registered ABILITY01-EFFECT-PLAN-ENTRIES = 2 (mirrored, not re-registered). Registered by OTV2-20260929-d4-1-multi-hit."
+    },
+    {
+      "id": "SPELL-RL-01",
+      "owner_contract": "../architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md",
+      "resource": "Spell cast inputs applied for one actor in one Channel owner work cycle",
+      "unit": "spell cast inputs per actor per work cycle",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one spell cast input is applied per actor per Channel owner work cycle; further inputs remain outstanding FND-02 commands bounded by FND02-OUTSTANDING-COMMANDS, processed FIFO per session and round-robin across actors.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one spell cast input for an actor is applied in a work cycle",
+        "max+1=2: a second spell cast input for the same actor is not applied in the same work cycle; it stays outstanding and the 65th outstanding command is refused under the existing FND-02 rule"
+      ],
+      "consumers": [
+        "WORLD_ACTOR_SPELL_CAST_INTENT command type 3 (crates/protocol-oteryn/src/actor_spell.rs; composition is section 9 step 2)"
+      ],
+      "notes": "SPELL-D6 (RL-01 = 1), #162 owner acceptance 5867161696; contract section 7. Registered by OTV2-20260929-spell-cast-wire-w1 (#162 allocation 5894588548)."
+    },
+    {
+      "id": "SPELL-RL-02",
+      "owner_contract": "../architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md",
+      "resource": "Ability effects in one spell cast Effect Plan",
+      "unit": "effects per cast Effect Plan",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A cast whose resolved effects exceed 2 fails CAPACITY_EXCEEDED before PRIMARY COMMIT: no mana, soul, cooldown or effect is committed.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: a cast with two resolved effects commits both in one Effect Plan",
+        "max+1=3: a cast with a third effect fails CAPACITY_EXCEEDED before commit and nothing is paid"
+      ],
+      "consumers": [
+        "apps/game-server/src/ability/mod.rs MAX_EFFECT_PLAN_ENTRIES, reached from the spell cast Effect Plan (composition is section 9 step 2)"
+      ],
+      "notes": "SPELL-D6 (RL-02 = 2), #162 owner acceptance 5867161696; contract section 7. The same bound as ABILITY01-EFFECT-PLAN-ENTRIES = 2, the current EffectPlan bound, applied to a spell cast; it adds no second limit. Registered by OTV2-20260929-spell-cast-wire-w1 (#162 allocation 5894588548)."
+    },
+    {
+      "id": "SPELL-RL-03",
+      "owner_contract": "../architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md",
+      "resource": "Actors in one ACTOR_VITALS snapshot or delta",
+      "unit": "actors per snapshot or delta",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The payload carries only the session's own actor; a second actor cannot be encoded by the ActorVitalsV1 payload schema.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1: the own actor's vitals are carried in a snapshot or delta",
+        "max+1=2: a second actor cannot be encoded by the ActorVitalsV1 payload schema"
+      ],
+      "consumers": [
+        "ACTOR_VITALS state domain 3, delta type 1, snapshot type 1 (crates/protocol-oteryn/src/actor_spell.rs)"
+      ],
+      "notes": "SPELL-D6 (RL-03 = 1), #162 owner acceptance 5867161696; contract section 7. SPELL-RL-04 (spells in one content-generation spell book) needs a finite measured value at registration (SPELL-D6) and is left to composition. Registered by OTV2-20260929-spell-cast-wire-w1 (#162 allocation 5894588548)."
     }
   ]
 }
