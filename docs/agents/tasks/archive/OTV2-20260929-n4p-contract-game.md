@@ -8,9 +8,9 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/n4p-contract-game
-pr: null
+pr: 1291
 base_sha: 50d75c6573344be02984b38ea79e32fc9a9caf1f
-head_sha: null
+head_sha: 9e1616fe8efb9e56fe3b3f0649e958660ea91673
 final_head_sha: null
 final_head_frozen_at: null
 owner: "N4P-CONTRACT design writer (Claude Code)"
@@ -76,5 +76,5 @@ Code, migrations, workflows, `RESOURCE_LIMITS_REGISTRY.json` entries (proposed i
 
 - Validation: `python tools/agents/validate_governance.py` PASS; `python tools/repository/validate_repository_policy.py` PASS; `python -m unittest discover -s tools/agents/tests` PASS; `git diff --check` clean.
 - Review: not requested by this worker; review packet returned to the lead.
-- Merge commit/result: squash merge of this PR when integrated.
+- Merge commit/result: squash merge of #1291.
 - Follow-ups: after Platform PR #1420 merges, set the lock entry to `LOCKED` with the merge commit and digest; resource-limit registry entries; implementation lanes per #162 plan step 2.
