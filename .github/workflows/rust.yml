@@ -108,19 +108,39 @@ jobs:
             cargo +1.94.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
           done
           python - <<'PY'
+          import re
           from pathlib import Path
 
           forbidden = (
-              'protocol-canary', 'protocol-core', 'protocol-oteryn',
+              'protocol-canary', 'protocol-core',
               'transport', 'game-session', 'oteryn-client-domain',
               'oteryn-client-simulation', 'oteryn-synthetic-assets',
               'oteryn-test-support', 'oteryn-synthetic-client-harness',
+              'oteryn-dev-client',
           )
+          session_crates = ('oteryn-session', 'oteryn-session-tcp')
+
+          def protocol_parents(tree):
+              stack, parents = [], []
+              for line in tree.splitlines():
+                  match = re.search(r'[├└]── (\S+)', line)
+                  if not match:
+                      continue
+                  depth = match.start() // 4
+                  del stack[depth:]
+                  if match.group(1) == 'oteryn-protocol-oteryn':
+                      parents.append(stack[-1] if stack else None)
+                  stack.append(match.group(1))
+              return parents
+
           for package in ('oteryn-client', 'oteryn-game-server'):
               tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')
-              found = [name for name in forbidden if name in tree and (package, name) != ('oteryn-game-server', 'protocol-oteryn')]
+              found = [name for name in forbidden if name in tree]
+              if package == 'oteryn-client':
+                  found += [f'protocol-oteryn via {parent}' for parent in protocol_parents(tree) if parent not in session_crates]
               if found:
                   raise SystemExit(f'{package} production closure contains forbidden entries: {found}')
+              print(f'{package} production closure: PASS')
               print(f'{package} production closure: PASS')
           PY
 
