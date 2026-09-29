@@ -29,6 +29,8 @@ owned_paths:
   - .github/workflows/world-metadata-authoring.yml
   - apps/game-server/tests/content_world_project_repository.rs
   - docs/agents/tasks/active/OTV2-20260928-world-base-map.md
+  - docs/agents/reports/OTV2-20260929-world-map-handover.md
+  - docs/agents/HANDOVER_LIFECYCLE.json
 public_contracts: []
 depends_on: []
 blocks: []
@@ -170,6 +172,11 @@ sha256-pinned and `OtsHypothesisOnly`.
   `validate_repository_policy.py` pass.
 - `cargo test --locked -p oteryn-game-server --test content_world_project_repository` and
   `cargo fmt --all -- --check` pass; the legacy seed reproduction diff is empty.
+
+## Handover
+
+Open owner decisions (Blue Valley floor 7 water-to-land, `summer-update-2025` import),
+research results and next steps: `docs/agents/reports/OTV2-20260929-world-map-handover.md`.
 
 ## Independent review
 

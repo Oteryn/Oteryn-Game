@@ -51,6 +51,17 @@
         "docs/architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md",
         "docs/architecture/reviews/OTERYN_GAME_DEATH0_CHARACTER_DEATH_RECEIPT_DECISION_2026-09-28.md"
       ]
+    },
+    {
+      "handover_id": "OTV2-20260929-world-map-handover",
+      "path": "docs/agents/reports/OTV2-20260929-world-map-handover.md",
+      "status": "historical",
+      "authoritative": false,
+      "expiry_rule": "Expired for current-state authority as soon as any recorded branch, PR, head, ownership, blocker, or accepted programme state changes; always re-resolve from live GitHub and current main before continuation.",
+      "superseded_by": [
+        "docs/agents/tasks/active/OTV2-20260928-world-base-map.md",
+        "live GitHub Issue/PR/CI state"
+      ]
     }
   ]
 }
