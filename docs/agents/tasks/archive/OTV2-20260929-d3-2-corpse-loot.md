@@ -4,14 +4,14 @@
 task_id: OTV2-20260929-d3-2-corpse-loot
 title: D3-2 - corpse-first MINT and loot MINT into the corpse container
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: "D3-2 row, OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md §6; scope widened by the #162 control plane to include the MINT-side proto/audit/durability path"
 base_branch: main
 branch: claude/d3-2-corpse-loot
 base_sha: 6133bde
-head_sha: null
+head_sha: adb3bed2af938da6997a7ef372bba99acd529ba8
 owner: "Oteryn: impl combat" (Claude Code)
 created_at: 2026-09-29
 updated_at: 2026-09-29
@@ -96,6 +96,11 @@ Local at 847d94d: `cargo test --lib` 1086 passed / 0 failed; PG test targets `--
 ## Context checkpoint
 
 ```yaml
-last_progress: proto/audit/durability/composition implemented; local validation complete
-next_action: "push claude/d3-2-corpse-loot; #162 opens the PR and routes independent review (DUR-03/proto change)"
+last_progress: PR #1222 merged via Merge Queue as d579154; protected-main readback matched adb3bed; record archived
+next_action: none for this task; follow-ups routed on #162
 ```
+
+## Closeout
+
+- merge commit/result: `d579154` on protected `main` (#1222); every file the PR changed is byte-identical to `adb3bed`
+- ownership release: all leases released at merge
