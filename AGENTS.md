@@ -33,6 +33,10 @@ Run the checks selected by changed paths and preserve `game-gate`, repository pr
 
 `docs/agents/CONTEXT_ROUTING.md` is a cost boundary as well as a correctness router: read the smallest authoritative slice for the current decision, never a recursive or full-history fetch (whole Issue/PR timelines, all open PRs, the full prompt lifecycle registry). Its live-state read budget, large-document rules and subagent routing apply to every session.
 
+## Owner questions in batches
+
+Do not ask the owner one question at a time. Collect open owner questions and decisions, and keep working on everything they do not block; for a reversible, ungoverned detail, proceed on a stated assumption and list it. Workers and lane leads send questions to the active control plane (in their report or the `STATE` decision queue on the coordination Issue), never to the owner. The control plane asks the owner at most twice a day, in one message: numbered questions, each with one line of context, lettered options and a recommendation, so the owner can answer `1a 2b`. Ask at once only when all remaining work is blocked, or the step is destructive, spends owner funds outside standing authorization, or touches production, credentials or safety.
+
 ## Jira programme coordination
 
 Programme coordination is mirrored in Jira project `KAN` (`KAN-23` is the overview); `docs/agents/JIRA_PROGRAMME_COORDINATION.md` has the mapping and state rules. GitHub remains the repository lifecycle and technical source of truth, and Jira never grants repository, merge, production, secret or cross-repository authority. Only the programme coordinator writes to Jira, once per day in one batch; workers report state transitions in their task record and #162 instead. If the connector or mapping is unavailable, record Jira sync as pending and continue.
