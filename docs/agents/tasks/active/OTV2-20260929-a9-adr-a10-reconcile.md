@@ -4,12 +4,12 @@
 task_id: OTV2-20260929-a9-adr-a10-reconcile
 title: "ADR-0020 native client gameplay entry (A9) and A10/D3 reconciliation"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1214
 base_sha: f5db55e39fce41e7435eb467a990e89c07bfce13
 head_sha: null
 final_head_sha: null
@@ -73,11 +73,11 @@ Not applicable. Contract and ADR text only.
 ## Context checkpoint
 
 ```yaml
-last_progress: authored
-status: implementing
+last_progress: authored; PR #1214 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1214
 owner_action_required: null
 blocker: null
-next_action: open the PR, freeze the head, exact-head review and Merge Queue integration
+next_action: exact-head review and Merge Queue integration of #1214
 ```
