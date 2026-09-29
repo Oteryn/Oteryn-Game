@@ -157,6 +157,7 @@ fn lethal_damage_disables_actions_but_administrative_remove_is_not_death() {
             &continuity,
             actor.0,
             command(b"cast:later", b"cast:later\0binding", 1),
+            None,
             false,
         ),
         Err(CarrierError::OccurrenceConflict)
@@ -245,6 +246,7 @@ fn owner_and_actor_generation_are_revalidated_after_resolution() {
             &continuity,
             wrong_actor,
             command(b"cast:1", b"cast:1\0binding", 5),
+            None,
             false,
         ),
         Err(CarrierError::WrongScope)
@@ -270,6 +272,7 @@ fn owner_and_actor_generation_are_revalidated_after_resolution() {
             &continuity,
             recycled,
             command(b"cast:1", b"cast:1\0binding", 5),
+            None,
             false,
         ),
         Err(CarrierError::WrongScope)
@@ -287,6 +290,7 @@ fn invalid_magnitude_overflow_and_injected_failure_do_not_mutate_slot() {
                 &continuity,
                 actor.0,
                 command(b"cast:1", b"cast:1\0binding", damage),
+                None,
                 false,
             ),
             Err(CarrierError::InvalidDamage)
@@ -298,6 +302,7 @@ fn invalid_magnitude_overflow_and_injected_failure_do_not_mutate_slot() {
             &continuity,
             actor.0,
             command(b"cast:1", b"cast:1\0binding", 5),
+            None,
             true,
         ),
         Err(CarrierError::InjectedCommitFailure)
@@ -312,6 +317,7 @@ fn invalid_magnitude_overflow_and_injected_failure_do_not_mutate_slot() {
             &continuity,
             actor.0,
             command(b"cast:1", b"cast:1\0binding", 1),
+            None,
             false,
         ),
         Err(CarrierError::DamageOverflow)
@@ -374,6 +380,7 @@ fn general_capacity_and_binding_size_bound_reject_without_mutation() {
             &continuity,
             actor.0,
             command(b"cast:1", &maximum, 1),
+            None,
             true,
         ),
         Err(CarrierError::InjectedCommitFailure)
@@ -385,6 +392,7 @@ fn general_capacity_and_binding_size_bound_reject_without_mutation() {
             &continuity,
             actor.0,
             command(b"cast:1", &maximum, 1),
+            None,
             false,
         ),
         Err(CarrierError::CommitBindingTooLarge)

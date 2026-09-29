@@ -274,6 +274,7 @@ fn different_lethal_occurrence_cannot_replace_the_retained_death() {
             &owner,
             actor.0,
             direct_command(b"cast:different", b"cast:different\0different-binding", 20,),
+            None,
             false,
         ),
         Err(CarrierError::OccurrenceConflict)
@@ -316,6 +317,7 @@ fn nonlethal_and_precommit_failure_leave_no_death_projection() {
             &owner,
             actor.0,
             direct_command(b"cast:failed", b"cast:failed\0binding", 20),
+            None,
             true,
         ),
         Err(CarrierError::InjectedCommitFailure)
@@ -589,6 +591,7 @@ fn maximum_commit_binding_projects_and_max_plus_one_rejects_before_write() {
                 &owner,
                 actor.0,
                 direct_command(b"cast:max", &maximum, 20),
+                None,
                 false,
             )
             .is_ok()
@@ -611,6 +614,7 @@ fn maximum_commit_binding_projects_and_max_plus_one_rejects_before_write() {
             &owner,
             actor.0,
             direct_command(b"cast:max", &maximum, 20),
+            None,
             false,
         ),
         Err(CarrierError::CommitBindingTooLarge)
