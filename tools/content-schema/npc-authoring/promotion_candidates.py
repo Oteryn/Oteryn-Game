@@ -65,6 +65,12 @@ Merge rules:
   "item_name": ..., "price": ..., "wikis": [...]}`; the offer has no count or sub type. An NPC with no source trade
   gets a gold trade Service from these offers alone. A fixed `WIKI_SHOP_HELD` table keeps quest, event and
   token shops (whose wiki prices are not plain gold sales) out of this rule;
+- D14 (`--crystal-supplement`, owner decision 2026-09-28): NPCs Crystal added after the pinned revision come from
+  one more pinned Crystal commit (`CRYSTAL_SUPPLEMENT_REVISION`, the `summer-update` branch), and only the new NPC
+  files listed in `SUPPLEMENT_ADMITTED`; they are merged like any Crystal bundle and their provenance records that
+  revision. The files listed in `SUPPLEMENT_HELD` (a placeholder outfit, dialogue Crystal wrote itself, or not an
+  NPC on the wiki) are held `SUPPLEMENT_HELD`. The report records the revision and the digest of the supplement
+  bundles it read;
 - key: `oteryn:npc.<slug>` where the slug is derived once from the registered name (ASCII fold,
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
   Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
@@ -111,6 +117,18 @@ WIKI_SHOP_HELD = {
     'Gnomux': 'gnome token exchange',
     'Walter Jaeger': 'event shop',
     'Ruprecht': 'Christmas event shop',
+}
+# D14: the Crystal `summer-update` commit supplies the NPC files Crystal added after ff7ede59; only these seven are
+# admitted, and the other thirteen new files are held with the reason found in review (owner decision 2026-09-28).
+CRYSTAL_SUPPLEMENT_REVISION = '00ce02a57ca5a12e48f32a3476e37471167e4c3f'
+SUPPLEMENT_ADMITTED = {f'crystal:npc/{stem}' for stem in (
+    'captain_corsarah', 'javala', 'mayor_pocaro', 'pescadu', 'thorim', 'uzon_back', 'wayland_smythers')}
+SUPPLEMENT_HELD = {
+    **{f'crystal:npc/{stem}': 'placeholder outfit in the summer-update source'
+       for stem in ('dhira', 'nilavarna', 'niral', 'saraki', 'sharai', 'tarisu', 'udu')},
+    **{f'crystal:npc/{stem}': 'dialogue written by Crystal, not Tibia text (TODO(text))'
+       for stem in ('g_ezkho', 'goldro', 'nekaret', 'omar', 'zofia_bolter')},
+    'crystal:npc/doctor_marrow': 'not an NPC on TibiaWiki',
 }
 REMOVED_FROM_GAME = {
     f'{source}:npc/{stem}': DUELLING_ARENA_REMOVED
@@ -570,7 +588,10 @@ class Builder:
             'travel_service': ({'identity': {'family': 'Service', 'key': f'oteryn:service.travel.{key_slug}',
                                              'revision': 'definition-r1'}, 'routes': travel} if travel else None),
             'trade_service': trade,
-            'provenance': {s: {'key': b['key'], 'sha256': b['source']['sha256']} for s, b in sorted(bundles.items())},
+            'provenance': {s: {'key': b['key'], 'sha256': b['source']['sha256'],
+                               **({'revision': b['source']['revision']}
+                                  if b['source'].get('revision') == CRYSTAL_SUPPLEMENT_REVISION else {})}
+                           for s, b in sorted(bundles.items())},
             'wiki': {'pageid': wiki['pageid'], 'revid': wiki['revid']} if wiki else None,
             'arbitration': [a for a in arbitration if a['rule'] in WIKI_ARBITRATION_RULES],
             'left_out': left_out,
@@ -578,7 +599,15 @@ class Builder:
         return record
 
 
-def build_report(canary_dir, crystal_dir, snapshot_bytes, item_map_bytes, br_facts_bytes=None, tibiopedia_bytes=None):
+def supplement_bundles_digest(bundles_dir):
+    """D14: sorted `<file name>:<sha256 of file>` lines of the listed supplement bundle files, hashed."""
+    names = sorted(f"{key.split(':npc/', 1)[1]}.json" for key in SUPPLEMENT_ADMITTED | set(SUPPLEMENT_HELD))
+    lines = [f'{name}:{hashlib.sha256((Path(bundles_dir) / name).read_bytes()).hexdigest()}' for name in names]
+    return hashlib.sha256('\n'.join(lines).encode()).hexdigest()
+
+
+def build_report(canary_dir, crystal_dir, snapshot_bytes, item_map_bytes, br_facts_bytes=None, tibiopedia_bytes=None,
+                 crystal_supplement_dir=None):
     """The whole candidates report from the pinned inputs (validate_promotion rebuilds it to compare)."""
     item_map = json.loads(item_map_bytes)
     if item_map['schema'] != 'OTERYN_PROTECTED_ITEM_IDENTITY_MAP_EXPORT/v1':
@@ -587,6 +616,22 @@ def build_report(canary_dir, crystal_dir, snapshot_bytes, item_map_bytes, br_fac
                       json.loads(tibiopedia_bytes) if tibiopedia_bytes else None,
                       registry_item_names() if tibiopedia_bytes else None)
     canary, crystal = source_diff.load(canary_dir), source_diff.load(crystal_dir)
+    supplement_digest = None
+    if crystal_supplement_dir:  # D14
+        supplement = {stem: b for stem, b in source_diff.load(crystal_supplement_dir).items()
+                      if b.get('key') in SUPPLEMENT_ADMITTED or b.get('key') in SUPPLEMENT_HELD}
+        if {b['key'] for b in supplement.values()} != SUPPLEMENT_ADMITTED | set(SUPPLEMENT_HELD):
+            raise SystemExit('the Crystal supplement lacks some of its listed NPC files')
+        for stem, bundle in sorted(supplement.items()):
+            if bundle['source']['revision'] != CRYSTAL_SUPPLEMENT_REVISION or stem in crystal:
+                raise SystemExit(f'{bundle["key"]} is not a new file at the pinned supplement revision')
+            if bundle['key'] in SUPPLEMENT_HELD:
+                builder.hold(bundle['definition']['name'], {'crystal': bundle['key']}, 'SUPPLEMENT_HELD',
+                             SUPPLEMENT_HELD[bundle['key']])
+            else:
+                crystal[stem] = bundle
+        # the census-style digest of the listed bundle files, which the dialogue stage re-checks
+        supplement_digest = supplement_bundles_digest(crystal_supplement_dir)
     records = []
     for left, right in source_diff.pair(canary, crystal):
         bundles = {s: b for s, b in (('canary', canary.get(left) if left else None),
@@ -617,11 +662,13 @@ def build_report(canary_dir, crystal_dir, snapshot_bytes, item_map_bytes, br_fac
     report = {
         'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY',
         'decisions': ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'] + (['D12'] if br_facts_bytes else [])
-        + (['D13'] if tibiopedia_bytes else []),
+        + (['D13'] if tibiopedia_bytes else []) + (['D14'] if supplement_digest else []),
         'snapshot_sha256': hashlib.sha256(snapshot_bytes).hexdigest(),
         'item_map_sha256': hashlib.sha256(item_map_bytes).hexdigest(),
         **({'br_facts_sha256': hashlib.sha256(br_facts_bytes).hexdigest()} if br_facts_bytes else {}),
         **({'tibiopedia_facts_sha256': hashlib.sha256(tibiopedia_bytes).hexdigest()} if tibiopedia_bytes else {}),
+        **({'crystal_supplement': {'revision': CRYSTAL_SUPPLEMENT_REVISION, 'bundles_sha256': supplement_digest}}
+           if supplement_digest else {}),
         'totals': {'candidates': len(promoted), 'with_travel': sum(1 for r in promoted if r['travel_service']),
                    'with_trade': sum(1 for r in promoted if r['trade_service']),
                    **dict(sorted(builder.stats.items()))},
@@ -639,6 +686,7 @@ def main():
     parser.add_argument('--item-map', required=True, help='export_reference_item_identity_map output')
     parser.add_argument('--br-facts', help='committed TibiaWiki BR NPC facts (D12 wiki prices)')
     parser.add_argument('--tibiopedia-facts', help='committed Tibiopedia NPC facts (D13 majority prices; needs --br-facts)')
+    parser.add_argument('--crystal-supplement', help='Crystal summer-update bundles (D14: the listed new NPC files)')
     parser.add_argument('--out', required=True)
     args = parser.parse_args()
     snapshot_bytes = Path(args.snapshot).read_bytes()
@@ -647,7 +695,8 @@ def main():
     if args.tibiopedia_facts and not br_facts_bytes:
         parser.error('--tibiopedia-facts (D13) needs --br-facts (D12)')
     tibiopedia_bytes = Path(args.tibiopedia_facts).read_bytes() if args.tibiopedia_facts else None
-    report = build_report(args.canary, args.crystal, snapshot_bytes, item_map_bytes, br_facts_bytes, tibiopedia_bytes)
+    report = build_report(args.canary, args.crystal, snapshot_bytes, item_map_bytes, br_facts_bytes, tibiopedia_bytes,
+                          args.crystal_supplement)
     Path(args.out).write_text(json.dumps(report, indent=1, sort_keys=True) + '\n', encoding='utf-8')
     print(json.dumps(report['totals'], indent=1))
 

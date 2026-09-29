@@ -7,6 +7,8 @@ Semantic rules:
   present and 'D13' exactly when tibiopedia_facts_sha256 is present (only with br_facts_sha256); a
   WIKI_PRICE row requires br_facts_sha256 and a WIKI_MAJORITY_PRICE row tibiopedia_facts_sha256;
   snapshot_sha256, item_map_sha256, br_facts_sha256 and tibiopedia_facts_sha256 are 64 hex chars;
+- D14: 'D14' exactly when crystal_supplement (the pinned supplement revision and a bundles digest) is present;
+  a provenance entry carries a revision only as a crystal entry of a SUPPLEMENT_ADMITTED file at that revision;
 - each candidate identity is family NPC, key `oteryn:npc.<slug>` (D4) and revision 'definition-r1';
   the key suffix equals the slug of `name` (same slug() as promotion_candidates.py);
 - candidate keys are unique and the candidates list is sorted by key;
@@ -204,6 +206,10 @@ def candidate_errors(candidate, index):
         sha = entry.get('sha256')
         if not isinstance(sha, str) or not SHA256_RE.match(sha):
             errs.append(f'{plabel}: sha256 {sha!r} is not 64 hex chars')
+        # D14: only a listed supplement NPC file names the pinned supplement revision, and only that revision
+        if 'revision' in entry and (source != 'crystal' or key not in promotion_candidates.SUPPLEMENT_ADMITTED
+                                    or entry['revision'] != promotion_candidates.CRYSTAL_SUPPLEMENT_REVISION):
+            errs.append(f"{plabel}: revision {entry['revision']!r} is not the D14 supplement revision of a listed file")
     if len(provenance) == 1 and candidate.get('wiki') is None:
         errs.append(f'{label}: single-source candidate has no wiki confirmation (D6)')
 
@@ -397,7 +403,7 @@ def errors(report):
     if report.get('evidence') != EVIDENCE:
         errs.append(f"evidence {report.get('evidence')!r} != {EVIDENCE!r}")
     expected = DECISIONS + (['D12'] if 'br_facts_sha256' in report else []) + (
-        ['D13'] if 'tibiopedia_facts_sha256' in report else [])
+        ['D13'] if 'tibiopedia_facts_sha256' in report else []) + (['D14'] if 'crystal_supplement' in report else [])
     if report.get('decisions') != expected:
         errs.append(f"decisions {report.get('decisions')!r} != {expected!r}")
     for field in ('br_facts_sha256', 'tibiopedia_facts_sha256'):
@@ -406,6 +412,15 @@ def errors(report):
     if 'tibiopedia_facts_sha256' in report and 'br_facts_sha256' not in report:
         errs.append('tibiopedia_facts_sha256 without br_facts_sha256 (D13 needs D12)')
     # a WIKI_MAJORITY_PRICE row is only valid with the Tibiopedia facts it was decided from (D13)
+    supplement = report.get('crystal_supplement')
+    if supplement is not None and (
+            not isinstance(supplement, dict)
+            or supplement.get('revision') != promotion_candidates.CRYSTAL_SUPPLEMENT_REVISION
+            or not SHA256_RE.match(str(supplement.get('bundles_sha256')))):
+        errs.append('crystal_supplement is not the pinned D14 revision with a bundles digest')
+    if supplement is None and any('revision' in (entry or {}) for candidate in report.get('candidates') or []
+                                  for entry in (candidate.get('provenance') or {}).values()):
+        errs.append('a provenance revision without crystal_supplement (D14)')
     for d13_rule in ('WIKI_MAJORITY_PRICE', 'WIKI_OFFER'):
         if 'tibiopedia_facts_sha256' not in report and any(
                 row.get('rule') == d13_rule for candidate in report.get('candidates') or []
@@ -551,11 +566,12 @@ def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names, ti
     return errs
 
 
-def rebuild_errors(report, canary, crystal, snapshot_bytes, item_map_bytes, br_facts_bytes, tibiopedia_bytes):
+def rebuild_errors(report, canary, crystal, snapshot_bytes, item_map_bytes, br_facts_bytes, tibiopedia_bytes,
+                   crystal_supplement=None):
     """With the source bundles as well, the report must be exactly what promotion_candidates builds from the pinned
     inputs, so no source offer, wiki offer or provenance row can be added, dropped or relabelled."""
     rebuilt = promotion_candidates.build_report(canary, crystal, snapshot_bytes, item_map_bytes, br_facts_bytes,
-                                                tibiopedia_bytes)
+                                                tibiopedia_bytes, crystal_supplement)
     if json.dumps(rebuilt, sort_keys=True) == json.dumps(report, sort_keys=True):
         return []
     theirs = {c.get('name'): json.dumps(c, sort_keys=True) for c in report.get('candidates') or []}
@@ -571,6 +587,7 @@ def main():
     parser.add_argument('--br-facts', type=Path, help='the pinned TibiaWiki BR facts; checks every WIKI_PRICE row')
     parser.add_argument('--canary', type=Path, help='Canary bundles; with --crystal and every pinned input, rebuild')
     parser.add_argument('--crystal', type=Path, help='Crystal bundles; with --canary and every pinned input, rebuild')
+    parser.add_argument('--crystal-supplement', type=Path, help='the D14 Crystal supplement bundles, for the rebuild')
     parser.add_argument('--item-map', type=Path, help='the pinned item map; checks every WIKI_OFFER row (D13 offers)')
     parser.add_argument('--tibiopedia-facts', type=Path,
                         help='the pinned Tibiopedia facts; checks every WIKI_MAJORITY_PRICE row (with the two above)')
@@ -594,7 +611,7 @@ def main():
     if args.canary:
         all_errors += rebuild_errors(report, args.canary, args.crystal, args.snapshot.read_bytes(),
                                      args.item_map.read_bytes(), args.br_facts.read_bytes(),
-                                     args.tibiopedia_facts.read_bytes())
+                                     args.tibiopedia_facts.read_bytes(), args.crystal_supplement)
 
     candidates = report.get('candidates') or []
     total = len(candidates)
