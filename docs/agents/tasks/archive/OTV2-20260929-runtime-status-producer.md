@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/runtime-status-producer
-pr: null
+pr: 1302
 base_sha: c0f7e238
 head_sha: null
 final_head_sha: null
@@ -53,6 +53,6 @@ owned_paths:
 
 ## Closeout
 
-- Validation: see the PR body (fmt, clippy, `cargo test -p oteryn-game-server`, governance and repository-policy validators, `git diff --check`).
+- Validation: fmt PASS; clippy -D warnings PASS; `cargo test -p oteryn-game-server` 9436 passed, 0 failed (focused rerun after final tests PASS); governance and repository-policy validators PASS; `git diff --check` clean.
 - Review: independent review required; run by the control plane after freeze.
-- Merge commit/result: squash merge of the PR named in the PR field once merged.
+- Merge commit/result: squash merge of #1302.
