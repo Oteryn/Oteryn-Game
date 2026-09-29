@@ -4,15 +4,15 @@
 task_id: OTV2-20260929-d3-4-corpse-transfer
 title: D3-4 DUR-03 TRANSFER out of a corpse container with the D133 exclusivity window and the corpse never a source
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/d3-4-corpse-transfer
 issue: 162
 allocation: "#162 control plane child D3-4 of the merged D3 decision (worker 'Oteryn: impl durability')"
 base_sha: 6133bde
-head_sha: null
-final_head_sha: null
+head_sha: f10961f8c07fcb4452188ff716ad97f4885ac8b5
+final_head_sha: f10961f8c07fcb4452188ff716ad97f4885ac8b5
 final_head_frozen_at: null
 owner: "Oteryn: impl durability (claude-code-session-01U1WRHgL9X8RbuiG1pwczrF)"
 created_at: 2026-09-29
@@ -124,3 +124,8 @@ finding_dispositions: {p0_p1_accepted_and_repaired: [], p0_p1_rejected_with_exac
 
 - No PR and no GitHub comment by this worker, per the allocation.
 - The PG cases were not executed locally (no PostgreSQL 17 available to this worker); CI runs them.
+
+## Closeout
+
+- merge commit/result: `d4d5e2c` on protected `main` (#1221); every file the PR changed is byte-identical to `f10961f` except `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`, whose only extra difference is #1214's amendment line, already on the base
+- ownership release: all leases released at merge
