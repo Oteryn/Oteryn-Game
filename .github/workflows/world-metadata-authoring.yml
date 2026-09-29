@@ -9,6 +9,7 @@ on:
       - content/world/areas/**
       - content/world/transitions/**
       - imports/crystalserver/bindings/items.json
+      - imports/tibiawiki/hunting-places/**
       - .github/workflows/world-metadata-authoring.yml
   workflow_dispatch:
 
@@ -45,6 +46,7 @@ jobs:
       - name: Validate committed world metadata families
         run: |
           set -euo pipefail
+          python convert_hunting_places.py --check
           python validate_world_metadata.py
           python ../validate_materialized_game_tree.py
 

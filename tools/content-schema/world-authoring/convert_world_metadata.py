@@ -55,6 +55,11 @@ FAMILIES = {
         "stem": "cities",
         "schema": "OTERYN_AREA_AUTHORING_SHARD/v1",
     },
+    "Area.HuntingPlace": {
+        "dir": "content/world/areas/hunting-places",
+        "stem": "hunting-places",
+        "schema": "OTERYN_AREA_AUTHORING_SHARD/v1",
+    },
     "House": {
         "dir": "content/houses",
         "stem": "houses",
@@ -110,7 +115,7 @@ def committed_keys(root: Path, family: str, namespace: str) -> dict[str, str]:
     if not index.is_file():
         return {}
     found: dict[str, str] = {}
-    for shard in json.loads(index.read_text(encoding="utf-8"))["shards"]:
+    for shard in json.loads(index.read_text(encoding="utf-8")).get("shards", []):
         shard_doc = json.loads((root / shard).read_text(encoding="utf-8"))
         for record in shard_doc["records"]:
             for row in record["source_bindings"]:
@@ -314,7 +319,9 @@ def teleports(
     return unique(records, "Transition.Teleport"), unbound
 
 
-def shard_files(family: str, records: list[dict]) -> dict[str, bytes]:
+def shard_files(
+    family: str, records: list[dict], source: dict = SOURCE, generator: str = GENERATOR
+) -> dict[str, bytes]:
     spec = FAMILIES[family]
     out, shards = {}, []
     for index, start in enumerate(range(0, len(records), SHARD_SIZE)):
@@ -339,13 +346,13 @@ def shard_files(family: str, records: list[dict]) -> dict[str, bytes]:
         {
             "coordinate_frame": COORDINATE_FRAME,
             "family": family,
-            "generator": GENERATOR,
+            "generator": generator,
             "population_state": "POPULATED",
             "record_count": len(records),
             "schema": "OTERYN_FAMILY_INDEX/v1",
             "shard_size": SHARD_SIZE,
             "shards": shards,
-            "source": SOURCE,
+            "source": source,
         }
     )
     return out
