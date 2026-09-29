@@ -19,6 +19,27 @@ Use targeted reads by default:
 - do not load `OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` for a technical worker unless owner-facing launch/status placement is the task;
 - prompt evaluation is for prompt authoring/material changes/lifecycle evaluation or an explicit evaluation task, not ordinary alias reuse.
 
+### Large documents and command output
+
+Load these only when their condition holds:
+
+- `CLOSURE_CONVERGENCE_PROTOCOL.md`: only when a PR is in a repeated review/repair loop;
+- `prompts/OTV2_REFERENCE_INVESTIGATOR.md`: the shared sections plus the section for your own alias, not the other aliases' sections;
+- `prompts/OTV2_WORK_DELIVERY_COORDINATOR.md`: only the active control plane;
+- audit and architecture-continuation prompts: only when running that alias.
+
+Run builds and tests quietly (`cargo ... --quiet`, keep the last ~20 lines of output) and report pass/fail counts instead of pasting logs or diffs.
+
+### Subagent routing
+
+Leads that run workers as subagents use the definitions in `.claude/agents/`:
+
+- `oteryn-impl-worker` (Sonnet, effort medium): ordinary allocated implementation, data and docs slices;
+- `oteryn-hard-worker` (Opus, effort high): persistence, session-generation fencing, `protocol-oteryn` wire format, authority or durable value;
+- `oteryn-ref-reader` (Haiku, read-only): code search, Reference evidence and live-state lookups.
+
+A subagent's final report is at most 15 lines. Subagents never trigger paid review, allocate or merge.
+
 A current-state read may expand only when the smaller slice leaves a material authority, ownership, dependency, safety or acceptance fact unresolved. Reuse authenticated immutable exact-revision material within the coherent task instead of re-reading it merely because another step begins.
 
 For an ungoverned, low-risk and reversible implementation detail, state a bounded assumption and continue. Do not infer permission, ownership, production access, destructive intent or a durable product decision from missing context.
