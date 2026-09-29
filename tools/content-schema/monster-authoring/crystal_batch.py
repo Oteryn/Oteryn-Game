@@ -18,6 +18,7 @@ import subprocess
 from pathlib import Path
 
 import canary_batch as cb
+import spell_scripts
 
 ROOT = Path(__file__).resolve().parent
 REPOSITORY = 'zimbadev/crystalserver'
@@ -32,24 +33,38 @@ SOURCE_NOTE = (f'{REPOSITORY} branch {BRANCH} at {REVISION} (read {READ}): the o
                f'(Canary {cb.REVISION[:8]}); loot names resolve through the 15.30 item tables of this commit.')
 
 
-def git(crystal, *args):
-    return subprocess.run(['git', '-C', str(crystal), *args], capture_output=True, text=True).stdout.strip()
+def git(root, *args):
+    return subprocess.run(['git', '-C', str(root), *args], capture_output=True, text=True).stdout.strip()
 
 
-def require_revision(crystal):
-    """Every output records REVISION, so the files read must be those of that commit: HEAD is REVISION and they are clean.
-    files() lists the monsters from the REVISION tree, so untracked or ignored files are never read."""
-    head = git(crystal, 'rev-parse', 'HEAD')
-    if head != REVISION:
-        raise SystemExit(f'{crystal} is at {head or "no git commit"}, not the pinned CrystalServer revision {REVISION}')
-    dirty = git(crystal, 'status', '--porcelain', '--untracked-files=no', '--', MONSTER_DIR, *SHARED_SOURCES)
+# The Canary files the converter reads: its monster names (files()) and the engine rules and spell scripts.
+CANARY_READ = (cb.MONSTER_DIR, cb.EFFECT_CONSTANTS, spell_scripts.SPELL_LIB, spell_scripts.ENGINE_DEFINITIONS,
+               *spell_scripts.SCRIPT_DIRS)
+
+
+def require_pinned(root, name, revision, paths, extra):
+    """Every output records the pinned revisions, so the files read must be those of the commits: HEAD is the revision,
+    the tracked files read are clean and, where `extra` is set (paths read by globbing the checkout), no untracked or
+    ignored file lies in them."""
+    head = git(root, 'rev-parse', 'HEAD')
+    if head != revision:
+        raise SystemExit(f'{root} is at {head or "no git commit"}, not the pinned {name} revision {revision}')
+    flags = ['--untracked-files=all', '--ignored'] if extra else ['--untracked-files=no']
+    dirty = git(root, 'status', '--porcelain', *flags, '--', *paths)
     if dirty:
-        raise SystemExit(f'{crystal} has local changes to files read at {REVISION}:\n{dirty}')
+        raise SystemExit(f'{root} has local changes to {name} files read at {revision}:\n{dirty}')
+
+
+def require_revision(canary, crystal):
+    """The Crystal monsters are listed from the REVISION tree (files()), so only its tracked files need to be clean; the
+    Canary engine rules and spell scripts are read by globbing, so their paths also admit no untracked or ignored file."""
+    require_pinned(crystal, 'CrystalServer', REVISION, (MONSTER_DIR, *SHARED_SOURCES), extra=False)
+    require_pinned(canary, 'Canary', cb.REVISION, CANARY_READ, extra=True)
 
 
 def converter(canary, crystal):
     """A converter that reads the Crystal monster files and item tables and keeps the Canary engine rules."""
-    require_revision(crystal)
+    require_revision(canary, crystal)
     objects = cb.load_appearance_objects(crystal / 'data/items/appearances.dat')
     items = cb.load_items_xml(crystal / 'data/items/items.xml')
     names, index = cb.name_index(objects, items)
@@ -66,8 +81,9 @@ def created_name(path):
 
 def files(canary, crystal):
     """Relative paths (no .lua) of the Crystal monsters whose name no Canary monster file creates."""
-    require_revision(crystal)
-    canary_slugs = {cb.slug(name) for path in (canary / cb.MONSTER_DIR).rglob('*.lua') if (name := created_name(path))}
+    require_revision(canary, crystal)
+    canary_files = git(canary, 'ls-tree', '-r', '--name-only', cb.REVISION, '--', cb.MONSTER_DIR).splitlines()
+    canary_slugs = {cb.slug(name) for path in canary_files if path.endswith('.lua') and (name := created_name(canary / path))}
     result = []
     tracked = git(crystal, 'ls-tree', '-r', '--name-only', REVISION, '--', MONSTER_DIR).splitlines()
     for path in sorted(crystal / name for name in tracked if name.endswith('.lua')):
