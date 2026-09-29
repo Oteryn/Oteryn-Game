@@ -1081,6 +1081,23 @@ impl LocalObjectRuntime {
         self.state_attributes.get(&self.state)
     }
 
+    /// #162 §10.2: whether the current state is a synthesized absent state, for which the
+    /// projection renders no object. Such a state is collision-`Absent` and carries no attributes
+    /// (validated at link and at `bind`), so it neither blocks nor exposes a destination.
+    #[cfg_attr(
+        not(test),
+        allow(
+            dead_code,
+            reason = "§10.2 accessor; the transport projection of absent states is a later allocation"
+        )
+    )]
+    #[must_use]
+    pub(crate) fn is_absent(&self) -> bool {
+        self.states
+            .iter()
+            .any(|state| state.key == self.state && state.absent)
+    }
+
     /// #162 §9 (design points 5/6): this placement's authored revert duration for one bound
     /// transition invoked by one authored action; `None` when that invocation carries none.
     #[cfg_attr(
@@ -1973,11 +1990,13 @@ mod tests {
                         key: closed.clone(),
                         collision: LocalObjectCollisionPresence::Present,
                         attribute_variant_of: None,
+                        absent: false,
                     },
                     LocalObjectStateDefinition {
                         key: open.clone(),
                         collision: LocalObjectCollisionPresence::Absent,
                         attribute_variant_of: None,
+                        absent: false,
                     },
                 ]),
                 client_projection: ClientProjectionClass::ClientSafe,
@@ -2151,21 +2170,25 @@ mod tests {
                             key: absent.clone(),
                             collision: LocalObjectCollisionPresence::Absent,
                             attribute_variant_of: None,
+                            absent: false,
                         },
                         LocalObjectStateDefinition {
                             key: present.clone(),
                             collision: LocalObjectCollisionPresence::Present,
                             attribute_variant_of: None,
+                            absent: false,
                         },
                         LocalObjectStateDefinition {
                             key: armed.clone(),
                             collision: LocalObjectCollisionPresence::Present,
                             attribute_variant_of: None,
+                            absent: false,
                         },
                         LocalObjectStateDefinition {
                             key: dormant.clone(),
                             collision: LocalObjectCollisionPresence::Absent,
                             attribute_variant_of: None,
+                            absent: false,
                         },
                     ]),
                     client_projection: ClientProjectionClass::ClientSafe,
@@ -2177,11 +2200,13 @@ mod tests {
                             key: foreign_state_a.clone(),
                             collision: LocalObjectCollisionPresence::Absent,
                             attribute_variant_of: None,
+                            absent: false,
                         },
                         LocalObjectStateDefinition {
                             key: foreign_state_b.clone(),
                             collision: LocalObjectCollisionPresence::Present,
                             attribute_variant_of: None,
+                            absent: false,
                         },
                     ]),
                     client_projection: ClientProjectionClass::ClientSafe,

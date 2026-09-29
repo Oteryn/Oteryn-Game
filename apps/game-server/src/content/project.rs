@@ -836,6 +836,7 @@ impl LocalObjectStateDocument {
             // never authored through this project document, so the document shape (and every
             // existing content byte) is unchanged.
             attribute_variant_of: None,
+            absent: false,
         })
     }
 }
