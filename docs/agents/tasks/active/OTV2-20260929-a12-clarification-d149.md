@@ -80,6 +80,16 @@ commit.
   digest) in a historical archive. Durable rows resolve to it, and live materialization fails
   closed for that item only.
 
+The owner-requested re-review of `7a594cf` raised three P1 findings. All were accepted and fixed
+in the second repair commit.
+
+- 4135816153, record evolution: continuity compares an identity projection digest (object class
+  and CipSoft name). Flag, sprite and other field changes become evolution notes.
+- 4135816165, alias requalification: `ACCEPTED_ALIAS` needs its G4 rule 7 duplicate proof and
+  acceptance provenance. Without them the row becomes `AMBIGUOUS`, and no acceptance is invented.
+- 4135816175, tombstone live path: ITEM-ID-1 must test that a tombstoned key never materializes as
+  a live item, the row stays byte-identical, and the event is reported.
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`

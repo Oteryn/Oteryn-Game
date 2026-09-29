@@ -79,8 +79,10 @@ Crystal and donor `.dat` files)
   The set only grows. A later admitted client adds ids and never changes what an existing key
   means.
 - **Membership manifests.** Each admitted CipSoft file has a membership manifest:
-  - the complete list of its appearance object ids, each with a digest of that id's appearance
-    record (the meaning-bearing fields), so continuity (§4.2) can be proven per id;
+  - the complete list of its appearance object ids, each with two digests:
+    - an *identity projection* digest over the identity-stable fields: the object class (item as
+      opposed to outfit, effect or missile) and the CipSoft object name where the file has one;
+    - a full record digest, used only to note record evolution;
   - derived from the exact file bytes, bound to that file's digest, with its own digest recorded.
 
   A census that emits only the difference (for example the B3 "undefined ids" output) is not a
@@ -118,18 +120,23 @@ Crystal and donor `.dat` files)
   - `EXACT` needs G4 identity evidence that both records are the same item. That evidence has two
     parts:
     1. The source row's appearance reference is that Tibia id in an admitted membership manifest.
-    2. CipSoft record continuity holds for that id. Its appearance record digest in the source's
-       pinned CipSoft file matches the digest in the comparison file:
+    2. CipSoft record continuity holds for that id. Its identity projection digest in the source's
+       pinned CipSoft file matches the one in the comparison file:
        - for a current id, the newest admitted file;
        - for a retired id, the last admitted file that contains it. Its removal is proven by its
          absence from every later manifest.
+  - Record evolution does not break continuity. Changed flags, sprites or other fields outside the
+    identity projection are recorded as an evolution note; the evidence shows 2-4 such flag changes.
   - A different OT name alone does not block `EXACT`, because OT names are editorial. It is recorded
     as a note on the crosswalk row.
   - Equal numbers alone never prove identity (G4 rule 3).
   - A source row that describes a different item than its id's CipSoft record, such as an OT
     repurposed id, becomes a `CONFLICT` crosswalk row. It emits no binding and no alias.
-  - A continuity break (the same id with a different CipSoft meaning) is `CONFLICT` and
+  - A continuity break (a different identity projection for the same id) is `CONFLICT` and
     `ARCHITECTURE_ESCALATION_REQUIRED`, never `EXACT`.
+  - `ACCEPTED_ALIAS` needs its own G4 rule 7 evidence: the duplicate or alias proof and its
+    acceptance provenance. A row that lacks it is requalified as `AMBIGUOUS` (unbound). An
+    acceptance is never re-invented.
 - The four-layer separation stays in force: canonical key, source id, presentation identity and
   runtime or wire id. For CipSoft items the canonical number and the wire number coincide by rule,
   not by merging the two layers.
@@ -217,13 +224,20 @@ ITEM-ID-1 must prove all of the following:
 - Every crosswalk row is requalified, never copied: its disposition, target and notes are derived
   again from its own §4.2 evidence. That evidence is:
   - the source appearance reference;
-  - the source-pinned and comparison appearance record digests;
-  - any name-difference note.
+  - the source-pinned and comparison identity projection digests, and any evolution note;
+  - any name-difference note;
+  - for `ACCEPTED_ALIAS`, the duplicate proof and acceptance provenance.
 - No source row is lost: every crosswalk row survives with its derived disposition.
   - Only `EXACT` and `ACCEPTED_ALIAS` rows emit target-bearing bindings to the new keys.
   - `CONFLICT` and other unbound rows emit none.
 - Every D149 record is removed from authored content. Its old key is `retired_without_successor`
   with a tombstone, and every durable row that holds such a key resolves to that tombstone.
+- A test covers the live reader path for a durable row that holds a tombstoned key:
+  - the item is not materialized as a live item;
+  - the row stays byte-identical;
+  - the event is reported.
+
+  Resolving historical data never brings removed content back to life.
 - Semantic constants resolve to existing Tibia keys.
 - No Tibia key coincides with an Oteryn-namespace key.
 
