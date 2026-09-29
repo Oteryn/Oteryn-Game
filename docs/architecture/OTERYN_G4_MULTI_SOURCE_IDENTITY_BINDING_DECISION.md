@@ -8,6 +8,9 @@
 - Extension: donor-only Item ids get an additive opaque identity epoch, and the frozen CW2-B1
   import stays unchanged (owner decisions D96-D97,
   `reviews/OTERYN_GAME_A8_DONOR_ITEM_IDENTITY_EPOCH_DECISION_2026-09-28.md`).
+- Amendment (candidate, owner decision ID1, 2026-09-29): the Item key number mirrors the Tibia item id for every id,
+  superseding the A8 epoch sequence; other families and sources keep this decision unchanged
+  (`reviews/OTERYN_GAME_ITEM_TIBIA_ID_MIRROR_IDENTITY_DECISION_2026-09-29.md`).
 
 ## Decision
 
