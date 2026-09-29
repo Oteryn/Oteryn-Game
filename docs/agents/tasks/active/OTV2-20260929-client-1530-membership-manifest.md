@@ -28,7 +28,7 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260929-client-1530-membership-manifest.md
 public_contracts: []
 depends_on: []
-blocks: [A12 #1237 digest-bound full membership manifest]
+blocks: ["A12 #1237 digest-bound full membership manifest"]
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -47,6 +47,16 @@ committed only the id list.
 
 A12 (#1237) §4.1/§5 require a digest-bound full membership manifest of each admitted CipSoft appearance
 file. `imports/official/client-assets/15.30/manifest.json` pins the file (sha256 `2dfa943b…`, 5,017,996 bytes).
+
+## High-risk authority/recovery qualification
+
+`NOT_APPLICABLE`: no production mutation, session/lease/generation fence, PREPARE/COMMIT, controller or
+persisted recovery evidence. The change is an offline tooling option plus committed id-only reference data.
+
+```yaml
+applicable: false
+reason: offline tooling and committed reference data; no authority, fence or recovery path
+```
 
 ## Acceptance criteria
 
