@@ -7,7 +7,7 @@ mode: IMPLEMENT
 status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1275
 base_branch: main
 branch: claude/n5-client-closure
 base_sha: cf025b7a
@@ -58,3 +58,8 @@ Candidate-side pins updated in `tools/repository`: `EXPECTED_MERGE_GROUP_GATE_BL
 - `validate_repository_policy.py` PASS (23 files, 50 workflows); `validate_governance.py` PASS; `git diff --check` clean.
 - `test_validate_merge_group_pg_sim.py` and `test_validate_pr_gate_pg_sim.py` need `pwsh`, absent in this container; CI runs them.
 - Owner authorization: Q4a (N5), Q2a (#1249 bump), Q7c (one combined rotation), #162 comments 5897283986, 5898411039.
+
+## Follow-up
+
+- The closure trees use the default target and features (no `--target all` / `--all-features`); a pre-existing gap, not widened here.
+- Review round: the check now fails closed on format (empty or unparsed tree, or a protocol-oteryn line count that differs from the parsed edge count) and rejects any `oteryn-protocol-oteryn-*` crate in the client closure.

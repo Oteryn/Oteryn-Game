@@ -526,24 +526,31 @@ jobs:
           )
           session_crates = ('oteryn-session', 'oteryn-session-tcp')
 
-          def protocol_parents(tree):
-              stack, parents = [], []
+          def parse_tree(tree):
+              stack, edges, protocol = [], 0, []
               for line in tree.splitlines():
                   match = re.search(r'[├└]── (\S+)', line)
                   if not match:
                       continue
+                  edges += 1
                   depth = match.start() // 4
                   del stack[depth:]
-                  if match.group(1) == 'oteryn-protocol-oteryn':
-                      parents.append(stack[-1] if stack else None)
+                  if match.group(1).startswith('oteryn-protocol-oteryn'):
+                      protocol.append((match.group(1), stack[-1] if stack else None))
                   stack.append(match.group(1))
-              return parents
+              return edges, protocol
 
           for package in ('oteryn-client', 'oteryn-game-server'):
               tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')
+              edges, protocol = parse_tree(tree)
+              if not tree.strip() or edges == 0:
+                  raise SystemExit(f'{package} production tree is empty or not in the expected format')
+              named = sum('oteryn-protocol-oteryn' in line for line in tree.splitlines())
+              if named != len(protocol):
+                  raise SystemExit(f'{package} production tree has {named} protocol-oteryn lines but {len(protocol)} parsed edges')
               found = [name for name in forbidden if name in tree]
               if package == 'oteryn-client':
-                  found += [f'protocol-oteryn via {parent}' for parent in protocol_parents(tree) if parent not in session_crates]
+                  found += [f'protocol-oteryn via {parent}' for name, parent in protocol if name != 'oteryn-protocol-oteryn' or parent not in session_crates]
               if found:
                   raise SystemExit(f'{package} production closure contains forbidden entries: {found}')
               print(f'{package} production closure: PASS')
