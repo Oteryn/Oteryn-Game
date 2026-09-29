@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-d3-3-top-damage
 title: D3-3 - deterministic top-damage CharacterId per creature generation
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1215
@@ -12,7 +12,7 @@ allocation_comment: "D132, OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DEC
 base_branch: main
 branch: claude/d3-3-top-damage
 base_sha: 4a82815
-head_sha: null
+head_sha: 70e9ed7c65e4e3ff4ae57ecbf26f8ba5642f0f7c
 owner: "Oteryn: D3 corpse/loot worker" (Claude Code)
 created_at: 2026-09-29
 updated_at: 2026-09-29
@@ -74,3 +74,8 @@ caller of `commit_damage_for_attacker`, and multi-hit-per-generation fixture sup
 - `cargo test --quiet --lib`
 - `python tools/agents/validate_governance.py`
 - `git diff --check`
+
+## Closeout
+
+- merge commit/result: `d917c62` on protected `main` (#1215); readback byte-identical to `70e9ed7`
+- ownership release: all leases released at merge
