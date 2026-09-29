@@ -1896,6 +1896,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-dev-client"
+version = "0.1.0"
+dependencies = [
+ "oteryn-protocol-oteryn",
+ "rcgen",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
+]
+
+[[package]]
 name = "oteryn-diagnostics"
 version = "0.1.0"
 dependencies = [
@@ -1917,6 +1928,7 @@ dependencies = [
  "cap-fs-ext",
  "cap-std",
  "ed25519-dalek",
+ "oteryn-dev-client",
  "oteryn-foundation",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
@@ -2041,10 +2053,16 @@ version = "0.1.0"
 dependencies = [
  "oteryn-client-domain",
  "oteryn-client-simulation",
+ "oteryn-dev-client",
  "oteryn-foundation",
  "oteryn-input-actions",
+ "oteryn-protocol-oteryn",
  "oteryn-renderer",
  "oteryn-synthetic-assets",
+ "rcgen",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]

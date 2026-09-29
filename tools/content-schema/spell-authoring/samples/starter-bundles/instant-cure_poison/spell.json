@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/cure_poison",
-      "revision": "spell-p2-r8"
+      "revision": "spell-p2-r12"
     },
     "name": "Cure Poison",
     "carrier": "instant",
@@ -57,7 +57,7 @@
       "ability": {
         "family": "Ability",
         "key": "candidate:ability/spell/cure_poison",
-        "revision": "spell-p2-r8"
+        "revision": "spell-p2-r12"
       }
     }
   }

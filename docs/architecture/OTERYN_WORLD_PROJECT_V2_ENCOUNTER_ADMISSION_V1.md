@@ -63,7 +63,7 @@ The estimate below is a closure over the current census. The staging tool's coun
 | Group | Count |
 |---|---:|
 | Encounter samples | 83 |
-| with `unresolved_semantics` rows (Alptramun, Ferumbras Mortal Shell, Gorzindel, Melting Frozen Horror, The Sandking) | 5 |
+| with `unresolved_semantics` rows (Alptramun, Ferumbras Mortal Shell, Gorzindel, Melting Frozen Horror, The Sandking; §12 of the format proposes CANDIDATE resolutions for all but Ferumbras Mortal Shell, pending owner acceptance) | 5 |
 | admitted after closure | about 58 |
 | Encounter-covered monsters admitted | about 128 of 164 |
 | Other monsters freed by the new references | about 3 |
@@ -101,11 +101,26 @@ creatures, in the same slices.
    `ProjectV2EncounterDetails.covers` names the participant creatures the encounter covers, and
    `ProjectV2CreatureAuthoring.encounters` binds a creature to its encounters (E3). The project checks both directions:
    a covered creature lists its encounter, and a listed encounter covers the creature. The D45 summon spells get `ProjectV2AbilityDetails.encounter`: exactly one of effects, variants
-   and encounter, and an encounter-backed ability must be a spell. Tests:
+   and encounter, and an encounter-backed ability must be a spell. Every such ability needs an `ability_cast` rule in its
+   encounter. The rule's role must be able to be a creature, participant or spawned, that owns the ability. Every
+   owner of the ability is bound to, and covered by, that encounter. Tests:
    `apps/game-server/tests/content_world_project_v2_encounter_admission.rs`.
 4. Writer and the first wave: `creature_admission_stage.py` stages the encounters and their creatures under E4, the
-   materializer pins the result, and the content tree is regenerated (`content/encounters/{bosses,…}`). One
-   independent exact-head review applies, because `content/world` changes.
+   materializer pins the result, and the content tree is regenerated. One independent exact-head review applies,
+   because `content/world` changes.
+   Done in `OTV2-20260928-encounter-admission-wave`.
+   - **Encounters:** 58 of the 83 encounters are admitted. Each is an Encounter declaration, a typed profile and a
+     `canary/encounter` source binding.
+   - **Deferred encounters (25):** 19 wait for an unadmitted creature, item or ability, 5 keep an
+     `unresolved_semantics` row, and 1 has an unlocated anchor (the Soul War taint zones). For four of the five rows
+     the format's §12 proposes CANDIDATE resolutions, pending owner acceptance.
+   - **Creatures:** 1,450 are admitted, up from 1,319. Monsters that wait only on an encounter drop from 164 to 35.
+   - **Content tree:** the admitted encounters are in `content/encounters/definitions/`. The tree contract has no
+     node for Generic encounters, so all types share that node.
+   - **Manifest digests (E5):** the Canary import batch `g4-creature-canary-wave-a-r1` carries one reimport baseline
+     per admitted encounter. Its identity is the encounter key, its field is `encounter_manifest_sha256`, and its value
+     is the digest of the manifest the profile was mapped from. The pinned staged evidence
+     `docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json` holds the same digests.
 5. Later: the remaining encounters as their creatures, items or vocabulary resolve; map binding and the Encounter
    runtime are separate owned slices.
 

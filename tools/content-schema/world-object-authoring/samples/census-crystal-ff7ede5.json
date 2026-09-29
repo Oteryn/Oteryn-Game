@@ -1,0 +1,217 @@
+{
+  "decision": "WO0-WORLD-OBJECT-TERRAIN-FORMAT-V1 (D93, D94)",
+  "excluded_routes": {
+    "Fluid:fluid_type_without_appearance": 20,
+    "WorldObject:appearance_placeholder_slot": 4351,
+    "WorldObject:no_client_appearance": 105
+  },
+  "no_appearance": {
+    "Terrain": 36,
+    "WorldObject": 5
+  },
+  "records": {
+    "by_family": {
+      "Terrain": 8581,
+      "WorldObject": 12789
+    },
+    "by_kind": {
+      "Terrain:UNKNOWN": 330,
+      "Terrain:border": 3779,
+      "Terrain:field": 104,
+      "Terrain:ground": 2197,
+      "Terrain:wall": 2171,
+      "WorldObject:UNKNOWN": 21,
+      "WorldObject:bed": 192,
+      "WorldObject:corpse": 3358,
+      "WorldObject:decoration": 2771,
+      "WorldObject:door": 728,
+      "WorldObject:ladder": 17,
+      "WorldObject:object": 5653,
+      "WorldObject:teleport": 49
+    },
+    "digest_sha256": "89a76539d5254da846c3d420c71a71e11c2c12c0eeb1922dda717987abbcc465",
+    "examples": {
+      "Terrain:UNKNOWN": [
+        "oteryn:terrain.registry.i00000488",
+        "oteryn:terrain.registry.i00000489",
+        "oteryn:terrain.registry.i00000506"
+      ],
+      "Terrain:border": [
+        "oteryn:terrain.registry.i00000207",
+        "oteryn:terrain.registry.i00000208",
+        "oteryn:terrain.registry.i00000209"
+      ],
+      "Terrain:field": [
+        "oteryn:terrain.registry.i00001620",
+        "oteryn:terrain.registry.i00001621",
+        "oteryn:terrain.registry.i00002031"
+      ],
+      "Terrain:ground": [
+        "oteryn:terrain.registry.i00000021",
+        "oteryn:terrain.registry.i00000022",
+        "oteryn:terrain.registry.i00000024"
+      ],
+      "Terrain:wall": [
+        "oteryn:terrain.registry.i00000151",
+        "oteryn:terrain.registry.i00000153",
+        "oteryn:terrain.registry.i00000159"
+      ],
+      "WorldObject:UNKNOWN": [
+        "oteryn:world-object.registry.i00000026",
+        "oteryn:world-object.registry.i00002022",
+        "oteryn:world-object.registry.i00002023"
+      ],
+      "WorldObject:bed": [
+        "oteryn:world-object.registry.i00000607",
+        "oteryn:world-object.registry.i00000608",
+        "oteryn:world-object.registry.i00000609"
+      ],
+      "WorldObject:corpse": [
+        "oteryn:world-object.registry.i00000032",
+        "oteryn:world-object.registry.i00000186",
+        "oteryn:world-object.registry.i00000187"
+      ],
+      "WorldObject:decoration": [
+        "oteryn:world-object.registry.i00000109",
+        "oteryn:world-object.registry.i00000110",
+        "oteryn:world-object.registry.i00000128"
+      ],
+      "WorldObject:door": [
+        "oteryn:world-object.registry.i00001532",
+        "oteryn:world-object.registry.i00001533",
+        "oteryn:world-object.registry.i00001534"
+      ],
+      "WorldObject:ladder": [
+        "oteryn:world-object.registry.i00001852",
+        "oteryn:world-object.registry.i00001872",
+        "oteryn:world-object.registry.i00005385"
+      ],
+      "WorldObject:object": [
+        "oteryn:world-object.registry.i00000035",
+        "oteryn:world-object.registry.i00000036",
+        "oteryn:world-object.registry.i00000053"
+      ],
+      "WorldObject:teleport": [
+        "oteryn:world-object.registry.i00000688",
+        "oteryn:world-object.registry.i00001660",
+        "oteryn:world-object.registry.i00001661"
+      ]
+    },
+    "total": 21370
+  },
+  "routes": {
+    "Fluid:fluid_type_without_appearance": 20,
+    "Terrain:ground_or_border": 3443,
+    "Terrain:primarytype_world_object": 5138,
+    "WorldObject:appearance_placeholder_slot": 4351,
+    "WorldObject:corpse": 3344,
+    "WorldObject:corpse_decoration": 14,
+    "WorldObject:immovable_unclassified": 8450,
+    "WorldObject:no_client_appearance": 105,
+    "WorldObject:primarytype_world_object": 981
+  },
+  "schema": "OTERYN_WORLD_OBJECT_TERRAIN_CENSUS/v1",
+  "scope": "Every id engine_items routes away from Item in this engine's pinned items.xml; not a placed map object. No identity is minted.",
+  "source": {
+    "artifact_digests": {
+      "data/items/appearances.dat": {
+        "digest_mode": "raw_bytes",
+        "sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1"
+      },
+      "data/items/items.xml": {
+        "digest_mode": "text_lf_normalized",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+      },
+      "data/scripts/lib/task_board_delivery_items.lua": {
+        "digest_mode": "text_lf_normalized",
+        "sha256": "7b30362470893f6e3ce6bdc0237ac5d3f13d6e5288ce10591a93fde2013b688d"
+      }
+    },
+    "engine": "crystal",
+    "profile": "crystal_ff7ede5_item_definition_v1",
+    "repository": "zimbadev/crystalserver",
+    "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+  },
+  "type_outside_family": {
+    "Terrain:carpet": {
+      "examples": [
+        "oteryn:terrain.registry.i00025266",
+        "oteryn:terrain.registry.i00033122",
+        "oteryn:terrain.registry.i00033429"
+      ],
+      "items": 18
+    },
+    "Terrain:teleport": {
+      "examples": [
+        "oteryn:terrain.registry.i00000433",
+        "oteryn:terrain.registry.i00000545",
+        "oteryn:terrain.registry.i00000788"
+      ],
+      "items": 11
+    },
+    "Terrain:trashholder": {
+      "examples": [
+        "oteryn:terrain.registry.i00000539",
+        "oteryn:terrain.registry.i00000546",
+        "oteryn:terrain.registry.i00000547"
+      ],
+      "items": 106
+    },
+    "WorldObject:magicfield": {
+      "examples": [
+        "oteryn:world-object.registry.i00000026",
+        "oteryn:world-object.registry.i00002022",
+        "oteryn:world-object.registry.i00002023"
+      ],
+      "items": 21
+    }
+  },
+  "unknown_facts": {
+    "Terrain:automap": 36,
+    "Terrain:blocks_projectile": 8579,
+    "Terrain:blocks_sight": 36,
+    "Terrain:client_projection": 36,
+    "Terrain:field": 87,
+    "Terrain:floor_change": 8423,
+    "Terrain:kind": 330,
+    "Terrain:walkable": 36,
+    "WorldObject:bed.female_sleeper": 192,
+    "WorldObject:bed.female_transform_to": 110,
+    "WorldObject:bed.male_sleeper": 192,
+    "WorldObject:bed.male_transform_to": 47,
+    "WorldObject:client_projection": 5,
+    "WorldObject:collision.avoid": 5,
+    "WorldObject:collision.blocks_movement": 5,
+    "WorldObject:collision.blocks_projectile": 12383,
+    "WorldObject:collision.blocks_sight": 5,
+    "WorldObject:door.house_guests": 728,
+    "WorldObject:door.level": 684,
+    "WorldObject:floor_change": 12503,
+    "WorldObject:fluid_source.fluid_name": 11384,
+    "WorldObject:fluid_source.liquid_pool": 5,
+    "WorldObject:kind": 21,
+    "WorldObject:movable": 5,
+    "WorldObject:placement.elevation": 5,
+    "WorldObject:placement.hangable": 5,
+    "WorldObject:placement.hook_direction": 5,
+    "WorldObject:placement.rotatable": 5,
+    "WorldObject:placement.rotate_to": 12703,
+    "WorldObject:placement.walk_stack": 12789
+  },
+  "unknown_kind_examples": {
+    "Terrain": [
+      "oteryn:terrain.registry.i00000488",
+      "oteryn:terrain.registry.i00000489",
+      "oteryn:terrain.registry.i00000506",
+      "oteryn:terrain.registry.i00000507",
+      "oteryn:terrain.registry.i00000508"
+    ],
+    "WorldObject": [
+      "oteryn:world-object.registry.i00000026",
+      "oteryn:world-object.registry.i00002022",
+      "oteryn:world-object.registry.i00002023",
+      "oteryn:world-object.registry.i00002024",
+      "oteryn:world-object.registry.i00002025"
+    ]
+  }
+}

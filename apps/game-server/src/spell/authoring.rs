@@ -84,6 +84,10 @@ pub(crate) fn spell_from_bundle(
     if requirements.get("wheel_unlock").is_some() && flag(requirements, "wheel_unlock")? {
         return fail("the spell is unlocked by the Wheel of Destiny, which has no owner yet");
     }
+    // S26: a monk Harmony builder or spender needs the Harmony resource, which has no owner yet (fails closed).
+    if spell.get("harmony_role").is_some() {
+        return fail("the spell builds or spends monk Harmony, which has no owner yet");
+    }
     let costs = field(spell, "costs")?;
     let targeting = field(spell, "targeting")?;
     // S20: a cast at a chosen position needs a position cast intent, which the cast wire does not carry yet.
@@ -185,6 +189,12 @@ fn ability_effects(key: &str, dependencies: &Value) -> Result<Vec<SpellEffect>, 
     if ability.get("variants").is_some() {
         return fail(format!(
             "{key} picks random variants, which this core does not resolve"
+        ));
+    }
+    // A chain would otherwise be cast on the first creature only (OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md).
+    if ability.get("chain").is_some() {
+        return fail(format!(
+            "{key} hits a chain of creatures, which this core does not resolve yet"
         ));
     }
     field(ability, "effects")?

@@ -1,9 +1,10 @@
 # Oteryn spell chain behaviour (candidate v1)
 
 - Date: 2026-09-28
-- Status: CANDIDATE / behaviour specification for review; no schema, converter, runtime or `content/` change.
-  The authoring shape in §5 extends a shared contract (monster D12 `Ability.chain`) and needs the owner's
-  acceptance and independent review before any implementation.
+- Status: CANDIDATE / behaviour specification. The owner accepted the §5 authoring shape on 2026-09-28 (spell
+  rule S23). Its independent review goes through #162. The data is in
+  `tools/content-schema/spell-authoring/chain-behaviours.json` for Chained Penance, the Forked spells and Lightning.
+  The chain runtime is not implemented; the game core rejects a spell with a chain.
 - Request: owner request of 2026-09-28 (specify the native behaviours that block spells, starting with the chain);
   programme story KAN-16; coordination #162.
 - Parent: `OTERYN_SPELL_AUTHORING_SCHEMA_V1.md` (S3, S7, S11, S21; plan phase P5).

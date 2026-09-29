@@ -18,14 +18,23 @@
 //!   appended per enclosing `one_of` branch;
 //! - a `revert_destination` lowers to post-revert state `<action id>/post-revert` (declared
 //!   `attribute_variant_of` the natural source state) and its dedicated inverse transition
-//!   `<action id>/revert`.
+//!   `<action id>/revert`;
+//! - owner decision D90 (re-arm): the same action also lowers to a re-arm forward
+//!   `<action id>/rearm` from the post-revert state back to the forward's target, bound like the
+//!   authored forward (same family, capability, guards, attributes and `revert_after_ms`), whose
+//!   unique inverse is the dedicated `<action id>/revert`. A covered teleporter therefore opens on
+//!   every owning event, not once per scope generation.
+//! - owner decision D91 (event-owned transitions): every edge this lowering binds at a transform
+//!   anchor (the authored forward, the dedicated `/revert` inverse and the `/rearm` forward) is
+//!   `TransitionOrigin::Event` at that anchor's placement, owned by the encounter key. None of
+//!   them is USE-selectable or session-invocable there.
 
 use super::{
     ContentError, FootprintCell, FootprintRelation, LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY,
     LocalObjectIntentFamily, LocalObjectStateAttributes, LocalObjectStateDefinition,
     LoweredActionId, MapRevisionRef, PlacementKey, PlacementRef, ProductionKey,
     ReferenceDefinitionKind, ReferencePlayableContentSource, SpatialAddress, TransitionBinding,
-    TransitionKey, TypedDefinitionRef,
+    TransitionEventOwner, TransitionKey, TypedDefinitionRef,
 };
 use serde_json::{Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -136,6 +145,8 @@ pub struct LoweredPlacementTables {
     pub definition: TypedDefinitionRef,
     pub state_attributes: BTreeMap<ProductionKey, LocalObjectStateAttributes>,
     pub revert_after_ms: BTreeMap<(TransitionKey, LoweredActionId), u64>,
+    /// D91: every transition lowered at this anchor, as `TransitionOrigin::Event` of its owner.
+    pub event_transitions: BTreeMap<TransitionKey, TransitionEventOwner>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -144,6 +155,9 @@ pub struct LoweredEncounterMapItems {
     pub post_revert_states: Vec<(TypedDefinitionRef, LocalObjectStateDefinition)>,
     /// Dedicated inverse transitions, one per `revert_destination`-bearing action.
     pub inverse_transitions: Vec<TransitionBinding>,
+    /// D90 re-arm forwards (post-revert state -> forward target), one per
+    /// `revert_destination`-bearing action.
+    pub rearm_transitions: Vec<TransitionBinding>,
     /// Keyed by the transform anchor's placement.
     pub placements: BTreeMap<PlacementKey, LoweredPlacementTables>,
     /// Destination anchors; each is one Generic marker placement (`marker_placement`).
@@ -151,8 +165,9 @@ pub struct LoweredEncounterMapItems {
 }
 
 impl LoweredEncounterMapItems {
-    /// Adds the synthesized post-revert states and inverse transitions to `source` before it is
-    /// linked; the linker then validates every declared `attribute_variant_of`.
+    /// Adds the synthesized post-revert states, inverse transitions and re-arm forwards to
+    /// `source` before it is linked; the linker then validates every declared
+    /// `attribute_variant_of`.
     pub fn apply_to_source(
         &self,
         source: &mut ReferencePlayableContentSource,
@@ -174,6 +189,9 @@ impl LoweredEncounterMapItems {
         source
             .transitions
             .extend(self.inverse_transitions.iter().cloned());
+        source
+            .transitions
+            .extend(self.rearm_transitions.iter().cloned());
         Ok(())
     }
 }
@@ -209,6 +227,7 @@ pub fn marker_placement(
         local_object_initial_state: None,
         local_object_state_attributes: BTreeMap::new(),
         local_object_revert_after_ms: BTreeMap::new(),
+        local_object_event_transitions: BTreeMap::new(),
     }
 }
 
@@ -397,9 +416,11 @@ pub fn lower_map_item_transforms(
     anchor_objects: &BTreeMap<String, TypedDefinitionRef>,
 ) -> Result<LoweredEncounterMapItems, EncounterMapItemError> {
     let admitted = admitted_map_item_transforms(encounter_json)?;
+    let owner = TransitionEventOwner::new(&admitted.encounter)?;
     let mut lowered = LoweredEncounterMapItems {
         post_revert_states: Vec::new(),
         inverse_transitions: Vec::new(),
+        rearm_transitions: Vec::new(),
         placements: BTreeMap::new(),
         destination_markers: BTreeSet::new(),
     };
@@ -467,7 +488,12 @@ pub fn lower_map_item_transforms(
                     definition: definition.clone(),
                     state_attributes: BTreeMap::new(),
                     revert_after_ms: BTreeMap::new(),
+                    event_transitions: BTreeMap::new(),
                 });
+        // D91: the owning event commits the forward; players never USE it at this anchor.
+        tables
+            .event_transitions
+            .insert(forward.key.clone(), owner.clone());
         if let Some(destination) = destination {
             lowered.destination_markers.insert(destination.clone());
             tables.state_attributes.insert(
@@ -485,6 +511,12 @@ pub fn lower_map_item_transforms(
         let Some(revert_destination) = &transform.revert_destination else {
             continue;
         };
+        // Admission already requires `revert_after_ms` beside `revert_destination`.
+        let revert_after_ms = transform.revert_after_ms.ok_or(
+            EncounterMapItemError::RevertDestinationWithoutRevert {
+                action: action.to_owned(),
+            },
+        )?;
         let revert_destination = anchor_placement_key(&admitted.encounter, revert_destination)?;
         let source_collision = states
             .iter()
@@ -500,8 +532,12 @@ pub fn lower_map_item_transforms(
                 attribute_variant_of: Some(forward.source_state.clone()),
             },
         ));
+        let revert = TransitionKey::new(&format!("{action}/revert"))?;
+        tables
+            .event_transitions
+            .insert(revert.clone(), owner.clone());
         lowered.inverse_transitions.push(TransitionBinding {
-            key: TransitionKey::new(&format!("{action}/revert"))?,
+            key: revert,
             definition: definition.clone(),
             source_state: forward.target_state.clone(),
             normalized_intent_family: ProductionKey::new(LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY)?,
@@ -509,6 +545,25 @@ pub fn lower_map_item_transforms(
             owner_capability: forward.owner_capability.clone(),
             policy_guard_refs: forward.policy_guard_refs.clone(),
         });
+        // D90: the re-arm forward C -> B, bound like A -> B. It enters the same target state, so
+        // it exposes the same `destination`, and it carries the same authored duration, keyed by
+        // its own `TransitionKey`; its unique inverse is the dedicated revert above.
+        let rearm = TransitionKey::new(&format!("{action}/rearm"))?;
+        tables
+            .event_transitions
+            .insert(rearm.clone(), owner.clone());
+        lowered.rearm_transitions.push(TransitionBinding {
+            key: rearm.clone(),
+            definition: definition.clone(),
+            source_state: post_revert.clone(),
+            normalized_intent_family: forward.normalized_intent_family.clone(),
+            target_state: forward.target_state.clone(),
+            owner_capability: forward.owner_capability.clone(),
+            policy_guard_refs: forward.policy_guard_refs.clone(),
+        });
+        tables
+            .revert_after_ms
+            .insert((rearm, transform.action.clone()), revert_after_ms);
         lowered
             .destination_markers
             .insert(revert_destination.clone());
@@ -533,7 +588,7 @@ mod tests {
         LocalObjectCollisionPresence, LogicalCell, OwnerCapabilityRequirement,
         PackageManifestBinding, ProductionAtom, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
         REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinition, Sha256HexDigest,
-        link_reference_playable,
+        TransitionOrigin, link_reference_playable,
     };
     use crate::foundation::{
         ChannelId, CharacterId, CharacterLease, CommandId, CommandIngress, CommandRef,
@@ -608,6 +663,7 @@ mod tests {
     const PLACEMENT_A: &str = "oteryn:reference.placement.depth-teleporter-a";
     const PLACEMENT_B: &str = "oteryn:reference.placement.depth-teleporter-b";
     const ACTION_A: &str = "oteryn:encounter/depth/rule/0";
+    const EVENT_OWNER: &str = "oteryn:encounter/depth";
     const NO_INVERSE: &str = "revert_after_ms transition has no bound inverse at this placement";
 
     fn fixture<E>(_error: E) -> WorldRuntimeError {
@@ -795,6 +851,10 @@ mod tests {
         TransitionKey::new(&format!("{DUKE_ACTION}/revert"))
     }
 
+    fn duke_rearm() -> Result<TransitionKey, ContentError> {
+        TransitionKey::new(&format!("{DUKE_ACTION}/rearm"))
+    }
+
     /// The duke sample lowered and linked, with its anchor and destination markers injected.
     fn duke_content() -> TestResult<CanonicalReferencePlayableContent> {
         let mut source = duke_source()?;
@@ -809,6 +869,7 @@ mod tests {
         let mut placement = teleporter_placement(&content, anchor.as_str(), SEALED_ITEM, 100)?;
         placement.local_object_state_attributes = tables.state_attributes.clone();
         placement.local_object_revert_after_ms = tables.revert_after_ms.clone();
+        placement.local_object_event_transitions = tables.event_transitions.clone();
         let mut placements = vec![placement];
         for (x, marker) in (200..).zip(&lowered.destination_markers) {
             placements.push(placement_at(
@@ -961,7 +1022,9 @@ mod tests {
         )?)?)
     }
 
-    /// Injects placement A (carrying `durations`) and placement B (carrying none).
+    /// Injects placement A (carrying `durations`) and placement B (carrying none). When
+    /// `durations` is non-empty, every content transition is event-owned at A by `EVENT_OWNER`
+    /// (D91: a timed forward and its inverse must be); B keeps every edge `PlayerUse`.
     fn with_revert(
         mut content: CanonicalReferencePlayableContent,
         durations: &[(&str, &str, u64)],
@@ -976,6 +1039,14 @@ mod tests {
                 ),
                 *ms,
             );
+        }
+        if !durations.is_empty() {
+            for transition in &content.transitions {
+                a.local_object_event_transitions.insert(
+                    transition.key.clone(),
+                    TransitionEventOwner::new(EVENT_OWNER)?,
+                );
+            }
         }
         content.placements = vec![a, b];
         Ok(content)
@@ -1027,15 +1098,34 @@ mod tests {
                 &format!("{DUKE_ACTION}/post-revert"),
             )?]
         );
+        // D90: the re-arm forward leaves the post-revert variant for the forward's target state
+        // and carries the same authored duration under its own key.
+        assert_eq!(
+            lowered.rearm_transitions,
+            vec![transition(
+                &format!("{DUKE_ACTION}/rearm"),
+                &format!("{DUKE_ACTION}/post-revert"),
+                OPEN_ITEM,
+            )?]
+        );
+        let action = LoweredActionId::new(DUKE_ACTION)?;
         assert_eq!(
             tables.revert_after_ms,
-            BTreeMap::from([(
-                (
-                    TransitionKey::new(FORWARD)?,
-                    LoweredActionId::new(DUKE_ACTION)?
-                ),
-                1_200_000
-            )])
+            BTreeMap::from([
+                ((TransitionKey::new(FORWARD)?, action.clone()), 1_200_000),
+                ((duke_rearm()?, action), 1_200_000),
+            ])
+        );
+        // D91: the forward, the dedicated inverse and the re-arm forward are all event-owned at
+        // the anchor by the encounter.
+        let owner = TransitionEventOwner::new(DUKE_KEY)?;
+        assert_eq!(
+            tables.event_transitions,
+            BTreeMap::from([
+                (TransitionKey::new(FORWARD)?, owner.clone()),
+                (duke_revert()?, owner.clone()),
+                (duke_rearm()?, owner),
+            ])
         );
         assert_eq!(
             lowered.destination_markers,
@@ -1050,9 +1140,23 @@ mod tests {
         let content = duke_content()?;
         let anchor = duke_anchor()?;
         let revert = duke_revert()?;
+        let rearm = duke_rearm()?;
         let action = LoweredActionId::new(DUKE_ACTION)?;
-        let mut runtime = bind(&content, anchor.as_str(), &[FORWARD, revert.as_str()])?;
+        let mut runtime = bind(
+            &content,
+            anchor.as_str(),
+            &[FORWARD, rearm.as_str(), revert.as_str()],
+        )?;
         let mut ingress = CommandIngress::new();
+
+        // D90: the widened unique-inverse search accepts the re-arm forward unchanged; the
+        // authored forward and the re-arm forward share the dedicated revert as their inverse.
+        assert_eq!(
+            runtime.revert_inverse(&TransitionKey::new(FORWARD)?),
+            Some(&revert)
+        );
+        assert_eq!(runtime.revert_inverse(&rearm), Some(&revert));
+        assert_eq!(runtime.revert_after_ms(&rearm, &action), Some(1_200_000));
 
         // Freshly bound in the natural source state: no destination is reachable.
         assert_eq!(runtime.state_key().as_str(), SEALED_ITEM);
@@ -1087,6 +1191,7 @@ mod tests {
             runtime.content_generation().clone(),
             LocalObjectOperation::new(TransitionKey::new(FORWARD)?),
             runtime.revision(),
+            TransitionEventOwner::new(DUKE_KEY)?,
         );
         assert!(matches!(
             runtime.apply_scope_operation(
@@ -1137,12 +1242,43 @@ mod tests {
             Some(anchor_placement_key(DUKE_KEY, "reward_destination")?.as_str())
         );
 
-        // The untimed dedicated inverse stays session-invocable and lands on the post-revert
-        // variant, which exposes `revert_destination`.
+        // D91: the untimed dedicated inverse is event-owned too, so the open teleporter offers
+        // USE nothing and a session command naming the inverse is refused before ingress.
         assert_eq!(
-            invoke(&mut runtime, &mut ingress, 1, revert.as_str())?,
-            "COMMITTED"
+            runtime.attempt_use(1, &BTreeSet::new())?,
+            crate::world_runtime::LocalObjectUseOutcome::NothingToUse
         );
+        let refused = invoke(&mut runtime, &mut ingress, 1, revert.as_str())
+            .err()
+            .and_then(|error| error.downcast::<WorldRuntimeError>().ok());
+        assert!(matches!(
+            refused.as_deref(),
+            Some(WorldRuntimeError::InvalidBinding(
+                "command names a transition this local-object runtime does not bind"
+            ))
+        ));
+        assert_eq!(ingress.outstanding(), 0);
+        assert_eq!(runtime.revision(), 1);
+
+        // Its owning event's scope operation lands it on the post-revert variant, which exposes
+        // `revert_destination`.
+        let inverse = crate::world_runtime::ScopeLocalObjectOperation::new(
+            runtime.placement_key().clone(),
+            runtime.incarnation(),
+            runtime.content_generation().clone(),
+            LocalObjectOperation::new(revert.clone()),
+            runtime.revision(),
+            TransitionEventOwner::new(DUKE_KEY)?,
+        );
+        let reverted = runtime.apply_scope_operation(
+            scope,
+            generation,
+            &inverse,
+            &BTreeSet::new(),
+            None,
+            |_| Ok::<(), std::convert::Infallible>(()),
+        )?;
+        assert!(matches!(reverted, Ok(outcome) if outcome.disposition() == "COMMITTED"));
         assert_eq!(runtime.state_key(), &duke_post_revert()?);
         assert_eq!(
             destination_of(&runtime),
@@ -1178,6 +1314,133 @@ mod tests {
             ),
             "revert_after_ms transition has an ambiguous bound inverse at this placement"
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn a_timed_forward_and_its_inverse_must_share_one_event_owner() -> TestResult {
+        // D91 at `bind`: the timed forward and its validated inverse are event-owned by one owner.
+        let timed = with_revert(plain_content(None, None)?, &[(FORWARD, ACTION_A, 1_000)])?;
+        let runtime = bind(&timed, PLACEMENT_A, &[FORWARD, PLAIN_INVERSE])?;
+        let owner = TransitionEventOwner::new(EVENT_OWNER)?;
+        assert_eq!(
+            runtime.transition_origin(&TransitionKey::new(FORWARD)?),
+            TransitionOrigin::Event(owner.clone())
+        );
+        assert_eq!(
+            runtime.transition_origin(&TransitionKey::new(PLAIN_INVERSE)?),
+            TransitionOrigin::Event(owner)
+        );
+
+        // A player-use timed forward is rejected: USE could otherwise commit it unscheduled.
+        let mut player_forward = timed.clone();
+        player_forward.placements[0]
+            .local_object_event_transitions
+            .remove(&TransitionKey::new(FORWARD)?);
+        assert!(rejects(
+            bind(&player_forward, PLACEMENT_A, &[FORWARD, PLAIN_INVERSE]),
+            "revert_after_ms transition is not event-owned at this placement"
+        ));
+
+        // A player-use inverse, or one owned by another event, is rejected too.
+        let mut player_inverse = timed.clone();
+        player_inverse.placements[0]
+            .local_object_event_transitions
+            .remove(&TransitionKey::new(PLAIN_INVERSE)?);
+        let mut foreign_inverse = timed.clone();
+        foreign_inverse.placements[0]
+            .local_object_event_transitions
+            .insert(
+                TransitionKey::new(PLAIN_INVERSE)?,
+                TransitionEventOwner::new("oteryn:encounter/elsewhere")?,
+            );
+        for content in [&player_inverse, &foreign_inverse] {
+            assert!(rejects(
+                bind(content, PLACEMENT_A, &[FORWARD, PLAIN_INVERSE]),
+                "revert_after_ms inverse is not owned by its forward's event at this placement"
+            ));
+        }
+
+        // Placement B names no event origin: every edge is player-use.
+        let untimed = bind(&timed, PLACEMENT_B, &[FORWARD, PLAIN_INVERSE])?;
+        assert_eq!(
+            untimed.transition_origin(&TransitionKey::new(FORWARD)?),
+            TransitionOrigin::PlayerUse
+        );
+
+        // An event origin naming a transition outside the content is refused by the re-link.
+        let mut dangling = timed;
+        dangling.placements[0]
+            .local_object_event_transitions
+            .insert(
+                TransitionKey::new("oteryn:reference.transition.nowhere")?,
+                TransitionEventOwner::new(EVENT_OWNER)?,
+            );
+        assert!(matches!(
+            bind(&dangling, PLACEMENT_A, &[FORWARD, PLAIN_INVERSE]),
+            Err(WorldRuntimeError::Content(
+                ContentError::MissingReference { .. }
+            ))
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn the_event_origin_table_is_part_of_the_binding_identity() -> TestResult {
+        // Owner decision D91 (#1187 P2): the same content with a different PLAYER_USE/EVENT
+        // split, or another owner, binds under a different generation; an empty table leaves the
+        // content generation's bytes unchanged.
+        let player_use = with_revert(plain_content(None, None)?, &[])?;
+        let base = ReferenceContentGeneration::from_content(&player_use)?;
+        let with_owner = |owner: &str| -> TestResult<CanonicalReferencePlayableContent> {
+            let mut content = player_use.clone();
+            content.placements[0].local_object_event_transitions.insert(
+                TransitionKey::new(FORWARD)?,
+                TransitionEventOwner::new(owner)?,
+            );
+            Ok(content)
+        };
+        let event = with_owner(EVENT_OWNER)?;
+        let other_owner = with_owner("oteryn:encounter/elsewhere")?;
+        // Placements are outside the Content generation itself, so its bytes and locks do not move.
+        assert_eq!(ReferenceContentGeneration::from_content(&event)?, base);
+
+        let keys = [FORWARD, PLAIN_INVERSE];
+        let player_use_runtime = bind(&player_use, PLACEMENT_A, &keys)?;
+        let mut event_runtime = bind(&event, PLACEMENT_A, &keys)?;
+        let other_runtime = bind(&other_owner, PLACEMENT_A, &keys)?;
+        assert_eq!(player_use_runtime.content_generation(), &base);
+        assert_ne!(event_runtime.content_generation(), &base);
+        assert_ne!(
+            other_runtime.content_generation(),
+            event_runtime.content_generation()
+        );
+        assert_eq!(
+            bind(&event, PLACEMENT_A, &keys)?.content_generation(),
+            event_runtime.content_generation()
+        );
+
+        // An operation fenced on another origin binding is a BINDING_MISMATCH, not a commit.
+        let (_, _, scope) = authority(10)?;
+        let generation = ScopeOwnershipGeneration::new(1).map_err(fixture)?;
+        let stale = crate::world_runtime::ScopeLocalObjectOperation::new(
+            event_runtime.placement_key().clone(),
+            event_runtime.incarnation(),
+            other_runtime.content_generation().clone(),
+            LocalObjectOperation::new(TransitionKey::new(FORWARD)?),
+            event_runtime.revision(),
+            TransitionEventOwner::new(EVENT_OWNER)?,
+        );
+        let outcome = event_runtime.apply_scope_operation(
+            scope,
+            generation,
+            &stale,
+            &BTreeSet::new(),
+            None,
+            |_| Ok::<(), std::convert::Infallible>(()),
+        )?;
+        assert!(matches!(outcome, Ok(outcome) if outcome.disposition() == "BINDING_MISMATCH"));
+        assert_eq!(event_runtime.revision(), 0);
         Ok(())
     }
 
@@ -1546,6 +1809,7 @@ mod tests {
             ])
         );
         assert!(lowered.post_revert_states.is_empty());
+        assert!(lowered.rearm_transitions.is_empty());
         assert!(tables.state_attributes.is_empty());
 
         // Two placements bind the same shared transition; only the authored one carries it.

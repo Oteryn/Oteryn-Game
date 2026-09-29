@@ -98,9 +98,12 @@ PATH_TRAIL = (r'local target = Creature\(var\.number\) if not target then return
               r'then return false end for i = 1, #path do creaturePos:getNextPosition\(path\[i\], 1\) '
               r'creaturePos:sendMagicEffect\((CONST_ME_\w+)\) end return combat:execute\(creature, var\)')
 WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces '
-                 'it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary '
+                 'it; applied to health, experience, armor, mitigation, element modifiers, flags, summon/convince mana cost, flee health, Bestiary '
                  'difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain '
                  '(? or ~) or unparsed wiki value')
+OFFICIAL_ADOPTION = ('Owner decision D47: the Tibia.com creature library, captured 2026-09-28 through TibiaData, is the '
+                     'reference-date state when no Tibia.com news item between the reference date and the capture changes '
+                     'the creature; its health and experience replace the Canary and reference-date wiki values')
 LOW_CONFIDENCE_DROPS = 10
 BR_API = 'https://www.tibiawiki.com.br/api.php'
 BR_ADOPTION = ('Owner decision D43: the owner\'s source order puts TibiaWiki BR after Fandom, so a BR health or experience '
@@ -349,6 +352,7 @@ class Converter:
         self.canary, self.objects, self.items, self.names, self.index = canary, objects, items, names, index
         self.wiki = {}
         self.br = {}
+        self.official = {}
         self.spell_scripts = None
         self.magic_effects, self.missiles = load_effect_constants(canary / EFFECT_CONSTANTS)
         self.magic_effect_names = {v: k for k, v in self.magic_effects.items()}
@@ -813,11 +817,52 @@ class Converter:
         sources = [{'repository': REPOSITORY, 'revision': REVISION}]
         self.adopt_wiki(s, monster, rows, sources, definitions, line_of)
         self.adopt_br(s, monster, rows, sources, line_of)
+        self.adopt_official(s, monster, rows, sources, line_of)
         definitions.discard(('Creature', creature['identity']['key']))
         catalog = {'definitions': [ref(f, k) for f, k in sorted(definitions)], 'assets': sorted(assets)}
         manifest = {'sources': sources, 'entries': rows}
         source = {'file': source_file, 'git_blob': blob_id(path.read_bytes())}
         return s, monster, deps, catalog, manifest, source
+
+    def adopt_official(self, s, monster, rows, sources, line_of):
+        """Tibia.com library health and experience over Canary and the wiki (D47, official_library.py)."""
+        record = self.official.get(s)
+        if not record:
+            return
+        creature, behavior = monster['creature'], monster['behavior']
+        targets = {'max_health': ('/monster/creature/stats/max_health', 'maxHealth', r'^monster\.maxHealth', 'hitpoints'),
+                   'experience': ('/monster/creature/stats/experience', 'experience', r'^monster\.experience', 'experience')}
+        index = None
+        for field, value in sorted(record['fields'].items()):
+            if index is None:
+                sources.append({'kind': 'official_capture', 'url': record['url'], 'title': record['title'],
+                                'captured': record['captured'], 'content_sha256': record['content_sha256']})
+                index = len(sources) - 1
+            destination, canary_field, pattern, label = targets[field]
+            text = (f'Value {value} confirmed by the Tibia.com library {label} ({OFFICIAL_ADOPTION}).'
+                    if creature['stats'][field] == value else
+                    f'Value {creature["stats"][field]} superseded by the Tibia.com library {label} {value} ({OFFICIAL_ADOPTION}).')
+            for entry in rows:
+                if entry['status'] == 'mapped' and entry.get('destination') == destination:
+                    entry.update(status='approved_omission', resolution=text)
+                    entry.pop('destination', None)
+            if creature['stats'][field] == value:
+                pass
+            elif field == 'max_health':
+                for entry in rows:
+                    if entry['source_index'] == 0 and entry['source_field'] == 'health' and entry['status'] == 'mapped':
+                        entry.update(status='approved_omission', resolution=text)
+                        entry.pop('destination', None)
+                creature['stats']['max_health'] = creature['stats']['initial_health'] = value
+                behavior['targeting']['flee_health'] = min(behavior['targeting']['flee_health'], value)
+            else:
+                creature['stats']['experience'] = value
+            if not any(e['source_index'] == 0 and e['source_field'] == canary_field for e in rows):
+                rows.append({'source_index': 0, 'source_file': rows[0]['source_file'], 'source_line': line_of(pattern),
+                             'source_field': canary_field, 'kind': 'field', 'status': 'approved_omission', 'resolution': text})
+            rows.append({'source_index': index, 'source_file': record['title'], 'source_line': 1,
+                         'source_field': f'Library.{label}', 'kind': 'field', 'status': 'mapped',
+                         'destination': destination, 'resolution': f'Tibia.com library {label} {value} ({OFFICIAL_ADOPTION}).'})
 
     def adopt_br(self, s, monster, rows, sources, line_of):
         """Fill health and experience from TibiaWiki BR where Fandom gives no certain value (D43, wiki_br_fill.py)."""
@@ -962,7 +1007,38 @@ class Converter:
                     creature['bestiary'][key] = value
                     adopt(diff, f'/monster/creature/bestiary/{key}', f'Bestiary.{key}', r'^monster\.Bestiary',
                           'bestiarylevel' if key == 'difficulty' else 'occurrence')
+        self.adopt_wiki_summoning(record, creature, adopt, lambda diff, destination, label: wiki_row(
+            page, title, diff.get('wiki_line', 1), f'Infobox Creature.{label}', destination,
+            f'Wiki {label} "{diff["wiki_raw"]}" ({WIKI_ADOPTION}).'))
         self.adopt_wiki_loot(record, monster, rows, source, wiki_row, definitions)
+
+    @staticmethod
+    def adopt_wiki_summoning(record, creature, adopt, wiki_only):
+        """D15 for the wiki summon/convince mana costs: "--" means not possible, a number sets the flag and the cost.
+
+        The authoring profile has one mana cost for both, so two different reference-date costs are left unadopted."""
+        diffs = {r['field']: r for r in record['rows']
+                 if r['status'] == 'DIFF' and r['field'] in ('summon_mana_cost', 'convince_mana_cost')}
+        if not diffs:
+            return
+        summoning = creature['summoning']
+        flags = {'summon_mana_cost': 'summonable', 'convince_mana_cost': 'convinceable'}
+        costs = {d['wiki'] for d in diffs.values() if isinstance(d['wiki'], int) and d['wiki'] > 0}
+        kept = {summoning.get('mana_cost') for field, flag in flags.items() if field not in diffs and summoning[flag]}
+        if len(costs | (kept - {None})) > 1:
+            return
+        for field, diff in sorted(diffs.items()):
+            summoning[flags[field]] = isinstance(diff['wiki'], int) and diff['wiki'] > 0
+        if summoning['summonable'] or summoning['convinceable']:
+            summoning['mana_cost'] = next(iter(costs | (kept - {None})), summoning.get('mana_cost', 0))
+        else:
+            summoning.pop('mana_cost', None)
+        for position, (field, diff) in enumerate(sorted(diffs.items())):
+            label = 'summon' if field == 'summon_mana_cost' else 'convince'
+            if position == 0:
+                adopt(diff, '/monster/creature/summoning', 'manaCost', r'^monster\.manaCost', label)
+            else:
+                wiki_only(diff, '/monster/creature/summoning', label)
 
     def adopt_wiki_loot(self, record, monster, rows, source, wiki_row, definitions):
         """D15 loot rules: wiki loot missing in Canary is added; Canary chances take the wiki estimate at >= 10 drops."""

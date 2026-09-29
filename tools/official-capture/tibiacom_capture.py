@@ -22,10 +22,15 @@ all sections linked from the manual's Contents page, in its displayed order. Onl
 accepted for any page; anything else aborts the whole `fetch` run before writing output.
 
 Spell library (S15, #1077): if `tools/content-schema/spell-authoring/tibiacom_spells.py` exists on
-this checkout, `fetch` imports it and calls its `parse_spell_library(html_body)` (or `parse`)
-entry point to turn the fetched spell-library page into facts -- this tool never copies that
-module's own parsing logic. When the module does not exist yet, `manifest.json["spells"]` is set
-to the string "PENDING_1077" and no spell-library request is made.
+this checkout, `fetch` loads it and passes the fetched spell-library list page through an explicit
+adapter (`spell_facts_from_library_html`): the page's list table is cut into rows of cell text
+(this tool's only parsing) and handed, as the tab-separated table text, to the #1077 module's
+`list_facts(text, captured)` -- the same parser that produced the committed S15 list sample. This
+tool never copies that module's field-mapping logic and never guesses entry-point names; a module
+without `list_facts`/`LIST_COLUMNS`, or a page without the list table, aborts `fetch` without
+writing output. Each spell becomes one `spells` fact (`spells.list.<slug>`, a JSON object of that
+row's fields). When the module does not exist, `manifest.json["spells"]` is the string
+"PENDING_1077" and no spell-library request is made.
 """
 import argparse
 import hashlib
@@ -56,6 +61,17 @@ MANUAL_SECTIONS_V1 = ('controls', 'characters', 'combat', 'world', 'controls_tra
 SPELL_LIBRARY_URL = 'https://www.tibia.com/library/?subtopic=spells'
 SPELL_MODULE_PATH = Path(__file__).resolve().parents[2] / 'tools/content-schema/spell-authoring/tibiacom_spells.py'
 SPELL_PENDING = 'PENDING_1077'
+# The adapter's explicit contract with #1077's module (no name guessing): list_facts(text, captured)
+# maps the list view's tab-separated table (header == LIST_COLUMNS) to {'pages': [{'fields': ...}]}.
+SPELL_PARSER_ENTRY = 'list_facts'
+SPELL_COLUMNS_ATTR = 'LIST_COLUMNS'
+SPELL_FACT_ANCHOR = 'list'
+SPELL_FACT_KEY_PREFIX = 'spells.list'
+SPELL_SLUG_LIMIT = 60
+# The exact row `tibiacom_spells.list_facts` emits per spell (all string values): these five fields
+# always, `levelrequired` when the list states a level, `mana` when it states a mana cost.
+SPELL_ROW_REQUIRED_FIELDS = frozenset({'name', 'words', 'subclass', 'type', 'premium'})
+SPELL_ROW_OPTIONAL_FIELDS = frozenset({'levelrequired', 'mana'})
 
 USER_AGENT = 'OterynContentResearch/1.0 (+https://github.com/Oteryn/Oteryn-Game)'
 REQUEST_DELAY_SECONDS = 2
@@ -85,6 +101,11 @@ FACTS_PER_SECTION_CAP = 40
 # (P2 r4120758016). Each row's field values still obey FACT_VALUE_LIMIT.
 SPELL_RECORDS_CAP = 600
 FACT_TO_VISIBLE_TEXT_RATIO_LIMIT = 0.25
+# The spell library list page IS a table of facts (one row per spell), so its facts necessarily
+# re-encode most of the page's visible text (key, anchor and JSON field names on top of it) and
+# the manual pages' 25% prose bound cannot apply. A spells fact is instead confined to the adapter's
+# row shape (see verify_snapshot) and to this multiple of the page's own visible text.
+SPELL_FACT_TO_VISIBLE_TEXT_RATIO_LIMIT = 6.0
 TOTAL_FACT_VALUE_BYTES_LIMIT = 200_000
 # Closes the whole "smuggled text" class in one generic check, regardless of encoding trick: the
 # RAW bytes of facts.json on disk (not the parsed field lengths) must fit the same 25% ratio, plus
@@ -102,9 +123,11 @@ ABSOLUTE_SPELL_FACTS_BUDGET_BYTES = SPELL_RECORDS_CAP * ABSOLUTE_FACT_SIZE_ESTIM
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
 ACCEPTED_HTTP_STATUS = 200
 # Strict match on what utc_now() produces (P2 r4120883679): an ISO-8601 UTC timestamp ending in Z.
-TIMESTAMP_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
-SNAPSHOT_DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
-SNAPSHOT_RUN_RE = re.compile(r'^\d{4}-\d{2}-\d{2}-\d{6}Z$')
+# Every date shape is literal ASCII `[0-9]` (never `\d`, which also matches non-ASCII digits) and is
+# matched with fullmatch, so the shape never depends on what `date.fromisoformat` happens to accept.
+TIMESTAMP_RE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z')
+SNAPSHOT_DATE_RE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
+SNAPSHOT_RUN_RE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{6}Z')
 MAX_FETCH_RUN_SECONDS = 3600
 SYMLINK_MODE = '120000'
 
@@ -157,7 +180,7 @@ def bound_key(base, suffix, limit=FIELD_ID_LIMIT):
 
 def parse_utc_timestamp(value):
     """Parse a strict `utc_now()`-shaped timestamp, or None if it isn't one (P2 r4120883679)."""
-    if not isinstance(value, str) or not TIMESTAMP_RE.match(value):
+    if not isinstance(value, str) or not TIMESTAMP_RE.fullmatch(value):
         return None
     try:
         return datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
@@ -165,13 +188,25 @@ def parse_utc_timestamp(value):
         return None
 
 
+def parse_iso_date(value):
+    """A literal `YYYY-MM-DD` (ASCII digits, zero-padded, nothing else) that is a real calendar
+    date, as a `date`, or None. The shape is checked first and literally; `date.fromisoformat`
+    only confirms the calendar validity of a string already known to have that shape."""
+    if not isinstance(value, str) or not SNAPSHOT_DATE_RE.fullmatch(value):
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
 def parse_snapshot_directory_name(name):
     """Accept a legacy date or a unique UTC capture-run timestamp."""
-    if SNAPSHOT_DATE_RE.fullmatch(name):
-        try:
-            return date.fromisoformat(name), None
-        except ValueError:
-            pass
+    if not isinstance(name, str):
+        return None, None
+    legacy = parse_iso_date(name)
+    if legacy is not None:
+        return legacy, None
     if SNAPSHOT_RUN_RE.fullmatch(name):
         try:
             run = datetime.strptime(name, '%Y-%m-%d-%H%M%SZ').replace(tzinfo=timezone.utc)
@@ -396,6 +431,166 @@ def load_spell_module():
     return module
 
 
+def spell_row_slug(name):
+    """The slug in a spells fact key (`spells.list.<slug>`), for the adapter and the verifier alike."""
+    return slugify(name)[:SPELL_SLUG_LIMIT].strip('-') or 'spell'
+
+
+def spell_row_value(fields):
+    """The one canonical serialization of a spell row, as written into a spells fact's value."""
+    return json.dumps(fields, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+
+
+def spell_row_problem(fields):
+    """Why `fields` is not exactly a row `tibiacom_spells.list_facts` emits, or None: a dict with
+    every required field, no field outside required + optional, every value a string, and a
+    non-blank name."""
+    if not isinstance(fields, dict):
+        return 'not an object'
+    unknown = sorted(set(fields) - SPELL_ROW_REQUIRED_FIELDS - SPELL_ROW_OPTIONAL_FIELDS, key=str)
+    if unknown:
+        return f'unexpected field(s) {unknown}'
+    missing = sorted(SPELL_ROW_REQUIRED_FIELDS - set(fields))
+    if missing:
+        return f'missing required field(s) {missing}'
+    wrong_type = sorted(k for k, v in fields.items() if not isinstance(v, str))
+    if wrong_type:
+        return f'non-string value for field(s) {wrong_type}'
+    if not fields['name'].strip():
+        return 'blank name'
+    return None
+
+
+class SpellAdapterError(Exception):
+    """The spell-library page or the #1077 module does not satisfy the adapter's contract."""
+
+
+class TableRowParser(html.parser.HTMLParser):
+    """Every <table> as a list of rows, each a list of normalized cell texts (the same shape
+    #1077's in-browser extraction produces). Text outside <td>/<th>, and <script>/<style>, is
+    ignored; a nested table's cells belong to the nested table only."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.tables = []
+        self._open = []  # stack of {'rows': [...], 'row': [...] | None, 'cell': [...] | None}
+        self._skip_depth = 0
+
+    def _flush_cell(self):
+        table = self._open[-1]
+        if table['cell'] is not None:
+            if table['row'] is None:
+                table['row'] = []
+            table['row'].append(normalize_space(''.join(table['cell'])))
+        table['cell'] = None
+
+    def _flush_row(self):
+        table = self._open[-1]
+        self._flush_cell()
+        if table['row'] is not None:
+            table['rows'].append(table['row'])
+        table['row'] = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ('script', 'style'):
+            self._skip_depth += 1
+        elif tag == 'table':
+            self._open.append({'rows': [], 'row': None, 'cell': None})
+        elif self._open and tag == 'tr':
+            self._flush_row()
+            self._open[-1]['row'] = []
+        elif self._open and tag in ('td', 'th'):
+            self._flush_cell()
+            self._open[-1]['cell'] = []
+        elif self._open and tag == 'br' and self._open[-1]['cell'] is not None:
+            self._open[-1]['cell'].append(' ')
+
+    def handle_endtag(self, tag):
+        if tag in ('script', 'style'):
+            if self._skip_depth:
+                self._skip_depth -= 1
+        elif self._open and tag in ('td', 'th'):
+            self._flush_cell()
+        elif self._open and tag == 'tr':
+            self._flush_row()
+        elif self._open and tag == 'table':
+            self._flush_row()
+            self.tables.append(self._open.pop()['rows'])
+
+    def handle_data(self, data):
+        if self._open and not self._skip_depth and self._open[-1]['cell'] is not None:
+            self._open[-1]['cell'].append(data)
+
+    def close(self):
+        super().close()
+        while self._open:
+            self._flush_row()
+            self.tables.append(self._open.pop()['rows'])
+
+
+def html_tables(body):
+    parser = TableRowParser()
+    parser.feed(body)
+    parser.close()
+    return parser.tables
+
+
+def spell_facts_from_library_html(module, body, captured_date):
+    """The explicit adapter from the fetched spell-library list page to `spells` facts.
+
+    Contract with #1077's `tibiacom_spells` module: it exposes `LIST_COLUMNS` (the list view's
+    header) and `list_facts(text, captured)`, which turns the list view's tab-separated table
+    into `{'pages': [{'fields': {...}}, ...]}`. This function only cuts the page's list table (the
+    table whose header row is exactly `LIST_COLUMNS`) into that tab-separated text, calls the
+    module, and serializes each spell row as one bounded fact; the field mapping stays the
+    module's. Anything that does not fit the contract raises `SpellAdapterError`.
+    """
+    columns = getattr(module, SPELL_COLUMNS_ATTR, None)
+    list_facts = getattr(module, SPELL_PARSER_ENTRY, None)
+    if not callable(list_facts) or not isinstance(columns, (list, tuple)) or not columns:
+        raise SpellAdapterError(
+            f'the #1077 spell module must expose {SPELL_COLUMNS_ATTR} and {SPELL_PARSER_ENTRY}(text, captured)')
+    if parse_iso_date(captured_date) is None:
+        raise SpellAdapterError(f'captured date {captured_date!r} is not a literal YYYY-MM-DD date')
+    columns = list(columns)
+    table = None
+    for candidate in html_tables(body):
+        for index, row in enumerate(candidate):
+            if row == columns:
+                table = [columns] + [r for r in candidate[index + 1:] if any(r)]
+                break
+        if table is not None:
+            break
+    if table is None or len(table) < 2:
+        raise SpellAdapterError(f'no spell list table with header {columns!r} and at least one row in the page')
+    try:
+        result = list_facts('\n'.join('\t'.join(row) for row in table) + '\n', captured_date)
+    except SystemExit as error:  # list_facts reports a malformed header/row this way
+        raise SpellAdapterError(f'{SPELL_PARSER_ENTRY} rejected the list table: {error}') from None
+    facts = []
+    seen_slugs = {}
+    for page in result['pages']:
+        fields = page['fields']
+        row_problem = spell_row_problem(fields)
+        if row_problem:
+            raise SpellAdapterError(f'{SPELL_PARSER_ENTRY} returned a row outside the exact row schema '
+                                    f'({row_problem}): {fields!r}')
+        name = fields['name']
+        slug = spell_row_slug(name)
+        seen_slugs[slug] = seen_slugs.get(slug, 0) + 1
+        if seen_slugs[slug] > 1:
+            slug = f'{slug}-{seen_slugs[slug]}'
+        value = spell_row_value(fields)
+        if len(value) > FACT_VALUE_LIMIT:
+            raise SpellAdapterError(f'spell row {name!r} serializes to {len(value)} chars, '
+                                    f'over the {FACT_VALUE_LIMIT}-char fact cap')
+        facts.append({'section': 'spells', 'anchor': SPELL_FACT_ANCHOR,
+                      'key': bound_key(SPELL_FACT_KEY_PREFIX, f'.{slug}'), 'value': value})
+    if len(facts) > SPELL_RECORDS_CAP:
+        raise SpellAdapterError(f'{len(facts)} spell rows is over the {SPELL_RECORDS_CAP}-row cap')
+    return facts
+
+
 def fetch_page_or_abort(url, what):
     """Fetch `url`; return (status, raw_bytes, body) only on an accepted HTTP 200, non-challenge
     response. `raw_bytes` is the exact, undecoded response body (hash that); `body` is a separate
@@ -424,12 +619,31 @@ def fetch_page_or_abort(url, what):
     return status, raw, body
 
 
+def fetch_directory_name_problem(name, captured_at):
+    """Why `name` cannot be the output directory of a run stamped `captured_at`, or None."""
+    dir_date, dir_run = parse_snapshot_directory_name(name)
+    if dir_date is None:
+        return 'must be a literal YYYY-MM-DD calendar date or a YYYY-MM-DD-HHMMSSZ UTC run timestamp'
+    if dir_run is None and name != captured_at[:10]:
+        return f'is a date but this run is stamped {captured_at[:10]}'
+    if dir_run is not None and dir_run != parse_utc_timestamp(captured_at):
+        return f'is a run timestamp but this run is stamped {captured_at}'
+    return None
+
+
 def cmd_fetch(out_dir):
     # Stamped once, before any request, so every page's fetched_at is >= captured_at
     # (P2 r4120883679) -- this run takes seconds, nowhere near MAX_FETCH_RUN_SECONDS.
     captured_at = utc_now()
     if out_dir.name == 'tibia-com':
         out_dir = out_dir / captured_at.replace('T', '-').replace(':', '')
+    # Literal YYYY-MM-DD shape (or the UTC run form) before any request, and consistent with the
+    # captured_at this run stamps, so fetch cannot write a directory verify would reject.
+    name_problem = fetch_directory_name_problem(out_dir.name, captured_at)
+    if name_problem:
+        print(f'tibiacom_capture: output directory name {out_dir.name!r} {name_problem}; nothing was '
+              'fetched.', file=sys.stderr)
+        return 2
     if out_dir.exists():
         print(f'tibiacom_capture: output directory {out_dir} already exists; snapshots are '
               'immutable, so choose a fresh capture-run directory.', file=sys.stderr)
@@ -459,33 +673,22 @@ def cmd_fetch(out_dir):
     if spell_module is None:
         spells = SPELL_PENDING
     else:
-        parse = getattr(spell_module, 'parse_spell_library', None) or getattr(spell_module, 'parse', None)
-        if parse is None:
-            print('tibiacom_capture: tools/content-schema/spell-authoring/tibiacom_spells.py has no '
-                  'parse_spell_library()/parse() entry point; leaving spells as PENDING_1077.',
-                  file=sys.stderr)
-            spells = SPELL_PENDING
-        else:
-            time.sleep(REQUEST_DELAY_SECONDS)
-            result = fetch_page_or_abort(SPELL_LIBRARY_URL, 'the spell library')
-            if result is None:
-                return 2
-            status, raw, body = result
-            pages.append({'section': 'spells', 'url': SPELL_LIBRARY_URL, 'fetched_at': utc_now(),
-                          'http_status': status, 'sha256': hashlib.sha256(raw).hexdigest(),
-                          'visible_text_chars': visible_text_length(body)})
-            spell_facts = 0
-            for item in parse(body):
-                if spell_facts >= SPELL_RECORDS_CAP:
-                    break
-                # Bound every delegated field the same way verify does (P2 r4120883667): a
-                # delegated parser is not exempt from the key/anchor/value size caps.
-                value = str(item.get('value', ''))[:FACT_VALUE_LIMIT]
-                anchor = bound_field(item.get('anchor', 'root'))
-                key = bound_field(item.get('key', f'spells.{len(facts)}'))
-                facts.append({'section': 'spells', 'anchor': anchor, 'key': key, 'value': value})
-                spell_facts += 1
-            spells = 'captured'
+        time.sleep(REQUEST_DELAY_SECONDS)
+        result = fetch_page_or_abort(SPELL_LIBRARY_URL, 'the spell library')
+        if result is None:
+            return 2
+        status, raw, body = result
+        try:
+            spell_facts = spell_facts_from_library_html(spell_module, body, captured_at[:10])
+        except SpellAdapterError as error:
+            print(f'tibiacom_capture: the spell library page does not fit the #1077 adapter: {error}. '
+                  'Aborting without writing output.', file=sys.stderr)
+            return 2
+        pages.append({'section': 'spells', 'url': SPELL_LIBRARY_URL, 'fetched_at': utc_now(),
+                      'http_status': status, 'sha256': hashlib.sha256(raw).hexdigest(),
+                      'visible_text_chars': visible_text_length(body)})
+        facts.extend(spell_facts)
+        spells = 'captured'
 
     out_dir.mkdir(parents=True, exist_ok=False)
 
@@ -495,8 +698,57 @@ def cmd_fetch(out_dir):
                                             encoding='utf-8', newline='\n')
     (out_dir / 'facts.json').write_text(json.dumps(facts_doc, ensure_ascii=False, indent=1) + '\n',
                                          encoding='utf-8', newline='\n')
+    # The run must never leave a snapshot its own verifier (and so CI) would reject: verify what
+    # was just written, and remove it (both files, then the directory this run created) if not.
+    errors = verify_snapshot(out_dir)
+    if errors:
+        for error in errors:
+            print(f'FAIL: {error}', file=sys.stderr)
+        for name in sorted(SNAPSHOT_FILENAMES):
+            (out_dir / name).unlink()
+        out_dir.rmdir()
+        print('tibiacom_capture: the captured snapshot failed its own verification; it was removed.',
+              file=sys.stderr)
+        return 2
     print(f'pages: {len(pages)}, facts: {len(facts)}, spells: {spells}')
     return 0
+
+
+def ratio_limit_for_section(section):
+    """The fact-to-visible-text bound of a section: the spell list gets its own (see
+    SPELL_FACT_TO_VISIBLE_TEXT_RATIO_LIMIT), every manual section the 25% prose bound."""
+    return SPELL_FACT_TO_VISIBLE_TEXT_RATIO_LIMIT if section == 'spells' else FACT_TO_VISIBLE_TEXT_RATIO_LIMIT
+
+
+def spell_fact_shape_errors(directory, key, anchor, value, slug_counts):
+    """A `spells` fact must be one the adapter could have written, since this shape is what stands
+    in for the manual pages' prose ratio on this section: anchor `list`; a value that is exactly the
+    canonical serialization of a row of `list_facts`' exact schema (required and optional fields
+    only, string values, a name); and a key equal to `spells.list.<slug of that name>`, unsuffixed
+    for the first row of a slug and exactly `-N` for its Nth (N >= 2), counted in fact order
+    through `slug_counts` (the caller's per-snapshot dict)."""
+    errors = []
+    if anchor != SPELL_FACT_ANCHOR:
+        errors.append(f'{directory}: spells fact {key!r} anchor must be {SPELL_FACT_ANCHOR!r}, got {anchor!r}')
+    try:
+        row = load_json_no_duplicates(value)
+    except ValueError:
+        row = None
+    problem = 'not a JSON object' if row is None else spell_row_problem(row)
+    if problem:
+        errors.append(f'{directory}: spells fact {key!r} value is not a spell row ({problem})')
+        return errors
+    if value != spell_row_value(row):
+        errors.append(f'{directory}: spells fact {key!r} value is not the canonical serialization of its row')
+    # Occurrence counts follow fact order, as the adapter numbers them: the first row of a slug is
+    # unsuffixed and the Nth (N >= 2) is exactly `-N`, so a suffix needs its preceding collisions.
+    slug = spell_row_slug(row['name'])
+    slug_counts[slug] = slug_counts.get(slug, 0) + 1
+    expected_key = f'{SPELL_FACT_KEY_PREFIX}.{slug}' + (f'-{slug_counts[slug]}' if slug_counts[slug] > 1 else '')
+    if key != expected_key:
+        errors.append(f'{directory}: spells fact key {key!r} must be {expected_key!r} '
+                      f'(occurrence {slug_counts[slug]} of slug {slug!r} in fact order)')
+    return errors
 
 
 def verify_snapshot(directory):
@@ -672,6 +924,7 @@ def verify_snapshot(directory):
         facts = []
 
     total_value_bytes = 0
+    spell_slug_counts = {}
     seen_keys = set()
     value_chars_by_section = {}
     fact_count_by_section = {}
@@ -724,6 +977,8 @@ def verify_snapshot(directory):
             errors.append(f'{directory}: duplicate fact key {key!r}')
         seen_keys.add(key)
         section = fact['section']
+        if section == 'spells':
+            errors.extend(spell_fact_shape_errors(directory, key, anchor, value, spell_slug_counts))
         if section not in pages_by_section:
             errors.append(f'{directory}: fact {key!r} references section {section!r}, '
                           f'which is not a manifest.json page')
@@ -760,11 +1015,12 @@ def verify_snapshot(directory):
                           f'any page that has facts')
             continue
         value_chars = value_chars_by_section.get(section, 0)
-        if visible_chars > 0 and value_chars > visible_chars * FACT_TO_VISIBLE_TEXT_RATIO_LIMIT + 1e-9:
+        ratio_limit = ratio_limit_for_section(section)
+        if visible_chars > 0 and value_chars > visible_chars * ratio_limit + 1e-9:
             ratio = value_chars / visible_chars
             errors.append(f'{directory}: section {section!r} facts total {value_chars} chars, '
                           f'{ratio:.0%} of the page\'s {visible_chars} visible-text chars, over the '
-                          f'{FACT_TO_VISIBLE_TEXT_RATIO_LIMIT:.0%} cap (looks like the page copied in '
+                          f'{ratio_limit:.0%} cap (looks like the page copied in '
                           f'chunks, not extracted facts)')
 
     if total_value_bytes > TOTAL_FACT_VALUE_BYTES_LIMIT:
@@ -776,14 +1032,16 @@ def verify_snapshot(directory):
     # per-fact JSON-structure allowance. Whitespace padding, an oversized field a field-level check
     # missed, or any other encoding trick that inflates the file without inflating a parsed value
     # still fails this.
-    total_visible_chars = sum(page['visible_text_chars'] for page in pages_by_section.values()
-                              if isinstance(page.get('visible_text_chars'), int))
-    allowed_raw_bytes = total_visible_chars * FACT_TO_VISIBLE_TEXT_RATIO_LIMIT + PER_FACT_JSON_OVERHEAD_BYTES * len(facts)
+    visible_allowance = sum(page['visible_text_chars'] * ratio_limit_for_section(section)
+                            for section, page in pages_by_section.items()
+                            if isinstance(page.get('visible_text_chars'), int))
+    allowed_raw_bytes = visible_allowance + PER_FACT_JSON_OVERHEAD_BYTES * len(facts)
     raw_facts_bytes = facts_path.stat().st_size
     if raw_facts_bytes > allowed_raw_bytes + 1e-9:
         errors.append(f'{directory}: facts.json is {raw_facts_bytes} bytes on disk, over the allowed '
-                      f'{allowed_raw_bytes:.0f} bytes ({FACT_TO_VISIBLE_TEXT_RATIO_LIMIT:.0%} of total '
-                      f'visible-text chars + {PER_FACT_JSON_OVERHEAD_BYTES} B/fact overhead) -- looks '
+                      f'{allowed_raw_bytes:.0f} bytes ({FACT_TO_VISIBLE_TEXT_RATIO_LIMIT:.0%} of the manual '
+                      f'pages\' visible-text chars, {SPELL_FACT_TO_VISIBLE_TEXT_RATIO_LIMIT:.0%} for the '
+                      f'spell list, + {PER_FACT_JSON_OVERHEAD_BYTES} B/fact overhead) -- looks '
                       f'like hidden text regardless of encoding')
 
     # Absolute cap, kept in addition to the ratio check above (P2 r4121271445): it does not depend
@@ -971,6 +1229,40 @@ or key names in it at all, and must not be copied into a fact.</p>
 </div>
 </body></html>
 """
+
+
+# A small recorded excerpt of the shape of the spell library list page (not a full page): a decoy
+# table, a script, and the list table whose header is #1077's LIST_COLUMNS. The rows use values the
+# committed S15 list sample carries (Animate Dead Rune, Apprentice's Strike) plus the two edge rows
+# of #1077's own self-test (a quoted words suffix; a '-' level, meaning no single value).
+SPELL_LIST_FIXTURE_HTML = """
+<html><head><title>Spell Library</title><script>var noise = "Name Group Type";</script></head>
+<body>
+<table class="Table1"><tr><td>Filter</td><td>Vocation</td></tr></table>
+<table class="TableContent">
+<tr class="LabelH"><th>Name</th><th>Group</th><th>Type</th><th>Exp Lvl</th><th>Mana</th><th>Premium</th></tr>
+<tr><td><a href="https://www.tibia.com/library/?subtopic=spells&amp;spell=findperson">Find Person</a> (exiva "name")</td>
+<td>Support</td><td>Instant</td><td>8</td><td>20</td><td>no</td></tr>
+<tr><td>Avatar of Steel (uteta res eq)</td><td>Support</td><td>Instant</td><td>-</td><td>800</td><td>yes</td></tr>
+<tr><td>Animate Dead Rune (adana mort)</td><td>Support</td><td>Rune</td><td>27</td><td>600</td><td>yes</td></tr>
+<tr><td>Apprentice&#39;s Strike (exori min flam)</td><td>Attack</td><td>Instant</td><td>6</td><td>6</td><td>no</td></tr>
+</table>
+</body></html>
+"""
+SPELL_LIST_EXPECTED_FACTS = [
+    {'section': 'spells', 'anchor': 'list', 'key': 'spells.list.find-person',
+     'value': '{"levelrequired":"8","mana":"20","name":"Find Person","premium":"no",'
+              '"subclass":"Support","type":"Instant","words":"exiva"}'},
+    {'section': 'spells', 'anchor': 'list', 'key': 'spells.list.avatar-of-steel',
+     'value': '{"mana":"800","name":"Avatar of Steel","premium":"yes",'
+              '"subclass":"Support","type":"Instant","words":"uteta res eq"}'},
+    {'section': 'spells', 'anchor': 'list', 'key': 'spells.list.animate-dead-rune',
+     'value': '{"levelrequired":"27","mana":"600","name":"Animate Dead Rune","premium":"yes",'
+              '"subclass":"Support","type":"Rune","words":"adana mort"}'},
+    {'section': 'spells', 'anchor': 'list', 'key': 'spells.list.apprentice-s-strike',
+     'value': '{"levelrequired":"6","mana":"6","name":"Apprentice\'s Strike","premium":"no",'
+              '"subclass":"Attack","type":"Instant","words":"exori min flam"}'},
+]
 
 
 def _valid_snapshot_documents():
@@ -1425,45 +1717,219 @@ def self_test():
         errors = verify_snapshot(directory)
         assert any('fetched_at must be an ISO-8601' in e for e in errors), errors
 
-        # fetch enforces the same key/anchor/value bounds on delegated spell-parser output
-        # (P2 r4120883667), and stamps captured_at once, before any request (P2 r4120883679).
-        class _FakeSpellModule:
-            @staticmethod
-            def parse_spell_library(body):
-                return [{'anchor': 'a' * 300, 'key': 'k' * 300, 'value': 'x' * 300 + ' costs 5 mana.'}]
-
-        # Enough ordinary (non-factual, so excluded) filler text that the one real fact stays
-        # under the 25% ratio cap even counting its key+anchor overhead -- a tiny fixture would
-        # fail that cap on overhead alone and prove nothing about this test's actual subject.
+        # Spell library (#1077 adapter): `fetch` passes the list page through
+        # spell_facts_from_library_html into the real tibiacom_spells.list_facts, writes one bounded
+        # `spells` fact per row, and the run's own snapshot must verify. Manual pages use a filler
+        # body (ordinary text, so exactly one qualifying fact stays under the 25% ratio); only the
+        # spell-library URL is served the recorded list-page fixture.
         filler = 'This is ordinary descriptive text about the interface. ' * 60
-        fetch_body = f'<h2 id="x">Heading</h2><p>{filler}Value is 5 here.</p>'.encode()
+        manual_body = f'<h2 id="x">Heading</h2><p>{filler}Value is 5 here.</p>'.encode()
 
-        _original_fetch_url, _original_load_spell_module = fetch_url, load_spell_module
-        fetch_url = lambda url: (200, fetch_body, url)
-        load_spell_module = lambda: _FakeSpellModule()
-        _original_sleep = time.sleep
-        time.sleep = lambda seconds: None
-        try:
-            # A separate temp dir, not nested under `directory` -- `directory` is reused below as
-            # the exactly-two-files fixture, and a subdirectory would pollute that check.
-            with tempfile.TemporaryDirectory() as fetch_tmp:
-                # A valid-date directory name (P2 r4121095570): cmd_fetch stamps captured_at with
-                # today's date, so naming the output directory that way keeps verify_snapshot happy.
-                fetch_out = Path(fetch_tmp) / utc_now()[:10]
-                assert cmd_fetch(fetch_out) == 0
-                fetched_manifest = json.loads((fetch_out / 'manifest.json').read_text(encoding='utf-8'))
-                fetched_facts = json.loads((fetch_out / 'facts.json').read_text(encoding='utf-8'))
-                fetched_verify_errors = verify_snapshot(fetch_out)
-        finally:
-            fetch_url, load_spell_module = _original_fetch_url, _original_load_spell_module
-            time.sleep = _original_sleep
-        spell_facts = [f for f in fetched_facts['facts'] if f['section'] == 'spells']
-        assert spell_facts, fetched_facts
-        assert all(len(f['anchor']) <= FIELD_ID_LIMIT for f in spell_facts), spell_facts
-        assert all(len(f['key']) <= FIELD_ID_LIMIT for f in spell_facts), spell_facts
-        assert all(len(f['value']) <= FACT_VALUE_LIMIT for f in spell_facts), spell_facts
+        def _run_fetch(spell_body, out_name=None):
+            """cmd_fetch against a stubbed network; returns (exit code, out dir, stderr text)."""
+            import contextlib
+            import io
+            global fetch_url
+            saved_fetch_url, saved_sleep = fetch_url, time.sleep
+            fetch_url = lambda url: (200, spell_body if url == SPELL_LIBRARY_URL else manual_body, url)
+            time.sleep = lambda seconds: None
+            stderr = io.StringIO()
+            try:
+                with tempfile.TemporaryDirectory() as fetch_tmp, contextlib.redirect_stderr(stderr):
+                    fetch_out = Path(fetch_tmp) / (out_name or utc_now()[:10])
+                    code = cmd_fetch(fetch_out)
+                    documents = None
+                    if fetch_out.is_dir():
+                        documents = (json.loads((fetch_out / 'manifest.json').read_text(encoding='utf-8')),
+                                     json.loads((fetch_out / 'facts.json').read_text(encoding='utf-8')),
+                                     verify_snapshot(fetch_out))
+                    left_behind = sorted(p.name for p in Path(fetch_tmp).iterdir())
+                return code, documents, left_behind, stderr.getvalue()
+            finally:
+                fetch_url, time.sleep = saved_fetch_url, saved_sleep
+
+        real_spell_module = load_spell_module()
+        assert real_spell_module is not None, f'{SPELL_MODULE_PATH} is missing'
+
+        # The recorded sample yields exactly the expected facts, through the real parser.
+        fixture_tables = html_tables(SPELL_LIST_FIXTURE_HTML)
+        assert fixture_tables[0] == [['Filter', 'Vocation']], fixture_tables  # the decoy comes first
+        assert len(fixture_tables) == 2 and fixture_tables[1][3][0] == 'Animate Dead Rune (adana mort)', fixture_tables
+        assert spell_facts_from_library_html(real_spell_module, SPELL_LIST_FIXTURE_HTML, '2026-09-28') \
+            == SPELL_LIST_EXPECTED_FACTS
+        code, documents, left_behind, stderr_text = _run_fetch(SPELL_LIST_FIXTURE_HTML.encode())
+        assert code == 0, stderr_text
+        fetched_manifest, fetched_facts, fetched_verify_errors = documents
+        assert fetched_manifest['spells'] == 'captured'
+        assert [p['section'] for p in fetched_manifest['pages']][-1] == 'spells'
+        assert [f for f in fetched_facts['facts'] if f['section'] == 'spells'] == SPELL_LIST_EXPECTED_FACTS
         assert fetched_manifest['captured_at'] == fetched_facts['captured_at']
         assert fetched_verify_errors == [], fetched_verify_errors
+        assert 'Animate Dead Rune' not in json.dumps(fetched_manifest)  # the manifest carries no page text
+
+        # A realistic full-library-size list (~200 rows) verifies inside every bound.
+        many_rows = ''.join(
+            f'<tr><td><a href="?subtopic=spells&spell=s{i}">Spell Number {i:03d}</a> (exori gran flam {i:03d})</td>'
+            f'<td>Attack</td><td>Instant</td><td>{i % 400 + 1}</td><td>{i * 3 + 10}</td><td>yes</td></tr>'
+            for i in range(200))
+        big_list = ('<table><tr>' + ''.join(f'<th>{c}</th>' for c in real_spell_module.LIST_COLUMNS) + '</tr>'
+                    + many_rows + '</table>')
+        code, documents, left_behind, stderr_text = _run_fetch(big_list.encode())
+        assert code == 0, stderr_text
+        assert len([f for f in documents[1]['facts'] if f['section'] == 'spells']) == 200
+        assert documents[2] == [], documents[2]
+
+        # No list table (a changed or blocked page): fetch aborts and writes nothing.
+        code, documents, left_behind, stderr_text = _run_fetch(b'<html><table><tr><th>Other</th></tr></table></html>')
+        assert code == 2 and documents is None and left_behind == [], (code, left_behind)
+        assert 'no spell list table' in stderr_text, stderr_text
+
+        # Adapter contract failures, each an explicit SpellAdapterError (never a guess or a partial result).
+        def _adapter_error(module, body, captured='2026-09-28'):
+            try:
+                spell_facts_from_library_html(module, body, captured)
+            except SpellAdapterError as error:
+                return str(error)
+            raise AssertionError('expected SpellAdapterError')
+
+        class _NoEntryPoint:
+            LIST_COLUMNS = ['Name']
+
+        class _OnlyLegacyNames:  # the old guessed entry points are not the contract
+            LIST_COLUMNS = ['Name']
+            parse_spell_library = staticmethod(lambda body: [])
+            parse = staticmethod(lambda body: [])
+
+        assert 'must expose' in _adapter_error(_NoEntryPoint, SPELL_LIST_FIXTURE_HTML)
+        assert 'must expose' in _adapter_error(_OnlyLegacyNames, SPELL_LIST_FIXTURE_HTML)
+        assert 'literal YYYY-MM-DD' in _adapter_error(real_spell_module, SPELL_LIST_FIXTURE_HTML, '2026-9-28')
+        header_only = '<table><tr>' + ''.join(f'<th>{c}</th>' for c in real_spell_module.LIST_COLUMNS) + '</tr></table>'
+        assert 'no spell list table' in _adapter_error(real_spell_module, header_only)
+        short_row = header_only.replace('</table>', '<tr><td>Find Person (exiva "name")</td><td>Support</td></tr></table>')
+        assert 'rejected the list table' in _adapter_error(real_spell_module, short_row)
+
+        _full_row = {'name': 'Find Person', 'words': 'exiva', 'subclass': 'Support', 'type': 'Instant',
+                     'premium': 'no'}
+
+        class _HugeRow:
+            LIST_COLUMNS = ['Name']
+            list_facts = staticmethod(lambda text, captured: {'pages': [{'fields': {**_full_row, 'name': 'x' * 400}}]})
+
+        assert 'fact cap' in _adapter_error(_HugeRow, '<table><tr><th>Name</th></tr><tr><td>x</td></tr></table>')
+
+        class _ManyRows:
+            LIST_COLUMNS = ['Name']
+            list_facts = staticmethod(lambda text, captured: {'pages': [
+                {'fields': {**_full_row, 'name': f'n{i}'}} for i in range(SPELL_RECORDS_CAP + 1)]})
+
+        assert 'row cap' in _adapter_error(_ManyRows, '<table><tr><th>Name</th></tr><tr><td>x</td></tr></table>')
+
+        # The adapter itself refuses a module row outside the exact row schema (extra field, missing
+        # field, non-string value), so it can never write a fact the verifier would reject.
+        for bad_fields in ({**_full_row, 'payload': 'x'}, {k: v for k, v in _full_row.items() if k != 'words'},
+                           {**_full_row, 'mana': 5}):
+            class _BadRow:
+                LIST_COLUMNS = ['Name']
+                list_facts = staticmethod(lambda text, captured, _f=bad_fields: {'pages': [{'fields': _f}]})
+
+            assert 'exact row schema' in _adapter_error(
+                _BadRow, '<table><tr><th>Name</th></tr><tr><td>x</td></tr></table>')
+
+        # The exact-schema constants match what the real #1077 module emits on the fixture: every
+        # required field on every row, and only required/optional fields overall.
+        emitted = [json.loads(f['value']) for f in SPELL_LIST_EXPECTED_FACTS]
+        assert all(SPELL_ROW_REQUIRED_FIELDS <= set(row) for row in emitted), emitted
+        assert set().union(*emitted) == SPELL_ROW_REQUIRED_FIELDS | SPELL_ROW_OPTIONAL_FIELDS, emitted
+        assert all(spell_row_problem(row) is None for row in emitted)
+
+        # The verifier holds a spells fact to exactly what the adapter could have written (this is
+        # what replaces the manual pages' prose ratio on the spell list): the exact row schema, the
+        # canonical serialization, and the key `spells.list.<slug of name>`.
+        spell_manifest = copy.deepcopy(base_manifest)
+        spell_manifest['spells'] = 'captured'
+        spell_manifest['pages'].append({'section': 'spells', 'url': SPELL_LIBRARY_URL,
+                                        'fetched_at': spell_manifest['captured_at'], 'http_status': 200,
+                                        'sha256': 'b' * 64, 'visible_text_chars': 1000})
+        spell_doc = copy.deepcopy(base_facts)
+        spell_doc['facts'] += SPELL_LIST_EXPECTED_FACTS
+        _write_snapshot(directory, spell_manifest, spell_doc)
+        assert verify_snapshot(directory) == [], verify_snapshot(directory)
+
+        def _row_of_last(fact):
+            return json.loads(fact['value'])
+
+        def _with_row(fact, row):
+            fact['value'] = spell_row_value(row)
+
+        def _add(name, value):
+            return lambda fact: _with_row(fact, {**_row_of_last(fact), name: value})
+
+        def _drop(name):
+            return lambda fact: _with_row(fact, {k: v for k, v in _row_of_last(fact).items() if k != name})
+
+        # Accepted variants: an optional field absent.
+        for mutate in (_drop('levelrequired'), _drop('mana')):
+            variant = copy.deepcopy(spell_doc)
+            mutate(variant['facts'][-1])
+            _write_snapshot(directory, spell_manifest, variant)
+            assert verify_snapshot(directory) == [], (variant['facts'][-1], verify_snapshot(directory))
+
+        # Slug occurrences are counted in fact order: `name`, `name-2`, `name-3` in order is accepted;
+        # a suffix without its preceding collisions (a lone `-2`/`-13`, a skipped `-2`, a repeated
+        # unsuffixed slug, an out-of-order suffix) is rejected.
+        def _repeat_last(keys):
+            variant = copy.deepcopy(spell_doc)
+            last = variant['facts'].pop()
+            base_key = last['key']
+            variant['facts'] += [{**last, 'key': base_key + suffix} for suffix in keys]
+            return variant
+
+        _write_snapshot(directory, spell_manifest, _repeat_last(['', '-2', '-3']))
+        assert verify_snapshot(directory) == [], verify_snapshot(directory)
+        for keys in (['-2'], ['-13'], ['-1'], ['-02'], ['', '-3'], ['', '-2', '-4'], ['-2', ''], ['-3', '-2', ''],
+                     ['', '-2', '-2']):
+            _write_snapshot(directory, spell_manifest, _repeat_last(keys))
+            errors = verify_snapshot(directory)
+            assert any('in fact order)' in e for e in errors), (keys, errors)
+        # The adapter numbers repeated names the same way, so what it writes verifies.
+        repeated_row = ('<tr><td>Find Person (exiva "name")</td><td>Support</td><td>Instant</td>'
+                        '<td>8</td><td>20</td><td>no</td></tr>')
+        repeated = spell_facts_from_library_html(
+            real_spell_module, header_only.replace('</table>', repeated_row * 3 + '</table>'), '2026-09-28')
+        assert [f['key'] for f in repeated] == [
+            'spells.list.find-person', 'spells.list.find-person-2', 'spells.list.find-person-3'], repeated
+        repeated_doc = copy.deepcopy(base_facts)
+        repeated_doc['facts'] += repeated
+        _write_snapshot(directory, spell_manifest, repeated_doc)
+        assert verify_snapshot(directory) == [], verify_snapshot(directory)
+
+        for mutate, expected in (
+                # an extra field such as `payload` is rejected
+                (_add('payload', 'anything'), 'unexpected field(s) [\'payload\']'),
+                # a missing required field
+                (_drop('words'), 'missing required field(s) [\'words\']'),
+                (_drop('name'), 'missing required field(s) [\'name\']'),
+                # a key that is not spells.list.<slug of the row's name>
+                (lambda f: f.update(key='spells.list.someone-else'), 'in fact order)'),
+                (lambda f: f.update(key='spells.list.apprentice-s-strike-1'), 'in fact order)'),
+                (lambda f: f.update(key='spells.list.apprentice-s-strike-02'), 'in fact order)'),
+                (lambda f: f.update(key='spells.other.apprentice-s-strike'), 'in fact order)'),
+                # a wrong value type
+                (_add('mana', 6), 'non-string value for field(s) [\'mana\']'),
+                (_add('levelrequired', None), 'non-string value for field(s) [\'levelrequired\']'),
+                (_add('words', ['exori']), 'non-string value for field(s) [\'words\']'),
+                # not a row at all, a blank name, a non-canonical serialization, a wrong anchor
+                (lambda f: f.update(value='Just a sentence with 5 numbers.'), 'not a JSON object'),
+                (lambda f: f.update(value='[]'), 'not an object'),
+                (_add('name', '  '), 'blank name'),
+                (lambda f: f.update(value=json.dumps(_row_of_last(f))), 'canonical serialization'),
+                (lambda f: f.update(anchor='root'), 'anchor must be')):
+            broken = copy.deepcopy(spell_doc)
+            mutate(broken['facts'][-1])
+            _write_snapshot(directory, spell_manifest, broken)
+            errors = verify_snapshot(directory)
+            assert any(expected in e for e in errors), (expected, errors)
+        _write_snapshot(directory, base_manifest, base_facts)
 
         # A snapshot directory holds exactly manifest.json and facts.json (P2 r4121003204):
         # a raw page dump alongside them must fail even though both required files are valid.
@@ -1564,6 +2030,82 @@ def self_test():
         _write_snapshot(wrong_run_dir, base_manifest, base_facts)
         errors = verify_snapshot(wrong_run_dir)
         assert any('must equal the UTC captured_at timestamp' in e for e in errors), errors
+
+        # Literal YYYY-MM-DD shape (#1083 hardening) for the snapshot directory and every date
+        # field, in fetch, verify and verify-root -- negative cases: not zero-padded, no dashes, ISO
+        # week/ordinal forms, non-ASCII digits, surrounding whitespace, a non-date, an impossible date.
+        assert parse_iso_date('2026-09-28') == date(2026, 9, 28)
+        not_literal_dates = ('2026-9-28', '2026-09-8', '20260928', '2026-W40-1', '2026-271', '２０２６-０９-２８',
+                             '٢٠٢٦-٠٩-٢٨', '2026-09-28\n', ' 2026-09-28', '2026-09-28 ', '2026/09/28', '2026-09-28T00:00:00Z',
+                             '2026-02-30', '0000-00-00', '', None, 20260928)
+        for candidate in not_literal_dates:
+            assert parse_iso_date(candidate) is None, candidate
+            assert parse_snapshot_directory_name(candidate) == (None, None), candidate
+        for candidate in ('2026-9-28-160207Z', '2026-09-28-16027Z', '２０２６-０９-２８-１６０２０７Z',
+                          '2026-09-28-160207', '2026-09-28-256207Z', '2026-13-28-160207Z'):
+            assert parse_snapshot_directory_name(candidate) == (None, None), candidate
+        assert parse_snapshot_directory_name('2026-09-28-160207Z')[0] == date(2026, 9, 28)
+        for candidate in ('2026-9-28T12:00:00Z', '２０２６-０９-２８T12:00:00Z', '2026-09-28T12:00:00Z\n',
+                          '20260928T120000Z', '2026-02-30T12:00:00Z'):
+            assert parse_utc_timestamp(candidate) is None, candidate
+
+        # verify: a directory whose name is not a literal date, and a captured_at whose date is not.
+        for bad_name in ('2026-9-28', '20260928', '２０２６-０９-２８'):
+            bad_dir = Path(tmp) / bad_name
+            bad_dir.mkdir()
+            _write_snapshot(bad_dir, base_manifest, base_facts)
+            errors = verify_snapshot(bad_dir)
+            assert any('calendar date' in e for e in errors), (bad_name, errors)
+        for bad_stamp in ('2026-9-28T12:00:00Z', '２０２６-０９-２８T12:00:00Z'):
+            manifest = copy.deepcopy(base_manifest)
+            manifest['captured_at'] = bad_stamp
+            facts_doc = copy.deepcopy(base_facts)
+            facts_doc['captured_at'] = bad_stamp
+            _write_snapshot(directory, manifest, facts_doc)
+            errors = verify_snapshot(directory)
+            assert any('"captured_at" must be an ISO-8601 UTC timestamp' in e for e in errors), (bad_stamp, errors)
+        _write_snapshot(directory, base_manifest, base_facts)
+
+        # verify-root: such a directory directly under the snapshot root is rejected.
+        with tempfile.TemporaryDirectory() as bad_root_tmp:
+            bad_root = Path(bad_root_tmp)
+            (bad_root / '2026-09-28').mkdir()
+            assert verify_snapshot_root(bad_root) == []
+            for bad_name in ('2026-9-28', '20260928', '２０２６-０９-２８'):
+                (bad_root / bad_name).mkdir()
+                errors = verify_snapshot_root(bad_root)
+                assert any(repr(bad_name) in e and 'calendar date' in e for e in errors), (bad_name, errors)
+                (bad_root / bad_name).rmdir()
+
+        # fetch: the output directory name is checked before any request, against the run's own stamp.
+        stamp = '2026-09-28T16:02:07Z'
+        assert fetch_directory_name_problem('2026-09-28', stamp) is None
+        assert fetch_directory_name_problem('2026-09-28-160207Z', stamp) is None
+        for bad_name in ('2026-9-28', '20260928', '２０２６-０９-２８', 'tibia-com', 'out',
+                         '2026-09-29', '2026-09-28-160208Z'):
+            assert fetch_directory_name_problem(bad_name, stamp), bad_name
+        import contextlib
+        import io
+        saved_fetch_url = fetch_url
+
+        def _network_must_not_be_touched(url):
+            raise AssertionError(f'fetch touched the network for {url}')
+
+        fetch_url = _network_must_not_be_touched
+        try:
+            for bad_name in ('2026-9-28', '20260928', '２０２６-０９-２８'):
+                stderr = io.StringIO()
+                with tempfile.TemporaryDirectory() as bad_fetch_tmp, contextlib.redirect_stderr(stderr):
+                    assert cmd_fetch(Path(bad_fetch_tmp) / bad_name) == 2, bad_name
+                    assert list(Path(bad_fetch_tmp).iterdir()) == [], bad_name
+                assert 'literal YYYY-MM-DD' in stderr.getvalue(), stderr.getvalue()
+            # A valid, matching directory that already exists is never overwritten (immutability).
+            with tempfile.TemporaryDirectory() as existing_tmp, contextlib.redirect_stderr(io.StringIO()):
+                (Path(existing_tmp) / utc_now()[:10]).mkdir()
+                assert cmd_fetch(Path(existing_tmp) / utc_now()[:10]) == 2
+                assert list((Path(existing_tmp) / utc_now()[:10]).iterdir()) == []
+        finally:
+            fetch_url = saved_fetch_url
 
         # Generic no-smuggled-text guard: verify checks facts.json's RAW byte size on disk, not
         # the parsed form -- padding that appears in no field must still fail.
