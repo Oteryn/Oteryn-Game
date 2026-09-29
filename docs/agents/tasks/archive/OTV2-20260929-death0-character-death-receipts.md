@@ -12,7 +12,7 @@ issue: 162
 allocation: "#162 comment 5895588092"
 pr: 1264
 base_sha: 48de3868
-head_sha: null
+head_sha: null   # a commit cannot hold its own SHA; exact head is in PR #1264 evidence (predecessor 0812f5f9)
 final_head_sha: null
 final_head_frozen_at: null
 owner: "DEATH-0 worker subagent (claude-code-session-01LphUANMfC2q2WKdfEb39eC)"
@@ -24,6 +24,7 @@ owned_paths:
   - apps/game-server/src/durability/schema.rs                               # conditional; not needed, untouched
   - apps/game-server/tests/character_death_receipts_postgres.rs
   - apps/game-server/tests/support/character_death_receipts_postgres_cases.rs
+  - apps/game-server/tests/character_authority_postgres.rs                # lease extension (#162 ruling Q1=a): one #[path] include only
   - apps/game-server/tests/character_progression_postgres.rs                # shared, minimal; not needed, untouched
   - docs/agents/tasks/archive/OTV2-20260929-death0-character-death-receipts.md
 public_contracts: []
@@ -142,22 +143,36 @@ finding_dispositions: {p0_p1_accepted_and_repaired: [], p0_p1_rejected_with_exac
 - [x] `cargo fmt --all --check`, `cargo clippy --locked --workspace --all-targets -D warnings`, and
   `cargo test -p oteryn-game-server` pass: lib 1005, all 39 integration targets and the bins green.
   `validate_governance.py` and `validate_repository_policy.py` pass.
-- [ ] Protected PostgreSQL 17.6 lane: see Deviations (routing).
+- [x] Protected PostgreSQL 17.6 lane routing: `character_authority_postgres` includes the cases
+  (665 tests locally = 659 + the 6 DEATH-0 cases; filtered run 6 passed).
 - [ ] Independent exact-head review, routed by the control plane.
 
 ## Deviations and gaps
 
-- **CI routing.** The protected PostgreSQL lane runs only its registered targets, such as
-  `character_authority_postgres`. The new standalone target runs locally only until a one-line
-  `#[path]` include of the cases file is added to `apps/game-server/tests/character_authority_postgres.rs`.
-  That file is outside this allocation's owned paths.
-- **Startup integrity (DEATH-1).** `durability/character_authority.rs::verify_character_integrity`
-  still counts XP receipts only. A store holding a death receipt fails closed at
-  `open_character_authority` until DEATH-1 extends that check to both kinds. No path can write a
-  death receipt before DEATH-1.
+- **CI routing.** Resolved by the lease extension (#162 ruling Q1=a):
+  `character_authority_postgres.rs` gains one `#[path]` include of the cases file, next to the D3-6
+  `corpse_decay_postgres_cases` include. The cases are `#[test]` functions, so the `mod` line runs them
+  and no call is needed. The standalone `character_death_receipts_postgres` target is kept, as for the
+  D3-6 pair (`corpse_decay_postgres.rs` plus the same include in the protected target): it is the
+  focused local route. The protected lane runs each case once, and ordinary runs without the database
+  skip both copies.
+- **Transition binding.** Kept by #162 ruling Q2.
 - The "exactly one receipt per revision" distinct-count clause is also implied by the count, chain and
   current-receipt clauses together. It is kept as the explicit form of §3.2.
 - `schema.rs` and `character_progression_postgres.rs` did not need changes.
+
+## DEATH-1 carry-over
+
+Accepted as DEATH-1 scope by #162 ruling Q3.
+
+1. **Startup integrity.** `durability/character_authority.rs::verify_character_integrity` still counts
+   XP receipts only. A store holding a death receipt fails closed at `open_character_authority` until
+   DEATH-1 extends that check to both receipt kinds. No path can write a death receipt before DEATH-1.
+2. **Write order.** The DEATH-1 writer must insert the death receipt before deleting the blessings it
+   consumes, because the blessing DELETE guard requires a same-transaction receipt that lists the key
+   before and not after.
+3. **Blessing set bound.** Blessing sets are capped at 32 keys as a storage bound chosen here, not a
+   game rule. DEATH-1 (or DEATH-4) confirms or widens it.
 
 ## PR and closeout
 
