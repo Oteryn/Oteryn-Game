@@ -57,11 +57,10 @@ Owner decisions of 2026-09-29 (#162 comment 5898471146), recorded in
 `docs/architecture/reviews/OTERYN_GAME_OWNER_DECISION_BATCH_D154_D158_2026-09-29.md`. History above
 is unchanged.
 
-- **D154 (Q8a):** the 15.30 client files under `content/assets/files/` (#1251-#1253) stay in the
-  repository as reference material. No redistribution right is implied by their presence, and
-  agents must not delete them. Where this conflicts with the 2026-09-29 supersession note above or
-  with the Non-claims below, agents rely on this amendment for what they may do (keep, read, do not
-  delete) and claim no distribution right from it.
+- **D154 (Q8a, clarified by Q12a, #162 2026-09-29):** the 15.30 client files under
+  `content/assets/files/` (#1251-#1253) stay in the repository and agents must not delete them.
+  This states retention only. The 2026-09-29 owner supersession note above governs redistribution
+  rights, which it confirms for these files (Q12a).
 - **D155 (Q9, delegated to the control plane):** keep plain Git, no Git LFS. Revisit if
   `content/assets` grows materially or clone/CI cost becomes a problem.
 

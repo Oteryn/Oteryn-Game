@@ -11,7 +11,7 @@
 
 | # | Topic | Owner choice (2026-09-29) | Source | Q |
 |---|---|---|---|---|
-| D154 | 15.30 client files in the repository | The files under `content/assets/files/` (#1251-#1253) stay as reference material; no redistribution right implied; agents must not delete them. Amends the client asset version decision | #162 5898471146 | Q8a |
+| D154 | 15.30 client files in the repository | The files under `content/assets/files/` (#1251-#1253) stay in the repository and agents must not delete them. Retention only: the 2026-09-29 owner supersession note governs redistribution and confirms the rights (Q12a). Amends the client asset version decision | #162 5898471146; Q12a, #162 2026-09-29 | Q8a, Q12a |
 | D155 | Large assets and Git LFS | Plain Git, no LFS (delegated to the control plane); revisit if `content/assets` grows materially or clone/CI cost becomes a problem | #162 5898471146 | Q9 |
 | D156 | Pickupable item ids | One proposal table for 247 client-only pickupable ids, 9 donor ids and 10 UNSURE ids, approved as a whole; the table is pending | #162 5898471146 | Q10a |
 | D157 | Task-session pilot | Confirmed: up to three concurrent task sessions | #162 5898317577 | Q6a |
