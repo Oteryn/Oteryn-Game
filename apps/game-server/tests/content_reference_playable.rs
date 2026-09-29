@@ -87,11 +87,13 @@ fn source() -> Result<ReferencePlayableContentSource, ContentError> {
                         key: closed.clone(),
                         collision: LocalObjectCollisionPresence::Present,
                         attribute_variant_of: None,
+                        absent: false,
                     },
                     LocalObjectStateDefinition {
                         key: open.clone(),
                         collision: LocalObjectCollisionPresence::Absent,
                         attribute_variant_of: None,
+                        absent: false,
                     },
                 ]),
                 client_projection: ClientProjectionClass::ClientSafe,
@@ -449,6 +451,7 @@ fn source_with_target_claim(
         local_object_initial_state: Some(ProductionKey::new("oteryn:reference.state.closed")?),
         local_object_state_attributes: BTreeMap::new(),
         local_object_revert_after_ms: BTreeMap::new(),
+        local_object_event_transitions: BTreeMap::new(),
     };
     candidate.placements.push(placement);
     Ok(candidate)
@@ -481,6 +484,7 @@ fn source_with_extra_local_object_state(
         key: ProductionKey::new(key)?,
         collision,
         attribute_variant_of: None,
+        absent: false,
     });
     Ok(candidate)
 }
@@ -1289,11 +1293,13 @@ fn local_object_definition_rejects_duplicate_state_key_regardless_of_collision()
             key: ProductionKey::new("oteryn:reference.state.closed")?,
             collision: LocalObjectCollisionPresence::Present,
             attribute_variant_of: None,
+            absent: false,
         },
         LocalObjectStateDefinition {
             key: ProductionKey::new("oteryn:reference.state.closed")?,
             collision: LocalObjectCollisionPresence::Absent,
             attribute_variant_of: None,
+            absent: false,
         },
     ]);
     assert!(matches!(
@@ -1666,6 +1672,7 @@ fn source_with_variant_state(
         key: ProductionKey::new("oteryn:reference.state.closed-variant")?,
         collision,
         attribute_variant_of: Some(ProductionKey::new(variant_of)?),
+        absent: false,
     });
     Ok(candidate)
 }

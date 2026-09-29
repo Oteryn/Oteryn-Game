@@ -749,6 +749,18 @@ jobs:
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
 
+      - name: Restore Cargo cache saved by protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-1.94.0-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            rust-linux-1.94.0-
+
       - name: Build workspace
         run: cargo +1.94.0 build --locked --workspace --all-targets
 

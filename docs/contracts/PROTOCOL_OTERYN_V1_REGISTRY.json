@@ -60,6 +60,15 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/world_object_v1.proto#UseResultV1",
       "max_payload_bytes": 529,
       "max_result_payload_bytes": 4
+    },
+    {
+      "id": 3,
+      "name": "WORLD_ACTOR_SPELL_CAST_INTENT",
+      "owner_decision": "OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1 SPELL-D1, SPELL-D7 (#162 owner acceptance 5867161696; owner decision D89 5875958040)",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto#WorldActorSpellCastIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto#WorldActorSpellCastResultV1",
+      "max_payload_bytes": 32,
+      "max_result_payload_bytes": 4
     }
   ],
   "state_domains": [
@@ -104,6 +113,28 @@
           "name": "WORLD_OBJECT_OVERLAY_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/world_object_v1.proto#WorldObjectOverlaySnapshotV1",
           "max_payload_bytes": 523908
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "ACTOR_VITALS",
+      "owner_decision": "OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1 SPELL-D2, SPELL-D8 H-3 (#162 owner acceptance 5867161696; SPELL-D8 5884682203)",
+      "owner": "current ChannelRuntime",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "ACTOR_VITALS_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto#ActorVitalsV1",
+          "max_payload_bytes": 32
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "ACTOR_VITALS_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto#ActorVitalsV1",
+          "max_payload_bytes": 32
         }
       ]
     }

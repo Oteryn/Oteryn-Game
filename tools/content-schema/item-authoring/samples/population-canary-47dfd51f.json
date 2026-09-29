@@ -9,7 +9,7 @@
         "oteryn:item.registry.i00000033",
         "oteryn:item.registry.i00000034"
       ],
-      "items": 11697
+      "items": 11706
     },
     {
       "blocker": "converter_missing:proficiency.proficiency_id",
@@ -25,12 +25,12 @@
     {
       "blocker": "delivery_task_decision_not_admitted",
       "examples": [],
-      "items": 236
+      "items": 227
     },
     {
       "blocker": "identity_not_in_b1_catalog",
       "examples": [],
-      "items": 236
+      "items": 227
     },
     {
       "blocker": "converter_missing:augments",
@@ -3069,7 +3069,7 @@
       "items": 1
     }
   ],
-  "bundle_digest": "d7163922f82baea8db586f0036d13009347a2de31407191714f258d62eab5ca4",
+  "bundle_digest": "1a193b6eddaa8806066cd8d199806a9b1038c6f7443a5bc8024782e34d17f2cd",
   "by_profile": {
     "container": 280,
     "container_equipment": 8,
@@ -3079,10 +3079,10 @@
     "equipment_offhand": 439,
     "event_collectible": 198,
     "fluid": 91,
-    "food": 196,
+    "food": 197,
     "key": 13,
     "light_source": 178,
-    "material_valuable": 2966,
+    "material_valuable": 2974,
     "plant": 904,
     "progression_material": 10,
     "quest_item": 1149,
@@ -3090,7 +3090,7 @@
     "tool": 332,
     "transformation_item": 25,
     "trash": 217,
-    "unresolved": 25629,
+    "unresolved": 25620,
     "weapon_distance": 183,
     "weapon_magic": 86,
     "weapon_melee": 625
@@ -3098,7 +3098,7 @@
   "delivery_task": {
     "crystal_list": {
       "entries": 436,
-      "in_items_xml_not_converted": 1,
+      "in_items_xml_not_converted": 0,
       "not_in_items_xml": [
         49894,
         49908,
@@ -3136,19 +3136,19 @@
       "unique": 436
     },
     "decision": {
-      "eligible_false": 11495,
-      "eligible_true": 403,
+      "eligible_false": 11503,
+      "eligible_true": 404,
       "override": 0,
       "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
     },
     "observation": {
       "member": 9,
-      "not_member": 11889,
+      "not_member": 11898,
       "source": "canary_task_board_weekly_items"
     }
   },
   "family_profile_basis": {
-    "engine_attribute": 10357,
+    "engine_attribute": 10366,
     "engine_wrap_target": 85,
     "owner_name_rule": 92,
     "wiki_evidence_fallback": 1364
@@ -3262,17 +3262,17 @@
     "appearance.frame_group": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 32702
+      "items": 32711
     },
     "appearance.id": {
       "converter": "routed",
       "disposition": "provenance_only",
-      "items": 32702
+      "items": 32711
     },
     "appearance.name": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 7790
+      "items": 7799
     },
     "armor": {
       "converter": "implemented",
@@ -3282,7 +3282,7 @@
     "article": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 25382
+      "items": 25388
     },
     "attack": {
       "converter": "implemented",
@@ -3372,7 +3372,7 @@
     "cyclopediaitem.cyclopedia_type": {
       "converter": "routed",
       "disposition": "provenance_only",
-      "items": 5765
+      "items": 5774
     },
     "deathmagiclevelpoints": {
       "converter": "implemented",
@@ -3577,12 +3577,12 @@
     "flags.cumulative": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 2249
+      "items": 2258
     },
     "flags.cyclopediaitem": {
       "converter": "routed",
       "disposition": "provenance_only",
-      "items": 5765
+      "items": 5774
     },
     "flags.default_action": {
       "converter": "implemented",
@@ -3667,7 +3667,7 @@
     "flags.market": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 4614
+      "items": 4623
     },
     "flags.multiuse": {
       "converter": "implemented",
@@ -3742,7 +3742,7 @@
     "flags.take": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 6556
+      "items": 6565
     },
     "flags.top": {
       "converter": "implemented",
@@ -3787,7 +3787,7 @@
     "flags.usable": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 9014
+      "items": 9015
     },
     "flags.wearout": {
       "converter": "implemented",
@@ -3927,7 +3927,7 @@
     "loottype": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 60
+      "items": 63
     },
     "magiclevelpoints": {
       "converter": "implemented",
@@ -4002,7 +4002,7 @@
     "market.category": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 4614
+      "items": 4623
     },
     "market.minimum_level": {
       "converter": "implemented",
@@ -4017,12 +4017,12 @@
     "market.show_as_object_id": {
       "converter": "routed",
       "disposition": "provenance_only",
-      "items": 4614
+      "items": 4623
     },
     "market.trade_as_object_id": {
       "converter": "routed",
       "disposition": "provenance_only",
-      "items": 4614
+      "items": 4623
     },
     "maxhitchance": {
       "converter": "implemented",
@@ -4062,12 +4062,12 @@
     "name": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 37291
+      "items": 37300
     },
     "npcsaledata.buy_price": {
       "converter": "routed",
       "disposition": "reverse_relation",
-      "items": 2461
+      "items": 2470
     },
     "npcsaledata.currency_object_type_id": {
       "converter": "routed",
@@ -4082,17 +4082,17 @@
     "npcsaledata.location": {
       "converter": "routed",
       "disposition": "reverse_relation",
-      "items": 2461
+      "items": 2470
     },
     "npcsaledata.name": {
       "converter": "routed",
       "disposition": "reverse_relation",
-      "items": 2461
+      "items": 2470
     },
     "npcsaledata.sale_price": {
       "converter": "routed",
       "disposition": "reverse_relation",
-      "items": 2461
+      "items": 2470
     },
     "partnerdirection": {
       "converter": "routed",
@@ -4122,7 +4122,7 @@
     "plural": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 389
+      "items": 390
     },
     "premium": {
       "converter": "implemented",
@@ -4132,7 +4132,7 @@
     "primarytype": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 16670
+      "items": 16679
     },
     "proficiency": {
       "converter": "missing",
@@ -4407,7 +4407,7 @@
     "weight": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 6967
+      "items": 6976
     },
     "wrapableto": {
       "converter": "implemented",
@@ -4441,14 +4441,14 @@
     }
   },
   "identity_basis": {
-    "crystal_exact_binding": 37127,
+    "crystal_exact_binding": 37136,
     "tibiawiki_exact_binding": 164
   },
   "outcome": {
     "blocked": 877,
-    "fully_resolved": 11021,
+    "fully_resolved": 11030,
     "items": 37527,
-    "not_converted": 246,
+    "not_converted": 237,
     "routed_non_item": 25383
   },
   "routed_non_item": [

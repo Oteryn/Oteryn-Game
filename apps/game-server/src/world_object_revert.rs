@@ -7,7 +7,8 @@
 //! `TERMINAL`. A record is created only in the same staged commit as a non-timer-origin forward
 //! operation whose `prepare` returned `Publish`, and capacity for it is checked only then. The
 //! driver fires due records through `LocalObjectRuntime::apply_scope_operation` with the bound
-//! inverse; a timer-origin firing never schedules another record (§7 Rounds 7/8).
+//! inverse, on behalf of the forward's own event owner (owner decision D91); a timer-origin
+//! firing never schedules another record (§7 Rounds 7/8).
 //!
 //! Lane resolutions of §7's open decisions (recorded at those entries in the proposal):
 //! - 1 and 5: `TERMINAL` records are kept for the whole scope generation, which is the
@@ -21,7 +22,10 @@
 //!
 //! Scope-ephemeral (§7 C2): nothing here is persisted; a scope restart builds a new driver.
 
-use crate::content::{LogicalCell, LoweredActionId, PlacementKey, ProductionKey, TransitionKey};
+use crate::content::{
+    LocalObjectIntentFamily, LogicalCell, LoweredActionId, PlacementKey, ProductionKey,
+    TransitionBinding, TransitionEventOwner, TransitionKey,
+};
 use crate::foundation::{
     GenerationError, RuntimeExecutionOrdinal, RuntimeScopeRefV1, ScopeOwnershipGeneration,
     ScopeRuntimeFence, TerminalSemanticOutcome,
@@ -78,6 +82,55 @@ pub(crate) fn revert_child_occurrence(
     )
 }
 
+/// Owner decision D90 (re-arm): the one timed forward `action` may commit from `runtime`'s
+/// current state. From the natural state that is the authored forward A -> B; from a §9
+/// post-revert variant C it is the lowered re-arm forward C -> B; while no timed edge of
+/// `action` leaves the current state (the teleporter is open) it is `None`, and the owning
+/// event commits nothing. `transitions` is the bound Content's transition set; only edges this
+/// placement times for `action` (and so binds, `LocalObjectRuntime::bind`) are candidates.
+/// More than one candidate is an ambiguous authored binding and fails closed.
+pub(crate) fn select_timed_forward<'a>(
+    runtime: &LocalObjectRuntime,
+    action: &LoweredActionId,
+    transitions: impl IntoIterator<Item = &'a TransitionBinding>,
+) -> Result<Option<TransitionKey>, RevertError> {
+    let mut candidates = transitions.into_iter().filter(|transition| {
+        &transition.source_state == runtime.state_key()
+            && runtime.revert_after_ms(&transition.key, action).is_some()
+    });
+    let Some(first) = candidates.next() else {
+        return Ok(None);
+    };
+    if candidates.any(|other| other.key != first.key) {
+        return Err(RevertError::AmbiguousForward);
+    }
+    Ok(Some(first.key.clone()))
+}
+
+/// Owner decision Q2=b (#162 comment 5884513528, §10.4): the timed CREATE forward of `action`
+/// whose created state `runtime` is in now, so the pre-authored teleporter is open. `None` from any
+/// other state and for every non-CREATE forward, so a TRANSFORM teleporter (the duke, owner
+/// decision 3) keeps its kill-while-open no-op. More than one candidate fails closed.
+pub(crate) fn select_open_create<'a>(
+    runtime: &LocalObjectRuntime,
+    action: &LoweredActionId,
+    transitions: impl IntoIterator<Item = &'a TransitionBinding>,
+) -> Result<Option<TransitionKey>, RevertError> {
+    let mut candidates = transitions.into_iter().filter(|transition| {
+        &transition.target_state == runtime.state_key()
+            && LocalObjectIntentFamily::from_key(&transition.normalized_intent_family)
+                == Some(LocalObjectIntentFamily::Create)
+            && runtime.revert_after_ms(&transition.key, action).is_some()
+    });
+    let Some(first) = candidates.next() else {
+        return Ok(None);
+    };
+    if candidates.any(|other| other.key != first.key) {
+        return Err(RevertError::AmbiguousForward);
+    }
+    Ok(Some(first.key.clone()))
+}
+
 /// Counts rendered bytes and stops, without allocating, once `limit` is exceeded.
 struct BoundedRendering {
     limit: usize,
@@ -126,6 +179,9 @@ pub(crate) struct PendingRevert {
     inverse: TransitionKey,
     expected_state: ProductionKey,
     expected_revision: u64,
+    // Owner decision D91: the forward operation's own event owner. The timer-origin inverse
+    // executes on that same owner's behalf; `bind` requires the inverse to be bound to it.
+    owner: TransitionEventOwner,
 }
 
 impl PendingRevert {
@@ -207,6 +263,14 @@ pub(crate) enum RevertError {
     /// `WOBJ-RL-07`: the forward or revert occurrence is too large; nothing committed.
     OccurrenceTooLarge,
     UnknownOccurrence,
+    /// D90: more than one timed forward of one action leaves the current state.
+    AmbiguousForward,
+    /// Owner decision Q2=b: no single `PENDING` revert matches the open teleporter; nothing
+    /// changed.
+    NoOpenRevert,
+    /// Owner decision Q2=b: the re-armed transition is not a CREATE edge of this runtime (a
+    /// TRANSFORM teleporter keeps its no-op); nothing changed.
+    NotCreateTransition,
     InvalidLimits(&'static str),
     /// Ordinal space exhausted or another fatal step error: no work until a new generation.
     ScopeTerminal,
@@ -224,6 +288,9 @@ impl Display for RevertError {
             Self::OccurrenceTooDeep => formatter.write_str("revert occurrence exceeds WOBJ-RL-06"),
             Self::OccurrenceTooLarge => formatter.write_str("revert occurrence exceeds WOBJ-RL-07"),
             Self::UnknownOccurrence => formatter.write_str("unknown revert occurrence"),
+            Self::NoOpenRevert => formatter.write_str("no pending revert of the open object"),
+            Self::NotCreateTransition => formatter.write_str("re-armed transition is not a CREATE"),
+            Self::AmbiguousForward => formatter.write_str("ambiguous timed forward transition"),
             Self::InvalidLimits(reason) => write!(formatter, "invalid revert limits: {reason}"),
             Self::ScopeTerminal => formatter.write_str("revert driver is scope-terminal"),
             Self::Ordinal(error) => write!(formatter, "{error}"),
@@ -389,6 +456,10 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
         if self.scope_terminal {
             return Err(RevertError::ScopeTerminal);
         }
+        // D91: another owner's (or a player-use) edge is refused before any ordinal is minted.
+        runtime
+            .check_scope_owner(operation)
+            .map_err(RevertError::Runtime)?;
         let transition = operation.transition_key();
         let placement = runtime.placement_key().clone();
         let timed = match runtime.revert_after_ms(transition, action) {
@@ -414,6 +485,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
         let scheduling_ordinal = self.accept(generation)?;
         let incarnation = runtime.incarnation();
         let content_generation = runtime.content_generation().clone();
+        let owner = operation.owner().clone();
         let scope = self.scope;
         let (records, due, clock, capacity, capability) = (
             &mut self.records,
@@ -454,6 +526,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
                     inverse,
                     expected_state: publish.next_state.clone(),
                     expected_revision: publish.next_revision,
+                    owner,
                 };
                 due.insert(pending.due_key(&id));
                 records.insert(id.clone(), RevertLifecycle::Pending(pending));
@@ -466,6 +539,92 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
             Ok(Err(error)) => Err(error),
             Err(error) => Err(RevertError::Runtime(error)),
         }
+    }
+
+    /// Owner decision Q2=b (#162 comment 5884513528, §10.4): a kill while a pre-authored CREATE
+    /// teleporter is open re-arms its one `PENDING` revert to the full `revert_after_ms` of
+    /// `create`, counted from now. The object is not touched and no record is added, so
+    /// `WOBJ-RL-04` is unaffected. `create` is `select_open_create`'s edge; `owner` is the
+    /// executing event's own owner, checked against the edge as for `apply_forward` (D91). The
+    /// re-kill is one accepted scope input, so it mints one ordinal, which orders the re-armed
+    /// deadline. Returns the re-armed record. A runtime bound under another scope or scope
+    /// generation (`StaleRuntimeScope`/`StaleScopeOwnershipGeneration`), a `create` that is not a
+    /// CREATE edge of `runtime` (`NotCreateTransition`), or no matching `PENDING` record, fails
+    /// closed with nothing changed.
+    pub(crate) fn rearm_open_create(
+        &mut self,
+        runtime: &LocalObjectRuntime,
+        action: &LoweredActionId,
+        create: &TransitionKey,
+        owner: &TransitionEventOwner,
+    ) -> Result<ChildOccurrenceRef, RevertError> {
+        if self.scope_terminal {
+            return Err(RevertError::ScopeTerminal);
+        }
+        let generation = self.issuer.generation();
+        // The same scope and generation fence as `apply_scope_operation` (#1204 review): a runtime
+        // bound under another scope or scope generation never re-arms this driver's record.
+        runtime
+            .check_scope_fence(self.scope, generation)
+            .map_err(RevertError::Runtime)?;
+        // The CREATE family `select_open_create` filters for, enforced at this mutation boundary
+        // (#1204 review): an open timed TRANSFORM edge is refused before any ordinal or deadline.
+        if runtime.transition_intent_family(create) != Some(LocalObjectIntentFamily::Create) {
+            return Err(RevertError::NotCreateTransition);
+        }
+        let operation = ScopeLocalObjectOperation::new(
+            runtime.placement_key().clone(),
+            runtime.incarnation(),
+            runtime.content_generation().clone(),
+            LocalObjectOperation::new(create.clone()),
+            runtime.revision(),
+            owner.clone(),
+        );
+        runtime
+            .check_scope_owner(&operation)
+            .map_err(RevertError::Runtime)?;
+        let (Some(ms), Some(inverse)) = (
+            runtime.revert_after_ms(create, action),
+            runtime.revert_inverse(create),
+        ) else {
+            return Err(RevertError::Runtime(WorldRuntimeError::InvalidBinding(
+                "re-armed transition is not timed for this action at this placement",
+            )));
+        };
+        let mut open = self
+            .records
+            .iter()
+            .filter_map(|(id, lifecycle)| match lifecycle {
+                RevertLifecycle::Pending(pending)
+                    if pending.scope_generation == generation
+                        && &pending.placement == runtime.placement_key()
+                        && pending.incarnation == runtime.incarnation()
+                        && &pending.content_generation == runtime.content_generation()
+                        && &pending.inverse == inverse
+                        && &pending.owner == owner
+                        && &pending.expected_state == runtime.state_key()
+                        && pending.expected_revision == runtime.revision() =>
+                {
+                    Some((id.clone(), pending.clone()))
+                }
+                _ => None,
+            });
+        let (Some((id, pending)), None) = (open.next(), open.next()) else {
+            return Err(RevertError::NoOpenRevert);
+        };
+        let deadline = Deadline::after(self.clock.as_ref(), Duration::from_millis(ms))
+            .map_err(RevertError::Time)?;
+        let scheduling_ordinal = self.accept(generation)?;
+        self.due.remove(&pending.due_key(&id));
+        let rearmed = PendingRevert {
+            deadline,
+            scheduling_ordinal,
+            ..pending
+        };
+        self.due.insert(rearmed.due_key(&id));
+        self.records
+            .insert(id.clone(), RevertLifecycle::Pending(rearmed));
+        Ok(id)
     }
 
     /// One owner-turn wake: fires at most `due_batch` due records in stored order.
@@ -558,6 +717,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
             pending.content_generation.clone(),
             LocalObjectOperation::new(pending.inverse.clone()),
             pending.expected_revision,
+            pending.owner.clone(),
         );
         // Timer origin: never stages a new record, even for a timed inverse (§7 Rounds 7/8).
         let result = runtime.apply_scope_operation(
@@ -665,8 +825,8 @@ mod tests {
         OwnerCapabilityRequirement, PackageManifestBinding, PlacementRef, ProductionAtom,
         REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
         ReferenceDefinition, ReferenceDefinitionKind, ReferencePlayableContentSource,
-        Sha256HexDigest, SpatialAddress, TransitionBinding, TypedDefinitionRef,
-        link_reference_playable,
+        Sha256HexDigest, SpatialAddress, TransitionBinding, TransitionEventOwner,
+        TypedDefinitionRef, link_reference_playable,
     };
     use crate::foundation::{
         ChannelId, CharacterId, CharacterLease, CommandId, CommandIngress, CommandRef,
@@ -699,6 +859,7 @@ mod tests {
     const CRACK: &str = "oteryn:reference.transition.timed-wall-crack";
     const MEND: &str = "oteryn:reference.transition.timed-wall-mend";
     const WALL_ACTION: &str = "oteryn:encounter/timed-wall/boss-death/0";
+    const WALL_OWNER: &str = "oteryn:encounter/timed-wall";
     const WALL_A: &str = "oteryn:reference.placement.timed-wall-a";
     const WALL_B: &str = "oteryn:reference.placement.timed-wall-b";
 
@@ -797,6 +958,7 @@ mod tests {
             key: ProductionKey::new(key)?,
             collision,
             attribute_variant_of: None,
+            absent: false,
         })
     }
 
@@ -919,6 +1081,11 @@ mod tests {
         anchor_placement_key(DUKE_KEY, anchor)
     }
 
+    /// D90: the lowered re-arm forward (post-revert variant -> open), bound beside the forward.
+    fn duke_rearm() -> String {
+        format!("{DUKE_ACTION}/rearm")
+    }
+
     /// `the_duke_of_the_depths` lowered by task A's §9 lowering, linked, with its anchor and
     /// destination markers injected. Returns the content and the dedicated inverse.
     fn duke_content(
@@ -944,6 +1111,7 @@ mod tests {
         let mut placement = object_at(&content, &anchor, SEALED_ITEM, 100)?;
         placement.local_object_state_attributes = tables.state_attributes.clone();
         placement.local_object_revert_after_ms = tables.revert_after_ms.clone();
+        placement.local_object_event_transitions = tables.event_transitions.clone();
         let mut placements = vec![placement];
         for (x, marker) in (200..).zip(&lowered.destination_markers) {
             placements.push(placement_at(
@@ -959,7 +1127,9 @@ mod tests {
     }
 
     /// Synthetic walls: `sealed` (blocking) --CRACK--> `cracked` --MEND--> `sealed`, with the
-    /// given `(transition, action, ms)` revert durations on every placement.
+    /// given `(transition, action, ms)` revert durations on every placement. D91: when any
+    /// duration is given, CRACK and MEND are both event-owned by `WALL_OWNER`; untimed walls keep
+    /// both `PlayerUse`.
     fn wall_content(
         timed: &[(&str, &str, u64)],
         placements: &[(&str, i32)],
@@ -988,6 +1158,14 @@ mod tests {
                     *ms,
                 );
             }
+            if !timed.is_empty() {
+                for transition in [CRACK, MEND] {
+                    placement.local_object_event_transitions.insert(
+                        TransitionKey::new(transition)?,
+                        TransitionEventOwner::new(WALL_OWNER)?,
+                    );
+                }
+            }
             injected.push(placement);
         }
         content.placements = injected;
@@ -1000,9 +1178,28 @@ mod tests {
         transitions: &[&str],
         incarnation: u64,
     ) -> Result<LocalObjectRuntime, WorldRuntimeError> {
-        let fence = ScopeContentGenerationFence::for_test(
+        bind_in(
+            content,
+            placement,
+            transitions,
+            incarnation,
             scope()?,
             generation(1)?,
+        )
+    }
+
+    /// `bind_at` under an explicit scope and scope generation.
+    fn bind_in(
+        content: &CanonicalReferencePlayableContent,
+        placement: &PlacementKey,
+        transitions: &[&str],
+        incarnation: u64,
+        scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+    ) -> Result<LocalObjectRuntime, WorldRuntimeError> {
+        let fence = ScopeContentGenerationFence::for_test(
+            scope,
+            scope_generation,
             ReferenceContentGeneration::from_content(content)?,
         );
         let keys = transitions
@@ -1013,8 +1210,8 @@ mod tests {
         LocalObjectRuntime::bind(
             content,
             &fence,
-            scope()?,
-            generation(1)?,
+            scope,
+            scope_generation,
             placement,
             incarnation,
             &keys,
@@ -1045,10 +1242,45 @@ mod tests {
         ))
     }
 
+    /// A registered-limits driver owned by `scope` at `scope_generation`.
+    fn driver_in(
+        clock: &ManualClock,
+        scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+    ) -> ScopeRevertDriver<TestIssuer> {
+        ScopeRevertDriver::new(
+            scope,
+            TestIssuer::new(scope_generation),
+            Arc::new(clock.clone()),
+            RevertDriverLimits::registered(),
+        )
+    }
+
+    /// A scope operation executed by the fixture event that owns `transition`: the timed
+    /// wall's owner for CRACK/MEND, the duke encounter for every other edge.
     fn operation(
         runtime: &LocalObjectRuntime,
         transition: &str,
         expected_revision: u64,
+    ) -> TestResult<ScopeLocalObjectOperation> {
+        let owner = if transition == CRACK || transition == MEND {
+            WALL_OWNER
+        } else {
+            DUKE_KEY
+        };
+        operation_owned(
+            runtime,
+            transition,
+            expected_revision,
+            &TransitionEventOwner::new(owner)?,
+        )
+    }
+
+    fn operation_owned(
+        runtime: &LocalObjectRuntime,
+        transition: &str,
+        expected_revision: u64,
+        owner: &TransitionEventOwner,
     ) -> TestResult<ScopeLocalObjectOperation> {
         Ok(ScopeLocalObjectOperation::new(
             runtime.placement_key().clone(),
@@ -1056,6 +1288,7 @@ mod tests {
             runtime.content_generation().clone(),
             LocalObjectOperation::new(TransitionKey::new(transition)?),
             expected_revision,
+            owner.clone(),
         ))
     }
 
@@ -1161,7 +1394,12 @@ mod tests {
         let anchor = duke_anchor()?;
         let mut runtimes = BTreeMap::from([(
             anchor.clone(),
-            bind_at(&content, &anchor, &[OPEN_TELEPORTER, revert.as_str()], 1)?,
+            bind_at(
+                &content,
+                &anchor,
+                &[OPEN_TELEPORTER, &duke_rearm(), revert.as_str()],
+                1,
+            )?,
         )]);
         let clock = ManualClock::new(Moment::ZERO);
         let mut driver = driver(&clock, RevertDriverLimits::registered())?;
@@ -1230,6 +1468,175 @@ mod tests {
         );
         assert_eq!(driver.issuer().minted, minted);
         assert_eq!(state_of(&runtimes, anchor.as_str())?, at(&post_revert, 2));
+        Ok(())
+    }
+
+    /// One duke death as the encounter owner delivers it: select the timed forward from the
+    /// teleporter's current state (D90) and, if there is one, commit it through the driver.
+    fn duke_kill(
+        driver: &mut ScopeRevertDriver<TestIssuer>,
+        runtimes: &mut BTreeMap<PlacementKey, LocalObjectRuntime>,
+        content: &CanonicalReferencePlayableContent,
+        death: &str,
+    ) -> TestResult<Option<ForwardOutcome>> {
+        let anchor = duke_anchor()?;
+        let runtime = runtimes.get(&anchor).ok_or(fixture("runtime"))?;
+        let action = LoweredActionId::new(DUKE_ACTION)?;
+        let Some(transition) = select_timed_forward(runtime, &action, &content.transitions)? else {
+            return Ok(None);
+        };
+        Ok(Some(forward(
+            driver,
+            runtimes,
+            anchor.as_str(),
+            death,
+            DUKE_ACTION,
+            transition.as_str(),
+        )?))
+    }
+
+    #[test]
+    fn duke_teleporter_re_arms_on_every_kill_and_a_kill_while_open_is_a_no_op() -> TestResult {
+        // Owner decision D90: after the timed revert lands on the post-revert variant, the next
+        // kill reopens the teleporter through the lowered re-arm forward.
+        let (content, revert) = duke_content(DUKE)?;
+        let anchor = duke_anchor()?;
+        let rearm = duke_rearm();
+        let mut runtimes = BTreeMap::from([(
+            anchor.clone(),
+            bind_at(
+                &content,
+                &anchor,
+                &[OPEN_TELEPORTER, &rearm, revert.as_str()],
+                1,
+            )?,
+        )]);
+        let clock = ManualClock::new(Moment::ZERO);
+        let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+        let post_revert = format!("{DUKE_ACTION}/post-revert");
+        let reward = duke_destination("reward_destination")?;
+        let warzone = duke_destination("warzone_exit")?;
+        let destination = |runtimes: &BTreeMap<PlacementKey, LocalObjectRuntime>| {
+            runtimes
+                .get(&anchor)
+                .and_then(destination_of)
+                .map(str::to_owned)
+        };
+
+        // Kill 1 from the natural state: A -> B, reward destination, one PENDING record.
+        let kill_1 = duke_kill(&mut driver, &mut runtimes, &content, DUKE_DEATH)?
+            .ok_or(fixture("kill 1 selected no forward"))?;
+        assert_eq!(kill_1.outcome.disposition(), "COMMITTED");
+        let first = scheduled(kill_1)?;
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 1));
+        assert_eq!(destination(&runtimes), Some(reward.as_str().to_owned()));
+
+        // A kill while open selects no forward: no ordinal, no record, no mutation.
+        let minted = driver.issuer().minted;
+        assert!(
+            duke_kill(
+                &mut driver,
+                &mut runtimes,
+                &content,
+                "canary:occurrence/the_duke_of_the_depths/death/open-1"
+            )?
+            .is_none()
+        );
+        assert_eq!(driver.issuer().minted, minted);
+        assert_eq!(driver.record_count(), 1);
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 1));
+
+        // 1,200,000 ms later the revert B -> C lands on the warzone exit.
+        clock.advance(millis(1_200_000))?;
+        let report = driver.wake(&mut runtimes, &BTreeSet::new())?;
+        let [(fired, first_outcome)] = report.fired.as_slice() else {
+            return Err("expected the first revert to fire".into());
+        };
+        assert_eq!(fired, &first);
+        assert!(first_outcome.committed());
+        let first_outcome = first_outcome.clone();
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(&post_revert, 2));
+        assert_eq!(destination(&runtimes), Some(warzone.as_str().to_owned()));
+
+        // Kill 2 from the post-revert variant: the re-arm forward C -> B reopens the teleporter
+        // to the reward destination and schedules a second, distinct revert of the same inverse.
+        let runtime = runtimes.get(&anchor).ok_or(fixture("runtime"))?;
+        let selected = select_timed_forward(
+            runtime,
+            &LoweredActionId::new(DUKE_ACTION)?,
+            &content.transitions,
+        )?;
+        assert_eq!(
+            selected.as_ref().map(TransitionKey::as_str),
+            Some(rearm.as_str())
+        );
+        let kill_2 = duke_kill(
+            &mut driver,
+            &mut runtimes,
+            &content,
+            "canary:occurrence/the_duke_of_the_depths/death/2",
+        )?
+        .ok_or(fixture("kill 2 selected no forward"))?;
+        assert_eq!(kill_2.outcome.disposition(), "COMMITTED");
+        let second = scheduled(kill_2)?;
+        assert_ne!(second, first);
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 3));
+        assert_eq!(destination(&runtimes), Some(reward.as_str().to_owned()));
+        let Some(RevertLifecycle::Pending(pending)) = driver.lifecycle(&second) else {
+            return Err("second revert record is not PENDING".into());
+        };
+        assert_eq!(pending.inverse(), &revert);
+        assert_eq!(pending.expected_state().as_str(), OPEN_ITEM);
+        assert_eq!(pending.expected_revision(), 3);
+
+        // A kill while open again is a no-op, and the first revert still stands.
+        let minted = driver.issuer().minted;
+        assert!(
+            duke_kill(
+                &mut driver,
+                &mut runtimes,
+                &content,
+                "canary:occurrence/the_duke_of_the_depths/death/open-2"
+            )?
+            .is_none()
+        );
+        assert_eq!(driver.issuer().minted, minted);
+        assert_eq!(driver.record_count(), 2);
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 3));
+        assert_eq!(
+            driver.lifecycle(&first),
+            Some(&RevertLifecycle::Terminal(first_outcome.clone()))
+        );
+
+        // 1,200,000 ms after kill 2 the teleporter reverts to the warzone exit again.
+        clock.advance(millis(1_199_999))?;
+        assert!(
+            driver
+                .wake(&mut runtimes, &BTreeSet::new())?
+                .fired
+                .is_empty()
+        );
+        clock.advance(millis(1))?;
+        let report = driver.wake(&mut runtimes, &BTreeSet::new())?;
+        let [(fired, second_outcome)] = report.fired.as_slice() else {
+            return Err("expected the second revert to fire".into());
+        };
+        assert_eq!(fired, &second);
+        assert!(second_outcome.committed());
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(&post_revert, 4));
+        assert_eq!(destination(&runtimes), Some(warzone.as_str().to_owned()));
+
+        // Two distinct TERMINAL lifecycle records, one per kill.
+        assert_eq!(driver.record_count(), 2);
+        assert_eq!(
+            driver.lifecycle(&first),
+            Some(&RevertLifecycle::Terminal(first_outcome))
+        );
+        assert_eq!(
+            driver.lifecycle(&second),
+            Some(&RevertLifecycle::Terminal(second_outcome.clone()))
+        );
+        assert_eq!(driver.next_deadline(), None);
         Ok(())
     }
 
@@ -1499,9 +1906,9 @@ mod tests {
     }
 
     #[test]
-    fn use_and_session_commands_cannot_commit_a_timed_transition() -> TestResult {
-        // #1144 P1 4125535249: USE and `apply` never schedule, so a transition carrying
-        // `revert_after_ms` at the placement is refused there, exactly like an unbound one.
+    fn use_and_session_commands_cannot_commit_an_event_owned_transition() -> TestResult {
+        // #1144 P1 4125535249, subsumed by owner decision D91: a timed transition is event-owned,
+        // and USE and `apply` refuse every event-owned edge, exactly like an unbound one.
         let timed = wall_content(&[(CRACK, WALL_ACTION, 1_000)], &[(WALL_A, 100)], "lock:r1")?;
         let mut runtimes = walls(&timed, &[WALL_A])?;
         let wall = PlacementKey::new(WALL_A)?;
@@ -1520,7 +1927,8 @@ mod tests {
         assert_eq!(ingress.outstanding(), 0);
         assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_SEALED, 0));
 
-        // The untimed inverse stays USE-selectable and session-invocable (carry-over (b)).
+        // D91 replaces carry-over (b): the untimed but event-owned inverse is neither
+        // USE-selectable nor session-invocable once the forward has committed.
         let clock = ManualClock::new(Moment::ZERO);
         let mut driver = driver(&clock, RevertDriverLimits::registered())?;
         scheduled(forward(
@@ -1532,13 +1940,28 @@ mod tests {
             CRACK,
         )?)?;
         let runtime = runtimes.get_mut(&wall).ok_or(fixture("runtime"))?;
-        assert_eq!(apply_session(runtime, &mut ingress, 1, MEND)??, "COMMITTED");
-        assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_SEALED, 2));
+        assert_eq!(
+            runtime.attempt_use(1, &BTreeSet::new())?,
+            LocalObjectUseOutcome::NothingToUse
+        );
+        assert!(matches!(
+            apply_session(runtime, &mut ingress, 1, MEND)?,
+            Err(WorldRuntimeError::InvalidBinding(
+                "command names a transition this local-object runtime does not bind"
+            ))
+        ));
+        assert_eq!(ingress.outstanding(), 0);
+        assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_CRACKED, 1));
 
         // The duke teleporter cannot be opened by USE from its natural state.
         let (content, revert) = duke_content(DUKE)?;
         let anchor = duke_anchor()?;
-        let mut duke = bind_at(&content, &anchor, &[OPEN_TELEPORTER, revert.as_str()], 1)?;
+        let mut duke = bind_at(
+            &content,
+            &anchor,
+            &[OPEN_TELEPORTER, &duke_rearm(), revert.as_str()],
+            1,
+        )?;
         assert_eq!(
             duke.attempt_use(0, &BTreeSet::new())?,
             LocalObjectUseOutcome::NothingToUse
@@ -1710,15 +2133,23 @@ mod tests {
     }
 
     #[test]
-    fn a_user_driven_revert_resolves_the_timer_terminal_without_a_double_revert() -> TestResult {
-        // #1133 carry-over (b): USE selects the bound inverse from the forward target state.
-        // §7's one path for an intervening change applies: the timer reaches `prepare` and
-        // terminalizes STALE_STATE; it never reverts a second time.
+    fn use_on_the_open_duke_teleporter_cannot_select_its_revert_and_an_early_event_revert_is_stale()
+    -> TestResult {
+        // Owner decision D91 gap regression: the open teleporter's only edge from its current
+        // state is the event-owned `/revert` inverse, so USE selects nothing and a session
+        // command naming it is refused; nothing mutates. §7's one path for an intervening
+        // change stays defensive: an early event-owned scope revert makes the timer reach
+        // `prepare` and terminalize STALE_STATE; it never reverts a second time.
         let (content, revert) = duke_content(DUKE)?;
         let anchor = duke_anchor()?;
         let mut runtimes = BTreeMap::from([(
             anchor.clone(),
-            bind_at(&content, &anchor, &[OPEN_TELEPORTER, revert.as_str()], 1)?,
+            bind_at(
+                &content,
+                &anchor,
+                &[OPEN_TELEPORTER, &duke_rearm(), revert.as_str()],
+                1,
+            )?,
         )]);
         let clock = ManualClock::new(Moment::ZERO);
         let mut driver = driver(&clock, RevertDriverLimits::registered())?;
@@ -1734,11 +2165,21 @@ mod tests {
         let post_revert = format!("{DUKE_ACTION}/post-revert");
         assert_eq!(
             runtime.attempt_use(1, &BTreeSet::new())?,
-            LocalObjectUseOutcome::Committed {
-                state: ProductionKey::new(&post_revert)?,
-                revision: 2,
-            }
+            LocalObjectUseOutcome::NothingToUse
         );
+        let mut ingress = CommandIngress::new();
+        assert!(matches!(
+            apply_session(runtime, &mut ingress, 1, revert.as_str())?,
+            Err(WorldRuntimeError::InvalidBinding(
+                "command names a transition this local-object runtime does not bind"
+            ))
+        ));
+        assert_eq!(ingress.outstanding(), 0);
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 1));
+
+        let runtime = runtimes.get_mut(&anchor).ok_or(fixture("runtime"))?;
+        assert_eq!(apply_plain(runtime, revert.as_str())?, "COMMITTED");
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(&post_revert, 2));
         clock.advance(millis(1_200_000))?;
         let report = driver.wake(&mut runtimes, &BTreeSet::new())?;
         let [(fired, outcome)] = report.fired.as_slice() else {
@@ -1752,6 +2193,95 @@ mod tests {
             destination_of(runtime),
             Some(duke_destination("warzone_exit")?.as_str())
         );
+        Ok(())
+    }
+
+    #[test]
+    fn scope_operations_commit_only_their_own_owners_event_edges() -> TestResult {
+        // Owner decision D91 (#1187 P1): the executing event names its owner; another owner's
+        // forward or inverse is refused before any ordinal, record or mutation.
+        let (content, revert) = duke_content(DUKE)?;
+        let anchor = duke_anchor()?;
+        let mut runtimes = BTreeMap::from([(
+            anchor.clone(),
+            bind_at(
+                &content,
+                &anchor,
+                &[OPEN_TELEPORTER, &duke_rearm(), revert.as_str()],
+                1,
+            )?,
+        )]);
+        let clock = ManualClock::new(Moment::ZERO);
+        let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+        let foreign = TransitionEventOwner::new("oteryn:encounter/another-boss")?;
+
+        // A foreign-owner forward.
+        let runtime = runtimes.get_mut(&anchor).ok_or(fixture("runtime"))?;
+        let foreign_forward = operation_owned(runtime, OPEN_TELEPORTER, 0, &foreign)?;
+        let refused = driver.apply_forward(
+            runtime,
+            &forward_child(DUKE_DEATH, None)?,
+            &revisions()?,
+            &LoweredActionId::new(DUKE_ACTION)?,
+            &foreign_forward,
+            &BTreeSet::new(),
+        );
+        assert!(matches!(
+            refused,
+            Err(RevertError::Runtime(WorldRuntimeError::EventOwnerMismatch))
+        ));
+        assert!(matches!(
+            runtime.apply_scope_operation(
+                scope()?,
+                generation(1)?,
+                &foreign_forward,
+                &BTreeSet::new(),
+                None,
+                |_| Ok::<(), Infallible>(()),
+            ),
+            Err(WorldRuntimeError::EventOwnerMismatch)
+        ));
+        assert_eq!(driver.issuer().minted, 0);
+        assert_eq!(driver.record_count(), 0);
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(SEALED_ITEM, 0));
+
+        // The correct owner commits the forward and schedules its revert.
+        let id = scheduled(forward(
+            &mut driver,
+            &mut runtimes,
+            anchor.as_str(),
+            DUKE_DEATH,
+            DUKE_ACTION,
+            OPEN_TELEPORTER,
+        )?)?;
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 1));
+
+        // A foreign-owner inverse.
+        let runtime = runtimes.get_mut(&anchor).ok_or(fixture("runtime"))?;
+        let foreign_inverse = operation_owned(runtime, revert.as_str(), 1, &foreign)?;
+        assert!(matches!(
+            runtime.apply_scope_operation(
+                scope()?,
+                generation(1)?,
+                &foreign_inverse,
+                &BTreeSet::new(),
+                None,
+                |_| Ok::<(), Infallible>(()),
+            ),
+            Err(WorldRuntimeError::EventOwnerMismatch)
+        ));
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(OPEN_ITEM, 1));
+
+        // The driver fires the inverse on the forward's own owner, and it commits.
+        clock.advance(millis(1_200_000))?;
+        let report = driver.wake(&mut runtimes, &BTreeSet::new())?;
+        let [(fired, outcome)] = report.fired.as_slice() else {
+            return Err("expected one fired revert".into());
+        };
+        assert_eq!(fired, &id);
+        assert_eq!(disposition(outcome), Some("COMMITTED"));
+        let post_revert = format!("{DUKE_ACTION}/post-revert");
+        assert_eq!(state_of(&runtimes, anchor.as_str())?, at(&post_revert, 2));
         Ok(())
     }
 
@@ -2067,7 +2597,8 @@ mod tests {
         // #1133 carry-over (a).
         let (content, revert) = duke_content(DUKE)?;
         let anchor = duke_anchor()?;
-        let transitions = [OPEN_TELEPORTER, revert.as_str()];
+        let rearm = duke_rearm();
+        let transitions = [OPEN_TELEPORTER, &rearm, revert.as_str()];
         let reward = duke_destination("reward_destination")?;
 
         let mut duplicate = content.clone();
@@ -2123,17 +2654,599 @@ mod tests {
         actions.push(first);
         let (content, revert) = duke_content(&serde_json::to_string(&encounter)?)?;
         let second_revert = format!("{}/1/revert", DUKE_ACTION.trim_end_matches("/0"));
+        let second_rearm = format!("{}/1/rearm", DUKE_ACTION.trim_end_matches("/0"));
         assert!(matches!(
             bind_at(
                 &content,
                 &duke_anchor()?,
-                &[OPEN_TELEPORTER, revert.as_str(), &second_revert],
+                &[
+                    OPEN_TELEPORTER,
+                    &duke_rearm(),
+                    &second_rearm,
+                    revert.as_str(),
+                    &second_revert,
+                ],
                 1
             ),
             Err(WorldRuntimeError::InvalidBinding(
                 "revert_after_ms transition has an ambiguous bound inverse at this placement"
             ))
         ));
+        Ok(())
+    }
+
+    // §10.4 (OD9): the pre-authored `CREATE` teleporters.
+    const OD9_SAMPLES: [(&str, &str, &str); 2] = [
+        (
+            "canary:encounter/death_priest_shargon",
+            "shargon_exit",
+            include_str!(
+                "../../../tools/content-schema/encounter-authoring/samples/death_priest_shargon/encounter.json"
+            ),
+        ),
+        (
+            "canary:encounter/the_ravager",
+            "ravager_exit",
+            include_str!(
+                "../../../tools/content-schema/encounter-authoring/samples/the_ravager/encounter.json"
+            ),
+        ),
+    ];
+
+    /// One OD9 sample bound at its anchor from the lowered tables, as `od9_bound` returns it.
+    struct Od9 {
+        content: CanonicalReferencePlayableContent,
+        runtimes: BTreeMap<PlacementKey, LocalObjectRuntime>,
+        anchor: PlacementKey,
+        action: String,
+        absent: String,
+        create: String,
+        remove: String,
+    }
+
+    /// One OD9 sample lowered, linked and bound at its anchor from the lowered absent start, with
+    /// its destination marker injected.
+    fn od9_bound(key: &str, encounter: &str) -> TestResult<Od9> {
+        let mut source = source_with(
+            vec![state(SEALED_ITEM, LocalObjectCollisionPresence::Absent)?],
+            vec![],
+            "lock:od9-r1",
+        )?;
+        let anchors = BTreeMap::from([("exit_teleporter".to_owned(), object_definition()?)]);
+        let lowered = lower_map_item_transforms(encounter, &source, &anchors)?;
+        lowered.apply_to_source(&mut source)?;
+        let mut content = link_reference_playable(source)?;
+        let anchor = anchor_placement_key(key, "exit_teleporter")?;
+        let tables = lowered
+            .placements
+            .get(&anchor)
+            .ok_or(fixture("lowered anchor tables"))?;
+        let mut placement = placement_at(&content, anchor.clone(), object_definition()?, 100)?;
+        placement.local_object_initial_state = tables.initial_state.clone();
+        placement.local_object_state_attributes = tables.state_attributes.clone();
+        placement.local_object_revert_after_ms = tables.revert_after_ms.clone();
+        placement.local_object_event_transitions = tables.event_transitions.clone();
+        let mut placements = vec![placement];
+        for (x, marker) in (200..).zip(&lowered.destination_markers) {
+            placements.push(placement_at(
+                &content,
+                marker.clone(),
+                marker_definition()?,
+                x,
+            )?);
+        }
+        content.placements = placements;
+        let rule = key.rsplit('/').next().ok_or(fixture("encounter key"))?;
+        let action = format!("{key}/{rule}_death/0");
+        let (create, remove) = (format!("{action}/create"), format!("{action}/remove"));
+        let runtime = bind_at(&content, &anchor, &[&create, &remove], 1)?;
+        Ok(Od9 {
+            content,
+            runtimes: BTreeMap::from([(anchor.clone(), runtime)]),
+            anchor,
+            absent: format!("{action}/absent"),
+            action,
+            create,
+            remove,
+        })
+    }
+
+    /// What one boss death did to the teleporter.
+    #[derive(Debug)]
+    enum Od9Kill {
+        /// The create committed (absent -> present) and scheduled its revert.
+        Opened(ForwardOutcome),
+        /// Owner decision Q2=b: the teleporter was open; its revert was re-armed.
+        Rearmed(ChildOccurrenceRef),
+    }
+
+    /// One boss death as the encounter owner delivers it: from absent, select and commit the
+    /// create through the driver; while open, re-arm the pending revert (owner decision Q2=b).
+    fn od9_kill(
+        driver: &mut ScopeRevertDriver<TestIssuer>,
+        od9: &mut Od9,
+        owner: &str,
+        death: &str,
+    ) -> TestResult<Option<Od9Kill>> {
+        let runtime = od9
+            .runtimes
+            .get_mut(&od9.anchor)
+            .ok_or(fixture("runtime"))?;
+        let action = LoweredActionId::new(&od9.action)?;
+        let owner = TransitionEventOwner::new(owner)?;
+        if let Some(transition) = select_timed_forward(runtime, &action, &od9.content.transitions)?
+        {
+            let operation =
+                operation_owned(runtime, transition.as_str(), runtime.revision(), &owner)?;
+            return Ok(Some(Od9Kill::Opened(driver.apply_forward(
+                runtime,
+                &forward_child(death, None)?,
+                &revisions()?,
+                &action,
+                &operation,
+                &BTreeSet::new(),
+            )?)));
+        }
+        let Some(create) = select_open_create(runtime, &action, &od9.content.transitions)? else {
+            return Ok(None);
+        };
+        Ok(Some(Od9Kill::Rearmed(
+            driver.rearm_open_create(runtime, &action, &create, &owner)?,
+        )))
+    }
+
+    fn opened(kill: Option<Od9Kill>) -> TestResult<ChildOccurrenceRef> {
+        match kill {
+            Some(Od9Kill::Opened(forward)) => {
+                assert_eq!(forward.outcome.disposition(), "COMMITTED");
+                Ok(scheduled(forward)?)
+            }
+            other => Err(format!("expected the create to commit, got {other:?}").into()),
+        }
+    }
+
+    /// `(is_absent, destination, blocks nothing)` of the bound teleporter.
+    fn od9_view(od9: &Od9) -> Option<(bool, Option<String>, bool)> {
+        od9.runtimes.get(&od9.anchor).map(|runtime| {
+            (
+                runtime.is_absent(),
+                destination_of(runtime).map(str::to_owned),
+                runtime.blocking_cells().is_empty(),
+            )
+        })
+    }
+
+    #[test]
+    fn od9_create_teleporter_opens_a_re_kill_re_arms_its_revert_and_it_re_opens_after_closing()
+    -> TestResult {
+        for (key, exit, encounter) in OD9_SAMPLES {
+            let mut od9 = od9_bound(key, encounter)?;
+            let anchor = od9.anchor.clone();
+            let absent = od9.absent.clone();
+            let exit = Some(anchor_placement_key(key, exit)?.as_str().to_owned());
+            let clock = ManualClock::new(Moment::ZERO);
+            let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+            let state = |od9: &Od9| state_of(&od9.runtimes, anchor.as_str());
+
+            // Before the first kill: bound, absent, non-colliding, no destination.
+            assert_eq!(state(&od9)?, at(&absent, 0));
+            assert_eq!(od9_view(&od9), Some((true, None, true)));
+
+            // Kill 1 at t=0: create commits absent -> present with the destination, one record.
+            let first = opened(od9_kill(
+                &mut driver,
+                &mut od9,
+                key,
+                &format!("{key}/death/1"),
+            )?)?;
+            assert_eq!(state(&od9)?, at(SEALED_ITEM, 1));
+            assert_eq!(od9_view(&od9), Some((false, exit.clone(), true)));
+            let Some(RevertLifecycle::Pending(pending)) = driver.lifecycle(&first) else {
+                return Err("revert record is not PENDING".into());
+            };
+            assert_eq!(pending.inverse().as_str(), od9.remove);
+            assert_eq!(pending.expected_state().as_str(), SEALED_ITEM);
+            assert_eq!(pending.expected_revision(), 1);
+
+            // Re-kill at t=4 min while open (owner decision Q2=b): the same record is re-armed
+            // to the full 5 min from now. One ordinal for the accepted input; no second record,
+            // no second object and no mutation of the teleporter.
+            clock.advance(millis(240_000))?;
+            let minted = driver.issuer().minted;
+            let deadline = driver.next_deadline();
+            let Some(Od9Kill::Rearmed(rearmed)) =
+                od9_kill(&mut driver, &mut od9, key, &format!("{key}/death/open"))?
+            else {
+                return Err("a kill while open did not re-arm the revert".into());
+            };
+            assert_eq!(rearmed, first);
+            assert_eq!(driver.issuer().minted, minted + 1);
+            assert_eq!(driver.record_count(), 1);
+            assert_ne!(driver.next_deadline(), deadline);
+            assert_eq!(state(&od9)?, at(SEALED_ITEM, 1));
+            let Some(RevertLifecycle::Pending(pending)) = driver.lifecycle(&first) else {
+                return Err("re-armed record is not PENDING".into());
+            };
+            assert_eq!(pending.expected_revision(), 1);
+
+            // At t=5 min it stays open; it closes at t=4+5 min, not at 5 min.
+            clock.advance(millis(60_000))?;
+            assert!(
+                driver
+                    .wake(&mut od9.runtimes, &BTreeSet::new())?
+                    .fired
+                    .is_empty()
+            );
+            assert_eq!(state(&od9)?, at(SEALED_ITEM, 1));
+            clock.advance(millis(239_999))?;
+            assert!(
+                driver
+                    .wake(&mut od9.runtimes, &BTreeSet::new())?
+                    .fired
+                    .is_empty()
+            );
+            clock.advance(millis(1))?;
+            let report = driver.wake(&mut od9.runtimes, &BTreeSet::new())?;
+            let [(fired, first_outcome)] = report.fired.as_slice() else {
+                return Err("expected the re-armed revert to fire at 4+5 min".into());
+            };
+            assert_eq!(fired, &first);
+            assert!(first_outcome.committed());
+            let first_outcome = first_outcome.clone();
+            assert_eq!(state(&od9)?, at(&absent, 2));
+            assert_eq!(od9_view(&od9), Some((true, None, true)));
+
+            // A kill after it closed re-opens it normally: the create again from the natural
+            // absent state (D90: no re-arm edge), with its own new record.
+            let runtime = od9.runtimes.get(&anchor).ok_or(fixture("runtime"))?;
+            let selected = select_timed_forward(
+                runtime,
+                &LoweredActionId::new(&od9.action)?,
+                &od9.content.transitions,
+            )?;
+            assert_eq!(
+                selected.as_ref().map(TransitionKey::as_str),
+                Some(od9.create.as_str())
+            );
+            let second = opened(od9_kill(
+                &mut driver,
+                &mut od9,
+                key,
+                &format!("{key}/death/2"),
+            )?)?;
+            assert_ne!(second, first);
+            assert_eq!(state(&od9)?, at(SEALED_ITEM, 3));
+            assert_eq!(od9_view(&od9), Some((false, exit.clone(), true)));
+            clock.advance(millis(299_999))?;
+            assert!(
+                driver
+                    .wake(&mut od9.runtimes, &BTreeSet::new())?
+                    .fired
+                    .is_empty()
+            );
+            clock.advance(millis(1))?;
+            let report = driver.wake(&mut od9.runtimes, &BTreeSet::new())?;
+            let [(fired, second_outcome)] = report.fired.as_slice() else {
+                return Err("expected the second revert to fire".into());
+            };
+            assert_eq!(fired, &second);
+            assert!(second_outcome.committed());
+            let second_outcome = second_outcome.clone();
+            assert_eq!(state(&od9)?, at(&absent, 4));
+
+            // Two distinct TERMINAL records, one per opening kill.
+            assert_eq!(driver.record_count(), 2);
+            assert_eq!(
+                driver.lifecycle(&first),
+                Some(&RevertLifecycle::Terminal(first_outcome))
+            );
+            assert_eq!(
+                driver.lifecycle(&second),
+                Some(&RevertLifecycle::Terminal(second_outcome))
+            );
+            assert_eq!(driver.next_deadline(), None);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn od9_create_edges_refuse_use_session_and_foreign_owners() -> TestResult {
+        let not_bound = "command names a transition this local-object runtime does not bind";
+        for (key, _, encounter) in OD9_SAMPLES {
+            let mut od9 = od9_bound(key, encounter)?;
+            let anchor = od9.anchor.clone();
+            let absent = od9.absent.clone();
+            let clock = ManualClock::new(Moment::ZERO);
+            let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+            let foreign = TransitionEventOwner::new(DUKE_KEY)?;
+            let mut ingress = CommandIngress::new();
+
+            // Absent: USE selects nothing, and a session command naming create is refused.
+            let runtime = od9.runtimes.get_mut(&anchor).ok_or(fixture("runtime"))?;
+            assert_eq!(
+                runtime.attempt_use(0, &BTreeSet::new())?,
+                LocalObjectUseOutcome::NothingToUse
+            );
+            assert!(matches!(
+                apply_session(runtime, &mut ingress, 1, &od9.create)?,
+                Err(WorldRuntimeError::InvalidBinding(reason)) if reason == not_bound
+            ));
+
+            // A foreign owner's create is refused before any ordinal, record or mutation.
+            let foreign_create = operation_owned(runtime, &od9.create, 0, &foreign)?;
+            assert!(matches!(
+                driver.apply_forward(
+                    runtime,
+                    &forward_child(&format!("{key}/death/1"), None)?,
+                    &revisions()?,
+                    &LoweredActionId::new(&od9.action)?,
+                    &foreign_create,
+                    &BTreeSet::new(),
+                ),
+                Err(RevertError::Runtime(WorldRuntimeError::EventOwnerMismatch))
+            ));
+            assert_eq!(driver.issuer().minted, 0);
+            assert_eq!(driver.record_count(), 0);
+            assert_eq!(state_of(&od9.runtimes, anchor.as_str())?, at(&absent, 0));
+
+            // Open: USE cannot select the remove edge, a session command naming it is refused,
+            // and a foreign owner's remove is refused; nothing mutates.
+            let id = opened(od9_kill(
+                &mut driver,
+                &mut od9,
+                key,
+                &format!("{key}/death/1"),
+            )?)?;
+            let runtime = od9.runtimes.get_mut(&anchor).ok_or(fixture("runtime"))?;
+            // Q2=b re-arm: another owner's re-kill is refused (D91) before any ordinal, and the
+            // deadline is unchanged.
+            let (minted, deadline) = (driver.issuer().minted, driver.next_deadline());
+            let create = TransitionKey::new(&od9.create)?;
+            let action = LoweredActionId::new(&od9.action)?;
+            assert!(matches!(
+                driver.rearm_open_create(runtime, &action, &create, &foreign),
+                Err(RevertError::Runtime(WorldRuntimeError::EventOwnerMismatch))
+            ));
+            assert_eq!(driver.issuer().minted, minted);
+            assert_eq!(driver.next_deadline(), deadline);
+            assert_eq!(
+                runtime.attempt_use(1, &BTreeSet::new())?,
+                LocalObjectUseOutcome::NothingToUse
+            );
+            assert!(matches!(
+                apply_session(runtime, &mut ingress, 2, &od9.remove)?,
+                Err(WorldRuntimeError::InvalidBinding(reason)) if reason == not_bound
+            ));
+            assert_eq!(ingress.outstanding(), 0);
+            let foreign_remove = operation_owned(runtime, &od9.remove, 1, &foreign)?;
+            assert!(matches!(
+                runtime.apply_scope_operation(
+                    scope()?,
+                    generation(1)?,
+                    &foreign_remove,
+                    &BTreeSet::new(),
+                    None,
+                    |_| Ok::<(), Infallible>(()),
+                ),
+                Err(WorldRuntimeError::EventOwnerMismatch)
+            ));
+            assert_eq!(
+                state_of(&od9.runtimes, anchor.as_str())?,
+                at(SEALED_ITEM, 1)
+            );
+
+            // The driver still reverts on the create's own owner.
+            clock.advance(millis(300_000))?;
+            let report = driver.wake(&mut od9.runtimes, &BTreeSet::new())?;
+            let [(fired, outcome)] = report.fired.as_slice() else {
+                return Err("expected one fired revert".into());
+            };
+            assert_eq!(fired, &id);
+            assert!(outcome.committed());
+            assert_eq!(state_of(&od9.runtimes, anchor.as_str())?, at(&absent, 2));
+        }
+        Ok(())
+    }
+
+    /// `od9_bound`, re-bound under `scope` at `scope_generation` and opened by its own driver.
+    fn od9_open_in(
+        clock: &ManualClock,
+        key: &str,
+        encounter: &str,
+        scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+    ) -> TestResult<(ScopeRevertDriver<TestIssuer>, Od9, ChildOccurrenceRef)> {
+        let mut od9 = od9_bound(key, encounter)?;
+        let runtime = bind_in(
+            &od9.content,
+            &od9.anchor,
+            &[&od9.create, &od9.remove],
+            1,
+            scope,
+            scope_generation,
+        )?;
+        od9.runtimes.insert(od9.anchor.clone(), runtime);
+        let mut driver = driver_in(clock, scope, scope_generation);
+        let id = opened(od9_kill(
+            &mut driver,
+            &mut od9,
+            key,
+            &format!("{key}/death/1"),
+        )?)?;
+        Ok((driver, od9, id))
+    }
+
+    /// #1204 review (P1): `foreign` is an open teleporter at the same placement, incarnation,
+    /// content generation, state and revision as the one `driver` scheduled `id` for, but bound
+    /// under another scope or scope generation. Its re-arm is refused with `expected`, and
+    /// nothing changes on either side.
+    fn assert_foreign_re_arm_refused(
+        driver: &mut ScopeRevertDriver<TestIssuer>,
+        (key, od9, id): (&str, &Od9, &ChildOccurrenceRef),
+        foreign: &Od9,
+        expected: &WorldRuntimeError,
+    ) -> TestResult {
+        let runtime = foreign
+            .runtimes
+            .get(&foreign.anchor)
+            .ok_or(fixture("foreign runtime"))?;
+        let (minted, deadline, records) = (
+            driver.issuer().minted,
+            driver.next_deadline(),
+            driver.record_count(),
+        );
+        let lifecycle = driver.lifecycle(id).cloned();
+        match driver.rearm_open_create(
+            runtime,
+            &LoweredActionId::new(&od9.action)?,
+            &TransitionKey::new(&od9.create)?,
+            &TransitionEventOwner::new(key)?,
+        ) {
+            Err(RevertError::Runtime(ref error))
+                if std::mem::discriminant(error) == std::mem::discriminant(expected) => {}
+            other => return Err(format!("expected {expected:?}, got {other:?}").into()),
+        }
+        assert_eq!(driver.issuer().minted, minted);
+        assert_eq!(driver.next_deadline(), deadline);
+        assert_eq!(driver.record_count(), records);
+        assert_eq!(driver.lifecycle(id).cloned(), lifecycle);
+        assert_eq!(
+            state_of(&od9.runtimes, od9.anchor.as_str())?,
+            at(SEALED_ITEM, 1)
+        );
+        assert_eq!(
+            state_of(&foreign.runtimes, foreign.anchor.as_str())?,
+            at(SEALED_ITEM, 1)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_re_arm_with_a_runtime_from_another_scope_or_a_stale_generation_is_refused() -> TestResult {
+        let other_scope =
+            RuntimeScopeRefV1::channel(world(1)?, ChannelId::decode(&uuid_v7(4)).map_err(fixture)?);
+        for (key, _, encounter) in OD9_SAMPLES {
+            let clock = ManualClock::new(Moment::ZERO);
+
+            // A runtime from a different scope: another channel of the same world.
+            let (mut driver, od9, id) =
+                od9_open_in(&clock, key, encounter, scope()?, generation(1)?)?;
+            let (_, foreign, _) = od9_open_in(&clock, key, encounter, other_scope, generation(1)?)?;
+            assert_foreign_re_arm_refused(
+                &mut driver,
+                (key, &od9, &id),
+                &foreign,
+                &WorldRuntimeError::StaleRuntimeScope,
+            )?;
+
+            // A runtime from a stale scope generation: bound at generation 1 while this driver
+            // owns the scope at generation 2.
+            let (mut driver, od9, id) =
+                od9_open_in(&clock, key, encounter, scope()?, generation(2)?)?;
+            let (_, stale, _) = od9_open_in(&clock, key, encounter, scope()?, generation(1)?)?;
+            assert_foreign_re_arm_refused(
+                &mut driver,
+                (key, &od9, &id),
+                &stale,
+                &WorldRuntimeError::StaleScopeOwnershipGeneration,
+            )?;
+
+            // The driver's own runtime still re-arms its record.
+            clock.advance(millis(60_000))?;
+            let runtime = od9.runtimes.get(&od9.anchor).ok_or(fixture("runtime"))?;
+            assert_eq!(
+                driver.rearm_open_create(
+                    runtime,
+                    &LoweredActionId::new(&od9.action)?,
+                    &TransitionKey::new(&od9.create)?,
+                    &TransitionEventOwner::new(key)?,
+                )?,
+                id
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn a_re_kill_without_one_pending_revert_fails_closed_and_the_duke_keeps_its_no_op() -> TestResult
+    {
+        // Q2=b: an open teleporter whose revert is no longer PENDING re-arms nothing.
+        let (key, _, encounter) = OD9_SAMPLES[0];
+        let mut od9 = od9_bound(key, encounter)?;
+        let clock = ManualClock::new(Moment::ZERO);
+        let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+        let id = opened(od9_kill(
+            &mut driver,
+            &mut od9,
+            key,
+            &format!("{key}/death/1"),
+        )?)?;
+        driver
+            .force_in_flight_for_test(&id)
+            .ok_or(fixture("force IN_FLIGHT"))?;
+        let minted = driver.issuer().minted;
+        assert!(matches!(
+            od9_kill(&mut driver, &mut od9, key, &format!("{key}/death/open")),
+            Err(error) if matches!(
+                error.downcast_ref::<RevertError>(),
+                Some(RevertError::NoOpenRevert)
+            )
+        ));
+        assert_eq!(driver.issuer().minted, minted);
+        assert_eq!(driver.record_count(), 1);
+
+        // Owner decision 3 still covers the duke's TRANSFORM teleporter: no CREATE edge opens it.
+        let (content, revert) = duke_content(DUKE)?;
+        let anchor = duke_anchor()?;
+        let mut runtimes = BTreeMap::from([(
+            anchor.clone(),
+            bind_at(
+                &content,
+                &anchor,
+                &[OPEN_TELEPORTER, &duke_rearm(), revert.as_str()],
+                1,
+            )?,
+        )]);
+        let mut duke_driver = self::driver(&clock, RevertDriverLimits::registered())?;
+        scheduled(forward(
+            &mut duke_driver,
+            &mut runtimes,
+            anchor.as_str(),
+            DUKE_DEATH,
+            DUKE_ACTION,
+            OPEN_TELEPORTER,
+        )?)?;
+        let runtime = runtimes.get(&anchor).ok_or(fixture("runtime"))?;
+        let action = LoweredActionId::new(DUKE_ACTION)?;
+        assert_eq!(
+            select_timed_forward(runtime, &action, &content.transitions)?,
+            None
+        );
+        assert_eq!(
+            select_open_create(runtime, &action, &content.transitions)?,
+            None
+        );
+
+        // #1204 review (P1): the re-arm boundary refuses the open timed TRANSFORM edge itself, so
+        // no caller can bypass the selector: nothing is minted and no deadline moves.
+        let (minted, deadline, records) = (
+            duke_driver.issuer().minted,
+            duke_driver.next_deadline(),
+            duke_driver.record_count(),
+        );
+        clock.advance(millis(60_000))?;
+        assert!(matches!(
+            duke_driver.rearm_open_create(
+                runtime,
+                &action,
+                &TransitionKey::new(OPEN_TELEPORTER)?,
+                &TransitionEventOwner::new(DUKE_DEATH)?,
+            ),
+            Err(RevertError::NotCreateTransition)
+        ));
+        assert_eq!(duke_driver.issuer().minted, minted);
+        assert_eq!(duke_driver.next_deadline(), deadline);
+        assert_eq!(duke_driver.record_count(), records);
         Ok(())
     }
 }

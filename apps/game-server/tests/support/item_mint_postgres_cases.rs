@@ -4,8 +4,8 @@
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::item_mint::{
-    CommittedItemMint, GroundPlacement, ItemMintCandidate, ItemMintCause, ItemMintError,
-    ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
+    CORPSE_MATERIALIZATION_PURPOSE_KEY, CommittedItemMint, GroundPlacement, ItemMintCandidate,
+    ItemMintCause, ItemMintError, ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
 };
 use crate::durability::item_mint_audit as audit;
 use crate::durability::runtime_scope_assignment::{
@@ -2013,6 +2013,839 @@ fn d1_two_creature_deaths_have_distinct_keys_and_items() -> TestResult {
         harness.assert_minted(2).await?;
         d1_assert_ground_item(&harness, &authority, &first_result, CHANNEL).await?;
         d1_assert_ground_item(&harness, &authority, &second_result, D1_SECOND_CHANNEL).await?;
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+// ---------------------------------------------------------------------------
+// D3-1: DUR-03 §39.4 "Corpse container amendment (D3)". The corpse's own
+// MINT (`commit_corpse_mint`): its two additive receipt columns, the
+// deferred `materialized_at` trigger and its narrow immutability exception,
+// and the per-scope `oteryn:corpse-cap:` advisory-locked, commit-time
+// COMBAT01-CORPSES-PER-SCOPE = 64 recount. The loot-into-corpse-container
+// admission gate and its GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX = 16
+// ceiling (migration 0013) are proven directly against the schema: no Rust
+// freeze/commit caller exists yet for that shape (DUR-03 §39.4 itself defers
+// the `OneItemMintV1.destination` proto widening to child D3-6, and the
+// composing caller is D3-2's `combat/death_reward.rs`).
+// ---------------------------------------------------------------------------
+
+const CORPSE_ACTOR_GENERATION: u64 = 1;
+
+/// Poll every future to completion together (single-threaded interleaving,
+/// same posture as `join_two`), for N concurrent corpse-MINT commits racing
+/// the same per-scope advisory lock.
+async fn join_all<F: Future>(tasks: Vec<F>) -> Vec<F::Output> {
+    let mut futures: Vec<_> = tasks.into_iter().map(Box::pin).collect();
+    let mut outputs: Vec<Option<F::Output>> = futures.iter().map(|_| None).collect();
+    std::future::poll_fn(move |context| {
+        let mut all_ready = true;
+        for (index, future) in futures.iter_mut().enumerate() {
+            if outputs[index].is_none() {
+                match future.as_mut().poll(context) {
+                    Poll::Ready(value) => outputs[index] = Some(value),
+                    Poll::Pending => all_ready = false,
+                }
+            }
+        }
+        if all_ready {
+            Poll::Ready(
+                outputs
+                    .iter_mut()
+                    .map(|value| value.take().expect("every future polled ready"))
+                    .collect(),
+            )
+        } else {
+            Poll::Pending
+        }
+    })
+    .await
+}
+
+/// Canonical hyphenated UUID text of `value`, for raw SQL literals.
+fn uuid_literal(value: [u8; 16]) -> String {
+    let hex: String = value.iter().map(|byte| format!("{byte:02x}")).collect();
+    format!(
+        "{}-{}-{}-{}-{}",
+        &hex[0..8],
+        &hex[8..12],
+        &hex[12..16],
+        &hex[16..20],
+        &hex[20..32]
+    )
+}
+
+fn corpse_request(actor: u32, top_damage_seed: u8) -> TestResult<(ItemMintRequest, [u8; 16])> {
+    Ok((
+        ItemMintRequest {
+            cause: ItemMintCause::for_test(
+                WorldId::decode(&id(WORLD)).map_err(debug)?,
+                ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+                ScopeOwnershipGeneration::new(CORPSE_ACTOR_GENERATION).map_err(debug)?,
+                actor,
+                1,
+                definition("LootTable", "fixture:loot.alpha", "loot-r1"),
+                CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+                0,
+            ),
+            item: definition("ItemType", "fixture:corpse.rat", "corpse-r1"),
+            quantity: 1,
+            ground: GroundPlacement {
+                spatial_position: vec![9, 9, 0],
+                corpse_ref: id(3).to_vec(),
+                map_revision: "map-1".into(),
+                content_revision: "content-1".into(),
+                native_room_placement_context: id(6).to_vec(),
+            },
+            content_revision: "content-1".into(),
+            ruleset_revision: "ruleset-1".into(),
+            sim_revision: "sim-1".into(),
+        },
+        id(top_damage_seed),
+    ))
+}
+
+async fn mint_corpse(
+    harness: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    actor: u32,
+) -> TestResult<CommittedItemMint> {
+    let (request, top_damage) = corpse_request(actor, 150)?;
+    let mut candidate = harness
+        .root
+        .freeze_item_mint(authority, &harness.node, request)
+        .await
+        .map_err(debug)?;
+    let outcome = harness
+        .root
+        .commit_corpse_mint(authority, &harness.node, &mut candidate, top_damage)
+        .await
+        .map_err(debug)?;
+    committed(outcome)
+}
+
+async fn corpse_receipt_row(
+    harness: &Harness,
+    item_instance_id: [u8; 16],
+) -> TestResult<sqlx::postgres::PgRow> {
+    Ok(sqlx::query(
+        "SELECT corpse_top_damage_character_id::text, materialized_at, loot_purpose_key \
+           FROM game_item_mint_receipts WHERE item_instance_id = encode($1,'hex')::uuid",
+    )
+    .bind(item_instance_id.as_slice())
+    .fetch_one(&harness.pool)
+    .await?)
+}
+
+async fn live_corpse_count(harness: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_ground_locations g \
+           JOIN game_item_mint_receipts r ON r.item_instance_id = g.item_instance_id \
+           JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
+          WHERE r.loot_purpose_key = $1 AND i.lifecycle = 1",
+    )
+    .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+    .fetch_one(&harness.pool)
+    .await?)
+}
+
+#[test]
+fn corpse_mint_writes_top_damage_and_materialized_at_only_via_trigger() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "corpsemint").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        let (request, top_damage) = corpse_request(1, 150)?;
+        let mut candidate = harness
+            .root
+            .freeze_item_mint(&authority, &harness.node, request)
+            .await
+            .map_err(debug)?;
+        let result = committed(
+            harness
+                .root
+                .commit_corpse_mint(&authority, &harness.node, &mut candidate, top_damage)
+                .await
+                .map_err(debug)?,
+        )?;
+        assert_candidate_result(&candidate, &result);
+        harness.assert_minted(1).await?;
+
+        let row = corpse_receipt_row(&harness, result.item_instance_id).await?;
+        assert_eq!(
+            row.try_get::<String, _>("loot_purpose_key")?,
+            CORPSE_MATERIALIZATION_PURPOSE_KEY
+        );
+        assert_eq!(
+            row.try_get::<String, _>("corpse_top_damage_character_id")?,
+            uuid_literal(top_damage)
+        );
+        let materialized_at: i64 = row.try_get("materialized_at")?;
+        assert!(
+            materialized_at > 0,
+            "materialized_at must be set by the trigger"
+        );
+        // The Rust candidate never carries materialized_at at all (it is not
+        // a field of ItemMintCandidate/ItemMintRequest); the only way it
+        // could have become non-NULL is the deferred
+        // game_item_mint_receipt_materialize_corpse trigger.
+
+        // The one-way NULL -> value transition already happened; a further
+        // change (even to the same column, even by the privileged test role)
+        // is refused: materialized_at is set exactly once, only by the
+        // trigger, never again.
+        let second_write = sqlx::query(
+            "UPDATE game_item_mint_receipts SET materialized_at = materialized_at + 1 \
+              WHERE item_instance_id = encode($1,'hex')::uuid",
+        )
+        .bind(result.item_instance_id.as_slice())
+        .execute(&harness.pool)
+        .await;
+        assert!(
+            second_write.is_err(),
+            "materialized_at must be immutable once set"
+        );
+        let unchanged = corpse_receipt_row(&harness, result.item_instance_id).await?;
+        assert_eq!(
+            unchanged.try_get::<i64, _>("materialized_at")?,
+            materialized_at
+        );
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn commit_corpse_mint_rejects_a_non_corpse_cause() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "corpsereject").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        let mut candidate = harness
+            .root
+            .freeze_item_mint(&authority, &harness.node, request(1, 7, 1)?)
+            .await
+            .map_err(debug)?;
+        let outcome = harness
+            .root
+            .commit_corpse_mint(&authority, &harness.node, &mut candidate, id(150))
+            .await;
+        assert!(matches!(outcome, Err(ItemMintError::InvalidInput)));
+        harness.assert_minted(0).await?;
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// D3 §4.2's required concurrency test: N concurrent corpse-MINT commits
+/// against a scope already holding 63 live corpses produce exactly one
+/// success and N-1 `CapacityExceeded` refusals, never more than 64 live
+/// corpses and never a lost update.
+#[test]
+fn concurrent_corpse_mints_at_capacity_produce_exactly_one_success() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "corpsecap").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        // Seed the scope to exactly 63 live corpses.
+        for actor in 1..=63_u32 {
+            mint_corpse(&harness, &authority, actor).await?;
+        }
+        assert_eq!(live_corpse_count(&harness).await?, 63);
+
+        // N = 3 concurrent corpse-MINT commits, each on its own connection
+        // (its own DurabilityRoot), racing for the last of 64 slots.
+        const N: u32 = 3;
+        let mut roots = Vec::new();
+        for _ in 0..N {
+            let root = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+            assert!(root.maintain_ready_once().await?);
+            roots.push(root);
+        }
+        let mut authorities = Vec::new();
+        for root in &roots {
+            authorities.push(root.open_character_authority(&seal).await.map_err(debug)?);
+        }
+        let mut candidates = Vec::new();
+        for (index, root) in roots.iter().enumerate() {
+            let (request, top_damage) = corpse_request(64 + index as u32, 151)?;
+            let candidate = root
+                .freeze_item_mint(&authorities[index], &harness.node, request)
+                .await
+                .map_err(debug)?;
+            candidates.push((candidate, top_damage));
+        }
+
+        let mut tasks = Vec::new();
+        for ((root, authority), (candidate, top_damage)) in roots
+            .iter()
+            .zip(authorities.iter())
+            .zip(candidates.iter_mut())
+        {
+            tasks.push(root.commit_corpse_mint(authority, &harness.node, candidate, *top_damage));
+        }
+        let outcomes = join_all(tasks).await;
+
+        let successes = outcomes
+            .iter()
+            .filter(|outcome| matches!(outcome, Ok(ItemMintOutcome::Committed(_))))
+            .count();
+        let capacity_refusals = outcomes
+            .iter()
+            .filter(|outcome| matches!(outcome, Err(ItemMintError::CapacityExceeded)))
+            .count();
+        assert_eq!(successes, 1, "outcomes: {outcomes:?}");
+        assert_eq!(
+            capacity_refusals,
+            (N - 1) as usize,
+            "outcomes: {outcomes:?}"
+        );
+        assert_eq!(live_corpse_count(&harness).await?, 64);
+
+        drop(authorities);
+        drop(authority);
+        drop(seal);
+        for root in roots {
+            drop(root);
+        }
+        harness.cleanup().await
+    })
+}
+
+/// Five raw-SQL statements forging one loot entry's whole logical MINT
+/// (reservation, receipt, audit event, item and its corpse container entry),
+/// mirroring `insert_mint_with_corpse_attribution`'s container branch
+/// exactly, for a death that already committed `corpse` as its own
+/// CORPSE_MATERIALIZATION MINT. Test-only: D3-1 ships the admission gate and
+/// this is the only way to exercise it before a real Rust caller exists
+/// (D3-2/D3-6).
+fn forge_corpse_loot_entry_statements(
+    world: [u8; 16],
+    channel: [u8; 16],
+    actor: u32,
+    corpse: [u8; 16],
+    ordinal: u64,
+    seed: u8,
+) -> Vec<String> {
+    let world_text = uuid_literal(world);
+    let channel_text = uuid_literal(channel);
+    let corpse_text = uuid_literal(corpse);
+    let item = uuid_literal(id(seed));
+    let tx = uuid_literal(id(seed.wrapping_add(1)));
+    let ev = uuid_literal(id(seed.wrapping_add(2)));
+    let node = uuid_literal(id(seed.wrapping_add(3)));
+    vec![
+        format!(
+            "INSERT INTO game_item_mint_reservations \
+               (death_world_id, death_channel_id, death_scope_ownership_generation, \
+                death_actor_local_id, death_actor_local_generation, loot_table_family, \
+                loot_table_production_key, loot_table_revision_ref, loot_purpose_key, \
+                draw_ordinal, intent_binding, transaction_id, event_id, item_instance_id, \
+                occurred_at, envelope, fence_scope_ownership_generation, fence_holder_node_id, \
+                fence_holder_registration_revision, work_units_used, reserved_at) \
+             VALUES \
+               ('{world_text}', '{channel_text}', {CORPSE_ACTOR_GENERATION}, {actor}, 1, \
+                'LootTable', 'fixture:loot.alpha', 'loot-r1', 'fixture:purpose.drop', {ordinal}, \
+                decode(repeat('cd',33),'hex'), '{tx}', '{ev}', '{item}', 1000, \
+                decode(repeat('ab',16),'hex'), {CORPSE_ACTOR_GENERATION}, '{node}', 0, 0, 900)"
+        ),
+        format!(
+            "INSERT INTO game_item_instances \
+               (item_instance_id, world_id, definition_family, definition_production_key, \
+                definition_revision_ref, quantity, lifecycle, minted_transaction_id) \
+             VALUES ('{item}', '{world_text}', 'ItemType', 'fixture:corpse-loot', 'rev-1', 1, 1, \
+                     '{tx}')"
+        ),
+        format!(
+            "INSERT INTO game_item_mint_receipts \
+               (death_world_id, death_channel_id, death_scope_ownership_generation, \
+                death_actor_local_id, death_actor_local_generation, loot_table_family, \
+                loot_table_production_key, loot_table_revision_ref, loot_purpose_key, \
+                draw_ordinal, intent_binding, transaction_id, event_id, item_instance_id, \
+                occurred_at, envelope_sha256, committed_at, destination_parent_item_instance_id, \
+                destination_ordinal) \
+             VALUES \
+               ('{world_text}', '{channel_text}', {CORPSE_ACTOR_GENERATION}, {actor}, 1, \
+                'LootTable', 'fixture:loot.alpha', 'loot-r1', 'fixture:purpose.drop', {ordinal}, \
+                decode(repeat('cd',33),'hex'), '{tx}', '{ev}', '{item}', 1000, \
+                sha256(decode(repeat('ab',16),'hex')), 1000, '{corpse_text}', {ordinal})"
+        ),
+        format!(
+            "INSERT INTO game_item_audit_outbox \
+               (event_id, transaction_id, transaction_ordinal, transaction_count, \
+                event_type_id, schema_revision, retention_profile_id, item_instance_id, \
+                occurred_at, expires_at, envelope, envelope_sha256, publication_state) \
+             VALUES \
+               ('{ev}', '{tx}', 1, 1, 2, 1, 'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', '{item}', \
+                1000, 7776001000, decode(repeat('ab',16),'hex'), \
+                sha256(decode(repeat('ab',16),'hex')), 1)"
+        ),
+        format!(
+            "INSERT INTO game_item_corpse_container_entries \
+               (item_instance_id, world_id, parent_item_instance_id, placement_ordinal, \
+                placed_transaction_id) \
+             VALUES ('{item}', '{world_text}', '{corpse_text}', {ordinal}, '{tx}')"
+        ),
+    ]
+}
+
+async fn run_forged_entry(harness: &Harness, statements: Vec<String>) -> TestResult {
+    let mut tx = harness.pool.begin().await?;
+    for statement in &statements {
+        sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+/// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` = 16 (D131, decision §4.2): the
+/// 16th loot entry is admitted, the 17th is rejected by the database, and the
+/// parent-live-receipt check (the corpse must carry a live
+/// CORPSE_MATERIALIZATION receipt for the same death) is proven throughout.
+#[test]
+fn corpse_container_entry_enforces_the_capacity_ceiling() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "corpseentries").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        let corpse = mint_corpse(&harness, &authority, 1).await?;
+
+        for ordinal in 1..=16_u64 {
+            let seed = 20 + (ordinal as u8) * 4;
+            let statements = forge_corpse_loot_entry_statements(
+                id(WORLD),
+                id(CHANNEL),
+                1,
+                corpse.item_instance_id,
+                ordinal,
+                seed,
+            );
+            run_forged_entry(&harness, statements).await?;
+        }
+        assert_eq!(
+            harness.count("game_item_corpse_container_entries").await?,
+            16
+        );
+
+        let seed17 = 20 + 17 * 4;
+        let statements17 = forge_corpse_loot_entry_statements(
+            id(WORLD),
+            id(CHANNEL),
+            1,
+            corpse.item_instance_id,
+            17,
+            seed17,
+        );
+        let rejected = run_forged_entry(&harness, statements17).await;
+        assert!(
+            rejected.is_err(),
+            "the 17th corpse container entry must be rejected"
+        );
+        assert_eq!(
+            harness.count("game_item_corpse_container_entries").await?,
+            16
+        );
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// The container-entry admission gate refuses a loot entry whose parent has
+/// no live CORPSE_MATERIALIZATION receipt for the same death (§39.4's
+/// parent-live-receipt check), even though every other shape of the forged
+/// row is otherwise well-formed.
+#[test]
+fn corpse_container_entry_requires_a_live_parent_receipt_for_the_same_death() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "corpseparent").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        // An ordinary (non-corpse) Ground item stands in for a "parent" that
+        // never materialized a corpse at all.
+        let mut plain = harness
+            .root
+            .freeze_item_mint(&authority, &harness.node, request(1, 9, 1)?)
+            .await
+            .map_err(debug)?;
+        let plain_result = committed(
+            harness
+                .root
+                .commit_item_mint(&authority, &harness.node, &mut plain)
+                .await
+                .map_err(debug)?,
+        )?;
+
+        let statements = forge_corpse_loot_entry_statements(
+            id(WORLD),
+            id(CHANNEL),
+            9,
+            plain_result.item_instance_id,
+            1,
+            60,
+        );
+        let rejected = run_forged_entry(&harness, statements).await;
+        assert!(
+            rejected.is_err(),
+            "a loot entry must not parent an item with no live corpse receipt"
+        );
+        assert_eq!(
+            harness.count("game_item_corpse_container_entries").await?,
+            0
+        );
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// A raw forged INSERT of a Ground row for an item, mirroring the shape
+/// `insert_mint_with_corpse_attribution`'s Ground branch produces (0010).
+fn forge_ground_location_statement(world: [u8; 16], channel: [u8; 16], item: [u8; 16]) -> String {
+    format!(
+        "INSERT INTO game_item_ground_locations \
+           (item_instance_id, world_id, channel_id, runtime_scope_ownership_generation, \
+            spatial_position, corpse_ref, map_revision, content_revision, \
+            native_room_placement_context) \
+         VALUES ('{}', '{}', '{}', {CORPSE_ACTOR_GENERATION}, decode('0909','hex'), \
+                 decode(repeat('03',16),'hex'), 'map-1', 'content-1', decode(repeat('06',16),'hex'))",
+        uuid_literal(item),
+        uuid_literal(world),
+        uuid_literal(channel)
+    )
+}
+
+/// The single-location invariant (a fresh ItemInstance is never both on
+/// Ground and a corpse container entry, DUR-03 §39.4), one insertion order:
+/// a corpse container entry row is inserted before a forged Ground row for
+/// the very same item, in one transaction. `game_item_corpse_container_entry
+/// _proven` and the extended `game_item_ground_insertion_guard` are both
+/// deferred constraint triggers -- each sees the whole transaction's writes
+/// as of commit, regardless of statement order -- so either one's new
+/// cross-check independently rejects the whole transaction at commit,
+/// including the container entry the same statement batch admitted moments
+/// earlier.
+#[test]
+fn forged_ground_location_for_a_corpse_container_entry_item_is_rejected_at_commit() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "corpsedual1").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        let corpse = mint_corpse(&harness, &authority, 1).await?;
+        let seed = 84u8;
+        let item = id(seed);
+        let mut statements = forge_corpse_loot_entry_statements(
+            id(WORLD),
+            id(CHANNEL),
+            1,
+            corpse.item_instance_id,
+            1,
+            seed,
+        );
+        statements.push(forge_ground_location_statement(
+            id(WORLD),
+            id(CHANNEL),
+            item,
+        ));
+        let rejected = run_forged_entry(&harness, statements).await;
+        assert!(
+            rejected.is_err(),
+            "an item already holding a corpse container entry must not also take a Ground location"
+        );
+        assert_eq!(
+            harness.count("game_item_corpse_container_entries").await?,
+            0
+        );
+        assert_eq!(
+            harness.count("game_item_ground_locations").await?,
+            1,
+            "only the corpse's own Ground row from mint_corpse"
+        );
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// The reverse insertion order: a forged Ground row for the item is
+/// inserted first, then its corpse container entry row, in one transaction.
+/// As in the sibling test above, both extended checks are deferred and see
+/// the whole transaction's writes as of commit regardless of order, so the
+/// transaction is rejected there just the same.
+#[test]
+fn forged_corpse_container_entry_for_a_ground_item_is_rejected_at_commit() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "corpsedual2").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        let corpse = mint_corpse(&harness, &authority, 1).await?;
+        let seed = 88u8;
+        let item = id(seed);
+        let mut statements = forge_corpse_loot_entry_statements(
+            id(WORLD),
+            id(CHANNEL),
+            1,
+            corpse.item_instance_id,
+            1,
+            seed,
+        );
+        // Splice the Ground row in right after its item/receipt rows (all
+        // three deferred triggers here only ever evaluate at commit, so
+        // statement order within the transaction does not itself matter;
+        // this ordering states the scenario as "Ground lands first").
+        let ground_statement = forge_ground_location_statement(id(WORLD), id(CHANNEL), item);
+        statements.insert(3, ground_statement);
+        let rejected = run_forged_entry(&harness, statements).await;
+        assert!(
+            rejected.is_err(),
+            "an item already on Ground must not also take a corpse container entry"
+        );
+        assert_eq!(
+            harness.count("game_item_corpse_container_entries").await?,
+            0
+        );
+        assert_eq!(
+            harness.count("game_item_ground_locations").await?,
+            1,
+            "only the corpse's own Ground row from mint_corpse"
+        );
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// D132/§4.3: the committed top-damage `CharacterId` is bound to this
+/// corpse's frozen intent even though it is only ever supplied at commit. A
+/// replay of the same frozen candidate carrying a different declared winner
+/// (e.g. a reconnect whose recomputation disagreed with the first attempt)
+/// must never silently return the first winner's outcome as its own.
+#[test]
+fn commit_corpse_mint_rejects_a_replay_with_a_different_top_damage_winner() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "corpsereplay").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        let (request, top_damage) = corpse_request(1, 150)?;
+        let mut candidate = harness
+            .root
+            .freeze_item_mint(&authority, &harness.node, request)
+            .await
+            .map_err(debug)?;
+        let first = committed(
+            harness
+                .root
+                .commit_corpse_mint(&authority, &harness.node, &mut candidate, top_damage)
+                .await
+                .map_err(debug)?,
+        )?;
+
+        let other_winner = id(151);
+        let replay = harness
+            .root
+            .commit_corpse_mint(&authority, &harness.node, &mut candidate, other_winner)
+            .await;
+        assert!(
+            matches!(replay, Err(ItemMintError::ConflictingCause)),
+            "{replay:?}"
+        );
+
+        // The original winner is still the one durably committed; the
+        // rejected replay wrote nothing.
+        let row = corpse_receipt_row(&harness, first.item_instance_id).await?;
+        assert_eq!(
+            row.try_get::<String, _>("corpse_top_damage_character_id")?,
+            uuid_literal(top_damage)
+        );
+        harness.assert_minted(1).await?;
+
+        // The same top-damage value, replayed, still returns the original
+        // outcome cleanly -- as the retained AlreadyCommitted result, not a
+        // fresh commit.
+        let replay_same = harness
+            .root
+            .commit_corpse_mint(&authority, &harness.node, &mut candidate, top_damage)
+            .await
+            .map_err(debug)?;
+        assert_eq!(already(replay_same)?, first);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// A raw forged INSERT of a `CORPSE_MATERIALIZATION` receipt (Ground-only,
+/// mirroring `insert_mint_with_corpse_attribution`'s corpse branch) at a
+/// caller-supplied `draw_ordinal`, for the DB-level half of the D3 §4.1
+/// draw_ordinal = 0 sentinel check.
+fn forge_corpse_receipt_statements(
+    world: [u8; 16],
+    channel: [u8; 16],
+    actor: u32,
+    draw_ordinal: u64,
+    seed: u8,
+) -> Vec<String> {
+    let world_text = uuid_literal(world);
+    let channel_text = uuid_literal(channel);
+    let item = uuid_literal(id(seed));
+    let tx = uuid_literal(id(seed.wrapping_add(1)));
+    let ev = uuid_literal(id(seed.wrapping_add(2)));
+    let top_damage = uuid_literal(id(seed.wrapping_add(3)));
+    vec![
+        format!(
+            "INSERT INTO game_item_instances \
+               (item_instance_id, world_id, definition_family, definition_production_key, \
+                definition_revision_ref, quantity, lifecycle, minted_transaction_id) \
+             VALUES ('{item}', '{world_text}', 'ItemType', 'fixture:corpse.rat', 'corpse-r1', 1, 1, \
+                     '{tx}')"
+        ),
+        format!(
+            "INSERT INTO game_item_mint_receipts \
+               (death_world_id, death_channel_id, death_scope_ownership_generation, \
+                death_actor_local_id, death_actor_local_generation, loot_table_family, \
+                loot_table_production_key, loot_table_revision_ref, loot_purpose_key, \
+                draw_ordinal, intent_binding, transaction_id, event_id, item_instance_id, \
+                occurred_at, envelope_sha256, committed_at, corpse_top_damage_character_id) \
+             VALUES \
+               ('{world_text}', '{channel_text}', {CORPSE_ACTOR_GENERATION}, {actor}, 1, \
+                'LootTable', 'fixture:loot.alpha', 'loot-r1', \
+                '{CORPSE_MATERIALIZATION_PURPOSE_KEY}', {draw_ordinal}, \
+                decode(repeat('cd',33),'hex'), '{tx}', '{ev}', '{item}', 1000, \
+                sha256(decode(repeat('ab',16),'hex')), 1000, '{top_damage}')"
+        ),
+    ]
+}
+
+/// D3 §4.1: the corpse's own MINT is always the reserved draw_ordinal = 0
+/// sentinel, enforced at both layers -- `commit_corpse_mint` refuses a
+/// non-zero draw_ordinal candidate before ever reaching the database, and
+/// the schema's own CHECK refuses a forged CORPSE_MATERIALIZATION receipt at
+/// any other ordinal, in case Rust's own check is ever bypassed or wrong.
+#[test]
+fn corpse_mint_draw_ordinal_must_be_zero() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "corpseordinal").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        let (mut bad_request, top_damage) = corpse_request(1, 150)?;
+        bad_request.cause = ItemMintCause::for_test(
+            WorldId::decode(&id(WORLD)).map_err(debug)?,
+            ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+            ScopeOwnershipGeneration::new(CORPSE_ACTOR_GENERATION).map_err(debug)?,
+            1,
+            1,
+            definition("LootTable", "fixture:loot.alpha", "loot-r1"),
+            CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+            1,
+        );
+        let mut candidate = harness
+            .root
+            .freeze_item_mint(&authority, &harness.node, bad_request)
+            .await
+            .map_err(debug)?;
+        let outcome = harness
+            .root
+            .commit_corpse_mint(&authority, &harness.node, &mut candidate, top_damage)
+            .await;
+        assert!(
+            matches!(outcome, Err(ItemMintError::InvalidInput)),
+            "{outcome:?}"
+        );
+        harness.assert_minted(0).await?;
+
+        let statements = forge_corpse_receipt_statements(id(WORLD), id(CHANNEL), 2, 1, 70);
+        let rejected = run_forged_entry(&harness, statements).await;
+        assert!(
+            rejected.is_err(),
+            "a CORPSE_MATERIALIZATION receipt with draw_ordinal != 0 must be rejected"
+        );
+        assert_eq!(harness.count("game_item_mint_receipts").await?, 0);
+
         drop(authority);
         drop(seal);
         harness.cleanup().await

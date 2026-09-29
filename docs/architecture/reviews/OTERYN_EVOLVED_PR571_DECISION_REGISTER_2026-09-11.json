@@ -1,0 +1,1997 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-09-11",
+  "repository": "Oteryn/Oteryn-Game",
+  "pr_number": 571,
+  "audited_pr_head": "b2ef322791520130a2683f3004d26abd5c027ac8",
+  "inspected_main": "c6103b325748fd31268c7b332defcddf76c59a66",
+  "scope": "Product-design audit of the PR inventory; not a runtime, exact-parity, security penetration, or merge-readiness certification.",
+  "authority": "All dispositions are recommendations. No repository or production change is authorized or performed by this registry.",
+  "coverage": {
+    "legacy": 128,
+    "forum": 57,
+    "research": 7,
+    "source_entries_total": 192,
+    "unique_features_count": "NOT_ASSERTED"
+  },
+  "source_path": "docs/architecture/OTERYN_EVOLVED_MASTER_PRODUCT_ROADMAP_2026-09-11.md",
+  "source_sections": [
+    "6",
+    "7",
+    "8"
+  ],
+  "provenance_limit": "Original external forum URLs/dates for A-D were not available in the inspected inventory; new Reddit research is independent corroboration, not proven original provenance.",
+  "research_id_note": "R01-R07 are local audit labels for the seven ordered candidates in source section 8. Their programme routing is a recommendation, not an asserted original mapping.",
+  "disposition_counts": {
+    "BADANIE": 31,
+    "ODRZUCIĆ": 3,
+    "PÓŹNIEJ": 25,
+    "UZGODNIĆ": 10,
+    "ZACHOWAĆ": 54,
+    "ZMIENIĆ": 69
+  },
+  "entries": [
+    {
+      "id": 1,
+      "source_group": "legacy",
+      "original_proposal": "Huntfinder 2.0",
+      "programmes": [
+        2
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Zacząć od filtrowanej, redagowanej bazy huntów i wyjaśnienia dopasowania; prognozy XP/profitu oznaczać zakresem i pochodzeniem danych."
+    },
+    {
+      "id": 2,
+      "source_group": "legacy",
+      "original_proposal": "Hunting Spot Availability",
+      "programmes": [
+        2
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Pokazywać przybliżony stan, aktualność i niepewność; nie ustanawiać własności respawnu ani ujawniać tożsamości polujących."
+    },
+    {
+      "id": 3,
+      "source_group": "legacy",
+      "original_proposal": "Party Finder 2.0",
+      "programmes": [
+        3
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Jedno lobby z rolami, dostępami i zgodą na zaproszenie; mały wariant natychmiastowy przed rozbudowanym kalendarzem."
+    },
+    {
+      "id": 4,
+      "source_group": "legacy",
+      "original_proposal": "Account-wide quest progression",
+      "programmes": [
+        9
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Współdzielić wybrane dostępy w Account+World, nie kopiować automatycznie ukończenia, wyborów i uprawnień do nagród."
+    },
+    {
+      "id": 5,
+      "source_group": "legacy",
+      "original_proposal": "Independent auto attack and spell casting",
+      "programmes": [
+        15
+      ],
+      "disposition": "UZGODNIĆ",
+      "recommendation": "Najpierw ustalić zachowanie dla przyjętej granicy Reference; Evolved może zmienić harmonogram walki jako jawny balans, nie domniemaną naprawę błędu."
+    },
+    {
+      "id": 6,
+      "source_group": "legacy",
+      "original_proposal": "Character markers on minimap",
+      "programmes": [
+        2,
+        3
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Udostępniać znaczniki według uprawnień i kontekstu World/Channel/Instance; nowe informacje nie są automatycznie neutralnym UX Reference."
+    },
+    {
+      "id": 7,
+      "source_group": "legacy",
+      "original_proposal": "Loot System Rework",
+      "programmes": [
+        4
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Najpierw ręcznie uruchamiane, ograniczone Loot Nearby i routing do pojemników; automatyczny loot wymaga osobnej polityki i oceny wydajności ekonomicznej."
+    },
+    {
+      "id": 8,
+      "source_group": "legacy",
+      "original_proposal": "Summon Loot Assistant",
+      "programmes": [
+        4
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Nie dublować Loot Nearby dodatkową symulacją pomocnika; wrócić tylko przy odrębnej wartości rozgrywkowej, bez przewagi wymagającej konkretnego summona."
+    },
+    {
+      "id": 9,
+      "source_group": "legacy",
+      "original_proposal": "Bank UI 2.0",
+      "programmes": [
+        5
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Wprowadzić podgląd odbiorcy, kwoty, opłat i rezultatu; ponowienie tej samej autoryzowanej operacji nie może wykonać drugiego przelewu."
+    },
+    {
+      "id": 10,
+      "source_group": "legacy",
+      "original_proposal": "Transaction History",
+      "programmes": [
+        5
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Historia ma wynikać z trwałych operacji, nie klientowego logu; odróżniać zatwierdzone, odrzucone i nierozstrzygnięte wyniki."
+    },
+    {
+      "id": 11,
+      "source_group": "legacy",
+      "original_proposal": "Trade System 2.0",
+      "programmes": [
+        5
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Wspólny handel przedmiotami i bankowym złotem, z ponowną akceptacją każdej zmiany oraz jawnymi ograniczeniami lokalnej interakcji."
+    },
+    {
+      "id": 12,
+      "source_group": "legacy",
+      "original_proposal": "Death System 2.0",
+      "programmes": [
+        12
+      ],
+      "disposition": "UZGODNIĆ",
+      "recommendation": "Powiązać z #295 i aktualną architekturą Evolved; nie tworzyć konkurencyjnego modelu utraty poziomów obok kierunku no-delevel/DeathDebt."
+    },
+    {
+      "id": 13,
+      "source_group": "legacy",
+      "original_proposal": "Recovery Pool",
+      "programmes": [
+        12
+      ],
+      "disposition": "UZGODNIĆ",
+      "recommendation": "Określić relację do DeathDebt i odzysku z ciała w #295; odzysk i Rested muszą mieć rozłączne cele i księgowanie."
+    },
+    {
+      "id": 14,
+      "source_group": "legacy",
+      "original_proposal": "Death Fatigue / Post-Death Weakness",
+      "programmes": [
+        12
+      ],
+      "disposition": "UZGODNIĆ",
+      "recommendation": "Skonfrontować z istniejącym kierunkiem exhaustion; rekomendacja audytu: nie dodawać osobnej ogólnej kary do obrażeń, leczenia i obrony bez testu spirali zgonów."
+    },
+    {
+      "id": 15,
+      "source_group": "legacy",
+      "original_proposal": "Connection Loss Protection",
+      "programmes": [
+        12
+      ],
+      "disposition": "UZGODNIĆ",
+      "recommendation": "Rozwijać przyjęte FND-04 zamiast drugiego systemu ochrony; nie uznawać pojedynczego rozłączenia za dowód winy albo niewinności."
+    },
+    {
+      "id": 16,
+      "source_group": "legacy",
+      "original_proposal": "Disconnect Abuse Detection",
+      "programmes": [
+        18
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Analizować wzorce i korelacje w dłuższym czasie; sam sygnał utraty połączenia nie powinien uruchamiać automatycznej sankcji."
+    },
+    {
+      "id": 17,
+      "source_group": "legacy",
+      "original_proposal": "AI Anti-Bot / Anti-Cheat Platform",
+      "programmes": [
+        18
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Najpierw serwerowa integralność i dane dowodowe; modele wykrywające anomalie później, z kontrolą błędów, odwołaniem i bez automatycznej winy."
+    },
+    {
+      "id": 18,
+      "source_group": "legacy",
+      "original_proposal": "PvP System 2.0",
+      "programmes": [
+        13
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Wybrać jeden pierwszy tryb i jawny kontrakt nagród/strat; nie uruchamiać jednocześnie kilku niepowiązanych systemów konkurencji."
+    },
+    {
+      "id": 19,
+      "source_group": "legacy",
+      "original_proposal": "PvP rating / prestige / seasons",
+      "programmes": [
+        13
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Ranking i nagrody prestiżowe po sprawdzeniu aktywności populacji; unikać rozdrabniania małej społeczności na zbyt wiele kolejek."
+    },
+    {
+      "id": 20,
+      "source_group": "legacy",
+      "original_proposal": "High-Risk PvP Zones",
+      "programmes": [
+        13
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Ryzyko dobrowolne, z czytelną granicą i zasadami wyjścia; nie przenosić silniejszych strat na zwykłą grę bez zgody gracza."
+    },
+    {
+      "id": 21,
+      "source_group": "legacy",
+      "original_proposal": "Adaptive UI / Scalable Client",
+      "programmes": [
+        1
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Oddzielić skalę UI, DPI, fonty i kamerę; większy monitor nie powinien niejawnie nadawać większej informacji o świecie."
+    },
+    {
+      "id": 22,
+      "source_group": "legacy",
+      "original_proposal": "Layout Presets",
+      "programmes": [
+        1
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Wersjonować i ograniczać ustawienia; zapewnić odzysk układu po zmianie monitora i bezpieczny powrót do domyślnej konfiguracji."
+    },
+    {
+      "id": 23,
+      "source_group": "legacy",
+      "original_proposal": "Boss System 2.0",
+      "programmes": [
+        11
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Jeden model encounteru, uczestnictwa i nagród; odróżniać uprawnienia do walki od uprawnień do otrzymania wartości."
+    },
+    {
+      "id": 24,
+      "source_group": "legacy",
+      "original_proposal": "Adventure Guild Boss Hub",
+      "programmes": [
+        11
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Hub tylko dla odkrytych i odblokowanych treści; wygoda podróży nie może po cichu unieważniać dostępu, świata i ryzyka przejścia."
+    },
+    {
+      "id": 25,
+      "source_group": "legacy",
+      "original_proposal": "Flexible Boss Party Size",
+      "programmes": [
+        11
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Wybrać encountery i obsługiwane składy; dostosować mechaniki, nie obiecywać dowolnego rozmiaru drużyny dla każdego bossa."
+    },
+    {
+      "id": 26,
+      "source_group": "legacy",
+      "original_proposal": "Boss Difficulty Tiers",
+      "programmes": [
+        11
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Rozdzielić practice bez progresji od trybów z nagrodą; skalować mechaniki i budżet nagród, nie wyłącznie HP."
+    },
+    {
+      "id": 27,
+      "source_group": "legacy",
+      "original_proposal": "Personal Loot",
+      "programmes": [
+        11
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Zachować wkład ról wspierających i wspólny budżet encounteru; samo dodanie uczestnika nie powinno niejawnie mnożyć gwarantowanej podaży."
+    },
+    {
+      "id": 28,
+      "source_group": "legacy",
+      "original_proposal": "Bad Luck Protection / Pity",
+      "programmes": [
+        11
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Określić konkretną nagrodę, zakres licznika i rozkład czasu zdobycia; liczyć razem z personal loot i essence."
+    },
+    {
+      "id": 29,
+      "source_group": "legacy",
+      "original_proposal": "Boss Essence / Guaranteed Progression",
+      "programmes": [
+        11
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Essence ma uzupełniać kontrolowaną podaż, nie być niezależnym dodatkiem do pełnego dropu oraz pity; oddzielić cele kosmetyczne i bojowe."
+    },
+    {
+      "id": 30,
+      "source_group": "legacy",
+      "original_proposal": "Threat-Based Monster Collision",
+      "programmes": [
+        15
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Nie zmieniać przechodzenia przez potwory automatycznie według poziomu; wymaga to osobnej analizy topologii, walki i PvP."
+    },
+    {
+      "id": 31,
+      "source_group": "legacy",
+      "original_proposal": "Break Free / Emergency Breakthrough",
+      "programmes": [
+        15
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Ocenić jako konkretną zdolność z kosztem i ograniczeniami, nie uniwersalną gwarancję wyjścia z niebezpiecznego ustawienia."
+    },
+    {
+      "id": 32,
+      "source_group": "legacy",
+      "original_proposal": "Transition Safety",
+      "programmes": [
+        15
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Walidować prawidłowe lądowanie i przekazanie kontroli przy przejściach; naprawa błędnego wejścia nie oznacza odporności na legalne zagrożenie."
+    },
+    {
+      "id": 33,
+      "source_group": "legacy",
+      "original_proposal": "Guaranteed Escape Path",
+      "programmes": [
+        15
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Zastąpić obietnicę gwarantowanej ucieczki wymaganiem poprawnych przejść; zachować znaczenie pozycji, blokowania i ryzyka."
+    },
+    {
+      "id": 34,
+      "source_group": "legacy",
+      "original_proposal": "Fishing System 2.0",
+      "programmes": [
+        16
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Rozwijać różnorodność i aktywną interakcję jako dobrowolną aktywność; nie wymagać wędkowania do standardowego poziomu mocy bojowej."
+    },
+    {
+      "id": 35,
+      "source_group": "legacy",
+      "original_proposal": "Fishing Codex / Records / Tournaments",
+      "programmes": [
+        16
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Kolekcje i prestiż bez obowiązkowej przewagi bojowej; użyć wspólnych widoków kolekcji i jawnych zasad konkursów."
+    },
+    {
+      "id": 36,
+      "source_group": "legacy",
+      "original_proposal": "Cooking 2.0",
+      "programmes": [
+        16
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Ograniczyć liczbę jednocześnie wymaganych buffów i obsługę; gotowanie ma oferować wybór, nie mnożyć przygotowań przed każdą sesją."
+    },
+    {
+      "id": 37,
+      "source_group": "legacy",
+      "original_proposal": "House Chef",
+      "programmes": [
+        16
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Usługa powiązana z zaakceptowanym housingiem, składnikami i recepturami; bez niejawnego uzależniania podstawowej skuteczności od Premium/domu."
+    },
+    {
+      "id": 38,
+      "source_group": "legacy",
+      "original_proposal": "Economy Sink Framework",
+      "programmes": [
+        17
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Rozróżniać tworzenie, niszczenie i transfer wartości; mierzyć całość World oraz rozkład majątku, nie tylko sumę złota."
+    },
+    {
+      "id": 39,
+      "source_group": "legacy",
+      "original_proposal": "House upgrades / services / luxury sinks",
+      "programmes": [
+        16,
+        17
+      ],
+      "disposition": "UZGODNIĆ",
+      "recommendation": "Przyjąć EXP-HOUSES-01 i rolę darmowej Residence; płatna wygoda/prestiż nie powinna podważać zaakceptowanej podstawowej funkcjonalności."
+    },
+    {
+      "id": 40,
+      "source_group": "legacy",
+      "original_proposal": "Equipment Durability",
+      "programmes": [
+        6
+      ],
+      "disposition": "ODRZUCIĆ",
+      "recommendation": "Nie włączać rutynowego zużycia do pierwszego projektu produktu; brak wykazanej decyzji gracza uzasadniającej dodatkową obsługę i naprawy."
+    },
+    {
+      "id": 41,
+      "source_group": "legacy",
+      "original_proposal": "Repair All / Auto Repair",
+      "programmes": [
+        6
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Nie implementować bez osobno przyjętej trwałości; automatyczne usuwanie nowo stworzonej uciążliwości nie jest samodzielnym uzasadnieniem systemu."
+    },
+    {
+      "id": 42,
+      "source_group": "legacy",
+      "original_proposal": "Skill Wheel changes outside temple",
+      "programmes": [
+        8
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Evolved: jawna klasa bezpiecznej strefy plus ograniczenia walki; Reference zachowuje udowodnione zasady wybranej wersji."
+    },
+    {
+      "id": 43,
+      "source_group": "legacy",
+      "original_proposal": "Skill Progression 2.0",
+      "programmes": [
+        8
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Najpierw określić relację skilli, treningu i oficjalnej proficjencji; nie dodawać czwartego ogólnego miernika mistrzostwa."
+    },
+    {
+      "id": 44,
+      "source_group": "legacy",
+      "original_proposal": "Real Combat Training",
+      "programmes": [
+        8
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Wzmacniać sens aktywnej gry, ale porównywać role i buildy; szybsze animacje lub liczba trafień nie powinny automatycznie wyznaczać całej progresji."
+    },
+    {
+      "id": 45,
+      "source_group": "legacy",
+      "original_proposal": "Threat coefficient for classic skill gain",
+      "programmes": [
+        8
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Wymaga scenariuszy i danych dla różnych klas; nie opierać progresji na niejawnej, zmiennej ocenie mocy gracza."
+    },
+    {
+      "id": 46,
+      "source_group": "legacy",
+      "original_proposal": "Diminishing returns on one persistent training target",
+      "programmes": [
+        8
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Sprawdzić fałszywe ograniczenia normalnych huntów; preferować prostą kwalifikację aktywności zanim powstanie złożony system kar za powtarzalność."
+    },
+    {
+      "id": 47,
+      "source_group": "legacy",
+      "original_proposal": "Combat Activity Score",
+      "programmes": [
+        8
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Tylko pomocniczy sygnał, nie nieprzejrzysty główny licznik skilli; aktywność wsparcia i dostępność muszą być uwzględnione."
+    },
+    {
+      "id": 48,
+      "source_group": "legacy",
+      "original_proposal": "Shielding progression in real combat",
+      "programmes": [
+        8
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Powiązać rozwój z legalnie obsłużoną presją i rolą defensywną; nie nagradzać wyłącznie liczby bezwartościowych trafień."
+    },
+    {
+      "id": 49,
+      "source_group": "legacy",
+      "original_proposal": "Offline training as slower convenience path",
+      "programmes": [
+        8
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Zachować prostą przewidywalną ścieżkę; odróżnić ją w UI od treningu Exercise zużywającego zasoby."
+    },
+    {
+      "id": 50,
+      "source_group": "legacy",
+      "original_proposal": "Exercise weapons as faster gold-sink path",
+      "programmes": [
+        8,
+        17
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Zachować zużycie i skuteczność zasobów; w Offline Exercise dopuszczać równoległe postacie konta bez utrzymywania fikcyjnych aktorów online."
+    },
+    {
+      "id": 51,
+      "source_group": "legacy",
+      "original_proposal": "Classic skills and Weapon Proficiency remain separate",
+      "programmes": [
+        8
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Różne liczniki i reguły, wspólne objaśnienie w panelu postaci; nie scalać ich księgowania wyłącznie dla wygody UI."
+    },
+    {
+      "id": 52,
+      "source_group": "legacy",
+      "original_proposal": "Natural hunts advance classic skills and Weapon Proficiency independently",
+      "programmes": [
+        8
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Oprzeć na zweryfikowanych zasadach obu systemów; Weapon Proficiency z walki istnieje już w Global, więc nie przedstawiać jej jako nowego wynalazku."
+    },
+    {
+      "id": 53,
+      "source_group": "legacy",
+      "original_proposal": "Equipment Presets",
+      "programmes": [
+        6
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Jeden serwerowy loadout, z legalnością przedmiotów, czasem aktywacji i jawną odmową; atomowość nie oznacza darmowej natychmiastowej zmiany w walce."
+    },
+    {
+      "id": 54,
+      "source_group": "legacy",
+      "original_proposal": "Linked Tasks",
+      "programmes": [
+        9,
+        14
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Wspólny dziennik i jawne zależności etapów; nie tworzyć osobnych sprzecznych flag dla identycznego zadania w kilku panelach."
+    },
+    {
+      "id": 55,
+      "source_group": "legacy",
+      "original_proposal": "Better Map UX",
+      "programmes": [
+        2
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Spójna minimapa i mapa świata, wyszukiwanie oraz warstwy odkrycia; ograniczyć spoilery według wybranej polityki produktu."
+    },
+    {
+      "id": 56,
+      "source_group": "legacy",
+      "original_proposal": "Castle / Battleground",
+      "programmes": [
+        13
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Jeden tryb celów z pomiarem udziału i strat, dopiero po grywalnej podstawie oraz wystarczającej populacji."
+    },
+    {
+      "id": 57,
+      "source_group": "legacy",
+      "original_proposal": "Prestige Arena",
+      "programmes": [
+        13
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Nie konkurować od razu z kilkoma innymi kolejkami PvP; prestiż przed transferowalną mocą i nagrodami za powtarzane zabójstwa."
+    },
+    {
+      "id": 58,
+      "source_group": "legacy",
+      "original_proposal": "Crash-aware boss cooldown compensation / Obelisk concept",
+      "programmes": [
+        11,
+        12
+      ],
+      "disposition": "UZGODNIĆ",
+      "recommendation": "Rozliczać potwierdzony incydent infrastruktury i rezultat encounteru dokładnie raz; utrata odpowiedzi nie dowodzi braku otrzymanej nagrody."
+    },
+    {
+      "id": 59,
+      "source_group": "legacy",
+      "original_proposal": "Dynamic Spawn and Hunting Capacity",
+      "programmes": [
+        2,
+        14
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Oddzielić dostępność kanałów od zwiększania tempa pozyskiwania nagród; badać łączny wpływ na podaż przedmiotów, XP i obciążenie całego World."
+    },
+    {
+      "id": 60,
+      "source_group": "legacy",
+      "original_proposal": "Bounty and Weekly Tasks Rework",
+      "programmes": [
+        14
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Opisać rzeczywistą różnicę wobec Bounty/Weekly z 2025; dobór aktywności i zrozumiałe nagrody przed kolejną checklistą obowiązków."
+    },
+    {
+      "id": 61,
+      "source_group": "legacy",
+      "original_proposal": "Task Suitability and progression-aware Bounty offers",
+      "programmes": [
+        14
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Uwzględniać znane dostępy, rolę, oczekiwany wysiłek i realną dostępność treści; wyjaśniać powód rekomendacji."
+    },
+    {
+      "id": 62,
+      "source_group": "legacy",
+      "original_proposal": "Dynamic Bounty/Weekly kill-count and reward scaling",
+      "programmes": [
+        14
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Zamrażać warunki przyjętego zadania; dostosowanie przyszłej oferty nie powinno przesuwać graczowi mety w trakcie realizacji."
+    },
+    {
+      "id": 63,
+      "source_group": "legacy",
+      "original_proposal": "Dedicated Bounty Equipment Slot",
+      "programmes": [
+        14,
+        6
+      ],
+      "disposition": "UZGODNIĆ",
+      "recommendation": "Zweryfikować oficjalny odpowiednik i własność slotu; nie tworzyć ogólnego drugiego ringu ani nieograniczonego dodatkowego budżetu statystyk."
+    },
+    {
+      "id": 64,
+      "source_group": "legacy",
+      "original_proposal": "Bounty Talisman Combat/Sustain/Spoils/Knowledge redesign",
+      "programmes": [
+        14,
+        6
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Zaprojektować konkurencyjne wybory z ograniczonym budżetem; nie przyznawać pełnego zestawu bonusów do walki, loota i wiedzy jednocześnie."
+    },
+    {
+      "id": 65,
+      "source_group": "legacy",
+      "original_proposal": "Weekly Delivery Economy Controller",
+      "programmes": [
+        17,
+        14
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Najpierw deterministyczny limit nowego popytu na przedmiot i World; uwzględnić małą płynność, a nie wyłącznie deklarowane ceny ofert."
+    },
+    {
+      "id": 66,
+      "source_group": "legacy",
+      "original_proposal": "Weekly Delivery Price Shock Guard",
+      "programmes": [
+        17
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Wstrzymywać nowe generowane zamówienia przy niewiarygodnym rynku; nie cofać już zaakceptowanych warunków zadania."
+    },
+    {
+      "id": 67,
+      "source_group": "legacy",
+      "original_proposal": "AI-assisted economy forecasting with deterministic caps",
+      "programmes": [
+        17
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Najpierw dane oraz prosty model bazowy; prognoza AI doradcza, bez samodzielnego ustalania cen, dropu i nagród."
+    },
+    {
+      "id": 68,
+      "source_group": "legacy",
+      "original_proposal": "Bounty Spawn Allowance for overleveled task players",
+      "programmes": [
+        14
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Zależne od przyjęcia konkretnego dynamicznego spawnu; nie tworzyć wyjątku od ograniczenia, którego produkt jeszcze nie potrzebuje."
+    },
+    {
+      "id": 69,
+      "source_group": "legacy",
+      "original_proposal": "World Map & Discovery System 2.0",
+      "programmes": [
+        2
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Rozdzielić prezentację odkryć od nagród gameplayowych; porównać Discovery po aktualizacji 2026 przed definiowaniem różnicy Evolved."
+    },
+    {
+      "id": 70,
+      "source_group": "legacy",
+      "original_proposal": "Live Social Map & Permissioned Position Sharing",
+      "programmes": [
+        2,
+        3
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Wycofanie zgody ma usuwać aktualny dostęp; różne kanały/instancje pokazywać jawnie zamiast fałszywej wspólnej lokalizacji."
+    },
+    {
+      "id": 71,
+      "source_group": "legacy",
+      "original_proposal": "Shared Discovery Markers",
+      "programmes": [
+        2
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Zakres odbiorców, wygaśnięcie i ręczna kontrola; nie zamieniać zgłoszeń rzadkich zdarzeń w publiczny system śledzenia."
+    },
+    {
+      "id": 72,
+      "source_group": "legacy",
+      "original_proposal": "Friends/VIP Mutual Consent & Privacy 2.0",
+      "programmes": [
+        3
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Oddzielić prywatne tagi od udostępniania obecności i pozycji; zachować profile prywatności oraz semantykę Reference."
+    },
+    {
+      "id": 73,
+      "source_group": "legacy",
+      "original_proposal": "Party System 2.0",
+      "programmes": [
+        3
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Oddzielić członkostwo World od lokalnych efektów walki i XP; uzgadniać role, cele i zakres informacji bez sztywnej obowiązkowej trójcy."
+    },
+    {
+      "id": 74,
+      "source_group": "legacy",
+      "original_proposal": "Party Combat Visibility",
+      "programmes": [
+        3
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Poprawić czytelność legalnie znanych danych; wskaźniki poza ekranem i statusy podlegają polityce informacji, nie tylko ustawieniu klienta."
+    },
+    {
+      "id": 75,
+      "source_group": "legacy",
+      "original_proposal": "Shared Hunt Accounting / Party Loot Ledger",
+      "programmes": [
+        3,
+        5
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Rozróżnić wycenę, zrealizowaną sprzedaż i rozrachunek; zamrożony uzgodniony rachunek oraz osobna autoryzacja każdego obciążenia."
+    },
+    {
+      "id": 76,
+      "source_group": "legacy",
+      "original_proposal": "Itemization & Build System 2.0",
+      "programmes": [
+        6
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Ułożyć wspólny budżet mocy i warianty alternatywne; loadouty nie uzasadniają automatycznego przyjęcia Forge, +N i kolejnej proficjencji razem."
+    },
+    {
+      "id": 77,
+      "source_group": "legacy",
+      "original_proposal": "Build Impact & Comparison System",
+      "programmes": [
+        6
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Porównywać konkretne scenariusze obrażeń, ochrony i sustainu; nie ukrywać wad builda pod jedną liczbą Gear Score."
+    },
+    {
+      "id": 78,
+      "source_group": "legacy",
+      "original_proposal": "Training Arena / Combat Simulation",
+      "programmes": [
+        6,
+        15
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Standardowe cele bez XP, loota, skilli i kolekcji; rozróżniać kalkulację teoretyczną od wyniku rzeczywistego scenariusza."
+    },
+    {
+      "id": 79,
+      "source_group": "legacy",
+      "original_proposal": "Inventory / Depot / Stash 2.0",
+      "programmes": [
+        4
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Wyszukiwanie i porządkowanie przy zachowaniu praw dostępu i tożsamości przedmiotów; nie scalać fizycznego inventory z dowolnym magazynem świata."
+    },
+    {
+      "id": 80,
+      "source_group": "legacy",
+      "original_proposal": "Smart Item Reservation & Task Protection",
+      "programmes": [
+        4
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Określić zakres Keep at least N i pierwszeństwo rezerwacji; chronić przed zbiorczą utratą, nie blokować niejawnie normalnego zużycia potionów."
+    },
+    {
+      "id": 81,
+      "source_group": "legacy",
+      "original_proposal": "Market sale-only commission",
+      "programmes": [
+        5,
+        17
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Porównać prowizję sprzedaży z limitem ofert i ewentualnym zwrotnym depozytem; darmowe wystawianie bez ograniczeń nie jest wymogiem wygodnego rynku."
+    },
+    {
+      "id": 82,
+      "source_group": "legacy",
+      "original_proposal": "Multi-Currency Market & Trade",
+      "programmes": [
+        5
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Tożsamość waluty przewidzieć w kontrakcie; wiele aktywnych rynków wdrażać dopiero po wykazaniu potrzeby i wpływu na płynność."
+    },
+    {
+      "id": 83,
+      "source_group": "legacy",
+      "original_proposal": "Imbuement System 2.0",
+      "programmes": [
+        7
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Najpierw konfiguracja, czytelność kosztów i obsługa; zmiana mocy, sukcesu i czasu to oddzielny zakres z konkretnym baseline Global."
+    },
+    {
+      "id": 84,
+      "source_group": "legacy",
+      "original_proposal": "Slot-Based Imbuement Library & Active Channels",
+      "programmes": [
+        7
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Biblioteka przechowuje konfigurację, nie darmowe efekty; wyposażony przedmiot nadal określa dozwolone kategorie i liczbę aktywnych slotów."
+    },
+    {
+      "id": 85,
+      "source_group": "legacy",
+      "original_proposal": "Elemental Attunement Layer",
+      "programmes": [
+        7
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Najpierw rozważyć wygodniejszy wybór w istniejącym budżecie; osobna ochrona obok pełnego crit/leech/skill wymaga kompensacji mocy."
+    },
+    {
+      "id": 86,
+      "source_group": "legacy",
+      "original_proposal": "Imbuement Slot / Attunement Progression",
+      "programmes": [
+        7
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Preferować elastyczność konfiguracji nad dodatkową obowiązkową pionową progresją; wybrać konkretny cel przed projektowaniem poziomów."
+    },
+    {
+      "id": 87,
+      "source_group": "legacy",
+      "original_proposal": "Imbuement Progression & Maintenance Sink",
+      "programmes": [
+        7,
+        17
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Jednorazowy unlock oddzielić od odnawialnych zasobów; porównywać rzeczywiste systemowe odpływy złota i materiałów."
+    },
+    {
+      "id": 88,
+      "source_group": "legacy",
+      "original_proposal": "Effective-Use Imbuement Lifecycle",
+      "programmes": [
+        7
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Ocenić skutki długości użytkowania i definicji aktywności dla każdej kategorii; nie uznawać wybiórczego zatrzymywania czasu za czysto wizualne QoL."
+    },
+    {
+      "id": 89,
+      "source_group": "legacy",
+      "original_proposal": "Vocation/Class Identity & Role Framework",
+      "programmes": [
+        15
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Opisać mocne strony, ograniczenia i wkład klas w różnych sytuacjach; używać aktualnego zestawu wspieranych vocations, także Monk."
+    },
+    {
+      "id": 90,
+      "source_group": "legacy",
+      "original_proposal": "Shared Role Taxonomy & Party Contribution Model",
+      "programmes": [
+        15,
+        3
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Role ułatwiają grupowanie i analizę, ale pojedynczy wynik wkładu nie może redukować leczenia, kontroli i przeżywalności do samego DPS."
+    },
+    {
+      "id": 91,
+      "source_group": "legacy",
+      "original_proposal": "Vocation Balance Target Bands & Telemetry",
+      "programmes": [
+        15
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Mierzyć obrażenia, leczenie, sustain, przeżywalność i użyteczność w tych samych scenariuszach; bez zmyślonych docelowych procentów."
+    },
+    {
+      "id": 92,
+      "source_group": "legacy",
+      "original_proposal": "Solo and Party Viability Balance Principle",
+      "programmes": [
+        15
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Zapewnić sens solo/duo/trio i korzyść z zespołu; porównywać również czas organizacji sesji, nie tylko najlepsze XP/h w walce."
+    },
+    {
+      "id": 93,
+      "source_group": "legacy",
+      "original_proposal": "Context-Separated PvE/Boss/PvP Balance",
+      "programmes": [
+        15
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Rozdzielać strojenie tam, gdzie potrzebne, z czytelnym UI i deterministycznymi regułami; unikać niejawnych wyjątków dla każdego spawnu."
+    },
+    {
+      "id": 94,
+      "source_group": "legacy",
+      "original_proposal": "Gem Atelier & Fragment Workshop parity/balance review",
+      "programmes": [
+        6
+      ],
+      "disposition": "UZGODNIĆ",
+      "recommendation": "Nie zamrażać szczegółów na podstawie nazw; brakuje w audycie pełnego dowodu ich reguł dla granicy Reference 2026-07-28."
+    },
+    {
+      "id": 95,
+      "source_group": "legacy",
+      "original_proposal": "Bestiary staged Charm Point rewards",
+      "programmes": [
+        10
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Niezmieniona suma końcowa zmienia moment dostępu do mocy; ocenić całą krzywą progresji i znaczenie pełnego ukończenia."
+    },
+    {
+      "id": 96,
+      "source_group": "legacy",
+      "original_proposal": "Bestiary knowledge-gated effective Charm levels",
+      "programmes": [
+        10
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Nie karać podwójnym grindem za zmianę hunta; jasno pokazać odblokowaną korzyść i koszt wyboru w modelu wiedzy."
+    },
+    {
+      "id": 97,
+      "source_group": "legacy",
+      "original_proposal": "Charm Level 3 Mastery and Level 4 Grandmaster",
+      "programmes": [
+        10
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Najpierw rozróżnić obecny oficjalny poziom od nowej warstwy; preferować ograniczone specjalizacje zamiast kolejnych procentów dla każdego."
+    },
+    {
+      "id": 98,
+      "source_group": "legacy",
+      "original_proposal": "Creature Family Mastery",
+      "programmes": [
+        10
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Mastery jako opcjonalny cel wiedzy/prestiżu; bonusy rodzinne liczyć razem z Charmami, a nie jako darmową niezależną warstwę."
+    },
+    {
+      "id": 99,
+      "source_group": "legacy",
+      "original_proposal": "Persistent Charm assignments and loadouts",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Zapamiętać konfiguracje z zachowaniem limitów jednoczesnych przypisań i jawnych kosztów aktywacji."
+    },
+    {
+      "id": 100,
+      "source_group": "legacy",
+      "original_proposal": "Drome Charm amplifiers and optional Grandmaster catalysts",
+      "programmes": [
+        10
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Zweryfikować bieżące nagrody i pełny łączny budżet; nie promować nowego wzmacniacza tylko dlatego, że ma własne źródło waluty."
+    },
+    {
+      "id": 101,
+      "source_group": "legacy",
+      "original_proposal": "Quest Journal 2.0 and quest dependency graph",
+      "programmes": [
+        9
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Jeden model znanych etapów i zależności; klient wyświetla projekcję, nie tworzy drugiego autorytatywnego grafu ukończenia."
+    },
+    {
+      "id": 102,
+      "source_group": "legacy",
+      "original_proposal": "Current Objective and quest blocker explanation",
+      "programmes": [
+        9
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Wyjaśniać brakujące znane wymagania; wskazówki i spoilery regulować oddzielnie od prawa dostępu do questów."
+    },
+    {
+      "id": 103,
+      "source_group": "legacy",
+      "original_proposal": "Party Quest Sync",
+      "programmes": [
+        9,
+        3
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Pokazać zgodność etapów i możliwość udziału bez automatycznego zaliczenia pominiętych misji."
+    },
+    {
+      "id": 104,
+      "source_group": "legacy",
+      "original_proposal": "Quest Renown / Adventure Points",
+      "programmes": [
+        9
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Kosmetyka, tytuły i usługi przed stałym bonusem do walki; nie tworzyć obowiązkowego licznika wszystkich starych questów."
+    },
+    {
+      "id": 105,
+      "source_group": "legacy",
+      "original_proposal": "Region Mastery",
+      "programmes": [
+        9
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Powiązać z odkrywaniem i lokalnymi historiami; nie dublować Discovery ani przypadkowo zmieniać już przyjętych korzyści Reference."
+    },
+    {
+      "id": 106,
+      "source_group": "legacy",
+      "original_proposal": "Legacy quest reward modernization and bounded XP scaling",
+      "programmes": [
+        9
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Zachować ikoniczne nagrody i jawne limity; określić uprawnienia alts/Account+World zanim dodane zostaną wartości skalowane poziomem."
+    },
+    {
+      "id": 107,
+      "source_group": "legacy",
+      "original_proposal": "Postman Quest modernization pilot",
+      "programmes": [
+        9,
+        5
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Dobry ograniczony pilot dostępu i usług pocztowych; nie kasować całej tożsamości questa dla jednego przycisku teleportu."
+    },
+    {
+      "id": 108,
+      "source_group": "legacy",
+      "original_proposal": "Postal Network 2.0",
+      "programmes": [
+        5,
+        9
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Najpierw podstawowa niezawodna dostawa; COD, ubezpieczenia i poziomy usług jako oddzielne późniejsze decyzje wartości i odpowiedzialności."
+    },
+    {
+      "id": 109,
+      "source_group": "legacy",
+      "original_proposal": "Global Market plus Local Logistics",
+      "programmes": [
+        5
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Global oznacza wspólny World, nie wszystkie światy; lokalna dostawa musi dawać wybór zamiast odtwarzać usuwaną uciążliwość."
+    },
+    {
+      "id": 110,
+      "source_group": "legacy",
+      "original_proposal": "Consolidated market delivery",
+      "programmes": [
+        5
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Łączyć kompatybilne zakupy w ograniczone partie z czytelnymi wynikami; nie projektować nieskończonej jednej transakcji Collect Everything."
+    },
+    {
+      "id": 111,
+      "source_group": "legacy",
+      "original_proposal": "Forge Slot Mastery",
+      "programmes": [
+        6
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Porównać inwestycję w slot z inwestycją w przedmiot i odzyskiem; wybrać model zamiast nakładać wszystkie warianty."
+    },
+    {
+      "id": 112,
+      "source_group": "legacy",
+      "original_proposal": "Item Enhancement +N",
+      "programmes": [
+        6
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Wymaga wspólnego limitu mocy i odrębnego uzasadnienia; nie wchodzi automatycznie wraz z loadoutami."
+    },
+    {
+      "id": 113,
+      "source_group": "legacy",
+      "original_proposal": "Equipment Proficiency",
+      "programmes": [
+        6
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Wykazać różnicę wobec Weapon Proficiency i klasycznych skilli; nie dodawać kolejnej obowiązkowej progresji każdej kategorii ekwipunku."
+    },
+    {
+      "id": 114,
+      "source_group": "legacy",
+      "original_proposal": "Item Classification as progression ceiling",
+      "programmes": [
+        6
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Tylko jeśli przyjęto system ulepszeń; nie budować nowej drabiny rzadkości wyłącznie po to, by ograniczyć inny nieprzyjęty system."
+    },
+    {
+      "id": 115,
+      "source_group": "legacy",
+      "original_proposal": "Equipment proficiency branches and qualitative capstones",
+      "programmes": [
+        6
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Rozłączne wybory i realny koszt alternatywny; odblokowanie wszystkiego naraz nie jest specjalizacją."
+    },
+    {
+      "id": 116,
+      "source_group": "legacy",
+      "original_proposal": "Controlled Enhancement RNG and pity",
+      "programmes": [
+        6
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Warunkowe względem przyjęcia enhancementu; ograniczyć skrajnego pecha i wykluczyć rutynową katastrofalną utratę inwestycji."
+    },
+    {
+      "id": 117,
+      "source_group": "legacy",
+      "original_proposal": "Controlled duplicate-item sink",
+      "programmes": [
+        6,
+        17
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Ocenić płynność i popyt na konkretne przedmioty; nie wymagać masowego spalania ultrarzadkich BIS do normalnej konkurencyjności."
+    },
+    {
+      "id": 118,
+      "source_group": "legacy",
+      "original_proposal": "Enhancement Salvage and equipment-replacement protection",
+      "programmes": [
+        6
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Dopiero po wyborze progresji; odzysk musi zachować wartość i pochodzenie, bez równoczesnego pozostawienia pełnej inwestycji w starym przedmiocie."
+    },
+    {
+      "id": 119,
+      "source_group": "legacy",
+      "original_proposal": "Existing tier migration contract",
+      "programmes": [
+        6
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Wymaga rzeczywistych stanów i modelu docelowego; nie zakładać w tym audycie istniejącej produkcyjnej populacji ulepszonych przedmiotów Oteryn."
+    },
+    {
+      "id": 120,
+      "source_group": "legacy",
+      "original_proposal": "Controlled Retaliation / reflect safety",
+      "programmes": [
+        15,
+        6
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Określić limity, źródła i brak wzajemnych nieograniczonych proców; sprawdzać grupy napastników, summony oraz wkład innych efektów."
+    },
+    {
+      "id": 121,
+      "source_group": "legacy",
+      "original_proposal": "Selected-creature active-use Prey timer",
+      "programmes": [
+        10
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "To zmiana efektywnej wartości czasu, nie sam UX; opisać aktywność mieszanego spawnu, wsparcia i summonów oraz budżet ekonomiczny."
+    },
+    {
+      "id": 122,
+      "source_group": "legacy",
+      "original_proposal": "Dormant Prey target reservation",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Zapamiętanie celu bez czynnego bonusu po wyczerpaniu czasu; UI jednoznacznie rozróżnia rezerwację od aktywacji."
+    },
+    {
+      "id": 123,
+      "source_group": "legacy",
+      "original_proposal": "Separate target reservation, bonus preservation and time renewal",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Osobne stany z jawnymi kosztami i ograniczeniami przełączania; bez jednego nieczytelnego przycisku łączącego różne zobowiązania."
+    },
+    {
+      "id": 124,
+      "source_group": "legacy",
+      "original_proposal": "Bankable free Prey Charges",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Ograniczony zapas z jasnym naliczaniem; unikać wymogu codziennego kliknięcia tylko po to, by nie utracić okazji."
+    },
+    {
+      "id": 125,
+      "source_group": "legacy",
+      "original_proposal": "Sustainable Prey maintenance paths",
+      "programmes": [
+        10,
+        17
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Jawne opcje gry i złota; opcja komercyjna nie jest z góry przyjęta i musi podlegać osobnej polityce Platform/Evolved."
+    },
+    {
+      "id": 126,
+      "source_group": "legacy",
+      "original_proposal": "Mixed-spawn and party-safe Prey consumption",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Naliczanie nie może opierać się wyłącznie na ostatnim trafieniu; niezależne stany graczy i poprawne przypisanie summonów."
+    },
+    {
+      "id": 127,
+      "source_group": "legacy",
+      "original_proposal": "Prey loadouts and cost controls",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Zapamiętywać wybory i pułapy wydatków; żadnych nieautoryzowanych zakupów ani klientowej kontroli ważności bonusu."
+    },
+    {
+      "id": 128,
+      "source_group": "legacy",
+      "original_proposal": "Prey migration and switching safeguards",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Wersjonować uprawnienia, koszty i stany; reconnect i ponowienie operacji nie tworzą dodatkowego czasu ani nie kasują zatwierdzonej wartości."
+    },
+    {
+      "id": "A01",
+      "source_group": "forum",
+      "original_proposal": "Market/Tibia Coin anti-bot cooldown",
+      "programmes": [
+        5,
+        17
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Nie zamrażać pięciominutowej blokady; limity operacji i liczby ofert mają chronić rynek bez utrudniania zwykłej korekty ceny."
+    },
+    {
+      "id": "A02",
+      "source_group": "forum",
+      "original_proposal": "Incomplete Bestiary indicator",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Wskaźnik korzysta z istniejącego stanu wiedzy; nie prowadzić osobnego licznika ukończenia."
+    },
+    {
+      "id": "A03",
+      "source_group": "forum",
+      "original_proposal": "Collect All exclusions",
+      "programmes": [
+        4
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Zachować wybrane nagrody w skrzyni, ale pokazywać termin wygaśnięcia; marker nie wydłuża automatycznie retencji."
+    },
+    {
+      "id": "A04",
+      "source_group": "forum",
+      "original_proposal": "Remember Offline Training choice",
+      "programmes": [
+        8
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Zapamiętany wybór per postać, bez automatycznego wydawania innych zasobów."
+    },
+    {
+      "id": "A05",
+      "source_group": "forum",
+      "original_proposal": "Exercise weapons while offline",
+      "programmes": [
+        8,
+        17
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Jedna sesja per postać, wiele postaci konta równolegle; te same zasoby, tempo i skuteczność, trwałe rozliczenie zamiast klienta online."
+    },
+    {
+      "id": "A06",
+      "source_group": "forum",
+      "original_proposal": "More outfit colours",
+      "programmes": [
+        1
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Ograniczona, dostępna paleta z zachowaniem czytelności; zgodność kolorów z Reference ocenić oddzielnie od możliwości edytora."
+    },
+    {
+      "id": "A07",
+      "source_group": "forum",
+      "original_proposal": "Random outfit colours",
+      "programmes": [
+        1
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Losowanie całości lub wybranych części, blokady i podgląd; nie wymaga zmian ekonomii ani osobnego systemu rozgrywki."
+    },
+    {
+      "id": "A08",
+      "source_group": "forum",
+      "original_proposal": "Party map/GPS",
+      "programmes": [
+        2,
+        3
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Tylko dozwolone udostępnianie, z jawnym kanałem/instancją i aktualnością; brak publicznego GPS wszystkich postaci."
+    },
+    {
+      "id": "A09",
+      "source_group": "forum",
+      "original_proposal": "Full equipment-set hotkeys",
+      "programmes": [
+        6
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Widok systemu Equipment Loadouts, nie makro wielu pakietów ani obejście ograniczeń ekwipowania."
+    },
+    {
+      "id": "A10",
+      "source_group": "forum",
+      "original_proposal": "Separate Event Chat",
+      "programmes": [
+        1,
+        3
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Typowane kategorie wiadomości, filtry i przypięte widoki zamiast osobnego niezależnego backendu czatu."
+    },
+    {
+      "id": "A11",
+      "source_group": "forum",
+      "original_proposal": "Auto-drop empty flasks",
+      "programmes": [
+        4
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Domyślnie przeniesienie albo zachowanie; świadoma utylizacja z regułą, bez automatycznego zaśmiecania terenu."
+    },
+    {
+      "id": "A12",
+      "source_group": "forum",
+      "original_proposal": "Larger potion/rune stacks",
+      "programmes": [
+        4
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Maksimum per definicja; waga, pojemność i limit zapasów nadal jawne. Większy stack może zmienić długość hunta."
+    },
+    {
+      "id": "A13",
+      "source_group": "forum",
+      "original_proposal": "Sell directly from Stash",
+      "programmes": [
+        4,
+        5
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Zachować wymagany dostęp do usługi NPC, rezerwacje i podgląd ceny; sprzedaż jest serwerową operacją wartości."
+    },
+    {
+      "id": "A14",
+      "source_group": "forum",
+      "original_proposal": "Mount attributes",
+      "programmes": [
+        16
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Preferować kosmetykę i ostrożną użyteczność podróżną; wykluczyć niejawny obowiązkowy bojowy BIS z płatnego mounta."
+    },
+    {
+      "id": "A15",
+      "source_group": "forum",
+      "original_proposal": "Bank k/kk shorthand",
+      "programmes": [
+        5
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Dokładna arytmetyka całkowita, znormalizowana kwota przed potwierdzeniem; jednoznaczne reguły przecinka, kropki i jednostek."
+    },
+    {
+      "id": "A16",
+      "source_group": "forum",
+      "original_proposal": "Item Deck / Codex",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Oddzielić zobaczone/posiadane od zdobytego własnym działaniem; wspólna przeglądarka nie nadaje automatycznie nagród."
+    },
+    {
+      "id": "A17",
+      "source_group": "forum",
+      "original_proposal": "Level in VIP/contact list",
+      "programmes": [
+        3
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Pokazywać dane według przyjętej widoczności i aktualności, nie nową nieograniczoną publikację stanu gracza."
+    },
+    {
+      "id": "A18",
+      "source_group": "forum",
+      "original_proposal": "Guild in chat/VIP/contact surfaces",
+      "programmes": [
+        3
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Spójna projekcja członkostwa i prywatności; widok nie jest drugim źródłem prawdy o gildii."
+    },
+    {
+      "id": "B01",
+      "source_group": "forum",
+      "original_proposal": "In-game UI scaling",
+      "programmes": [
+        1
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Wspólny system DPI, skali interfejsu i fontów, niezależny od pola widzenia świata."
+    },
+    {
+      "id": "B02",
+      "source_group": "forum",
+      "original_proposal": "Larger/resizable minimap",
+      "programmes": [
+        1,
+        2
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Zwykły skalowalny panel z tą samą mapą danych; większe okno nie omija zasad odkrycia i udostępniania."
+    },
+    {
+      "id": "B03",
+      "source_group": "forum",
+      "original_proposal": "Party members on minimap",
+      "programmes": [
+        2,
+        3
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "To samo rozwiązanie co A08; bez osobnego systemu lokalizacji."
+    },
+    {
+      "id": "B04",
+      "source_group": "forum",
+      "original_proposal": "Mouse wheel hotkeys",
+      "programmes": [
+        1
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "UI najpierw konsumuje scroll; impulsy gry ograniczone i normalizowane, bez mnożenia akcji przez swobodnie obracane kółko."
+    },
+    {
+      "id": "B05",
+      "source_group": "forum",
+      "original_proposal": "Protection Set Management",
+      "programmes": [
+        6
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Jeden Equipment Loadouts z podglądem ochrony i przyczyną odmowy, nie osobny typ zestawu z innymi regułami."
+    },
+    {
+      "id": "B06",
+      "source_group": "forum",
+      "original_proposal": "Skill Wheel in broader PZ/safe zones",
+      "programmes": [
+        8
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Jawna polityka Evolved bez zakodowania nazwy Temple w silniku; Reference tylko zgodnie z dowodami."
+    },
+    {
+      "id": "B07",
+      "source_group": "forum",
+      "original_proposal": "More VIP groups",
+      "programmes": [
+        3
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Prywatne tagi i filtry z ograniczoną liczbą przechowywanych ustawień; nie wymagają nowej struktury społecznej."
+    },
+    {
+      "id": "B08",
+      "source_group": "forum",
+      "original_proposal": "Persistent/pinned read-only tabs",
+      "programmes": [
+        1
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Wersjonowane zapisane widoki, mute i nieprzeczytane; brak duplikowania autorytatywnych wiadomości lub nieograniczonej historii."
+    },
+    {
+      "id": "B09",
+      "source_group": "forum",
+      "original_proposal": "Weekly-task Stash filters",
+      "programmes": [
+        4,
+        14
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Tylko znane zaakceptowane zadania; pokaż wymagane, posiadane, zarezerwowane i brakujące ilości."
+    },
+    {
+      "id": "B10",
+      "source_group": "forum",
+      "original_proposal": "Weekly-task Market filters",
+      "programmes": [
+        5,
+        14
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Ten sam kontekst zadania co Stash, z osobnym potwierdzeniem zakupu i limitem wydatku."
+    },
+    {
+      "id": "B11",
+      "source_group": "forum",
+      "original_proposal": "Remove/clear ring/amulet enchant",
+      "programmes": [
+        4,
+        6
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Najpierw rozpoznać model ładunków; normalizacja nie może odtwarzać zużytego czasu ani tworzyć pełnowartościowego przedmiotu z resztek."
+    },
+    {
+      "id": "B12",
+      "source_group": "forum",
+      "original_proposal": "In-game party loot split",
+      "programmes": [
+        3,
+        5
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Rachunek informacyjny nie daje liderowi prawa do przelewu; jawna wycena, zgody i nierozstrzygnięte składniki."
+    },
+    {
+      "id": "B13",
+      "source_group": "forum",
+      "original_proposal": "Food duration display",
+      "programmes": [
+        1
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Active Effects z serwerowym czasem i lokalnym odliczaniem; nie odgadywać dokładnego końca bez danych."
+    },
+    {
+      "id": "B14",
+      "source_group": "forum",
+      "original_proposal": "Individual food/potion buff icons",
+      "programmes": [
+        1
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Jedna powierzchnia efektów, czytelny HUD i panel szczegółów; limity zasobów zamiast arbitralnego małego limitu ikon."
+    },
+    {
+      "id": "B15",
+      "source_group": "forum",
+      "original_proposal": "NPC food/supply cost in party hunt",
+      "programmes": [
+        3,
+        5
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Ustalić wycenę kosztu i moment użycia; zakup zapasu na przyszłość nie musi być w całości kosztem obecnego hunta."
+    },
+    {
+      "id": "B16",
+      "source_group": "forum",
+      "original_proposal": "Echo Warden completion counter",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Widok istniejącego postępu, zgodny z aktualnym modelem treści; nie nowa równoległa ścieżka nagród."
+    },
+    {
+      "id": "B17",
+      "source_group": "forum",
+      "original_proposal": "Larger Bestiary/Bosstiary Tracker",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Oddzielić dużą listę zainteresowań od ograniczonego HUD; wirtualizacja/paginacja i jawne limity zamiast dosłownego unlimited."
+    },
+    {
+      "id": "B18",
+      "source_group": "forum",
+      "original_proposal": "Better Bestiary UI/sort/filter/layout",
+      "programmes": [
+        10
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Wspólne filtrowanie, sortowanie i presety bez naruszania odrębnej logiki kolekcji oraz przyznawania punktów."
+    },
+    {
+      "id": "B19",
+      "source_group": "forum",
+      "original_proposal": "Immediate Loyalty from prepaid Premium",
+      "programmes": [
+        19
+      ],
+      "disposition": "ODRZUCIĆ",
+      "recommendation": "Podtrzymać odmowę natychmiastowej mocy za przyszły opłacony czas; odróżnić saldo uprawnienia od faktycznego stażu."
+    },
+    {
+      "id": "C01",
+      "source_group": "forum",
+      "original_proposal": "Equipment Presets",
+      "programmes": [
+        6
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "To samo źródło prawdy i komenda co A09/B05; jedna konfiguracja obsługiwana kilkoma wygodnymi widokami."
+    },
+    {
+      "id": "C02",
+      "source_group": "forum",
+      "original_proposal": "Diagonal movement from simultaneous WASD",
+      "programmes": [
+        1
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Stan trzymanych kierunków, anulowanie przeciwieństw i jeden legalny zamiar ruchu; testować utratę fokusu, czat oraz brak podwójnych kroków."
+    },
+    {
+      "id": "D01",
+      "source_group": "forum",
+      "original_proposal": "Decouple Stash and Market; retain filters/views",
+      "programmes": [
+        1,
+        4,
+        5
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Zachować stan okien i wyszukiwania niezależnie, ale odświeżać ważność danych i uprawnień po zmianie miejsca lub sesji."
+    },
+    {
+      "id": "D02",
+      "source_group": "forum",
+      "original_proposal": "Anonymous Market offers by default",
+      "programmes": [
+        5
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Jawna polityka produktu; anonimowość wobec innych graczy nie usuwa wewnętrznej identyfikacji i historii operacji."
+    },
+    {
+      "id": "D03",
+      "source_group": "forum",
+      "original_proposal": "Highlight own Market offers",
+      "programmes": [
+        5
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Widoczne własne oferty i ich stan, bez ujawniania anonimowej tożsamości innym użytkownikom."
+    },
+    {
+      "id": "D04",
+      "source_group": "forum",
+      "original_proposal": "Sort My Offers",
+      "programmes": [
+        5
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Sortowanie i filtry lokalnej projekcji; zachować spójność przy aktualizacjach i częściowym zrealizowaniu ofert."
+    },
+    {
+      "id": "D05",
+      "source_group": "forum",
+      "original_proposal": "NPC Sell: hide items not carried",
+      "programmes": [
+        4,
+        5
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Filtr oznaczony czytelnie; po przyjęciu sprzedaży ze Stash rozróżniać posiadane, dostępne usłudze i zarezerwowane."
+    },
+    {
+      "id": "D06",
+      "source_group": "forum",
+      "original_proposal": "Auto-label purchased parcel",
+      "programmes": [
+        5
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Nowoczesny formularz adresowania może zastąpić dosłowną automatyzację labela; zachować sprawdzenie odbiorcy i kosztu."
+    },
+    {
+      "id": "D07",
+      "source_group": "forum",
+      "original_proposal": "Custom Timers & Reminders",
+      "programmes": [
+        1
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Lokalne przypomnienia jawnie odróżnić od autorytatywnego czasu efektu; limit liczby, wyciszenie i brak automatycznego wykonywania gameplayu."
+    },
+    {
+      "id": "D08",
+      "source_group": "forum",
+      "original_proposal": "Party Finder lobbies/scheduling/tactical map",
+      "programmes": [
+        3
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Etapować: lobby i ready check, później terminy oraz rysunki; link lobby nie jest zgodą na członkostwo ani ujawnienie prywatnych questów."
+    },
+    {
+      "id": "D09",
+      "source_group": "forum",
+      "original_proposal": "Legacy Story Mode solo encounters",
+      "programmes": [
+        9
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Ręcznie wybrana lista starej treści z oddzielnymi nagrodami i zaliczeniami; nie globalne prawo do solo każdego bossa."
+    },
+    {
+      "id": "D10",
+      "source_group": "forum",
+      "original_proposal": "Puzzle/vocation companion illusions",
+      "programmes": [
+        9
+      ],
+      "disposition": "PÓŹNIEJ",
+      "recommendation": "Wyłącznie wskazane stare zagadki, bez stałej bojowej AI i bez niejawnego omijania współczesnej treści grupowej."
+    },
+    {
+      "id": "D11",
+      "source_group": "forum",
+      "original_proposal": "Exact Market quantity input",
+      "programmes": [
+        5
+      ],
+      "disposition": "ZACHOWAĆ",
+      "recommendation": "Dokładne pole liczby i podgląd sumy/opłaty; slider opcjonalny, z walidacją zakresu i formatu."
+    },
+    {
+      "id": "D12",
+      "source_group": "forum",
+      "original_proposal": "Protect Stash item",
+      "programmes": [
+        4
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Widok wspólnej polityki rezerwacji; nie nowa niezależna blokada, którą omija inna operacja zbiorcza."
+    },
+    {
+      "id": "D13",
+      "source_group": "forum",
+      "original_proposal": "Protect/reserve only N quantity",
+      "programmes": [
+        4
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Jednoznaczny zakres rezerwy i dostępna nadwyżka; uzgodnić pierwszeństwo ręcznych oraz zadaniowych potrzeb."
+    },
+    {
+      "id": "D14",
+      "source_group": "forum",
+      "original_proposal": "Two-ring quick switch",
+      "programmes": [
+        6
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "A/B jako skrót do wspólnego loadoutu, z zachowaniem właściwych ograniczeń czasowych i tożsamości używanego ringu."
+    },
+    {
+      "id": "D15",
+      "source_group": "forum",
+      "original_proposal": "Personal Hideouts / basic instanced housing",
+      "programmes": [
+        16
+      ],
+      "disposition": "UZGODNIĆ",
+      "recommendation": "Mapować na zaakceptowane Residence w EXP-HOUSES-01: bez Premium, max jeden slot Account+World, Residence albo dom fizyczny, nie oba równocześnie."
+    },
+    {
+      "id": "D16",
+      "source_group": "forum",
+      "original_proposal": "Account/world shared legacy quest access",
+      "programmes": [
+        9
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Wybrane dostępy współdzielone po spełnieniu warunków; nie kopiować automatycznie wszystkich flag postaci."
+    },
+    {
+      "id": "D17",
+      "source_group": "forum",
+      "original_proposal": "Shared quest unlock with one-time rewards",
+      "programmes": [
+        9
+      ],
+      "disposition": "ZMIENIĆ",
+      "recommendation": "Oddzielne uprawnienie do nagrody z zakresem Account+World tam, gdzie przyjęto taką zasadę; odporność na kanały i ponowienia."
+    },
+    {
+      "id": "D18",
+      "source_group": "forum",
+      "original_proposal": "Main character absorbs >5 alts and deletes them",
+      "programmes": [
+        9
+      ],
+      "disposition": "ODRZUCIĆ",
+      "recommendation": "Podtrzymać odrzucenie destrukcyjnego transferu progresji; powtarzalne dostępy naprawiać bez usuwania postaci."
+    },
+    {
+      "id": "R01",
+      "source_group": "research",
+      "original_proposal": "Faction & Reputation System 2.0",
+      "programmes": [
+        2,
+        9
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Rola fabularna, tożsamość i usługi; brak automatycznego obowiązkowego bonusu bojowego za reputację."
+    },
+    {
+      "id": "R02",
+      "source_group": "research",
+      "original_proposal": "Professions 2.0",
+      "programmes": [
+        16
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Najpierw odrębne aktywności i gospodarka; nie nowy komplet obowiązkowych statystyk do standardowego hunta."
+    },
+    {
+      "id": "R03",
+      "source_group": "research",
+      "original_proposal": "Guild Progression 2.0",
+      "programmes": [
+        3,
+        13
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Prestiż i organizacja zamiast stałej mocy, która uzależnia konkurencyjność gracza od przynależności do największej gildii."
+    },
+    {
+      "id": "R04",
+      "source_group": "research",
+      "original_proposal": "Adventurer Caravan / Expedition System",
+      "programmes": [
+        2,
+        9,
+        16
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Ocenić ograniczoną wyprawę jako wspólną treść eksploracyjną; reuse questów, encounterów i nagród, nie nowy monolityczny system."
+    },
+    {
+      "id": "R05",
+      "source_group": "research",
+      "original_proposal": "Region Discovery + Quest Chains",
+      "programmes": [
+        2,
+        9
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Włączyć do istniejącej mapy, Discovery i dziennika; nie promować jako odrębnego równoległego programu."
+    },
+    {
+      "id": "R06",
+      "source_group": "research",
+      "original_proposal": "Item rarity / random affixes",
+      "programmes": [
+        6
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Oddzielić wizualną rzadkość od losowych statystyk; zachować rozpoznawalność przedmiotów, przejrzyste budżety i ograniczoną liczbę wariantów."
+    },
+    {
+      "id": "R07",
+      "source_group": "research",
+      "original_proposal": "Awakening / Prestige reset",
+      "programmes": [
+        8,
+        9
+      ],
+      "disposition": "BADANIE",
+      "recommendation": "Nie rekomenduję resetu progresji w obecnym kierunku produktu; pozostaje historycznym kandydatem badawczym, bez promocji lub automatycznej zmiany filozofii."
+    }
+  ]
+}

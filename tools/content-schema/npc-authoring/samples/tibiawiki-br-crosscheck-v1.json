@@ -2,9 +2,9 @@
  "close_tiles": 10,
  "evidence": "REFERENCE_CROSSCHECK_ONLY",
  "inputs": {
-  "admission_sha256": "d4f1042ae2188ee852656feab2416c1d36b7abd4fc16ded8cbc68397f877d690",
-  "candidates_sha256": "6eac448abe51019154ea42afb6de72fcbb9dfb824fb5e6c16ed3fbeedd91dcb2",
-  "dialogues_sha256": "0c82197739ad2d5dbb9d36c5f8a2b49c7671696a13d38d7a336477bf9860d894",
+  "admission_sha256": "44d11c4cb3075c7bf54d43f968e9d366da1e985bafdafc0fe342571f095c898b",
+  "candidates_sha256": "16e6ec0b41e228176da0c021c1278801c09e48f0378a9820541c698924b48589",
+  "dialogues_sha256": "bb1f72f371b86ebd294d4eea20d623f94c858b3155a203cedf9a6b262536cc68",
   "facts_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
@@ -1222,10 +1222,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 33,
+    "matched": 35,
     "only_br": [
-     "SellToPlayer:candelabrum",
-     "SellToPlayer:crusher",
      "SellToPlayer:oil",
      "SellToPlayer:parchment (yellow)",
      "SellToPlayer:water (líquido)"
@@ -1239,10 +1237,7 @@
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -1477,9 +1472,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 45,
+    "matched": 46,
     "only_br": [
-     "SellToPlayer:snakebite rod",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -2379,11 +2373,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 14,
-    "only_br": [
-     "SellToPlayer:pineapple"
-    ],
-    "status": "DIFFER"
+    "matched": 15,
+    "status": "AGREE"
    }
   },
   {
@@ -2505,9 +2496,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 9,
+    "matched": 10,
     "only_br": [
-     "BuyFromPlayer:reality splinter",
      "BuyFromPlayer:spirited soil"
     ],
     "status": "DIFFER"
@@ -2642,8 +2632,11 @@
     "status": "NEAR"
    },
    "trade": {
-    "br_offers": 2,
-    "status": "BR_ONLY"
+    "matched": 1,
+    "only_br": [
+     "SellToPlayer:amphora"
+    ],
+    "status": "DIFFER"
    }
   },
   {
@@ -2715,9 +2708,8 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 27,
+    "matched": 28,
     "only_br": [
-     "SellToPlayer:crusher",
      "SellToPlayer:net (ferramenta)",
      "SellToPlayer:present",
      "BuyFromPlayer:coral branch",
@@ -2744,10 +2736,7 @@
      "SellToPlayer:telescope",
      "BuyFromPlayer:inkwell"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -2867,16 +2856,30 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 106,
-    "only_br": [
-     "BuyFromPlayer:grant of arms"
-    ],
+    "matched": 107,
     "only_ours": [
      "SellToPlayer:bounty talisman",
      "SellToPlayer:grant of arms",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant shimmering pearl",
-     "BuyFromPlayer:royal almandine"
+     "BuyFromPlayer:greater guardian gem",
+     "BuyFromPlayer:greater marksman gem",
+     "BuyFromPlayer:greater mystic gem",
+     "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
+     "BuyFromPlayer:guardian gem",
+     "BuyFromPlayer:lesser guardian gem",
+     "BuyFromPlayer:lesser marksman gem",
+     "BuyFromPlayer:lesser mystic gem",
+     "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
+     "BuyFromPlayer:marksman gem",
+     "BuyFromPlayer:mystic gem",
+     "BuyFromPlayer:royal almandine",
+     "BuyFromPlayer:sage gem",
+     "BuyFromPlayer:spiritualist gem"
     ],
     "status": "DIFFER"
    }
@@ -3191,23 +3194,14 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 124,
+    "matched": 133,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:studded legs",
-     "BuyFromPlayer:studded shield",
-     "BuyFromPlayer:swampling club",
      "BuyFromPlayer:sword",
-     "BuyFromPlayer:thick fur",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:viking shield",
-     "BuyFromPlayer:war hammer",
-     "BuyFromPlayer:wooden shield"
+     "BuyFromPlayer:viking helmet"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -3386,9 +3380,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 34,
+    "matched": 35,
     "only_br": [
-     "SellToPlayer:crusher",
      "SellToPlayer:oil",
      "SellToPlayer:parchment (yellow)",
      "SellToPlayer:water (líquido)"
@@ -3401,10 +3394,7 @@
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -3506,18 +3496,12 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 34,
-    "only_br": [
-     "SellToPlayer:crusher"
-    ],
+    "matched": 35,
     "only_ours": [
      "SellToPlayer:hand auger",
      "SellToPlayer:net"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -3663,11 +3647,10 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 38,
+    "matched": 39,
     "only_br": [
      "SellToPlayer:black book",
      "SellToPlayer:brown book",
-     "SellToPlayer:candelabrum",
      "SellToPlayer:football",
      "SellToPlayer:grey small book",
      "SellToPlayer:parchment (grey)",
@@ -3683,6 +3666,7 @@
      "SellToPlayer:book",
      "SellToPlayer:book",
      "SellToPlayer:book",
+     "SellToPlayer:crusher",
      "SellToPlayer:hand auger",
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net",
@@ -3691,10 +3675,7 @@
      "BuyFromPlayer:book",
      "BuyFromPlayer:book"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -3741,10 +3722,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 31,
+    "matched": 33,
     "only_br": [
-     "SellToPlayer:candelabrum",
-     "SellToPlayer:crusher",
      "SellToPlayer:oil",
      "SellToPlayer:parchment (yellow)",
      "SellToPlayer:water (líquido)"
@@ -3758,10 +3737,7 @@
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -3915,10 +3891,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 116,
+    "matched": 118,
     "only_br": [
-     "SellToPlayer:bag with naga eggs",
-     "SellToPlayer:celestial chart",
      "SellToPlayer:conch shell",
      "SellToPlayer:copied research notes",
      "SellToPlayer:fake dwarven beard",
@@ -3944,11 +3918,7 @@
      "SellToPlayer:ring of the count",
      "SellToPlayer:witches' grimoire"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00035132",
-     "SellToPlayer:oteryn:item.registry.i00035490"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -3977,8 +3947,12 @@
     "status": "NEAR"
    },
    "trade": {
-    "br_offers": 10,
-    "status": "BR_ONLY"
+    "matched": 8,
+    "only_br": [
+     "SellToPlayer:arrow",
+     "SellToPlayer:sword"
+    ],
+    "status": "DIFFER"
    }
   },
   {
@@ -4441,39 +4415,14 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 143,
+    "matched": 168,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
-     "BuyFromPlayer:ripper lance",
-     "BuyFromPlayer:sabre",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:salamander shield",
-     "BuyFromPlayer:scale armor",
-     "BuyFromPlayer:sentinel shield",
-     "BuyFromPlayer:short sword",
-     "BuyFromPlayer:sickle",
-     "BuyFromPlayer:small axe",
      "BuyFromPlayer:soldier helmet",
-     "BuyFromPlayer:spear",
-     "BuyFromPlayer:spike sword",
-     "BuyFromPlayer:steel helmet",
-     "BuyFromPlayer:steel shield",
-     "BuyFromPlayer:studded armor",
-     "BuyFromPlayer:studded club",
-     "BuyFromPlayer:studded helmet",
-     "BuyFromPlayer:studded legs",
-     "BuyFromPlayer:studded shield",
-     "BuyFromPlayer:swampling club",
-     "BuyFromPlayer:sword",
-     "BuyFromPlayer:templar scytheblade",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:viking shield",
-     "BuyFromPlayer:war hammer",
-     "BuyFromPlayer:wooden shield"
+     "BuyFromPlayer:sword"
     ],
     "only_ours": [
      "SellToPlayer:blue quiver",
@@ -4591,17 +4540,20 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 52,
+    "matched": 53,
     "only_br": [
      "SellToPlayer:watermelon tourmaline (fatia)",
-     "SellToPlayer:watermelon tourmaline (lapidada)",
-     "BuyFromPlayer:wedding ring"
+     "SellToPlayer:watermelon tourmaline (lapidada)"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -4609,16 +4561,19 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:mystic gem",
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -5189,6 +5144,25 @@
   },
   {
    "br": {
+    "pageid": 67603,
+    "revid": 441508,
+    "title": "Captain Corsarah"
+   },
+   "dialogue": {
+    "br_lines": 7,
+    "matched": 7,
+    "near": 0,
+    "status": "CHECKED",
+    "texts": 11
+   },
+   "name": "Captain Corsarah",
+   "npc": "oteryn:npc.captain_corsarah",
+   "position": {
+    "status": "MATCH"
+   }
+  },
+  {
+   "br": {
     "pageid": 34243,
     "revid": 406445,
     "title": "Captain Dreadnought"
@@ -5306,8 +5280,8 @@
     "status": "CLOSE"
    },
    "trade": {
-    "br_offers": 1,
-    "status": "BR_ONLY"
+    "matched": 1,
+    "status": "AGREE"
    }
   },
   {
@@ -5846,36 +5820,15 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 129,
+    "matched": 150,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
-     "BuyFromPlayer:rapier",
-     "BuyFromPlayer:sabre",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:scale armor",
-     "BuyFromPlayer:short sword",
-     "BuyFromPlayer:sickle",
-     "BuyFromPlayer:small axe",
      "BuyFromPlayer:soldier helmet",
-     "BuyFromPlayer:spear",
-     "BuyFromPlayer:spike sword",
-     "BuyFromPlayer:steel helmet",
-     "BuyFromPlayer:steel shield",
-     "BuyFromPlayer:studded armor",
-     "BuyFromPlayer:studded club",
-     "BuyFromPlayer:studded helmet",
-     "BuyFromPlayer:studded legs",
-     "BuyFromPlayer:studded shield",
-     "BuyFromPlayer:swampling club",
      "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:viking shield",
-     "BuyFromPlayer:war hammer",
-     "BuyFromPlayer:wooden shield"
+     "BuyFromPlayer:viking helmet"
     ],
     "only_ours": [
      "SellToPlayer:blue quiver",
@@ -5996,17 +5949,20 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 56,
+    "matched": 57,
     "only_br": [
-     "BuyFromPlayer:watermelon tourmaline",
-     "BuyFromPlayer:wedding ring"
+     "BuyFromPlayer:watermelon tourmaline"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:diamond",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -6014,11 +5970,13 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:moonstone",
@@ -6026,6 +5984,8 @@
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:scarab coin",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
+     "BuyFromPlayer:white gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -7310,8 +7270,41 @@
     "status": "NEAR"
    },
    "trade": {
-    "br_offers": 32,
-    "status": "BR_ONLY"
+    "matched": 1,
+    "only_br": [
+     "BuyFromPlayer:ape fur",
+     "BuyFromPlayer:badger fur",
+     "BuyFromPlayer:black wool",
+     "BuyFromPlayer:blue piece of cloth",
+     "BuyFromPlayer:brown piece of cloth",
+     "BuyFromPlayer:bunch of troll hair",
+     "BuyFromPlayer:downy feather",
+     "BuyFromPlayer:earflap",
+     "BuyFromPlayer:frost giant pelt",
+     "BuyFromPlayer:ghostly tissue",
+     "BuyFromPlayer:gloom wolf fur",
+     "BuyFromPlayer:green dragon leather",
+     "BuyFromPlayer:green piece of cloth",
+     "BuyFromPlayer:lion's mane",
+     "BuyFromPlayer:minotaur leather",
+     "BuyFromPlayer:piece of crocodile leather",
+     "BuyFromPlayer:red dragon leather",
+     "BuyFromPlayer:red piece of cloth",
+     "BuyFromPlayer:shaggy tail",
+     "BuyFromPlayer:silky fur",
+     "BuyFromPlayer:skunk tail",
+     "BuyFromPlayer:snake skin",
+     "BuyFromPlayer:spool of yarn",
+     "BuyFromPlayer:striped fur",
+     "BuyFromPlayer:thick fur",
+     "BuyFromPlayer:warwolf fur",
+     "BuyFromPlayer:werewolf fur",
+     "BuyFromPlayer:white piece of cloth",
+     "BuyFromPlayer:winter wolf fur",
+     "BuyFromPlayer:wool",
+     "BuyFromPlayer:yellow piece of cloth"
+    ],
+    "status": "DIFFER"
    }
   },
   {
@@ -7600,25 +7593,7 @@
     "status": "OTHER_FLOOR"
    },
    "trade": {
-    "matched": 8,
-    "only_br": [
-     "SellToPlayer:crystalline arrow",
-     "SellToPlayer:drill bolt",
-     "SellToPlayer:earth arrow",
-     "SellToPlayer:envenomed arrow",
-     "SellToPlayer:flaming arrow",
-     "SellToPlayer:flash arrow",
-     "SellToPlayer:onyx arrow",
-     "SellToPlayer:piercing bolt",
-     "SellToPlayer:power bolt",
-     "SellToPlayer:prismatic bolt",
-     "SellToPlayer:royal spear",
-     "SellToPlayer:shiver arrow",
-     "SellToPlayer:sniper arrow",
-     "SellToPlayer:tarsal arrow",
-     "SellToPlayer:throwing star",
-     "SellToPlayer:vortex bolt"
-    ],
+    "matched": 24,
     "only_ours": [
      "SellToPlayer:blue quiver",
      "SellToPlayer:quiver",
@@ -7782,11 +7757,8 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 27,
-    "only_br": [
-     "BuyFromPlayer:wooden shield"
-    ],
-    "status": "DIFFER"
+    "matched": 28,
+    "status": "AGREE"
    }
   },
   {
@@ -7874,7 +7846,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 72,
+    "matched": 73,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
@@ -7883,7 +7855,6 @@
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
      "SellToPlayer:red bed",
-     "SellToPlayer:silky tapestry",
      "SellToPlayer:simple bed",
      "SellToPlayer:treasure chest (ornamented)",
      "SellToPlayer:venorean cabinet",
@@ -8559,17 +8530,20 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 52,
+    "matched": 53,
     "only_br": [
      "BuyFromPlayer:watermelon tourmaline (fatia)",
-     "BuyFromPlayer:watermelon tourmaline (lapidada)",
-     "BuyFromPlayer:wedding ring"
+     "BuyFromPlayer:watermelon tourmaline (lapidada)"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -8577,16 +8551,19 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:mystic gem",
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -8705,21 +8682,16 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 71,
+    "matched": 76,
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
      "SellToPlayer:chest of drawers",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
-     "SellToPlayer:large used amphora kit",
      "SellToPlayer:red bed",
      "SellToPlayer:simple bed",
      "SellToPlayer:treasure chest (ornamented)",
-     "SellToPlayer:used globe kit",
-     "SellToPlayer:used red chair kit",
-     "SellToPlayer:used rocking horse kit",
-     "SellToPlayer:used telescope kit",
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
      "SellToPlayer:venorean wardrobe",
@@ -10257,12 +10229,10 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 81,
+    "matched": 83,
     "only_br": [
      "BuyFromPlayer:axe of sir leonard",
-     "BuyFromPlayer:colourful quill",
-     "BuyFromPlayer:helmet of sir leonard",
-     "BuyFromPlayer:transcendence potion"
+     "BuyFromPlayer:helmet of sir leonard"
     ],
     "status": "DIFFER"
    }
@@ -10346,23 +10316,13 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 139,
+    "matched": 149,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:studded helmet",
-     "BuyFromPlayer:studded legs",
-     "BuyFromPlayer:studded shield",
-     "BuyFromPlayer:swampling club",
-     "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:viking shield",
-     "BuyFromPlayer:war hammer",
-     "BuyFromPlayer:wooden shield"
+     "BuyFromPlayer:sword"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -10473,6 +10433,10 @@
      4
     ],
     "status": "NEAR"
+   },
+   "trade": {
+    "offers": 2,
+    "status": "NO_BR_TRADE"
    }
   },
   {
@@ -10823,17 +10787,20 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 52,
+    "matched": 53,
     "only_br": [
      "BuyFromPlayer:watermelon tourmaline (fatia)",
-     "BuyFromPlayer:watermelon tourmaline (lapidada)",
-     "BuyFromPlayer:wedding ring"
+     "BuyFromPlayer:watermelon tourmaline (lapidada)"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -10841,16 +10808,19 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:mystic gem",
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -10885,10 +10855,9 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 8,
+    "matched": 9,
     "only_br": [
-     "SellToPlayer:refined bow",
-     "BuyFromPlayer:spear"
+     "SellToPlayer:refined bow"
     ],
     "status": "DIFFER"
    }
@@ -10922,25 +10891,17 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 74,
+    "matched": 82,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "SellToPlayer:sword",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:small axe",
      "BuyFromPlayer:soldier helmet",
-     "BuyFromPlayer:spike sword",
      "BuyFromPlayer:steel helmet",
-     "BuyFromPlayer:studded club",
-     "BuyFromPlayer:studded helmet",
-     "BuyFromPlayer:swampling club",
      "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:war hammer"
+     "BuyFromPlayer:viking helmet"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -11009,6 +10970,7 @@
      "SellToPlayer:statue",
      "SellToPlayer:straw bed foot section",
      "SellToPlayer:straw mat head section",
+     "SellToPlayer:wooden stake",
      "SellToPlayer:yellow footboard",
      "SellToPlayer:yellow headboard"
     ],
@@ -11237,11 +11199,7 @@
     "status": "CLOSE"
    },
    "trade": {
-    "matched": 44,
-    "only_br": [
-     "SellToPlayer:poison field rune",
-     "SellToPlayer:poison wall rune"
-    ],
+    "matched": 46,
     "only_ours": [
      "SellToPlayer:supreme health potion",
      "SellToPlayer:ultimate mana potion",
@@ -11344,19 +11302,24 @@
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:greater guardian gem",
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:mystic gem",
-     "BuyFromPlayer:sage gem"
+     "BuyFromPlayer:sage gem",
+     "BuyFromPlayer:spiritualist gem"
     ],
     "status": "DIFFER"
    }
@@ -11373,10 +11336,8 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 37,
+    "matched": 39,
     "only_br": [
-     "SellToPlayer:crusher",
-     "BuyFromPlayer:werebear skull",
      "BuyFromPlayer:wereboar tusk",
      "BuyFromPlayer:werewolf fang"
     ],
@@ -11387,10 +11348,7 @@
      "BuyFromPlayer:wereboar tusks",
      "BuyFromPlayer:werewolf fangs"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -11834,10 +11792,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 5,
-    "only_br": [
-     "BuyFromPlayer:spear"
-    ],
+    "matched": 6,
     "only_ours": [
      "SellToPlayer:blue quiver",
      "SellToPlayer:quiver",
@@ -12182,14 +12137,11 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 49,
+    "matched": 52,
     "only_br": [
      "BuyFromPlayer:golden fafnar trophy",
      "BuyFromPlayer:the avenger",
-     "BuyFromPlayer:the ironworker",
-     "BuyFromPlayer:trophy of jaul",
-     "BuyFromPlayer:trophy of obujos",
-     "BuyFromPlayer:trophy of tanjis"
+     "BuyFromPlayer:the ironworker"
     ],
     "only_ours": [
      "BuyFromPlayer:avenger",
@@ -12396,19 +12348,16 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 40,
+    "matched": 43,
     "only_br": [
      "SellToPlayer:black book",
      "SellToPlayer:brown book",
-     "SellToPlayer:candelabrum",
-     "SellToPlayer:crusher",
      "SellToPlayer:grey small book",
      "SellToPlayer:parchment",
      "BuyFromPlayer:blue book",
      "BuyFromPlayer:gemmed book",
      "BuyFromPlayer:green book",
-     "BuyFromPlayer:orange book",
-     "BuyFromPlayer:sail pass"
+     "BuyFromPlayer:orange book"
     ],
     "only_ours": [
      "SellToPlayer:blank parchment",
@@ -12423,10 +12372,7 @@
      "BuyFromPlayer:book",
      "BuyFromPlayer:book"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -12492,14 +12438,14 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 34,
+    "matched": 35,
     "only_br": [
-     "SellToPlayer:candelabrum",
      "SellToPlayer:parchment (yellow)",
      "SellToPlayer:water (líquido)"
     ],
     "only_ours": [
      "SellToPlayer:blank parchment",
+     "SellToPlayer:crusher",
      "SellToPlayer:deed of ownership",
      "SellToPlayer:hand auger",
      "SellToPlayer:lit candelabrum",
@@ -12507,10 +12453,7 @@
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -13213,11 +13156,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 123,
-    "only_br": [
-     "BuyFromPlayer:dragon lance",
-     "BuyFromPlayer:silver dagger"
-    ],
+    "matched": 125,
     "only_ours": [
      "BuyFromPlayer:spell rune"
     ],
@@ -13311,23 +13250,13 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 59,
+    "matched": 69,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
-     "BuyFromPlayer:sabre",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:short sword",
-     "BuyFromPlayer:sickle",
-     "BuyFromPlayer:small axe",
-     "BuyFromPlayer:spike sword",
-     "BuyFromPlayer:studded club",
-     "BuyFromPlayer:swampling club",
-     "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:war hammer"
+     "BuyFromPlayer:sword"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -13426,10 +13355,8 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 32,
+    "matched": 34,
     "only_br": [
-     "SellToPlayer:candelabrum",
-     "SellToPlayer:crusher",
      "SellToPlayer:oil",
      "SellToPlayer:parchment (yellow)",
      "SellToPlayer:water (líquido)"
@@ -13443,10 +13370,7 @@
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -13560,9 +13484,13 @@
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -13570,16 +13498,19 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:mystic gem",
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -13614,24 +13545,13 @@
     "status": "MISMATCH"
    },
    "trade": {
-    "matched": 119,
+    "matched": 130,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:studded club",
-     "BuyFromPlayer:studded helmet",
-     "BuyFromPlayer:studded legs",
-     "BuyFromPlayer:studded shield",
-     "BuyFromPlayer:swampling club",
-     "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:viking shield",
-     "BuyFromPlayer:war hammer",
-     "BuyFromPlayer:wooden shield"
+     "BuyFromPlayer:sword"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -13743,6 +13663,9 @@
      "SellToPlayer:flask of warrior's sweat",
      "SellToPlayer:magic sulphur",
      "SellToPlayer:spirit container (fighting spirit)"
+    ],
+    "only_ours": [
+     "BuyFromPlayer:greater garlic necklace"
     ],
     "status": "DIFFER"
    }
@@ -13869,7 +13792,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 60,
+    "matched": 63,
     "only_br": [
      "SellToPlayer:convince creature rune",
      "SellToPlayer:cure poison rune",
@@ -13878,13 +13801,10 @@
      "SellToPlayer:fire field rune",
      "SellToPlayer:intense healing rune",
      "SellToPlayer:light magic missile rune",
-     "SellToPlayer:meat",
      "SellToPlayer:poison field rune",
      "BuyFromPlayer:empty potion flask (small)",
-     "BuyFromPlayer:leather legs",
      "BuyFromPlayer:mage hat",
      "BuyFromPlayer:magician's robe",
-     "BuyFromPlayer:refined bow",
      "BuyFromPlayer:rope",
      "BuyFromPlayer:shovel",
      "BuyFromPlayer:spellbook",
@@ -14042,8 +13962,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "br_offers": 1,
-    "status": "BR_ONLY"
+    "matched": 1,
+    "status": "AGREE"
    }
   },
   {
@@ -14190,8 +14110,12 @@
     "status": "NEAR"
    },
    "trade": {
-    "br_offers": 5,
-    "status": "BR_ONLY"
+    "matched": 3,
+    "only_br": [
+     "SellToPlayer:rotworm",
+     "BuyFromPlayer:dead rat"
+    ],
+    "status": "DIFFER"
    }
   },
   {
@@ -14580,10 +14504,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 5,
-    "only_br": [
-     "BuyFromPlayer:spear"
-    ],
+    "matched": 6,
     "only_ours": [
      "SellToPlayer:blue quiver",
      "SellToPlayer:quiver",
@@ -14725,17 +14646,20 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 52,
+    "matched": 53,
     "only_br": [
      "BuyFromPlayer:watermelon tourmaline (fatia)",
-     "BuyFromPlayer:watermelon tourmaline (lapidada)",
-     "BuyFromPlayer:wedding ring"
+     "BuyFromPlayer:watermelon tourmaline (lapidada)"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -14743,16 +14667,19 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:mystic gem",
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -14916,17 +14843,20 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 52,
+    "matched": 53,
     "only_br": [
      "BuyFromPlayer:watermelon tourmaline (fatia)",
-     "BuyFromPlayer:watermelon tourmaline (lapidada)",
-     "BuyFromPlayer:wedding ring"
+     "BuyFromPlayer:watermelon tourmaline (lapidada)"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -14934,16 +14864,19 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:mystic gem",
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -15051,8 +14984,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "br_offers": 1,
-    "status": "BR_ONLY"
+    "matched": 1,
+    "status": "AGREE"
    }
   },
   {
@@ -15435,6 +15368,22 @@
   },
   {
    "br": {
+    "pageid": 67594,
+    "revid": 440493,
+    "title": "Javala"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 8
+   },
+   "name": "Javala",
+   "npc": "oteryn:npc.javala",
+   "position": {
+    "status": "MATCH"
+   }
+  },
+  {
+   "br": {
     "pageid": 11536,
     "revid": 357212,
     "title": "Jean Claude"
@@ -15513,6 +15462,10 @@
      6
     ],
     "status": "NEAR"
+   },
+   "trade": {
+    "offers": 6,
+    "status": "NO_BR_TRADE"
    }
   },
   {
@@ -15620,17 +15573,20 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 56,
+    "matched": 57,
     "only_br": [
-     "BuyFromPlayer:watermelon tourmaline",
-     "BuyFromPlayer:wedding ring"
+     "BuyFromPlayer:watermelon tourmaline"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:diamond",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -15638,11 +15594,13 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:moonstone",
@@ -15650,6 +15608,8 @@
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:scarab coin",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
+     "BuyFromPlayer:white gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -16423,10 +16383,9 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 78,
+    "matched": 79,
     "only_br": [
      "SellToPlayer:life ring",
-     "SellToPlayer:soulfire rune",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher",
      "BuyFromPlayer:bashmu feather",
@@ -16966,11 +16925,9 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 63,
+    "matched": 65,
     "only_br": [
-     "SellToPlayer:football",
-     "BuyFromPlayer:sickle",
-     "BuyFromPlayer:studded club"
+     "SellToPlayer:football"
     ],
     "status": "DIFFER"
    }
@@ -17168,10 +17125,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 5,
-    "only_br": [
-     "BuyFromPlayer:cookie"
-    ],
+    "matched": 6,
     "only_ours": [
      "BuyFromPlayer:empty potion flask",
      "BuyFromPlayer:empty potion flask",
@@ -17555,10 +17509,9 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 27,
+    "matched": 28,
     "only_br": [
      "SellToPlayer:candelabrum",
-     "SellToPlayer:crusher",
      "SellToPlayer:torch",
      "SellToPlayer:water (líquido)"
     ],
@@ -17568,10 +17521,7 @@
      "SellToPlayer:net",
      "SellToPlayer:waterskin"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -17596,8 +17546,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "br_offers": 1,
-    "status": "BR_ONLY"
+    "matched": 1,
+    "status": "AGREE"
    }
   },
   {
@@ -18249,6 +18199,7 @@
      "SellToPlayer:backpack",
      "SellToPlayer:baking tray",
      "SellToPlayer:cleaver",
+     "SellToPlayer:crusher",
      "SellToPlayer:cup",
      "SellToPlayer:fork",
      "SellToPlayer:hand auger",
@@ -18262,10 +18213,7 @@
      "SellToPlayer:watering can",
      "SellToPlayer:wooden spoon"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -18384,6 +18332,7 @@
     "matched": 76,
     "only_ours": [
      "SellToPlayer:blue quiver",
+     "SellToPlayer:crusher",
      "SellToPlayer:diamond arrow",
      "SellToPlayer:hand auger",
      "SellToPlayer:net",
@@ -18394,10 +18343,26 @@
      "SellToPlayer:shovel",
      "SellToPlayer:spectral bolt"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
+   }
+  },
+  {
+   "br": {
+    "pageid": 67591,
+    "revid": 441510,
+    "title": "Mayor Pocaro"
+   },
+   "dialogue": {
+    "br_lines": 22,
+    "matched": 14,
+    "near": 5,
+    "status": "CHECKED",
+    "texts": 41
+   },
+   "name": "Mayor Pocaro",
+   "npc": "oteryn:npc.mayor_pocaro",
+   "position": {
+    "status": "MATCH"
    }
   },
   {
@@ -18576,24 +18541,14 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 121,
+    "matched": 131,
     "only_br": [
      "SellToPlayer:dwarven shield",
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:studded helmet",
-     "BuyFromPlayer:studded legs",
-     "BuyFromPlayer:studded shield",
-     "BuyFromPlayer:swampling club",
-     "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:viking shield",
-     "BuyFromPlayer:war hammer",
-     "BuyFromPlayer:wooden shield"
+     "BuyFromPlayer:sword"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -18770,10 +18725,9 @@
     "status": "NO_PLACEMENT"
    },
    "trade": {
-    "matched": 11,
+    "matched": 12,
     "only_br": [
-     "SellToPlayer:christmas present",
-     "SellToPlayer:christmas tree package"
+     "SellToPlayer:christmas present"
     ],
     "only_ours": [
      "SellToPlayer:snowman"
@@ -18973,9 +18927,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 56,
+    "matched": 57,
     "only_br": [
-     "SellToPlayer:soulfire rune",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -19036,25 +18989,13 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 123,
+    "matched": 135,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:small axe",
-     "BuyFromPlayer:studded club",
-     "BuyFromPlayer:studded helmet",
-     "BuyFromPlayer:studded legs",
-     "BuyFromPlayer:studded shield",
-     "BuyFromPlayer:swampling club",
-     "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:viking shield",
-     "BuyFromPlayer:war hammer",
-     "BuyFromPlayer:wooden shield"
+     "BuyFromPlayer:sword"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -19600,10 +19541,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 15,
-    "only_br": [
-     "SellToPlayer:broom"
-    ],
+    "matched": 16,
     "only_ours": [
      "SellToPlayer:witchesbroom"
     ],
@@ -19692,10 +19630,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 31,
+    "matched": 33,
     "only_br": [
-     "SellToPlayer:candelabrum",
-     "SellToPlayer:crusher",
      "SellToPlayer:oil",
      "SellToPlayer:parchment (yellow)",
      "SellToPlayer:water (líquido)"
@@ -19709,10 +19645,7 @@
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -20557,17 +20490,20 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 56,
+    "matched": 57,
     "only_br": [
-     "BuyFromPlayer:watermelon tourmaline",
-     "BuyFromPlayer:wedding ring"
+     "BuyFromPlayer:watermelon tourmaline"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:diamond",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -20575,11 +20511,13 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:moonstone",
@@ -20587,6 +20525,8 @@
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:scarab coin",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
+     "BuyFromPlayer:white gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -20604,17 +20544,20 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 52,
+    "matched": 53,
     "only_br": [
      "BuyFromPlayer:watermelon tourmaline (fatia)",
-     "BuyFromPlayer:watermelon tourmaline (lapidada)",
-     "BuyFromPlayer:wedding ring"
+     "BuyFromPlayer:watermelon tourmaline (lapidada)"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -20622,16 +20565,19 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:mystic gem",
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -20759,11 +20705,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 3,
-    "only_br": [
-     "SellToPlayer:blank poetry parchment"
-    ],
-    "status": "DIFFER"
+    "matched": 4,
+    "status": "AGREE"
    }
   },
   {
@@ -21382,8 +21325,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "br_offers": 1,
-    "status": "BR_ONLY"
+    "matched": 1,
+    "status": "AGREE"
    }
   },
   {
@@ -21609,10 +21552,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 5,
-    "only_br": [
-     "BuyFromPlayer:spear"
-    ],
+    "matched": 6,
     "only_ours": [
      "SellToPlayer:blue quiver",
      "SellToPlayer:quiver",
@@ -21707,27 +21647,22 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 56,
+    "matched": 61,
     "only_br": [
      "SellToPlayer:basket",
      "SellToPlayer:black book",
      "SellToPlayer:brown book",
-     "SellToPlayer:candelabrum",
-     "SellToPlayer:crusher",
      "SellToPlayer:football",
      "SellToPlayer:grey small book",
      "SellToPlayer:parchment (grey)",
      "SellToPlayer:parchment (poetry)",
      "SellToPlayer:parchment (yellow)",
-     "SellToPlayer:valentine's card",
-     "SellToPlayer:watch",
      "BuyFromPlayer:blue book",
      "BuyFromPlayer:closed trap",
      "BuyFromPlayer:gemmed book",
      "BuyFromPlayer:green book",
      "BuyFromPlayer:orange book",
-     "BuyFromPlayer:parchment (grey)",
-     "BuyFromPlayer:watch"
+     "BuyFromPlayer:parchment (grey)"
     ],
     "only_ours": [
      "SellToPlayer:blank parchment",
@@ -21760,10 +21695,36 @@
       ]
      }
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
+   }
+  },
+  {
+   "br": {
+    "pageid": 67602,
+    "revid": 440501,
+    "title": "Pescadu"
+   },
+   "dialogue": {
+    "br_lines": 2,
+    "matched": 4,
+    "near": 0,
+    "status": "CHECKED",
+    "texts": 4
+   },
+   "name": "Pescadu",
+   "npc": "oteryn:npc.pescadu",
+   "position": {
+    "br": [
+     34021,
+     32505,
+     7
+    ],
+    "ours": [
+     34020,
+     32505,
+     7
+    ],
+    "status": "NEAR"
    }
   },
   {
@@ -22456,8 +22417,21 @@
     "status": "MATCH"
    },
    "trade": {
-    "br_offers": 52,
-    "status": "BR_ONLY"
+    "matched": 44,
+    "only_br": [
+     "SellToPlayer:egg",
+     "SellToPlayer:fish",
+     "SellToPlayer:oracle figurine",
+     "SellToPlayer:rope",
+     "SellToPlayer:shovel",
+     "SellToPlayer:torch",
+     "BuyFromPlayer:empty potion flask (small)",
+     "BuyFromPlayer:sword"
+    ],
+    "only_ours": [
+     "SellToPlayer:quiver"
+    ],
+    "status": "DIFFER"
    }
   },
   {
@@ -22967,10 +22941,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 33,
+    "matched": 35,
     "only_br": [
-     "SellToPlayer:candelabrum",
-     "SellToPlayer:crusher",
      "SellToPlayer:oil",
      "SellToPlayer:parchment (yellow)",
      "SellToPlayer:water (líquido)"
@@ -22984,10 +22956,7 @@
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -23098,13 +23067,10 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 18,
+    "matched": 21,
     "only_br": [
-     "SellToPlayer:cheese",
-     "SellToPlayer:meat",
      "SellToPlayer:rope",
-     "SellToPlayer:shovel",
-     "BuyFromPlayer:fishing rod"
+     "SellToPlayer:shovel"
     ],
     "status": "DIFFER"
    }
@@ -23157,37 +23123,15 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 131,
+    "matched": 153,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
-     "BuyFromPlayer:plate shield",
-     "BuyFromPlayer:rapier",
-     "BuyFromPlayer:sabre",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:scale armor",
-     "BuyFromPlayer:short sword",
-     "BuyFromPlayer:sickle",
-     "BuyFromPlayer:small axe",
      "BuyFromPlayer:soldier helmet",
-     "BuyFromPlayer:spear",
-     "BuyFromPlayer:spike sword",
-     "BuyFromPlayer:steel helmet",
-     "BuyFromPlayer:steel shield",
-     "BuyFromPlayer:studded armor",
-     "BuyFromPlayer:studded club",
-     "BuyFromPlayer:studded helmet",
-     "BuyFromPlayer:studded legs",
-     "BuyFromPlayer:studded shield",
-     "BuyFromPlayer:swampling club",
      "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:viking shield",
-     "BuyFromPlayer:war hammer",
-     "BuyFromPlayer:wooden shield"
+     "BuyFromPlayer:viking helmet"
     ],
     "only_ours": [
      "SellToPlayer:blue quiver",
@@ -23271,8 +23215,68 @@
     "status": "MATCH"
    },
    "trade": {
-    "br_offers": 263,
-    "status": "BR_ONLY"
+    "matched": 217,
+    "only_br": [
+     "SellToPlayer:arrow",
+     "SellToPlayer:basket",
+     "SellToPlayer:brass shield",
+     "SellToPlayer:brass shield",
+     "SellToPlayer:bucket",
+     "SellToPlayer:closed trap",
+     "SellToPlayer:crowbar",
+     "SellToPlayer:cure poison rune",
+     "SellToPlayer:intense healing rune",
+     "SellToPlayer:iron helmet",
+     "SellToPlayer:label",
+     "SellToPlayer:letter",
+     "SellToPlayer:light magic missile rune",
+     "SellToPlayer:parcel",
+     "SellToPlayer:pick",
+     "SellToPlayer:present",
+     "SellToPlayer:rope",
+     "SellToPlayer:scale armor",
+     "SellToPlayer:shovel",
+     "SellToPlayer:soldier helmet",
+     "SellToPlayer:steel helmet",
+     "SellToPlayer:sword",
+     "SellToPlayer:torch",
+     "SellToPlayer:ultimate healing rune",
+     "SellToPlayer:viking helmet",
+     "BuyFromPlayer:brass shield",
+     "BuyFromPlayer:closed trap",
+     "BuyFromPlayer:crowbar",
+     "BuyFromPlayer:depth galea",
+     "BuyFromPlayer:dung ball",
+     "BuyFromPlayer:empty potion flask (large)",
+     "BuyFromPlayer:empty potion flask (medium)",
+     "BuyFromPlayer:empty potion flask (small)",
+     "BuyFromPlayer:iron helmet",
+     "BuyFromPlayer:leather helmet",
+     "BuyFromPlayer:leather legs",
+     "BuyFromPlayer:legion helmet",
+     "BuyFromPlayer:nunchaku",
+     "BuyFromPlayer:pick",
+     "BuyFromPlayer:rope",
+     "BuyFromPlayer:sai",
+     "BuyFromPlayer:shovel",
+     "BuyFromPlayer:soldier helmet",
+     "BuyFromPlayer:steel helmet",
+     "BuyFromPlayer:sword",
+     "BuyFromPlayer:viking helmet"
+    ],
+    "only_ours": [
+     "SellToPlayer:blue quiver",
+     "SellToPlayer:brass helmet",
+     "SellToPlayer:crusher",
+     "SellToPlayer:great fireball rune",
+     "SellToPlayer:hand auger",
+     "SellToPlayer:holy missile rune",
+     "SellToPlayer:quiver",
+     "SellToPlayer:red quiver",
+     "SellToPlayer:studded legs",
+     "BuyFromPlayer:studded legs"
+    ],
+    "status": "DIFFER"
    }
   },
   {
@@ -23455,27 +23459,11 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 40,
+    "matched": 56,
     "only_br": [
-     "SellToPlayer:avalanche rune",
-     "SellToPlayer:chameleon rune",
-     "SellToPlayer:convince creature rune",
      "SellToPlayer:cure poison rune",
-     "SellToPlayer:destroy field rune",
-     "SellToPlayer:energy field rune",
-     "SellToPlayer:energy wall rune",
-     "SellToPlayer:explosion rune",
-     "SellToPlayer:fire bomb rune",
-     "SellToPlayer:fire field rune",
-     "SellToPlayer:fire wall rune",
-     "SellToPlayer:great fireball rune",
-     "SellToPlayer:heavy magic missile rune",
      "SellToPlayer:intense healing rune",
      "SellToPlayer:light magic missile rune",
-     "SellToPlayer:poison field rune",
-     "SellToPlayer:poison wall rune",
-     "SellToPlayer:stalagmite rune",
-     "SellToPlayer:sudden death rune",
      "SellToPlayer:ultimate healing rune"
     ],
     "status": "DIFFER"
@@ -23674,24 +23662,14 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 57,
+    "matched": 67,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "SellToPlayer:sword",
      "BuyFromPlayer:nunchaku",
-     "BuyFromPlayer:sabre",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:short sword",
-     "BuyFromPlayer:sickle",
-     "BuyFromPlayer:small axe",
-     "BuyFromPlayer:spike sword",
-     "BuyFromPlayer:studded club",
-     "BuyFromPlayer:swampling club",
-     "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:war hammer"
+     "BuyFromPlayer:sword"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -23858,13 +23836,12 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 130,
+    "matched": 131,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
-     "BuyFromPlayer:sai",
-     "BuyFromPlayer:swampling club"
+     "BuyFromPlayer:sai"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -24132,9 +24109,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 33,
+    "matched": 34,
     "only_br": [
-     "SellToPlayer:crusher",
      "SellToPlayer:football",
      "SellToPlayer:oil",
      "SellToPlayer:parchment (yellow)"
@@ -24145,10 +24121,7 @@
      "SellToPlayer:net",
      "SellToPlayer:vial"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -24480,17 +24453,6 @@
      "SellToPlayer:vial",
      "SellToPlayer:vial"
     ],
-    "price_mismatch": [
-     {
-      "br": [
-       3
-      ],
-      "offer": "SellToPlayer:roll",
-      "ours": [
-       2
-      ]
-     }
-    ],
     "status": "DIFFER"
    }
   },
@@ -24565,87 +24527,19 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 63,
+    "matched": 131,
     "only_br": [
-     "SellToPlayer:coat",
-     "SellToPlayer:crowbar",
-     "SellToPlayer:doublet",
-     "SellToPlayer:dwarven shield",
-     "SellToPlayer:hand axe",
      "SellToPlayer:iron helmet",
-     "SellToPlayer:jacket",
-     "SellToPlayer:leather boots",
-     "SellToPlayer:leather legs",
-     "SellToPlayer:mace",
-     "SellToPlayer:morning star",
      "SellToPlayer:nunchaku",
-     "SellToPlayer:plate armor",
-     "SellToPlayer:plate shield",
      "SellToPlayer:sai",
-     "SellToPlayer:scale armor",
-     "SellToPlayer:short sword",
-     "SellToPlayer:sickle",
      "SellToPlayer:soldier helmet",
-     "SellToPlayer:spike sword",
-     "SellToPlayer:steel helmet",
-     "SellToPlayer:studded armor",
-     "SellToPlayer:studded helmet",
-     "SellToPlayer:studded legs",
-     "SellToPlayer:studded shield",
      "SellToPlayer:sword",
-     "SellToPlayer:two handed sword",
      "SellToPlayer:viking helmet",
-     "SellToPlayer:viking shield",
-     "SellToPlayer:war hammer",
-     "BuyFromPlayer:bone club",
-     "BuyFromPlayer:bone sword",
-     "BuyFromPlayer:carlin sword",
-     "BuyFromPlayer:club",
-     "BuyFromPlayer:coat",
-     "BuyFromPlayer:copper shield",
-     "BuyFromPlayer:crowbar",
-     "BuyFromPlayer:double axe",
-     "BuyFromPlayer:doublet",
-     "BuyFromPlayer:dwarven shield",
-     "BuyFromPlayer:golden armor",
-     "BuyFromPlayer:halberd",
-     "BuyFromPlayer:hand axe",
-     "BuyFromPlayer:hatchet",
-     "BuyFromPlayer:jacket",
-     "BuyFromPlayer:katana",
-     "BuyFromPlayer:leather boots",
      "BuyFromPlayer:legion helmet",
-     "BuyFromPlayer:morning star",
      "BuyFromPlayer:nunchaku",
-     "BuyFromPlayer:orcish axe",
-     "BuyFromPlayer:plate armor",
-     "BuyFromPlayer:plate legs",
-     "BuyFromPlayer:plate shield",
-     "BuyFromPlayer:rapier",
-     "BuyFromPlayer:sabre",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:scale armor",
-     "BuyFromPlayer:short sword",
-     "BuyFromPlayer:sickle",
-     "BuyFromPlayer:small axe",
      "BuyFromPlayer:soldier helmet",
-     "BuyFromPlayer:spike sword",
-     "BuyFromPlayer:steel helmet",
-     "BuyFromPlayer:steel shield",
-     "BuyFromPlayer:studded armor",
-     "BuyFromPlayer:studded club",
-     "BuyFromPlayer:studded helmet",
-     "BuyFromPlayer:studded legs",
-     "BuyFromPlayer:studded shield",
-     "BuyFromPlayer:swampling club",
-     "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:viking shield",
-     "BuyFromPlayer:war hammer",
-     "BuyFromPlayer:warrior helmet",
-     "BuyFromPlayer:wooden shield"
+     "BuyFromPlayer:sword"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -24797,7 +24691,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 50,
+    "matched": 52,
     "only_br": [
      "SellToPlayer:black book",
      "SellToPlayer:brown book",
@@ -24809,13 +24703,11 @@
      "SellToPlayer:pick",
      "SellToPlayer:wall mirror",
      "SellToPlayer:wall mirror",
-     "SellToPlayer:watch",
      "BuyFromPlayer:blue book",
      "BuyFromPlayer:gemmed book",
      "BuyFromPlayer:green book",
      "BuyFromPlayer:orange book",
-     "BuyFromPlayer:parchment (grey)",
-     "BuyFromPlayer:watch"
+     "BuyFromPlayer:parchment (grey)"
     ],
     "only_ours": [
      "SellToPlayer:blank parchment",
@@ -24823,6 +24715,7 @@
      "SellToPlayer:book",
      "SellToPlayer:book",
      "SellToPlayer:coal basin kit",
+     "SellToPlayer:crusher",
      "SellToPlayer:net",
      "SellToPlayer:very noble-looking watch",
      "SellToPlayer:vial",
@@ -24842,10 +24735,7 @@
       ]
      }
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -25154,26 +25044,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 7,
-    "only_br": [
-     "SellToPlayer:crossbow",
-     "SellToPlayer:crystalline arrow",
-     "SellToPlayer:drill bolt",
-     "SellToPlayer:earth arrow",
-     "SellToPlayer:envenomed arrow",
-     "SellToPlayer:flaming arrow",
-     "SellToPlayer:flash arrow",
-     "SellToPlayer:onyx arrow",
-     "SellToPlayer:piercing bolt",
-     "SellToPlayer:power bolt",
-     "SellToPlayer:prismatic bolt",
-     "SellToPlayer:royal spear",
-     "SellToPlayer:shiver arrow",
-     "SellToPlayer:sniper arrow",
-     "SellToPlayer:tarsal arrow",
-     "SellToPlayer:throwing star",
-     "SellToPlayer:vortex bolt"
-    ],
+    "matched": 24,
     "only_ours": [
      "SellToPlayer:blue quiver",
      "SellToPlayer:quiver",
@@ -25734,17 +25605,6 @@
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
-    "price_mismatch": [
-     {
-      "br": [
-       15
-      ],
-      "offer": "SellToPlayer:blank rune",
-      "ours": [
-       10
-      ]
-     }
-    ],
     "status": "DIFFER"
    }
   },
@@ -25977,12 +25837,16 @@
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:bar of gold",
      "BuyFromPlayer:diamond",
      "BuyFromPlayer:dragon figurine",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant emerald",
      "BuyFromPlayer:giant ruby",
@@ -25993,11 +25857,13 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:moonstone",
@@ -26005,6 +25871,7 @@
      "BuyFromPlayer:ornate locket",
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
      "BuyFromPlayer:unicorn figurine",
      "BuyFromPlayer:white gem",
      "BuyFromPlayer:white silk flower"
@@ -26335,6 +26202,10 @@
      5
     ],
     "status": "NEAR"
+   },
+   "trade": {
+    "offers": 16,
+    "status": "NO_BR_TRADE"
    }
   },
   {
@@ -26509,20 +26380,39 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 60,
+    "matched": 61,
     "only_br": [
-     "BuyFromPlayer:watermelon tourmaline",
-     "BuyFromPlayer:wedding ring"
+     "BuyFromPlayer:watermelon tourmaline"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:diamond",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
+     "BuyFromPlayer:greater guardian gem",
+     "BuyFromPlayer:greater marksman gem",
+     "BuyFromPlayer:greater mystic gem",
+     "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
+     "BuyFromPlayer:guardian gem",
+     "BuyFromPlayer:lesser guardian gem",
+     "BuyFromPlayer:lesser marksman gem",
+     "BuyFromPlayer:lesser mystic gem",
+     "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
+     "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:moonstone",
+     "BuyFromPlayer:mystic gem",
+     "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
+     "BuyFromPlayer:white gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -26550,17 +26440,20 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 52,
+    "matched": 53,
     "only_br": [
      "BuyFromPlayer:watermelon tourmaline (fatia)",
-     "BuyFromPlayer:watermelon tourmaline (lapidada)",
-     "BuyFromPlayer:wedding ring"
+     "BuyFromPlayer:watermelon tourmaline (lapidada)"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -26568,16 +26461,19 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:mystic gem",
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -27086,6 +26982,25 @@
   },
   {
    "br": {
+    "pageid": 67597,
+    "revid": 440496,
+    "title": "Thorim"
+   },
+   "dialogue": {
+    "br_lines": 2,
+    "matched": 4,
+    "near": 0,
+    "status": "CHECKED",
+    "texts": 4
+   },
+   "name": "Thorim",
+   "npc": "oteryn:npc.thorim",
+   "position": {
+    "status": "MATCH"
+   }
+  },
+  {
+   "br": {
     "pageid": 12089,
     "revid": 436898,
     "title": "Thorwulf"
@@ -27251,9 +27166,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 37,
+    "matched": 38,
     "only_br": [
-     "SellToPlayer:crusher",
      "SellToPlayer:parchment (yellow)"
     ],
     "only_ours": [
@@ -27261,10 +27175,7 @@
      "SellToPlayer:hand auger",
      "SellToPlayer:net"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -27813,23 +27724,13 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 120,
+    "matched": 130,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:studded helmet",
-     "BuyFromPlayer:studded legs",
-     "BuyFromPlayer:studded shield",
-     "BuyFromPlayer:swampling club",
-     "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:viking shield",
-     "BuyFromPlayer:war hammer",
-     "BuyFromPlayer:wooden shield"
+     "BuyFromPlayer:sword"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -28049,23 +27950,14 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 109,
+    "matched": 118,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:studded club",
-     "BuyFromPlayer:studded helmet",
-     "BuyFromPlayer:studded shield",
-     "BuyFromPlayer:swampling club",
      "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:viking helmet",
-     "BuyFromPlayer:viking shield",
-     "BuyFromPlayer:war hammer",
-     "BuyFromPlayer:wooden shield"
+     "BuyFromPlayer:viking helmet"
     ],
     "only_ours": [
      "SellToPlayer:durable exercise shield",
@@ -28269,29 +28161,14 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 59,
+    "matched": 74,
     "only_br": [
      "SellToPlayer:nunchaku",
      "SellToPlayer:sai",
      "BuyFromPlayer:excalibug",
-     "BuyFromPlayer:mace",
-     "BuyFromPlayer:morning star",
      "BuyFromPlayer:nunchaku",
-     "BuyFromPlayer:orcish axe",
-     "BuyFromPlayer:rapier",
-     "BuyFromPlayer:sabre",
      "BuyFromPlayer:sai",
-     "BuyFromPlayer:short sword",
-     "BuyFromPlayer:sickle",
-     "BuyFromPlayer:small axe",
-     "BuyFromPlayer:spear",
-     "BuyFromPlayer:spike sword",
-     "BuyFromPlayer:studded club",
-     "BuyFromPlayer:swampling club",
-     "BuyFromPlayer:sword",
-     "BuyFromPlayer:throwing knife",
-     "BuyFromPlayer:two handed sword",
-     "BuyFromPlayer:war hammer"
+     "BuyFromPlayer:sword"
     ],
     "only_ours": [
      "SellToPlayer:blue quiver",
@@ -28444,12 +28321,16 @@
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
      "BuyFromPlayer:bar of gold",
      "BuyFromPlayer:diamond",
      "BuyFromPlayer:dragon figurine",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant emerald",
      "BuyFromPlayer:giant ruby",
@@ -28460,11 +28341,13 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:moonstone",
@@ -28472,6 +28355,7 @@
      "BuyFromPlayer:ornate locket",
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
      "BuyFromPlayer:unicorn figurine",
      "BuyFromPlayer:white gem",
      "BuyFromPlayer:white silk flower"
@@ -28683,8 +28567,11 @@
     "status": "CLOSE"
    },
    "trade": {
-    "br_offers": 5,
-    "status": "BR_ONLY"
+    "matched": 4,
+    "only_br": [
+     "SellToPlayer:shovel"
+    ],
+    "status": "DIFFER"
    }
   },
   {
@@ -28713,9 +28600,13 @@
     "only_ours": [
      "SellToPlayer:blue quiver",
      "SellToPlayer:diamond arrow",
+     "SellToPlayer:froststorm arrow",
      "SellToPlayer:quiver",
      "SellToPlayer:red quiver",
-     "SellToPlayer:spectral bolt"
+     "SellToPlayer:shatterstorm arrow",
+     "SellToPlayer:spectral bolt",
+     "SellToPlayer:terrastorm arrow",
+     "SellToPlayer:thunderstorm arrow"
     ],
     "status": "DIFFER"
    }
@@ -28906,6 +28797,32 @@
      6
     ],
     "status": "CLOSE"
+   }
+  },
+  {
+   "br": {
+    "pageid": 67587,
+    "revid": 440488,
+    "title": "Wayland Smythers"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 27
+   },
+   "name": "Wayland Smythers",
+   "npc": "oteryn:npc.wayland_smythers",
+   "position": {
+    "br": [
+     32960,
+     32075,
+     6
+    ],
+    "ours": [
+     32961,
+     32076,
+     6
+    ],
+    "status": "NEAR"
    }
   },
   {
@@ -29388,12 +29305,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 7,
+    "matched": 11,
     "only_br": [
-     "SellToPlayer:bread",
-     "SellToPlayer:cheese",
-     "SellToPlayer:ham",
-     "SellToPlayer:meat",
      "BuyFromPlayer:carrot"
     ],
     "status": "DIFFER"
@@ -29559,10 +29472,7 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 5,
-    "only_br": [
-     "BuyFromPlayer:spear"
-    ],
+    "matched": 6,
     "only_ours": [
      "SellToPlayer:blue quiver",
      "SellToPlayer:quiver",
@@ -29810,74 +29720,42 @@
     "status": "MISMATCH"
    },
    "trade": {
-    "matched": 646,
+    "matched": 678,
     "only_br": [
      "BuyFromPlayer:atab's mitmah helmet",
      "BuyFromPlayer:axe of sir leonard",
      "BuyFromPlayer:bakragore's amalgamation",
      "BuyFromPlayer:bloated maggot",
-     "BuyFromPlayer:blood amulet",
-     "BuyFromPlayer:blood crown",
-     "BuyFromPlayer:blood hood",
-     "BuyFromPlayer:blood sceptre",
-     "BuyFromPlayer:bloodshot giant eye",
-     "BuyFromPlayer:bone fibula",
-     "BuyFromPlayer:bone rattle",
-     "BuyFromPlayer:book with a dragon",
-     "BuyFromPlayer:book with an hourglass",
      "BuyFromPlayer:broken mitmah chestplate",
      "BuyFromPlayer:broken mitmah necklace",
      "BuyFromPlayer:bulltaur armor scrap",
      "BuyFromPlayer:bulltaur hoof",
      "BuyFromPlayer:bulltaur horn",
      "BuyFromPlayer:chagorz igneous obsidian",
-     "BuyFromPlayer:chain leash",
-     "BuyFromPlayer:charred mask",
      "BuyFromPlayer:closed pocket sundial",
-     "BuyFromPlayer:colourful quill",
      "BuyFromPlayer:cookbook (book world)",
      "BuyFromPlayer:crystal of the mitmah",
      "BuyFromPlayer:darklight figurine",
-     "BuyFromPlayer:demon dust",
      "BuyFromPlayer:encrypted notes",
-     "BuyFromPlayer:gold tooth",
      "BuyFromPlayer:gold-brocaded cloth",
-     "BuyFromPlayer:heart amphora",
      "BuyFromPlayer:helmet of sir leonard",
      "BuyFromPlayer:ichgahal's fungal infestation",
      "BuyFromPlayer:idol of the forge",
-     "BuyFromPlayer:infernoid ember",
-     "BuyFromPlayer:little bowl of myrrh",
-     "BuyFromPlayer:lizard tail",
-     "BuyFromPlayer:meat hammer",
      "BuyFromPlayer:moon compass",
      "BuyFromPlayer:murcion's mycelium",
      "BuyFromPlayer:norcferatu talisman",
-     "BuyFromPlayer:orcish toothbrush",
-     "BuyFromPlayer:paper boat",
-     "BuyFromPlayer:paper plane",
-     "BuyFromPlayer:piece of frozen night",
-     "BuyFromPlayer:pot of orcish warpaint",
      "BuyFromPlayer:pressed flower",
      "BuyFromPlayer:putrefactive figurine",
-     "BuyFromPlayer:ritual bone knife",
      "BuyFromPlayer:ritual tooth",
      "BuyFromPlayer:rotten feather",
      "BuyFromPlayer:rotten vermin ichor",
-     "BuyFromPlayer:sealing wax",
-     "BuyFromPlayer:shimmering beetles",
-     "BuyFromPlayer:single human eye",
-     "BuyFromPlayer:spiked bracers",
-     "BuyFromPlayer:spiked gorget",
      "BuyFromPlayer:splintered mitmah gem",
      "BuyFromPlayer:staff piece",
-     "BuyFromPlayer:star ink",
      "BuyFromPlayer:strange substance",
      "BuyFromPlayer:the handmaiden's protector",
      "BuyFromPlayer:the imperor's trident",
      "BuyFromPlayer:the plasmother's remains",
      "BuyFromPlayer:tiny bat coffin",
-     "BuyFromPlayer:torn page",
      "BuyFromPlayer:vemiath's infused basalt",
      "BuyFromPlayer:wereboar tusk",
      "BuyFromPlayer:werewolf fang",
@@ -29886,16 +29764,27 @@
     ],
     "only_ours": [
      "BuyFromPlayer:amber souvenir",
+     "BuyFromPlayer:ancient eye stalk",
+     "BuyFromPlayer:ancient scales",
+     "BuyFromPlayer:bone spikes",
      "BuyFromPlayer:brigadeiro",
+     "BuyFromPlayer:broken staff of mind control",
      "BuyFromPlayer:churro heart",
+     "BuyFromPlayer:cluster of crystallized death",
      "BuyFromPlayer:cobalt ridge",
      "BuyFromPlayer:cry-stal",
+     "BuyFromPlayer:crystallized death",
+     "BuyFromPlayer:cuirass plate",
+     "BuyFromPlayer:deadly fangs",
      "BuyFromPlayer:decayed finger bone",
      "BuyFromPlayer:demon root",
      "BuyFromPlayer:dracoyle statue",
      "BuyFromPlayer:emerald tortoise shell",
      "BuyFromPlayer:fish eye",
+     "BuyFromPlayer:frozen crapace",
+     "BuyFromPlayer:giant tusk",
      "BuyFromPlayer:golden cheese wedge",
+     "BuyFromPlayer:golden claw",
      "BuyFromPlayer:golden dustbin",
      "BuyFromPlayer:golden skull",
      "BuyFromPlayer:gore horn",
@@ -29904,12 +29793,17 @@
      "BuyFromPlayer:handmaiden's protector",
      "BuyFromPlayer:headpecker beak",
      "BuyFromPlayer:headpecker feather",
+     "BuyFromPlayer:icy horns",
+     "BuyFromPlayer:icy scales",
      "BuyFromPlayer:imperor's trident",
      "BuyFromPlayer:lime tart",
      "BuyFromPlayer:mantosaurus jaw",
      "BuyFromPlayer:mercurial wing",
      "BuyFromPlayer:moon pin",
      "BuyFromPlayer:morshabaal's extract",
+     "BuyFromPlayer:necromantic core",
+     "BuyFromPlayer:night harpy beak",
+     "BuyFromPlayer:night harpy feathers",
      "BuyFromPlayer:nighthunter wing",
      "BuyFromPlayer:one of timira's many heads",
      "BuyFromPlayer:pastry dragon",
@@ -29924,20 +29818,28 @@
      "BuyFromPlayer:root tentacle",
      "BuyFromPlayer:sabretooth fur",
      "BuyFromPlayer:schnitzel meat grinder",
+     "BuyFromPlayer:shrunken head",
      "BuyFromPlayer:silver foxmouse coin",
      "BuyFromPlayer:silver moon coin",
+     "BuyFromPlayer:silver poniard",
+     "BuyFromPlayer:skull tendril",
      "BuyFromPlayer:smoldering eye",
+     "BuyFromPlayer:soul trap",
+     "BuyFromPlayer:stag parchment",
      "BuyFromPlayer:stalking seeds",
      "BuyFromPlayer:sulphider shell",
      "BuyFromPlayer:sulphur powder",
      "BuyFromPlayer:sun brooch",
      "BuyFromPlayer:taiyaki ice cream",
      "BuyFromPlayer:tiara",
+     "BuyFromPlayer:toe nails",
+     "BuyFromPlayer:twisted marionette",
      "BuyFromPlayer:undertaker fangs",
      "BuyFromPlayer:wad of fairy floss",
      "BuyFromPlayer:wafer paper flower",
      "BuyFromPlayer:wereboar tusks",
-     "BuyFromPlayer:werewolf fangs"
+     "BuyFromPlayer:werewolf fangs",
+     "BuyFromPlayer:worn guide book"
     ],
     "status": "DIFFER",
     "uncomparable": [
@@ -30082,17 +29984,20 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 52,
+    "matched": 53,
     "only_br": [
      "BuyFromPlayer:watermelon tourmaline (fatia)",
-     "BuyFromPlayer:watermelon tourmaline (lapidada)",
-     "BuyFromPlayer:wedding ring"
+     "BuyFromPlayer:watermelon tourmaline (lapidada)"
     ],
     "only_ours": [
      "SellToPlayer:bounty talisman",
+     "SellToPlayer:greater fragment",
+     "SellToPlayer:lesser fragment",
      "BuyFromPlayer:amber",
      "BuyFromPlayer:amber with a bug",
      "BuyFromPlayer:amber with a dragonfly",
+     "BuyFromPlayer:eldritch crystal",
+     "BuyFromPlayer:fiery tear",
      "BuyFromPlayer:giant amethyst",
      "BuyFromPlayer:giant shimmering pearl",
      "BuyFromPlayer:giant topaz",
@@ -30100,16 +30005,19 @@
      "BuyFromPlayer:greater marksman gem",
      "BuyFromPlayer:greater mystic gem",
      "BuyFromPlayer:greater sage gem",
+     "BuyFromPlayer:greater spiritualist gem",
      "BuyFromPlayer:guardian gem",
      "BuyFromPlayer:lesser guardian gem",
      "BuyFromPlayer:lesser marksman gem",
      "BuyFromPlayer:lesser mystic gem",
      "BuyFromPlayer:lesser sage gem",
+     "BuyFromPlayer:lesser spiritualist gem",
      "BuyFromPlayer:lion figurine",
      "BuyFromPlayer:marksman gem",
      "BuyFromPlayer:mystic gem",
      "BuyFromPlayer:sage gem",
      "BuyFromPlayer:skull coin",
+     "BuyFromPlayer:spiritualist gem",
      "BuyFromPlayer:white silk flower"
     ],
     "status": "DIFFER"
@@ -30586,14 +30494,12 @@
      "SellToPlayer:book",
      "SellToPlayer:book",
      "SellToPlayer:book",
+     "SellToPlayer:crusher",
      "SellToPlayer:hand auger",
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net"
     ],
-    "status": "DIFFER",
-    "uncomparable": [
-     "SellToPlayer:oteryn:item.registry.i00036234"
-    ]
+    "status": "DIFFER"
    }
   },
   {
@@ -30700,30 +30606,30 @@
  ],
  "schema": "OTERYN_NPC_TIBIAWIKI_BR_CROSSCHECK/v1",
  "totals": {
-  "dialogue:admitted": 701,
+  "dialogue:admitted": 707,
   "dialogue:br_only": 178,
-  "dialogue:checked": 368,
-  "dialogue:matched": 2856,
-  "dialogue:near": 348,
+  "dialogue:checked": 372,
+  "dialogue:matched": 2885,
+  "dialogue:near": 353,
   "dialogue:no_br_page": 8,
   "dialogue:no_br_page_texts": 64,
-  "dialogue:no_br_transcript": 325,
-  "dialogue:no_br_transcript_texts": 2699,
+  "dialogue:no_br_transcript": 327,
+  "dialogue:no_br_transcript_texts": 2734,
   "dialogue:no_text_matched": 65,
-  "dialogue:texts": 5851,
+  "dialogue:texts": 5911,
   "matched_by_position_alias": 8,
   "no_br_page": 14,
-  "npcs": 1088,
+  "npcs": 1094,
   "position:CLOSE": 98,
-  "position:MATCH": 230,
+  "position:MATCH": 234,
   "position:MISMATCH": 36,
-  "position:NEAR": 680,
+  "position:NEAR": 682,
   "position:NO_BR_POSITION": 1,
   "position:NO_PLACEMENT": 2,
   "position:OTHER_FLOOR": 27,
-  "trade:AGREE": 97,
-  "trade:BR_ONLY": 64,
-  "trade:DIFFER": 200,
-  "trade:NO_BR_TRADE": 5
+  "trade:AGREE": 105,
+  "trade:BR_ONLY": 52,
+  "trade:DIFFER": 204,
+  "trade:NO_BR_TRADE": 8
  }
 }

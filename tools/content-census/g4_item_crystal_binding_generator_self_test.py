@@ -25,6 +25,350 @@ def expect_error(code: str, fn, *args, **kwargs) -> None:
         raise AssertionError(f"expected GeneratorError {code}")
 
 
+def candidate(base_id: int, matched: list[str], contradicted: list[str]) -> dict:
+    return {
+        "base_source_item_id": base_id,
+        "matched": matched,
+        "contradicted": contradicted,
+    }
+
+
+def epoch2_alias_gate_and_allocation() -> None:
+    """Alias gate truth table, `NO_MATCH`-only allocation, ordering and fail-closed checks."""
+    gate = MODULE.resolve_alias_gate
+    both = ["article_plural", "attributes"]
+    full = [*both, "visual"]
+
+    # Names only discover candidates: no same-name item, or only name-level agreement.
+    assert gate([])[:2] == ("NO_MATCH", "NO_SAME_NAME_BASE_ITEM")
+    assert gate([candidate(1, ["article_plural"], ["attributes"])])[0] == "NO_MATCH"
+    assert gate([candidate(1, [], both)])[0] == "NO_MATCH"
+    assert MODULE.counterpart(candidate(1, both, ["visual"]))
+    assert not MODULE.counterpart(candidate(1, ["visual", "attributes"], ["article_plural"]))
+    # Presentation is never an identity signal: a candidate that agrees on article/plural
+    # and the full attribute set but differs only in sprite is held, not minted (a sprite
+    # change never remints an identity). Its differing sprite is not evidence of a distinct
+    # identity, so it is neither NO_MATCH nor an alias.
+    assert gate([candidate(1, both, ["visual"])])[:2] == (
+        "PROBABLE_MATCH",
+        "SPRITE_ONLY_DIFFERENCE_HELD",
+    )
+    assert gate([candidate(1, both, ["visual"]), candidate(2, both, ["visual"])])[0] == (
+        "AMBIGUOUS"
+    )
+    # Only non-presentation contradictions leave NO_MATCH, whatever the sprite says.
+    assert gate([candidate(1, ["article_plural"], ["attributes", "visual"])])[:2] == (
+        "NO_MATCH",
+        "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
+    )
+    assert gate([candidate(1, ["visual", "attributes"], ["article_plural"])])[0] == (
+        "CONFLICT"
+    )
+    assert gate(
+        [candidate(1, ["article_plural"], ["attributes", "visual"]), candidate(2, both, ["visual"])]
+    )[0] == "PROBABLE_MATCH"
+    # Proven counterpart: all three non-name signals agree, and it is unique.
+    assert gate([candidate(1, full, [])])[0] == "ACCEPTED_ALIAS"
+    assert (
+        gate([candidate(1, full, []), candidate(2, ["article_plural"], ["attributes", "visual"])])[0]
+        == "ACCEPTED_ALIAS"
+    )
+    # A second counterpart that differs only in sprite competes with the alias target.
+    assert (
+        gate([candidate(1, full, []), candidate(2, both, ["visual"])])[0] == "AMBIGUOUS"
+    )
+    # Two counterparts cannot both be the alias target.
+    assert gate([candidate(1, full, []), candidate(2, full, [])])[0] == "AMBIGUOUS"
+    # No visual signal: two agreeing signals are only a probable match, never a binding.
+    assert gate([candidate(1, both, [])])[0] == "PROBABLE_MATCH"
+    assert gate([candidate(1, both, []), candidate(2, both, [])])[0] == "AMBIGUOUS"
+
+    signals = {"article": "a", "plural": None, "attrs": {"weight": "1"}, "visual": "v"}
+    assert MODULE.compare_alias_signals(signals, dict(signals)) == (
+        ["article_plural", "attributes", "visual"],
+        [],
+    )
+    assert MODULE.compare_alias_signals(
+        signals, {**signals, "attrs": {}, "visual": None}
+    ) == (["article_plural"], ["attributes"])
+    assert MODULE.normalize_name("  Magic   Portal ") == "magic portal"
+
+    # Allocation: only NO_MATCH mints, in ascending source id, from 38,094 upward, and the
+    # key is the rank among the minted ids (an alias or unresolved id consumes no number).
+    namespace = "oteryn:item.registry"
+    rows = [
+        {"source_item_id": 100, "state": "NO_MATCH"},
+        {"source_item_id": 200, "state": "ACCEPTED_ALIAS"},
+        {"source_item_id": 300, "state": "NO_MATCH"},
+        {"source_item_id": 400, "state": "AMBIGUOUS"},
+        {"source_item_id": 500, "state": "PROBABLE_MATCH"},
+        {"source_item_id": 600, "state": "CONFLICT"},
+        {"source_item_id": 700, "state": "NO_MATCH"},
+    ]
+    assert MODULE.EPOCH1_HIGHEST_SEQUENCE == 38_093
+    assert MODULE.allocate_epoch2(rows, namespace) == [
+        (100, "oteryn:item.registry.i00038094"),
+        (300, "oteryn:item.registry.i00038095"),
+        (700, "oteryn:item.registry.i00038096"),
+    ]
+    expect_error(
+        "CROSSWALK_SOURCE_ID_ORDER_VIOLATION",
+        MODULE.allocate_epoch2,
+        [rows[2], rows[0]],
+        namespace,
+    )
+    expect_error(
+        "CROSSWALK_SOURCE_ID_ORDER_VIOLATION",
+        MODULE.allocate_epoch2,
+        [rows[0], rows[0]],
+        namespace,
+    )
+    expect_error(
+        "CROSSWALK_STATE_INVALID",
+        MODULE.allocate_epoch2,
+        [{"source_item_id": 1, "state": "EXACTISH"}],
+        namespace,
+    )
+
+    # Bindings: EXACT for minted ids, ACCEPTED_ALIAS to the existing key, nothing otherwise.
+    alias_rows = [
+        {**row, "alias_target_key": "oteryn:item.registry.i00000007"}
+        if row["state"] == "ACCEPTED_ALIAS"
+        else row
+        for row in rows
+    ]
+    allocations = MODULE.allocate_epoch2(alias_rows, namespace)
+    bindings = MODULE.epoch2_bindings(
+        allocations, {"rows": alias_rows}, "donor-rev", "definition-r1"
+    )
+    assert [
+        (row["external_id"], row["disposition"], row["target"]["key"])
+        for row in bindings
+    ] == [
+        ("100", "EXACT", "oteryn:item.registry.i00038094"),
+        ("200", "ACCEPTED_ALIAS", "oteryn:item.registry.i00000007"),
+        ("300", "EXACT", "oteryn:item.registry.i00038095"),
+        ("700", "EXACT", "oteryn:item.registry.i00038096"),
+    ], bindings
+    assert all(row["source_revision"] == "donor-rev" for row in bindings)
+
+    # Same construction as the frozen import: `id NUL key LF`, SHA-256.
+    assert MODULE.allocation_digest([(1, "k")]) == MODULE.sha256_hex(b"1\x00k\n")
+
+
+def epoch2_committed_output() -> None:
+    """The committed inputs and output: range, count, ordering, determinism, epoch 1 intact."""
+    text = MODULE.read_text(MODULE.RUST_SOURCE)
+    pins = MODULE.parse_epoch2_pins(text)
+    namespace = MODULE.parse_opaque_namespace(text)
+    census, census_payload = MODULE.load_census()
+    crosswalk = MODULE.load_alias_crosswalk(pins)
+    ids = MODULE.census_ids(census)
+    assert ids == sorted(ids) and len(ids) == pins["census_id_count"] == 412
+
+    epoch1_allocations = MODULE.apply_identity_promotions(
+        MODULE.allocate_keys(
+            MODULE.load_identity_records(),
+            MODULE.parse_native_batch(text),
+            namespace,
+        ),
+        MODULE.parse_identity_promotions(text),
+    )
+    allocations = MODULE.epoch2_allocations(
+        census, census_payload, crosswalk, pins, epoch1_allocations, namespace
+    )
+
+    # Key range and count: NO_MATCH ids only, ascending by source id, 38,094..38,505.
+    states = [row["state"] for row in crosswalk["rows"]]
+    assert set(states) <= set(MODULE.EPOCH2_STATES)
+    no_match = [
+        row["source_item_id"] for row in crosswalk["rows"] if row["state"] == "NO_MATCH"
+    ]
+    assert [source_id for source_id, _ in allocations] == no_match
+    assert no_match == sorted(no_match)
+    assert len(allocations) == pins["minted_count"] == states.count("NO_MATCH")
+    assert [key for _, key in allocations] == [
+        f"oteryn:item.registry.i{sequence:08d}"
+        for sequence in range(38_094, 38_094 + len(allocations))
+    ]
+    # Eight sprite-only same-name donors are held (no key, no alias, no binding), so 404 of
+    # the 412 census ids mint: the range is derived as 38,094 .. 38,497.
+    held = sorted(
+        row["source_item_id"] for row in crosswalk["rows"] if row["state"] != "NO_MATCH"
+    )
+    assert held == [35500, 53380, 54609, 54610, 54613, 54614, 54615, 54616]
+    by_id = {row["source_item_id"]: row for row in crosswalk["rows"]}
+    assert by_id[35500]["state"] == "PROBABLE_MATCH"
+    assert by_id[35500]["reason"] == "SPRITE_ONLY_DIFFERENCE_HELD"
+    assert by_id[54610]["state"] == "PROBABLE_MATCH"
+    assert all(by_id[i]["state"] == "AMBIGUOUS" for i in held if i not in (35500, 54610))
+    sprite_only = [
+        c
+        for c in by_id[35500]["same_name_base_items"]
+        if c["base_source_item_id"] == 35502
+    ]
+    assert sprite_only == [
+        {
+            "base_source_item_id": 35502,
+            "matched": ["article_plural", "attributes"],
+            "contradicted": ["visual"],
+        }
+    ]
+    assert len(allocations) == 404 == len(ids) - len(held)
+    assert not {source_id for source_id, _ in allocations} & set(held)
+    assert allocations[0][1].endswith("i00038094")
+    assert allocations[-1][1].endswith("i00038497")
+    # One crosswalk row per census id; nothing minted twice.
+    assert len(crosswalk["rows"]) == len(ids)
+    assert len({key for _, key in allocations}) == len(allocations)
+
+    # No collision with any epoch-1 key or source id; retired 2,921 is never reassigned.
+    epoch1_keys = {key for _, key in epoch1_allocations}
+    assert not epoch1_keys & {key for _, key in allocations}
+    assert not {source_id for source_id, _ in epoch1_allocations} & set(ids)
+    assert "oteryn:item.registry.i00002921" not in epoch1_keys
+    assert "oteryn:item.registry.i00002921" not in {key for _, key in allocations}
+    highest = max(
+        int(key.rsplit(".i", 1)[1])
+        for key in epoch1_keys
+        if key.startswith(namespace + ".i")
+    )
+    assert highest == MODULE.EPOCH1_HIGHEST_SEQUENCE == 38_093
+
+    # Re-run determinism: two independent generations are byte-identical.
+    output, payload = MODULE.generate()
+    again_output, again_payload = MODULE.generate()
+    assert payload == again_payload and output == again_output
+    assert MODULE.OUTPUT.read_bytes() == payload
+
+    # Epoch 1 is byte-identical: its rows, regenerated from the frozen allocator, are the
+    # first 38,157 rows, and their canonical bytes are a strict prefix of the file.
+    bindings = output["bindings"]
+    epoch1 = MODULE.build_bindings(epoch1_allocations, MODULE.parse_source_revision(text))
+    assert bindings[: MODULE.EXPECTED_TOTAL] == epoch1
+    assert len(bindings) == MODULE.EXPECTED_TOTAL + len(allocations)
+    epoch1_bytes = MODULE.canonical_bytes(
+        {"schema": MODULE.SCHEMA, "family": "Item", "bindings": epoch1}
+    )
+    assert MODULE.sha256_hex(epoch1_bytes) == MODULE.EXPECTED_EPOCH1_OUTPUT_SHA256
+    assert len(epoch1_bytes) == MODULE.EXPECTED_EPOCH1_OUTPUT_BYTES
+    assert payload.startswith(epoch1_bytes[: -len(MODULE.OUTPUT_ARRAY_SUFFIX)])
+    assert payload.endswith(MODULE.OUTPUT_ARRAY_SUFFIX)
+
+    # Epoch-2 rows: one EXACT binding per minted id at the donor commit, source id verbatim.
+    epoch2 = bindings[MODULE.EXPECTED_TOTAL :]
+    assert [row["external_id"] for row in epoch2] == [
+        str(source_id) for source_id, _ in allocations
+    ]
+    assert not {row["external_id"] for row in bindings} & {str(i) for i in held}
+    for row, (source_id, key) in zip(epoch2, allocations):
+        assert row == {
+            "disposition": "EXACT",
+            "external_id": str(source_id),
+            "identity_namespace": "ots/item_server_id",
+            "source_key": "oteryn:source.crystalserver",
+            "source_revision": pins["source_revision"],
+            "target": {"family": "Item", "key": key, "revision": "definition-r1"},
+        }
+
+    # NO_MATCH versus alias: an alias id mints nothing and shifts every later rank down.
+    mutated = [dict(row) for row in crosswalk["rows"]]
+    mutated[0].update(
+        state="ACCEPTED_ALIAS",
+        alias_target_source_item_id=epoch1_allocations[0][0],
+        alias_target_key=epoch1_allocations[0][1],
+    )
+    shifted = MODULE.allocate_epoch2(mutated, namespace)
+    assert len(shifted) == len(allocations) - 1
+    assert shifted[0] == (allocations[1][0], allocations[0][1])
+    assert shifted[-1] == (allocations[-1][0], allocations[-2][1])
+    # The pinned evidence rejects any change of state, allocation or census.
+    expect_error(
+        "EPOCH2_MINTED_COUNT_MISMATCH",
+        MODULE.epoch2_allocations,
+        census,
+        census_payload,
+        {**crosswalk, "rows": mutated},
+        pins,
+        epoch1_allocations,
+        namespace,
+    )
+    expect_error(
+        "CENSUS_DIGEST_MISMATCH",
+        MODULE.epoch2_allocations,
+        census,
+        census_payload + b" ",
+        crosswalk,
+        pins,
+        epoch1_allocations,
+        namespace,
+    )
+    # An alias may only target an existing epoch-1 key.
+    bad_alias = [dict(row) for row in crosswalk["rows"]]
+    bad_alias[0].update(
+        state="ACCEPTED_ALIAS",
+        alias_target_source_item_id=1,
+        alias_target_key="oteryn:item.registry.i00038094",
+    )
+    expect_error(
+        "ALIAS_TARGET_NOT_EPOCH1_KEY",
+        MODULE.epoch2_allocations,
+        census,
+        census_payload,
+        {**crosswalk, "rows": bad_alias},
+        pins,
+        epoch1_allocations,
+        namespace,
+    )
+    # A census id that is already an epoch-1 source id fails closed.
+    shared_id = epoch1_allocations[0][0]
+    shared_census = {**census, "items": {**census["items"], str(shared_id): {}}}
+    expect_error(
+        "CENSUS_ID_COUNT_MISMATCH",
+        MODULE.epoch2_allocations,
+        shared_census,
+        census_payload,
+        crosswalk,
+        pins,
+        epoch1_allocations,
+        namespace,
+    )
+    shared_pins = {**pins, "census_id_count": pins["census_id_count"] + 1}
+    shared_crosswalk = {
+        **crosswalk,
+        "rows": [
+            {"source_item_id": shared_id, "state": "AMBIGUOUS"},
+            *crosswalk["rows"],
+        ],
+    }
+    expect_error(
+        "EPOCH2_SOURCE_ID_SHARED_WITH_EPOCH1",
+        MODULE.epoch2_allocations,
+        shared_census,
+        census_payload,
+        shared_crosswalk,
+        shared_pins,
+        epoch1_allocations,
+        namespace,
+    )
+    # A key collision with epoch 1 (a wrong "highest earlier sequence") fails closed.
+    original = MODULE.EPOCH1_HIGHEST_SEQUENCE
+    try:
+        MODULE.EPOCH1_HIGHEST_SEQUENCE = original - 1
+        expect_error(
+            "EPOCH2_KEY_COLLISION",
+            MODULE.epoch2_allocations,
+            census,
+            census_payload,
+            crosswalk,
+            pins,
+            epoch1_allocations,
+            namespace,
+        )
+    finally:
+        MODULE.EPOCH1_HIGHEST_SEQUENCE = original
+
+
 def main() -> None:
     assert (
         MODULE.opaque_item_key("oteryn:item.registry", 3167)
@@ -206,6 +550,9 @@ def main() -> None:
             "revision": "definition-r1",
         },
     }
+
+    epoch2_alias_gate_and_allocation()
+    epoch2_committed_output()
 
     print("g4_item_crystal_binding_generator synthetic self-test: PASS")
 

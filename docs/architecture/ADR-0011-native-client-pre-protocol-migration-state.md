@@ -5,6 +5,7 @@
 - Decision owners: Oteryn project
 - Applies to: `FND-01`, `VSL-02`, the atomic Rust-client destination migration, `FND-02`, `FND-03` and `FND-04`
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
+- Amended by: ADR-0020 (native client gameplay entry), sections 2 and 3, once ADR-0020 is accepted
 
 ## Context
 

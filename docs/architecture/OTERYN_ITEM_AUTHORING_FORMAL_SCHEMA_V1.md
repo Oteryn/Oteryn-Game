@@ -933,6 +933,95 @@ B2 recaptures wiki evidence for those ids once identified; B3 (out of this task'
 scope entirely) folds the donor facts into the pinned engine revision once B1b/B2
 land, so a future `population_census.py` run covers them natively.
 
+**B1b and B2 status (2026-09-28).**
+
+B1b (#1179, decision A8, D96/D97) bound 404 donor ids to epoch-2 keys `oteryn:item.registry.i00038094`–`i00038497`
+in the committed Crystal bindings. It held 8 ids without a key: `PROBABLE_MATCH` 35500 and 54610, and `AMBIGUOUS`
+53380, 54609, 54613, 54614, 54615 and 54616.
+
+B2 changes the donor census and the wiki capture:
+
+- **Frozen input, live census.** The B1a census file stays byte-identical, because B1b pins it by exact bytes as its epoch-2 input. `donor_census.py` now writes the live census to `samples/donor-census-crystal-summer-update-00ce02a5-keyed.json`.
+- **Keys in the donor census.** `donor_census.py` now reads each id's committed key (`registry_key`). Every row carries
+  `key`: the epoch-2 key for a minted id, and the provisional `donor:` key for a held one. The wiki-evidence and owner
+  table joins run under that key.
+- **Capture mode.** `tools/content-census/item_wiki_family_capture.py --donor-only` captures evidence for the donor
+  ids that reach the wiki step. It uses the exact `itemid` join only, which is the donor census's admitted basis. It
+  appends the records to the snapshot, and every existing record stays byte-identical.
+- **Pinned censuses unaffected.** The Crystal population census and the promotion packet are byte-identical.
+
+**Capture result.** 17 donor ids reached the wiki step, and 8 records were appended:
+
+- `lunar ascension orb` (53695) and `auric moon sigil` (54480): Fandom `primarytype` Valuables, so `material_valuable`.
+- `skewered fish` (54638) and `cloud in a bottle` (54651): Taming Items, so `tool`.
+- 4 × `sickbed` (50213–50216): Furniture, so `decoration`. This is the same profile they already had from the wrap
+  target. The wiki now outranks the wrap target, as in `convert_item`.
+
+**Still unresolved: 9 ids.** Their own itemid page has an empty `primarytype`, so they stay unresolved and are
+reported, never guessed: 53692, 53693, 53696, 53783, 54262, 54267, 54564, 54566 and 54640.
+
+**Donor census totals.** 265 resolved (8 via wiki evidence), 138 routed, 9 unresolved.
+
+**Canary sample.** B1b's bindings also gave 9 ids in Canary `47dfd51f`'s own `items.xml` a key. The regenerated
+`population-canary-47dfd51f.json` therefore has 9 more converted items. Its wiki-evidence count is unchanged (1,364).
+
+## 5l-b. Client appearance-only census (task B3, 2026-09-29)
+
+`client_appearance_census.py` reads the owner's local 15.30 client `appearances.dat`. The file is pinned by size
+(5,017,996 B) and sha256 `2dfa943b…`, as recorded in the owner-supplied client asset manifest. It is reference
+evidence only and is never committed.
+
+The tool censuses every appearance id that none of the pinned `items.xml` define (Crystal `ff7ede5`, donor `00ce02a5`,
+Canary `47dfd51f`). Each id gets exactly the facts this lane already reads: name, description and a fixed flag
+subset. The routing is Oteryn's own `non_item_route` and `immovable_non_item_route`, from the appearance alone. Each id
+also gets a provisional `client:tibia@15.30-2dfa943b:item/<id>` key. No identity is minted.
+
+The committed sample `samples/client-appearance-census-15-30-2dfa943b.json` covers 43,516 appearance ids. 38,796 are
+engine-defined, which leaves **9,310 undefined**: 1,306 in the 15.30 range (`>= 52977`) and 8,004 older. They split as
+follows:
+
+| Outcome | Count |
+|---|---|
+| Routed | 8,766 |
+| — Terrain `ground_or_border` | 2,896 |
+| — WorldObject `immovable_unclassified` | 5,569 |
+| — WorldObject `corpse` | 301 |
+| Pickupable candidates (`flags.take`) | 247 |
+| Unclassified | 297 |
+
+What follows:
+
+- **Map geometry.** The routed ids are client-only map geometry. The WO-1 census does not cover them, because it
+  starts from `items.xml`. They need their own identity step before WO-2 can key them.
+- **Pickupable candidates.** These need a family and an identity decision, just as the donor ids did.
+
+## 5m. Routed Item pointer: `routed_to` (WO-1, 2026-09-28)
+
+WO-0 (`docs/architecture/reviews/OTERYN_GAME_WO0_WORLD_OBJECT_AND_TERRAIN_AUTHORING_FORMAT_DECISION_2026-09-28.md`,
+owner decisions D93 and D94) gives every routed id a Terrain or WorldObject family key. The key has the id's own frozen
+CW2-B1 sequence number: `oteryn:terrain.registry.iNNNNNNNN` or `oteryn:world-object.registry.iNNNNNNNN`.
+
+The routed id's Item record keeps `oteryn:item.registry.iNNNNNNNN`. It stays non-materializable and is never deleted
+or reused, and it carries a typed, versioned `routed_to {family, key, revision}` reference to that definition.
+
+- **Shape.** The shape is `tools/content-schema/world-object-authoring/routed-item-pointer.schema.json`:
+  - `identity` is the frozen Item key;
+  - `materializable` is `false`;
+  - `routed_to.family` is `Terrain` or `WorldObject`, with that family's key pattern.
+- **Rejected:**
+  - a bare key string;
+  - any other family, such as `LocalObject` or `Item`;
+  - a family and key pair that disagree;
+  - a `routed_to` key whose sequence number differs from the Item key's (`world_objects.validate_routed_item_pointer`).
+- **Not part of this Item authoring schema.** A routed id is never authored as an Item bundle, because it has no
+  `family_profile`. `item.schema.json` and its generator are therefore unchanged. The pointer is its own record shape,
+  next to the Terrain and WorldObject schemas it points into.
+- **Exclusions (D94).** Empty appearance slots, ids without a client appearance and the 20 Fluid kinds get no family
+  key and no `routed_to`.
+- **Runtime.** `DefinitionFamily` has no `WorldObject` variant today, and nothing in `content/**` carries `routed_to`
+  yet. The `ProjectReferenceRecord::Item` amendment therefore lands in WO-2 together with the first content that uses
+  it (#162 comment 5877980827).
+
 ## 6. Validation and non-claims
 
 The schema validator checks:

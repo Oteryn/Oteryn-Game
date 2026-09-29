@@ -13,26 +13,19 @@ Prompts are task-specific deltas over root/nearest instructions, bound META and 
 
 The former `Oteryn: terra game coordinator` and `Oteryn: implementation coordinator` profiles are retired provenance. `OTV2_WORK_DELIVERY_COORDINATOR.md` is the sole reusable mutating Game control-plane profile; live allocation still governs whether it may mutate.
 
-## Current WP3-v2 / upstream-first family
+## Retired programme families
 
-- `OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR.md` — **`Oteryn: astra wp3-v2 programme coordinator`.**
-- `OTV2_ASTRA_WP3_V2_ARCHITECTURE_LEAD.md` — **`Oteryn: astra wp3-v2 architecture lead`.**
-- `OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR.md` — **`Oteryn: sol wp3-v2 evidence auditor`.**
-- `OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD.md` — **`Oteryn: astra wp3-v2 implementation lead`.**
-- `../programs/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md` — current launch order and gates.
+The WP3-v2 / upstream-first family (`Oteryn: astra wp3-v2 programme coordinator`, `... architecture lead`, `... implementation lead`, `Oteryn: sol wp3-v2 evidence auditor`), `Oteryn: astra child-b durability lead` and `Oteryn: astra wp5 source composition lead` are retired provenance in `retired/`: WP5 G0 is READY (#319) and Server Seam #247 is closed. Their launch runbook is in `../programs/archive/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md`. The older `OTV2_WP3_WRITER`, `OTV2_WP3_TLS_AUDITOR` and `OTV2_WP3_QUALIFICATION_AUDITOR` aliases for the broad #356 lineage are also retired. The Defect Discovery family (`OTV2_DEFECT_DISCOVERY_*`, dormant since 2026-09-15) is retired too; its runbook and P0-P3 allocation are in `../programs/archive/`. Do not dispatch any of them; use the Work coordinator and live #162 allocations.
 
-The old `OTV2_WP3_WRITER`, `OTV2_WP3_TLS_AUDITOR` and `OTV2_WP3_QUALIFICATION_AUDITOR` aliases targeted the broad #356 lineage and are retired. #356 remains read-only research/evidence; do not dispatch those aliases or restore their broad-fork-first authority.
+The Native UI role pack (`OTV2_SOL_NATIVE_UI_*`), the future-wave `OTV2_SOL_*_PREP` and `OTV2_SOL_POST_VSL_EXPANSION` placeholders, `OTV2_IMPL_VSL_CONTENT` and `OTV2_IMPL_WORKSPACE_BOOTSTRAP` were retired to `retired/` on 2026-09-29 after a prompt audit found no recorded use; native client work runs through ADR-0020 lanes and content through the `OTV2_CONTENT_WORLD_*` family.
 
 ## Specialist families
 
 - Current delivery leads: `OTV2_SOL_DURABILITY_LEAD`, `OTV2_SOL_SERVER_SEAM_LEAD`, `OTV2_SOL_CLIENT_QA_LEAD`, `OTV2_SOL_MOVEMENT_LEAD`, `OTV2_SOL_COMBAT_LEAD` and their explicitly read-only analyst profiles. Their common short form is `Oteryn: sol <lane> lead` where the prompt defines it.
-- Native UI: reusable `OTV2_SOL_NATIVE_UI_*` roles; every mutating role still requires exact live allocation and leases.
 - Reference investigation: `OTV2_REFERENCE_INVESTIGATOR.md`, parameterized as **`Oteryn: ref <lane>`**.
-- Defect Discovery: reusable `OTV2_DEFECT_DISCOVERY_*` supervisor/lead/qualifier/module roles under their live allocation and runbook.
 - Direct implementation recovery: `OTV2_IMPL_*`; read-only unless the unique active control plane grants the exact current lane and owned paths.
 - Independent audits: `OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT.md` and `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` with the authority limits in their prompt bodies.
 - Full Tibia content population programme: `OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md` — canonical **`Oteryn: full content population`**; legacy **`Oteryn: full content census`** remains a compatibility invocation. This is a **scoped dispatch alias of the same `OTV2_WORK_DELIVERY_COORDINATOR` control-plane profile**, not a subordinate second profile. After the protected census/classification prerequisites, it is population-first: create/match canonical identities, write source bindings/tags/exact fields/relationships, compile/test, and allow analysis-only slices only when they directly unblock a named population batch.
-- Future-wave preparation: `OTV2_SOL_*_PREP` profiles remain read-only until a later merged allocation activates implementation.
 
 For the complete reusable set, exact short alias, owner, version and supersession rule, perform a targeted lookup in `../PROMPT_LIFECYCLE.json`. Do not maintain another full hand-written catalogue here.
 

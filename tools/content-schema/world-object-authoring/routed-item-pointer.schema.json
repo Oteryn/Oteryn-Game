@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:routed-item-pointer:candidate:1",
+  "title": "Routed Item pointer (WO-0 §4.1)",
+  "description": "The non-materializable Item record of a routed id keeps its frozen CW2-B1 key and points to its family definition with a typed, versioned reference. A bare key or a family other than Terrain/WorldObject is rejected; the family key must carry the Item key's own sequence number (checked by world_objects.validate_routed_item_pointer).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": { "const": "Item" },
+        "key": { "type": "string", "pattern": "^oteryn:item\\.registry\\.i[0-9]{8}$" },
+        "revision": { "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/revision" }
+      },
+      "required": ["family", "key", "revision"]
+    },
+    "materializable": { "const": false },
+    "routed_to": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "family": { "const": "Terrain" },
+            "key": { "type": "string", "pattern": "^oteryn:terrain\\.registry\\.i[0-9]{8}$" },
+            "revision": { "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/revision" }
+          },
+          "required": ["family", "key", "revision"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "family": { "const": "WorldObject" },
+            "key": { "type": "string", "pattern": "^oteryn:world-object\\.registry\\.i[0-9]{8}$" },
+            "revision": { "$ref": "urn:oteryn:terrain-authoring:candidate:1#/$defs/revision" }
+          },
+          "required": ["family", "key", "revision"]
+        }
+      ]
+    }
+  },
+  "required": ["identity", "materializable", "routed_to"]
+}

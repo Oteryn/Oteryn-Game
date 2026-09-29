@@ -1,0 +1,89 @@
+//! The thin live loop body: one input event -> at most one session command -> model update.
+
+use super::input::LiveInput;
+use super::model::{LiveCommand, RenderModel, Viewport};
+use oteryn_dev_client::{DevClientError, DevClientSession};
+use oteryn_input_actions::NormalizedInputEvent;
+use std::time::Duration;
+
+/// Drives one admitted [`DevClientSession`] and keeps the [`RenderModel`] in step with it.
+#[derive(Debug)]
+pub struct LiveController {
+    session: DevClientSession,
+    model: RenderModel,
+    view: Viewport,
+    input: LiveInput,
+}
+
+impl LiveController {
+    #[must_use]
+    pub fn new(session: DevClientSession, view: Viewport, input: LiveInput) -> Self {
+        let model = RenderModel::from_snapshot(session.join_snapshot());
+        Self {
+            session,
+            model,
+            view,
+            input,
+        }
+    }
+
+    #[must_use]
+    pub const fn model(&self) -> &RenderModel {
+        &self.model
+    }
+
+    #[must_use]
+    pub const fn view(&self) -> Viewport {
+        self.view
+    }
+
+    /// Maps `event` and, if it asks for a command, runs it. Returns whether a command ran (so the
+    /// caller knows to redraw).
+    ///
+    /// # Errors
+    ///
+    /// Any session error; the session is unusable afterwards.
+    pub async fn handle_event(
+        &mut self,
+        event: &NormalizedInputEvent,
+    ) -> Result<bool, DevClientError> {
+        match self.input.map_event(event, self.view, &self.model) {
+            Some(command) => {
+                self.dispatch(command).await?;
+                Ok(true)
+            }
+            None => Ok(false),
+        }
+    }
+
+    /// Runs one command and applies its outcome (result and deltas) to the model.
+    ///
+    /// # Errors
+    ///
+    /// Any session error; the session is unusable afterwards.
+    pub async fn dispatch(&mut self, command: LiveCommand) -> Result<(), DevClientError> {
+        self.model = match command {
+            LiveCommand::Step(direction) => {
+                let outcome = self.session.step(direction).await?;
+                self.model.apply_step(&outcome)
+            }
+            LiveCommand::UseDoor { expected_revision } => {
+                let outcome = self
+                    .session
+                    .use_object(super::model::DOOR_PLACEMENT, expected_revision)
+                    .await?;
+                self.model.apply_use(&outcome)
+            }
+        };
+        Ok(())
+    }
+
+    /// Keeps the connection alive while nothing is happening.
+    ///
+    /// # Errors
+    ///
+    /// Any session error; the session is unusable afterwards.
+    pub async fn idle(&mut self, duration: Duration) -> Result<(), DevClientError> {
+        self.session.service_liveness(duration).await
+    }
+}

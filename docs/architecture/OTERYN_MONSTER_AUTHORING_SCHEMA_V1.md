@@ -76,7 +76,7 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D9 | A boss is a monster with the optional `bosstiary`, `reward_boss` and `reward_encounter`; arena, phases, timers, cooldowns, reward chest and combat-changing boss scripts belong to the referenced Encounter. | Canary/Crystal register bosses as ordinary monster types; the boss logic lives in quest scripts (e.g. Forgotten Knowledge `HealthForgotten`, boss-kill cooldowns). |
 | D10 | The importer resolves a monster spell name as Canary does: registered rune spell, then registered instant spell (case-insensitive), then built-in kind. The resolved script is recorded in the manifest. | `Monsters::deserializeSpell` calls `Spells::getSpellByName` before building a built-in kind; §8. |
 | D11 | Every monster spell is an `Ability` (+ `Effect`s, `Formula`) under `content/abilities/**`. A player spell or rune used by a monster is the one shared Ability; a monster-only script gets its own Ability keyed by the source spell name. The monster attack entry keeps interval, chance, range and its damage magnitude, which overrides the Ability formula. | `Combat::getCombatDamage` uses `Monster::getCombatValues` whenever the monster entry has a non-zero min/max; §8. |
-| D12 | Spell schema extensions are added in census order, each with a batch monster that needs it: area matrix with explicit centre and directional rotation; constant-tick DoT (count, interval, per-tick amount); attribute-modifier condition (skill/stat, percent or absolute); `Ability.variants` with a uniform pick; chain targeting (count, range, backtracking). The damage distribution is a world combat rule, not a per-formula field. | Census frequencies in §8. Canary draws all monster damage with `normal_random`; whether Tibia Global does the same is unproven, so the rule is an OTS hypothesis until checked. |
+| D12 | Spell schema extensions are added in census order, each with a batch monster that needs it: area matrix with explicit centre and directional rotation; constant-tick DoT (count, interval, per-tick amount); attribute-modifier condition (skill/stat, percent or absolute); `Ability.variants` with a uniform pick; chain targeting (further-creature count, range, backtracking; player-spell extensions in §8.6, S23). The damage distribution is a world combat rule, not a per-formula field. | Census frequencies in §8. Canary draws all monster damage with `normal_random`; whether Tibia Global does the same is unproven, so the rule is an OTS hypothesis until checked. |
 | D13 | A spell with custom logic becomes an `Ability` with a `native_behavior` key and its data parameters. Native behaviours are shared and parameterized by pattern (e.g. one path-chain behaviour with an element parameter), not one per source script. The content compiler rejects a key without an implementation. No Lua is admitted; an implementation is written only when a playable monster needs it, and until then the manifest row stays `unresolved_semantics`. | 44 custom-logic scripts cluster into recurring patterns (path chains, summon-N, cast-then-remove-self); §8. |
 | D14 | A spell reference that has no effect in Canary is recorded as `approved_omission`; when the reference-date wiki shows that attack, it is authored as an ordinary Ability from the wiki instead. | `energy beam` returns false for a non-player caster (4 monsters). |
 | D15 | Where the reference-date (the programme target date, D33) wiki differs from Canary, the wiki value replaces it. So far this is applied to mitigation, `pushable`, loot items missing in Canary and loot probabilities. Loot rate rule: use the highest-version `Loot Statistics` block at the cut (the largest-sample source; other sites such as Tibiopedia are cross-checks only); estimate = drops / kills rounded half-even to 1 ppm, with a 95% Wilson interval recorded. At 10 or more drops the estimate replaces the Canary probability; below 10 the Canary probability is kept and marked low confidence (an item missing in Canary is still added, marked low confidence). An item the infobox lists but the statistics block does not show keeps its Canary probability (probably added after that version). An ambiguous item name is resolved by the item page `itemid`. | The wiki tracks Tibia Global more closely than OTS sources. Batch 1 comparison: `samples/canary-47dfd51f/wiki-2026-07-28.json`. |
@@ -95,6 +95,30 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D43 | TibiaWiki BR fills health and experience where the Fandom page at the target date is missing or gives no certain value (empty, `?`, `~` or unparsed). The owner's source order puts BR after Fandom, and BR is used for tables and cross-checks. The BR value must be a plain number. BR element modifiers are not used, because "100%" there is often the template default; BR speed and loot are not used either. `wiki_br_capture.py` reads the pages on a hosted runner (the build container gets a Cloudflare bot check). `wiki_br_fill.py` selects the fills into `samples/wiki-br-fill-2026-09-27.json`, and the converter applies them after the D15 values. | Owner answer 2026-09-27 ("Tylko HP i doświadczenie"), after BR gave Dark Knight 7,900 health where Fandom has "?" and Canary 1,800. |
 | D44 | A monster Tibia has at the target date and Canary lacks is authored from the wiki as close to Tibia as the sources allow. `wiki_authored.py` writes it as a Canary-format file from pinned facts (Fandom first, then TibiaWiki BR, per the source order) and converts it with the normal converter; each manifest row cites the wiki revision line of its value. A value no wiki page gives is taken from the closest Canary template monster, and its row is marked `NEEDS VERIFICATION (D44)`; an ability whose damage no source gives is left out and recorded as an omission to verify. The creature is bound to its Fandom page id (`mediawiki/page_id`) under its own `oteryn:source.tibiawiki` import batch. First case: Dark Merudri (Grave Danger, summoned for a Monk in the Count Vlarkorth fight); template Dark Knight. | Owner answers 2026-09-28 ("uzupełnić to co masz, żeby było maksymalnie zbliżone do Tibii, ale zaznacz, że to wymaga kiedyś weryfikacji"); Canary and CrystalServer, all active branches, have no Dark Merudri. |
 | D45 | An ability may point to an encounter (`encounter`) instead of listing effects or variants. A monster spell whose Canary script summons creatures, and keeps counters, flags or timers for it, is converted this way: the monster keeps the ability with its range and targeting, and the encounter's `ability_cast` rule does the summon (OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1 D45). | Owner answer 2026-09-28 ("Tak, przez encountery"). |
+| D47 | Source order for the reference-date state (owner answer 2026-09-28): a Tibia.com news item dated on or before the target date, then the Tibia.com creature library, then the wiki at the target date, then Canary and CrystalServer as hypotheses. The library has no history, so a capture counts as the target-date state only while no news item between the target date and the capture changes the creature. `official_library.py` records the library health and experience from TibiaData captures; the converter adopts them over Canary and the wiki as an `official_capture` source. A percentage from a news item is applied directly only where the library has no entry, and its rounding is marked uncertain. A change without numbers is recorded as known but not quantified. Library descriptions stay out of the repository; the entry keeps the library URL. | Guessing values for changes without numbers. |
+
+### Game version 15.30 monsters from CrystalServer
+
+Rule from the game version 15.30 decision
+(`docs/agents/programs/OTERYN_GAME_VERSION_1530_AND_OTS_BRANCHES_DECISION_20260928.md` §1–2); it is not a new
+owner decision. The Summer Update 2026 monsters are in no Canary branch, so `crystal_batch.py` takes them from
+`zimbadev/crystalserver`, branch `summer-update`, pinned at commit `00ce02a57ca5a12e48f32a3476e37471167e4c3f`
+(read 2026-09-28). It selects the files under `data-global/monster/summer_update_2026` whose monster name no Canary
+file creates: 49 files, 8 of them bosses.
+
+- The files are in the Canary format. The normal converter reads them with its Canary `47dfd51f` engine rules, and
+  resolves loot names through the 15.30 `items.xml` and `appearances.dat` of the same Crystal commit.
+- Each manifest names the Crystal repository and commit as source 0 and the Crystal file as the source file of its
+  rows.
+- The source order of D47 applies unchanged. The reference-date wiki values
+  (`samples/wiki-population-crystal-00ce02a5-2026-09-27.json`, D15) and the library values
+  (`samples/official-library-crystal-00ce02a5-2026-09-28.json`, from the same TibiaData captures) are adopted over
+  the Crystal values.
+- `population_census.py` adds the result to the census as its own group, `crystal_*` counts. The admission binds
+  each admitted creature to its Crystal file under the import batch `g4-creature-crystal-1530-r1`, whose
+  `oteryn:source.crystalserver` source revision is `crystalserver-creature-1530:<commit>`. `crystal_batch.py` stops
+  unless both checkouts are at their pinned commits with clean read paths, and lists the monster files from those
+  commits.
 
 ## 4. Carried semantics
 
@@ -321,6 +345,32 @@ player in a protection zone (`combat.cpp` `canDoCombat`), so the only effect of 
 chain skips other creatures, such as player summons. Any other picker body stays unresolved. This
 resolves Quara Looter, Rootthing Bug Tracker, Mould Phantom and Rotten Golem.
 
+`Ability.chain` (D12) gained optional fields for player spells (spell rule S23, owner 2026-09-28; behaviour and
+sources in `OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md` §3-§5):
+- `shape`: `sequential` (default; each jump starts at the last creature hit) or `fork` (every further creature is
+  chosen within `range_tiles` of the first creature);
+- `initial_range_tiles`: search radius for the first creature of a cast without a target; absent means `range_tiles`;
+- `damage_step_percent`: integer; creature at step `i` gets `(100 + i * damage_step_percent)%` of the rolled value,
+  at least 0; absent means 0;
+- `target_filter` gained `ranged_monsters` (monsters that are not summons, not reward bosses and prefer a target
+  distance above 1), next to `players`.
+
+`max_targets` counts the further creatures after the first, so one cast hits at most `1 + max_targets` creatures.
+This is what the stored Canary value already means (Canary hits the returned value plus one), so no monster data
+changes; the D12 wording "up to `max_targets` creatures" was one short. No monster uses the new fields, and the
+creature admission does not accept them yet.
+
+Fork import rule: a Canary fork chain value (`pickForkTargets`, a chain value callback that returns the fork flag)
+is the total number of creatures, the first included, so the importer stores it minus 1. `max_targets` always
+counts the further creatures, for both shapes (Forked Glacier: Canary 7, `max_targets` 6). Equal distances go to
+the lowest creature id in both shapes (chain §7 Q1 proposal, until the owner's in-game test).
+
+Step rounding: each creature hit draws its own value (Canary `doCombat` per chain target), an integer after the
+truncated formula bounds. Its step value is `value * max(0, 100 + i * damage_step_percent) / 100` in exact integer
+arithmetic, rounded half away from zero (Canary `std::round`), before any mitigation. It equals Canary's double
+computation for every step Chained Penance reaches (−5%, steps 0-5 with a Wheel +1); Canary's doubles differ only
+on some exact halves beyond, which are floating-point artefacts. Example: 101 at step 1 of −5% gives 95.95, so 96.
+
 `area_damage_named_target` is probed like `heal_allies_in_area`. A `CALLBACK_PARAM_TARGETTILE` callback that, on each
 tile of the ability area, takes a fixed or rolled amount of health from the top creature through `Creature:addHealth`
 is authored as an extra `damage` effect of damage type `untyped`:
@@ -437,16 +487,20 @@ The 2026-07-28 comparisons (`wiki-population-2026-07-28.json`, `wiki-scenes-2026
 `wiki-2026-07-28.json`) stay as the record of the earlier admission.
 
 The converter adopts only DIFF rows (D15): health, experience, armor, mitigation, element
-modifiers, `pushable`, `pushobjects`, `senseinvis`, paralysis immunity, `illusionable`, flee health
-and Bestiary difficulty/occurrence; speed (the wiki lists observed speed, Canary the engine value),
-Bestiary class and summon/convince costs are not adopted. Every adopted value keeps the superseded
+modifiers, `pushable`, `pushobjects`, `senseinvis`, paralysis immunity, `illusionable`, flee health,
+Bestiary difficulty/occurrence and the summon/convince costs (`--` clears the flag, a number sets it and
+the one mana cost; two different costs cannot be expressed and stay unadopted); speed (the wiki lists
+observed speed, Canary the engine value) and the Bestiary class are not adopted. Every adopted value keeps the superseded
 Canary row as an `approved_omission` and adds a MediaWiki-sourced row. Wiki loot missing in Canary
 is added only when its name resolves to one item: by name, by the item page `itemid`, or by
 dropping the equipped state of an `items.xml` `transformEquipTo` pair. Over all converted
-monsters 748 mitigations and 12,722 loot rows (probabilities, counts and added items) are adopted; 1,186 of
+monsters 748 mitigations and 12,722 loot rows (probabilities, counts and added items) are adopted; 1,188 of
 the fully resolved monsters carry at least one adopted value. Under D43, TibiaWiki BR gives the health of 65
 and the experience of 37 fully resolved monsters whose Fandom value is missing or uncertain; 124 monsters have a BR
 fill in `wiki-br-fill-2026-09-27.json`; the other fills equal Canary or belong to monsters that are not fully resolved.
+Under D47, `official-library-2026-09-28.json` gives the Tibia.com library health and experience of 647 Canary
+monsters; among the admitted creatures only Sabretooth differs (experience 11,931 becomes 12,830), and the four Darklight
+Core creatures, still deferred for their encounter, take the 2026-08-25 balance (-7% experience) that the wiki misses.
 Under D32, 971 loot count bounds (a minimum or a maximum) of 334 fully resolved monsters take the
 observed wiki range, and Duke Krule's twelve `minCount` 0 entries become count 1..max.
 

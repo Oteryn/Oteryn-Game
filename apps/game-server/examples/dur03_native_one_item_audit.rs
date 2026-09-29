@@ -1744,13 +1744,10 @@ mod tests {
     #[test]
     fn registered_constants_equal_the_registry_rows() {
         for (row, value) in [
-            ("DUR03-RL-01", RL01_TOUCHED_ITEM_INSTANCES_MAX),
             ("DUR03-RL-02", RL02_LOCATION_CUSTODY_LINES_MAX),
             ("DUR03-RL-03", RL03_VALUE_LINES_MAX),
             ("DUR03-RL-04", RL04_TRANSFORM_LINES_MAX),
             ("DUR03-RL-05", RL05_CONTAINER_EXPANSION_MAX),
-            ("DUR03-RL-06-PARTICIPANTS", RL06_PARTICIPANTS_MAX),
-            ("DUR03-RL-06-EFFECT-WORK-UNITS", RL06_EFFECT_WORK_UNITS_MAX),
             ("DUR03-RL-07-EVENTS", RL07_EVENTS_MAX),
             ("DUR03-RL-07-ENVELOPE-BYTES", RL07_ENVELOPE_BYTES_MAX as u64),
             ("DUR03-RL-07-PAYLOAD-BYTES", RL07_PAYLOAD_BYTES_MAX as u64),
@@ -1771,6 +1768,20 @@ mod tests {
             ("DUR03-AUDIT-RETENTION-S", AUDIT_RETENTION_P90D_SECONDS),
         ] {
             assert_eq!(registered(row), value, "{row}");
+        }
+        // B3 §4.5 amended these rows for the two-item merge shapes; this
+        // offline one-item evidence keeps its lower one-item shape bounds.
+        for (row, one_item, amended) in [
+            ("DUR03-RL-01", RL01_TOUCHED_ITEM_INSTANCES_MAX, 2),
+            ("DUR03-RL-06-PARTICIPANTS", RL06_PARTICIPANTS_MAX, 2),
+            (
+                "DUR03-RL-06-EFFECT-WORK-UNITS",
+                RL06_EFFECT_WORK_UNITS_MAX,
+                6,
+            ),
+        ] {
+            assert_eq!(registered(row), amended, "{row}");
+            assert!(one_item <= amended, "{row}");
         }
         // Decision literals, independent of both the registry and the constants.
         assert_eq!(RL07_ENVELOPE_BYTES_MAX, 9_216);

@@ -19,7 +19,7 @@
 | --- | --- | --- | --- |
 | Door / world-object execution (CW4) | #162 comments `5860226213`, `5860394705`; Jira KAN-31 | `WAITING_CW3_MODEL` | Resumes on the same task after the CW3 local-object state model (`OTV2-20260928-cw3-local-object-state-model`) is protected. `revert_after` stays deferred until a Foundation-owned scope progression input exists. |
 | Control-wire commands beyond step (use / door / item move) | `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json` (only command type 1) | `WAITING_ARCHITECTURE` | Needs an owner decision in the #642 FIRST-CONTROL-WIRE-V1 pattern before any registry or seam writer. |
-| Interaction "Use" orchestration | GAME-INTERACTION-01 successor (`PROPOSED / NONCANONICAL`); D37/D38 proposal (`CANDIDATE`) | `WAITING_ARCHITECTURE` | `Oteryn: impl interaction` stays read-only until the successor contract and the D37/D38 owners are accepted. |
+| Interaction "Use" orchestration | GAME-INTERACTION-01 successor (`PROPOSED / NONCANONICAL` except the chest USE slice: §4.1, §4.3, §5.1, §5.3-§5.7, §17, §19.1, `reviews/OTERYN_GAME_D39_CHEST_USE_GAME_INTERACTION_AMENDMENT_DECISION_2026-09-29.md`); D37/D38 proposal (`CANDIDATE`) | `READY` for the chest USE slice only; `WAITING_ARCHITECTURE` for the rest | The D39 chest USE wiring child may get its own #162 allocation (CHEST-1 worker): plain `once` chests only, no keys, cooldowns, containers, weight or protocol. `Oteryn: impl interaction` stays read-only for every other interaction until the successor contract and the D37/D38 owners are accepted. |
 | DUR-03 item transaction (backpack / pickup) | Issue #513; Jira KAN-12 | `WAITING_B3_ALLOCATION` | B2 is protected (#1031, #1038). B3/B4 need a fresh exact #162 allocation inside the single DUR-03 lineage; no parallel inventory writer. |
 | Native client gameplay entry | `apps/client` (`PreNativeProtocol`) | `WAITING_WIRE_AND_CLIENT_QA_ALLOCATION` | Consumes only an accepted wire contract; native protocol entry belongs to the canonical Client/QA lane. |
 | Native UI | `OTERYN_NATIVE_CLIENT_UI_IMPLEMENTATION_PROGRAMME_V1.md` | `UI-P0_ADMISSION_PENDING` | The L-CARGO custody cited by UI-P0 (#351, #356) is closed. P1 admission needs a fresh Cargo lease grant and an authorized P1 writer; input work waits on protected P1. |
@@ -42,7 +42,7 @@ A historical lease never survives terminal merge/closeout by itself. An open Iss
 
 ```text
 CW3 local-object state model -> CW4 world-object overlay (door execution)
-architecture: GAME-INTERACTION-01 successor + D37/D38 acceptance -> impl interaction
+architecture: GAME-INTERACTION-01 successor + D37/D38 acceptance -> impl interaction (other than the chest USE slice: CHEST-1 -> D39 chest USE wiring)
 architecture: next control-wire owner decision -> seam command dispatch -> native client entry/click
 #513 B3/B4 allocation -> pickup / inventory custody
 L-CARGO release + P1 writer -> UI-P1 -> UI input

@@ -31,6 +31,17 @@ class CentralStatementView:
 
 
 class MetaPolicyAdoptionTests(unittest.TestCase):
+    def assertVersionAtLeast(self, actual: str, minimum: str) -> None:
+        """Live prompts must not regress below the version that adopted a rule.
+
+        A later version bump needs no edit here, so an ordinary prompt PR does
+        not touch `tools/agents/` (which selects the full Rust and Windows CI lanes).
+        """
+        def parse(value: str) -> tuple[int, ...]:
+            return tuple(int(part) for part in value.split("."))
+
+        self.assertGreaterEqual(parse(actual), parse(minimum), f"version {actual} < {minimum}")
+
     def test_authenticates_exact_ancestor_of_protected_main(self):
         responses = [
             {"sha": SHA},
@@ -286,7 +297,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
         )
-        self.assertEqual(entry["version"], "2.5")
+        self.assertVersionAtLeast(entry["version"], "2.6")
         self.assertNotIn(
             "compact execution profile over `docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md`",
             coordinator,
@@ -323,7 +334,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         durability_entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_IMPL_DURABILITY"
         )
-        self.assertEqual(durability_entry["version"], "1.6")
+        self.assertVersionAtLeast(durability_entry["version"], "1.6")
 
     def test_work_is_single_control_plane_and_startups_are_targeted(self):
         lifecycle = json.loads((ROOT / "docs/agents/PROMPT_LIFECYCLE.json").read_text(encoding="utf-8"))
@@ -354,16 +365,16 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         ]
         self.assertEqual(retired_to_implementation, [])
 
+        self.assertEqual(entries["OTV2_DEFECT_DISCOVERY_SUPERVISOR"]["version"], "1.1")
         for prompt_id, version in {
-            "OTV2_REFERENCE_INVESTIGATOR": "1.1",
+            "OTV2_REFERENCE_INVESTIGATOR": "1.2",
             "OTV2_OWNER_EXECUTION_STATUS_ADVISOR": "1.1",
             "OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT": "1.1",
-            "OTV2_DEFECT_DISCOVERY_SUPERVISOR": "1.1",
             "OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR": "1.2",
             "OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR": "1.5",
             "OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT": "1.3",
         }.items():
-            self.assertEqual(entries[prompt_id]["version"], version)
+            self.assertVersionAtLeast(entries[prompt_id]["version"], version)
 
         readme = (ROOT / "docs/agents/prompts/README.md").read_text(encoding="utf-8")
         self.assertNotIn(
@@ -374,7 +385,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertIn("former `Oteryn: terra game coordinator` and `Oteryn: implementation coordinator` profiles are retired", readme)
 
         census = entries["OTV2_FULL_CONTENT_CENSUS_PROGRAMME"]
-        self.assertEqual(census["version"], "1.4")
+        self.assertVersionAtLeast(census["version"], "1.4")
         self.assertEqual(census["status"], "reusable")
         self.assertIs(census["reusable"], True)
         self.assertIn("same OTV2_WORK_DELIVERY_COORDINATOR control-plane profile identity", census["scope"])
@@ -487,7 +498,10 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
 
         programme_audit = (ROOT / "docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md").read_text(encoding="utf-8")
         self.assertIn("intentionally a **whole-programme audit**", programme_audit)
-        self.assertIn('prompt_version: "1.3"', programme_audit)
+        self.assertIn(
+            f'prompt_version: "{entries["OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT"]["version"]}"',
+            programme_audit,
+        )
 
         terra_prompt = (ROOT / "docs/agents/prompts/OTV2_TERRA_GAME_CONTROL_PLANE.md").read_text(
             encoding="utf-8"

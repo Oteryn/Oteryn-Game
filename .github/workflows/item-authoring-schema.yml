@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - tools/content-schema/item-authoring/**
+      - tools/content-schema/world-object-authoring/**
       - tools/content-schema/validate_item_master_schema.py
       - tools/content-schema/test_validate_item_master_schema.py
       - imports/tibiawiki/bindings/items.json
@@ -68,6 +69,13 @@ jobs:
       - name: Donor census fixture tests
         run: python test_donor_census.py
 
+      - name: Client appearance census fixture tests
+        run: python test_client_appearance_census.py
+
+      - name: WorldObject and Terrain authoring tests
+        working-directory: tools/content-schema/world-object-authoring
+        run: python test_world_objects.py
+
       - name: Item Master census
         working-directory: .
         run: |
@@ -79,8 +87,8 @@ jobs:
         working-directory: .
         run: |
           set -euo pipefail
-          ruff check tools/content-schema/item-authoring
-          ruff format --check tools/content-schema/item-authoring
+          ruff check tools/content-schema/item-authoring tools/content-schema/world-object-authoring
+          ruff format --check tools/content-schema/item-authoring tools/content-schema/world-object-authoring
 
       - name: Verify the checkout stayed clean
         if: ${{ always() }}

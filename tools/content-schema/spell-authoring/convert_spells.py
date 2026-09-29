@@ -50,8 +50,11 @@ TIBIACOM_LIST = SAMPLES / 'tibiacom-spell-list-2026-09-28.json'
 # S15: tibia.com list names that differ from the source spell names (source name -> tibia.com name).
 TIBIACOM_NAMES = {'invisibility': 'invisible', 'paralyze rune': 'paralyse rune', 'monk familiar': 'summon monk familiar'}
 OFFICIAL = ROOT / 'official-changes.json'
+# S23: accepted chain parameters of player spells (OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md).
+CHAINS = json.loads((ROOT / 'chain-behaviours.json').read_text(encoding='utf-8'))['spells']
+CHAIN_FIELDS = ('max_targets', 'range_tiles', 'backtracking', 'shape', 'initial_range_tiles', 'damage_step_percent')
 CANARY_DECIDES = 'S21: the Canary 15.30 branch decides a Canary/Crystal conflict no wiki or tibia.com states'
-REVISION = 'spell-p2-r8'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level
+REVISION = 'spell-p2-r12'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level; r9: S23 chains; r10: S24 removed spells, rune groups from the wiki runegroup; r11: S25 unstated secondary groups, Dawnport conjure spells; r12: S26 Harmony role
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
                       'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -284,7 +287,7 @@ class Execution:
     def __init__(self, source, root):
         self.source, self.root = source, root
         self.converter = canary_batch.Converter(root, {}, {}, {}, {})
-        self.converter.spell_scripts = spell_scripts.SpellScripts(root)
+        self.converter.spell_scripts = spell_scripts.SpellScripts(root, player_chains=True)
         self.converter.pending_definitions = set()
         self.tag = SOURCES[source]['tag']
         self.canonical = self.converter  # S18: replaced by the Canary 15.30 tables once both sources exist
@@ -334,11 +337,21 @@ class Execution:
         keys = [key] if len(order) == 1 else [f'{key}/variant-{n}' for n in range(1, len(order) + 1)]
         for ability_key, combat_index in zip(keys, order):
             local = []
+            combat = info['combats'][combat_index]
+            chain = None
+            if 'CALLBACK_PARAM_CHAINVALUE' in combat['callbacks']:
+                chain = CHAINS.get(str(record['name']).lower())
+                if chain is None:
+                    raise Unresolved(f'{self.source}: a chain spell without accepted chain parameters (S23)')
+                combat = {**combat, 'chain': [chain['max_targets'], chain['range_tiles'], chain['backtracking']]}
             try:
-                self.converter.combat_ability(ability_key, info['combats'][combat_index], geometry, range_tiles, deps,
-                                              lambda a: a, local)
+                self.converter.combat_ability(ability_key, combat, geometry, range_tiles, deps, lambda a: a, local)
             except canary_batch.SpellUnresolved as exc:
                 raise Unresolved(f'{self.source}: {exc}')
+            if chain is not None:
+                ability = next(a for a in deps['abilities'] if a['identity']['key'] == ability_key)
+                ability['chain'].update({k: chain[k] for k in CHAIN_FIELDS[3:] if k in chain})
+                local.append('S23: chain parameters from chain-behaviours.json (' + chain['sources'] + ')')
             notes.update(n.strip() for n in local if n.strip() and 'monster caster' not in n and 'player formula' not in n)
             census_combat = record['combats'][combat_index]
             callbacks = [c for c in census_combat.get('callbacks', []) if 'formula' in c]
@@ -592,6 +605,13 @@ class Bundle:
         key = f'candidate:spell/{"rune/" if carrier == "rune" else ""}{slug(self.name)}'
         spell = {'identity': ident(key), 'name': primary['name'], 'carrier': carrier}
         base = '/spell/spell'
+        removed = self.wikis.official.get((self.name, 'removed'))
+        if removed and removed['value'] in ('yes', carrier):
+            # S24: an official announcement dated before the target date removed the spell from the game.
+            self.row('unresolved_semantics', 'spell', resolution=(f'S24: removed from the game by the official change of '
+                     f'{removed["date"]} ({removed["fact"]}; {removed["source"]}).' if removed['value'] == 'yes' else
+                     f'{removed["fact"]} ({removed["source"]})'), source=next(iter(self.records)),
+                     kind='script')
         if carrier == 'instant':
             normal = lambda v: re.sub(r'\s+', ' ', v.strip().lower())  # noqa: E731
             words = self.field(base + '/words', 'words' if pages.get('tibiacom') else None, 'words', pages,
@@ -650,7 +670,12 @@ class Bundle:
         spell['costs'] = costs
         cooldown = self.field(base + '/cooldown_ms', 'cooldown', 'cooldown', spell_pages)
         spell['cooldown_ms'] = cooldown or 1000
-        spell['groups'] = self.groups(spell_pages)
+        spell['groups'] = self.groups(spell_pages, carrier)
+        # S26: only Canary 15.30 states the monk Harmony role (S21); Crystal has no such call.
+        role = self.field(base + '/harmony_role', None, 'monkSpellType', pages, required=False,
+                          transform=lambda v: {'MonkSpell_Builder': 'builder', 'MonkSpell_Spender': 'spender'}.get(str(v).lstrip('@')))
+        if role:
+            spell['harmony_role'] = role
         spell['targeting'] = self.targeting(spell_pages)
         spell['pz_locks_caster'] = bool(self.field(base + '/pz_locks_caster', None, 'setPzLocked', pages))
         spell['needs_weapon'] = bool(self.field(base + '/needs_weapon', None, 'needWeapon', pages))
@@ -716,9 +741,10 @@ class Bundle:
                              source=source, method='vocation')
         return sorted({b for b in bases} | {VOCATIONS[b] for b in bases})
 
-    def groups(self, pages):
+    def groups(self, pages, carrier='instant'):
         groups = []
-        primary = self.field('/spell/spell/groups/0/group', 'subclass', 'group', pages,
+        # A rune's group is the wiki runegroup; subclass is the group of the spell that conjures the rune.
+        primary = self.field('/spell/spell/groups/0/group', 'runegroup' if carrier == 'rune' else 'subclass', 'group', pages,
                              transform=lambda v: (v[0] if isinstance(v, list) else v).lower())
         if isinstance(primary, str) and 'primary' not in COOLDOWN_GROUPS.get(primary, ()):
             sources = {s: (r['registrar'].get('group') if not isinstance(r['registrar'].get('group'), list)
@@ -743,8 +769,13 @@ class Bundle:
             if cd2:
                 groups.append({'group': secondary, 'cooldown_ms': cd2})
             else:
-                self.row('unresolved_semantics', 'groupCooldown', resolution=f'secondary group {secondary} has no '
-                         'stated cooldown.', source=next(iter(self.records)), method='groupCooldown')
+                # S25: a secondary group no source gives a cooldown is dropped; the official library lists one group.
+                for entry in self.rows:
+                    if entry.get('destination', '').startswith('/spell/spell/groups/1'):
+                        entry['status'] = 'approved_omission'
+                        entry['resolution'] = (f'S25: the secondary group {secondary} has no stated cooldown and the '
+                                               'official library lists only the primary group; it is not authored.')
+                        del entry['destination']
         return groups
 
     def targeting(self, pages):

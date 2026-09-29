@@ -16,11 +16,13 @@ Scope: family-profile classification only -- never delivery-task eligibility, fi
 mapping or Presentation binding, all of which need a real Oteryn identity that this
 task is explicitly forbidden from minting (B1b, a separate reviewed Content/World
 step, assigns that). The wiki-evidence fallback and the owner leftover-family table
-(`owner-item-family-decisions.json`) are both keyed by Oteryn registry key, so neither
-can ever match a donor-only id -- the lookup is attempted anyway (structural fidelity
-with `convert_item`'s own order), but is guaranteed to miss. Recapturing the wiki for
-these ids, once B1b assigns them identity, is B2's job; this tool does not touch the
-network.
+(`owner-item-family-decisions.json`) are both keyed by Oteryn registry key. Since B1b
+(#1179) the committed Crystal bindings carry an epoch-2 registry key for every minted
+donor id (`engine_items.build_identity_index`), so both joins are tried under that key
+(task B2); a held id (PROBABLE_MATCH/AMBIGUOUS, no key) keeps the provisional
+`donor_key` and can never match either. This tool itself mints nothing and does not
+touch the network; `tools/content-census/item_wiki_family_capture.py --donor-only`
+captures the wiki evidence.
 
 Every id classified here is, by construction, absent from both pinned engines'
 `items.xml` (verified against the committed `population-*.json` censuses, which stay
@@ -71,12 +73,25 @@ DONOR_APPEARANCES_SHA256 = (
 # other new id predates 15.25 and was simply absent from the pinned ff7ede5 revision.
 NEW_APPEARANCE_RANGE = range(52977, 55118)
 
-DEFAULT_SAMPLE_NAME = "donor-census-crystal-summer-update-00ce02a5.json"
+# The live census (task B2: rows carry each id's committed key). The B1a census,
+# `donor-census-crystal-summer-update-00ce02a5.json`, is the frozen B1b epoch-2 input
+# pinned by exact bytes in `apps/game-server/src/content/cw2_b1_import.rs` and
+# `g4_item_crystal_binding_generator.py`: never regenerated or edited.
+DEFAULT_SAMPLE_NAME = "donor-census-crystal-summer-update-00ce02a5-keyed.json"
 SELF_CHECK_ROUTED_ID = (
     54335  # "slain iceplume strider", flags.corpse: WorldObject/corpse
 )
 SELF_CHECK_ATTRIBUTE_ID = 35500  # "magic portal", engine attribute -> material_valuable
-SELF_CHECK_WRAP_TARGET_ID = 50213  # "sickbed", wrapableto -> decoration
+SELF_CHECK_WRAP_TARGET_ID = 50213  # "sickbed", wrapableto and wiki -> decoration
+# B2 wiki evidence by exact itemid join under the epoch-2 key (Fandom primarytype).
+SELF_CHECK_WIKI_EVIDENCE = {
+    53695: "material_valuable",  # "lunar ascension orb", Valuables
+    54480: "material_valuable",  # "auric moon sigil", Valuables
+    54638: "tool",  # "skewered fish", Taming Items
+    54651: "tool",  # "cloud in a bottle", Taming Items
+}
+# B1b held ids (PROBABLE_MATCH 35500, AMBIGUOUS 53380): no epoch-2 key.
+SELF_CHECK_HELD_IDS = (35500, 53380)
 
 # Only the exact numeric-itemid join is even attempted (owner instruction, task B1a):
 # the title/appearance_title/actualname joins all require a broader wiki-title index
@@ -88,6 +103,13 @@ def donor_key(item_id):
     """Provisional, clearly non-canonical key: never `oteryn:item.registry.*`. No
     Oteryn identity is minted by this tool (hard constraint, task B1a)."""
     return f"donor:crystalserver@{DONOR_COMMIT_SHORT}:item/{item_id}"
+
+
+def registry_key(item_id, identity_index):
+    """The id's committed registry key (epoch 2, B1b) when it has one, else the
+    provisional `donor_key`. Never mints: `identity_index` is read-only."""
+    entry = (identity_index or {}).get(item_id)
+    return entry[0] if entry else donor_key(item_id)
 
 
 def load_donor_artifacts(donor_source, digests=None):
@@ -121,7 +143,12 @@ def load_donor_artifacts(donor_source, digests=None):
 
 
 def classify_donor_item(
-    item_id, donor, merged_items, wiki_family_fallback, owner_family_decisions
+    item_id,
+    donor,
+    merged_items,
+    wiki_family_fallback,
+    owner_family_decisions,
+    identity_index=None,
 ):
     """Mirrors `engine_items.convert_item`'s classification order exactly, starting
     after (non-existent) identity resolution. Returns one of:
@@ -165,10 +192,10 @@ def classify_donor_item(
         owner, reason = immovable_route
         return {"outcome": "routed", "name": name, "owner": owner, "reason": reason}
 
-    key = donor_key(item_id)
-    # Structurally can never match: both dicts are keyed by Oteryn registry key, which
-    # this donor-only id does not have. Attempted anyway for exact fidelity with
-    # `convert_item`'s own priority order -- see module docstring.
+    key = registry_key(item_id, identity_index)
+    # Both dicts are keyed by Oteryn registry key: a minted donor id joins under its
+    # epoch-2 key (B1b), a held id's provisional key can never match -- see module
+    # docstring.
     fallback_entry = wiki_family_fallback.get(key)
     if fallback_entry_matches_name(
         fallback_entry, name, appearance, DONOR_WIKI_MATCH_BASES
@@ -255,6 +282,7 @@ def build_census(donor_source, base_source, donor_digests=None, base_digests=Non
     base_items = base_sources["items"]
     wiki_family_fallback = base_sources["wiki_family_fallback"]
     owner_family_decisions = base_sources["owner_family_decisions"]
+    identity_index = base_sources["identity_index"]
 
     new_ids = sorted(set(donor["items"]) - set(base_items))
     # Prefer the pinned base's own record for any id both checkouts share (wrap-target
@@ -270,8 +298,14 @@ def build_census(donor_source, base_source, donor_digests=None, base_digests=Non
     rows = {}
     for item_id in new_ids:
         result = classify_donor_item(
-            item_id, donor, merged_items, wiki_family_fallback, owner_family_decisions
+            item_id,
+            donor,
+            merged_items,
+            wiki_family_fallback,
+            owner_family_decisions,
+            identity_index,
         )
+        key = registry_key(item_id, identity_index)
         if result["outcome"] == "resolved":
             by_profile[result["family_profile"]] += 1
             by_basis[result["family_profile_basis"] or "engine_attribute"] += 1
@@ -280,6 +314,7 @@ def build_census(donor_source, base_source, donor_digests=None, base_digests=Non
             if rule:
                 by_rule[rule] += 1
             rows[str(item_id)] = {
+                "key": key,
                 "name": result["name"],
                 "outcome": "resolved",
                 "family_profile": result["family_profile"],
@@ -289,6 +324,7 @@ def build_census(donor_source, base_source, donor_digests=None, base_digests=Non
             owner_key = f"{result['owner']}:{result['reason']}"
             routed_counts[owner_key] += 1
             rows[str(item_id)] = {
+                "key": key,
                 "name": result["name"],
                 "outcome": "routed",
                 "owner": result["owner"],
@@ -297,6 +333,7 @@ def build_census(donor_source, base_source, donor_digests=None, base_digests=Non
         else:
             blocker_counts[result["blocker"]] += 1
             rows[str(item_id)] = {
+                "key": key,
                 "name": result["name"],
                 "outcome": "unresolved",
                 "blocker": result["blocker"],
@@ -321,12 +358,12 @@ def build_census(donor_source, base_source, donor_digests=None, base_digests=Non
         "scope": (
             "Family-profile classification only, for donor-only ids (present in the "
             "donor items.xml, absent from the pinned base items.xml). No Oteryn "
-            "identity is minted or consulted; delivery-task eligibility, field "
-            "mapping and Presentation binding are out of scope (need identity, B1b). "
+            "identity is minted; the committed epoch-2 keys (B1b) are only read. "
+            "Delivery-task eligibility, field mapping and Presentation binding are "
+            "out of scope. "
             "The wiki-evidence fallback and the owner leftover-family table are both "
-            "keyed by Oteryn registry key and can never match a donor-only id; "
-            "'wiki_evidence_fallback_resolved' below is always 0 by construction, not "
-            "by omission -- see the module docstring."
+            "keyed by Oteryn registry key: a minted donor id joins under its epoch-2 "
+            "key (B1b), a held id (no key) never matches -- see the module docstring."
         ),
         "principle": (
             "The donor is a source of facts only (items.xml, appearances.dat); "
@@ -436,15 +473,24 @@ def self_check(result_doc, new_ids):
     assert attribute_row["family_profile"] == "material_valuable", attribute_row
     assert attribute_row["family_profile_basis"] is None, attribute_row
 
+    # Since B2 its own itemid page (primarytype Furniture) outranks the wrap target,
+    # exactly as in `convert_item`; the profile is the same either way.
     wrap_row = result_doc["items"][str(SELF_CHECK_WRAP_TARGET_ID)]
     assert wrap_row["outcome"] == "resolved", wrap_row
     assert wrap_row["family_profile"] == "decoration", wrap_row
-    assert wrap_row["family_profile_basis"] == "engine_wrap_target", wrap_row
+    assert wrap_row["family_profile_basis"] == "wiki_evidence_fallback", wrap_row
 
-    # Wiki evidence and the owner leftover-family table are both keyed by Oteryn
-    # registry key: structurally impossible for any donor-only id to match either
-    # (the dead-item owner table, a plain name lookup, is unaffected and can fire).
-    assert result_doc["wiki_evidence_fallback_resolved"] == 0, result_doc
+    # B2: a minted donor id joins the wiki evidence under its epoch-2 key; these four
+    # carry an admitted primarytype on their own itemid page. The owner leftover table
+    # has no epoch-2 key at all, and a held id keeps its provisional key.
+    for item_id, profile in SELF_CHECK_WIKI_EVIDENCE.items():
+        row = result_doc["items"][str(item_id)]
+        assert row["outcome"] == "resolved", row
+        assert row["family_profile"] == profile, row
+        assert row["family_profile_basis"] == "wiki_evidence_fallback", row
+        assert row["key"].startswith("oteryn:item.registry.i000"), row
+    for item_id in SELF_CHECK_HELD_IDS:
+        assert result_doc["items"][str(item_id)]["key"] == donor_key(item_id)
     assert result_doc["owner_leftover_table_resolved"] == 0, result_doc
     print(
         json.dumps(

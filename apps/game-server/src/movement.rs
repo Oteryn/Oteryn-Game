@@ -1,8 +1,17 @@
 //! Unactivated production Rust proof of one local cardinal Movement decision.
 //!
 //! Engineering Content scope and synthetic collision are caller supplied, not admitted
-//! Reference data or independently verified active-generation authority. No owner loop,
-//! external dispatch, client legality, or creature movement is composed here.
+//! Reference data or independently verified active-generation authority. No owner loop or
+//! external dispatch/client legality is composed here.
+//!
+//! GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.5 ("Creature slots become
+//! Movement-capable actors of the same Movement owner"): `MovementDecision`/`step_cardinal`/
+//! `MovementOwnerTurn` are generic over `ExactActorRef` and were already agnostic to slot kind;
+//! `runtime_actor_carrier.rs`'s `read_movement_position`/`commit_movement_position` no longer
+//! reject a `CreatureOccupied` slot (this module is unchanged for that), so a creature actor now
+//! steps through exactly this same path a player's does. This file still composes no owner loop
+//! or `ai/**` decision logic itself: the future perception/chase/wander decision (AI-3, `ai/**`)
+//! proposes a step and this module's existing machinery revalidates and commits it, unchanged.
 
 use crate::content::static_cell_engine::{
     EngineeringStaticCellIndex, EngineeringStaticCellScope, StaticCellEngineError,
@@ -13,6 +22,7 @@ use crate::foundation::{
     MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot,
 };
 use std::num::NonZeroUsize;
+mod interest;
 
 pub(crate) const LOCAL_STEP_CANDIDATES_PER_DECISION: usize = 1;
 
@@ -1234,52 +1244,52 @@ mod tests {
     }
 
     #[test]
-    fn real_movement_creature_and_revision_ceiling_reject_no_mutation() -> Result<(), Box<dyn Error>>
-    {
+    fn creature_actor_steps_through_the_same_movement_owner_turn_as_a_player()
+    -> Result<(), Box<dyn Error>> {
+        // GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.5 ("Creature slots become
+        // Movement-capable actors of the same Movement owner"): a creature actor now steps
+        // through exactly the same `MovementDecision`/`step_cardinal` path a player's does,
+        // superseding the bootstrap's `movement_adoption: FORBIDDEN_IN_BOOTSTRAP` for this slice.
         let mut creature = self::fixture(4, 5, true)?;
-        let actor = creature.actor();
-        assert_eq!(
-            creature.borrow_position().read(actor),
-            Err(CarrierError::MovementCreatureUnavailable)
-        );
-        assert_eq!(
-            creature.raw_position()?,
-            (
-                MovementLocalPosition {
-                    x: 4,
-                    y: 5,
-                    floor: 7
-                },
-                1
-            )
-        );
-        let mut fixture = self::fixture(4, 5, false)?;
-        let scope = self::scope(&fixture)?;
+        let scope = self::scope(&creature)?;
         let index = self::index(&scope, &[(5, 5, 7, walkable())])?;
-        let actor = fixture.actor();
-        let before = fixture.current_position()?;
-        let mut decision = MovementDecision::begin(
-            &fixture.borrow_position(),
+        let actor = creature.actor();
+        let before = creature.current_position()?;
+        let committed = step_cardinal(
+            &mut creature.borrow_position(),
             actor,
             before,
             &selection(before, &scope),
+            &index,
             CardinalStep::East,
         )?;
-        decision.attempt_candidate(&index)?;
-        fixture.become_creature()?;
-        let creature_actor = fixture.actor();
-        let creature_before = fixture.raw_position()?;
         assert_eq!(
-            decision.commit(&mut fixture.borrow_position()),
-            Err(MovementError::Actor(
-                CarrierError::MovementCreatureUnavailable
-            ))
+            committed.position(),
+            MovementLocalPosition {
+                x: 5,
+                y: 5,
+                floor: 7
+            }
         );
-        assert_eq!(fixture.raw_position()?, creature_before);
+        assert_eq!(creature.raw_position()?, (committed.position(), 2));
+        // A stale expected snapshot is revalidated exactly as for a player: refused, no mutation.
         assert_eq!(
-            fixture.borrow_position().read(creature_actor),
-            Err(CarrierError::MovementCreatureUnavailable)
+            MovementDecision::begin(
+                &creature.borrow_position(),
+                actor,
+                before,
+                &selection(before, &scope),
+                CardinalStep::East
+            )
+            .err(),
+            Some(MovementError::SnapshotMismatch)
         );
+        assert_eq!(creature.raw_position()?, (committed.position(), 2));
+        Ok(())
+    }
+
+    #[test]
+    fn real_movement_revision_ceiling_rejects_no_mutation() -> Result<(), Box<dyn Error>> {
         let mut fixture = self::fixture(4, 5, false)?;
         let scope = self::scope(&fixture)?;
         let index = self::index(&scope, &[(5, 5, 7, walkable())])?;

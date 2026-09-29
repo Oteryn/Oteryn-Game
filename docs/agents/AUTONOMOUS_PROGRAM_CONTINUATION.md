@@ -27,7 +27,7 @@ Do not ask the owner to repeat state that can be resolved from GitHub.
 6. Run audit/E2E/exact-head gates when the package is complete.
 7. Repair evidence-based failures while a materially new hypothesis or safe authorized repair path exists.
 8. When all gates pass, resolve protected integration through the current immutable bound META integration-capability router. Use its direct exact-head route when freshly proven; otherwise use its freshly proven delegated executor route. Record `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither route is proven, preserve the qualified head and continue safe path-disjoint work; do not substitute direct merge or generic auto-merge.
-9. Only after successful Merge Queue integration and protected-main readback confirm the accepted candidate is integrated, archive the task, release ownership and reconcile programme barriers.
+9. Only after successful Merge Queue integration and protected-main readback confirm the accepted candidate is integrated, archive the task, release ownership and reconcile programme barriers. The task record's move to `tasks/archive/` may ride in the candidate's final authoring commit (`tasks/archive/README.md`); it takes effect only through that merge, and the readback, ownership release and barrier reconciliation still happen after it, recorded in the control-plane state rather than in a separate PR.
 10. Start at most one additional safe ready task when current authority and anti-stall policy permit; elapsed implementation time does not decide this.
 
 ## Worker rules
