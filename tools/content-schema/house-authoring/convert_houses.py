@@ -95,6 +95,29 @@ def extract_crystal(xml_bytes: bytes) -> dict:
     }
 
 
+def layout_tiles(layout: dict) -> list[list[int]]:
+    """Positions of the non-empty staticmapdata cells, sorted.
+
+    Cell order is floors (ascending z), then x, then y; each cell's `skip` counts the
+    empty positions that follow it. Derived by testing every axis order against the
+    House tiles of the pinned CrystalServer map (see samples/otbm-tile-check.json).
+    """
+    origin, dims = layout["origin"], layout["dimensions"]
+    width, height, floors = dims["width"], dims["height"], dims["floors"]
+    tiles, index = [], 0
+    for cell in layout["cells"]:
+        if index >= width * height * floors:
+            raise ValueError("layout cells exceed the footprint")
+        if cell["items"]:
+            z, rest = divmod(index, width * height)
+            x, y = divmod(rest, height)
+            tiles.append([origin["x"] + x, origin["y"] + y, origin["z"] + z])
+        index += 1 + cell["skip"]
+    if index != width * height * floors:
+        raise ValueError("layout cells do not fill the footprint")
+    return sorted(tiles)
+
+
 def load_staged() -> list[dict]:
     manifest = json.loads((STAGED / "manifest.json").read_text(encoding="utf-8"))
     records = []
@@ -143,6 +166,7 @@ def convert(staged: list[dict], crystal: dict) -> tuple[dict, dict]:
             "rent_gold": record["rent_gold"],
             "entry_restriction": RESTRICTION_TEXT.get(record["restrictions"]),
             "footprint": footprint,
+            "tiles": layout_tiles(layout),
             "provenance": {
                 "source": "cipsoft/staticdata/house_id",
                 "client_version": "15.30",
@@ -171,20 +195,19 @@ def convert(staged: list[dict], crystal: dict) -> tuple[dict, dict]:
                 examples.setdefault(field, []).append(
                     [record["source_id"], official, observed]
                 )
-        origin, dims = layout["origin"], layout["dimensions"]
-        if not (
-            origin["x"] <= e["entry"]["x"] < origin["x"] + dims["width"]
-            and origin["y"] <= e["entry"]["y"] < origin["y"] + dims["height"]
-            and origin["z"] <= e["entry"]["z"] < origin["z"] + dims["floors"]
+        ex, ey, ez = (e["entry"][a] for a in "xyz")
+        if not any(
+            z == ez and max(abs(x - ex), abs(y - ey)) == 1 for x, y, z in house["tiles"]
         ):
-            divergence["entrance_outside_footprint"] += 1
-            examples.setdefault("entrance_outside_footprint", []).append(
+            divergence["entrance_not_next_to_house_tile"] += 1
+            examples.setdefault("entrance_not_next_to_house_tile", []).append(
                 record["source_id"]
             )
     catalog = {"schema": "OTERYN_HOUSE_AUTHORING/candidate-1", "houses": houses}
     report = {
         "houses": len(houses),
         "joined_by": "crystal clientid == client house id",
+        "tiles": sum(len(h["tiles"]) for h in houses),
         "kinds": dict(sorted(Counter(h["kind"] for h in houses).items())),
         "engine_divergence_counts": dict(sorted(divergence.items())),
         "engine_divergence_examples": {k: v[:5] for k, v in sorted(examples.items())},

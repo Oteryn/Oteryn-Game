@@ -36,6 +36,28 @@
         "height": 4,
         "floors": 2
       },
+      "tiles": [
+        [
+          1000,
+          1000,
+          7
+        ],
+        [
+          1000,
+          1001,
+          7
+        ],
+        [
+          1001,
+          1000,
+          7
+        ],
+        [
+          1001,
+          1001,
+          7
+        ]
+      ],
       "provenance": {
         "source": "cipsoft/staticdata/house_id",
         "client_version": "15.30",
@@ -86,6 +108,28 @@
         "height": 4,
         "floors": 2
       },
+      "tiles": [
+        [
+          1000,
+          1000,
+          7
+        ],
+        [
+          1000,
+          1001,
+          7
+        ],
+        [
+          1001,
+          1000,
+          7
+        ],
+        [
+          1001,
+          1001,
+          7
+        ]
+      ],
       "provenance": {
         "source": "cipsoft/staticdata/house_id",
         "client_version": "15.30",
@@ -140,6 +184,28 @@
         "height": 4,
         "floors": 2
       },
+      "tiles": [
+        [
+          1000,
+          1000,
+          7
+        ],
+        [
+          1000,
+          1001,
+          7
+        ],
+        [
+          1001,
+          1000,
+          7
+        ],
+        [
+          1001,
+          1001,
+          7
+        ]
+      ],
       "provenance": {
         "source": "cipsoft/staticdata/house_id",
         "client_version": "15.30",

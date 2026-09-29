@@ -36,6 +36,7 @@ def house(slug, name, source_id, engine_id, kind="private_house", restriction=""
             "height": 4,
             "floors": 2,
         },
+        "tiles": [[1000, 1000, 7], [1000, 1001, 7], [1001, 1000, 7], [1001, 1001, 7]],
         "provenance": {
             "source": "cipsoft/staticdata/house_id",
             "client_version": "15.30",
@@ -137,6 +138,14 @@ NEGATIVE = {
         "does not match",
     ),
     "shop name": (lambda d: h0(d).update(kind="shop"), "shop without"),
+    "no tiles": (lambda d: h0(d).update(tiles=[]), "should be non-empty"),
+    "tile arity": (lambda d: h0(d)["tiles"].append([1, 2]), "is too short"),
+    "duplicate tile": (lambda d: h0(d)["tiles"].append([1001, 1001, 7]), "non-unique"),
+    "tile outside footprint": (
+        lambda d: h0(d)["tiles"].append([2000, 1001, 7]),
+        "tiles: a tile is outside",
+    ),
+    "unsorted tiles": (lambda d: h0(d)["tiles"].reverse(), "tiles: not sorted"),
 }
 
 

@@ -1,11 +1,11 @@
 {
  "engine_divergence_counts": {
-  "entrance_outside_footprint": 10,
+  "entrance_not_next_to_house_tile": 10,
   "name": 1,
   "size_sqm": 812
  },
  "engine_divergence_examples": {
-  "entrance_outside_footprint": [
+  "entrance_not_next_to_house_tile": [
    20203,
    20314,
    20315,
@@ -75,6 +75,7 @@
   "private_house": 878,
   "shop": 51
  },
+ "tiles": 117226,
  "towns": {
   "oteryn:content.area.city.ab_dendriel": 56,
   "oteryn:content.area.city.ankrahmun": 120,

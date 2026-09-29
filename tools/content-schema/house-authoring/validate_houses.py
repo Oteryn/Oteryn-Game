@@ -81,6 +81,11 @@ def semantic(data) -> list[str]:
                     f"{at}: duplicate {field} {value!r} (first at /houses/{seen[field][value]})"
                 )
             seen[field].setdefault(value, i)
+        tiles = [{"x": x, "y": y, "z": z} for x, y, z in house["tiles"]]
+        if not all(inside(tile, house["footprint"]) for tile in tiles):
+            errors.append(f"{at}/tiles: a tile is outside the footprint")
+        if house["tiles"] != sorted(house["tiles"]):
+            errors.append(f"{at}/tiles: not sorted")
         if not inside(house["map_marker"], house["footprint"]):
             errors.append(f"{at}/map_marker: outside the footprint")
         if house["name"] != " ".join(house["provenance"]["source_name"].split()):

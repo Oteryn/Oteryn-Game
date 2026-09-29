@@ -37,6 +37,7 @@
         "rent_gold",
         "entry_restriction",
         "footprint",
+        "tiles",
         "provenance"
       ],
       "properties": {
@@ -63,7 +64,7 @@
         },
         "entrance": {
           "$ref": "#/$defs/Position",
-          "description": "Tile a player is placed on when entering or being moved into the House (engine entry). Sourced from CrystalServer world-house.xml; the official client does not ship it."
+          "description": "Engine entry tile (CrystalServer world-house.xml): the tile in front of the House door where players are placed when they leave or are moved out; next to a House tile, not on one, for 975 of 995 houses. The official client does not ship it."
         },
         "map_marker": {
           "$ref": "#/$defs/Position",
@@ -114,6 +115,34 @@
         },
         "footprint": {
           "$ref": "#/$defs/Footprint"
+        },
+        "tiles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "House area: every position of the footprint with a non-empty official staticmapdata cell, as [x, y, z], sorted. Doors and beds on these tiles are world placement content.",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 15
+              }
+            ],
+            "items": false,
+            "minItems": 3
+          }
         },
         "provenance": {
           "$ref": "#/$defs/Provenance"
@@ -167,7 +196,7 @@
     "Footprint": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Bounding box of the House layout (origin is the lowest x/y and lowest z). Tile membership, doors and bed placements are world placement content, not modeled here.",
+      "description": "Bounding box of the official staticmapdata House layout: origin is the minimum x/y/z.",
       "required": [
         "origin",
         "width",

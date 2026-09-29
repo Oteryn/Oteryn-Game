@@ -18,11 +18,12 @@ doors and bed placements belong to `content/world/placements/`.
 | `name` | client staticdata f2 | whitespace-normalized; verbatim in `provenance.source_name` |
 | `kind` | client f8 / f10 | `private_house` \| `guildhall` \| `shop`; exclusive in all 995 houses |
 | `town` | client f9 | `Area` ref `oteryn:content.area.city.<slug>`; city Areas are not populated yet |
-| `entrance` | CrystalServer `entryx/y/z` | engine entry tile; the client does not ship it |
+| `entrance` | CrystalServer `entryx/y/z` | engine entry tile in front of the door (next to a House tile for 975 houses); the client does not ship it |
 | `map_marker` | client f6 | staged as `entrance` by HOUSES-1, but it sits at or next to the footprint centre (328 exact, rest ±1 tile), so it is not the door |
 | `size_sqm`, `beds`, `rent_gold` | client f7, f5, f4 | official values win over the engine |
 | `entry_restriction` | client f3 | structured form of the only observed text, "Only Sorcerers can enter." (3 houses) |
 | `footprint` | client staticmapdata | bounding box: `origin` (minimum x/y/z) + `width`/`height`/`floors` |
+| `tiles` | client staticmapdata | House area: every position with a non-empty layout cell, `[x, y, z]`, sorted |
 | `provenance` | both | client id + record digests, verbatim name/restriction text, engine House id (the id on House tiles in the engine map) |
 
 ## Cross-source check (CrystalServer `summer-update` @ `00ce02a5`, `data-global/world/world-house.xml`)
@@ -34,9 +35,26 @@ differently; the official value is kept), one name (`Harbour Street 4` official 
 `Harbour Place 4`), and 10 engine entries outside the client footprint. Engine
 `townid`s map 1:1 to client town names.
 
-TibiaWiki BR (`Todas_as_casas`) is not cross-checked yet: it is behind a Cloudflare
-challenge from agent containers, so it needs a capture workflow like
-`npc-tibiawiki-br-capture.yml`.
+## House tiles and the staticmapdata cell order
+
+Cell order is floors with ascending z, then x, then y; a cell's `skip` counts the empty
+positions **after** it. `otbm_tile_check.py` derived this by scoring all 24 candidate
+orders against the House tiles of the pinned CrystalServer `world.otbm` (gzip,
+sha256 `dcb73554...d8d7`): the selected order matches 104,748 ground items, the next best
+96,981. Client tiles cover 108,034 of the 109,744 engine House tiles (98.4%) and 442
+houses have identical tile sets; the houses below 90% coverage are listed in
+`samples/otbm-tile-check.json` (engine map drift). Doors and beds on these tiles are world
+placement content (`content/world/placements/`), not modeled here.
+
+## TibiaWiki BR
+
+`wiki_br_houses.py` captures `Todas_as_casas` and every page it links to in the
+`house-tibiawiki-br-capture.yml` workflow (the site challenges agent containers). It
+discovers the infobox parameters instead of assuming them, joins by the parameter whose
+values are client house ids, and reports agreement per field plus disagreement examples.
+A local run against four Fandom pages joined on `houseid` and agreed on rent, size and
+beds (4/4), which supports the official `size_sqm` over the engine value. The snapshot
+stays a CI artifact; the facts file may be committed from it.
 
 ## Files
 
@@ -45,6 +63,8 @@ challenge from agent containers, so it needs a capture workflow like
 | `house.schema.json` | JSON Schema 2020-12, closed shapes |
 | `validate_houses.py` | schema plus semantic checks: key family, unique key/source id/engine id/name, marker inside footprint, name normalization, restriction text ↔ structured form, shop naming |
 | `verify_formal_schema.py` | positive/negative cases; regenerates `synthetic-valid-house.json` |
+| `otbm_tile_check.py` | local-only: pinned `world.otbm` House tiles → `samples/otbm-tile-check.json` (cell order evidence) |
+| `wiki_br_houses.py` | TibiaWiki BR `fetch` / `facts` / `compare` / `self-test` |
 | `convert_houses.py` | `extract-crystal`: pinned `world-house.xml` → `samples/crystal-world-house-00ce02a5.json`; `convert`: joins it with `imports/cipsoft-staticdata/houses/` (digest-checked), validates all 995 houses, writes `samples/conversion-report.json` |
 
 ```text
@@ -55,11 +75,12 @@ python convert_houses.py convert --check            # all 995 houses validate; r
 python convert_houses.py convert --out /tmp/houses.json
 # needs a crystalserver@00ce02a5 checkout (local only):
 python convert_houses.py extract-crystal --xml <crystal>/data-global/world/world-house.xml --check
+python otbm_tile_check.py --otbm <crystal>/data-global/world/world.otbm --check
+python wiki_br_houses.py self-test
 ```
 
-## Open decisions before acceptance
+## Owner decisions (2026-09-29)
 
-1. House key: slug of the official name (current) or of the client id.
-2. Town: reference a city `Area` (current, keys not yet defined) or a separate Town identity.
-3. `entrance`: engine entry tile (current) until the client door position is derived from `staticmapdata`/map tiles.
-4. Tile membership: next step is the cell order → x/y/z mapping (HOUSES-1 UNKNOWN), or engine `world.otbm` House tiles, into `content/world/placements/`.
+1. House key: slug of the official name. 2. Town: city `Area` ref. 3. `entrance`: engine
+entry tile. 4. Next: House tiles from the official layout, verified against the engine map
+(done here), then the TibiaWiki BR capture (workflow here; facts to commit after its first run).

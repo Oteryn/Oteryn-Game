@@ -49,6 +49,9 @@ jobs:
       - name: All staged houses convert and validate
         run: python convert_houses.py convert --check
 
+      - name: Wiki comparison self-test
+        run: python wiki_br_houses.py self-test
+
       - name: Ruff check and format
         working-directory: .
         run: |
@@ -61,6 +64,6 @@ jobs:
         working-directory: .
         run: test -z "$(git status --short --untracked-files=all)"
 
-  # `convert_houses.py extract-crystal --check` needs a pinned CrystalServer checkout,
-  # which this repository's CI does not fetch; it is run locally by whoever changes the
-  # extractor and its result is the committed samples/crystal-world-house-00ce02a5.json.
+  # `convert_houses.py extract-crystal --check` and `otbm_tile_check.py --check` need a
+  # pinned CrystalServer checkout, which this repository's CI does not fetch; they are run
+  # locally by whoever changes them and their results are the committed samples.

@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260929-house-authoring-schema-candidate
-title: HOUSES-2 - House authoring schema candidate v1 with CrystalServer cross-check
+title: HOUSES-2 - House authoring schema candidate v1, House tiles, CrystalServer and TibiaWiki BR cross-checks
 mode: CONTRACT
 status: completed
 repository: Oteryn/Oteryn-Game
@@ -22,6 +22,7 @@ execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/house-authoring/**
   - .github/workflows/house-authoring-schema.yml
+  - .github/workflows/house-tibiawiki-br-capture.yml
   - imports/cipsoft-staticdata/houses/README.md
   - docs/agents/tasks/archive/OTV2-20260929-house-authoring-schema-candidate.md
 public_contracts: []
@@ -34,7 +35,7 @@ jira: null   # sync pending (coordinator batch)
 ## Outcome
 
 `tools/content-schema/house-authoring/` holds a CANDIDATE authoring schema for static House
-definitions, a validator, positive/negative cases and a converter that turns all 995 staged
+definitions including each House's tile area, a validator, positive/negative cases and a converter that turns all 995 staged
 15.30 client houses (HOUSES-1) plus CrystalServer `world-house.xml` into a valid candidate
 catalog in CI. `content/houses/` stays READY_UNPOPULATED; no runtime, identity registry or
 Item identity is touched. Runtime House state stays out by the tree contract.
@@ -50,17 +51,25 @@ Item identity is touched. Runtime House state stays out by the tree contract.
   comes from the engine.
 - CONFLICT (reported, official wins): `size` differs for 812 houses, one name differs,
   10 engine entries fall outside the client footprint (`samples/conversion-report.json`).
-- UNKNOWN: TibiaWiki BR `Todas_as_casas` is behind a Cloudflare challenge from agent
-  containers; not cross-checked. Cell order to x/y/z mapping is still unknown.
+- PROVEN: staticmapdata cell order is ascending z, then x, then y, `skip` after the cell:
+  best of 24 candidates against the pinned `world.otbm` (sha256 `dcb73554...d8d7`) House
+  tiles, 104,748 ground matches vs 96,981 next; 98.4% of engine House tiles covered, 442
+  identical houses (`samples/otbm-tile-check.json`). Engine entry is next to a House tile
+  for 975 houses, i.e. the tile in front of the door.
+- DERIVED: a local run of the wiki comparison on four Fandom pages agreed on rent, size,
+  beds (supports official `size_sqm` over the engine value).
+- PENDING: TibiaWiki BR challenges agent containers; `house-tibiawiki-br-capture.yml`
+  captures it on the runner. Facts are committed after its first run.
 
-## Owner decisions pending (see README)
+## Owner decisions (2026-09-29)
 
-1. House key from name slug (current) or client id. 2. Town as city `Area` ref (current)
-or Town identity. 3. Engine entry tile as `entrance` (current). 4. Next step for tiles.
+1a House key from name slug. 2a Town as city `Area` ref. 3a Engine entry tile as
+`entrance`. 4 a+c: House tiles from the official layout (done), then the TibiaWiki BR capture.
 
 ## Validation (local)
 
-- `verify_formal_schema.py`: 19/19 cases; `validate_houses.py synthetic-valid-house.json`: ok.
+- `otbm_tile_check.py --check` against the pinned map: ok. `wiki_br_houses.py self-test`: ok.
+- `verify_formal_schema.py`: 24/24 cases; `validate_houses.py synthetic-valid-house.json`: ok.
 - `convert_houses.py convert --check`: 995 houses valid, report unchanged.
 - `convert_houses.py extract-crystal --check` against the pinned checkout: ok.
 - `ruff check` / `ruff format --check`: pass.
