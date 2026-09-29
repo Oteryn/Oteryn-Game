@@ -34,9 +34,10 @@ One record per achievement, validated by `achievement.schema.json`:
 | `identity.revision` | Content revision of the record. |
 | `name`, `description` | Game text. |
 | `grade` | 1-4. |
-| `points` | Integer inside the grade's range: 1-3, 4-6, 7-9, 10. |
+| `points` | Integer inside the grade's range: 1-3, 4-6, 7-9, 10; exactly 0 for a retired achievement. |
 | `secret` | Whether the Reference target publishes it before it is earned. Presentation only. |
 | `premium` | Reference fact that the achievement is earned in premium content. The Achievement domain does not check it; the granting content gates access. |
+| `retired` | Optional, default false. A retired achievement can no longer be earned (§3) and gives no points; facts earned before stay and are shown. |
 | `provenance` | The client staticdata `source_id` when there is one, and the TibiaWiki page id and revision. Never identity. |
 
 ### 2.1 Identity
@@ -45,7 +46,7 @@ One record per achievement, validated by `achievement.schema.json`:
   no client record, and one wiki page has only an inferred id (`563?`).
 - A key is never reused and never reinterpreted. A change of meaning (a different way to earn it, a different
   grade) is a new key; a text correction or a points correction inside the grade range is a new revision of the
-  same key.
+  same key. Retiring an achievement is a new revision of the same key.
 - Two records with the same slug are a catalogue error; the validator rejects them.
 
 ### 2.2 Source precedence for population
@@ -55,8 +56,19 @@ The catalogue is populated in a separate content change, not by this contract:
 - `name`, `description`, `grade`: the client staticdata record where one joins (368), else TibiaWiki (203
   secret). The 57 joined records where the wiki differs keep the client text.
 - `points`, `secret`, `premium`: TibiaWiki; the client does not carry them.
-- The 10 wiki anomalies of the join report (missing points or premium, grade 0, non-`yes`/`no` flags) and the
-  page with an inferred id are held until a reviewed value exists. A held achievement has no key yet.
+- The 10 wiki anomalies of the join report are resolved by owner decision (2026-09-29):
+
+  | Achievement | Value |
+  |---|---|
+  | Sculptor Apprentice | `premium` true (`Yes`) |
+  | Smart Thinking, Sail Away! | `premium` true, as the wiki displays an empty value |
+  | Hell Rider | 2 points (Canary `register_achievements.lua` and GuildStats agree) |
+  | Taskaholic | 7 points, provisional: no source states the value; a sourced value is a new revision |
+  | The More the Merrier | kept, `retired`, grade 1, 0 points: it cannot be earned since 2015 (Canary grade 1, 0 points) |
+  | Achievement 563 | not in the catalogue: no name, grade or points, inferred id |
+
+- The quest-sample ref `the_professors_nut` binds explicitly to `oteryn:achievement/the_professor_s_nut`
+  (official name "The Professor's Nut"); a ref that matches no slug is listed, never guessed.
 
 ### 2.3 Compatibility (D49)
 
@@ -73,8 +85,8 @@ counts no points there; the fact is unchanged.
 2. The Achievement domain consumes the request **in the same transaction**: it inserts the
    `AccountAchievement` fact if `(account_id, achievement_key)` is absent and does nothing otherwise. The
    request row stays as the fact's durable provenance.
-3. A request for a key the world's catalogue lacks fails the granting transaction closed: nothing is written.
-   Content validation prevents this before runtime.
+3. A request for a key the world's catalogue lacks, or for a retired achievement, fails the granting
+   transaction closed: nothing is written. Content validation prevents both before runtime.
 
 Same-transaction consumption is the minimum sufficient choice: no background consumer, no pending state and
 no retry path. It keeps the one-row, first-commit-wins rule of §4.6 by the unique key. A granter that cannot

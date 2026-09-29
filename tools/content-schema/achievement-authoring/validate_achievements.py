@@ -44,7 +44,10 @@ def record_errors(record: dict) -> list[str]:
     expected = KEY_PREFIX + slug(record["name"])
     if record["identity"]["key"] != expected:
         errors.append(f"key must be {expected}")
-    if record["points"] not in GRADE_POINTS[record["grade"]]:
+    if record.get("retired", False):
+        if record["points"] != 0:
+            errors.append("a retired achievement has 0 points")
+    elif record["points"] not in GRADE_POINTS[record["grade"]]:
         errors.append(
             f"points {record['points']} outside the grade {record['grade']} range"
         )

@@ -41,6 +41,17 @@ class ValidateAchievementsTest(unittest.TestCase):
         )
         self.assertEqual(v.validate([variant(grade=4, points=10)])["invalid"], [])
 
+    def test_retired_has_zero_points(self) -> None:
+        self.assertEqual(v.validate([variant(retired=True, points=0)])["invalid"], [])
+        self.assertEqual(
+            v.validate([variant(retired=True, points=2)])["invalid"][0]["errors"],
+            ["a retired achievement has 0 points"],
+        )
+        self.assertEqual(
+            v.validate([variant(points=0)])["invalid"][0]["errors"],
+            ["points 0 outside the grade 1 range"],
+        )
+
     def test_duplicate_key_rejected(self) -> None:
         report = v.validate([SAMPLE, variant(description="Other text.")])
         self.assertEqual(

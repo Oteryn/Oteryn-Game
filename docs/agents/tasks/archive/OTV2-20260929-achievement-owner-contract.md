@@ -45,13 +45,20 @@ validator implement §2. `content/achievements/`, migrations and runtime are unt
 - Compatibility is key equality, because a key never changes meaning (§2.3).
 - Grant requests are consumed in the same transaction (§3); asynchronous consumption is named as superseding
   evidence, not built.
-- A grant for a key missing from the world's catalogue fails the granting transaction closed (§3).
+- A grant for a key missing from the world's catalogue, or for a retired achievement, fails the granting
+  transaction closed (§3).
+
+## Owner decisions (2026-09-29, this session)
+
+Resolutions of the 10 join anomalies (contract §2.2): Sculptor Apprentice, Smart Thinking and Sail Away! premium
+true; Hell Rider 2 points (Canary and GuildStats); Taskaholic 7 points, provisional; The More the Merrier kept as
+`retired` with 0 points; Achievement 563 left out. This added the optional `retired` field before review.
 
 ## Validation (local)
 
-- `test_validate_achievements.py`: 6 tests pass.
-- Evidence fit: 565 candidates from staticdata plus the #1286 wiki facts all validate, slugs unique, 7 held;
-  27 of 28 quest-sample achievement refs bind by slug.
+- `test_validate_achievements.py`: 7 tests pass.
+- Evidence fit: with the owner resolutions, 571 candidates from staticdata plus the #1286 wiki facts all validate,
+  slugs unique; only `Achievement 563` stays out. 27 of 28 quest-sample refs bind by slug, the 28th explicitly.
 - `ruff check`, `ruff format --check`, `validate_governance.py`, `validate_repository_policy.py`,
   `git diff --check`: pass.
 - Review: exact-head independent review required (catalogue identity, account-fact grant path).
