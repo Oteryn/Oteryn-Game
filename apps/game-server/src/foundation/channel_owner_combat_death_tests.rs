@@ -244,8 +244,8 @@ fn lethal_replay_returns_the_same_projection_without_a_second_write() {
     assert_eq!(
         projection_signature(
             carrier
-                .corpse_projection
-                .as_ref()
+                .corpse_projections
+                .first()
                 .expect("one retained projection")
         ),
         first
@@ -282,8 +282,8 @@ fn different_lethal_occurrence_cannot_replace_the_retained_death() {
     assert_eq!(
         projection_signature(
             carrier
-                .corpse_projection
-                .as_ref()
+                .corpse_projections
+                .first()
                 .expect("original projection retained")
         ),
         original
@@ -307,7 +307,7 @@ fn nonlethal_and_precommit_failure_leave_no_death_projection() {
         project_fixed_one_creature_death(&mut carrier.current_owner_combat_death(&owner), actor,),
         Err(CarrierError::CommittedLethalUnavailable)
     );
-    assert!(carrier.corpse_projection.is_none());
+    assert!(carrier.corpse_projections.is_empty());
 
     let (owner, mut carrier, actor) = fixture(41, true);
     let before = carrier.slots.clone();
@@ -321,7 +321,7 @@ fn nonlethal_and_precommit_failure_leave_no_death_projection() {
         Err(CarrierError::InjectedCommitFailure)
     );
     assert_eq!(carrier.slots, before);
-    assert!(carrier.corpse_projection.is_none());
+    assert!(carrier.corpse_projections.is_empty());
 }
 
 #[test]
@@ -347,7 +347,7 @@ fn projection_failures_preserve_retry_and_lost_response_idempotency() {
             .project_committed_lethal_with_failures(receipt, true, false),
         Err(CarrierError::InjectedCorpseProjectionFailure)
     );
-    assert!(carrier.corpse_projection.is_none());
+    assert!(carrier.corpse_projections.is_empty());
 
     let receipt = carrier
         .current_owner_combat_death(&owner)
@@ -371,8 +371,8 @@ fn projection_failures_preserve_retry_and_lost_response_idempotency() {
     );
     let retained = projection_signature(
         carrier
-            .corpse_projection
-            .as_ref()
+            .corpse_projections
+            .first()
             .expect("write survived lost response"),
     );
     assert_eq!(carrier.remove(&owner, actor.0), Ok(ActorState(1)));
@@ -411,7 +411,7 @@ fn projection_failures_preserve_retry_and_lost_response_idempotency() {
         .is_err()
     );
     assert_eq!(
-        projection_signature(carrier.corpse_projection.as_ref().expect("retained corpse")),
+        projection_signature(carrier.corpse_projections.first().expect("retained corpse")),
         retained
     );
 }
@@ -440,7 +440,7 @@ fn missing_death_position_cannot_be_invented_after_lethal_commit() {
         carrier.lookup(&owner, actor.0),
         Err(CarrierError::CreatureNotActionable)
     );
-    assert!(carrier.corpse_projection.is_none());
+    assert!(carrier.corpse_projections.is_empty());
 }
 
 #[test]
@@ -480,7 +480,7 @@ fn dead_position_mutation_and_changed_receipt_fail_without_projection() {
             .project_committed_lethal(changed),
         Err(CarrierError::CorpseReceiptMismatch)
     );
-    assert!(carrier.corpse_projection.is_none());
+    assert!(carrier.corpse_projections.is_empty());
 
     let mut changed = carrier
         .current_owner_combat_death(&owner)
@@ -493,7 +493,7 @@ fn dead_position_mutation_and_changed_receipt_fail_without_projection() {
             .project_committed_lethal(changed),
         Err(CarrierError::CorpseReceiptMismatch)
     );
-    assert!(carrier.corpse_projection.is_none());
+    assert!(carrier.corpse_projections.is_empty());
 }
 
 #[test]
@@ -513,7 +513,7 @@ fn administrative_removal_emits_no_death_and_stales_an_issued_receipt() {
         .committed_lethal_receipt(actor)
         .expect("receipt before administration");
     assert_eq!(carrier.remove(&owner, actor.0), Ok(ActorState(1)));
-    assert!(carrier.corpse_projection.is_none());
+    assert!(carrier.corpse_projections.is_empty());
     assert_eq!(
         carrier
             .current_owner_combat_death(&owner)
@@ -530,7 +530,11 @@ fn administrative_removal_emits_no_death_and_stales_an_issued_receipt() {
 }
 
 #[test]
-fn retained_corpse_blocks_replacement_and_stale_owner_cannot_replay() {
+fn retained_corpse_survives_a_new_admission_and_stale_owner_cannot_replay() {
+    // AI-2 (GAME-AI-01 §4.1 envelope): a new, unrelated creature admission is no longer
+    // blocked by an earlier actor's retained corpse projection (that per-actor record is
+    // independent of carrier-wide admission capacity now); the retained record itself is
+    // untouched by the new admission.
     let (mut owner, mut carrier, actor) = fixture(90, true);
     let cast = occurrence("cast:retained", "rules:1");
     commit_ability(
@@ -548,13 +552,15 @@ fn retained_corpse_blocks_replacement_and_stale_owner_cannot_replay() {
             .actor();
     assert_eq!(carrier.remove(&owner, actor.0), Ok(ActorState(1)));
     let retained =
-        projection_signature(carrier.corpse_projection.as_ref().expect("retained corpse"));
-    assert_eq!(
-        carrier.admit_creature(&owner, ActorState(2), "target:two", 20),
-        Err(CarrierError::CapacityExceeded)
+        projection_signature(carrier.corpse_projections.first().expect("retained corpse"));
+    assert!(
+        carrier
+            .admit_creature(&owner, ActorState(2), "target:two", 20)
+            .is_ok(),
+        "an unrelated new creature is no longer blocked by another actor's retained corpse"
     );
     assert_eq!(
-        projection_signature(carrier.corpse_projection.as_ref().expect("retained corpse")),
+        projection_signature(carrier.corpse_projections.first().expect("retained corpse")),
         retained
     );
 
@@ -567,7 +573,7 @@ fn retained_corpse_blocks_replacement_and_stale_owner_cannot_replay() {
         Err(CarrierError::WrongScope)
     );
     assert_eq!(
-        projection_signature(carrier.corpse_projection.as_ref().expect("retained corpse")),
+        projection_signature(carrier.corpse_projections.first().expect("retained corpse")),
         retained
     );
 }
@@ -610,7 +616,7 @@ fn maximum_commit_binding_projects_and_max_plus_one_rejects_before_write() {
         Err(CarrierError::CommitBindingTooLarge)
     );
     assert_eq!(carrier.slots, before);
-    assert!(carrier.corpse_projection.is_none());
+    assert!(carrier.corpse_projections.is_empty());
 }
 
 fn key_fields(
