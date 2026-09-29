@@ -14,7 +14,7 @@ PAGE = """{{Infobox Charm|List={{{1|}}}|GetValue={{{GetValue|}}}
 | cost          = 240 / 360 / 1,200
 | effect        = Each attack on a creature has a 5% / 10% / 11% chance to trigger and deal 5% of its maximum [[Hit Point]]s as [[Physical Damage]] once.
 | implemented   = 11.50.6055
-| notes         = Damage is limited to 2 times the character's level (applied before resistances).
+| notes         = Damage is limited to 2 times the character's level (applied before resistances). Since the elemental damage charms are applied on top of the creature's elemental resistances, it is recommended for weak creatures.
 }}
 """
 

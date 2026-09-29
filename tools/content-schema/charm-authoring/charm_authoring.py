@@ -83,10 +83,13 @@ def proc(element: str) -> tuple[dict, list[str]]:
         "element": element,
         "percent_of_creature_max_health": 5,
         "damage_cap_level_multiplier": 2,
+        "ignores_resistances": False,
+        "reduced_by_armor": False,
     }
     phrases = [
         f"5% of its maximum hit points as {element} damage",
         "damage is limited to 2 times the character's level",
+        "applied on top of the creature's elemental resistances",
     ]
     return effect, phrases
 
@@ -98,10 +101,14 @@ def resource(kind: str, percent: float, word: str) -> tuple[dict, list[str]]:
         "resource": kind,
         "percent_of_own_maximum": percent,
         "damage_cap_percent_of_creature_max_health": 8,
+        "ignores_resistances": True,
+        # Armor is not mentioned on the page; Canary does not block this damage by armor.
+        "reduced_by_armor": False,
     }
     phrases = [
         f"physical damage equal to {percent}% of your maximum {word}",
         "limited up to 8% of the creature's maximum health",
+        "it is neutral and will damage the creature regardless of its resistances",
     ]
     return effect, phrases
 
@@ -132,10 +139,17 @@ CHARMS: dict[str, tuple[dict, list[str]]] = {
             "type": "kill_area_damage",
             "element": "physical",
             "percent_of_creature_max_health": 15,
+            "damage_cap_level_multiplier": 6,
+            # The page calls it Physical Damage and says nothing about resistances;
+            # Canary deals it as neutral (see README, open point).
+            "ignores_resistances": False,
+            "reduced_by_armor": True,
         },
         [
             "killing a monster",
             "physical damage equal to 15% of its maximum health to all monsters",
+            "damage is limited up to 6 times the character level",
+            "the damage from this charm is reduced by creatures' armor",
         ],
     ),
     "Cripple": plain(
@@ -159,7 +173,19 @@ CHARMS: dict[str, tuple[dict, list[str]]] = {
         "for 30 seconds",
         duration_ms=30000,
     ),
-    "Parry": plain("reflect_damage_taken", "reflected to the aggressor"),
+    "Parry": (
+        {
+            "type": "reflect_damage_taken",
+            "element": "physical",
+            "ignores_resistances": True,
+            "reduced_by_armor": True,
+        },
+        [
+            "reflected to the aggressor",
+            "it is neutral and will damage the creature regardless of its resistances",
+            "it will, however, be affected by the creature's armor",
+        ],
+    ),
     "Dodge": plain("dodge_attack", "dodges an attack", "taking no damage"),
     "Cleanse": plain(
         "cleanse_after_hit", "after you get hit", "removes one random active negative"
@@ -440,7 +466,10 @@ def build(sources: dict) -> tuple[dict, dict]:
                     "canary": engine["chance"],
                 }
             )
-        wiki_element = effect.get("element")
+        # A damage the wiki calls neutral in effect compares as neutral.
+        wiki_element = (
+            "neutral" if effect.get("ignores_resistances") else effect.get("element")
+        )
         if engine["damage_type"] is not None and engine["damage_type"] != wiki_element:
             differences.append(
                 {

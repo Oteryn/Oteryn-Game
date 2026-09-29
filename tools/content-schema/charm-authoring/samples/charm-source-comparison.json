@@ -1,5 +1,5 @@
 {
-  "agreeing": 20,
+  "agreeing": 22,
   "charms": 25,
   "differing": [
     {
@@ -25,29 +25,9 @@
     {
       "differences": [
         {
-          "canary": "neutral",
-          "field": "element",
-          "tibiawiki": "physical"
-        }
-      ],
-      "name": "Overflux"
-    },
-    {
-      "differences": [
-        {
-          "canary": "neutral",
-          "field": "element",
-          "tibiawiki": "physical"
-        }
-      ],
-      "name": "Overpower"
-    },
-    {
-      "differences": [
-        {
           "canary": "physical",
           "field": "element",
-          "tibiawiki": null
+          "tibiawiki": "neutral"
         }
       ],
       "name": "Parry"

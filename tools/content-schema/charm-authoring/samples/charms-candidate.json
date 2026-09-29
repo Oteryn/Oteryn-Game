@@ -91,8 +91,11 @@
       "category": "major",
       "cost_currency": "charm_points",
       "effect": {
+        "damage_cap_level_multiplier": 6,
         "element": "physical",
+        "ignores_resistances": false,
         "percent_of_creature_max_health": 15,
+        "reduced_by_armor": true,
         "type": "kill_area_damage"
       },
       "implemented_version": "14.10.4e0c16",
@@ -225,7 +228,9 @@
       "effect": {
         "damage_cap_level_multiplier": 2,
         "element": "death",
+        "ignores_resistances": false,
         "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
         "type": "attack_proc_damage"
       },
       "implemented_version": "11.50.6055",
@@ -271,7 +276,9 @@
       "effect": {
         "damage_cap_level_multiplier": 2,
         "element": "holy",
+        "ignores_resistances": false,
         "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
         "type": "attack_proc_damage"
       },
       "implemented_version": "12.40.9997",
@@ -360,7 +367,9 @@
       "effect": {
         "damage_cap_level_multiplier": 2,
         "element": "fire",
+        "ignores_resistances": false,
         "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
         "type": "attack_proc_damage"
       },
       "implemented_version": "11.50.6055",
@@ -450,7 +459,9 @@
       "effect": {
         "damage_cap_level_multiplier": 2,
         "element": "ice",
+        "ignores_resistances": false,
         "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
         "type": "attack_proc_damage"
       },
       "implemented_version": "11.50.6055",
@@ -626,7 +637,9 @@
       "effect": {
         "damage_cap_percent_of_creature_max_health": 8,
         "element": "physical",
+        "ignores_resistances": true,
         "percent_of_own_maximum": 2.5,
+        "reduced_by_armor": false,
         "resource": "mana",
         "type": "attack_proc_resource_damage"
       },
@@ -673,7 +686,9 @@
       "effect": {
         "damage_cap_percent_of_creature_max_health": 8,
         "element": "physical",
+        "ignores_resistances": true,
         "percent_of_own_maximum": 5,
+        "reduced_by_armor": false,
         "resource": "health",
         "type": "attack_proc_resource_damage"
       },
@@ -718,6 +733,9 @@
       "category": "major",
       "cost_currency": "charm_points",
       "effect": {
+        "element": "physical",
+        "ignores_resistances": true,
+        "reduced_by_armor": true,
         "type": "reflect_damage_taken"
       },
       "implemented_version": "11.50.6055",
@@ -763,7 +781,9 @@
       "effect": {
         "damage_cap_level_multiplier": 2,
         "element": "earth",
+        "ignores_resistances": false,
         "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
         "type": "attack_proc_damage"
       },
       "implemented_version": "11.50.6055",
@@ -1024,7 +1044,9 @@
       "effect": {
         "damage_cap_level_multiplier": 2,
         "element": "physical",
+        "ignores_resistances": false,
         "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
         "type": "attack_proc_damage"
       },
       "implemented_version": "11.50.6055",
@@ -1070,7 +1092,9 @@
       "effect": {
         "damage_cap_level_multiplier": 2,
         "element": "energy",
+        "ignores_resistances": false,
         "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
         "type": "attack_proc_damage"
       },
       "implemented_version": "11.50.6055",

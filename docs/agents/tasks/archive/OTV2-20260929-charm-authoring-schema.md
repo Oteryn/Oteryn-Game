@@ -43,11 +43,12 @@ written to `content/`, `rulesets/` or runtime code, and no identity is minted.
 - PROVEN: 25 wiki pages, `Category:Charms`, each pinned by page id, revision id and wikitext SHA-256. Canary
   `bestiary_charms.lua` is pinned by SHA-256 and holds 25 charms. The names match one to one.
 - PROVEN: wiki and Canary agree for all 25 on category, stage costs and stage values.
-- CONFLICT, recorded in `samples/charm-source-comparison.json`:
-  - Bless has an extra Canary `percent` of 10.
-  - Carnage, Overpower and Overflux have a NEUTRAL damage type in Canary against Physical on the wiki.
-  - Parry reflects physical damage in Canary; the wiki says it is shown as physical but is neutral.
-  - The catalogue follows the wiki.
+- CONFLICT, recorded in `samples/charm-source-comparison.json`. After the owner-requested cross-check of Canary,
+  Crystal `00ce02a`, the wiki notes and web sources (2026-09-29), 2 points remain:
+  - Bless has an unused Canary `percent` of 10; Canary's code uses only the 6/9/12% stage values, like the wiki.
+  - Carnage is physical on the wiki and neutral in Canary. The catalogue follows the wiki until verified in game.
+  - Overpower, Overflux and Parry are resolved: they are displayed as physical but ignore resistances, and Parry is
+    reduced by armor. The wiki notes, the Canary C++ handlers and Crystal agree.
 - DERIVED: the per-charm effect parameters are hand-written. Each is tied to phrases the captured page must contain.
 - UNKNOWN: whether the Canary charm id equals the client protocol id.
 
