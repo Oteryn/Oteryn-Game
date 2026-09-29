@@ -2,7 +2,7 @@
 
 - Date: 2026-09-27
 - Status: CANDIDATE / authoring schema with executable validation and source evidence; S1–S5, S11 and S12
-  decided by the owner on 2026-09-27, S13–S24 and S6–S10 on 2026-09-28 (S6–S10: #162 comment 5867161696); no runtime, WorldProject storage or `content/` change
+  decided by the owner on 2026-09-27, S13–S26 and S6–S10 on 2026-09-28 (S6–S10: #162 comment 5867161696); no runtime, WorldProject storage or `content/` change
 - Request: owner request of 2026-09-27 (schema and implementation plan for player spells, as for monsters);
   programme story KAN-16; no GitHub task allocation yet
 - Machine artifacts: `tools/content-schema/spell-authoring/`
@@ -120,7 +120,7 @@ Formula findings:
   2026-09-27): "Vocation Adjustments Changes" (2026-07-07: knight healing mana Wound Cleansing 40 → 60,
   Fair 90 → 135, Intense 200 → 300, several base damage reductions), balancing posts of 2026-07-28,
   08-04, 08-05, 08-25 and 09-01 (hunting grounds, bosses, gold and XP only) and "Monk Adjustments"
-  (2026-09-01: Spirit Mend base power 210 → 240; Mystic Repulse and Thousand Fist Blows cooldown
+  (2026-09-01, news 8944 and ticker 8949: Spirit Mend base power 220 → 250, mana 210; Mystic Repulse and Thousand Fist Blows cooldown
   12 → 8 s; Devastating Knockout cooldown 24 → 8 s and range 1 → 7). The only new level-dependent rule
   is the monk Harmony base bonus, `7% + 0.005% × level` (level 200: 8%, level 700: 10.5%), raised by
   50% by Virtue of Harmony (100% while Serene); it is a monk resource rule, not the damage/healing
@@ -285,6 +285,31 @@ announcement 8783 is not final.
   `subclass` is the group of the spell that conjures the rune. Intense and Ultimate Healing Rune move from `support`
   to `healing`, as Canary, Crystal and the library state.
 
+S25 (`spell-p2-r11`) brings readiness to 164 ready and 88 blocked:
+- **Forked Thorns and Forked Glacier** become ready. Their secondary `special` group came only from TibiaWiki BR,
+  with no cooldown. The official library lists only Attack, and the official release state (news 8783/8833) gives
+  target + 5 / + 6.
+- **Enchant Party** also loses its unstated `party` group, but stays blocked on its party behaviour.
+- **Practise Fire Wave, Practise Healing** and the conjuring spells of **Lightest Missile Rune** and **Light Stone
+  Shower Rune** are blocked as removed. The rune items stay.
+- **PZ lock of Avatar of Balance, Enlighten Party, Focus Harmony and Focus Serenity is unknown**, not "no". No
+  official source states `aggressive`, a protection-zone use or a fight lock for them; the authored
+  `pz_locks_caster` false is the Canary default. These spells are blocked on native behaviours; their behaviour
+  contract must settle it from a live test or packet capture.
+
+Wheel of Destiny spell data (S6, S24): `wheel-augments.json` holds the evidence for a later Wheel owner.
+- **Coverage:** 54 augment entries for 25 spells (Augment I and II for 5 spells per vocation, including the Forked,
+  Special and Focus spell groups) and 17 revelation perks with their 3 stages.
+- **Where the values come from:**
+  - 29 augment entries come from official news (8833, 8872, 8944), 23 from Fandom (Conviction Perks revision 1206174)
+    and 2 from Canary only.
+  - Official news supersedes Canary and Fandom on Mystic Repulse I and Thousand Fist Blows II: −4 s instead of −6 s
+    (news 8944).
+  - Fandom supersedes Canary's integer rounding on Terra Wave I (6.5%) and Groundshaker II (12.5%).
+- **Hypotheses, not facts:** the avatar cooldowns, durations and damage reduction, Gift of Life, and two extra
+  cooldown reductions (Special Spells I, Focus Spells II) come from Canary only.
+- **Status:** the file is evidence, not a runtime contract. The spell bundles keep `wheel_unlock` fail-closed.
+
 The official tibia.com spell library (S15) answers a Cloudflare browser check from the build container
 and blocks GitHub-hosted runners outright ("Sorry, you have been blocked"). `tibiacom_spells.py fetch`
 therefore runs on an ordinary machine the site serves (no challenge bypass).
@@ -372,6 +397,8 @@ with the converted bundles:
 | S22 | **DECIDED (owner, 2026-09-28).** A Wheel of Destiny revelation spell has level 0: the client spell list shows 0 and tibia.com states no level; the Wheel unlock gates it (S6/S16). This applies only where tibia.com states no level (the 11 revelation spells: the five avatars, Divine Empowerment, Divine Grenade, Executioner's Throw, Ice Burst, Terra Burst, Spiritual Outburst); the wikis' level 300 for the avatars is superseded. Where tibia.com states a level, the spell unlocks at it: the Fandom `wheelspell` marking on Mystic Repulse (30) and Flurry of Blows (35) is superseded under S15 (BR states none), so they lose `wheel_unlock`; Focus Harmony and Forceful Uppercut keep the Canary `needLearn` gate with their tibia.com level. | Owner in-game screenshot: Spiritual Outburst level 0, Mystic Repulse level 30. |
 | S23 | **DECIDED (owner, 2026-09-28).** A chain spell is a plain `Ability` with a `chain` block: the monster D12 `Ability.chain`, extended with `shape` (`sequential`/`fork`), `initial_range_tiles`, `damage_step_percent` and the `ranged_monsters` filter. `max_targets` counts the further creatures after the first. The parameters are the accepted values in `chain-behaviours.json`; a chain spell without a row stays blocked. The behaviour, the per-spell values and their sources are in `OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md`. The game core rejects a chain until its runtime exists; the creature admission does not accept the new fields yet (no monster uses them). | Owner in session; #162 comment 5876917107. |
 | S24 | **DECIDED (owner, 2026-09-28).** Source order for a value: an official tibia.com announcement dated on or before the target date (2026-09-27), then the wiki at the target date, then Canary/Crystal (hypothesis only). A later official source (the tibia.com spell list, S15) supersedes an earlier announcement. A percent change is applied as stated (rounding marked uncertain); a change without a number is recorded as known but not quantified, never guessed. News is read through the TibiaData API (api.tibiadata.com/v4), never by bypassing tibia.com's protection. A spell an announcement removed is blocked as removed (`official-changes.json` field `removed`). | Owner in session. |
+| S25 | **DECIDED (owner, 2026-09-28).** A secondary cooldown group that no source gives a cooldown is not authored (the official library lists only the primary group); it no longer blocks the spell. Spells absent from the official spell library and marked deprecated by Fandom (the Dawnport Practise Fire Wave and Practise Healing, and the conjuring spells of Lightest Missile Rune and Light Stone Shower Rune) are blocked as removed (`official-changes.json` field `removed`, value `instant`: the rune items stay). The removal patch is not known and is not guessed. | Owner in session. |
+| S26 | **DECIDED (worker, within S7/S21; owner request of 2026-09-28 to finish the spell work).** The monk Harmony role is authored as `harmony_role: builder|spender`. It comes from Canary 15.30 `monkSpellType`: Crystal has no such call and no wiki field states it, so S21 applies. There are 8 builders and 5 spenders. The game core rejects a spell with a Harmony role until the Harmony resource has an owner (fails closed), instead of casting a builder that never builds Harmony. | `OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md` part A. |
 
 ## 6. Mapping to WorldProject/v2
 
@@ -458,7 +485,7 @@ of spells a new character actually uses.
 | **P3a** Spell core in the server (unwired) | Done: `apps/game-server/src/spell/` — spoken words and rune lookup (`SpellBook`), the cast checks in the Canary `Spell::playerSpellCheck` order (cooldowns, level, magic level, mana, soul, learning or vocation, premium, target), mana/soul debit, own and group cooldowns on `SemanticTimeMicros`, `player_expression` evaluation with the exact integer level curve, and resolved damage/heal/conjure effects; the candidate bundle reader (`spell/authoring.rs`); the hand-off of a resolved cast to the Ability pipeline as an `EffectPlan` (`spell/plan.rs`), with condition removal and conjure returned beside it | private module, no protocol, persistence or live composition | 12 unit tests on the starter bundles, including the official level table for levels 0–20000 and plans committed through `AbilityEngine` |
 | **P3b** First castable slice (live) | A character casts the starter set in the running server | protocol contract (cast/talk command, use-with for runes, own HP/mana/cooldown and effect deltas in `PROTOCOL_OTERYN_V1_REGISTRY.json`), player combat state (health, mana, vocation, magic level, soul, premium) in the runtime slot, heal and player-target commits in the ability owner commit, WorldProject/v2 lowering of Spell definitions into the channel content pin, inventory for runes; the damage distribution world rule | protocol and state contracts accepted with changes ([`OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md`](OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md), SPELL-D1–D6, 2026-09-28; first child is self heal); GAME-ABILITY implementation allocation; `game-gate` green |
 | **P4** Bulk declarative spells | All remaining `plain_combat` spells and runes by vocation, conditions (haste, paralyse, magic shield, utito) and areas | content population through the P2 converter; runtime only for missing Effect operations | readiness census: declarative spells admitted |
-| **P5** Native behaviours | Shared behaviours by pattern in order of player need: party buffs, find person / levitate / magic rope, familiars, summons, house lists, stances, equipment-dependent spells, delayed strikes; Wheel gating and augments with the Wheel system | one behaviour per pattern with parameter contract (S7) | each pattern: contract + tests; manifest rows move from `unresolved_semantics` to `resolved_native_behavior`. The chain pattern (8 spells) is specified in `OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md` |
+| **P5** Native behaviours | Shared behaviours by pattern in order of player need: party buffs, find person / levitate / magic rope, familiars, summons, house lists, stances, equipment-dependent spells, delayed strikes; Wheel gating and augments with the Wheel system | one behaviour per pattern with parameter contract (S7) | each pattern: contract + tests; manifest rows move from `unresolved_semantics` to `resolved_native_behavior`. The chain pattern (8 spells) is specified in `OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md`, all other patterns in `OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md` |
 
 Dependencies: P3b needs the protocol and runtime-state contracts accepted, the rune Items in the Item catalogue, the Formula family
 extended in v2 and the character state (mana, soul, cooldowns) under the existing session-generation

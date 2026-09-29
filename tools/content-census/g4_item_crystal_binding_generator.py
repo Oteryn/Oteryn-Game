@@ -29,9 +29,30 @@ source, never hand-copying it) and writes it as
 `imports/crystalserver/bindings/items.json`, in the same shape as the sibling
 `imports/tibiawiki/bindings/items.json`.
 
-This script mints no identity, resolves no ambiguity and performs no
-crosswalk matching: every row is already fully determined by the frozen
-allocator and the frozen evidence catalogue. It fails closed on any mismatch.
+Epoch 1 (the frozen allocator's 38,157 rows) mints no identity, resolves no
+ambiguity and performs no crosswalk matching: every row is already fully
+determined by the frozen allocator and the frozen evidence catalogue. It fails
+closed on any mismatch.
+
+Epoch 2 (decision `A8-DONOR-ITEM-IDENTITY-EPOCH-V1`, owner decisions D96/D97, task
+B1b) is additive. The 412 donor-only ids of the Crystal `summer-update` census
+(`donor-census-crystal-summer-update-00ce02a5.json`) first pass the alias gate
+below; only `NO_MATCH` ids receive an opaque key, in ascending donor source id,
+continuing after the highest epoch-1 sequence (38,093), i.e. from 38,094. The
+epoch-1 bindings are never re-derived from the epoch-2 corpus: the epoch-1 output
+is regenerated exactly as before, pinned by digest, and the epoch-2 bindings are
+appended after it, so the epoch-1 bytes stay a strict prefix of the file.
+
+The alias gate (`A8-ALIAS-GATE-V1`, `resolve_alias_gate`) is the G4 promotion
+discipline applied to a donor id against the existing Items: names only discover
+candidates (G4 rule 9); identity rests on non-name, non-presentation signals
+(article/plural and the full items.xml attribute set). The appearance sprite
+signature is presentation: it can corroborate an alias, but a sprite-only
+difference never proves a distinct identity, so such an id is held (no key, no
+alias) instead of minted. Its result is committed as crosswalk evidence, and the default and
+`--check` paths consume that evidence offline. `--build-alias-crosswalk` and
+`--verify-alias-crosswalk` recompute it from local checkouts of the two pinned
+Crystal revisions.
 """
 
 from __future__ import annotations
@@ -39,6 +60,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +74,12 @@ EVIDENCE = (
 DEFINITIONS_GLOB = "content/items/definitions/items-*.json"
 TIBIAWIKI_BINDINGS = ROOT / "imports/tibiawiki/bindings/items.json"
 OUTPUT = ROOT / "imports/crystalserver/bindings/items.json"
+
+ITEM_AUTHORING = ROOT / "tools/content-schema/item-authoring"
+DONOR_CENSUS = ITEM_AUTHORING / "samples/donor-census-crystal-summer-update-00ce02a5.json"
+ALIAS_CROSSWALK = (
+    ROOT / "docs/agents/evidence/OTV2-20260928-item-donor-identity-b1b-alias-crosswalk.json"
+)
 
 SCHEMA = "OTERYN_SOURCE_IDENTITY_BINDINGS/v1"
 SOURCE_KEY = "oteryn:source.crystalserver"
@@ -68,6 +97,30 @@ EXPECTED_EVIDENCE_SHA256 = (
 EXPECTED_TOTAL = 38_157
 EXPECTED_NATIVE_BATCH = 64
 EXPECTED_OPAQUE = EXPECTED_TOTAL - EXPECTED_NATIVE_BATCH
+
+# Epoch 1 as committed on `main` before epoch 2: the canonical bytes of the frozen
+# allocator's 38,157 bindings. Regenerating epoch 1 must reproduce this digest.
+EXPECTED_EPOCH1_OUTPUT_BYTES = 10_864_254
+EXPECTED_EPOCH1_OUTPUT_SHA256 = (
+    "74ba56c5e624e5e3ebc3f4ebff5f4ccbb73cee5e2802d79a5b9e6b1d5884b810"
+)
+# Suffix of the canonical output that follows the `bindings` array; epoch-1 bytes
+# minus this suffix are the exact prefix of the epoch-2 output up to the array's end.
+OUTPUT_ARRAY_SUFFIX = (
+    f'],"family":"Item","schema":"{SCHEMA}"}}\n'.encode("utf-8")
+)
+
+# Epoch 2 (A8 decision). Every value below is cross-checked against the Rust pins.
+EPOCH2_DECISION = "A8-DONOR-ITEM-IDENTITY-EPOCH-V1"
+EPOCH2_GATE_RULE = "A8-ALIAS-GATE-V1"
+EPOCH2_CROSSWALK_SCHEMA = "OTERYN_ITEM_DONOR_ALIAS_CROSSWALK/v1"
+EPOCH2_CENSUS_SCHEMA = "OTERYN_ITEM_DONOR_CENSUS/v1"
+EPOCH2_MINTING_STATE = "NO_MATCH"
+EPOCH2_BOUND_STATES = ("EXACT", "ACCEPTED_ALIAS")
+EPOCH2_UNBOUND_STATES = ("PROBABLE_MATCH", "AMBIGUOUS", "CONFLICT")
+EPOCH2_STATES = (EPOCH2_MINTING_STATE, *EPOCH2_BOUND_STATES, *EPOCH2_UNBOUND_STATES)
+EPOCH2_DONOR_ITEMS_XML = "data/items/items.xml"
+EPOCH2_DONOR_APPEARANCES = "data/items/appearances.dat"
 
 # Golden cross-checks: (crystal source_item_id, expected canonical key,
 # TibiaWiki mediawiki page_id already bound EXACT to that same key). These
@@ -304,29 +357,545 @@ def build_bindings(
     return bindings
 
 
+def rust_literal(text: str, name: str) -> str | int:
+    """Read one `pub const NAME: T = <string or integer literal>;` from the Rust source."""
+    match = re.search(rf'pub const {name}: [^=]+=\s*(?:"([^"]*)"|([0-9_]+))\s*;', text)
+    if not match:
+        raise GeneratorError(f"RUST_CONST_NOT_FOUND:{name}")
+    if match.group(1) is not None:
+        return match.group(1)
+    return int(match.group(2).replace("_", ""))
+
+
+def parse_epoch2_pins(text: str) -> dict[str, Any]:
+    """Epoch-2 pins declared beside the frozen import; never hand-copied here."""
+    names = {
+        "source_revision": "SOURCE_REVISION",
+        "items_xml_sha256": "ITEMS_XML_SHA256",
+        "census_bytes": "CENSUS_BYTES",
+        "census_sha256": "CENSUS_SHA256",
+        "census_id_count": "CENSUS_ID_COUNT",
+        "crosswalk_bytes": "CROSSWALK_BYTES",
+        "crosswalk_sha256": "CROSSWALK_SHA256",
+        "minted_count": "MINTED_COUNT",
+        "allocation_digest_sha256": "ALLOCATION_DIGEST_SHA256",
+        "revision": "REVISION",
+    }
+    return {
+        key: rust_literal(text, f"CW2_B1_DONOR_EPOCH2_{suffix}")
+        for key, suffix in names.items()
+    }
+
+
+# --- epoch 2: alias gate ------------------------------------------------------------
+
+
+def normalize_name(name: str | None) -> str:
+    return " ".join((name or "").split()).casefold()
+
+
+def visual_signature(appearance: dict[str, Any] | None) -> str | None:
+    """Sprite ids and geometry of every frame group; `None` when there is nothing to compare."""
+    groups = (appearance or {}).get("frame_groups") or []
+    if not groups:
+        return None
+    return json.dumps(
+        [[group["sprite_ids"], group["geometry"]] for group in groups],
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def compare_alias_signals(
+    donor: dict[str, Any], base: dict[str, Any]
+) -> tuple[list[str], list[str]]:
+    """Return `(matched, contradicted)` non-name signals of one donor/base pair.
+
+    Each dict carries `article`, `plural`, `attrs` and `visual`. A signal that is not
+    comparable (no appearance on either side) is neither matched nor contradicted.
+    """
+    matched: list[str] = []
+    contradicted: list[str] = []
+    for signal, equal in (
+        (
+            "article_plural",
+            (donor["article"], donor["plural"]) == (base["article"], base["plural"]),
+        ),
+        ("attributes", donor["attrs"] == base["attrs"]),
+    ):
+        (matched if equal else contradicted).append(signal)
+    if donor["visual"] is not None and base["visual"] is not None:
+        (matched if donor["visual"] == base["visual"] else contradicted).append("visual")
+    return matched, contradicted
+
+
+IDENTITY_SIGNALS = ("article_plural", "attributes")
+
+
+def counterpart(row: dict[str, Any]) -> bool:
+    """Both non-presentation signals agree. Presentation (`visual`) is never an identity signal."""
+    return all(signal in row["matched"] for signal in IDENTITY_SIGNALS)
+
+
+def resolve_alias_gate(
+    candidates: list[dict[str, Any]],
+) -> tuple[str, str, list[dict[str, Any]]]:
+    """`A8-ALIAS-GATE-V1`: crosswalk state of one donor id from its same-name base items.
+
+    `candidates` are the existing base Items whose normalized name equals the donor's
+    (discovery only; names never decide, G4 rule 9). Each carries `base_source_item_id`,
+    `matched` and `contradicted` from `compare_alias_signals`. Returns
+    `(state, reason, evidence_rows)`.
+
+    Identity rests on non-presentation facts only (`IDENTITY_SIGNALS`). A sprite or
+    appearance change never remints an Item identity (G4 decision, identity layers), so
+    a differing sprite signature is never evidence of a distinct identity:
+    - a candidate whose article/plural and full attribute set agree is a counterpart;
+    - a unique counterpart is `ACCEPTED_ALIAS` only when the visual signature also
+      agrees, and otherwise a held `PROBABLE_MATCH` (no key, no binding);
+    - several counterparts are `AMBIGUOUS`;
+    - a candidate that shares the visual signature but contradicts a non-presentation
+      signal is a conflicting counterpart (`CONFLICT` when alone);
+    - only a candidate contradicted by non-presentation facts, or no candidate at all,
+      leaves `NO_MATCH`.
+    """
+    rows = [
+        {
+            "base_source_item_id": row["base_source_item_id"],
+            "matched": list(row["matched"]),
+            "contradicted": list(row["contradicted"]),
+        }
+        for row in candidates
+    ]
+    if not rows:
+        return "NO_MATCH", "NO_SAME_NAME_BASE_ITEM", rows
+    counterparts = [row for row in rows if counterpart(row)]
+    conflicting = [
+        row for row in rows if not counterpart(row) and "visual" in row["matched"]
+    ]
+    if not counterparts:
+        if conflicting:
+            return "CONFLICT", "SAME_VISUAL_OBJECT_CONTRADICTORY_FACTS", rows
+        return (
+            "NO_MATCH",
+            "SAME_NAME_CANDIDATES_CONTRADICTED_BY_NON_PRESENTATION_FACTS",
+            rows,
+        )
+    if len(counterparts) > 1 or conflicting:
+        return "AMBIGUOUS", "MULTIPLE_COUNTERPART_CANDIDATES", rows
+    if "visual" in counterparts[0]["matched"]:
+        return (
+            "ACCEPTED_ALIAS",
+            "UNIQUE_COUNTERPART_NON_PRESENTATION_FACTS_AND_VISUAL_AGREE",
+            rows,
+        )
+    if "visual" in counterparts[0]["contradicted"]:
+        return "PROBABLE_MATCH", "SPRITE_ONLY_DIFFERENCE_HELD", rows
+    return "PROBABLE_MATCH", "UNIQUE_COUNTERPART_WITHOUT_VISUAL_SIGNAL", rows
+
+
+def load_census() -> tuple[dict[str, Any], bytes]:
+    payload = DONOR_CENSUS.read_bytes()
+    census = json.loads(payload)
+    if census.get("schema") != EPOCH2_CENSUS_SCHEMA:
+        raise GeneratorError("CENSUS_SCHEMA_MISMATCH")
+    return census, payload
+
+
+def census_ids(census: dict[str, Any]) -> list[int]:
+    """Census donor ids in ascending order; the census is the frozen epoch-2 corpus."""
+    rows = census.get("items")
+    if not isinstance(rows, dict) or not rows:
+        raise GeneratorError("CENSUS_ITEMS_INVALID")
+    ids = sorted(int(key) for key in rows)
+    if len(set(ids)) != len(ids):
+        raise GeneratorError("CENSUS_ID_DUPLICATE")
+    return ids
+
+
+# --- epoch 2: allocation ------------------------------------------------------------
+
+# The highest sequence allocated by any earlier epoch: epoch 1 is contiguous 1..38,093.
+EPOCH1_HIGHEST_SEQUENCE = EXPECTED_OPAQUE
+
+
+def allocate_epoch2(rows: list[dict[str, Any]], namespace: str) -> list[tuple[int, str]]:
+    """`NO_MATCH` ids, ascending by donor source id, numbered after the earlier epochs."""
+    previous: int | None = None
+    minting: list[int] = []
+    for row in rows:
+        source_id = row["source_item_id"]
+        if not isinstance(source_id, int) or isinstance(source_id, bool):
+            raise GeneratorError("CROSSWALK_SOURCE_ID_INVALID")
+        if previous is not None and previous >= source_id:
+            raise GeneratorError("CROSSWALK_SOURCE_ID_ORDER_VIOLATION")
+        previous = source_id
+        if row["state"] not in EPOCH2_STATES:
+            raise GeneratorError(f"CROSSWALK_STATE_INVALID:{source_id}")
+        if row["state"] == EPOCH2_MINTING_STATE:
+            minting.append(source_id)
+    return [
+        (source_id, opaque_item_key(namespace, EPOCH1_HIGHEST_SEQUENCE + rank))
+        for rank, source_id in enumerate(minting, start=1)
+    ]
+
+
+def allocation_digest(allocations: list[tuple[int, str]]) -> str:
+    """Same construction as the frozen import: `id NUL key LF`, hashed with SHA-256."""
+    payload = b"".join(
+        str(source_id).encode() + b"\x00" + key.encode() + b"\n"
+        for source_id, key in allocations
+    )
+    return sha256_hex(payload)
+
+
+def build_alias_crosswalk(
+    donor_root: Path,
+    base_root: Path,
+    text: str,
+    epoch1_keys_by_source: dict[int, str],
+) -> bytes:
+    """Recompute the alias gate for every census id from the two pinned checkouts."""
+    pins = parse_epoch2_pins(text)
+    sys.path.insert(0, str(ITEM_AUTHORING))
+    try:
+        import engine_items  # type: ignore[import-not-found]
+    finally:
+        sys.path.pop(0)
+
+    census, census_payload = load_census()
+    ids = census_ids(census)
+    donor_meta = census["donor"]
+    base_meta = census["base"]
+    if donor_meta.get("commit") != pins["source_revision"] or base_meta.get(
+        "revision"
+    ) != parse_source_revision(text):
+        raise GeneratorError("CENSUS_REVISION_MISMATCH")
+    base_digests = engine_items.ENGINE_ARTIFACT_DIGESTS[engine_items.CRYSTAL_PROFILE]
+    digests = {
+        "donor": {
+            path: donor_meta["artifact_digests"][path]["sha256"]
+            for path in (EPOCH2_DONOR_ITEMS_XML, EPOCH2_DONOR_APPEARANCES)
+        },
+        "base": {
+            path: base_digests[path]
+            for path in (EPOCH2_DONOR_ITEMS_XML, EPOCH2_DONOR_APPEARANCES)
+        },
+    }
+
+    def load(root: Path, role: str) -> tuple[dict[int, Any], dict[int, Any]]:
+        items_bytes, _ = engine_items.read_verified_artifact(
+            root, EPOCH2_DONOR_ITEMS_XML, digests[role][EPOCH2_DONOR_ITEMS_XML]
+        )
+        appearance_bytes, _ = engine_items.read_verified_artifact(
+            root, EPOCH2_DONOR_APPEARANCES, digests[role][EPOCH2_DONOR_APPEARANCES]
+        )
+        return (
+            engine_items.load_items_xml(items_bytes.decode("utf-8")),
+            engine_items.load_appearance_objects(appearance_bytes),
+        )
+
+    donor_items, donor_appearances = load(donor_root, "donor")
+    base_items, base_appearances = load(base_root, "base")
+    if sorted(set(donor_items) - set(base_items)) != ids:
+        raise GeneratorError("CENSUS_IDS_NOT_DONOR_ONLY_SET")
+    if digests["donor"][EPOCH2_DONOR_ITEMS_XML] != pins["items_xml_sha256"]:
+        raise GeneratorError("DONOR_ITEMS_XML_DIGEST_MISMATCH")
+
+    def signals(record: dict[str, Any], appearance: dict[str, Any] | None) -> dict:
+        return {
+            "article": record["article"],
+            "plural": record["plural"],
+            "attrs": record["attrs"],
+            "visual": visual_signature(appearance),
+        }
+
+    by_name: dict[str, list[int]] = defaultdict(list)
+    for base_id in sorted(base_items):
+        by_name[normalize_name(base_items[base_id]["name"])].append(base_id)
+
+    rows: list[dict[str, Any]] = []
+    for donor_id in ids:
+        record = donor_items[donor_id]
+        donor_signals = signals(record, donor_appearances.get(donor_id))
+        candidates = []
+        for base_id in by_name.get(normalize_name(record["name"]), []):
+            matched, contradicted = compare_alias_signals(
+                donor_signals,
+                signals(base_items[base_id], base_appearances.get(base_id)),
+            )
+            candidates.append(
+                {
+                    "base_source_item_id": base_id,
+                    "matched": matched,
+                    "contradicted": contradicted,
+                }
+            )
+        state, reason, evidence_rows = resolve_alias_gate(candidates)
+        row: dict[str, Any] = {
+            "name": census["items"][str(donor_id)]["name"],
+            "reason": reason,
+            "source_item_id": donor_id,
+            "state": state,
+        }
+        if evidence_rows:
+            row["same_name_base_items"] = evidence_rows
+        if state in EPOCH2_BOUND_STATES:
+            target = next(c for c in evidence_rows if counterpart(c))
+            row["alias_target_source_item_id"] = target["base_source_item_id"]
+            row["alias_target_key"] = epoch1_keys_by_source[
+                target["base_source_item_id"]
+            ]
+        rows.append(row)
+
+    allocations = allocate_epoch2(rows, parse_opaque_namespace(text))
+    evidence = {
+        "base": {
+            "appearances_sha256": digests["base"][EPOCH2_DONOR_APPEARANCES],
+            "items_xml_sha256": digests["base"][EPOCH2_DONOR_ITEMS_XML],
+            "repository": base_meta["repository"],
+            "revision": base_meta["revision"],
+        },
+        "census": {
+            "bytes": len(census_payload),
+            "path": DONOR_CENSUS.relative_to(ROOT).as_posix(),
+            "sha256": sha256_hex(census_payload),
+        },
+        "counts": {
+            "by_state": {
+                state: sum(1 for row in rows if row["state"] == state)
+                for state in EPOCH2_STATES
+            },
+            "census_ids": len(ids),
+            "minted": len(allocations),
+        },
+        "decision": EPOCH2_DECISION,
+        "donor": {
+            "appearances_sha256": digests["donor"][EPOCH2_DONOR_APPEARANCES],
+            "branch": donor_meta["branch"],
+            "commit": donor_meta["commit"],
+            "items_xml_sha256": digests["donor"][EPOCH2_DONOR_ITEMS_XML],
+            "repository": donor_meta["repository"],
+        },
+        "epoch_2": {
+            "allocation_digest_sha256": allocation_digest(allocations),
+            "first_sequence": EPOCH1_HIGHEST_SEQUENCE + 1,
+            "last_sequence": EPOCH1_HIGHEST_SEQUENCE + len(allocations),
+            "namespace": parse_opaque_namespace(text),
+        },
+        "gate": {
+            "rule": EPOCH2_GATE_RULE,
+            "signals": {
+                "article_plural": "identity signal: article and plural attributes equal",
+                "attributes": "identity signal: the complete items.xml attribute set equal",
+                "name": "discovery only, never counted as agreement (G4 rule 9)",
+                "visual": "presentation, never an identity signal: it can corroborate an alias but a difference never proves a distinct identity",
+            },
+            "states": {
+                "ACCEPTED_ALIAS": "unique counterpart; article/plural and attributes agree and the visual signature agrees; binds to the existing key and mints nothing",
+                "AMBIGUOUS": "several counterparts; held: mints and binds nothing",
+                "CONFLICT": "same visual object with contradictory non-presentation facts; held: mints and binds nothing",
+                "NO_MATCH": "no same-name item, or every same-name item contradicted by non-presentation facts; the only state that mints",
+                "PROBABLE_MATCH": "unique counterpart on non-presentation facts whose visual signature differs or is absent; held: mints and binds nothing until non-presentation evidence proves a distinct identity or an alias",
+            },
+        },
+        "rows": rows,
+        "schema": EPOCH2_CROSSWALK_SCHEMA,
+    }
+    return (
+        json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
+
+
+def load_alias_crosswalk(pins: dict[str, Any]) -> dict[str, Any]:
+    payload = ALIAS_CROSSWALK.read_bytes()
+    if (
+        len(payload) != pins["crosswalk_bytes"]
+        or sha256_hex(payload) != pins["crosswalk_sha256"]
+    ):
+        raise GeneratorError("ALIAS_CROSSWALK_DIGEST_MISMATCH")
+    crosswalk = json.loads(payload)
+    if crosswalk.get("schema") != EPOCH2_CROSSWALK_SCHEMA:
+        raise GeneratorError("ALIAS_CROSSWALK_SCHEMA_MISMATCH")
+    return crosswalk
+
+
+def epoch2_allocations(
+    census: dict[str, Any],
+    census_payload: bytes,
+    crosswalk: dict[str, Any],
+    pins: dict[str, Any],
+    epoch1_allocations: list[tuple[int, str]],
+    namespace: str,
+) -> list[tuple[int, str]]:
+    """Fail-closed epoch-2 allocation from the frozen census and alias-gate evidence."""
+    if (
+        len(census_payload) != pins["census_bytes"]
+        or sha256_hex(census_payload) != pins["census_sha256"]
+    ):
+        raise GeneratorError("CENSUS_DIGEST_MISMATCH")
+    donor = census["donor"]
+    if (
+        donor.get("commit") != pins["source_revision"]
+        or donor["artifact_digests"][EPOCH2_DONOR_ITEMS_XML]["sha256"]
+        != pins["items_xml_sha256"]
+    ):
+        raise GeneratorError("CENSUS_DONOR_PIN_MISMATCH")
+    ids = census_ids(census)
+    if len(ids) != pins["census_id_count"]:
+        raise GeneratorError("CENSUS_ID_COUNT_MISMATCH")
+    if crosswalk["census"]["sha256"] != pins["census_sha256"]:
+        raise GeneratorError("ALIAS_CROSSWALK_CENSUS_BINDING_MISMATCH")
+    rows = crosswalk["rows"]
+    if [row["source_item_id"] for row in rows] != ids:
+        raise GeneratorError("ALIAS_CROSSWALK_ROWS_NOT_THE_CENSUS_IDS")
+
+    epoch1_by_source = dict(epoch1_allocations)
+    if set(ids) & set(epoch1_by_source):
+        raise GeneratorError("EPOCH2_SOURCE_ID_SHARED_WITH_EPOCH1")
+    for row in rows:
+        source_id = row["source_item_id"]
+        if row["state"] in EPOCH2_BOUND_STATES:
+            if epoch1_by_source.get(row.get("alias_target_source_item_id")) != row.get(
+                "alias_target_key"
+            ):
+                raise GeneratorError(f"ALIAS_TARGET_NOT_EPOCH1_KEY:{source_id}")
+        elif "alias_target_key" in row:
+            raise GeneratorError(f"UNBOUND_STATE_WITH_TARGET:{source_id}")
+
+    allocations = allocate_epoch2(rows, namespace)
+    keys = [key for _, key in allocations]
+    if len(set(keys)) != len(keys) or set(keys) & {
+        key for _, key in epoch1_allocations
+    }:
+        raise GeneratorError("EPOCH2_KEY_COLLISION")
+    if len(allocations) != pins["minted_count"]:
+        raise GeneratorError("EPOCH2_MINTED_COUNT_MISMATCH")
+    if allocation_digest(allocations) != pins["allocation_digest_sha256"]:
+        raise GeneratorError("EPOCH2_ALLOCATION_DIGEST_MISMATCH")
+    if crosswalk["epoch_2"]["allocation_digest_sha256"] != pins["allocation_digest_sha256"]:
+        raise GeneratorError("ALIAS_CROSSWALK_ALLOCATION_DIGEST_MISMATCH")
+    return allocations
+
+
+def epoch2_bindings(
+    allocations: list[tuple[int, str]],
+    crosswalk: dict[str, Any],
+    source_revision: str,
+    revision: str,
+) -> list[dict[str, Any]]:
+    """Ascending-source-id bindings: EXACT for minted ids, ACCEPTED_ALIAS for aliases.
+
+    Ids in `PROBABLE_MATCH`, `AMBIGUOUS` or `CONFLICT` get neither a key nor a binding.
+    """
+    minted = dict(allocations)
+    bindings = []
+    for row in crosswalk["rows"]:
+        source_id = row["source_item_id"]
+        if row["state"] == EPOCH2_MINTING_STATE:
+            key, disposition = minted[source_id], "EXACT"
+        elif row["state"] in EPOCH2_BOUND_STATES:
+            key, disposition = row["alias_target_key"], "ACCEPTED_ALIAS"
+        else:
+            continue
+        bindings.append(
+            {
+                "disposition": disposition,
+                "external_id": str(source_id),
+                "identity_namespace": IDENTITY_NAMESPACE,
+                "source_key": SOURCE_KEY,
+                "source_revision": source_revision,
+                "target": {"family": "Item", "key": key, "revision": revision},
+            }
+        )
+    return bindings
+
+
 def generate() -> tuple[dict[str, Any], bytes]:
     text = read_text(RUST_SOURCE)
+    pins = parse_epoch2_pins(text)
     source_revision = parse_source_revision(text)
     namespace = parse_opaque_namespace(text)
-    native_batch = parse_native_batch(text)
-    records = load_identity_records()
-    allocations = apply_identity_promotions(
-        allocate_keys(records, native_batch, namespace),
+    epoch1_allocations = apply_identity_promotions(
+        allocate_keys(load_identity_records(), parse_native_batch(text), namespace),
         parse_identity_promotions(text),
     )
-    definition_keys = load_definition_keys()
-    tibiawiki_targets = load_tibiawiki_targets()
-    verify_allocations(allocations, definition_keys, tibiawiki_targets)
-    bindings = build_bindings(allocations, source_revision)
-    if len(bindings) != EXPECTED_TOTAL:
+    census, census_payload = load_census()
+    crosswalk = load_alias_crosswalk(pins)
+    allocations = epoch2_allocations(
+        census, census_payload, crosswalk, pins, epoch1_allocations, namespace
+    )
+    # Epoch-2 keys have no Item definition until the content tree is regenerated; a
+    # definition for one is allowed but never required, so only epoch-1 keys are held
+    # to the exact allocation/definition closure.
+    definition_keys = load_definition_keys() - {key for _, key in allocations}
+    verify_allocations(epoch1_allocations, definition_keys, load_tibiawiki_targets())
+    epoch1 = build_bindings(epoch1_allocations, source_revision)
+    if len(epoch1) != EXPECTED_TOTAL:
         raise GeneratorError("BINDING_COUNT_MISMATCH")
     if (
-        len({(row["external_id"], row["target"]["key"]) for row in bindings})
+        len({(row["external_id"], row["target"]["key"]) for row in epoch1})
         != EXPECTED_TOTAL
     ):
         raise GeneratorError("BINDING_UNIQUENESS")
-    output = {"schema": SCHEMA, "family": "Item", "bindings": bindings}
-    return output, canonical_bytes(output)
+    epoch1_bytes = canonical_bytes(
+        {"schema": SCHEMA, "family": "Item", "bindings": epoch1}
+    )
+    if (
+        len(epoch1_bytes) != EXPECTED_EPOCH1_OUTPUT_BYTES
+        or sha256_hex(epoch1_bytes) != EXPECTED_EPOCH1_OUTPUT_SHA256
+    ):
+        raise GeneratorError("EPOCH1_BINDINGS_DRIFT")
+    epoch2 = epoch2_bindings(
+        allocations, crosswalk, pins["source_revision"], pins["revision"]
+    )
+    if {row["external_id"] for row in epoch1} & {row["external_id"] for row in epoch2}:
+        raise GeneratorError("BINDING_SOURCE_ID_SHARED_ACROSS_EPOCHS")
+    if {row["target"]["key"] for row in epoch2 if row["disposition"] == "EXACT"} & {
+        row["target"]["key"] for row in epoch1
+    }:
+        raise GeneratorError("EPOCH2_KEY_COLLIDES_WITH_BOUND_KEY")
+    # `bindings`, `family`, `schema` are emitted in canonical sorted-key order, so epoch-2
+    # rows inserted at the end of the array leave the epoch-1 bytes as a strict prefix.
+    output = {"schema": SCHEMA, "family": "Item", "bindings": epoch1 + epoch2}
+    payload = (
+        epoch1_bytes[: -len(OUTPUT_ARRAY_SUFFIX)]
+        + b"".join(b"," + canonical_bytes(row)[:-1] for row in epoch2)
+        + OUTPUT_ARRAY_SUFFIX
+    )
+    if payload != canonical_bytes(output):
+        raise GeneratorError("OUTPUT_LAYOUT_MISMATCH")
+    return output, payload
+
+
+def alias_crosswalk_main(args: argparse.Namespace) -> int:
+    if not args.donor_root or not args.base_root:
+        raise GeneratorError("DONOR_AND_BASE_ROOT_REQUIRED")
+    text = read_text(RUST_SOURCE)
+    epoch1_allocations = apply_identity_promotions(
+        allocate_keys(
+            load_identity_records(),
+            parse_native_batch(text),
+            parse_opaque_namespace(text),
+        ),
+        parse_identity_promotions(text),
+    )
+    payload = build_alias_crosswalk(
+        args.donor_root, args.base_root, text, dict(epoch1_allocations)
+    )
+    digest = sha256_hex(payload)
+    if args.verify_alias_crosswalk:
+        if not ALIAS_CROSSWALK.exists() or ALIAS_CROSSWALK.read_bytes() != payload:
+            raise GeneratorError("ALIAS_CROSSWALK_DRIFT")
+        print(
+            f"g4_item_crystal_binding_generator --verify-alias-crosswalk: PASS bytes={len(payload)} sha256={digest}"
+        )
+        return 0
+    ALIAS_CROSSWALK.write_bytes(payload)
+    print(
+        f"g4_item_crystal_binding_generator --build-alias-crosswalk: wrote bytes={len(payload)} sha256={digest}"
+    )
+    return 0
 
 
 def main() -> int:
@@ -336,7 +905,24 @@ def main() -> int:
         action="store_true",
         help="Regenerate in memory and require the on-disk output to already match, without writing.",
     )
+    parser.add_argument(
+        "--build-alias-crosswalk",
+        action="store_true",
+        help="Recompute the epoch-2 alias-gate evidence from --donor-root/--base-root and write it.",
+    )
+    parser.add_argument(
+        "--verify-alias-crosswalk",
+        action="store_true",
+        help="Recompute the alias-gate evidence and require the committed file to match, without writing.",
+    )
+    parser.add_argument("--donor-root", type=Path, help="Checkout of the donor commit.")
+    parser.add_argument(
+        "--base-root", type=Path, help="Checkout of the pinned base revision."
+    )
     args = parser.parse_args()
+
+    if args.build_alias_crosswalk or args.verify_alias_crosswalk:
+        return alias_crosswalk_main(args)
 
     output, payload = generate()
     bindings = output["bindings"]

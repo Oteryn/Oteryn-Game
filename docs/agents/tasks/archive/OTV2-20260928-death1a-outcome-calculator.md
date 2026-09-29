@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-death1a-outcome-calculator
 title: DEATH-1a - pure PvE death-outcome calculator
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1154
@@ -12,10 +12,10 @@ allocation_comment: "#162 5876229534 (request), confirmation: owner-authorized i
 base_branch: main
 branch: claude/vigilant-carson-067781
 base_sha: 840072adb9d6682fe73f3e8559fe5f36bfce9578
-head_sha: null
+head_sha: ccad3111148b2ba3e2be87fb09dc35a160fd4faf  # integrated as df2dd46
 owner: "Oteryn: impl domains" (Claude Code)
 created_at: 2026-09-28T19:15:00Z
-updated_at: 2026-09-28T19:30:00Z
+updated_at: 2026-09-28T22:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/domain/death.rs

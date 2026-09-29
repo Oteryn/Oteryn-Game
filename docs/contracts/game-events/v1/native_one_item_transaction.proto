@@ -23,6 +23,9 @@ package oteryn.events.v1;
 // §4): the CharacterEquipment `container` slot, direct entries of the equipped
 // main backpack, and the D83 full-merge and top-up shapes. DUR03-RL-01 and
 // DUR03-RL-06 are 2 items / 2 participants / 6 work units for the merge shapes.
+// The reward-claim MINT (operation tag 4, chest decisions §5.1, CHEST-1) mints
+// exactly one live item into a new direct entry of the equipped main backpack
+// for a `once` RewardClaim; it has no Ground and no creature-death source.
 // Historical game-events/v1/item_transaction.proto and
 // game-events/v2/item_transaction.proto remain unchanged.
 
@@ -31,6 +34,7 @@ message OneItemTransactionV1 {
   oneof operation {
     OneItemMintV1 mint = 2;
     OneItemTransferV1 transfer = 3; // B3 destinations only (see above)
+    OneItemRewardClaimMintV1 reward_claim_mint = 4; // CHEST-1 only (see above)
   }
 }
 
@@ -146,4 +150,26 @@ message OneItemTransferV1 {
   OneItemInventoryV1 destination = 4;
   OneItemTransferCauseV1 cause = 5;
   OneItemReceiverV1 receiver = 6; // D83 full merge and top-up only
+}
+
+// Reward-claim MINT cause: typed_cause "reward_claim_mint", the revisions, the
+// actual player USE CommandRef and the claimed RewardClaim definition. Same
+// field numbers as OneItemTransferCauseV1 for the shared fields.
+message OneItemRewardClaimCauseV1 {
+  string typed_cause = 1;      // <= 128 B
+  string content_revision = 6; // <= 512 B
+  string ruleset_revision = 7; // <= 512 B
+  string sim_revision = 8;     // <= 512 B
+  OneItemCommandRefV1 command_ref = 9;
+  OneItemTypedDefinitionRevisionV1 reward_claim = 10; // the claimed RewardClaim
+}
+
+// One fresh live item placed in a new direct entry of the main backpack; the
+// destination carries container_entry only (never the container slot).
+message OneItemRewardClaimMintV1 {
+  OneItemStateV1 after = 1;
+  OneItemInventoryV1 destination = 2;
+  OneItemRewardClaimCauseV1 source = 3;
+  // Explicit semantic absence of a prior item; not a nil or zero identifier.
+  bool before_semantically_absent = 4;
 }

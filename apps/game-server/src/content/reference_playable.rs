@@ -842,6 +842,34 @@ impl LoweredActionId {
     }
 }
 
+/// Owner decision D91: the encounter or server event that owns an event-origin transition at
+/// one placement. The §9 lowering sets it to the authored encounter's key.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TransitionEventOwner(ProductionKey);
+
+impl TransitionEventOwner {
+    pub fn new(value: &str) -> Result<Self, ContentError> {
+        Ok(Self(ProductionKey::new(value)?))
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+/// Owner decision D91: the typed origin of one transition as bound at one placement. It is read
+/// from `PlacementRef::local_object_event_transitions`, which lowering sets from the authored
+/// action and client input never reaches. A transition the placement does not name there is
+/// `PlayerUse`, so existing content keeps its current behaviour.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TransitionOrigin {
+    /// USE-selectable and session-invocable; never committed by a scope operation.
+    PlayerUse,
+    /// Committed only by its owning event's scope operation; never USE-selectable or
+    /// session-invocable.
+    Event(TransitionEventOwner),
+}
+
 /// D38 W1c (coordinator decision, allocation 1c): RETAG is a transition between two states of the
 /// same `LocalObjectCollisionPresence` that differ only in interaction binding (the action-id
 /// rearm). It adds no action-id field anywhere in this model; `TransitionBinding::key`,
@@ -1384,6 +1412,10 @@ pub struct PlacementRef {
     /// #162 §9 (design points 1/5): this placement's own authored revert duration per invoked
     /// transition and authored action, never read from the shared `TransitionBinding`.
     pub local_object_revert_after_ms: BTreeMap<(TransitionKey, LoweredActionId), u64>,
+    /// Owner decision D91: the transitions this placement binds as `TransitionOrigin::Event`,
+    /// each with its owner. Any other transition is `PlayerUse`. Empty for every placement that
+    /// no encounter lowering targets.
+    pub local_object_event_transitions: BTreeMap<TransitionKey, TransitionEventOwner>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -2226,8 +2258,9 @@ fn validate_local_object_placement_state(
 /// #162 §9 (design point 1): fail-closed, mirroring `validate_local_object_placement_state`.
 /// A `LocalObject` placement's attribute keys must be states of its definition's vocabulary, each
 /// `destination` must resolve to a placement of the same content, and each revert entry must name
-/// a transition of the same content that targets this placement's definition. A placement whose
-/// definition is not `LocalObject` must carry neither table. `LocalObjectRuntime::bind` re-runs
+/// a transition of the same content that targets this placement's definition, as must each D91
+/// event-origin entry. A placement whose definition is not `LocalObject` must carry none of
+/// these tables. `LocalObjectRuntime::bind` re-runs
 /// this check and additionally requires every revert transition to be bound at the placement.
 pub(crate) fn validate_local_object_placement_attributes(
     placement: &PlacementRef,
@@ -2240,6 +2273,7 @@ pub(crate) fn validate_local_object_placement_attributes(
     let ReferenceDefinitionKind::LocalObjectStates(states) = &definition.kind else {
         if !placement.local_object_state_attributes.is_empty()
             || !placement.local_object_revert_after_ms.is_empty()
+            || !placement.local_object_event_transitions.is_empty()
         {
             return Err(ContentError::InvalidArtifact(
                 "reference-playable placement declares local object attributes for a non-local-object definition",
@@ -2294,6 +2328,21 @@ pub(crate) fn validate_local_object_placement_attributes(
         if transition.definition != placement.definition {
             return Err(ContentError::InvalidArtifact(
                 "reference-playable placement revert duration names a transition of another definition",
+            ));
+        }
+    }
+    // D91: an event-origin entry names a transition of the same content and definition.
+    for transition_key in placement.local_object_event_transitions.keys() {
+        let transition = transitions
+            .iter()
+            .find(|transition| &transition.key == transition_key)
+            .ok_or_else(|| ContentError::MissingReference {
+                owner: placement.key.as_str().to_owned(),
+                target: transition_key.as_str().to_owned(),
+            })?;
+        if transition.definition != placement.definition {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable placement event origin names a transition of another definition",
             ));
         }
     }

@@ -348,10 +348,14 @@ fn target_is_bound_to_owner_slot_before_first_commit() {
 }
 
 #[test]
-fn second_creature_and_binding_size_bound_reject_without_mutation() {
+fn general_capacity_and_binding_size_bound_reject_without_mutation() {
+    // AI-2 (GAME-AI-01 §4.1 envelope): a one-slot carrier's second admission now fails on
+    // general capacity (not a one-creature-only gate); a wider carrier's second creature
+    // admission succeeds instead (`ai2_multiple_creatures_coexist_bounded_only_by_general_capacity`,
+    // `runtime_actor_carrier`'s own tests).
     let mut continuity = NamespaceContinuityGuard::from_pre_production_grant(grant(80, 1));
-    let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 2)
-        .expect("two finite slots");
+    let mut carrier =
+        ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1).expect("one finite slot");
     let actor = ExactActorRef(
         carrier
             .admit_creature(&continuity, ActorState(1), "target:one", 20)

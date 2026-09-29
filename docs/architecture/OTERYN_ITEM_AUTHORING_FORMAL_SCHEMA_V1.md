@@ -933,6 +933,38 @@ B2 recaptures wiki evidence for those ids once identified; B3 (out of this task'
 scope entirely) folds the donor facts into the pinned engine revision once B1b/B2
 land, so a future `population_census.py` run covers them natively.
 
+**B1b and B2 status (2026-09-28).**
+
+B1b (#1179, decision A8, D96/D97) bound 404 donor ids to epoch-2 keys `oteryn:item.registry.i00038094`–`i00038497`
+in the committed Crystal bindings. It held 8 ids without a key: `PROBABLE_MATCH` 35500 and 54610, and `AMBIGUOUS`
+53380, 54609, 54613, 54614, 54615 and 54616.
+
+B2 changes the donor census and the wiki capture:
+
+- **Frozen input, live census.** The B1a census file stays byte-identical, because B1b pins it by exact bytes as its epoch-2 input. `donor_census.py` now writes the live census to `samples/donor-census-crystal-summer-update-00ce02a5-keyed.json`.
+- **Keys in the donor census.** `donor_census.py` now reads each id's committed key (`registry_key`). Every row carries
+  `key`: the epoch-2 key for a minted id, and the provisional `donor:` key for a held one. The wiki-evidence and owner
+  table joins run under that key.
+- **Capture mode.** `tools/content-census/item_wiki_family_capture.py --donor-only` captures evidence for the donor
+  ids that reach the wiki step. It uses the exact `itemid` join only, which is the donor census's admitted basis. It
+  appends the records to the snapshot, and every existing record stays byte-identical.
+- **Pinned censuses unaffected.** The Crystal population census and the promotion packet are byte-identical.
+
+**Capture result.** 17 donor ids reached the wiki step, and 8 records were appended:
+
+- `lunar ascension orb` (53695) and `auric moon sigil` (54480): Fandom `primarytype` Valuables, so `material_valuable`.
+- `skewered fish` (54638) and `cloud in a bottle` (54651): Taming Items, so `tool`.
+- 4 × `sickbed` (50213–50216): Furniture, so `decoration`. This is the same profile they already had from the wrap
+  target. The wiki now outranks the wrap target, as in `convert_item`.
+
+**Still unresolved: 9 ids.** Their own itemid page has an empty `primarytype`, so they stay unresolved and are
+reported, never guessed: 53692, 53693, 53696, 53783, 54262, 54267, 54564, 54566 and 54640.
+
+**Donor census totals.** 265 resolved (8 via wiki evidence), 138 routed, 9 unresolved.
+
+**Canary sample.** B1b's bindings also gave 9 ids in Canary `47dfd51f`'s own `items.xml` a key. The regenerated
+`population-canary-47dfd51f.json` therefore has 9 more converted items. Its wiki-evidence count is unchanged (1,364).
+
 ## 5m. Routed Item pointer: `routed_to` (WO-1, 2026-09-28)
 
 WO-0 (`docs/architecture/reviews/OTERYN_GAME_WO0_WORLD_OBJECT_AND_TERRAIN_AUTHORING_FORMAT_DECISION_2026-09-28.md`,

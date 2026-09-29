@@ -46,6 +46,12 @@ candidates are read from both `[[wikilinks]]` and the positional entries of an
 `{{ItemList ...}}` template (Fandom's own alternative to linking each variant),
 `key=value` parameters skipped either way. Generic placeholder engine names (e.g. "old
 tibia item") are never looked up at all; they are always report-only.
+
+`--donor-only --donor-source <checkout>` (task B2) captures only the donor-only ids that
+B1b bound to an epoch-2 registry key and that reach the wiki step, through the exact
+itemid join alone (`donor_census.DONOR_WIKI_MATCH_BASES`), and appends those records to
+the committed snapshot: every existing record stays byte-identical, and a key already
+present is a hard error.
 """
 
 from __future__ import annotations
@@ -802,6 +808,130 @@ def resolve_name(name, candidate_titles, fetcher, report, report_examples):
     }
 
 
+def collect_donor_wiki_candidates(donor_source, base_source, report):
+    """Task B2: `(registry_key, item_id, name_lower)` for every donor-only id that has
+    an epoch-2 registry key (B1b) and reaches the wiki-evidence step of
+    `donor_census.classify_donor_item` (no non-Item route, no engine-attribute family,
+    no immovable route) -- the same point `engine_items.convert_item` consults the
+    snapshot. A held id (no key) is counted and skipped: nothing can join it."""
+    import donor_census
+
+    donor = donor_census.load_donor_artifacts(donor_source)
+    base = engine_items.load_engine_sources(
+        "crystal", base_source, wiki_fallback_path=_NO_EXISTING_WIKI_FALLBACK
+    )
+    identity_index = base["identity_index"]
+    out = []
+    for item_id in sorted(set(donor["items"]) - set(base["items"])):
+        entry = identity_index.get(item_id)
+        if entry is None:
+            report["donor_held_without_key"] += 1
+            continue
+        xml_record = donor["items"].get(item_id)
+        appearance = donor["appearances"].get(item_id)
+        attrs = dict(xml_record["attrs"]) if xml_record else {}
+        flags = dict(appearance["flags"]) if appearance else {}
+        if engine_items.non_item_route(xml_record, attrs, flags) is not None:
+            continue
+        if (
+            engine_items.classify_family_profile(
+                attrs, attrs.get("primarytype"), flags.get("clothes.slot")
+            )
+            is not None
+        ):
+            continue
+        if engine_items.immovable_non_item_route(flags) is not None:
+            continue
+        name = ((xml_record or {}).get("name") or "").strip().lower()
+        out.append((entry[0], item_id, name))
+    return out
+
+
+def run_donor_only(args):
+    """Task B2: capture itemid-join evidence for the donor-only ids alone and append
+    it to the committed snapshot. Every existing record stays byte-identical, and a
+    key already present is a hard error; only the donor census's own admitted join
+    (`donor_census.DONOR_WIKI_MATCH_BASES`, exact itemid) is attempted."""
+    captured_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    report = Counter()
+    pairs = collect_donor_wiki_candidates(
+        args.donor_source, args.crystal_source, report
+    )
+    print(f"donor wiki candidates: {len(pairs)}", file=sys.stderr)
+    existing = json.loads(args.output.read_text(encoding="utf-8"))
+    overlap = sorted({key for key, _i, _n in pairs} & set(existing["records"]))
+    if overlap:
+        raise SystemExit(f"donor keys already in the snapshot: {overlap[:5]}")
+
+    fetcher = WikiFetcher()
+    infobox_object_titles = fetch_infobox_object_titles()
+    fetcher.fetch_titles(infobox_object_titles, batch_size=ITEMID_JOIN_FETCH_BATCH_SIZE)
+    itemid_index = build_itemid_index(fetcher, infobox_object_titles)
+
+    records = {}
+    outcomes = {}
+    for key, item_id, name in pairs:
+        pages = list(itemid_index.get(item_id, ()))
+        if not pages:
+            outcomes[str(item_id)] = "no_itemid_page"
+            report["no_itemid_page"] += 1
+            continue
+        base = resolve_id_matched_pages(pages)
+        if base is None:
+            outcomes[str(item_id)] = "itemid_match_unresolved: " + ", ".join(
+                diagnose_id_matched_unresolved(pages)
+            )
+            report["itemid_match_unresolved"] += 1
+            continue
+        record = dict(base)
+        record["matched_names"] = [name]
+        record["registry_key"] = key
+        if record["resolution"] == "direct":
+            record["captured_at"] = captured_at
+        else:
+            record["candidates"] = [
+                {**candidate, "captured_at": captured_at}
+                for candidate in record["candidates"]
+            ]
+        records[key] = record
+        outcomes[str(item_id)] = f"resolved: {record['field']}={record['value']}"
+        report["itemid_match_resolved"] += 1
+
+    merged = {**existing["records"], **records}
+    snapshot = dict(existing)
+    snapshot["records"] = merged
+    snapshot["snapshot_sha256"] = hashlib.sha256(
+        canonical_records_bytes(merged)
+    ).hexdigest()
+    args.output.write_text(
+        json.dumps(snapshot, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.report.write_text(
+        json.dumps(
+            {
+                "mode": "donor_only",
+                "captured_at": captured_at,
+                "candidates": len(pairs),
+                "records_appended": len(records),
+                "reasons": dict(sorted(report.items())),
+                "by_item_id": dict(sorted(outcomes.items(), key=lambda r: int(r[0]))),
+            },
+            indent=2,
+            sort_keys=True,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    print(
+        f"appended {len(records)} donor records to {args.output}; report at "
+        f"{args.report}",
+        file=sys.stderr,
+    )
+
+
 def canonical_records_bytes(records):
     return json.dumps(
         records, ensure_ascii=False, sort_keys=True, separators=(",", ":")
@@ -811,7 +941,20 @@ def canonical_records_bytes(records):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--crystal-source", type=Path, required=True)
-    parser.add_argument("--canary-source", type=Path, required=True)
+    parser.add_argument("--canary-source", type=Path)
+    parser.add_argument(
+        "--donor-source",
+        type=Path,
+        help="Crystal donor checkout (donor_census pins); required by --donor-only",
+    )
+    parser.add_argument(
+        "--donor-only",
+        action="store_true",
+        help=(
+            "task B2: capture itemid evidence for the epoch-2 donor ids only and "
+            "append it to --output, leaving every existing record unchanged"
+        ),
+    )
     parser.add_argument(
         "--output",
         type=Path,
@@ -824,6 +967,13 @@ def main():
         help="uncommitted JSON report of every non-admitted name, bucketed by reason",
     )
     args = parser.parse_args()
+    if args.donor_only:
+        if args.donor_source is None:
+            parser.error("--donor-only requires --donor-source")
+        run_donor_only(args)
+        return
+    if args.canary_source is None:
+        parser.error("--canary-source is required for a full capture")
 
     captured_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     report = Counter()

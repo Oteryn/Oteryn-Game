@@ -95,6 +95,7 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D43 | TibiaWiki BR fills health and experience where the Fandom page at the target date is missing or gives no certain value (empty, `?`, `~` or unparsed). The owner's source order puts BR after Fandom, and BR is used for tables and cross-checks. The BR value must be a plain number. BR element modifiers are not used, because "100%" there is often the template default; BR speed and loot are not used either. `wiki_br_capture.py` reads the pages on a hosted runner (the build container gets a Cloudflare bot check). `wiki_br_fill.py` selects the fills into `samples/wiki-br-fill-2026-09-27.json`, and the converter applies them after the D15 values. | Owner answer 2026-09-27 ("Tylko HP i doświadczenie"), after BR gave Dark Knight 7,900 health where Fandom has "?" and Canary 1,800. |
 | D44 | A monster Tibia has at the target date and Canary lacks is authored from the wiki as close to Tibia as the sources allow. `wiki_authored.py` writes it as a Canary-format file from pinned facts (Fandom first, then TibiaWiki BR, per the source order) and converts it with the normal converter; each manifest row cites the wiki revision line of its value. A value no wiki page gives is taken from the closest Canary template monster, and its row is marked `NEEDS VERIFICATION (D44)`; an ability whose damage no source gives is left out and recorded as an omission to verify. The creature is bound to its Fandom page id (`mediawiki/page_id`) under its own `oteryn:source.tibiawiki` import batch. First case: Dark Merudri (Grave Danger, summoned for a Monk in the Count Vlarkorth fight); template Dark Knight. | Owner answers 2026-09-28 ("uzupełnić to co masz, żeby było maksymalnie zbliżone do Tibii, ale zaznacz, że to wymaga kiedyś weryfikacji"); Canary and CrystalServer, all active branches, have no Dark Merudri. |
 | D45 | An ability may point to an encounter (`encounter`) instead of listing effects or variants. A monster spell whose Canary script summons creatures, and keeps counters, flags or timers for it, is converted this way: the monster keeps the ability with its range and targeting, and the encounter's `ability_cast` rule does the summon (OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1 D45). | Owner answer 2026-09-28 ("Tak, przez encountery"). |
+| D47 | Source order for the reference-date state (owner answer 2026-09-28): a Tibia.com news item dated on or before the target date, then the Tibia.com creature library, then the wiki at the target date, then Canary and CrystalServer as hypotheses. The library has no history, so a capture counts as the target-date state only while no news item between the target date and the capture changes the creature. `official_library.py` records the library health and experience from TibiaData captures; the converter adopts them over Canary and the wiki as an `official_capture` source. A percentage from a news item is applied directly only where the library has no entry, and its rounding is marked uncertain. A change without numbers is recorded as known but not quantified. Library descriptions stay out of the repository; the entry keeps the library URL. | Guessing values for changes without numbers. |
 
 ## 4. Carried semantics
 
@@ -445,16 +446,20 @@ The 2026-07-28 comparisons (`wiki-population-2026-07-28.json`, `wiki-scenes-2026
 `wiki-2026-07-28.json`) stay as the record of the earlier admission.
 
 The converter adopts only DIFF rows (D15): health, experience, armor, mitigation, element
-modifiers, `pushable`, `pushobjects`, `senseinvis`, paralysis immunity, `illusionable`, flee health
-and Bestiary difficulty/occurrence; speed (the wiki lists observed speed, Canary the engine value),
-Bestiary class and summon/convince costs are not adopted. Every adopted value keeps the superseded
+modifiers, `pushable`, `pushobjects`, `senseinvis`, paralysis immunity, `illusionable`, flee health,
+Bestiary difficulty/occurrence and the summon/convince costs (`--` clears the flag, a number sets it and
+the one mana cost; two different costs cannot be expressed and stay unadopted); speed (the wiki lists
+observed speed, Canary the engine value) and the Bestiary class are not adopted. Every adopted value keeps the superseded
 Canary row as an `approved_omission` and adds a MediaWiki-sourced row. Wiki loot missing in Canary
 is added only when its name resolves to one item: by name, by the item page `itemid`, or by
 dropping the equipped state of an `items.xml` `transformEquipTo` pair. Over all converted
-monsters 748 mitigations and 12,722 loot rows (probabilities, counts and added items) are adopted; 1,186 of
+monsters 748 mitigations and 12,722 loot rows (probabilities, counts and added items) are adopted; 1,188 of
 the fully resolved monsters carry at least one adopted value. Under D43, TibiaWiki BR gives the health of 65
 and the experience of 37 fully resolved monsters whose Fandom value is missing or uncertain; 124 monsters have a BR
 fill in `wiki-br-fill-2026-09-27.json`; the other fills equal Canary or belong to monsters that are not fully resolved.
+Under D47, `official-library-2026-09-28.json` gives the Tibia.com library health and experience of 647 Canary
+monsters; among the admitted creatures only Sabretooth differs (experience 11,931 becomes 12,830), and the four Darklight
+Core creatures, still deferred for their encounter, take the 2026-08-25 balance (-7% experience) that the wiki misses.
 Under D32, 971 loot count bounds (a minimum or a maximum) of 334 fully resolved monsters take the
 observed wiki range, and Duke Krule's twelve `minCount` 0 entries become count 1..max.
 
