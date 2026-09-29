@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-harness-live-c3c4
 title: harness live mode - render the join snapshot, step and click-the-door through oteryn-dev-client
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1174
@@ -12,9 +12,9 @@ allocation_comment: control-plane allocation on #162 (alias "impl interaction");
 base_branch: main
 branch: claude/harness-live-c3c4
 base_sha: be242b8fbcd2908ec7b2c58408354eddd414bc0f
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 22b42cfab80aaee7ea3cb2b1429f1e7a3ea9aa77
+final_head_sha: 22b42cfab80aaee7ea3cb2b1429f1e7a3ea9aa77
+final_head_frozen_at: 2026-09-28
 owner: "Oteryn: impl interaction" (Claude Code)
 created_at: 2026-09-28T00:00:00Z
 updated_at: 2026-09-28T00:00:00Z
@@ -143,12 +143,18 @@ crate: unchanged. No `@codex`, no auto-merge, no review-thread resolution by thi
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #1174 opened; live mode implemented and validated locally; C2 record archived
-status: ready
+last_progress: PR #1174 merged via Merge Queue as afa402c; protected-main readback matched 22b42cf; record archived in the 2026-09-29 batch
+status: completed
 branch: claude/harness-live-c3c4
 pr: 1174
-final_head_sha: the frozen final head of the PR
+final_head_sha: 22b42cfab80aaee7ea3cb2b1429f1e7a3ea9aa77
 owner_action_required: null
 blocker: null
-next_action: await required checks and independent review on PR #1174
+next_action: none for this task
 ```
+
+## Closeout
+
+- merge commit/result: `afa402c` on protected `main` (#1174); the changed files are byte-identical to `22b42cf`
+- ownership release: all leases released at merge
+- archived in the batch archive of 2026-09-29

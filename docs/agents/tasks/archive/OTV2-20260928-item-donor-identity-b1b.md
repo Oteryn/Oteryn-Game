@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-item-donor-identity-b1b
 title: "B1b donor Item identity epoch 2 (alias gate, function, bindings)"
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/item-donor-identity-b1b
 issue: 162
 pr: 1179
 base_sha: be242b8
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: dd4e6e85bffae776fd2f63d647a718195e3969c7
+final_head_sha: dd4e6e85bffae776fd2f63d647a718195e3969c7
+final_head_frozen_at: 2026-09-28
 owner: Content/World lane single writer
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -120,12 +120,18 @@ SHA recorded here.
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation and local validation
-status: validating
+last_progress: PR #1179 merged via Merge Queue as ff498b5; protected-main readback matched dd4e6e8; record archived in the 2026-09-29 batch
+status: completed
 branch: claude/item-donor-identity-b1b
 pr: 1179
 owner_action_required: null
 blocker: null
-next_action: freeze the PR head, route the independent identity review, integrate through Merge Queue
+next_action: none for this task
 jira_sync: pending (no mapped Story resolved in this session)
 ```
+
+## Closeout
+
+- merge commit/result: `ff498b5` on protected `main` (#1179); the changed files are byte-identical to `dd4e6e8`
+- ownership release: all leases released at merge
+- archived in the batch archive of 2026-09-29

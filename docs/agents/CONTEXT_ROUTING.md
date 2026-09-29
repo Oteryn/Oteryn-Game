@@ -30,6 +30,8 @@ Load these only when their condition holds:
 
 Run builds and tests quietly (`cargo ... --quiet`, keep the last ~20 lines of output) and report pass/fail counts instead of pasting logs or diffs.
 
+Many data files are multi-megabyte JSON on a single line (`content/**/definitions/*.json`, `content/loot/`, `content/world/definitions/`, `imports/**/bindings/*.json`, `docs/agents/evidence/*.json`). A plain `grep`/`rg` match there prints the whole line. Search them with `rg -l` or `--count` first, then extract the record with `jq` or Python; never print matching lines from them. `docs/agents/evidence/.rgignore` excludes that directory's JSON from ripgrep searches entirely.
+
 ### Subagent routing
 
 Leads that run workers as subagents use the definitions in `.claude/agents/`:

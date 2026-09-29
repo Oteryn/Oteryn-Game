@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-tibiacom-spells-hardening
 title: tibia.com capture - spell library through the real #1077 parser, literal YYYY-MM-DD hardening
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1181
@@ -12,9 +12,9 @@ allocation_comment: "#162, owner decision D100"
 base_branch: main
 branch: claude/tibiacom-spells-hardening
 base_sha: df2dd464ceb97287fea0bdcc717911c4c8ef182c
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: f31eb5a3f182b6d4f444fbbbb843ff18260ad433
+final_head_sha: f31eb5a3f182b6d4f444fbbbb843ff18260ad433
+final_head_frozen_at: 2026-09-28
 owner: "Oteryn: content import" (Claude Code)
 created_at: 2026-09-28T00:00:00Z
 updated_at: 2026-09-28T00:00:00Z
@@ -136,12 +136,18 @@ snapshot directory, `tools/content-schema/spell-authoring/**`: unchanged. No new
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation and local validation complete; PR 1181 open
-status: ready
+last_progress: PR #1181 merged via Merge Queue as 59604a2; protected-main readback matched f31eb5a; record archived in the 2026-09-29 batch
+status: completed
 branch: claude/tibiacom-spells-hardening
 pr: 1181
-final_head_sha: the frozen final head of the PR
+final_head_sha: f31eb5a3f182b6d4f444fbbbb843ff18260ad433
 owner_action_required: run the spells capture command from imports/official/tibia-com/README.md after merge
 blocker: null
-next_action: await required checks and independent review on PR 1181
+next_action: none for this task
 ```
+
+## Closeout
+
+- merge commit/result: `59604a2` on protected `main` (#1181); the changed files are byte-identical to `f31eb5a`
+- ownership release: all leases released at merge
+- archived in the batch archive of 2026-09-29

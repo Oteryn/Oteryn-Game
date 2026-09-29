@@ -203,6 +203,501 @@
         "protected WP4 durability implementation",
         "current accepted persistence/session contracts and live GitHub state"
       ]
+    },
+    {
+      "program_id": "OTV2_WP3_BLOCKING_RUNTIME_OWNER_AMENDMENT_20260907",
+      "path": "docs/agents/programs/archive/OTV2_WP3_BLOCKING_RUNTIME_OWNER_AMENDMENT_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_RUSTLS_DEFRAMER_OWNER_AMENDMENT_20260907",
+      "path": "docs/agents/programs/archive/OTV2_WP3_RUSTLS_DEFRAMER_OWNER_AMENDMENT_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_TOKIO_BLOCKING_OWNER_AMENDMENT_20260907",
+      "path": "docs/agents/programs/archive/OTV2_WP3_TOKIO_BLOCKING_OWNER_AMENDMENT_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_TOKIO_TASK_REEXPORT_AMENDMENT_20260907",
+      "path": "docs/agents/programs/archive/OTV2_WP3_TOKIO_TASK_REEXPORT_AMENDMENT_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP5_CHARACTER_AUDIT_OUTBOX_ALLOCATION_20260907",
+      "path": "docs/agents/programs/archive/OTV2_WP5_CHARACTER_AUDIT_OUTBOX_ALLOCATION_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP5 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP5_DEDICATED_POSTGRES_CI_ROUTING_ALLOCATION_20260907",
+      "path": "docs/agents/programs/archive/OTV2_WP5_DEDICATED_POSTGRES_CI_ROUTING_ALLOCATION_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP5 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP5_GAME_CHARACTER_AUTHORITY_ALLOCATION_20260907",
+      "path": "docs/agents/programs/archive/OTV2_WP5_GAME_CHARACTER_AUTHORITY_ALLOCATION_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP5 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP5_GAME_SCOPE_ASSIGNMENT_ALLOCATION_20260907",
+      "path": "docs/agents/programs/archive/OTV2_WP5_GAME_SCOPE_ASSIGNMENT_ALLOCATION_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP5 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_RUSTLS_CLIENTHELLO_CONSTRUCTOR_OWNER_AMENDMENT_20260908",
+      "path": "docs/agents/programs/archive/OTV2_WP3_RUSTLS_CLIENTHELLO_CONSTRUCTOR_OWNER_AMENDMENT_20260908.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_RUSTLS_CLIENTHELLO_OWNER_SYMBOL_AMENDMENT_20260908",
+      "path": "docs/agents/programs/archive/OTV2_WP3_RUSTLS_CLIENTHELLO_OWNER_SYMBOL_AMENDMENT_20260908.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_RUSTLS_DECODED_OWNER_AMENDMENT_20260908",
+      "path": "docs/agents/programs/archive/OTV2_WP3_RUSTLS_DECODED_OWNER_AMENDMENT_20260908.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_RUSTLS_SESSION_RETRIEVE_OWNER_AMENDMENT_20260908",
+      "path": "docs/agents/programs/archive/OTV2_WP3_RUSTLS_SESSION_RETRIEVE_OWNER_AMENDMENT_20260908.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_SQLX_OPERATION_OWNER_PROPAGATION_AMENDMENT_20260908",
+      "path": "docs/agents/programs/archive/OTV2_WP3_SQLX_OPERATION_OWNER_PROPAGATION_AMENDMENT_20260908.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_AWS_LC_PROVIDER_CONFIG_OWNER_AMENDMENT_20260909",
+      "path": "docs/agents/programs/archive/OTV2_WP3_AWS_LC_PROVIDER_CONFIG_OWNER_AMENDMENT_20260909.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_RUSTLS_MESSAGE_CUSTODY_CONSTRUCTOR_AMENDMENT_20260909",
+      "path": "docs/agents/programs/archive/OTV2_WP3_RUSTLS_MESSAGE_CUSTODY_CONSTRUCTOR_AMENDMENT_20260909.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_SQLX_AWS_LC_PQ_PROFILE_AMENDMENT_20260909",
+      "path": "docs/agents/programs/archive/OTV2_WP3_SQLX_AWS_LC_PQ_PROFILE_AMENDMENT_20260909.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP5_NATIVE_ADMISSION_SOURCE_INGESTION_ALLOCATION_20260909",
+      "path": "docs/agents/programs/archive/OTV2_WP5_NATIVE_ADMISSION_SOURCE_INGESTION_ALLOCATION_20260909.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP5 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP5_NATIVE_ADMISSION_SOURCE_POSTGRES_ROUTING_AMENDMENT_ALLOCATION_20260909",
+      "path": "docs/agents/programs/archive/OTV2_WP5_NATIVE_ADMISSION_SOURCE_POSTGRES_ROUTING_AMENDMENT_ALLOCATION_20260909.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP5 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP5_NATIVE_ADMISSION_SOURCE_READINESS_RECONCILIATION_20260909",
+      "path": "docs/agents/programs/archive/OTV2_WP5_NATIVE_ADMISSION_SOURCE_READINESS_RECONCILIATION_20260909.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP5 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP5_PLATFORM_NATIVE_EVIDENCE_PRODUCER_HANDOFF_20260909",
+      "path": "docs/agents/programs/archive/OTV2_WP5_PLATFORM_NATIVE_EVIDENCE_PRODUCER_HANDOFF_20260909.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP5 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_RUSTLS_TLS13_SERVER_HELLO_TRANSCRIPT_AMENDMENT_20260910",
+      "path": "docs/agents/programs/archive/OTV2_WP3_RUSTLS_TLS13_SERVER_HELLO_TRANSCRIPT_AMENDMENT_20260910.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_RUSTLS_TLS13_FINAL_FLIGHT_CUSTODY_AMENDMENT_20260911",
+      "path": "docs/agents/programs/archive/OTV2_WP3_RUSTLS_TLS13_FINAL_FLIGHT_CUSTODY_AMENDMENT_20260911.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_RUSTLS_TLS13_POST_CERTIFICATE_TRANSCRIPT_CALLERS_AMENDMENT_20260911",
+      "path": "docs/agents/programs/archive/OTV2_WP3_RUSTLS_TLS13_POST_CERTIFICATE_TRANSCRIPT_CALLERS_AMENDMENT_20260911.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_SQLX_BUFFERED_SOCKET_OWNER_AMENDMENT_20260912",
+      "path": "docs/agents/programs/archive/OTV2_WP3_SQLX_BUFFERED_SOCKET_OWNER_AMENDMENT_20260912.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_SQLX_CONNECT_SOCKET_OWNER_AMENDMENT_20260912",
+      "path": "docs/agents/programs/archive/OTV2_WP3_SQLX_CONNECT_SOCKET_OWNER_AMENDMENT_20260912.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_ERROR_CUSTODY_AMENDMENT_20260913",
+      "path": "docs/agents/programs/archive/OTV2_WP3_ERROR_CUSTODY_AMENDMENT_20260913.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_SELECTED_CLIENT_SEND_AMENDMENT_20260913",
+      "path": "docs/agents/programs/archive/OTV2_WP3_SELECTED_CLIENT_SEND_AMENDMENT_20260913.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_TOKIO_IO_REGISTRATION_OWNER_AMENDMENT_20260912",
+      "path": "docs/agents/programs/archive/OTV2_WP3_TOKIO_IO_REGISTRATION_OWNER_AMENDMENT_20260912.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_V2_GATE1_ACCEPTANCE_ALLOCATION_20260913",
+      "path": "docs/agents/programs/archive/OTV2_WP3_V2_GATE1_ACCEPTANCE_ALLOCATION_20260913.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_FINAL_QUALIFICATION_SCOPE_AMENDMENT_20260914",
+      "path": "docs/agents/programs/archive/OTV2_WP3_FINAL_QUALIFICATION_SCOPE_AMENDMENT_20260914.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_SQLX_POOL_RETURN_FINALITY_AMENDMENT_20260914",
+      "path": "docs/agents/programs/archive/OTV2_WP3_SQLX_POOL_RETURN_FINALITY_AMENDMENT_20260914.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_SQLX_TRANSACTION_FINALITY_AMENDMENT_20260914",
+      "path": "docs/agents/programs/archive/OTV2_WP3_SQLX_TRANSACTION_FINALITY_AMENDMENT_20260914.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_A_Q01_Q75_TRANSITION_DISPOSITION_20260916",
+      "path": "docs/agents/programs/archive/OTV2_WP3_A_Q01_Q75_TRANSITION_DISPOSITION_20260916.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3 allocation/amendment superseded by the terminal WP3-v2/WP5 programme; archived 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
     }
   ]
 }
