@@ -60,6 +60,7 @@ class ValidateAchievementsTest(unittest.TestCase):
             variant(secret="no"),
             variant(extra=1),
             variant(provenance={}),
+            variant(identity="oteryn:achievement/allow_cookies"),
             variant(
                 identity={
                     **SAMPLE["identity"],

@@ -55,9 +55,8 @@ def validate(records: list[dict]) -> dict:
     invalid, seen = [], {}
     for index, record in enumerate(records):
         errors = record_errors(record)
-        key = (
-            record.get("identity", {}).get("key") if isinstance(record, dict) else None
-        )
+        identity = record.get("identity") if isinstance(record, dict) else None
+        key = identity.get("key") if isinstance(identity, dict) else None
         if isinstance(key, str):
             if key in seen:
                 errors.append(f"duplicate key, first at record {seen[key]}")
