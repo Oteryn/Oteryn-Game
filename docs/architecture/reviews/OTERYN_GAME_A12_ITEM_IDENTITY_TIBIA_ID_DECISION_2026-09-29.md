@@ -1,11 +1,13 @@
 # A12 Item identity equals the Tibia id
 
 - Decision: `A12-ITEM-IDENTITY-TIBIA-ID-V1`
-- Status: **CANDIDATE with owner decisions D146-D148 (§2)**. Acceptance requires exact-head
+- Status: **CANDIDATE with owner decisions D146-D149 (§2)**. Acceptance requires exact-head
   validation, independent identity review and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Answers: #162 comment 5892865958 (item-authoring lane, `ARCHITECTURE_ESCALATION_REQUIRED`)
 - Ruling posted: #162 comment 5892983885
+- Clarified: #162 comment 5894110248 answering 5893830130 (D149, §4.2 evidence, §5 binding
+  dispositions), after protected integration as `8af7f88e`
 - Supersedes: `OTERYN_GAME_A8_DONOR_ITEM_IDENTITY_EPOCH_DECISION_2026-09-28.md` (D96, D97) and the
   sequential key allocation of CW2-B1 (`apps/game-server/src/content/cw2_b1_import.rs`)
 - Amends:
@@ -32,6 +34,7 @@ in 5892865958.
 | D146 | The canonical key of every Tibia item is its Tibia id: `oteryn:item.tibia.i<id>`. This applies to all ids, whether or not Oteryn knows what the item is. It happens now, before WO-2. It supersedes A8 (D96, D97) and the CW2-B1 sequential allocation. | "Tak, teraz przed WO-2" |
 | D147 | The 64 semantic named keys (for example `oteryn:item.currency.gold_coin`) stop being keys. Each Tibia item has exactly one key, and the name lives on as a code constant that points at it. | "Numer Tibii + stała w kodzie" |
 | D148 | Items that exist only in Oteryn use a separate namespace, `oteryn:item.oteryn.<slug>`, never a numeric range. | "Osobna przestrzeń nazw" |
+| D149 | The 4,590 OT records with no CipSoft appearance in any admitted file are removed from authored content. Each of their old keys gets `retired_without_successor`. | "Usunąć z treści" |
 
 Decision number note: D140-D144 were already allocated to D4 (#1218) when A11 recorded its owner
 decision as D140. The A11 decision is renumbered D145 in this change (§6).
@@ -92,6 +95,11 @@ Crystal and donor `.dat` files)
 - **Ids outside the set.** An OT server or donor id that is not a CipSoft appearance object id in
   the admitted set gets no Tibia key. It stays `UNKNOWN`, and loading or minting it fails closed
   until it is bound to a Tibia id (`ACCEPTED_ALIAS`) or authored in the D148 namespace.
+- **OT records without a CipSoft appearance (D149).** The 4,590 such records in the current OT
+  corpus are removed from authored content.
+  - Their old keys get `retired_without_successor` (§4.5).
+  - Historical durable rows that hold them still resolve.
+  - Keeping one of them as an Oteryn-only item needs a separate owner decision under D148.
 
 ### 4.2 G4 amendment
 
@@ -100,12 +108,18 @@ Crystal and donor `.dat` files)
   source numeric id" rule.
 - Canary, Crystal, donors, TibiaWiki and every other source keep G4 unchanged. Their ids are
   bindings (`ots/item_server_id` and the like) that target the Tibia key.
-  - `EXACT` needs G4 identity evidence that both records are the same item, for example the
-    source row's appearance reference resolving to that CipSoft appearance record, with name and
-    flags corroborating it.
-  - Equal numbers only corroborate that evidence and never prove it (G4 rule 3).
-  - A source row without that evidence is not bound `EXACT`, and it stays in the G4
-    ambiguous/conflict path.
+  - `EXACT` needs G4 identity evidence that both records are the same item. That evidence has two
+    parts:
+    1. The source row's appearance reference is that Tibia id in an admitted membership manifest.
+    2. CipSoft record continuity holds for that id: its appearance record means the same object in
+       the source's pinned CipSoft file and in the newest admitted file.
+  - A different OT name alone does not block `EXACT`, because OT names are editorial. It is recorded
+    as a note on the binding.
+  - Equal numbers alone never prove identity (G4 rule 3).
+  - A source row that describes a different item than its id's CipSoft record, such as an OT
+    repurposed id, becomes `CONFLICT` with no target and no alias.
+  - A continuity break (the same id with a different CipSoft meaning) is `CONFLICT` and
+    `ARCHITECTURE_ESCALATION_REQUIRED`, never `EXACT`.
 - The four-layer separation stays in force: canonical key, source id, presentation identity and
   runtime or wire id. For CipSoft items the canonical number and the wire number coincide by rule,
   not by merging the two layers.
@@ -186,7 +200,10 @@ ITEM-ID-1 must prove all of the following:
 - No two retired keys that meant different items map to the same key.
 - Every key reference in authored content and code is rewritten, and none names a retired key.
 - Every durable row with a retired key resolves through the alias table.
-- The G4 bindings target the new keys, with no binding lost.
+- No binding is lost: every source binding row survives with a disposition.
+  - `EXACT` and `ACCEPTED_ALIAS` rows target the new keys.
+  - `CONFLICT` rows, such as repurposed ids, keep no target.
+- Every D149 record is removed from authored content, and its old key is `retired_without_successor`.
 - Semantic constants resolve to existing Tibia keys.
 - No Tibia key coincides with an Oteryn-namespace key.
 
@@ -222,7 +239,7 @@ ITEM-ID-1 must prove all of the following:
 ```yaml
 result: RESOLVED_WITH_OWNER_DECISIONS
 source_escalation: "#162 5892865958 (item-authoring, ARCHITECTURE_ESCALATION_REQUIRED)"
-owner_decisions: [D146, D147, D148]
+owner_decisions: [D146, D147, D148, D149]
 renumbered: {A11_stance: "D140 -> D145"}
 durable_decision_ref: docs/architecture/reviews/OTERYN_GAME_A12_ITEM_IDENTITY_TIBIA_ID_DECISION_2026-09-29.md
 supersedes: [A8 D96, A8 D97, CW2-B1 sequential allocation]

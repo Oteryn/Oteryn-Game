@@ -4,16 +4,16 @@
 task_id: OTV2-20260929-a12-item-identity-tibia-id
 title: "A12 Item identity equals the Tibia id (D146-D148)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1237
 base_sha: b90f85c9
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: eed19673d77c90c22d4c457361f6a494ed378ab0
+final_head_sha: eed19673d77c90c22d4c457361f6a494ed378ab0
+final_head_frozen_at: "2026-09-29 (#162 5893275379)"
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-29
 updated_at: 2026-09-29
@@ -65,9 +65,9 @@ independent exact-head identity review. ITEM-ID-1 needs its own review.
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review.
+- [x] Protected Merge Queue integration.
 
 ## Excluded scope
 
@@ -101,15 +101,26 @@ and fixed in the second repair commit.
 - `python3 tools/repository/validate_repository_policy.py`
 - `git diff --check`
 
+## Terminal integration
+
+- PR #1237 merged through the Merge Queue on 2026-09-29 as `8af7f88e`.
+- Reviews:
+  - Codex on `225b350` raised four P1 findings.
+  - The owner-requested re-review on `448b8f1` raised one P1 and one P2.
+  - All were fixed by `eed1967`, and the owner decided to merge after green CI.
+- Protected-main readback: all seven owned files are byte-identical to `eed1967`.
+- The coordinator's clarification request (5893830130) and owner decision D149 are recorded in the
+  follow-up task `OTV2-20260929-a12-clarification-d149`, which archives this record.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: decision authored
-status: validating
+last_progress: protected-integrated as 8af7f88e; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
-head_sha: null
+head_sha: eed19673d77c90c22d4c457361f6a494ed378ab0
 pr: 1237
 owner_action_required: null
 blocker: null
-next_action: "validate, open the PR, freeze, request review"
+next_action: null
 ```
