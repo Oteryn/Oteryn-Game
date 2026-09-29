@@ -15,9 +15,50 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "dragon_egg",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/dragon_egg",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "solid_frozen_horror",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/solid_frozen_horror",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
-  "anchors": [],
+  "anchors": [
+    {
+      "key": "horror_arena",
+      "kind": "area",
+      "description": "The lever's cleanup area, Canary (32264, 31070, 14) to (32284, 31104, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32264,
+              32284
+            ],
+            "y": [
+              31070,
+              31104
+            ],
+            "floor": 14
+          }
+        ]
+      }
+    }
+  ],
   "phases": [],
   "state": {
     "counters": [],
@@ -37,6 +78,55 @@
           "kind": "emit_outcome",
           "outcome": "melting_frozen_horror_defeated",
           "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "melting_frozen_horror_hatches_the_egg",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "melting_frozen_horror"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "dragon_egg",
+          "anchor": "horror_arena",
+          "present": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "dragon_egg"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/baby_dragon",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "role_position": "dragon_egg"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "melting_frozen_horror_removes_the_solid_form",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "melting_frozen_horror"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "solid_frozen_horror"
         }
       ]
     }
