@@ -20,6 +20,8 @@ member, and its counts are recorded in the capture summary.
 
 After the fills, the Edron underground box is reworked from the summer file and the
 real-Tibia minimap (`edron_rework.py`, pinned tibiamaps files read from `--tibiamaps-root`).
+Then areas that no source has are drafted from the minimap (`minimap_draft.py`, rough draft:
+first the Temple of Light) where the base has no tile or plain water.
 
     python convert_world_base.py --crystal-root /path/to/crystalserver \
         --tibiamaps-root /path/to/tibiamaps-data [--check]
@@ -41,6 +43,7 @@ from xml.etree import ElementTree
 
 import convert_world_metadata as metadata
 import edron_rework as edron
+import minimap_draft as draft
 import otbm_reader
 import world_region_codec as codec
 import zstandard
@@ -549,8 +552,8 @@ class Overrider:
         self.inner(x, y, z, flags, house, zones, items)
 
 
-def apply_edron(collector: Collector, adds: dict) -> int:
-    """Add the Edron rework's tiles, each at a position that has no tile yet. Returns items."""
+def apply_edron(collector: Collector, adds: dict, what: str = "edron") -> int:
+    """Add a rework's tiles, each at a position that has no tile yet. Returns items."""
     items = 0
     for (x, y, z), tile in sorted(
         adds.items(), key=lambda kv: (kv[0][2], kv[0][0], kv[0][1])
@@ -560,7 +563,7 @@ def apply_edron(collector: Collector, adds: dict) -> int:
         )
         if sector and sector_slot(x, y) in sector[0]:
             raise ConvertError(
-                f"edron tile ({x}, {y}, {z}) is added over an existing tile"
+                f"{what} tile ({x}, {y}, {z}) is added over an existing tile"
             )
         collector(x, y, z, *tile)
         items += len(tile[3])
@@ -737,7 +740,9 @@ def build(
         )
     edron_key = fill_key(FILL[1])
     plan = None
-    if tibiamaps is None and edron.tibiamaps_blob_key("bounds.json") in blobs:
+    if tibiamaps is None and all(
+        edron.tibiamaps_blob_key(name) in blobs for name, _sha in edron.TIBIAMAPS_FILES
+    ):
         tibiamaps = edron.decode_tibiamaps(blobs)
     if tibiamaps is not None:
         if edron_key not in blobs:
@@ -753,10 +758,24 @@ def build(
             tibiamaps,
             blocking,
         )
-    overrider = Overrider(replacer or collector, plan.replace if plan else {})
+    draft_plan = None
+    if draft.has_files(blobs):
+        images = draft.decode_images(blobs)
+        scan = draft.Scanner(images)
+        otbm_reader.read_tiles(blobs[OTBM], scan)
+        land = land or minimap_land()
+        draft_plan = draft.plan_draft(scan, images, land, ground_ids()[0])
+        if plan and set(plan.replace) & set(draft_plan.replace):
+            raise ConvertError("the draft replaces a tile of the Edron rework")
+    draft_over = Overrider(
+        replacer or collector, draft_plan.replace if draft_plan else {}
+    )
+    overrider = Overrider(draft_over, plan.replace if plan else {})
     facts = otbm_reader.read_tiles(blobs[OTBM], overrider)
     if plan and overrider.seen != len(plan.replace):
         raise ConvertError("an Edron replacement has no base tile to replace")
+    if draft_plan and draft_over.seen != len(draft_plan.replace):
+        raise ConvertError("a draft replacement has no base tile to replace")
     if facts.unknown_item_attrs or facts.unknown_tile_attrs:
         raise ConvertError(
             f"unknown OTBM attributes: items {dict(facts.unknown_item_attrs)}, "
@@ -780,10 +799,13 @@ def build(
         fills.append(fill_summary(row, raw, stats))
         applied.append(row)
     edron_items = apply_edron(collector, plan.add) if plan else 0
+    draft_items = apply_edron(collector, draft_plan.add, "draft") if draft_plan else 0
     collector.check()
     source = {**SOURCE, "fill": applied}
     if plan:
         source["edron"] = edron.PIN
+    if draft_plan:
+        source["minimap_draft"] = draft.PIN
     palette = build_palette(bound, collector.occurrences, previous, terrain)
     collector.remap({row["source_item_id"]: i for i, row in enumerate(palette)})
     declared = items_xml_ids(blobs[ITEMS_XML])
@@ -899,6 +921,11 @@ def build(
         "edron": edron_summary(
             plan, tibiamaps, (blocking, kinds, yellow), overrider, edron_items
         ),
+        "draft": (
+            draft.summarize(draft_plan, draft_items)
+            if draft_plan
+            else draft.unapplied()
+        ),
         "replace": replace_summary(replace_row, replacer),
         "fill": {
             "items_added": sum(f["items_added"] for f in fills),
@@ -923,6 +950,7 @@ def read_source(
     blobs = {}
     if tibiamaps_root is not None:
         blobs.update(edron.read_tibiamaps_root(tibiamaps_root))
+        blobs.update(draft.read_files(tibiamaps_root))
     for row in SOURCE["files"]:
         data = (crystal_root / row["path"]).read_bytes()
         if hashlib.sha256(data).hexdigest() != row["sha256"]:
@@ -960,6 +988,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     fill = summary.get("fill", {})
     replace = summary.get("replace", {})
     rework = summary.get("edron", {})
+    drafted = summary.get("draft", {})
 
     def count(row: dict, key: str) -> int:
         return row.get(key, 0)
@@ -970,11 +999,15 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         - count(replace, "items_added")
         - count(rework, "items_added")
         - count(rework, "replaced_items_added")
+        - count(drafted, "items_added")
+        - count(drafted, "replaced_items_added")
         + count(replace, "items_removed")
-        + count(rework, "replaced_items_removed"),
+        + count(rework, "replaced_items_removed")
+        + count(drafted, "replaced_items_removed"),
         "tiles": totals["tiles"]
         - count(fill, "tiles_added")
-        - count(rework, "tiles_added"),
+        - count(rework, "tiles_added")
+        - count(drafted, "tiles_added"),
     }
 
 

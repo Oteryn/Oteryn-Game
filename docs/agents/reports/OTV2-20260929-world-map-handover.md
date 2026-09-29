@@ -46,12 +46,30 @@ The owner asked for a handover to the next agent. State at handover:
      floor 9 keeps the base, which has no tile there, so it is the link to decide.
    - Open for the owner or the item agent: place a floor-change item at (33295, 31819, 9)
      (then the cave joins the base), or accept the cave as a sealed area for now.
+   - **Owner decision: keep the Edron z10 cave sealed for now.** There is no evidence-backed
+     entrance, so no floor-change item is invented; the entrances stay in the list above.
+
+4. Temple of Light: answered **2a** (owner). No source has it, so `minimap_draft.py` drafts
+   it from the tibiamaps floor 6/7 images (pinned in `source.minimap_draft`, read from
+   `--tibiamaps-root`; evidence class reference-derived). **It is a rough draft: correct shape
+   and walkability, generic ground, no borders, decorations, doors or furniture.**
+   - Area x31912-32027, y31979-32099. Floor 7: 5,832 plain-water tiles replaced (5,519
+     walkable, 313 blocked) where the map is coloured and official minimap ZZ07 shows land;
+     floor 6: 469 tiles added (189 walkable, 280 blocked). The colour to ground table is
+     learned from the base (26 rows, at least 50 samples, none unmapped) and recorded in the
+     summary `draft.mapping`.
+   - Yellow markers are not turned into items: `unresolved_entrances` (x, y, z) are
+     (31972, 32048, 6), (31989, 32040, 7), (31951, 32044, 7), (31994, 32045, 7),
+     (31989, 32046, 7), (31972, 32048, 7), (31955, 32050, 7), (31967, 32051, 7).
+   - The island family now detects it: `Temple of Light` is an event-only island record
+     (5,821 tiles; 60 records). Removing or replacing the draft as a whole: drop
+     `source.minimap_draft` and the area from `minimap_draft.AREAS`, or swap in a real source.
 
 ## Research results (the session scratchpad is not kept)
 
 - Missing islands, measured against the official minimap land mask:
-  - Temple of Light, Great Expedition Island and Great Expedition Wharf: no source in any
-    CrystalServer map at the pin. These must be drawn.
+  - Temple of Light (now a minimap draft, decision 4), Great Expedition Island and Great
+    Expedition Wharf: no source in any CrystalServer map at the pin. The last two must be drawn.
   - `winterlight_solstice/island.otbm` is the event island, not Great Expedition.
 - `15.30/` fragments use absolute coordinates; the file name is only an entry point.
 - CrystalServer loads only `world.otbm` at startup; `custom/` loads only with
@@ -74,7 +92,8 @@ The owner asked for a handover to the next agent. State at handover:
    with the pins, `--check`, validators and tests.
 2. Record the drawing list as the remaining map gap:
    - Blue Valley NE/E/S;
-   - Temple of Light;
+   - Temple of Light: minimap draft done (decision 4); a hand-drawn or sourced replacement
+     later;
    - Great Expedition Island and Wharf;
    - Marapur/Thalassara floors 2-6;
    - Nargor floors 4-6;
@@ -94,8 +113,8 @@ The owner asked for a handover to the next agent. State at handover:
 - Sources: `zimbadev/crystalserver` at `00ce02a5`. A blobless or sparse clone of
   `data-global/world/` is enough. `maps.7z` needs `py7zr` and the Edron rework Pillow, both
   from `requirements-regenerate.txt`; the tibiamaps files (`bounds.json`,
-  `floor-09/10/11-map.png` and `-path.png` of `raw.githubusercontent.com/tibiamaps/tibia-map-data/main/data/`,
-  sha256 in `edron_rework.py`) are fetched by hand into a directory passed as `--tibiamaps-root`.
+  `floor-06/07/09/10/11-map.png` and `-path.png` of `raw.githubusercontent.com/tibiamaps/tibia-map-data/main/data/`,
+  sha256 in `edron_rework.py` and `minimap_draft.py`) are fetched by hand into a directory passed as `--tibiamaps-root`.
 - Lint with the CI version: `python3 -m ruff` 0.16.1 from `requirements-dev.txt`, run from
   the repository root. A plain `ruff` on PATH may be older. New scripts with a shebang need
   `chmod +x` (EXE001).

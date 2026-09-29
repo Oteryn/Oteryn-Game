@@ -93,8 +93,8 @@ map or the wiki changes.
   from the nearest land tile within 5 tiles (squared distance, first strictly nearer wins).
   - hits the cap: `part_of_landmass`, excluded (Fibula's and Isle of the Mists' wiki
     coordinates; the mainland is 451,923 floor-7 tiles).
-  - no land within 5 tiles: `not_on_map`, excluded (`event_only_not_on_map` for the two
-    event islands); no coordinate at all: `no_coordinates`.
+  - no land within 5 tiles: `not_on_map`, excluded (`event_only_not_on_map` for the
+    event island Isle of Merriment); no coordinate at all: `no_coordinates`.
   - a page inside another island's component (`place_within`: Ragnir, Chyllfroest in
     Hrodmir) is excluded; a page that is the same place under another name (`alias_of`:
     Percht Island is Orcsoberfest Island) merges into `also_known_as` and one extra binding.
@@ -134,8 +134,9 @@ map or the wiki changes.
   Isle of the Mists (destination of the committed teleport at 32831,32294,
   32858,32336), Robson's Isle (Lunch 32527,32029 on floor 14, `underground`, the enclosed
   2,080 tile water-bounded floor-14 component). Not imported: Dwacatra (its floor-13/14
-  pockets are void-bounded, no enclosure), Travora and Temple of Light (no map tile),
-  Redbone Castle (inside Draconia), Isle of Merriment (test server only).
+  pockets are void-bounded, no enclosure), Travora (no map tile),
+  Redbone Castle (inside Draconia), Isle of Merriment (test server only). Temple of Light is an
+  event-only island record since the minimap draft gave it map tiles (5,821 tiles, floor 7).
 - **Newhaven** is one island of two components. The wiki coordinate (city temple) lies on a
   50 tile temple islet; the island itself is the 9,189 tile component west of it. Ground
   between them is water (no bridge, pier or dock), and the owner states they are joined by a
@@ -144,9 +145,9 @@ map or the wiki changes.
   `additional_components[0]` (anchor at the temple) and `tile_count` in the capture is the
   sum (9,239). No connection is recorded because none is committed; add a
   `connected_by` link when the teleport enters the map.
-- Result: 59 records (55 island, 3 archipelago, 1 continent; 2 event-only; 1 underground;
-  8 evidence-anchored; 1 with an additional component) and 7 excluded pages (3 without
-  coordinates, 2 part of the landmass, 2 event-only not on the map), all listed with their
+- Result: 60 records (56 island, 3 archipelago, 1 continent; 3 event-only; 1 underground;
+  8 evidence-anchored; 1 with an additional component) and 6 excluded pages (3 without
+  coordinates, 2 part of the landmass, 1 event-only not on the map), all listed with their
   reasons in `samples/islands-capture-v1.json`. Tiny footprints such as Laguna Islands (97)
   are confirmed and kept.
 - `validate_islands.py` checks the pins (snapshot, ground classes, evidence anchors, base
@@ -346,8 +347,8 @@ python fandom_island_snapshot.py fetch && python convert_islands.py
 ## Base map (step 3)
 
 `WorldPlacement.Base` holds every tile and item of `world.otbm` (19,325,129 tiles,
-24,925,845 items, floors 0-15) plus the fills from `maps.7z` and the Edron rework below
-(19,350,541 tiles, 24,958,513 items in all) in `content/world/placements/`. JSON is not used: the same
+24,925,845 items, floors 0-15) plus the fills from `maps.7z` and the Edron rework and the minimap draft below
+(19,351,010 tiles, 24,959,455 items in all) in `content/world/placements/`. JSON is not used: the same
 data is 3.25 GB as JSON sectors and about 22 MB in the format below.
 
 - **Layout:** `index.json` (`OTERYN_FAMILY_INDEX/v1`, family `WorldPlacement.Base`) plus one
@@ -438,7 +439,7 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   counts per floor and skipped tiles. `totals` and `tiles_by_floor` include the fill;
   `totals` minus the fill equals the pinned `world.otbm` totals (19,325,129 tiles,
   24,925,845 items). Reading the archive needs `py7zr` (`requirements-regenerate.txt`, not
-  installed by CI; the Edron rework needs Pillow from the same file); `--check` reproduces everything from the pinned checkout.
+  installed by CI; the Edron rework and the draft need Pillow from the same file); `--check` reproduces everything from the pinned checkout.
 - **Partial fill from `summer-update-2025.otbm`** (owner decision 2b; second `FILL` entry,
   same archive, member sha256 `d4b4baee...`, 2,964,786 bytes, 286,241 tiles on floors 0-15,
   absolute coordinates). Nothing in CrystalServer loads this file. The rule is computed by
@@ -472,8 +473,8 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   client assets, the fragment from the pinned archive). Underground validity rests on the
   file being the official summer-2025 update placed under official surface; the official
   minimap cannot check floors 8-15.
-  Still to draw (no source): Blue Valley north-east, east and south blocks, Temple of
-  Light, Great Expedition Island and Wharf, Marapur/Thalassara floors 2-6, Nargor floors
+  Still to draw (no source): Blue Valley north-east, east and south blocks, Great
+  Expedition Island and Wharf (Temple of Light: minimap draft below), Marapur/Thalassara floors 2-6, Nargor floors
   4-6, Upper Roshamuul floor 6, Great Expedition floors 3-6.
 - **Edron underground rework** (owner decision 1a; `edron_rework.py`, the `edron` object of
   the summary and `source.edron` of the index; evidence class **reference-derived**). The
@@ -521,6 +522,33 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
     well). `world.otbm` totals equal the index totals minus the fills and this rework's added
     tiles and item changes (`world_otbm_totals`). The validator checks the pins, that every
     count adds up and the entrance lists.
+- **Minimap draft (rough draft, owner decision 2a; `minimap_draft.py`, the `draft` object of
+  the summary and `source.minimap_draft` of the index; evidence class
+  **reference-derived**).** For areas that no source has, the converter drafts tiles from the
+  pinned tibiamaps minimap (the files of the Edron rework plus `floor-06/07-map.png` and
+  `-path.png`, sha256 in `minimap_draft.py`, read from `--tibiamaps-root`, not committed).
+  **It is a rough draft: correct shape and walkability, generic ground, no borders,
+  decorations, doors or furniture.** The first area is `temple-of-light` (x31912-32027,
+  y31979-32099, floors 6 and 7). `source.minimap_draft` and `draft.areas` name every area
+  and its bbox, so a draft can be removed or replaced as a whole when a real source appears.
+  - **Colour mapping, learned:** over the whole base map on floors 6 and 7 (outside the
+    drafted areas) each base tile is paired with the map-image colour at its position. The
+    path image gives the class (grey pixel walkable, other explored pixel blocked). Per
+    (colour, class): the most frequent ground id; for blocked also the most frequent single
+    top item (none if that is most frequent). Fewer than 50 samples means unmapped, the
+    pixel is skipped and counted. The table (colour, class, ground, item, samples) is
+    `draft.mapping.rows` in the summary. Yellow is the floor-change colour and never mapped.
+  - **Rule:** a position of the bbox is drafted where the map image is coloured (not black)
+    and the base has no tile or a plain water tile (water ground only, no house or zone;
+    the flags are kept). Floor 7 also needs the official 15.30 minimap ZZ07 to show land,
+    unless the mapped ground is water. A base tile that is not plain water is never replaced.
+    Yellow pixels are **not** turned into items; they are listed in
+    `draft.unresolved_entrances`.
+  - **Result (Temple of Light):** floor 7 5,832 plain-water tiles replaced (5,519 walkable,
+    313 blocked; 7,841 water pixels over base water unchanged; no base land existed there);
+    floor 6 469 tiles added (189 walkable, 280 blocked). 26 colour rows mapped, 0 unmapped, 8
+    unresolved entrances (1 on floor 6, 7 on floor 7). Totals and counts per floor are
+    validated (`validate_world_base.py`, `test_minimap_draft.py`).
 - **Not imported / deferred:** `access.otbm`, `asura_resp.otbm`, `boss_rooms_-_part_2.otbm`
   and `final.otbm` of `data-global/world/15.30/` are unreferenced local-coordinate drafts (x
   about 945-1173, y about 999-1096, floors 5-7, 17,801 tiles, absent from the base). No
@@ -541,7 +569,7 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   shared immutable base for all channels). An edit rewrites one sector but changes the
   region file as a whole, so git stores it as a binary diff (`.b3` is marked `binary`).
   Runtime loading and the per-channel overlay are out of scope here.
-- **Speed:** `convert_world_base.py` takes about 3.5 minutes. `validate_world_base.py`
+- **Speed:** `convert_world_base.py` takes about 4.5 minutes. `validate_world_base.py`
   decodes all 1,208 regions in about 13 s on four cores (about 50 s of CPU).
 
 ```bash
@@ -551,6 +579,7 @@ python test_world_base.py                  # codec round trips, converter, valid
 python convert_world_base.py --crystal-root /path/to/crystalserver \
     --tibiamaps-root /path/to/tibiamaps-data [--check]
 python test_edron_rework.py                # the Edron rework rules, pins and validator negatives
+python test_minimap_draft.py               # the minimap draft mapping, rules, pins and validator negatives
 ```
 
 Region files are compressed by libzstd through the pinned `zstandard` package. The capture

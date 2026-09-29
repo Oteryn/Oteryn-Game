@@ -19,6 +19,7 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import edron_rework as edron
+import minimap_draft as draft
 import world_region_codec as codec
 from convert_world_base import (
     DONOR_PREFIX,
@@ -191,6 +192,7 @@ def check_index(index: dict, summary: dict, errors: list[str]) -> None:
     check_fill(index, summary, errors)
     check_replace(index, summary, errors)
     check_edron(index, summary, errors)
+    check_draft(index, summary, errors)
     frame = index.get("coordinate_frame")
     if frame != "global-target-2026-09-27":
         errors.append(f"{INDEX}: unexpected coordinate_frame {frame!r}")
@@ -295,6 +297,150 @@ def check_replace(index: dict, summary: dict, errors: list[str]) -> None:
             errors.append(
                 f"{SUMMARY}: floor {floor} replaces {count} tiles outside the pinned rule"
             )
+
+
+DRAFT_KEYS = {
+    "applied",
+    "areas",
+    "drafted_land_on_official_land",
+    "items_added",
+    "mapping",
+    "replaced_items_added",
+    "replaced_items_removed",
+    "tiles_added",
+    "tiles_added_by_floor",
+    "tiles_replaced",
+    "tiles_replaced_by_floor",
+    "unresolved_entrances",
+}
+DRAFT_ROW_KEYS = {"class", "colour", "ground", "item", "mapped", "samples"}
+
+
+def check_draft(index: dict, summary: dict, errors: list[str]) -> None:
+    """The minimap draft record matches its pin (tibiamaps sha256s) and every count adds up."""
+    record = summary.get("draft")
+    pin = (index.get("source") or {}).get("minimap_draft")
+    if not isinstance(record, dict):
+        errors.append(f"{SUMMARY}: the draft record is required")
+        return
+    if pin is None:
+        if record != draft.unapplied():
+            errors.append(f"{SUMMARY}: draft changes tiles but the index pins no draft")
+        return
+    if pin != draft.PIN:
+        errors.append(f"{INDEX}: source.minimap_draft differs from the pinned draft")
+    if set(record) != DRAFT_KEYS or record["applied"] is not True:
+        errors.append(f"{SUMMARY}: draft record has the wrong keys")
+        return
+    try:
+        problems = draft_counts(record, summary)
+    except (KeyError, TypeError, AttributeError) as error:
+        problems = [f"malformed record ({error!r})"]
+    errors.extend(f"{SUMMARY}: draft {problem}" for problem in problems)
+
+
+def draft_counts(record: dict, summary: dict) -> list[str]:
+    problems: list[str] = []
+    added = {str(z): 0 for z in draft.FLOORS}
+    replaced = dict(added)
+    markers = dict(added)
+    if [(a["name"], a["bbox"]) for a in record["areas"]] != [
+        (a["name"], a["bbox"]) for a in draft.AREAS
+    ]:
+        problems.append("areas differ from the pin")
+        return problems
+    for area in record["areas"]:
+        if set(area) != {"bbox", "floors", "name"} or set(area["floors"]) != set(added):
+            problems.append(f"area {area['name']} floors differ from the pin")
+            continue
+        for floor, row in area["floors"].items():
+            if set(row) != set(draft.STAT_KEYS):
+                problems.append(f"area {area['name']} floor {floor} has the wrong keys")
+                continue
+            if row["added"] + row["replaced"] != row["walkable"] + row["blocked"]:
+                problems.append(f"floor {floor} drafted tiles do not add up")
+            if row["explored"] != sum(
+                row[k]
+                for k in (
+                    "added",
+                    "replaced",
+                    "kept_base",
+                    "markers",
+                    "no_official_land",
+                    "unmapped",
+                    "water_over_water",
+                )
+            ):
+                problems.append(
+                    f"floor {floor} explored pixels differ from their parts"
+                )
+            if floor != str(draft.OFFICIAL_FLOOR) and row["no_official_land"]:
+                problems.append(f"floor {floor} skips tiles on the official minimap")
+            added[floor] += row["added"]
+            replaced[floor] += row["replaced"]
+            markers[floor] += row["markers"]
+    for key, expected in (("added", added), ("replaced", replaced)):
+        by_floor = record[f"tiles_{key}_by_floor"]
+        if by_floor != {f: n for f, n in expected.items() if n}:
+            problems.append(f"tiles_{key}_by_floor differs from the area counts")
+        if sum(by_floor.values()) != record[f"tiles_{key}"]:
+            problems.append(f"tiles_{key} differs from its floors")
+    floors = summary.get("tiles_by_floor", {})
+    if any(n > floors.get(f, 0) for f, n in record["tiles_added_by_floor"].items()):
+        problems.append("adds more tiles on a floor than exist")
+    if record["items_added"] < record["tiles_added"]:
+        problems.append("items_added is below tiles_added")
+    if record["replaced_items_added"] < record["tiles_replaced"]:
+        problems.append("replaced_items_added is below tiles_replaced")
+    mapping = record["mapping"]
+    rows = mapping["rows"]
+    keys = [(r["colour"], r["class"]) for r in rows]
+    if (
+        set(mapping) != {"mapped", "min_samples", "rows", "unmapped"}
+        or mapping["min_samples"] != draft.MIN_SAMPLES
+        or keys != sorted(set(keys))
+        or any(set(r) != DRAFT_ROW_KEYS for r in rows)
+    ):
+        problems.append("mapping table is malformed")
+        return problems
+    for row in rows:
+        if row["mapped"] != (row["samples"] >= draft.MIN_SAMPLES) or row["mapped"] != (
+            row["ground"] is not None
+        ):
+            problems.append(
+                f"mapping row {row['colour']} {row['class']} breaks the sample rule"
+            )
+        if row["class"] not in ("walkable", "blocked") or (
+            row["class"] == "walkable" and row["item"] is not None
+        ):
+            problems.append(
+                f"mapping row {row['colour']} {row['class']} has a wrong class"
+            )
+        if row["colour"] == "#" + draft.MARKER.hex():
+            problems.append("the marker colour is mapped")
+    if mapping["mapped"] != sum(r["mapped"] for r in rows) or mapping[
+        "unmapped"
+    ] != sum(not r["mapped"] for r in rows):
+        problems.append("mapping counts differ from the rows")
+    entrances = record["unresolved_entrances"]
+    if entrances != sorted(entrances, key=lambda p: (p[2], p[1], p[0])) or len(
+        {tuple(p) for p in entrances}
+    ) != len(entrances):
+        problems.append("unresolved entrances are unsorted or repeated")
+    boxes = {a["name"]: a["bbox"] for a in draft.AREAS}
+    for p in entrances:
+        if (
+            len(p) != 3
+            or str(p[2]) not in markers
+            or not any(
+                b[0] <= p[0] <= b[2] and b[1] <= p[1] <= b[3] for b in boxes.values()
+            )
+        ):
+            problems.append("an unresolved entrance lies outside the areas or floors")
+    for floor, count in markers.items():
+        if sum(1 for p in entrances if str(p[2]) == floor) != count:
+            problems.append(f"entrances of floor {floor} differ from the marker counts")
+    return problems
 
 
 EDRON_KEYS = {

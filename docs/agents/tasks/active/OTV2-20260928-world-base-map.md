@@ -43,7 +43,7 @@ jira: KAN-16
 
 Step 3 of the owner's world-map plan: the whole base map of `world.otbm` in
 `zimbadev/crystalserver@00ce02a5` (`summer-update`) becomes `WorldPlacement.Base`:
-19,325,129 tiles and 24,925,845 items on floors 0-15 (plus 19,893 `maps.7z` fill and 5,519 Edron tiles),
+19,325,129 tiles and 24,925,845 items on floors 0-15 (plus 19,893 `maps.7z` fill, 5,519 Edron and 469 draft tiles),
 in 1,208 region files
 (`OTERYN_WORLD_REGION_B3/v1`, about 21.6 MB) plus a 2.5 MB `index.json`. The source is
 sha256-pinned and `OtsHypothesisOnly`.
@@ -95,8 +95,8 @@ sha256-pinned and `OtsHypothesisOnly`.
       item key, with the engine mapping documented and `occurrences_on_base_map` counted
       from the region files (329 types, 26,935 occurrences). Ladders up, rope spots, sewer
       grates and tool holes are scripted uses and are listed as excluded, not invented.
-- [x] `Area.Island` holds only islands the base map confirms (owner rule): 59 records
-      (55 island, 3 archipelago, 1 continent; 2 event-only; 1 underground) computed by
+- [x] `Area.Island` holds only islands the base map confirms (owner rule): 60 records
+      (56 island, 3 archipelago, 1 continent; 3 event-only; 1 underground) computed by
       `convert_islands.py --check` from the committed region files, the pinned TibiaWiki
       snapshot (`imports/tibiawiki/islands/fandom-snapshot-v1.json`),
       `island-ground-classes.json` and the owner-approved `island-evidence-anchors.json`
@@ -122,20 +122,25 @@ sha256-pinned and `OtsHypothesisOnly`.
       ground is land and the 15.30 minimap ZZ07 shows land: 905 tiles (896 inside the Blue
       Valley box), capture summary `replace`, validated and tested; the island footprint
       grows to 10,427 tiles. Nothing else is replaced.
-      Still to draw: Blue Valley NE/E/S blocks, Temple of Light, Great Expedition Island and
+      Still to draw: Blue Valley NE/E/S blocks, Great Expedition Island and
       Wharf, Marapur/Thalassara floors 2-6, Nargor floors 4-6, Upper Roshamuul floor 6,
       Great Expedition floors 3-6.
-- [x] Edron underground (owner decision 1a, evidence class reference-derived): floors 9 and
-      10 of the box are imported from the summer file and repaired with the player-recorded
-      real-Tibia minimap (tibiamaps/tibia-map-data, files sha256-pinned in `source.edron`,
-      read from `--tibiamaps-root`, not committed; `edron_rework.py`). Rule 1 (floor 10, summer
-      tiles that agree with tibiamaps: walkable core plus its 8-neighbourhood): 3,982 filled,
-      699 replaced, 423 base tiles kept, no walkable base tile that tibiamaps shows walkable
-      removed. Rule 2 (tibiamaps-walkable, walkable in neither map nor summer): floor 9 761
-      added, 4 replaced, 379 rock; floor 10 262 added, 3 replaced, 135 rock (grounds recorded).
-      Rule 3: 5+3+7 markers on floors 9-11, 10 `unresolved_entrances` reported, none invented.
-      Floor 10 is not reachable from the surface. z8, z9 (outside rule 2), z11, z12 keep the
-      base. Totals 5,519 tiles added, 706 replaced. `test_edron_rework.py` and validator pass.
+- [x] Temple of Light minimap draft (owner decision 2a, rough draft, reference-derived): no
+      source has the island, so `minimap_draft.py` drafts x31912-32027, y31979-32099 floors 6-7
+      from the pinned tibiamaps floor 6/7 images (shape and walkability, generic ground, no
+      borders, decorations, doors or furniture). The colour to ground table is learned from
+      the base (26 rows, min 50 samples, 0 unmapped); floor 7 needs official minimap land.
+      Floor 7 replaces 5,832 plain water tiles, floor 6 adds 469; 8 yellow markers are listed
+      as `unresolved_entrances`, no item invented. Summary `draft`, index
+      `source.minimap_draft`; the island family gains Temple of Light (event-only, 5,821 tiles).
+- [x] Edron underground (owner decision 1a, reference-derived): floors 9 and 10 of the box
+      are imported from the summer file and repaired with the player-recorded real-Tibia
+      minimap (tibiamaps/tibia-map-data, sha256-pinned in `source.edron`, read from
+      `--tibiamaps-root`, not committed; `edron_rework.py`). Rule 1 (floor 10): 3,982 filled,
+      699 replaced, 423 kept. Rule 2: floor 9 761 added, 4 replaced, 379 rock; floor 10 262
+      added, 3 replaced, 135 rock. Rule 3: 15 markers, 10 `unresolved_entrances`, none
+      invented; floor 10 is not reachable from the surface. Totals 5,519 tiles added, 706
+      replaced. `test_edron_rework.py` and the validator pass.
 - [x] `Terrain` holds one record (`oteryn:terrain.a<id>`) per appearance-only palette id
       that the official 15.30 client `appearances-2dfa943b….dat` declares (owner-confirmed
       redistribution), from `convert_terrain.py --check` and `client_appearance_reader.py`.
@@ -153,16 +158,12 @@ sha256-pinned and `OtsHypothesisOnly`.
 - A patch layer for authored Oteryn edits over a regenerated base.
 - Runtime consumption, the per-channel overlay and the native `WorldTilePosition` mapping.
 - `access.otbm`, `asura_resp.otbm`, `boss_rooms_-_part_2.otbm` and `final.otbm` of
-  `data-global/world/15.30/`: unreferenced local-coordinate drafts (x about 945-1173, y about
-  999-1096, floors 5-7, 17,801 tiles, absent from the base). No script, XML or C++ loads them
-  and no boss uses their coordinates; they overlap the Movement Trainer area of
-  `custom/global-custom.otbm` (off by default, `toggleMapCustom=false`). Owner decision: not
-  imported, deferred.
-- The other members of `maps.7z` (`newheaven`, `winter-update-2025`: one tile each) and the
-  six `15.30/` fragment maps already contained in `world.otbm` (0 missing tiles; the base
-  wins). All 57 BossLever rooms are present in the base map. Known data gap: the General
-  Murius raid spawn (32427,31131,15) has no tile in the base (tiles exist only on floors
-  7-11).
+  `data-global/world/15.30/`: unreferenced local-coordinate drafts (17,801 tiles, absent from
+  the base, overlapping the off-by-default Movement Trainer of `custom/global-custom.otbm`).
+  Owner decision: not imported, deferred.
+- The other `maps.7z` members (`newheaven`, `winter-update-2025`: one tile each) and the six
+  `15.30/` fragment maps already in `world.otbm` (0 missing tiles; the base wins). Known
+  gap: the General Murius raid spawn (32427,31131,15) has no tile in the base.
 
 ## Validation
 
@@ -182,7 +183,7 @@ sha256-pinned and `OtsHypothesisOnly`.
 
 ## Handover
 
-Owner decisions 1a (Blue Valley floor 7; Edron underground) and 2b (summer-update-2025),
+Owner decisions 1a (Blue Valley floor 7; Edron underground), 2a (Temple of Light draft) and 2b (summer-update-2025),
 research results, unresolved Edron entrances and next steps: `docs/agents/reports/OTV2-20260929-world-map-handover.md`.
 
 ## Independent review
