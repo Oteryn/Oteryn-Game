@@ -15,7 +15,7 @@ base_sha: c91055f66dd2c5724f17e226c7b7da2430a1a914  # main 48de3868 merged in be
 head_sha: null  # the frozen head is the one in the FREEZE_SHA entry; a commit cannot hold its own SHA
 owner: "Oteryn: spell cast lane" (Claude Code, oteryn-hard-worker)
 created_at: 2026-09-29T19:00:00Z
-updated_at: 2026-09-29T21:00:00Z
+updated_at: 2026-09-29T22:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/spell/**
@@ -139,7 +139,10 @@ record_derived_matching_helper:
   and out of `serve_admitted` over a real `ChannelRuntimeV1` (snapshot with vitals, CAST plus delta, COOLING_DOWN,
   malformed and unknown REJECTED, replay expired, mana paid once).
 - WP5 seam and node-boot qualification (`qualification.rs`, CI topology only): the first-control scenario adds a
-  cast answered `REJECTED` while casting is gated; every other frame is unchanged.
+  cast answered `REJECTED` while casting is gated. That cast consumes one CommandId and one server sequence, so the
+  later same-GameSession resume stages continue one higher: generation 2 resumes at `next_command_id=7`,
+  `server_sequence=8`, generation 3 at `next_command_id=8`, `server_sequence=10`. Positions, revisions and every
+  other frame are unchanged.
 
 ## Validation
 

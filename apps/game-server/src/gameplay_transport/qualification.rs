@@ -1886,13 +1886,13 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     let mut raw = framed(&resume(&session, token.as_bytes()));
     raw.extend_from_slice(&framed(&client_command_at(
         2,
-        6,
+        7,
         step,
         &encode_step_intent(StepDirection::East),
     )));
     raw.extend_from_slice(&framed(&client_command_at(
         2,
-        8,
+        9,
         step,
         &encode_step_intent(StepDirection::East),
     )));
@@ -1902,8 +1902,8 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         &session,
         ResumeFrames {
             generation: 2,
-            sequence: 7,
-            next: 6,
+            sequence: 8,
+            next: 7,
             revision: 3,
             x: 0,
             to: 1,
@@ -1916,7 +1916,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         return Err("resume created an admission".into());
     }
     evidence(
-        "resume same_session=resumed generation=2 next_command_id=6 server_sequence=7 position=0_0_0_rev3 step_east=moved_1_0_0_rev4 admissions=2",
+        "resume same_session=resumed generation=2 next_command_id=7 server_sequence=8 position=0_0_0_rev3 step_east=moved_1_0_0_rev4 admissions=2",
     );
     // The consumed recovery credential cannot resume again.
     let replay = exchange(
@@ -1961,13 +1961,13 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     let mut raw = framed(&resume(&session, token.as_bytes()));
     raw.extend_from_slice(&framed(&client_command_at(
         3,
-        7,
+        8,
         step,
         &encode_step_intent(StepDirection::West),
     )));
     raw.extend_from_slice(&framed(&client_command_at(
         3,
-        9,
+        10,
         step,
         &encode_step_intent(StepDirection::West),
     )));
@@ -1977,8 +1977,8 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         &session,
         ResumeFrames {
             generation: 3,
-            sequence: 9,
-            next: 7,
+            sequence: 10,
+            next: 8,
             revision: 4,
             x: 1,
             to: 0,
@@ -1991,7 +1991,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         return Err("second resume created an admission".into());
     }
     evidence(
-        "resumed_loss epoch=2 grace_s=60 same_session=resumed generation=3 next_command_id=7 server_sequence=9 position=1_0_0_rev4 step_west=moved_0_0_0_rev5 admissions=2",
+        "resumed_loss epoch=2 grace_s=60 same_session=resumed generation=3 next_command_id=8 server_sequence=10 position=1_0_0_rev4 step_west=moved_0_0_0_rev5 admissions=2",
     );
 
     evidence("stage=grace_expiry");
