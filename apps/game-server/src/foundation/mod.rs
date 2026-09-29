@@ -20,12 +20,12 @@ mod protocol;
 mod runtime_actor_carrier;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
-    CarrierError, ChannelContentPin, ChannelRuntimeV1, CommittedLethalReceipt, ControlLossMark,
-    CreatureDeathOccurrenceKey, CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath,
-    CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition,
-    ExactActorRef, FirstEntryPosition, MovementLocalPosition, MovementPositionContext,
-    MovementPositionSnapshot, OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation,
-    RuntimeCorpseProjection,
+    COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX, CarrierError, ChannelContentPin,
+    ChannelRuntimeV1, CommittedLethalReceipt, ControlLossMark, CreatureDeathOccurrenceKey,
+    CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit,
+    CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition,
+    MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot, OwnerDamageCommand,
+    OwnerDamageResult, PlayerActorReservation, RuntimeCorpseProjection,
 };
 #[cfg(test)]
 #[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.

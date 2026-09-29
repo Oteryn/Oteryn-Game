@@ -5,7 +5,7 @@
 //! assignment that `serve` consumes before readiness; one runtime per
 //! ownership generation is enforced by that composition, not by this module.
 
-use super::{ChannelId, GameSessionId, NodeId, ScopeOwnershipGeneration, WorldId};
+use super::{ChannelId, CharacterId, GameSessionId, NodeId, ScopeOwnershipGeneration, WorldId};
 use std::mem::size_of;
 use std::sync::Arc;
 
@@ -381,6 +381,110 @@ struct OwnerCommitRecord {
     result: OwnerDamageResult,
 }
 
+/// `COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE` (`docs/contracts/RESOURCE_LIMITS_REGISTRY.json`;
+/// D132, `docs/architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md`
+/// §4.3): at most this many distinct `CharacterId` contributors are tracked per live creature
+/// actor. Past this bound, a creature's own damage/HP math stays completely unaffected -- only a
+/// *new* (17th+) distinct attacker's damage stops being added to the map; every already-tracked
+/// contributor keeps accumulating normally (fail-open for combat, fail-closed only for
+/// attribution).
+pub(crate) const COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX: usize = 16;
+
+/// D132: one tracked attacker's running damage total against a live creature actor, and the
+/// ordinal (this creature's own damage-application sequence) at which that total was last
+/// reached. A contributor's total only ever increases, so "last reached" already is "first
+/// reached this exact value" -- no separate history is needed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct DamageContributor {
+    character: CharacterId,
+    total: u64,
+    last_update_ordinal: u64,
+}
+
+/// D132/D3-3: bounded, ephemeral, per-creature-generation damage-contributor accumulation.
+/// Lives only inside its owning `Slot::CreatureOccupied` -- a fresh, empty map on every creature
+/// admission (`admit_inner`), dropped with the slot on `remove` (administrative removal or
+/// respawn). Never grows past `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX` and never
+/// initialized from, or retained across, a prior generation: a scope move drops whatever
+/// in-progress accumulation was pending, exactly the accepted D52 loss ("Przepadają, bez
+/// duplikatów" -- nothing duplicated, nothing silently completed by a later generation).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+struct DamageContributors {
+    entries: Vec<DamageContributor>,
+    next_ordinal: u64,
+}
+
+impl DamageContributors {
+    /// Attribute one already-applied, positive damage amount to `character`. A *new* distinct
+    /// contributor past `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX` is silently not tracked:
+    /// the caller's own HP mutation already committed independently of this call and is never
+    /// affected by it. An already-tracked contributor keeps accumulating regardless of map size.
+    fn record(&mut self, character: CharacterId, damage: u64) {
+        let ordinal = self.next_ordinal;
+        self.next_ordinal = self.next_ordinal.saturating_add(1);
+        if let Some(existing) = self
+            .entries
+            .iter_mut()
+            .find(|contributor| contributor.character == character)
+        {
+            existing.total = existing.total.saturating_add(damage);
+            existing.last_update_ordinal = ordinal;
+            return;
+        }
+        if self.entries.len() >= COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX {
+            return;
+        }
+        self.entries.push(DamageContributor {
+            character,
+            total: damage,
+            last_update_ordinal: ordinal,
+        });
+    }
+
+    /// D132's deterministic two-rule tie-break: the highest running total wins; among equal top
+    /// totals, the contributor whose total *first reached* that value (the smaller
+    /// `last_update_ordinal`) wins; a remaining same-ordinal tie resolves to the
+    /// lexicographically lowest `CharacterId` byte sequence (`CharacterId`'s derived `Ord` is
+    /// exactly that byte order, `crates/protocol-oteryn/src/lib.rs`'s
+    /// `foundation_uuid_v7_id!`). A pure function of already-recorded state, independent of
+    /// insertion or iteration order.
+    fn top_damage_character(&self) -> Option<CharacterId> {
+        self.entries
+            .iter()
+            .copied()
+            .reduce(|best, candidate| {
+                if is_more_preferred_contributor(&candidate, &best) {
+                    candidate
+                } else {
+                    best
+                }
+            })
+            .map(|contributor| contributor.character)
+    }
+}
+
+/// `true` when `candidate` outranks `current_best` under D132's tie-break order (see
+/// [`DamageContributors::top_damage_character`]).
+fn is_more_preferred_contributor(
+    candidate: &DamageContributor,
+    current_best: &DamageContributor,
+) -> bool {
+    match candidate.total.cmp(&current_best.total) {
+        std::cmp::Ordering::Greater => true,
+        std::cmp::Ordering::Less => false,
+        std::cmp::Ordering::Equal => {
+            match candidate
+                .last_update_ordinal
+                .cmp(&current_best.last_update_ordinal)
+            {
+                std::cmp::Ordering::Less => true,
+                std::cmp::Ordering::Greater => false,
+                std::cmp::Ordering::Equal => candidate.character < current_best.character,
+            }
+        }
+    }
+}
+
 /// Stable identity of the one committed lethal occurrence. Construction stays
 /// private to the physical Channel owner; callers cannot supply occurrence
 /// bytes, HP facts or actor generation.
@@ -501,7 +605,34 @@ impl CurrentOwnerExactActorCommit<'_> {
         command: OwnerDamageCommand<'_>,
     ) -> Result<OwnerDamageResult, CarrierError> {
         self.carrier
-            .commit_creature_damage_inner(self.continuity, actor.0, command, false)
+            .commit_creature_damage_inner(self.continuity, actor.0, command, None, false)
+    }
+
+    /// D132/D3-3: the same owner-authoritative damage commit, additionally attributing the
+    /// applied HP loss to `attacker`'s running per-creature damage total
+    /// (`COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE`, capped at
+    /// [`COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX`]). An idempotent replay of an
+    /// already-committed occurrence never double-attributes: it never reaches the mutation
+    /// boundary a second time. GAME-ABILITY's own effect-commit bridge
+    /// (`ability::commit::commit_exact_owner_damage`) has no live gameplay caller yet; this is
+    /// the seam a later composition stage wires the attacking `CharacterId` through.
+    #[allow(
+        dead_code,
+        reason = "no production caller yet; a later Ability wiring stage uses this"
+    )]
+    pub(crate) fn commit_damage_for_attacker(
+        &mut self,
+        actor: ExactActorRef,
+        attacker: CharacterId,
+        command: OwnerDamageCommand<'_>,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        self.carrier.commit_creature_damage_inner(
+            self.continuity,
+            actor.0,
+            command,
+            Some(attacker),
+            false,
+        )
     }
 }
 
@@ -562,6 +693,26 @@ impl CurrentOwnerCombatDeath<'_> {
     ) -> Result<([u8; 16], bool), CarrierError> {
         self.carrier
             .reward_occurrence_inner(self.continuity, actor.0, character)
+    }
+
+    /// D132/D3-3: the deterministic top-damage `CharacterId` for `actor`'s still-live slot in
+    /// this generation, read from the owner's own bounded, in-memory `DamageContributors`
+    /// accumulation. `Ok(None)` when the creature died (or is still alive) with no tracked
+    /// contributor ever recorded against it (a damage-free death, or every hit came from an
+    /// untracked 17th-plus attacker). This reads only live slot state, never
+    /// `corpse_projections`: like the rest of D132's accumulation, the answer does not outlive
+    /// this generation (D52). D3-2 is the composition point that reads this at the same moment
+    /// it extracts `(death, corpse)`, before the corpse's own MINT.
+    #[allow(
+        dead_code,
+        reason = "no production caller yet; D3-2 wires this into settle_creature_death_rewards"
+    )]
+    pub(crate) fn top_damage_character(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Option<CharacterId>, CarrierError> {
+        self.carrier
+            .top_damage_character_inner(self.continuity, actor.0)
     }
 }
 
@@ -653,6 +804,12 @@ enum Slot {
         target_identity: Arc<[u8]>,
         health: i64,
         committed: Option<OwnerCommitRecord>,
+        /// D132/D3-3: this generation's running per-attacker damage accumulation. Fresh and
+        /// empty on every admission; dropped with the slot on `remove`. Boxed for the same
+        /// reason `target_identity` is `Arc<[u8]>` rather than inline bytes: this variant's own
+        /// extra state must not grow every `Slot` (including every non-creature player slot) by
+        /// more than a pointer's worth of the already-measured fixed-slot footprint.
+        damage_contributors: Box<DamageContributors>,
     },
     Exhausted {
         generation: u64,
@@ -1672,6 +1829,7 @@ impl ChannelActorCarrier {
                 target_identity,
                 health,
                 committed: None,
+                damage_contributors: Box::default(),
             }
         } else {
             Slot::Occupied {
@@ -1773,6 +1931,7 @@ impl ChannelActorCarrier {
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
         command: OwnerDamageCommand<'_>,
+        attacker: Option<CharacterId>,
         fail_before_write: bool,
     ) -> Result<OwnerDamageResult, CarrierError> {
         let OwnerDamageCommand {
@@ -1858,6 +2017,7 @@ impl ChannelActorCarrier {
             target_identity,
             health,
             committed,
+            damage_contributors,
         } = &self.slots[index]
         else {
             return Err(CarrierError::StaleActorGeneration);
@@ -1871,6 +2031,14 @@ impl ChannelActorCarrier {
         }
         let (generation, actor, position, target_identity) =
             (*generation, *actor, *position, Arc::clone(target_identity));
+        // D132/D3-3: attribute this applied hit to its attacker only now, at the sole mutation
+        // boundary, after every replay/staleness check above -- an idempotent replay of an
+        // already-committed occurrence returns earlier (`prior` branch) and never reaches here,
+        // so it can never double-attribute.
+        let mut damage_contributors = damage_contributors.clone();
+        if let Some(attacker) = attacker {
+            damage_contributors.record(attacker, u64::try_from(damage).unwrap_or(u64::MAX));
+        }
         self.slots[index] = Slot::CreatureOccupied {
             generation,
             actor,
@@ -1878,8 +2046,32 @@ impl ChannelActorCarrier {
             target_identity,
             health: next,
             committed: Some(receipt),
+            damage_contributors,
         };
         Ok(result)
+    }
+
+    /// D132/D3-3: read-only, non-mutating lookup of `actor`'s current
+    /// `DamageContributors::top_damage_character()` in this generation's still-live slot. See
+    /// [`CurrentOwnerCombatDeath::top_damage_character`].
+    fn top_damage_character_inner(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+    ) -> Result<Option<CharacterId>, CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        let Slot::CreatureOccupied {
+            generation,
+            damage_contributors,
+            ..
+        } = &self.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if *generation != actor_ref.actor_local_generation.0 {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        Ok(damage_contributors.top_damage_character())
     }
 
     fn committed_lethal_receipt_inner(
@@ -2924,6 +3116,38 @@ impl CombatDeathFixture {
         Ok((projection.occurrence().death_key(), projection.position()))
     }
 
+    /// D132/D3-3: the same owner-committed damage occurrence as [`Self::strike`], additionally
+    /// attributed to `attacker`'s running per-creature damage total.
+    pub(crate) fn strike_by(
+        &mut self,
+        occurrence: &str,
+        damage: i64,
+        attacker: CharacterId,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let mut binding = occurrence.as_bytes().to_vec();
+        binding.extend_from_slice(b"\0fixture:vsl-combat.strike.v1");
+        self.carrier
+            .current_owner_exact_commit(&self.owner)
+            .commit_damage_for_attacker(
+                self.actor,
+                attacker,
+                OwnerDamageCommand {
+                    target: Self::TARGET.as_bytes(),
+                    occurrence: occurrence.as_bytes(),
+                    binding: &binding,
+                    damage,
+                },
+            )
+    }
+
+    /// D132/D3-3: the current deterministic top-damage `CharacterId` tracked for this fixture's
+    /// creature, [`CurrentOwnerCombatDeath::top_damage_character`].
+    pub(crate) fn top_damage_character(&mut self) -> Result<Option<CharacterId>, CarrierError> {
+        self.carrier
+            .current_owner_combat_death(&self.owner)
+            .top_damage_character(self.actor)
+    }
+
     /// Administrative despawn: the creature leaves without a semantic death.
     pub(crate) fn despawn(&mut self) -> Result<(), CarrierError> {
         self.carrier.remove(&self.owner, self.actor.0).map(|_| ())
@@ -2964,6 +3188,11 @@ mod channel_owner_ability_commit_tests;
 #[allow(clippy::expect_used)]
 #[path = "channel_owner_combat_death_tests.rs"]
 mod channel_owner_combat_death_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "damage_contributors_tests.rs"]
+mod damage_contributors_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -3357,7 +3586,11 @@ mod tests {
         assert_eq!(runtime.content_pin(), &ChannelContentPin::test(world));
         assert_eq!(
             size_of::<Slot>(),
-            192,
+            // D132/D3-3: +8 bytes (one pointer) for CreatureOccupied's boxed
+            // `damage_contributors`, the same footprint-preserving pattern already used for
+            // `target_identity: Arc<[u8]>` above; every non-creature slot pays this one pointer
+            // too, since it is `Slot`'s largest-variant size, not per-variant.
+            200,
             "session binding must stay inside the already measured fixed-slot footprint"
         );
     }
