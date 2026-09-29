@@ -6,8 +6,8 @@
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Answers: #162 slice D4 ("multiple committed damage occurrences per creature generation")
 - Amends: no accepted contract text; this decision applies already-accepted policy
-  (VSL-COMBAT-01 §7, §13; GAME-ABILITY-01 §7.1, §12, §13) to a carrier gap those contracts already
-  govern but the implementation has not yet closed
+  (VSL-COMBAT-01 §7, §13; GAME-ABILITY-01 §7.1, §12, §13; FND-04B §16, §21) to a carrier gap those
+  contracts already govern but the implementation has not yet closed
 - Admission baseline: `main@f611ffe3e44a02c6549b00670473e7bfc6174fba`
 - Runtime, registry and production authority: **NONE**. This decision resolves the retention
   bound, bound behaviour while alive, the owner damage-application ordinal and lethal-receipt
@@ -25,6 +25,18 @@
   occurrence's replay is refused, never re-applied; the bound is now unreachable for admission and
   reachable only for a narrow, explicitly stated residual case (§4.2). D140, D142, D143 and D144 are
   unchanged by this revision.
+- Revision note (2026-09-29, control-plane rejection, round 2): the control plane closed the round-1
+  open question in this decision itself rather than leaving it deferred: the high-water mark is now
+  keyed `(GameSessionId, sequence)`, not `sequence` alone. A command from a different, *current*
+  session replaces the mark outright (a reconnected session's low starting sequence is never treated
+  as stale); ordering stays sequence-monotonic only within one session. This is grounded, not
+  assumed: `FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md` §16 already keeps `CommandId`
+  continuous across a fast, in-grace reconnect (same `GameSessionId`, no reset), and §21 already
+  makes a post-grace `GameSessionId` terminal and non-revivable, with only a genuinely new
+  `GameSessionId` able to resume control — so a lower sequence under a differing session id is never
+  a smuggled-through replay of the old one, and the already-wired connection-generation fence
+  (`ConnectionFence`/`StaleConnectionGeneration`, §3) keeps a superseded session's commands from
+  reaching the carrier at all. D140, D142, D143 and D144 remain unchanged.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
 ## 1. Question
@@ -164,9 +176,31 @@ are both already accepted, not chosen here:
   committed player actor reconnectable, but does not by itself prove `CommandIngress` continuity
   across that reconnect).
 
+- **The session-generation character fence already exists and is production-wired**, unlike the
+  ability bridge: `ConnectionFence` (`foundation/mod.rs:793-829`, `current: ConnectionGeneration`,
+  `accepts()`, `rebind()`) is consumed by `durability/{mod,schema,db}.rs`, `foundation/admission.rs`/
+  `admission_recovery_inner.rs` and `lib.rs`; `gameplay_transport/connection.rs` returns
+  `FoundationProtocolError::StaleConnectionGeneration` at multiple live command-handling sites
+  (lines 512, 653, 1523, 1663). The test `reconnect_advances_generation_and_fences_stale_transport`
+  (`foundation/mod.rs:1390`) proves the exact shape this decision relies on: after `rebind`, the
+  fence accepts only the new generation and `!fence.accepts(first)` for the old one — a superseded
+  session's commands are rejected before any downstream consumer, including the carrier, ever sees
+  them. This is the concrete evidence behind AGENTS.md's durable invariant "Character writes remain
+  session-generation fenced."
+- **`FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md` fixes exactly how `GameSessionId`/`CommandId`
+  behave across a reconnect, resolving the round-1 open question directly, not by inference:**
+  §16 "Same-GameSession continuity" — a fast, in-grace reconnect **preserves `GameSessionId`** and
+  **"preserves FND-02 CommandId order, server_sequence and typed domain revisions"**; `CommandId`
+  never resets while `GameSessionId` is unchanged. §21 "Grace expiry and post-grace existing-actor
+  recovery" — once grace expires, "GameSessionId cannot revive; reconnect proof cannot resurrect it;
+  old prepared candidates cannot commit"; the only route back to control is reauthenticated recovery
+  that "creates new canonical GameSessionId" with `connection_generation = 1`. A lower `CommandId`
+  for the same attacker can therefore only ever legitimately appear under a *different*
+  `GameSessionId` — never under the same one — and the old `GameSessionId` is contractually incapable
+  of producing another command afterward.
+
 **UNKNOWN:** measured hits-to-kill for shipped non-fixture content above the rat; whether any
-planned creature needs more than 16 distinct committed occurrences in one generation; whether a
-`GameSessionId`'s `CommandId` sequence is guaranteed monotonic across a reconnect mid-fight.
+planned creature needs more than 16 distinct committed occurrences in one generation.
 
 ## 4. Decision (D140-D144)
 
@@ -216,57 +250,70 @@ slot under this or any design. Nothing here changes that check.
 `AbilityOccurrenceId` is an opaque, unordered string atom, and the one bridge that would supply it
 is not composed into live gameplay. `CommandRef`/`CommandId` is existing, already-proven per-session
 monotonic infrastructure used elsewhere (WO-0, B3-2 pickup) but not threaded into ability damage
-commits, and its continuity across a reconnect is not proven here. This decision therefore does not
-assume ordering is already available; it adds a new, explicit, optional input the caller must supply
-to get eviction-safe treatment, and defines safe behaviour when it is absent.
+commits. This decision therefore does not assume ordering is already available; it adds a new,
+explicit, optional input the caller must supply to get eviction-safe treatment, and defines safe
+behaviour when it is absent. Round 2 (header revision note) closes the reconnect question this
+finding originally left open, rather than deferring it.
 
-**3. The mechanism: bounded eviction guarded by a per-attacker high-water mark.**
-`commit_creature_damage_inner` gains a new parameter alongside D3-3's existing `attacker:
-Option<CharacterId>`: `attacker_sequence: Option<u64>` — the caller's promise that, for this exact
-`(creature actor, attacker)` pair within this generation, successive calls supply a non-decreasing
-value (the natural fit is that attacker's own `CommandId`, once the ability bridge is composed into
-live gameplay and wired through `CommandRef`; a fixture/test caller may supply any monotonic
-counter it controls). D132/D3-3's bounded 16-entry `DamageContributor` map (already keyed by
-`CharacterId`, `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX`) gains one field per entry,
-`high_water_sequence: Option<u64>`, reusing the same bounded structure rather than adding a second
-one. The lookup widens:
+**3. The mechanism: bounded eviction guarded by a per-attacker, per-session high-water mark.**
+`commit_creature_damage_inner` gains new parameters alongside D3-3's existing `attacker:
+Option<CharacterId>`: `attacker_session: Option<GameSessionId>` and `attacker_sequence: Option<u64>`
+(both `Some` together or both `None`) — the caller's promise that, *within one `GameSessionId`*,
+successive calls for this exact `(creature actor, attacker)` pair supply a non-decreasing sequence
+(the natural fit is that session's own `CommandId`, once the ability bridge is composed into live
+gameplay and wired through `CommandRef`; a fixture/test caller may supply any monotonic counter it
+controls). D132/D3-3's bounded 16-entry `DamageContributor` map (already keyed by `CharacterId`,
+`COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX`) gains one field per entry, `high_water:
+Option<(GameSessionId, u64)>`, reusing the same bounded structure rather than adding a second one.
+The lookup widens:
 
 - **Match found** (a retained record's occurrence equals the incoming one): unchanged
   idempotent-replay/`PlanConflict` logic, checked per-record instead of against a single field.
 - **No match, health == 0:** unchanged `CreatureNotActionable`.
-- **No match, health > 0, attacker tracked and `attacker_sequence <= that attacker's
-  high_water_sequence`:** refuse with a new `CarrierError::StaleAttackerSequence`, never mutating
-  HP or the receipt list. This is provably a replay, not a new hit: sequences from one attacker are
-  promised non-decreasing, so anything at or below the recorded high-water mark was already resolved
-  once, whether or not its own receipt is still retained — refusing it can never double-apply
-  damage, because the damage it represents was already applied (or never will be, if it was itself
-  ever rejected) the first time its sequence was seen.
-- **No match, health > 0, otherwise (a genuinely new occurrence):** apply the damage; if
-  `attacker_sequence` is `Some` and the attacker is tracked (or has room to be, in D132's bounded
-  contributor map, above), raise that attacker's `high_water_sequence`; append a new record with the
-  next ordinal (D142). If
-  the retained set is already at 16, **evict the oldest *evictable* record first** (lowest ordinal
-  among records whose attacker has a tracked `high_water_sequence`, i.e. whose future replays are
-  already provably refusable by the check above) to make room, rather than refusing the new
-  occurrence. Every distinct new occurrence from a tracked attacker is therefore always admitted —
-  **a single attacker can land any number of hits without ever being blocked**, which is the exact
-  bug the control plane flagged; eviction only ever removes a receipt whose own stale replay is
-  already safe to refuse.
+- **No match, health > 0, attacker tracked with a recorded `high_water = Some((session, seq))`,
+  and the incoming `attacker_session == session` and `attacker_sequence <= seq`:** refuse with a
+  new `CarrierError::StaleAttackerSequence`, never mutating HP or the receipt list. This is
+  provably a replay, not a new hit: sequences within one session are promised non-decreasing, so
+  anything at or below the recorded mark for *that same session* was already resolved once,
+  whether or not its own receipt is still retained.
+- **No match, health > 0, attacker tracked with `high_water = Some((session, _))` and the incoming
+  `attacker_session != session`:** **not stale — treated as the next branch.** A different
+  `GameSessionId` for the same attacker only ever occurs after the old one is over: FND-04B §16
+  (§3) keeps `CommandId` continuous for as long as `GameSessionId` is unchanged, so a differing
+  session id is never an in-grace reconnect replaying the same commands under the same identity; it
+  is FND-04B §21's post-grace recovery, which mints a genuinely new, previously-unseen
+  `GameSessionId` while the old one "cannot revive" and its "old prepared candidates cannot commit."
+  A reconnected session's sequence starting low is therefore never mistaken for stale.
+- **No match, health > 0, otherwise (a genuinely new occurrence — including the reconnect case
+  above)**: apply the damage; if `attacker_session`/`attacker_sequence` are `Some` and the attacker
+  is tracked (or has room to be, in D132's bounded contributor map, above), **set** (not
+  monotonically raise — a differing session always replaces) that attacker's `high_water` to
+  `(attacker_session, attacker_sequence)`; append a new record with the next ordinal (D142). If the
+  retained set is already at 16, **evict the oldest *evictable* record first** (lowest ordinal
+  among records whose attacker has a tracked `high_water`, i.e. whose future replays are already
+  provably refusable by the checks above) to make room, rather than refusing the new occurrence.
+  Every distinct new occurrence from a tracked attacker is therefore always admitted — **a single
+  attacker can land any number of hits, across any number of reconnects, without ever being
+  blocked** — which is the exact bug the control plane flagged; eviction only ever removes a
+  receipt whose own stale replay is already safe to refuse.
 - **No match, health > 0, retained set at 16, and no evictable record exists** (every retained
-  receipt is either from an attacker with no `attacker_sequence` supplied, or from a 17th-or-later
-  distinct attacker past `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX` = 16 and therefore untracked
-  in D132's map): refuse with `CarrierError::DamageReceiptCapacityExceeded`, fail-closed, exactly
-  as GAME-ABILITY-01 §12 requires — HP and every retained receipt stay untouched. Unlike the
-  original D141, this is now the narrow fallback, not the common case (residual limitation, below).
+  receipt is either from an attacker with no `attacker_session`/`attacker_sequence` supplied at
+  all, or
+  from a 17th-or-later distinct attacker past `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX` = 16
+  and therefore untracked in D132's map): refuse with `CarrierError::DamageReceiptCapacityExceeded`,
+  fail-closed, exactly as GAME-ABILITY-01 §12 requires — HP and every retained receipt stay
+  untouched. Unlike the original D141, this is now the narrow fallback, not the common case
+  (residual limitation, below).
 
 `CarrierError::OccurrenceConflict` is still removed as unreachable (§4.2 original reasoning
 unchanged); its two test sites are rewritten to assert `CreatureNotActionable`, as before.
 
 **Replay window.** Exactly the currently retained receipts (up to 16) replay byte-identically; an
-occurrence whose receipt was evicted, if it is ever resubmitted, is either provably stale (refused,
-never re-applied, if it carried a tracked `attacker_sequence`) or — for an untracked attacker only —
-was never eligible for eviction in the first place, so it is still retained and still replays
-byte-identically. No retained-but-untracked receipt is ever silently dropped.
+occurrence whose receipt was evicted, if it is ever resubmitted **within the same session**, is
+provably stale (refused, never re-applied); a resubmission from a *different* session is a reconnect
+and is never treated as a replay of the evicted receipt (above) — for an untracked attacker, the
+receipt was never eligible for eviction in the first place, so it is still retained and still
+replays byte-identically. No retained-but-untracked receipt is ever silently dropped.
 
 **Why eviction is now safe (unlike the originally rejected FIFO option, §6).** Plain FIFO eviction
 was rejected because evicting a receipt with no ordering signal could let a later replay of it be
@@ -287,13 +334,20 @@ the rat/playable path (every player attacker supplies a `CharacterId`). Raising 
 larger or unbounded high-water-mark map for untracked sources) is a later decision if content needs
 it (§7).
 
-**Open question for the owner/coordinator (not blocking this decision, §7).** Whether a
-`GameSessionId`'s `CommandId` sequence is guaranteed monotonic across a reconnect is not proven by
-this document (§3); the implementation child that wires `attacker_sequence` from live gameplay must
-either prove that continuity or derive the sequence from something already proven durable across
-reconnect. Until the ability bridge is actually composed into live gameplay (§3: it is not, today),
-no production caller supplies `attacker_sequence` at all, so no production behaviour regresses while
-this is resolved.
+**Reconnect, closed (round 2).** The round-1 open question — whether a `CommandId` sequence stays
+monotonic across a reconnect — is closed by FND-04B itself, not inferred: there are only two cases,
+and both already have an accepted answer (§3). A **fast, in-grace** reconnect (FND-04B §16) keeps
+the same `GameSessionId` and keeps `CommandId` continuous — no reset, so the ordinary same-session
+check (above) already covers it correctly, unchanged. A **post-grace** reconnect (FND-04B §21) mints
+a new `GameSessionId` precisely because the old one is terminal and "cannot revive" — its `CommandId`
+starting low is not a violation of monotonicity, because it is not the same sequence continuing; it
+is a different sequence, under a different, previously-unseen identity, that the mark's session key
+now distinguishes rather than conflates. Keying by `(GameSessionId, sequence)` therefore needs no new
+property of `CommandId` itself and no cross-session comparison at all — it only needs the two
+properties FND-04B already establishes: same-session continuity, and old-session non-revival. Until
+the ability bridge is actually composed into live gameplay (§3: it is not, today), no production
+caller supplies `attacker_session`/`attacker_sequence` at all, so no production behaviour changes
+while that composition work happens; this decision only fixes the shape it must arrive in.
 
 ### 4.3 D142 — The owner damage-application ordinal
 
@@ -367,7 +421,7 @@ tests, no migration, no protocol, no cross-domain wiring.
 
 | Child | Scope |
 |---|---|
-| `#162` allocation, D4 (working label `OTV2-<date>-d4-multi-hit-damage-receipt`) | Owned paths: `apps/game-server/src/foundation/runtime_actor_carrier.rs` (widen `committed`, `commit_creature_damage_inner` — new `attacker_sequence: Option<u64>` parameter, high-water-mark check, eviction — `committed_lethal_receipt_inner`, `validate_lethal_receipt`, remove `OccurrenceConflict`, add `StaleAttackerSequence`/`DamageReceiptCapacityExceeded`, add `DamageContributor::high_water_sequence`, update the `size_of::<Slot>()` guard); `apps/game-server/src/foundation/channel_owner_ability_commit_tests.rs`; `apps/game-server/src/foundation/channel_owner_combat_death_tests.rs`; `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` (register `COMBAT01-DAMAGE-RECEIPTS-PER-CREATURE-GENERATION`, max and max+1 tests); reconciliation with PR #1215's `DamageContributors`/`DamageContributor` shape per D142/D141, in whichever direction landing order requires. |
+| `#162` allocation, D4 (working label `OTV2-<date>-d4-multi-hit-damage-receipt`) | Owned paths: `apps/game-server/src/foundation/runtime_actor_carrier.rs` (widen `committed`, `commit_creature_damage_inner` — new `attacker_session: Option<GameSessionId>`/`attacker_sequence: Option<u64>` parameters, session-scoped high-water-mark check, eviction — `committed_lethal_receipt_inner`, `validate_lethal_receipt`, remove `OccurrenceConflict`, add `StaleAttackerSequence`/`DamageReceiptCapacityExceeded`, add `DamageContributor::high_water: Option<(GameSessionId, u64)>`, update the `size_of::<Slot>()` guard); `apps/game-server/src/foundation/channel_owner_ability_commit_tests.rs`; `apps/game-server/src/foundation/channel_owner_combat_death_tests.rs`; `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` (register `COMBAT01-DAMAGE-RECEIPTS-PER-CREATURE-GENERATION`, max and max+1 tests); reconciliation with PR #1215's `DamageContributors`/`DamageContributor` shape per D142/D141, in whichever direction landing order requires. |
 
 Required tests (this child, white-box against the carrier unless noted):
 
@@ -378,8 +432,18 @@ Required tests (this child, white-box against the carrier unless noted):
   control plane flagged, proven fixed.
 - **Replay of each occurrence, retained and evicted.** Replaying a still-retained occurrence returns
   the original `applied: false` result byte-identical. Replaying an occurrence whose receipt has
-  since been evicted (same attacker, an old `attacker_sequence`) returns `StaleAttackerSequence` and
-  mutates nothing — proving eviction never double-applies.
+  since been evicted (same attacker, same session, an old `attacker_sequence`) returns
+  `StaleAttackerSequence` and mutates nothing — proving eviction never double-applies.
+- **Reconnect (round 2, §4.2).** One attacker lands a hit under `attacker_session = A`, sequence 5
+  (mark becomes `(A, 5)`); resubmitting sequence 5 (or lower) still under `A` is refused
+  `StaleAttackerSequence` — the ordinary within-session case, unaffected by the session-keyed
+  redesign. The attacker then reconnects: a hit under a *different* `GameSessionId` `B`, sequence 1
+  (lower than `A`'s recorded 5), is **accepted**, not `StaleAttackerSequence` — proving a
+  reconnected session's low starting sequence is never compared against, or blocked by, the old
+  session's mark. This carrier-level test does not, and does not need to, prove that session `A`'s
+  own commands stop arriving after the reconnect — that guarantee is the session-generation
+  character fence's job (§3), already proven by its own
+  `reconnect_advances_generation_and_fences_stale_transport` test, upstream of the carrier.
 - **Conflict.** A replay of an already-committed occurrence with a different `binding`/`damage`
   still returns `PlanConflict` (unchanged). A genuinely new, distinct occurrence after the creature
   is already dead returns `CreatureNotActionable` (replacing the two `OccurrenceConflict` sites
@@ -422,6 +486,17 @@ Required tests (this child, white-box against the carrier unless noted):
 - **A durable per-hit receipt table.** Rejected for the same reason D132 already rejected a durable
   per-hit attribution ledger: disproportionate to an ephemeral, generation-scoped feature; VSL-
   COMBAT-01 nowhere requires damage receipts to survive a generation.
+- **A high-water mark keyed by `sequence` alone, ignoring `GameSessionId`** (round 1's shape).
+  Rejected by the control plane: a reconnected session's `CommandId` restarting at 1 would compare
+  as `<=` almost any pre-reconnect mark and be refused `StaleAttackerSequence` forever after a
+  reconnect — the exact bug this round closes, and worse than the original bound bug because no
+  further hits from that attacker could ever land again in the generation.
+- **Comparing sequences across sessions directly, hoping `CommandId` stays globally monotonic for
+  one attacker.** It does not, and FND-04B never claims it does (§3): a post-grace reconnect mints
+  a new `GameSessionId` and a new `CommandId` sequence by design (§21). Keying by
+  `(GameSessionId, sequence)` and relying on FND-04B §16/§21's already-accepted continuity/
+  non-revival guarantees is the correct reading of the existing contract, not a cheaper
+  approximation of a harder proof.
 
 ## 7. Decision test
 
@@ -433,17 +508,16 @@ Required tests (this child, white-box against the carrier unless noted):
   high-water-mark map (no new resource row for the latter) rather than measuring new numbers; reuse
   GAME-ABILITY-01 §12's fail-closed policy for the one residual, narrow bound case rather than
   inventing a new failure mode; change one file's semantic shape plus its direct tests.
-- **Superseding evidence:** proof that a `GameSessionId`'s `CommandId` stays monotonic across a
-  reconnect (closes the open question in §4.2 outright); measured shipped content needing more than
-  16 simultaneously untracked contributors (closes the residual limitation).
-- **Deliberately not decided:** how the ability bridge derives `attacker_sequence` once it is
-  composed into live gameplay (its own later decision; not blocking, since no production caller
-  exists today, §3); raising `COMBAT01-DAMAGE-RECEIPTS-PER-CREATURE-GENERATION` or
+- **Superseding evidence:** measured shipped content needing more than 16 simultaneously untracked
+  contributors (closes the residual limitation, §4.2); evidence that the session-generation
+  character fence (§3) does not in fact cover every path that could reach
+  `commit_creature_damage_inner` with an attacker-attributed command (would require reinstating an
+  open question this round closed).
+- **Deliberately not decided:** how the ability bridge derives `attacker_session`/`attacker_sequence`
+  once it is composed into live gameplay (its own later decision; not blocking, since no production
+  caller exists today, §3); raising `COMBAT01-DAMAGE-RECEIPTS-PER-CREATURE-GENERATION` or
   `COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE` above 16; any change to GAME-ABILITY-01 §7.1 ordered
   sub-occurrences/commit groups.
-- **Open question (not blocking):** `CommandId` monotonicity across reconnect (§4.2) — the
-  implementation child either proves it or sources `attacker_sequence` from something already proven
-  durable across reconnect; owner/coordinator input welcome but not required to accept this decision.
 
 ## 8. Handback
 
@@ -458,17 +532,17 @@ production_authority_changed: false
 cross_repository_authority_changed: false
 implementation_may_resume: true
 required_fresh_allocation: true
-required_independent_review: "exact-head independent review (bounded eviction, high-water-mark safety, ordinal, lethal-receipt lookup, PR #1215 reconciliation)"
+required_independent_review: "exact-head independent review (bounded eviction, session-keyed high-water-mark safety, reliance on the session-generation fence, ordinal, lethal-receipt lookup, PR #1215 reconciliation)"
 implementation_lanes: [Combat-D4]
 required_revalidation:
   - "multi-hit kill: one attacker lands more than 16 distinct occurrences against a creature that survives all but the last; none is ever refused by capacity; the last is the one lethal receipt"
-  - "replay: a still-retained occurrence replays byte-identical; a replay of an evicted occurrence returns StaleAttackerSequence and mutates nothing"
+  - "replay: a still-retained occurrence replays byte-identical; a replay of an evicted occurrence (same session) returns StaleAttackerSequence and mutates nothing"
+  - "reconnect: a stale sequence resubmitted within the same session is refused; a lower sequence under a new GameSessionId for the same attacker is accepted, never StaleAttackerSequence"
   - "conflict: PlanConflict unchanged; CreatureNotActionable replaces OccurrenceConflict for a new occurrence against a dead creature"
   - "bound: tracked occurrences past 16 always evict-and-admit, never DamageReceiptCapacityExceeded; 16 simultaneously untracked occurrences plus a 17th untracked one does return it"
   - "ordinal: strictly increasing and gap-free across attackers; D132's tie-break proven to consume the same sequence"
 remaining_unknowns:
   - measured hits-to-kill for non-fixture/boss content
-  - CommandId monotonicity across reconnect (open question, §4.2)
   - PR #1215 landing order relative to this decision's implementation child
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates the D4 implementation child."
 ```
