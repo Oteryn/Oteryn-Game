@@ -2736,13 +2736,14 @@ fn commit_corpse_mint_rejects_a_replay_with_a_different_top_damage_winner() -> T
         harness.assert_minted(1).await?;
 
         // The same top-damage value, replayed, still returns the original
-        // outcome cleanly.
+        // outcome cleanly -- as the retained AlreadyCommitted result, not a
+        // fresh commit.
         let replay_same = harness
             .root
             .commit_corpse_mint(&authority, &harness.node, &mut candidate, top_damage)
             .await
             .map_err(debug)?;
-        assert_eq!(committed(replay_same)?, first);
+        assert_eq!(already(replay_same)?, first);
 
         drop(authority);
         drop(seal);
