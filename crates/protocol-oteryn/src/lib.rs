@@ -2197,6 +2197,7 @@ pub fn decode_framed_envelope(
     decode_wire_envelope(body)
 }
 
+pub mod actor_spell;
 pub mod world_object;
 pub mod world_spatial;
 

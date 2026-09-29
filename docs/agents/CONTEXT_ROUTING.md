@@ -14,6 +14,7 @@ Use targeted reads by default:
 
 - do not bulk-read complete Issue or PR comment timelines; start from metadata/current state and fetch only specifically referenced or latest material comments needed by the decision;
 - do not enumerate every open PR/task when the affected lane, dependency or ownership set is already bounded;
+- long threads such as #162: read the Issue body and the `STATE` comment it links, then only the last page of comments (last page = ceil(comment count / page size), from the Issue metadata); never start from page 1, which holds the oldest comments;
 - do not read the complete `PROMPT_LIFECYCLE.json` to invoke one known alias; resolve the matching entry only;
 - do not read historical sections of long-lived allocation/task documents when a current checkpoint already supersedes them, unless history itself is material evidence;
 - do not load `OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` for a technical worker unless owner-facing launch/status placement is the task;
@@ -58,6 +59,8 @@ Run the narrow local check for what you changed and leave the full workspace bui
 | `docs/agents/`, `tools/agents/`, `.claude/` | `python tools/agents/validate_governance.py`; `python -m unittest discover -s tools/agents/tests` |
 | `tools/repository/`, `.github/` | `python tools/repository/validate_repository_policy.py` and the matching `tools/repository/test_*.py` |
 | other docs | `git diff --check` |
+
+The `apps/game-server/tests/*_postgres.rs` targets need PostgreSQL 17.6, the version CI pins. Start it once per session: run `(dockerd >/dev/null 2>&1 &)`, wait until `docker info` succeeds, then `docker run -d --name oteryn-pg -p 5432:5432 -e POSTGRES_USER=oteryn_test_admin -e POSTGRES_PASSWORD=localpw postgres:17.6-bookworm`. Run one target with `OTERYN_TEST_POSTGRES_ADMIN_URL=postgresql://oteryn_test_admin:localpw@127.0.0.1:5432/postgres cargo test --locked -p oteryn-game-server --test <target> --quiet`. Never relax the 17.6 version check, even temporarily. If the 17.6 image is unavailable (for example, Docker Hub returns 429), leave those targets to CI and say so in the report.
 
 The package name is the `name` in that directory's `Cargo.toml`. A PR that touches `tools/agents/`, `tools/repository/`, `.github/workflows/` or the Cargo manifests runs the full Rust Linux and Windows lanes in CI (about 15 minutes), even when it changes no Rust. Keep ordinary docs, task-record and content PRs away from those paths, and put prompt-version pin updates into the coordinator's daily batch.
 

@@ -1864,6 +1864,17 @@ mod corpse_transfer_postgres_cases;
 #[path = "support/corpse_decay_postgres_cases.rs"]
 mod corpse_decay_postgres_cases;
 
+// DEATH-0 death receipts, blessings and pending respawns (migration 0016)
+// share their cases with the focused standalone target through the same
+// protected lane.
+#[path = "support/character_death_receipts_postgres_cases.rs"]
+mod character_death_receipts_postgres_cases;
+
+// STANCE-0 stance slot and stance receipts (migration 0017) share their cases
+// with the focused standalone target through the same protected lane.
+#[path = "support/character_stance_postgres_cases.rs"]
+mod character_stance_postgres_cases;
+
 // CHEST-1 reward-claim MINT (a `once` RewardClaim into a new main backpack
 // entry) shares its cases with the focused standalone target through the same
 // protected lane.

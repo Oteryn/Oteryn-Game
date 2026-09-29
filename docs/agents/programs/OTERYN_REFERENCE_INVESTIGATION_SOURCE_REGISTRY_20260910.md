@@ -5,7 +5,7 @@
 - Date: 2026-09-10
 - Purpose: shared evidence/source discipline for Reference investigation agents
 - Runtime/write authority granted: **NONE**
-- External target: Global Tibia behavior/data at the accepted post-2026-07-28 cut Superseded 2026-09-27: the target is now 2026-09-27, see `OTERYN_TARGET_DATE_20260927_DECISION.md`.
+- External target: the current owner target date in `OTERYN_TARGET_DATE_20260927_DECISION.md` (2026-09-27 since that decision; it replaced the 2026-07-28 cut).
 
 ## 1. Why this registry exists
 
@@ -438,15 +438,15 @@ These should preferentially resolve through official evidence, controlled Global
 
 ## 9. Target-date rule
 
-For every external field that may have changed over time, record:
+The target date is set only by `OTERYN_TARGET_DATE_20260927_DECISION.md` (currently 2026-09-27); do not copy a date from older documents. For every external field that may have changed over time, record:
 
 ```yaml
-target_cut: 2026-07-28
+target_cut: <the current target date from that decision>
 source_date_or_revision: <date/revision>
 continuity_to_target: PROVEN|DERIVED|UNKNOWN|CONFLICT
 ```
 
-A September 2026 value is not automatically the July 28, 2026 value. Likewise an old wiki/OTS value is not automatically continuous to the cut.
+A value read at another date is not automatically the target-date value. Likewise an old wiki/OTS value is not automatically continuous to the target.
 
 When the exact target value remains uncertain, preserve `UNKNOWN`/`CONFLICT` or a weaker `DERIVED` claim rather than inventing certainty.
 

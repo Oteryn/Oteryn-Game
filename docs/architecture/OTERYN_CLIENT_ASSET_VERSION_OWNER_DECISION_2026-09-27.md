@@ -12,6 +12,8 @@
 - Does not authorize: runtime, protocol, persistence, atlas-compiler or client
   implementation
 
+> **Owner supersession — 2026-09-29:** the project owner confirmed redistribution rights for the current local Tibia client asset set and directed those currently present files to be committed under `content/assets/files/`. This supersedes only this record's earlier repository-storage prohibition/non-distribution statements. The checksum manifest remains immutable evidence of its original 6,249-file snapshot; the current 6,248-file source set matches every shared manifest SHA-256 and omits only the manifest's 122,882,530-byte `minimap-32-0996-0984-02-dce27ae4b4d345201c9cc7f9d4f7576fc9144583779e8716b29032d6c1731073.bmp.zip`, which is no longer present in the current source folder.
+
 ## 1. Target client version
 
 Oteryn's client graphics are pinned to Tibia client **15.30** (Summer Update 2026),

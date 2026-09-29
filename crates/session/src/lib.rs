@@ -1,6 +1,6 @@
 //! Transport-neutral Oteryn Game session (ADR-0020 section 1, lane N1; ADR-0014 layering
 //! `protocol-oteryn -> session -> TCP adapter`): admission, envelope validation, sequencing,
-//! join-snapshot assembly, the `step`/`use_object` command exchange, command status pairing and
+//! join-snapshot assembly, the `step`/`use_object`/`cast_spell` command exchange, command status pairing and
 //! liveness, all over an abstract byte stream ([`SessionStream`]).
 //!
 //! The crate names no TLS or TCP type and opens no connection: a caller (the TCP adapter, a later
@@ -16,6 +16,9 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
+use oteryn_protocol_oteryn::actor_spell::{
+    self, ActorVitals, SpellCastDisposition, SpellCastIntent, SpellTarget,
+};
 use oteryn_protocol_oteryn::world_object::{
     self, UseDisposition, WorldObjectOverlayEntry, WorldObjectTarget,
 };
@@ -33,6 +36,7 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::future::Future;
 use std::io;
+use std::num::NonZeroU32;
 use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
@@ -91,6 +95,7 @@ pub enum SessionError {
     Protocol(FoundationProtocolError),
     WorldSpatial(world_spatial::WorldSpatialError),
     WorldObject(world_object::WorldObjectError),
+    ActorSpell(actor_spell::ActorSpellError),
     /// The server closed, or replied with something other than `ServerAccepted`, before
     /// admission completed.
     NotAdmitted(MessageType),
@@ -203,6 +208,12 @@ impl fmt::Display for SessionError {
             }
             Self::WorldObject(error) => {
                 write!(formatter, "WORLD_OBJECT_OVERLAY decode failed: {error:?}")
+            }
+            Self::ActorSpell(error) => {
+                write!(
+                    formatter,
+                    "ACTOR_SPELL/ACTOR_VITALS decode failed: {error:?}"
+                )
             }
             Self::NotAdmitted(message_type) => {
                 write!(formatter, "admission refused: server sent {message_type:?}")
@@ -323,6 +334,12 @@ impl From<world_object::WorldObjectError> for SessionError {
     }
 }
 
+impl From<actor_spell::ActorSpellError> for SessionError {
+    fn from(error: actor_spell::ActorSpellError) -> Self {
+        Self::ActorSpell(error)
+    }
+}
+
 /// One delta a command's outcome carried, already validated and applied to the session's state:
 /// its own `server_sequence` and the domain revisions it moved between.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -352,6 +369,18 @@ pub struct CommandOutcome<D> {
 pub type StepOutcome = CommandOutcome<StepDisposition>;
 /// Outcome of `Session::use_object` (USE-WIRE-V1, command type 2).
 pub type UseOutcome = CommandOutcome<UseDisposition>;
+
+/// Outcome of `Session::cast_spell` (SPELL wire contract, command type 3). A `Cast` is followed by
+/// exactly one `ACTOR_VITALS` delta (the cast pays its cost); every other disposition, including
+/// `Rejected` while the server gate is closed, changes nothing and carries no delta.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CastOutcome {
+    pub command_id: u64,
+    pub status: CommandStatus,
+    pub disposition: SpellCastDisposition,
+    pub result_server_sequence: u64,
+    pub actor_vitals_delta: Option<AppliedDelta<ActorVitals>>,
+}
 
 /// An admitted, joined game session that can issue the registered gameplay commands.
 ///
@@ -385,6 +414,10 @@ pub struct Session<S> {
     last_server_sequence: u64,
     spatial_revision: u64,
     overlay_revision: u64,
+    vitals_revision: u64,
+    /// Own-actor vitals; `None` until the server sends the `ACTOR_VITALS` domain (it is optional
+    /// in the join snapshot while the server cast gate is closed).
+    actor_vitals: Option<ActorVitals>,
     world_spatial: WorldSpatialObservation,
     world_object_overlay: Vec<WorldObjectOverlayEntry>,
     join_snapshot: JoinSnapshot,
@@ -566,7 +599,8 @@ impl<S: SessionStream> Session<S> {
         // "apply is atomic only after all chunks and matching SnapshotCommit validate").
         let mut world_spatial_observation = None;
         let mut world_object_overlay = None;
-        let (mut spatial_revision, mut overlay_revision) = (0, 0);
+        let mut actor_vitals = None;
+        let (mut spatial_revision, mut overlay_revision, mut vitals_revision) = (0, 0, 0);
         for domain in decode_snapshot_body(&assembled_body)? {
             match (domain.domain_id, domain.snapshot_type) {
                 (
@@ -586,14 +620,22 @@ impl<S: SessionStream> Session<S> {
                     );
                     overlay_revision = domain.revision;
                 }
+                (
+                    actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                    actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                ) => {
+                    actor_vitals = Some(actor_spell::decode_actor_vitals(domain.payload)?);
+                    vitals_revision = domain.revision;
+                }
                 // PROTOCOL_OTERYN_V1_REGISTRY.json registers exactly one snapshot_type (1) for
-                // domains 1 and 2; anything else naming one of those domains is a registry
+                // domains 1, 2 and 3; anything else naming one of those domains is a registry
                 // violation, not a domain this client merely doesn't need.
                 (
                     domain_id @ world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
                     snapshot_type,
                 )
-                | (domain_id @ world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, snapshot_type) => {
+                | (domain_id @ world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, snapshot_type)
+                | (domain_id @ actor_spell::STATE_DOMAIN_ACTOR_VITALS, snapshot_type) => {
                     return Err(SessionError::UnregisteredSnapshotType {
                         domain_id,
                         snapshot_type,
@@ -623,6 +665,8 @@ impl<S: SessionStream> Session<S> {
             last_server_sequence: begin.target_server_sequence,
             spatial_revision,
             overlay_revision,
+            vitals_revision,
+            actor_vitals,
             world_spatial: snapshot.world_spatial,
             world_object_overlay: snapshot.world_object_overlay.clone(),
             join_snapshot: snapshot,
@@ -650,7 +694,12 @@ impl<S: SessionStream> Session<S> {
         &self.world_object_overlay
     }
 
-    /// The `CommandId` the next `step`/`use_object` will send.
+    /// The own-actor vitals after every delta applied so far, if the server has sent any.
+    pub fn actor_vitals(&self) -> Option<&ActorVitals> {
+        self.actor_vitals.as_ref()
+    }
+
+    /// The `CommandId` the next `step`/`use_object`/`cast_spell` will send.
     pub fn next_command_id(&self) -> u64 {
         self.next_command_id
     }
@@ -772,6 +821,25 @@ impl<S: SessionStream> Session<S> {
         self.poison_on_error(outcome)
     }
 
+    /// Sends the FND-02 `ClientCommand` type 3 `WORLD_ACTOR_SPELL_CAST_INTENT` for the 1-based
+    /// `spell` index, and decodes its `CommandResult` and, when it `Cast`, the one `ACTOR_VITALS`
+    /// delta. A `Rejected` result (the closed server gate) is a normal outcome, not an error.
+    pub async fn cast_spell(
+        &mut self,
+        spell: NonZeroU32,
+        target: SpellTarget,
+        aim_at_target: bool,
+    ) -> Result<CastOutcome, SessionError> {
+        self.ensure_usable()?;
+        let payload = actor_spell::encode_spell_cast_intent(&SpellCastIntent {
+            spell,
+            target,
+            aim_at_target,
+        });
+        let outcome = self.exchange_cast(&payload).await;
+        self.poison_on_error(outcome)
+    }
+
     fn ensure_usable(&self) -> Result<(), SessionError> {
         if self.unusable {
             Err(SessionError::SessionUnusable)
@@ -837,6 +905,54 @@ impl<S: SessionStream> Session<S> {
             result_server_sequence: result.server_sequence,
             world_spatial_delta: None,
             world_object_overlay_delta,
+        })
+    }
+
+    async fn exchange_cast(&mut self, payload: &[u8]) -> Result<CastOutcome, SessionError> {
+        let result = self
+            .send_and_read_result(
+                actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+                payload,
+            )
+            .await?;
+        let disposition = actor_spell::decode_spell_cast_result(&result.payload)?;
+        check_status_pairing(
+            result.command_id,
+            result.status,
+            disposition == SpellCastDisposition::Rejected,
+        )?;
+        let actor_vitals_delta = if result.status == CommandStatus::Accepted
+            && disposition == SpellCastDisposition::Cast
+        {
+            Some(self.read_vitals_delta().await?)
+        } else {
+            None
+        };
+        Ok(CastOutcome {
+            command_id: result.command_id,
+            status: result.status,
+            disposition,
+            result_server_sequence: result.server_sequence,
+            actor_vitals_delta,
+        })
+    }
+
+    async fn read_vitals_delta(&mut self) -> Result<AppliedDelta<ActorVitals>, SessionError> {
+        let delta = self
+            .read_delta(
+                actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+                self.vitals_revision,
+            )
+            .await?;
+        let vitals = actor_spell::decode_actor_vitals(&delta.payload)?;
+        self.actor_vitals = Some(vitals);
+        self.vitals_revision = delta.new_revision;
+        Ok(AppliedDelta {
+            server_sequence: delta.server_sequence,
+            base_revision: delta.base_revision,
+            new_revision: delta.new_revision,
+            value: vitals,
         })
     }
 
@@ -1352,6 +1468,150 @@ mod tests {
             assert_eq!((delta.server_sequence, delta.new_revision), (42, 6));
             assert_eq!(session.world_spatial().actor_position.x, 1);
             assert_eq!(session.last_server_sequence(), 42);
+            Ok(())
+        })?
+    }
+
+    fn vitals(health: u32, mana: u32) -> ActorVitals {
+        ActorVitals {
+            health,
+            max_health: 150,
+            mana,
+            max_mana: 55,
+            soul: 100,
+            harmony: 0,
+            serene: false,
+        }
+    }
+
+    /// Admits, sends a join snapshot that carries `ACTOR_VITALS` (revision 3) and then answers two
+    /// casts: `Cast` with its vitals delta, then `Rejected` (the closed server gate) with none.
+    async fn cast_server(mut stream: DuplexStream) -> Result<(), BoxError> {
+        read_frame(&mut stream).await?;
+        write_frame(
+            &mut stream,
+            &encode_server_accepted(&ServerAcceptedValue {
+                game_session_id: GameSessionId::decode(&uuid_v7(1))?,
+                world_id: WorldId::decode(&uuid_v7(2))?,
+                channel_id: ChannelId::decode(&uuid_v7(3))?,
+                connection_generation: 1,
+                current_server_sequence: 0,
+                next_command_id: 7,
+                schema_revision: 1,
+                selected_capabilities: &[],
+            })?,
+        )
+        .await?;
+        let overlay = encode_world_object_overlay_snapshot(&[])
+            .map_err(|error| format!("overlay snapshot: {error:?}"))?;
+        let vitals_payload = actor_spell::encode_actor_vitals(&vitals(150, 55))
+            .map_err(|error| format!("vitals: {error:?}"))?;
+        for frame in encode_single_chunk_snapshot(
+            1,
+            1,
+            40,
+            &[
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    revision: 5,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                    payload: &spatial(0),
+                },
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    revision: 2,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                    payload: &overlay,
+                },
+                DomainSnapshot {
+                    domain_id: actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                    revision: 3,
+                    snapshot_type: actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                    payload: &vitals_payload,
+                },
+            ],
+        )? {
+            write_frame(&mut stream, &frame).await?;
+        }
+        let command = read_frame(&mut stream).await?;
+        let command = decode_wire_envelope(&command)?.client_command(1)?;
+        assert_eq!(
+            (command.command_id, command.command_type),
+            (7, actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT)
+        );
+        assert_eq!(
+            actor_spell::decode_spell_cast_intent(command.payload),
+            Ok(SpellCastIntent {
+                spell: NonZeroU32::new(2).ok_or("nonzero")?,
+                target: SpellTarget::AttackTarget,
+                aim_at_target: true,
+            })
+        );
+        write_frame(
+            &mut stream,
+            &encode_command_result(
+                1,
+                41,
+                7,
+                CommandStatus::Accepted,
+                &actor_spell::encode_spell_cast_result(SpellCastDisposition::Cast),
+            )?,
+        )
+        .await?;
+        write_frame(
+            &mut stream,
+            &encode_state_delta(
+                1,
+                42,
+                actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                3,
+                4,
+                actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+                &actor_spell::encode_actor_vitals(&vitals(150, 30))
+                    .map_err(|error| format!("vitals: {error:?}"))?,
+            )?,
+        )
+        .await?;
+        read_frame(&mut stream).await?;
+        write_frame(
+            &mut stream,
+            &encode_command_result(
+                1,
+                43,
+                8,
+                CommandStatus::Rejected,
+                &actor_spell::encode_spell_cast_result(SpellCastDisposition::Rejected),
+            )?,
+        )
+        .await?;
+        Ok(())
+    }
+
+    #[test]
+    fn a_cast_applies_the_vitals_delta_and_a_rejected_cast_changes_nothing() -> Result<(), BoxError>
+    {
+        block_on(async {
+            let (client, server) = tokio::io::duplex(64 * 1024);
+            let server = tokio::spawn(cast_server(server));
+            let mut session = Session::admit(client, admission()?).await?;
+            assert_eq!(session.actor_vitals(), Some(&vitals(150, 55)));
+            let spell = NonZeroU32::new(2).ok_or("nonzero")?;
+            let cast = session
+                .cast_spell(spell, SpellTarget::AttackTarget, true)
+                .await?;
+            assert_eq!(cast.disposition, SpellCastDisposition::Cast);
+            let delta = cast.actor_vitals_delta.ok_or("Cast carries a delta")?;
+            assert_eq!((delta.server_sequence, delta.base_revision), (42, 3));
+            assert_eq!(session.actor_vitals(), Some(&vitals(150, 30)));
+            let rejected = session.cast_spell(spell, SpellTarget::None, false).await?;
+            server.await??;
+            assert_eq!(rejected.status, CommandStatus::Rejected);
+            assert_eq!(rejected.disposition, SpellCastDisposition::Rejected);
+            assert_eq!(rejected.actor_vitals_delta, None);
+            assert_eq!(session.actor_vitals(), Some(&vitals(150, 30)));
+            assert_eq!(session.last_server_sequence(), 43);
+            // The session stays usable after a rejection.
+            assert_eq!(session.next_command_id(), 9);
             Ok(())
         })?
     }
