@@ -501,7 +501,8 @@ fn resolve(
     }
     let hits = match (&spell.chain, world) {
         (Some(chain), Some((world, start))) if spell.chains(has_target) => {
-            let hits = pick_chain(chain, world, start);
+            let target_range = spell.range_tiles.unwrap_or(chain.initial_range_tiles);
+            let hits = pick_chain(chain, world, start, target_range);
             if hits.is_empty() {
                 return Err(CastRejection::NoChainTarget);
             }

@@ -107,18 +107,26 @@ pub(crate) struct ChainHit {
 }
 
 /// The creatures one cast hits, in hit order. Empty when there is no first creature (the cast
-/// fails, §3 step 2). `start.target` is set only for a spell that takes a target.
+/// fails, §3 step 2). `start.target` is set only for a spell that takes a target; that target must
+/// be valid (§3 step 4) from the caster within `target_range_tiles`, the spell's cast range.
 pub(crate) fn pick_chain(
     spec: &ChainSpec,
     world: &dyn ChainWorld,
     start: ChainStart,
+    target_range_tiles: u32,
 ) -> Vec<ChainHit> {
     let caster = world.caster();
     let mut visited = BTreeSet::from([caster.id]);
     let first = match start.target {
-        Some(id) => {
-            find(world, id).filter(|creature| creature.id != caster.id && world.may_hit(creature))
-        }
+        Some(id) => find(world, id).filter(|creature| {
+            valid(
+                world,
+                caster.position,
+                target_range_tiles,
+                &visited,
+                creature,
+            )
+        }),
         None => start
             .attacked
             .and_then(|id| find(world, id))

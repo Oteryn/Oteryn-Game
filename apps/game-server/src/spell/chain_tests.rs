@@ -510,6 +510,59 @@ fn lightning_chains_at_a_target_and_not_by_direction() {
     );
 }
 
+/// §3 step 4 holds for the cast target too: a target the caster cannot reach fails the cast before
+/// anything is spent.
+#[test]
+fn an_unreachable_cast_target_fails_the_cast() {
+    let spell = chain_spell("lightning", true);
+    let target = ChainStart {
+        target: Some(10),
+        attacked: None,
+    };
+    let reachable = Grid::new().with(10, at(3, 0)).with(11, at(4, 0));
+    assert_eq!(
+        hit_ids(&cast(&spell, &reachable, target).expect("cast")),
+        vec![10, 11]
+    );
+    // Behind a wall.
+    let mut walled = Grid::new().with(10, at(3, 0)).with(11, at(4, 0));
+    walled.walls.insert(at(2, 0));
+    assert_eq!(
+        cast(&spell, &walled, target),
+        Err(CastRejection::NoChainTarget)
+    );
+    // On another floor.
+    let other_floor = Grid::new()
+        .with(
+            10,
+            TilePosition {
+                x: 1,
+                y: 0,
+                floor: 6,
+            },
+        )
+        .with(11, at(1, 1));
+    assert_eq!(
+        cast(&spell, &other_floor, target),
+        Err(CastRejection::NoChainTarget)
+    );
+    // Beyond the cast range of 3.
+    let far = Grid::new().with(10, at(4, 0)).with(11, at(1, 0));
+    assert_eq!(
+        cast(&spell, &far, target),
+        Err(CastRejection::NoChainTarget)
+    );
+    // The caster itself.
+    let own = ChainStart {
+        target: Some(CASTER),
+        attacked: None,
+    };
+    assert_eq!(
+        cast(&spell, &reachable, own),
+        Err(CastRejection::NoChainTarget)
+    );
+}
+
 /// §6 test 9.
 #[test]
 fn the_chain_effect_shows_on_each_path_tile() {
