@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-client-1530-membership-manifest
 title: Emit the 15.30 client appearance membership manifest (ITEM-ID-1 prerequisite)
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/client-1530-membership-manifest
@@ -25,7 +25,7 @@ owned_paths:
   - tools/content-schema/item-authoring/README.md
   - imports/official/client-assets/15.30/README.md
   - imports/official/client-assets/15.30/appearance-ids.json
-  - docs/agents/tasks/active/OTV2-20260929-client-1530-membership-manifest.md
+  - docs/agents/tasks/archive/OTV2-20260929-client-1530-membership-manifest.md
 public_contracts: []
 depends_on: []
 blocks: ["A12 #1237 digest-bound full membership manifest"]
@@ -121,15 +121,15 @@ The ITEM-ID-1 key migration, any other client file, and `.github/**`.
 - changed-file review: done
 - unresolved review threads: resolved after the fix push
 - related/superseded PRs: #1237 (A12), ITEM-ID-1 consumer
-- protected auto-merge: pending
-- merge commit/result: pending
+- protected auto-merge: merged via Merge Queue
+- merge commit/result: `e9197e6ecdd2180f5ebf6cbd3dac9eaa81ab1015` (squash merge of #1240)
 - ownership release: on merge
 
 ## Context checkpoint
 
 ```yaml
 last_progress: Codex P1/P2 and ruff formatting fixed
-status: validating
+status: completed
 branch: claude/client-1530-membership-manifest
 head_sha: null
 pr: 1240
@@ -152,3 +152,9 @@ owner_action_required: null
 blocker: null
 next_action: enable auto-merge once game-gate is green on the final head
 ```
+
+## Closeout
+
+- PR #1240 merged via Merge Queue: final head `ba6a51a835b5a44af5aa47151e3886a8142e995e`, merge commit `e9197e6ecdd2180f5ebf6cbd3dac9eaa81ab1015`.
+- Protected-main readback: all 6 files the merge changed are byte-identical between the final head and the merge commit.
+- Ownership released on merge. Archived by the Work coordinator in the 2026-09-29 batch.
