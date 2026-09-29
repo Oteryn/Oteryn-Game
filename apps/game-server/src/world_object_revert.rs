@@ -268,6 +268,9 @@ pub(crate) enum RevertError {
     /// Owner decision Q2=b: no single `PENDING` revert matches the open teleporter; nothing
     /// changed.
     NoOpenRevert,
+    /// Owner decision Q2=b: the re-armed transition is not a CREATE edge of this runtime (a
+    /// TRANSFORM teleporter keeps its no-op); nothing changed.
+    NotCreateTransition,
     InvalidLimits(&'static str),
     /// Ordinal space exhausted or another fatal step error: no work until a new generation.
     ScopeTerminal,
@@ -286,6 +289,7 @@ impl Display for RevertError {
             Self::OccurrenceTooLarge => formatter.write_str("revert occurrence exceeds WOBJ-RL-07"),
             Self::UnknownOccurrence => formatter.write_str("unknown revert occurrence"),
             Self::NoOpenRevert => formatter.write_str("no pending revert of the open object"),
+            Self::NotCreateTransition => formatter.write_str("re-armed transition is not a CREATE"),
             Self::AmbiguousForward => formatter.write_str("ambiguous timed forward transition"),
             Self::InvalidLimits(reason) => write!(formatter, "invalid revert limits: {reason}"),
             Self::ScopeTerminal => formatter.write_str("revert driver is scope-terminal"),
@@ -544,8 +548,9 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     /// executing event's own owner, checked against the edge as for `apply_forward` (D91). The
     /// re-kill is one accepted scope input, so it mints one ordinal, which orders the re-armed
     /// deadline. Returns the re-armed record. A runtime bound under another scope or scope
-    /// generation (`StaleRuntimeScope`/`StaleScopeOwnershipGeneration`), or no matching `PENDING`
-    /// record, fails closed with nothing changed.
+    /// generation (`StaleRuntimeScope`/`StaleScopeOwnershipGeneration`), a `create` that is not a
+    /// CREATE edge of `runtime` (`NotCreateTransition`), or no matching `PENDING` record, fails
+    /// closed with nothing changed.
     pub(crate) fn rearm_open_create(
         &mut self,
         runtime: &LocalObjectRuntime,
@@ -562,6 +567,11 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
         runtime
             .check_scope_fence(self.scope, generation)
             .map_err(RevertError::Runtime)?;
+        // The CREATE family `select_open_create` filters for, enforced at this mutation boundary
+        // (#1204 review): an open timed TRANSFORM edge is refused before any ordinal or deadline.
+        if runtime.transition_intent_family(create) != Some(LocalObjectIntentFamily::Create) {
+            return Err(RevertError::NotCreateTransition);
+        }
         let operation = ScopeLocalObjectOperation::new(
             runtime.placement_key().clone(),
             runtime.incarnation(),
@@ -3216,6 +3226,27 @@ mod tests {
             select_open_create(runtime, &action, &content.transitions)?,
             None
         );
+
+        // #1204 review (P1): the re-arm boundary refuses the open timed TRANSFORM edge itself, so
+        // no caller can bypass the selector: nothing is minted and no deadline moves.
+        let (minted, deadline, records) = (
+            duke_driver.issuer().minted,
+            duke_driver.next_deadline(),
+            duke_driver.record_count(),
+        );
+        clock.advance(millis(60_000))?;
+        assert!(matches!(
+            duke_driver.rearm_open_create(
+                runtime,
+                &action,
+                &TransitionKey::new(OPEN_TELEPORTER)?,
+                &TransitionEventOwner::new(DUKE_DEATH)?,
+            ),
+            Err(RevertError::NotCreateTransition)
+        ));
+        assert_eq!(duke_driver.issuer().minted, minted);
+        assert_eq!(duke_driver.next_deadline(), deadline);
+        assert_eq!(duke_driver.record_count(), records);
         Ok(())
     }
 }

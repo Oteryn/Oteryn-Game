@@ -1165,6 +1165,18 @@ impl LocalObjectRuntime {
         !self.event_transitions.contains_key(transition)
     }
 
+    /// The normalized intent family of a transition this runtime binds; `None` when it binds no such
+    /// transition or its family is not a known one.
+    #[must_use]
+    pub(crate) fn transition_intent_family(
+        &self,
+        transition: &TransitionKey,
+    ) -> Option<LocalObjectIntentFamily> {
+        self.transitions
+            .get(transition)
+            .and_then(|bound| LocalObjectIntentFamily::from_key(&bound.normalized_intent_family))
+    }
+
     /// #162 §7: the unique bound inverse `bind` validated for a timed forward transition.
     #[must_use]
     pub(crate) fn revert_inverse(&self, forward: &TransitionKey) -> Option<&TransitionKey> {

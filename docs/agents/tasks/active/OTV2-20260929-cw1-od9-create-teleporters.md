@@ -158,5 +158,5 @@ The results are in the PR.
 
 ## Context checkpoint
 
-last_progress: #1204 review P1 4130255100 fixed (scope/generation fence on the re-arm); returned to AUTHORING, awaiting coordinator freeze
+last_progress: #1204 review P1 4130722521 fixed (`rearm_open_create` refuses non-CREATE edges with `NotCreateTransition`; P1 4130255100 fence already in place); returned to AUTHORING, awaiting coordinator freeze
 jira: pending (no mapped Story resolved in this worker session)
