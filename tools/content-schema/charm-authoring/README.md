@@ -16,7 +16,7 @@ None of these is modelled here. The `key` values (`oteryn:charm.<name>`) are min
 |---|---|
 | `charm.schema.json` | One catalogue (`OTERYN_CHARM_AUTHORING_CATALOGUE/v1`), JSON Schema 2020-12, closed shapes. The effect is a `oneOf` over typed shapes: `attack_proc_damage`, `attack_proc_resource_damage`, `kill_area_damage`, the timed effects (paralyse, haste, prevent flee) and the parameterless effects (dodge, parry, leech, critical and so on). |
 | `charm_authoring.py` | `capture` writes the source facts. `build` derives the catalogue and the comparison report from them, and `build --check` diffs an in-memory build against the committed samples. `validate` runs the schema and semantic checks. |
-| `charm_authoring.py content` | Writes (`--check` verifies) `content/charms/index.json` (`OTERYN_FAMILY_INDEX/v1`) and the shard `charms-00000-00024.json` (one `definition` per Charm, identity `{key, revision: definition-r1}`), and registers `Charm` in `content/project.json` (`migrated_families`), `content/manifest.json` (`families`, `managed_files`) and `content/content.lock.json` (`static_family_counts`). |
+| `charm_authoring.py content` | Writes (`--check` verifies) `content/charms/index.json` (`OTERYN_FAMILY_INDEX/v1`) and the shard `charms-00000-00024.json` (one `definition` per Charm, identity `{key, revision: definition-r1}`), and registers `Charm` in `content/project.json` (`migrated_families`), `content/manifest.json` (`families`, `managed_files`) and `content/content.lock.json` (`family_counts`). |
 | `test_charm_authoring.py` | No-network tests: infobox parsing and its rejections, the pinned Canary digest, the committed build, and one negative case per validator rule. |
 | `samples/charm-sources-2026-09-29.json` | The captured source facts (details below). |
 | `samples/charms-candidate.json` | The candidate catalogue, which validates. |
@@ -49,9 +49,8 @@ None of these is modelled here. The `key` values (`oteryn:charm.<name>`) are min
 
 ## Content population
 
-`content/lock family_counts` is asserted verbatim by `tools/content-migration`, whose generator does not yet
-know Charm, so the count is `static_family_counts.Charm` in `content/content.lock.json`. Teaching that
-generator and validator about Charm (and moving the count into `family_counts`) is a follow-up outside this package.
+`tools/content-migration/world_project_v2_to_tree.py` registers the committed Charm family (no legacy source) when it
+regenerates project, manifest and lock, so `content --check` and the generator agree byte for byte.
 Nothing loads `content/charms/` at runtime; `runtime_source` stays `legacy_until_separately_qualified`.
 
 ## Wiki and Canary comparison (2026-09-29)

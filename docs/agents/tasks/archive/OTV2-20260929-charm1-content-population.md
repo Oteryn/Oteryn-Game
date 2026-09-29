@@ -26,6 +26,9 @@ owned_paths:
   - content/content.lock.json
   - tools/content-schema/charm-authoring/**
   - .github/workflows/charm-authoring-schema.yml
+  - tools/content-migration/world_project_v2_to_tree.py
+  - tools/content-migration/validate_world_project_v2_to_tree.py
+  - tools/content-migration/test_world_project_v2_to_tree.py
   - docs/agents/tasks/archive/OTV2-20260929-charm1-content-population.md
 public_contracts: []
 depends_on:
@@ -45,12 +48,12 @@ from `next_population_families` to `migrated_families` and is registered in the 
 managed files. `charm_authoring.py content [--check]` writes and verifies all of it; CI runs the check.
 No runtime loading was added; `runtime_source` is unchanged.
 
-## Deviation and follow-up (not in owned paths)
+## Content-migration alignment (owner decision 1b)
 
-`tools/content-migration` (generator, validator, test) asserts `content.lock.json` `family_counts` verbatim,
-so the Charm count is `static_family_counts.Charm`, not `family_counts.Charm`. That generator also rewrites
-project, manifest and lock and would drop the Charm registration if re-run: teach it Charm, then move the
-count. Both are in `tools/content-migration/**`, owned by another lane.
+The Charm count is in `content.lock.json` `family_counts`. `world_project_v2_to_tree.py` registers the committed
+`content/charms/` family (no legacy source) when it regenerates project, manifest and lock; its validator and test
+assert the Charm count. Re-running the generator leaves the tree byte-identical (`git status` clean).
+Creature scripts are untouched.
 
 ## Validation (local)
 

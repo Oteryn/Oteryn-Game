@@ -28,6 +28,8 @@ NPC_BINDING_COUNT = 2344
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 58
 DIALOGUE_COUNT = 707
+# Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
+CHARM_COUNT = 25
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 322, "Service.Travel": 56}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
 
@@ -322,7 +324,8 @@ def main() -> int:
         "runtime_switch_authorized": False,
     }, "COMPATIBILITY_BOUNDARY")
     require(lock["family_counts"] == {"Item": 38157, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
-                                       "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS},
+                                       "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS,
+                                       "Charm": CHARM_COUNT},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
     require(item_index["record_count"] == 38157 and len(item_index["shards"]) == 77, "ITEM_INDEX")
@@ -400,12 +403,18 @@ def main() -> int:
     npc_records, npc_bindings, service_records = validate_npc_services(declarations, sources)
     dialogue_records = validate_dialogue(declarations)
     encounter_records = validate_encounters(declarations, sources)
+    charm_index = load(ROOT / "content" / "charms" / "index.json")
+    require(charm_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and charm_index["family"] == "Charm", "CHARM_INDEX")
+    require(charm_index["record_count"] == CHARM_COUNT and len(charm_index["shards"]) == 1, "CHARM_INDEX_COUNT")
+    charm_shard = load(ROOT / charm_index["shards"][0])
+    require(charm_shard["family"] == "Charm" and charm_shard["shard"]["count"] == len(charm_shard["records"]) == CHARM_COUNT, "CHARM_SHARD")
+    require(len({row["definition"]["identity"]["key"] for row in charm_shard["records"]}) == CHARM_COUNT, "CHARM_IDENTITY_UNIQUENESS")
     print(
         "PASS items=38157 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "
-        f"encounter_records={encounter_records}"
+        f"encounter_records={encounter_records} charm_records={CHARM_COUNT}"
     )
     return 0
 

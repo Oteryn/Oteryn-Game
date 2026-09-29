@@ -52,9 +52,6 @@ REVISION = "definition-r1"
 CATALOGUE_REL = "tools/content-schema/charm-authoring/samples/charms-candidate.json"
 INDEX_SCHEMA = "OTERYN_FAMILY_INDEX/v1"
 SHARD_SCHEMA = "OTERYN_CHARM_SHARD/v1"
-# content.lock.json family_counts is asserted verbatim by tools/content-migration, which
-# does not know Charm yet, so the static Charm count lives beside it.
-LOCK_COUNT_KEY = "static_family_counts"
 
 CURRENCY = {"major": "charm_points", "minor": "minor_charm_echoes"}
 CHANCE, EFFECT = "trigger_chance_percent", "effect_percent"
@@ -575,7 +572,8 @@ def registered(project: dict, manifest: dict, lock: dict, count: int) -> tuple:
         SHARD_PATH,
     }
     manifest["managed_files"] = [{"path": p} for p in sorted(paths)]
-    lock[LOCK_COUNT_KEY] = {**lock.get(LOCK_COUNT_KEY, {}), FAMILY: count}
+    lock["family_counts"][FAMILY] = count
+    lock.pop("static_family_counts", None)  # interim key of the first population
     return project, manifest, lock
 
 

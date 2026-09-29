@@ -171,8 +171,7 @@ def test_registration_is_idempotent_and_leaves_family_counts() -> None:
         "records": 25,
         "index": "content/charms/index.json",
     }
-    assert "Charm" not in lock["family_counts"]
-    assert lock["static_family_counts"] == {"Charm": 25}
+    assert lock["family_counts"]["Charm"] == 25
 
 
 if __name__ == "__main__":
