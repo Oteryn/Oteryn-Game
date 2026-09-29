@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import struct
 import tempfile
 import unittest
 from pathlib import Path
@@ -419,8 +420,11 @@ class ConvertAndValidateTest(unittest.TestCase):
         def wrong_revision(palette):
             palette[2] = {**palette[2], "key": "donor:crystalserver@ff7ede59:item/1949"}
 
-        def unsorted(palette):
-            palette.reverse()
+        def retired_but_used(palette):
+            palette[0] = {**palette[0], "retired": True}
+
+        def retired_not_true(palette):
+            palette[0] = {**palette[0], "retired": False}
 
         def duplicate_key(palette):
             palette[1] = {**palette[1], "key": GOLD}
@@ -437,7 +441,8 @@ class ConvertAndValidateTest(unittest.TestCase):
             (provisional_but_bound, "has a binding"),
             (wrong_binding, "not a binding target"),
             (wrong_revision, "provisional key must be"),
-            (unsorted, "ascending"),
+            (retired_but_used, "retired palette entries an item still uses"),
+            (retired_not_true, "malformed entry"),
             (duplicate_key, "listed twice"),
             (duplicate_id, "listed twice"),
             (extra_field, "malformed entry"),
@@ -447,6 +452,88 @@ class ConvertAndValidateTest(unittest.TestCase):
                 self.assertTrue(any(expected in e for e in errors), errors)
                 self.write_index(json.loads(self.out[validate.INDEX]))
         self.assertEqual(self.errors(), [])
+
+    def install(self, out):
+        """Write a build into a fresh temp root and return it."""
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root)
+        for path, data in out.items():
+            (root / path).parent.mkdir(parents=True, exist_ok=True)
+            (root / path).write_bytes(data)
+        (root / validate.ITEM_BINDINGS).parent.mkdir(parents=True, exist_ok=True)
+        (root / validate.ITEM_BINDINGS).write_bytes(ITEMS_BY_SERVER_ID)
+        return root
+
+    @staticmethod
+    def palette_of(out):
+        return json.loads(out[validate.INDEX])["palette"]
+
+    @staticmethod
+    def regions_of(out):
+        return {p: d for p, d in out.items() if p.endswith(".b3")}
+
+    def map_with_lower_id(self):
+        """The fixture plus one tile of server id 50 in another region (x5, y5)."""
+        tile = fixtures.node(5, bytes([1, 1]), fixtures.node(6, struct.pack("<H", 50)))
+        area = fixtures.node(4, struct.pack("<HHB", 1280, 1280, 7), tile)
+        return {**self.blobs, convert.OTBM: fixtures.fixture_map(extra_areas=(area,))}
+
+    def test_new_lower_id_is_appended_and_untouched_regions_stay_identical(self):
+        blobs = self.map_with_lower_id()
+        out = convert.build(blobs, ITEMS_BY_SERVER_ID, self.palette_of(self.out))
+        palette = self.palette_of(out)
+        self.assertEqual(palette[:3], self.palette_of(self.out))
+        self.assertEqual(
+            palette[3], {"key": DONOR + "50", "provisional": True, "source_item_id": 50}
+        )
+        old_regions = self.regions_of(self.out)
+        new_regions = self.regions_of(out)
+        self.assertEqual(len(new_regions), len(old_regions) + 1)
+        for path, data in old_regions.items():
+            self.assertEqual(new_regions[path], data)
+        # A fresh build sorts 50 first, renumbers every index and rewrites the old region.
+        fresh = convert.build(blobs, ITEMS_BY_SERVER_ID)
+        self.assertEqual(self.palette_of(fresh)[0]["source_item_id"], 50)
+        region = f"{validate.DIRECTORY}/region-z07-x003-y003.b3"
+        self.assertNotEqual(fresh[region], self.out[region])
+        self.assertEqual(validate.validate(self.install(out)), [])
+
+    def test_binding_change_rewrites_only_the_index(self):
+        provisional = convert.build(self.blobs, bindings_for([]))
+        out = convert.build(
+            self.blobs, ITEMS_BY_SERVER_ID, self.palette_of(provisional)
+        )
+        self.assertEqual(self.regions_of(out), self.regions_of(provisional))
+        self.assertEqual(out, self.out)
+        self.assertNotEqual(out[validate.INDEX], provisional[validate.INDEX])
+        self.assertEqual(
+            [row["source_item_id"] for row in self.palette_of(out)], [100, 1234, 1949]
+        )
+        self.assertEqual(self.palette_of(out)[0]["key"], GOLD)
+
+    def test_unused_entry_is_kept_and_flagged_retired(self):
+        previous = convert.build(self.map_with_lower_id(), ITEMS_BY_SERVER_ID)
+        out = convert.build(self.blobs, ITEMS_BY_SERVER_ID, self.palette_of(previous))
+        palette = self.palette_of(out)
+        self.assertEqual(
+            [row["source_item_id"] for row in palette], [50, 100, 1234, 1949]
+        )
+        self.assertEqual(
+            [row.get("retired") for row in palette], [True, None, None, None]
+        )
+        region = f"{validate.DIRECTORY}/region-z07-x003-y003.b3"
+        self.assertEqual(out[region], previous[region])
+        self.assertEqual(self.summary(out)["palette"]["entries"], 4)
+        root = self.install(out)
+        self.assertEqual(validate.validate(root), [])
+        # A retired entry that the map uses again is revived and loses the flag.
+        again = convert.build(self.map_with_lower_id(), ITEMS_BY_SERVER_ID, palette)
+        self.assertEqual(again, previous)
+
+    def test_committed_palette_with_a_repeated_id_fails_closed(self):
+        palette = self.palette_of(self.out)
+        with self.assertRaises(convert.ConvertError):
+            convert.build(self.blobs, ITEMS_BY_SERVER_ID, palette + palette[:1])
 
     def test_bindings_change_makes_a_registry_entry_stale(self):
         self.write_bindings(bindings_for([(100, GOLD), (1234, GOLD.upper())]))

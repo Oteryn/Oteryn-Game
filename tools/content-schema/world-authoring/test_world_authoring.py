@@ -35,10 +35,11 @@ def string(text: str) -> bytes:
     return struct.pack("<H", len(text)) + text.encode("latin-1")
 
 
-def fixture_map(extra_houses=()) -> bytes:
+def fixture_map(extra_houses=(), extra_areas=()) -> bytes:
     """One town, one house (id 0xFE forces escaping) with a door, two teleports.
 
-    `extra_houses` adds one plain tile per additional house id.
+    `extra_houses` adds one plain tile per additional house id; `extra_areas` appends raw
+    tile-area nodes.
     """
     door = node(6, struct.pack("<H", 1234) + bytes([14, 3]))
     teleport = node(
@@ -81,7 +82,9 @@ def fixture_map(extra_houses=()) -> bytes:
     waypoints = node(
         15, b"", node(16, string("wp") + struct.pack("<HHB", 1000, 1000, 7))
     )
-    map_data = node(2, bytes([1]) + string("fixture"), area, towns, waypoints)
+    map_data = node(
+        2, bytes([1]) + string("fixture"), area, *extra_areas, towns, waypoints
+    )
     return b"\x00\x00\x00\x00" + node(
         0, struct.pack("<IHHII", 4, 2048, 2048, 3, 57), map_data
     )

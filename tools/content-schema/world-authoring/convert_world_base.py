@@ -4,9 +4,12 @@
 Writes content/world/placements/ (region files and index.json) plus the committed capture
 summary. The source is OTS_HYPOTHESIS_ONLY migration evidence. Region files store, per
 item, an index into the ``palette`` of index.json. The palette holds one entry per distinct
-map server item id, in ascending id order. An id bound in the item bindings resolves to its
-binding target key. Any other id gets a provisional donor key. The conversion fails closed
-on an item or tile attribute it does not carry.
+map server item id and is append-only: a fresh build orders entries by ascending id, and a
+build over a committed palette keeps every entry at its index, appends new ids at the end
+in ascending id order and flags an entry the map no longer uses ``"retired": true``. An id
+bound in the item bindings resolves to its binding target key. Any other id gets a
+provisional donor key. The conversion fails closed on an item or tile attribute it does
+not carry.
 
     python convert_world_base.py --crystal-root /path/to/crystalserver [--check]
 """
@@ -83,24 +86,63 @@ def bound_keys(bindings: bytes) -> dict[int, str]:
     return keys
 
 
-def build_palette(bound: dict[int, str], occurrences: Counter) -> list[dict]:
-    """One entry per distinct map server id, ascending by id."""
+def palette_entry(server_id: int, bound: dict[int, str]) -> dict:
+    key = bound.get(server_id)
+    return {
+        "key": key or donor_key(server_id),
+        "provisional": key is None,
+        "source_item_id": server_id,
+    }
+
+
+def build_palette(
+    bound: dict[int, str], occurrences: Counter, previous: list[dict] | None = None
+) -> list[dict]:
+    """The append-only palette.
+
+    Without a committed palette: one entry per distinct map server id, ascending by id.
+    With one: every committed entry keeps its index (its key is refreshed from the current
+    bindings), an id the map no longer uses is kept and flagged ``retired``, and new ids are
+    appended in ascending id order, so region files never need renumbering.
+    """
     palette = []
-    for server_id in sorted(occurrences):
-        key = bound.get(server_id)
-        palette.append(
-            {
-                "key": key or donor_key(server_id),
-                "provisional": key is None,
-                "source_item_id": server_id,
-            }
-        )
+    seen: set[int] = set()
+    for row in previous or ():
+        server_id = row["source_item_id"]
+        if server_id in seen:
+            raise ConvertError(f"committed palette lists server id {server_id} twice")
+        seen.add(server_id)
+        entry = palette_entry(server_id, bound)
+        if server_id not in occurrences:
+            entry["retired"] = True
+        palette.append(entry)
+    palette.extend(
+        palette_entry(server_id, bound)
+        for server_id in sorted(occurrences)
+        if server_id not in seen
+    )
     keys = Counter(row["key"] for row in palette)
     duplicated = sorted(key for key, count in keys.items() if count > 1)
     if duplicated:
         raise ConvertError(
             f"palette keys shared by several server ids: {duplicated[:5]}"
         )
+    return palette
+
+
+def committed_palette(root: Path = ROOT) -> list[dict] | None:
+    """The palette of the committed index, or None while the family is unpopulated."""
+    path = root / DIRECTORY / "index.json"
+    if not path.is_file():
+        return None
+    palette = json.loads(path.read_text(encoding="utf-8")).get("palette")
+    if palette is None:
+        return None
+    if not all(
+        isinstance(row, dict) and isinstance(row.get("source_item_id"), int)
+        for row in palette
+    ):
+        raise ConvertError(f"{DIRECTORY}/index.json: committed palette is malformed")
     return palette
 
 
@@ -211,7 +253,12 @@ def zstd_info() -> dict:
     }
 
 
-def build(blobs: dict[str, bytes], bindings: bytes | None = None) -> dict[str, bytes]:
+def build(
+    blobs: dict[str, bytes],
+    bindings: bytes | None = None,
+    previous: list[dict] | None = None,
+) -> dict[str, bytes]:
+    """Build every output; `previous` is the committed palette to extend, if any."""
     if bindings is None:
         bindings = ITEM_BINDINGS.read_bytes()
     bound = bound_keys(bindings)
@@ -227,7 +274,7 @@ def build(blobs: dict[str, bytes], bindings: bytes | None = None) -> dict[str, b
         raise ConvertError("map extent exceeds the region coordinate range")
     if collector.tiles != facts.tiles:
         raise ConvertError("tile count differs from the reader")
-    palette = build_palette(bound, collector.occurrences)
+    palette = build_palette(bound, collector.occurrences, previous)
     collector.remap({row["source_item_id"]: i for i, row in enumerate(palette)})
     declared = items_xml_ids(blobs[ITEMS_XML])
     provisional = {"appearance_only": [0, 0], "in_items_xml": [0, 0]}
@@ -358,7 +405,7 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="fail instead of writing")
     args = parser.parse_args()
     try:
-        out = build(read_source(args.crystal_root))
+        out = build(read_source(args.crystal_root), previous=committed_palette())
         totals = json.loads(out[f"{DIRECTORY}/index.json"])["totals"]
         if {k: totals[k] for k in PINNED_TOTALS} != PINNED_TOTALS:
             raise ConvertError(

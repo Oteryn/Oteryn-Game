@@ -50,6 +50,7 @@ INDEX_KEYS = {
 REGION_KEYS = {"items", "path", "sha256", "tiles"}
 TOTAL_KEYS = {"items", "regions", "sectors", "tiles"}
 PALETTE_KEYS = {"key", "provisional", "source_item_id"}
+RETIRED_KEYS = PALETTE_KEYS | {"retired"}
 
 
 class ValidationError(Exception):
@@ -197,12 +198,13 @@ def check_palette(palette, bound: dict[int, set[str]], errors: list[str]) -> boo
         return False
     start = len(errors)
     keys: set[str] = set()
-    previous = -1
+    ids: set[int] = set()
     for position, row in enumerate(palette):
         where = f"{INDEX}: palette[{position}]"
         if (
             not isinstance(row, dict)
-            or set(row) != PALETTE_KEYS
+            or set(row) not in (PALETTE_KEYS, RETIRED_KEYS)
+            or row.get("retired", True) is not True
             or not isinstance(row["key"], str)
             or not isinstance(row["provisional"], bool)
             or not isinstance(row["source_item_id"], int)
@@ -212,11 +214,9 @@ def check_palette(palette, bound: dict[int, set[str]], errors: list[str]) -> boo
             errors.append(f"{where}: malformed entry {row!r}"[:200])
             continue
         server_id, key = row["source_item_id"], row["key"]
-        if server_id == previous:
+        if server_id in ids:
             errors.append(f"{where}: source_item_id {server_id} is listed twice")
-        elif server_id < previous:
-            errors.append(f"{where}: source_item_id {server_id} breaks ascending order")
-        previous = max(previous, server_id)
+        ids.add(server_id)
         if key in keys:
             errors.append(f"{where}: key {key!r} is listed twice")
         keys.add(key)
@@ -237,11 +237,19 @@ def check_palette(palette, bound: dict[int, set[str]], errors: list[str]) -> boo
 def check_palette_use(
     palette: list, used: Counter, summary: dict, items: int, errors: list[str]
 ) -> None:
-    unused = [i for i in range(len(palette)) if used[i] == 0]
+    unused = [
+        i for i, row in enumerate(palette) if used[i] == 0 and not row.get("retired")
+    ]
     if unused:
         errors.append(
             f"{INDEX}: palette entries no item uses: "
             f"{[palette[i]['source_item_id'] for i in unused[:10]]}"
+        )
+    revived = [i for i, row in enumerate(palette) if used[i] and row.get("retired")]
+    if revived:
+        errors.append(
+            f"{INDEX}: retired palette entries an item still uses: "
+            f"{[palette[i]['source_item_id'] for i in revived[:10]]}"
         )
     if sum(used.values()) != items:
         errors.append(f"{INDEX}: palette occurrences differ from the item total")

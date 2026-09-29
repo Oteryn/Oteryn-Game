@@ -112,14 +112,18 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   charges, action id, unique id, text, description, teleport destination, depot id, house
   door id. Presence is exact, so a present zero or empty text stays present.
 - **Item identity (palette):** a region file never names an item. It stores, per item, an
-  index into `palette` in `index.json`. The palette holds exactly the distinct server item
-  ids the map uses, ordered by ascending id, as `{"key", "source_item_id", "provisional"}`:
+  index into `palette` in `index.json`. The palette holds the distinct server item
+  ids the map uses (and any retired ones) as `{"key", "source_item_id", "provisional"}`. A fresh build orders it by
+  ascending id, and the palette is then **append-only** (see below):
   - an id bound in `imports/crystalserver/bindings/items.json` (`ots/item_server_id`) takes
     that binding's target key, either `oteryn:item.registry.iNNNNNNNN` or a named key such
     as `oteryn:item.currency.gold_coin`, with `provisional: false`;
   - any other id takes `donor:crystalserver@00ce02a5:item/<id>` (the donor-census key
     form) with `provisional: true`. This covers appearance-only terrain ids that are not in
     `items.xml` and new items that no binding covers yet.
+
+  An entry the map stops using is never removed: it is flagged `"retired": true`, which is
+  allowed only while no region references it.
 
   Later identity work (admitting the provisional items, a Terrain identity path) rewrites
   palette entries in `index.json` only. The 22 MB of region files do not change. The
@@ -149,7 +153,11 @@ summary records the versions, and `--check` compares bytes, so run it with the s
 To update from a newer CrystalServer revision, change the pin in `convert_world_metadata.py`
 and the `items.xml` digest in `convert_world_base.py`, then rerun the converter. Region
 files whose tiles did not change stay byte-identical, so only the changed regions differ,
-plus `index.json` and the summary. Palette indexes are assigned by ascending server id, so a
-new id that sorts before existing ones renumbers later indexes and rewrites every region
-that uses them. Oteryn edits authored on top of the base map will later need a separate
-patch layer that survives a regeneration. That layer is not implemented.
+plus `index.json` and the summary. The palette is append-only, so a new id never renumbers
+anything: when `content/world/placements/index.json` is committed, the converter keeps every existing entry
+at its index (refreshing only its key if the binding changed, for example provisional to an
+Oteryn key), appends new server ids at the end in ascending id order, and keeps an id the
+new map no longer uses as `"retired": true`. Untouched region files stay byte-identical.
+The validator requires unique ids and keys, every non-retired entry referenced and every
+retired entry unreferenced. Oteryn edits authored on top of the base map will later need a
+separate patch layer that survives a regeneration. That layer is not implemented.
