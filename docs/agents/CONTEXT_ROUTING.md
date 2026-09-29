@@ -59,6 +59,8 @@ Run the narrow local check for what you changed and leave the full workspace bui
 | `tools/repository/`, `.github/` | `python tools/repository/validate_repository_policy.py` and the matching `tools/repository/test_*.py` |
 | other docs | `git diff --check` |
 
+The `apps/game-server/tests/*_postgres.rs` targets need PostgreSQL 17.6, the version CI pins. Start it once per session: run `(dockerd >/dev/null 2>&1 &)`, wait until `docker info` succeeds, then `docker run -d --name oteryn-pg -p 5432:5432 -e POSTGRES_USER=oteryn_test_admin -e POSTGRES_PASSWORD=localpw postgres:17.6-bookworm`. Run one target with `OTERYN_TEST_POSTGRES_ADMIN_URL=postgresql://oteryn_test_admin:localpw@127.0.0.1:5432/postgres cargo test --locked -p oteryn-game-server --test <target> --quiet`. Never relax the 17.6 version check, even temporarily. If the 17.6 image is unavailable (for example, Docker Hub returns 429), leave those targets to CI and say so in the report.
+
 The package name is the `name` in that directory's `Cargo.toml`. A PR that touches `tools/agents/`, `tools/repository/`, `.github/workflows/` or the Cargo manifests runs the full Rust Linux and Windows lanes in CI (about 15 minutes), even when it changes no Rust. Keep ordinary docs, task-record and content PRs away from those paths, and put prompt-version pin updates into the coordinator's daily batch.
 
 ### Waiting for CI

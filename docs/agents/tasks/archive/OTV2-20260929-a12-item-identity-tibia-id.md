@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-a12-item-identity-tibia-id
 title: "A12 Item identity equals the Tibia id (D146-D148)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
@@ -24,7 +24,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_WO0_WORLD_OBJECT_AND_TERRAIN_AUTHORING_FORMAT_DECISION_2026-09-28.md
   - docs/architecture/reviews/OTERYN_GAME_STANCE0_CHARACTER_STANCE_PERSISTENCE_DECISION_2026-09-29.md
   - docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md
-  - docs/agents/tasks/active/OTV2-20260929-a12-item-identity-tibia-id.md
+  - docs/agents/tasks/archive/OTV2-20260929-a12-item-identity-tibia-id.md
   - docs/agents/tasks/active/OTV2-20260929-a11-stance-persistence-decision.md   # archive move after #1225
   - docs/agents/tasks/archive/OTV2-20260929-a11-stance-persistence-decision.md
 public_contracts: []
@@ -105,7 +105,7 @@ and fixed in the second repair commit.
 
 ```yaml
 last_progress: decision authored
-status: validating
+status: completed
 branch: claude/gifted-rubin-a0axzx
 head_sha: null
 pr: 1237
@@ -113,3 +113,9 @@ owner_action_required: null
 blocker: null
 next_action: "validate, open the PR, freeze, request review"
 ```
+
+## Closeout
+
+- PR #1237 merged via Merge Queue: final head `eed19673d77c90c22d4c457361f6a494ed378ab0`, merge commit `8af7f88e031333b4f243287c58be7a8c9d4578ad`.
+- Protected-main readback: all 7 files the merge changed are byte-identical between the final head and the merge commit.
+- Ownership released on merge. Archived by the Work coordinator in the 2026-09-29 batch.
