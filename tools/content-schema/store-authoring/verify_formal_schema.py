@@ -19,10 +19,10 @@ def identity(key):
     return {"key": key, "revision": "definition-r1"}
 
 
-def item_ref(n):
+def item_ref(tibia_id):
     return {
         "family": "Item",
-        "key": f"oteryn:item.registry.i{n:08d}",
+        "key": f"oteryn:item.tibia.i{tibia_id}",
         "revision": "definition-r1",
     }
 
@@ -76,7 +76,7 @@ CATALOG = {
             "engine_offer_id": None,
             "product": {
                 "kind": "item",
-                "item": {"item_refs": [item_ref(239)], "count": 100, "charges": None},
+                "item": {"item_refs": [item_ref(322)], "count": 100, "charges": None},
             },
         },
         {

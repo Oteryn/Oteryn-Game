@@ -5810,7 +5810,7 @@
         "apps/game-server/src/durability/item_transfer.rs (plan_transfer/load_entries)",
         "apps/game-server/migrations/0011_item_transfer_backpack.sql (game_item_placement_proven)"
       ],
-      "notes": "D81; B3 \u00a74.2/\u00a74.5; the backpack definition oteryn:item.registry.i00002752 declares capacity 20; registered by OTV2-20260928-b3-1-transfer."
+      "notes": "D81; B3 \u00a74.2/\u00a74.5; the backpack definition oteryn:item.tibia.i2854 (A12) declares capacity 20; registered by OTV2-20260928-b3-1-transfer."
     },
     {
       "id": "GAMEITEM01-PLACEMENT-DEPTH",

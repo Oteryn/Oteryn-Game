@@ -309,8 +309,8 @@ after identity resolution instead of before it: these donor ids have no CW2 B1
 allocator key at all, and this task never mints one (a separate, reviewed
 Content/World step, B1b, does). Rows are keyed by a provisional, clearly
 non-canonical string, `donor:crystalserver@<short-commit>:item/<id>`, never
-`oteryn:item.registry.*`. Because the committed wiki-evidence snapshot and the owner
-leftover-family table above are both keyed by Oteryn registry key, neither can ever
+an Oteryn Item key. Because the committed wiki-evidence snapshot and the owner
+leftover-family table above are both keyed by Oteryn Item key, neither can ever
 match a donor-only id; the join is attempted anyway, exactly where `convert_item`
 would attempt it, and the committed census reports the resulting zero-match count
 explicitly (`wiki_evidence_fallback_resolved`, `owner_leftover_table_resolved`) so
@@ -458,7 +458,7 @@ makes the bundle invalid. Engine manifest fields are additionally restricted to 
 artifact must carry its pinned SHA-256.
 
 An example keeps the canonical Item key bound to its TibiaWiki BR page in
-`imports/tibiawiki/bindings/items.json` (Magic Sword: `oteryn:item.registry.i00003167`).
+`imports/tibiawiki/bindings/items.json` (Magic Sword: `oteryn:item.tibia.i3288`).
 Examples whose page has no binding yet keep a provisional key and the
 `canonical_item_identity_not_bound` blocker.
 
