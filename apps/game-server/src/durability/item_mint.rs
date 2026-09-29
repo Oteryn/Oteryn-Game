@@ -51,6 +51,22 @@ const INTENT_BINDING_VERSION: u8 = 1;
 const EVENT_TYPE_ID: i64 = audit::EVENT_TYPE_ID as i64;
 const EVENT_SCHEMA_REVISION: i64 = audit::EVENT_SCHEMA_REVISION as i64;
 
+// D3-1 is test-only: `commit_corpse_mint` and its supporting items below have
+// no production caller yet (D3-2's `combat/death_reward.rs` composes the
+// corpse-MINT-then-loot-MINT sequence and is a later, separate allocation).
+#[allow(dead_code)]
+/// DUR-03 §39.4 / D3 §4.1: the reserved sentinel `loot_purpose_key` naming a
+/// creature's own corpse MINT (always `draw_ordinal = 0`), never reused by an
+/// ordinary loot entry's own cause.
+pub const CORPSE_MATERIALIZATION_PURPOSE_KEY: &str = "CORPSE_MATERIALIZATION";
+
+/// VSL resource-rows decision §4.1 row 6 / D3 §4.2: the one bound on live
+/// corpse projections per scope (`COMBAT01-CORPSES-PER-SCOPE`), enforced only
+/// at the corpse's own MINT commit under the per-scope `oteryn:corpse-cap:`
+/// advisory lock -- never re-decided here.
+#[allow(dead_code)]
+const COMBAT01_CORPSES_PER_SCOPE_MAX: i64 = 64;
+
 /// Equality on the full cause tuple, parameters `$1..$10`; never a hash.
 macro_rules! cause_key {
     () => {
@@ -632,6 +648,136 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// Commit one frozen corpse-MINT candidate (DUR-03 §39.4, child `D3-1`).
+    /// The candidate is frozen exactly like any other MINT
+    /// ([`Self::freeze_item_mint`]); this commit path differs from
+    /// [`Self::commit_item_mint`] only in what it is admitted for and what it
+    /// writes:
+    /// - admitted only for a candidate whose cause carries the reserved
+    ///   [`CORPSE_MATERIALIZATION_PURPOSE_KEY`] (D3 §4.1); any other cause is
+    ///   `InvalidInput`, never silently handled as an ordinary Ground MINT;
+    /// - the receipt additionally carries the corpse's captured top-damage
+    ///   `CharacterId` (D132/§4.3), a value no other MINT shape ever writes;
+    /// - `materialized_at` is never written here: only the deferred
+    ///   `game_item_mint_receipt_materialize_corpse` trigger (migration 0013)
+    ///   sets it, from `clock_timestamp()`, immediately before this
+    ///   transaction's own commit finalizes (D133/D135);
+    /// - before the existing `fence_is_live` check and before this MINT's own
+    ///   insert, it takes the per-scope `oteryn:corpse-cap:` advisory
+    ///   transaction lock and recounts live corpses for the death's scope,
+    ///   refusing `CapacityExceeded` at or above the already-accepted
+    ///   `COMBAT01-CORPSES-PER-SCOPE` = 64 ceiling (VSL resource-rows decision
+    ///   §4.1 row 6; D3 §4.2) -- never a freeze-time-only count, so two
+    ///   concurrent corpse commits for one scope can never both observe room
+    ///   and both succeed.
+    // D3-2 is the production caller (a later, separate allocation); today
+    // only D3-1's own PG tests call this.
+    #[allow(dead_code)]
+    pub async fn commit_corpse_mint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        candidate: &mut ItemMintCandidate,
+        top_damage_character_id: [u8; 16],
+    ) -> Result<ItemMintOutcome> {
+        if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
+            return Err(ItemMintError::InvalidInput);
+        }
+        audit::check_uuid_v7(&top_damage_character_id)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemMintError::AuthorityRejected)?;
+        self.charge_item_mint_work_unit(recovery.clone(), candidate)
+            .await?;
+        let frozen = FrozenMint::of(candidate);
+        let node = node.clone();
+
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    lock_cause(&mut tx, &frozen.request.cause).await?;
+
+                    if let Some(row) = load_receipt(&mut tx, &frozen.request.cause).await? {
+                        let stored: Vec<u8> = row.try_get("intent_binding")?;
+                        if stored != frozen.intent_binding {
+                            return Ok(Err(ItemMintError::ConflictingCause));
+                        }
+                        let committed = decode_receipt(&row)?;
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(ItemMintOutcome::AlreadyCommitted(committed)));
+                    }
+
+                    let Some(row) = load_reservation(&mut tx, &frozen.request.cause).await? else {
+                        return Ok(Err(ItemMintError::ConflictingCandidate));
+                    };
+                    let stored: Vec<u8> = row.try_get("intent_binding")?;
+                    if stored != frozen.intent_binding {
+                        return Ok(Err(ItemMintError::ConflictingCause));
+                    }
+                    let reservation = decode_reservation(&row)?;
+                    if reservation.transaction_id != frozen.transaction_id
+                        || reservation.event_id != frozen.event_id
+                        || reservation.item_instance_id != frozen.item_instance_id
+                    {
+                        return Ok(Err(ItemMintError::ConflictingCandidate));
+                    }
+
+                    let identity_reused: bool = sqlx::query_scalar(
+                        "SELECT EXISTS (SELECT 1 FROM game_item_mint_receipts \
+                                         WHERE transaction_id = encode($1,'hex')::uuid \
+                                            OR event_id = encode($2,'hex')::uuid \
+                                            OR item_instance_id = encode($3,'hex')::uuid) \
+                             OR EXISTS (SELECT 1 FROM game_item_audit_outbox \
+                                         WHERE transaction_id = encode($1,'hex')::uuid \
+                                            OR event_id = encode($2,'hex')::uuid) \
+                             OR EXISTS (SELECT 1 FROM game_item_instances \
+                                         WHERE item_instance_id = encode($3,'hex')::uuid)",
+                    )
+                    .bind(frozen.transaction_id.as_slice())
+                    .bind(frozen.event_id.as_slice())
+                    .bind(frozen.item_instance_id.as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    if identity_reused {
+                        return Ok(Err(ItemMintError::ConflictingCandidate));
+                    }
+
+                    // D3 §4.2: the per-scope corpse-cap advisory lock, taken
+                    // before fence_is_live and before this MINT's own insert
+                    // -- never a freeze-time-only count.
+                    let live_corpses =
+                        corpse_cap_recount(&mut tx, &frozen.request.cause.death).await?;
+                    if live_corpses >= COMBAT01_CORPSES_PER_SCOPE_MAX {
+                        return Ok(Err(ItemMintError::CapacityExceeded));
+                    }
+
+                    // DUR-03 §32 / D52: the reservation's fence must be live:
+                    // the death's generation is the current assignment held by
+                    // the reserving node's current incarnation.
+                    if !fence_matches(&reservation, &node)
+                        || !fence_is_live(&mut tx, &frozen.request.cause.death, &node).await?
+                    {
+                        return Ok(Err(ItemMintError::AuthorityRejected));
+                    }
+
+                    insert_corpse_mint(&mut tx, &frozen, top_damage_character_id).await?;
+                    let committed = CommittedItemMint {
+                        transaction_id: frozen.transaction_id,
+                        event_id: frozen.event_id,
+                        item_instance_id: frozen.item_instance_id,
+                        occurred_at_unix_ms: frozen.occurred_at_unix_ms,
+                        envelope_sha256: frozen.envelope_sha256,
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(ItemMintOutcome::Committed(committed)))
+                })
+            })
+            .await?
+    }
+
     /// Resolve an unknown outcome of a frozen candidate. The cause lock waits
     /// for any in-flight attempt, so `None` proves nothing committed for this
     /// cause and the same candidate may be retried. Never reacquires runtime
@@ -1001,9 +1147,65 @@ async fn fence_is_live(
     Ok(assignment.is_some() && prove_current_incarnation(tx, node).await?)
 }
 
+/// D3 §4.2: take the per-scope `oteryn:corpse-cap:` advisory transaction lock
+/// (serializing every concurrent corpse-MINT commit for this exact scope
+/// against each other -- and only them, so no other MINT/TRANSFER/XP writer
+/// of the scope is affected) and recount live corpses currently on Ground for
+/// it. The count is authoritative only inside the same transaction as the
+/// corpse's own insert; an earlier `freeze_item_mint`-time count is advisory
+/// only (§39.4).
+#[allow(dead_code)]
+async fn corpse_cap_recount(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    death: &CreatureDeathKey,
+) -> std::result::Result<i64, DurabilityError> {
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(\
+         'oteryn:corpse-cap:' || encode($1,'hex'), 0))",
+    )
+    .bind(scope_key(death.world_id, death.channel_id).as_slice())
+    .execute(&mut **tx)
+    .await?;
+    let count: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_ground_locations g \
+           JOIN game_item_mint_receipts r ON r.item_instance_id = g.item_instance_id \
+           JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
+          WHERE g.world_id = encode($1,'hex')::uuid AND g.channel_id = encode($2,'hex')::uuid \
+            AND r.loot_purpose_key = $3 AND i.lifecycle = 1",
+    )
+    .bind(death.world_id.as_bytes().as_slice())
+    .bind(death.channel_id.as_bytes().as_slice())
+    .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+    .fetch_one(&mut **tx)
+    .await?;
+    Ok(count)
+}
+
 async fn insert_mint(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     frozen: &FrozenMint,
+) -> std::result::Result<(), DurabilityError> {
+    insert_mint_with_corpse_attribution(tx, frozen, None).await
+}
+
+/// D3-1: the corpse's own MINT, identical to [`insert_mint`] except its
+/// receipt also carries the captured top-damage `CharacterId` (D132/§4.3).
+/// `materialized_at` is left NULL here; only the deferred
+/// `game_item_mint_receipt_materialize_corpse` trigger (migration 0013) ever
+/// writes it.
+#[allow(dead_code)]
+async fn insert_corpse_mint(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    frozen: &FrozenMint,
+    top_damage_character_id: [u8; 16],
+) -> std::result::Result<(), DurabilityError> {
+    insert_mint_with_corpse_attribution(tx, frozen, Some(top_damage_character_id)).await
+}
+
+async fn insert_mint_with_corpse_attribution(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    frozen: &FrozenMint,
+    top_damage_character_id: Option<[u8; 16]>,
 ) -> std::result::Result<(), DurabilityError> {
     let request = &frozen.request;
     let death = &request.cause.death;
@@ -1049,11 +1251,12 @@ async fn insert_mint(
            death_actor_local_generation, loot_table_family, loot_table_production_key, \
            loot_table_revision_ref, loot_purpose_key, draw_ordinal, intent_binding, \
            transaction_id, event_id, item_instance_id, occurred_at, envelope_sha256, \
-           committed_at) \
+           committed_at, corpse_top_damage_character_id) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3::text::numeric(20,0), $4, \
            $5::text::numeric(20,0), $6, $7, $8, $9, $10, $11, encode($12,'hex')::uuid, \
            encode($13,'hex')::uuid, encode($14,'hex')::uuid, $15, $16, \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint)",
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, \
+           encode($17,'hex')::uuid)",
     )
     .bind(world)
     .bind(death.channel_id.as_bytes().as_slice())
@@ -1071,6 +1274,7 @@ async fn insert_mint(
     .bind(item)
     .bind(frozen.occurred_at_unix_ms)
     .bind(frozen.envelope_sha256.as_slice())
+    .bind(top_damage_character_id.map(|value| value.to_vec()))
     .execute(&mut **tx)
     .await?;
     sqlx::query(
