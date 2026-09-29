@@ -41,7 +41,8 @@ jira: KAN-16
 
 Step 3 of the owner's world-map plan: the whole base map of `world.otbm` in
 `zimbadev/crystalserver@00ce02a5` (`summer-update`) becomes `WorldPlacement.Base`:
-19,325,129 tiles and 24,925,845 items on floors 0-15, in 1,208 region files
+19,325,129 tiles and 24,925,845 items on floors 0-15 (plus the 2,965 tile Blue Valley fill),
+in 1,208 region files
 (`OTERYN_WORLD_REGION_B3/v1`, about 21.6 MB) plus a 2.5 MB `index.json`. The source is
 sha256-pinned and `OtsHypothesisOnly`.
 
@@ -90,7 +91,7 @@ sha256-pinned and `OtsHypothesisOnly`.
       `floorchange` attribute (447 types: 194 `down`, 73 `up_north`, 52 `up_south`,
       50 `up_east`, 69 `up_west`, 5 `up_south_alt`, 4 `up_east_alt`), keyed from the palette
       item key, with the engine mapping documented and `occurrences_on_base_map` counted
-      from the region files (329 types, 26,919 occurrences). Ladders up, rope spots, sewer
+      from the region files (329 types, 26,929 occurrences). Ladders up, rope spots, sewer
       grates and tool holes are scripted uses and are listed as excluded, not invented.
 - [x] `Area.Island` holds only islands the base map confirms (owner rule): 59 records
       (55 island, 3 archipelago, 1 continent; 2 event-only; 1 underground) computed by
@@ -109,6 +110,16 @@ sha256-pinned and `OtsHypothesisOnly`.
       no committed teleport links them). 7 candidates are excluded with a reason
       (3 without coordinates, 2 part of the landmass, 2 event-only not on the map) in
       `samples/islands-capture-v1.json`. `validate_islands.py` and `test_islands.py` pass.
+- [x] Blue Valley is partially filled from `maps.7z:blue_valley.otbm` (fill-only: a tile is
+      added only where the base map has no tile at that position, nothing existing is
+      overwritten or merged): 2,965 tiles and 3,364 items added (floor 2 118, floor 3 219,
+      floor 4 685, floor 5 918, floor 6 1,025; floor 7 none because the base already has a
+      tile at every fragment position, 905 of them land over base water), pinned by the
+      sha256 of the archive and member, counts in the capture summary `fill`, reproduced by
+      `convert_world_base.py --check` (needs `py7zr`, `requirements-regenerate.txt`).
+      Still to draw: Blue Valley NE/E/S blocks, Temple of Light, Great Expedition Island and
+      Wharf, Marapur/Thalassara floors 2-6, Nargor floors 4-6, Upper Roshamuul floor 6,
+      Great Expedition floors 3-6.
 - [x] `Terrain` holds 5,942 records (`oteryn:terrain.a<id>`), one per appearance-only palette
       id that the official 15.30 client `appearances-2dfa943b….dat` declares (owner-confirmed
       redistribution), from `convert_terrain.py --check` and `client_appearance_reader.py`.
@@ -128,7 +139,21 @@ sha256-pinned and `OtsHypothesisOnly`.
 - Admitting provisional items (item B1b).
 - A patch layer for authored Oteryn edits over a regenerated base.
 - Runtime consumption, the per-channel overlay and the native `WorldTilePosition` mapping.
-- The `15.30/` fragment maps.
+- `access.otbm`, `asura_resp.otbm`, `boss_rooms_-_part_2.otbm` and `final.otbm` of
+  `data-global/world/15.30/`: unreferenced local-coordinate drafts (x about 945-1173, y about
+  999-1096, floors 5-7, 17,801 tiles, absent from the base). No script, XML or C++ loads them
+  and no boss uses their coordinates; they overlap the Movement Trainer area of
+  `custom/global-custom.otbm` (off by default, `toggleMapCustom=false`). Owner decision: not
+  imported, deferred.
+- The other members of `maps.7z` (not approved): measured against base positions only,
+  `summer-update-2025` (286,241 tiles) would add 45,047 tiles on floors 2-6 and 8-15,
+  `newheaven` and `winter-update-2025` one tile each.
+- The other six `15.30/` fragment maps (Thalassara, castle, asura_sanctuary,
+  asura_sanctuary_boss, mimar_haffar, werepanther_boss_map) are already contained in
+  `world.otbm` (0 missing tiles); only water ground and decoration variants differ and the
+  base wins. Nothing to import. All 57 BossLever rooms at the pin are present in the base
+  map. Known data gap: the General Murius raid spawn (32427,31131,15) has no tile in the
+  base (tiles exist there only on floors 7-11).
 
 ## Validation
 

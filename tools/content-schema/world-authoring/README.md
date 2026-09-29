@@ -306,7 +306,7 @@ committed base map, and writes the shard `floor-changes-00000-00446.json`, the i
   missing name, or an id that items.xml declares in two nodes.
 - **Counts** (see the capture summary): 194 `down`, 73 `up_north`, 52 `up_south`,
   50 `up_east`, 69 `up_west`, 5 `up_south_alt`, 4 `up_east_alt`; 329 of the 447 types
-  occur on the map, 26,919 occurrences in all.
+  occur on the map, 26,929 occurrences in all (fill included).
 - **Excluded:** ladders that go up, rope spots, sewer grates and shovel or pick holes are
   scripted `use` actions (or runtime terrain changes), not static item attributes, so they
   are listed in the capture summary and not invented here. Item types named `ramp`,
@@ -346,7 +346,8 @@ python fandom_island_snapshot.py fetch && python convert_islands.py
 ## Base map (step 3)
 
 `WorldPlacement.Base` holds every tile and item of `world.otbm` (19,325,129 tiles,
-24,925,845 items, floors 0-15) in `content/world/placements/`. JSON is not used: the same
+24,925,845 items, floors 0-15) plus the fill from `maps.7z` below (19,328,094 tiles,
+24,929,209 items in all) in `content/world/placements/`. JSON is not used: the same
 data is 3.25 GB as JSON sectors and about 22 MB in the format below.
 
 - **Layout:** `index.json` (`OTERYN_FAMILY_INDEX/v1`, family `WorldPlacement.Base`) plus one
@@ -390,7 +391,7 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   palette entries in `index.json` only. The 22 MB of region files do not change. The
   capture summary counts provisional entries and occurrences, split into ids that
   `items.xml` declares at the pinned revision and appearance-only ids, and the Terrain-keyed
-  entries. Current counts: 25,963 palette entries; 5,942 Terrain keys (757,025
+  entries. Current counts: 25,963 palette entries; 5,942 Terrain keys (757,028
   occurrences); 5 provisional (24 occurrences): 4 ids that `items.xml` declares and id 99,
   which neither `items.xml` nor the client declares.
   `validate_world_base.py` accepts a non-provisional key that is an Item binding target or
@@ -398,6 +399,48 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   the Terrain family), and rejects an id that is both.
   The converter still fails closed, and never guesses, on an item or tile attribute
   outside the carried set.
+- **Fill from `maps.7z`** (owner-approved, fill-only): `data-global/world/maps.7z` at the pinned
+  revision (sha256 `c770e239...`, 945,468 bytes) holds fragment maps. `blue_valley.otbm`
+  (sha256 of the extracted member `9f0bd617...`, 248,546 bytes, 22,802 tiles on floors 1-7)
+  uses the absolute Tibia coordinates of `world.otbm`, so no offset. After `world.otbm`,
+  `convert_world_base.py` adds a fragment tile **only where the base map has no tile at that
+  (x, y, z)**; a position the base (or an earlier fragment tile) already has is skipped, so
+  nothing existing is overwritten or merged. A tile that would be added with a house, tile
+  zone or teleport destination is refused (none is; existing tiles that have them are
+  skipped like any existing tile). Items map to keys like the base import: an
+  id `items.xml` declares takes its Item binding or the provisional donor key, an
+  appearance-only id its Terrain key once the Terrain family covers it; ids first used by
+  the fill are appended at the end of the palette. Result (capture summary `fill`):
+  2,965 tiles and 3,364 items added: floor 2 118, floor 3 219, floor 4 685, floor 5 918,
+  floor 6 1,025, floor 7 0, floor 1 0; 19,837 fragment tiles skipped as already present.
+  Floor 7 gains nothing because the base map already has a tile at every fragment position:
+  measured against the committed regions, 905 of the 10,747 floor-7 fragment tiles are land
+  where the base has water ground (the roughly 900 tiles of the coverage study), 529 are
+  water on both, 10 water over land and 9,303 land on both. Replacing those would overwrite
+  existing tiles, which the fill rule forbids; only an explicit owner rule can change that.
+  The index `source.fill` pins the archive and member; the summary `fill` records the rule,
+  counts per floor and skipped tiles. `totals` and `tiles_by_floor` include the fill;
+  `totals` minus the fill equals the pinned `world.otbm` totals (19,325,129 tiles,
+  24,925,845 items). Reading the archive needs `py7zr` (`requirements-regenerate.txt`, not
+  installed by CI); `--check` reproduces everything from the pinned checkout.
+  Still to draw (no source): Blue Valley north-east, east and south blocks, Temple of
+  Light, Great Expedition Island and Wharf, Marapur/Thalassara floors 2-6, Nargor floors
+  4-6, Upper Roshamuul floor 6, Great Expedition floors 3-6.
+- **Not imported / deferred:** `access.otbm`, `asura_resp.otbm`, `boss_rooms_-_part_2.otbm`
+  and `final.otbm` of `data-global/world/15.30/` are unreferenced local-coordinate drafts (x
+  about 945-1173, y about 999-1096, floors 5-7, 17,801 tiles, absent from the base). No
+  script, XML or C++ file at the pin loads them and no boss uses their coordinates. They
+  overlap the Movement Trainer area of `custom/global-custom.otbm`, which is off by default
+  (`toggleMapCustom=false`). Owner decision: not imported, deferred. The other six files of
+  `15.30/` (Thalassara,
+  castle, asura_sanctuary, asura_sanctuary_boss, mimar_haffar, werepanther_boss_map) are
+  already contained in `world.otbm` (0 missing tiles); only water ground and decoration
+  variants differ, and the base wins. All 57 BossLever rooms at the pin are present in the
+  base map. Known data gap: the General Murius raid spawn (32427,31131,15) has no tile in
+  the base (tiles exist there only on floors 7-11). The other members of `maps.7z` are not pinned or imported.
+  Measured against the base positions only (their coordinate frame is not verified):
+  `newheaven` and `winter-update-2025` would add one tile each, `summer-update-2025`
+  (286,241 tiles) would add 45,047 tiles on floors 2-6 and 8-15, mostly underground.
 - **Measured** (prototype of this codec on the same map, one thread): full load 1.7 s into
   a naive model, one sector read about 30 us, compact in-memory base about 170 MB (a
   shared immutable base for all channels). An edit rewrites one sector but changes the
@@ -467,7 +510,7 @@ Item business.
   three that are not ground, and water or lava ground has no flag of its own (it is `bank`
   or `clip`, usually `unpass`).
 - **Counts** (capture summary): ground 740, border 1,533, blocking 2,611, decoration 1,058;
-  757,025 occurrences on the base map.
+  757,028 occurrences on the base map (fill included).
 - **Generation order:** `convert_terrain.py --crystal-root PATH` derives the set (palette
   ids with no Item binding, not declared by `items.xml`, known to the client) and writes the
   records; `convert_world_base.py --crystal-root PATH` then switches those palette keys (only

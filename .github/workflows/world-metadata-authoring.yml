@@ -98,4 +98,5 @@ jobs:
   # regenerates the families runs them locally and commits the output together with
   # samples/source-capture-v1.json, samples/world-base-capture-v1.json and
   # samples/floor-changes-capture-v1.json (`convert_terrain.py` also writes
-  # samples/terrain-capture-v1.json).
+  # samples/terrain-capture-v1.json). `convert_world_base.py` also reads
+  # data-global/world/maps.7z (fill) and needs py7zr from requirements-regenerate.txt.

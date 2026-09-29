@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 import shutil
 import struct
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import convert_world_base as convert
 import otbm_reader
@@ -279,6 +281,213 @@ class ConvertAndValidateTest(unittest.TestCase):
                 (1002, 1002): (0, 0, (), []),
             },
         )
+
+    FILL_KEY = convert.fill_key(convert.FILL[0])
+
+    @staticmethod
+    def fill_map(*areas):
+        """A fragment map: `areas` are (z, [(dx, dy, [item nodes])]) around (1000, 1000)."""
+        nodes = [
+            fixtures.node(
+                4,
+                struct.pack("<HHB", 1000, 1000, z),
+                *(fixtures.node(5, bytes([dx, dy]), *items) for dx, dy, items in tiles),
+            )
+            for z, tiles in areas
+        ]
+        map_data = fixtures.node(2, bytes([1]) + fixtures.string("fill"), *nodes)
+        return b"\x00\x00\x00\x00" + fixtures.node(
+            0, struct.pack("<IHHII", 4, 2048, 2048, 3, 57), map_data
+        )
+
+    @staticmethod
+    def item(server_id, *tail):
+        return fixtures.node(6, struct.pack("<H", server_id) + bytes(tail))
+
+    def build_with_fill(self, raw):
+        blobs = {**self.blobs, self.FILL_KEY: raw}
+        return convert.build(blobs, ITEMS_BY_SERVER_ID)
+
+    def standard_fill(self):
+        return self.fill_map(
+            (
+                7,
+                [
+                    (1, 1, [self.item(555)]),  # base has this tile: skipped
+                    (3, 1, [self.item(100), self.item(555)]),  # missing: added
+                    (3, 1, [self.item(1234)]),  # repeated inside the fill: skipped
+                    (1, 2, []),  # missing, empty tile: added
+                ],
+            ),
+            (6, [(1, 1, [self.item(100)])]),  # a floor the base lacks: added
+        )
+
+    def test_fill_adds_missing_tiles_and_skips_existing_ones(self):
+        out = self.build_with_fill(self.standard_fill())
+        summary = self.summary(out)
+        self.assertEqual(
+            summary["fill"],
+            {
+                "items_added": 3,
+                "rule": convert.FILL_RULE,
+                "sources": [
+                    {
+                        "archive": convert.FILL[0]["archive"],
+                        "items_added": 3,
+                        "member": {
+                            **convert.FILL[0]["member"],
+                            "bytes": len(self.standard_fill()),
+                        },
+                        "tiles_added": 3,
+                        "tiles_added_by_floor": {"6": 1, "7": 2},
+                        "tiles_in_source": 5,
+                        "tiles_skipped_existing": 2,
+                        "tiles_skipped_existing_by_floor": {"7": 2},
+                    }
+                ],
+                "tiles_added": 3,
+            },
+        )
+        self.assertEqual(summary["totals"]["tiles"], 4 + 3)
+        self.assertEqual(summary["tiles_by_floor"], {"6": 1, "7": 6})
+        index = json.loads(out[validate.INDEX])
+        self.assertEqual(index["source"]["fill"], convert.FILL)
+        self.assertEqual(index["totals"]["items"], 4 + 3)
+        # the tile the base has keeps its own items; the added tiles are in the region files
+        palette = [row["source_item_id"] for row in index["palette"]]
+        z, rx, ry, sectors = codec.decode_region(self.decode_path(out, 7))
+        tiles = {
+            (x, y): [(palette[i], d, a) for i, d, a in items]
+            for x, y, _f, _h, _z, items in sectors[0][1]
+        }
+        self.assertEqual(tiles[(1001, 1001)], [(1234, 0, {"door": 3})])
+        self.assertEqual(tiles[(1003, 1001)], [(100, 0, None), (555, 0, None)])
+        self.assertEqual(tiles[(1001, 1002)], [])
+        # the new floor gets a region file, existing regions elsewhere keep their bytes
+        self.assertIn(f"{validate.DIRECTORY}/region-z06-x003-y003.b3", out)
+
+    def decode_path(self, out, floor):
+        return out[f"{validate.DIRECTORY}/region-z{floor:02d}-x003-y003.b3"]
+
+    def test_fill_palette_is_append_only(self):
+        previous = json.loads(self.out[validate.INDEX])["palette"]
+        blobs = {**self.blobs, self.FILL_KEY: self.standard_fill()}
+        out = convert.build(blobs, ITEMS_BY_SERVER_ID, previous=previous)
+        palette = json.loads(out[validate.INDEX])["palette"]
+        self.assertEqual(palette[: len(previous)], previous)
+        self.assertEqual(
+            [row["source_item_id"] for row in palette[len(previous) :]], [555]
+        )
+        self.assertEqual(palette[-1]["key"], DONOR + "555")
+
+    def test_fill_output_validates_and_pins_are_checked(self):
+        out = self.build_with_fill(self.standard_fill())
+        root = self.install(out)
+        self.assertEqual(validate.validate(root, workers=1), [])
+        # the world.otbm totals stay checkable after the fill
+        self.assertEqual(validate.validate(root, {"items": 4, "tiles": 4}), [])
+        self.assertTrue(
+            any(
+                "pinned source" in e
+                for e in validate.validate(root, {"items": 4, "tiles": 5})
+            )
+        )
+
+    def test_fill_summary_tampering_is_rejected(self):
+        out = self.build_with_fill(self.standard_fill())
+        root = self.install(out)
+        path = root / convert.SUMMARY.relative_to(convert.ROOT)
+        summary = json.loads(path.read_text())
+        for edit, expected in (
+            (lambda f: f["sources"][0].update(tiles_added=4), "do not add up"),
+            (lambda f: f.update(tiles_added=9), "fill totals differ"),
+            (lambda f: f.update(rule="other"), "fill rule differs"),
+            (
+                lambda f: f["sources"][0]["archive"].update(sha256="0" * 64),
+                "fill sources differ",
+            ),
+        ):
+            with self.subTest(expected):
+                tampered = json.loads(json.dumps(summary))
+                edit(tampered["fill"])
+                path.write_bytes(validate.canonical(tampered))
+                errors = validate.validate(root)
+                self.assertTrue(any(expected in e for e in errors), errors)
+        path.write_bytes(validate.canonical(summary))
+        index = json.loads((root / validate.INDEX).read_text())
+        index["source"]["fill"][0]["member"]["sha256"] = "0" * 64
+        (root / validate.INDEX).write_bytes(validate.canonical(index))
+        self.assertTrue(any("source" in e for e in validate.validate(root)))
+
+    def test_fill_tiles_with_houses_zones_or_teleports_are_refused(self):
+        house = fixtures.node(14, bytes([5, 5]) + struct.pack("<I", 7))
+        teleport = self.item(1949, 8, *struct.pack("<HHB", 1, 1, 7))
+        for name, tile in (
+            ("house", house),
+            ("teleport", fixtures.node(5, bytes([6, 6]), teleport)),
+        ):
+            area = fixtures.node(4, struct.pack("<HHB", 1000, 1000, 7), tile)
+            raw = b"\x00\x00\x00\x00" + fixtures.node(
+                0,
+                struct.pack("<IHHII", 4, 2048, 2048, 3, 57),
+                fixtures.node(2, bytes([1]) + fixtures.string("f"), area),
+            )
+            with self.subTest(name), self.assertRaises(convert.ConvertError):
+                self.build_with_fill(raw)
+
+    def test_existing_tiles_with_houses_or_teleports_are_skipped_not_refused(self):
+        # the base has a house tile at (1001, 1001) and a teleport tile at (1001, 1003)
+        house = fixtures.node(14, bytes([1, 1]) + struct.pack("<I", 9))
+        teleport = self.item(1949, 8, *struct.pack("<HHB", 1, 1, 7))
+        area = fixtures.node(
+            4,
+            struct.pack("<HHB", 1000, 1000, 7),
+            house,
+            fixtures.node(5, bytes([1, 3]), teleport),
+        )
+        raw = b"\x00\x00\x00\x00" + fixtures.node(
+            0,
+            struct.pack("<IHHII", 4, 2048, 2048, 3, 57),
+            fixtures.node(2, bytes([1]) + fixtures.string("f"), area),
+        )
+        out = self.build_with_fill(raw)
+        self.assertEqual(self.summary(out)["fill"]["tiles_added"], 0)
+        self.assertEqual(
+            self.summary(out)["fill"]["sources"][0]["tiles_skipped_existing"], 2
+        )
+        self.assertEqual(
+            out,
+            {
+                **self.out,
+                **{
+                    k: out[k]
+                    for k in (
+                        validate.INDEX,
+                        str(convert.SUMMARY.relative_to(convert.ROOT)),
+                    )
+                },
+            },
+        )
+
+    def test_fill_tile_outside_the_extent_is_refused(self):
+        tile = fixtures.node(5, bytes([1, 1]), self.item(100))
+        area = fixtures.node(4, struct.pack("<HHB", 2100, 1000, 7), tile)
+        raw = b"\x00\x00\x00\x00" + fixtures.node(
+            0,
+            struct.pack("<IHHII", 4, 4096, 2048, 3, 57),
+            fixtures.node(2, bytes([1]) + fixtures.string("f"), area),
+        )
+        with self.assertRaises(convert.ConvertError):
+            self.build_with_fill(raw)
+
+    def test_reading_the_archive_needs_py7zr(self):
+        with mock.patch.dict(sys.modules, {"py7zr": None}):
+            with self.assertRaises(convert.ConvertError):
+                convert.extract_member(b"", "blue_valley.otbm")
+
+    def test_without_a_fill_the_source_lists_none(self):
+        self.assertEqual(json.loads(self.out[validate.INDEX])["source"]["fill"], [])
+        self.assertEqual(self.summary()["fill"]["sources"], [])
 
     def test_conversion_is_deterministic(self):
         self.assertEqual(convert.build(self.blobs, ITEMS_BY_SERVER_ID), self.out)

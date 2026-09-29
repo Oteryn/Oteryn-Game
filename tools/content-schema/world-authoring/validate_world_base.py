@@ -21,6 +21,8 @@ from pathlib import Path
 import world_region_codec as codec
 from convert_world_base import (
     DONOR_PREFIX,
+    FILL,
+    FILL_RULE,
     ITEM_NAMESPACE,
     PINNED_TOTALS,
     TERRAIN_DIRECTORY,
@@ -183,6 +185,7 @@ def check_index(index: dict, summary: dict, errors: list[str]) -> None:
             errors.append(f"{INDEX}: {key} must be {value!r}")
     if index.get("source") != summary.get("source"):
         errors.append(f"{INDEX}: source differs from the capture summary")
+    check_fill(index, summary, errors)
     frame = index.get("coordinate_frame")
     if frame != "global-target-2026-09-27":
         errors.append(f"{INDEX}: unexpected coordinate_frame {frame!r}")
@@ -196,6 +199,51 @@ def check_index(index: dict, summary: dict, errors: list[str]) -> None:
     generator = str(index.get("generator"))
     if not (HERE.parents[2] / generator).is_file():
         errors.append(f"{INDEX}: generator {generator!r} does not exist")
+
+
+def check_fill(index: dict, summary: dict, errors: list[str]) -> None:
+    """The fill pins are a subset of the committed ones and every count adds up."""
+    pins = (index.get("source") or {}).get("fill")
+    fill = summary.get("fill")
+    if not isinstance(pins, list) or not isinstance(fill, dict):
+        errors.append(f"{SUMMARY}: fill pins and summary are required")
+        return
+    if any(row not in FILL for row in pins):
+        errors.append(f"{INDEX}: source.fill differs from the pinned fill sources")
+    sources = fill.get("sources")
+    if set(fill) != {"items_added", "rule", "sources", "tiles_added"} or not isinstance(
+        sources, list
+    ):
+        errors.append(
+            f"{SUMMARY}: fill must hold items_added, rule, sources, tiles_added"
+        )
+        return
+    if fill["rule"] != FILL_RULE:
+        errors.append(f"{SUMMARY}: fill rule differs from the documented one")
+    if [(s.get("archive"), s.get("member", {}).get("name")) for s in sources] != [
+        (p["archive"], p["member"]["name"]) for p in pins
+    ]:
+        errors.append(f"{SUMMARY}: fill sources differ from the pinned fill sources")
+    for source in sources:
+        added, skipped = (
+            source.get("tiles_added_by_floor"),
+            source.get("tiles_skipped_existing_by_floor"),
+        )
+        if (
+            not isinstance(added, dict)
+            or not isinstance(skipped, dict)
+            or sum(added.values()) != source.get("tiles_added")
+            or sum(skipped.values()) != source.get("tiles_skipped_existing")
+            or source["tiles_added"] + source["tiles_skipped_existing"]
+            != source.get("tiles_in_source")
+        ):
+            errors.append(
+                f"{SUMMARY}: fill counts of {source.get('member')} do not add up"
+            )
+    if fill["tiles_added"] != sum(s.get("tiles_added", 0) for s in sources) or fill[
+        "items_added"
+    ] != sum(s.get("items_added", 0) for s in sources):
+        errors.append(f"{SUMMARY}: fill totals differ from the sources")
 
 
 def terrain_bindings(root: Path, errors: list[str]) -> dict[int, set[str]]:
@@ -453,8 +501,24 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
         errors.append(f"{SUMMARY}: codec.zstd must record backend, libzstd and package")
     if summary.get("map", {}).get("floors") != [0, codec.MAX_FLOOR]:
         errors.append(f"{SUMMARY}: map floors must be [0, {codec.MAX_FLOOR}]")
-    if pinned is not None and {k: index["totals"][k] for k in pinned} != pinned:
-        errors.append(f"{INDEX}: totals differ from the pinned source {pinned}")
+    fill = summary.get("fill", {})
+    base = {
+        "items": index["totals"]["items"] - fill.get("items_added", 0),
+        "tiles": index["totals"]["tiles"] - fill.get("tiles_added", 0),
+    }
+    if pinned is not None and {k: base[k] for k in pinned} != pinned:
+        errors.append(
+            f"{INDEX}: world.otbm totals differ from the pinned source {pinned}"
+        )
+    for floor, added in (
+        (f, n)
+        for s in fill.get("sources", [])
+        for f, n in s.get("tiles_added_by_floor", {}).items()
+    ):
+        if added > summary.get("tiles_by_floor", {}).get(floor, 0):
+            errors.append(
+                f"{SUMMARY}: fill adds more tiles on floor {floor} than exist"
+            )
     return errors
 
 

@@ -12,6 +12,12 @@ committed Terrain family covers to its `oteryn:terrain.a<id>` key. Any other id 
 provisional donor key. The conversion fails closed on an item or tile attribute it does
 not carry.
 
+After `world.otbm`, fragment maps of `maps.7z` (`FILL`, currently `blue_valley.otbm`) fill
+tiles the base map lacks: a tile is added only where the base map has no tile at its position,
+nothing existing is overwritten or merged. Reading the archive needs `py7zr`
+(`requirements-regenerate.txt`); the fill is pinned by the sha256 of the archive and of the
+member, and its counts are recorded in the capture summary.
+
     python convert_world_base.py --crystal-root /path/to/crystalserver [--check]
 """
 
@@ -19,8 +25,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import sys
+import tempfile
 from collections import Counter
 from itertools import pairwise
 from pathlib import Path
@@ -47,6 +55,24 @@ TERRAIN_DIRECTORY = "content/world/terrain"
 TERRAIN_NAMESPACE = "tibia-client/appearance-id"
 TERRAIN_KEY_PREFIX = "oteryn:terrain.a"
 
+MAPS_ARCHIVE = "data-global/world/maps.7z"
+# Fragment maps inside `maps.7z` that fill tiles the base map lacks. Absolute Tibia
+# coordinates, the frame of `world.otbm`, so no offset. A tile is added only where the base
+# map has no tile at that position: nothing existing is overwritten or merged.
+FILL_RULE = "a tile is added only where the base map has no tile at that position"
+FILL = [
+    {
+        "archive": {
+            "path": MAPS_ARCHIVE,
+            "sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+        },
+        "member": {
+            "name": "blue_valley.otbm",
+            "sha256": "9f0bd617651de2219b5f4227d8e34166fd143eeb519a3bdde6658346ba68d63d",
+        },
+    }
+]
+
 SOURCE = {
     **metadata.SOURCE,
     "files": [
@@ -56,6 +82,7 @@ SOURCE = {
             "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
         },
     ],
+    "fill": FILL,
 }
 # OTBM item attribute -> carried name.
 CARRIED = {
@@ -272,6 +299,74 @@ class Collector:
         return codec.encode_sector(entries)
 
 
+def fill_key(row: dict) -> str:
+    """The `blobs` key of a fill member: archive path, `!`, member name."""
+    return f"{row['archive']['path']}!{row['member']['name']}"
+
+
+def sector_slot(x: int, y: int) -> int:
+    return _INDEX[(y % codec.SECTOR_SIZE) * codec.SECTOR_SIZE + x % codec.SECTOR_SIZE]
+
+
+def apply_fill(collector: Collector, raw: bytes, width: int, height: int) -> dict:
+    """Add the tiles of one fragment map that the collected base map lacks.
+
+    A tile whose position the base map (or an earlier tile of this fragment) already has is
+    skipped, so nothing is overwritten or merged. A tile that would be added with a house, a
+    tile zone or a teleport destination is refused: houses and teleports are bound to
+    `world.otbm` metadata, and this fill carries terrain and decoration only.
+    """
+    present: dict[tuple[int, int, int], set[int]] = {}
+    stats = {
+        "added": Counter(),
+        "items_added": 0,
+        "source": Counter(),
+        "skipped": Counter(),
+    }
+
+    def on_tile(x, y, z, flags, house, zones, items) -> None:
+        stats["source"][z] += 1
+        if x >= width or y >= height:
+            raise ConvertError(f"fill tile ({x}, {y}, {z}) is outside the map extent")
+        key = (z, x // codec.SECTOR_SIZE, y // codec.SECTOR_SIZE)
+        if key not in present:
+            sector = collector.sectors.get(key)
+            present[key] = set(sector[0]) if sector else set()
+        slot = sector_slot(x, y)
+        if slot in present[key]:
+            stats["skipped"][z] += 1
+            return
+        if house is not None or zones or any(DEST_KEY in attrs for *_, attrs in items):
+            raise ConvertError(
+                f"fill tile ({x}, {y}, {z}) carries a house, zone or teleport"
+            )
+        present[key].add(slot)
+        collector(x, y, z, flags, house, zones, items)
+        stats["added"][z] += 1
+        stats["items_added"] += len(items)
+
+    facts = otbm_reader.read_tiles(raw, on_tile)
+    if facts.unknown_item_attrs or facts.unknown_tile_attrs:
+        raise ConvertError("fill map has unknown OTBM attributes")
+    return stats
+
+
+def fill_summary(row: dict, raw: bytes, stats: dict) -> dict:
+    def by_floor(counter: Counter) -> dict[str, int]:
+        return {str(z): n for z, n in sorted(counter.items())}
+
+    return {
+        "archive": row["archive"],
+        "items_added": stats["items_added"],
+        "member": {**row["member"], "bytes": len(raw)},
+        "tiles_added": sum(stats["added"].values()),
+        "tiles_added_by_floor": by_floor(stats["added"]),
+        "tiles_in_source": sum(stats["source"].values()),
+        "tiles_skipped_existing": sum(stats["skipped"].values()),
+        "tiles_skipped_existing_by_floor": by_floor(stats["skipped"]),
+    }
+
+
 def zstd_info() -> dict:
     return {
         "backend": zstandard.backend,
@@ -303,6 +398,16 @@ def build(
         raise ConvertError("map extent exceeds the region coordinate range")
     if collector.tiles != facts.tiles:
         raise ConvertError("tile count differs from the reader")
+    fills, applied = [], []
+    for row in FILL:
+        raw = blobs.get(fill_key(row))
+        if raw is None:
+            continue
+        stats = apply_fill(collector, raw, facts.width, facts.height)
+        fills.append(fill_summary(row, raw, stats))
+        applied.append(row)
+    collector.check()
+    source = {**SOURCE, "fill": applied}
     palette = build_palette(bound, collector.occurrences, previous, terrain)
     collector.remap({row["source_item_id"]: i for i, row in enumerate(palette)})
     declared = items_xml_ids(blobs[ITEMS_XML])
@@ -376,7 +481,7 @@ def build(
             "schema": "OTERYN_FAMILY_INDEX/v1",
             "sector_size": codec.SECTOR_SIZE,
             "shards": [row["path"] for row in regions],
-            "source": SOURCE,
+            "source": source,
             "totals": totals,
             "zstd_level": codec.ZSTD_LEVEL,
         }
@@ -415,8 +520,14 @@ def build(
             },
         },
         "rejected_items": {"unsupported_attributes": len(collector.unsupported)},
+        "fill": {
+            "items_added": sum(f["items_added"] for f in fills),
+            "rule": FILL_RULE,
+            "sources": fills,
+            "tiles_added": sum(f["tiles_added"] for f in fills),
+        },
         "schema": "OTERYN_WORLD_BASE_SOURCE_CAPTURE/v1",
-        "source": SOURCE,
+        "source": source,
         "tiles_by_floor": {str(z): n for z, n in sorted(floors.items())},
         "tiles_with_house": collector.house_tiles,
         "tiles_with_zone": collector.zone_tiles,
@@ -433,7 +544,31 @@ def read_source(crystal_root: Path) -> dict[str, bytes]:
         if hashlib.sha256(data).hexdigest() != row["sha256"]:
             raise ConvertError(f"{row['path']}: sha256 differs from the pinned source")
         blobs[row["path"]] = data
+    for row in FILL:
+        archive = (crystal_root / row["archive"]["path"]).read_bytes()
+        if hashlib.sha256(archive).hexdigest() != row["archive"]["sha256"]:
+            raise ConvertError(f"{row['archive']['path']}: sha256 differs from the pin")
+        data = extract_member(archive, row["member"]["name"])
+        if hashlib.sha256(data).hexdigest() != row["member"]["sha256"]:
+            raise ConvertError(
+                f"{fill_key(row)}: sha256 differs from the pinned source"
+            )
+        blobs[fill_key(row)] = data
     return blobs
+
+
+def extract_member(archive: bytes, name: str) -> bytes:
+    """One member of a 7z archive. `py7zr` is needed only to regenerate the fill."""
+    try:
+        import py7zr
+    except ImportError as error:
+        raise ConvertError(
+            "reading maps.7z needs py7zr (pip install -r requirements-regenerate.txt)"
+        ) from error
+    with tempfile.TemporaryDirectory() as tmp:
+        with py7zr.SevenZipFile(io.BytesIO(archive)) as handle:
+            handle.extract(path=tmp, targets=[name])
+        return (Path(tmp) / name).read_bytes()
 
 
 def main() -> int:
@@ -448,9 +583,14 @@ def main() -> int:
             terrain=terrain_keys(),
         )
         totals = json.loads(out[f"{DIRECTORY}/index.json"])["totals"]
-        if {k: totals[k] for k in PINNED_TOTALS} != PINNED_TOTALS:
+        fill = json.loads(out[str(SUMMARY.relative_to(ROOT))])["fill"]
+        base = {
+            "items": totals["items"] - fill["items_added"],
+            "tiles": totals["tiles"] - fill["tiles_added"],
+        }
+        if base != PINNED_TOTALS:
             raise ConvertError(
-                f"totals {totals} differ from the pinned source {PINNED_TOTALS}"
+                f"world.otbm totals {base} differ from the pinned source {PINNED_TOTALS}"
             )
     except (ConvertError, otbm_reader.OtbmError, OSError) as error:
         print(f"FAIL {error}", file=sys.stderr)
