@@ -2,7 +2,7 @@
 
 - Date: 2026-09-27
 - DecisionStatus: CANDIDATE (D20 draft; owner decisions D26-D29 recorded in §10; the vocabulary is
-  implemented offline before any runtime work; §12 holds CW2 candidate extensions pending owner acceptance)
+  implemented offline before any runtime work; §12 holds the CW2 extensions, ACCEPTED 2026-09-29)
 - DeliveryStatus: OPEN (design draft only)
 - ImplementationStatus: NOT_STARTED
 - Programme: KAN-16 / #504
