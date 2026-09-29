@@ -175,7 +175,7 @@ Why these choices:
 | HP, mana, soul (current and max) | Current ChannelRuntime (runtime actor owner, as VSL-COMBAT-01 §6 for creatures) | Runtime-actor-local and non-durable, stated explicitly as the cooldown baseline allows (SPELL-D2): the values belong to the runtime actor, not to a GameSession, and are lost only when the actor ends. Vitals start at the current maximum only when a new runtime actor is created (the actor was absent). Any session that attaches to an existing present actor keeps its vitals exactly: a same-GameSession reconnect, and the post-grace new-GameSession recovery of FND-04B §21 ("no heal, refill"). A fresh admission after the actor is gone restarts at the maximum. Durable vitals through DUR-02 are required before any external or production evaluation. Max values per vocation and level follow SPELL-D5: the official tibia.com library, then the wikis decide where they state the per-vocation base and per-level gains (S15, S3, S11, S13, S14), Canary/Crystal fill only what they do not state (S4), every value keeps its provenance, and a remaining conflict goes to the owner. |
 | Cooldowns | Current ChannelRuntime, keyed by (actor, spell) and (actor, group) | Runtime-actor-local and non-durable; kept across a same-GameSession reconnect and FND-04B §21 recovery (no cooldown reset); `SemanticTimeMicros` from the owner clock. |
 | Monk Harmony (0..5) | Durable: GAME-CHAR Character state under DUR-02. Live: the runtime actor (Current ChannelRuntime) | SPELL-D8 candidate (§8.2): loaded into a new runtime actor, changed at the cast's PRIMARY COMMIT, written back under the session-generation fence at the actor's end and by the death transaction. |
-| Monk Serene (flag and forced-until time) | Current ChannelRuntime | SPELL-D8 candidate (§8.2): runtime-actor-local and non-durable, evaluated by the owner every 1000 ms. |
+| Monk Serene (flag and forced-until time) | Flag: Current ChannelRuntime only. Remaining forced time: durable GAME-CHAR Character state under DUR-02, live in the runtime actor | SPELL-D8 candidate (§8.2): the flag is runtime-actor-local, never stored, and evaluated by the owner at initialization and every 1000 ms. The remaining forced time is durable (owner decision Q1=b) and follows the Harmony save points. |
 | Monk virtue, party membership | Part C `stance` owner; party service | No owner yet. Interim rule (#162 comment 5884682203): no party service means solo; no stance owner means virtue none. |
 | Damage and heal draw | SIM determinism: RNG stream bound to the occurrence | `uniform_draw` over the owner stream; retry never redraws. |
 
@@ -313,7 +313,7 @@ The actor-end write must commit, or be fenced out, before the Character lease is
 admission therefore always loads the final value of the previous actor, or the last committed one when
 the previous actor's write was fenced out.
 
-**Serene (runtime-actor-local, non-durable).**
+**Serene (flag runtime-actor-local; remaining forced time durable).**
 - State: `serene` (flag) and `serene_forced_until` (optional `SemanticTimeMicros` from the owner clock).
   Both exist for monks only.
 - Evaluation: the Channel owner evaluates the §A.2 step 6 rule at every actor initialization (below)
@@ -327,15 +327,18 @@ the previous actor's write was fenced out.
   FND-04B §21 recovery. A monk outside a party is therefore Serene for its first cast (§A.2 step 6).
   Canary instead sends Serene off at login and sets it at the first think (up to 1000 ms later); V1
   does not keep that gap.
-- A new runtime actor starts with no forced time.
+- A new runtime actor loads the durable remaining forced time (zero when none), as described below.
 - A same-GameSession reconnect and FND-04B §21 recovery keep `serene_forced_until` exactly, and then
   re-evaluate `serene` as above.
 - Death: at the lethal commit `serene` becomes false and the forced time is cleared, as Canary
   removes a timed Serene at death. Respawn evaluates it again before any command.
-- **Declared difference.** Canary saves the remaining ticks of a forced Serene at logout (a timed
-  condition). V1 does not persist Serene at all (the allocation), so at most 7000 ms of forced Serene
-  is lost when a new runtime actor starts. This is the control-plane default (#1205); owner
-  confirmation is pending, and it is not a blocker.
+- **Forced Serene durability (owner decision Q1=b, 2026-09-29).** The remaining forced time is
+  durable, as in Canary, which saves the remaining ticks of a forced Serene at logout (a timed
+  condition). A new runtime actor loads the remaining time together with Harmony, and the forced time
+  runs that long from its initialization evaluation. The `serene` flag itself is never stored: it is
+  evaluated again at every initialization, as above. The durable write follows Harmony (H-1): the
+  owner stores the remaining time (forced-until minus owner time, floored at zero) at each Harmony save
+  point, and death stores zero.
 
 **Wire and compatibility (`ActorVitalsV1`, §3).**
 - Two fields are added: `harmony = 6` and `serene = 7`. They carry the actor's live values, and a
@@ -357,9 +360,8 @@ the previous actor's write was fenced out.
   in this message (§4 interim rule).
 
 **Resolutions (control plane, #1205; standing rule 6).**
-- **Q1, forced Serene across logout: non-durable.** This is the control-plane default; owner
-  confirmation is pending, and it is not a blocker. A confirmation that follows Canary would make only
-  the forced-until time durable.
+- **Q1, forced Serene across logout: durable remaining time (owner decision Q1=b, 2026-09-29,
+  following Canary).** Only the remaining forced time is stored; the `serene` flag is not.
 - **Q2, periodic save point: none.** Actor end and death are the only save points. The crash reset in
   the table above is accepted.
 
@@ -367,7 +369,8 @@ the previous actor's write was fenced out.
 table above). The DEATH owner must accept it; it does not block this contract.
 
 **Delivery (each child with its own #162 allocation).**
-- **H-1:** the durable field, its migration, the fenced actor-end write and the load into a new actor.
+- **H-1:** the durable Harmony and remaining forced-Serene fields, their migration, the fenced
+  actor-end write and the load into a new actor.
   It needs the Character progression storage and a receipt design, as DEATH-0 does, and the high-risk
   authority/recovery qualification.
 - **H-2:** Harmony and Serene in the runtime actor, the initialization and 1000 ms evaluations, and
@@ -403,7 +406,7 @@ table above). The DEATH owner must accept it; it does not block this contract.
 - Exact rejection texts.
 - Cast animations and effects.
 - Exhaustion between different groups beyond the authored cooldowns.
-- Durable persistence of vitals and cooldowns. (Monk Harmony is durable under SPELL-D8, §8.2.)
+- Durable persistence of vitals and cooldowns. (Monk Harmony and the remaining forced-Serene time are durable under SPELL-D8, §8.2.)
 - The monk virtue slot (Part C `stance`) and party membership (party service).
 - Mana and health regeneration (conditions S8).
 - Magic-level training.
