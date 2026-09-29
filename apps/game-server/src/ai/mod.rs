@@ -2,7 +2,15 @@
 //!
 //! This module deliberately exposes only immutable snapshots, normalized decisions and path
 //! proposals. It has no Movement, Ability, Interaction, persistence, value or reward mutation
-//! surface. The composition root may elect to include it only after coordinator integration.
+//! surface.
+//!
+//! AI-3 (`#162` §5; `GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1` §4.4) is the first
+//! composition root over this module's public API: `crate::ai_think`, a sibling of this module
+//! rather than a child of it (`ResourceLimit`/`AiError` and everything below stay `pub` for that
+//! reason too). It lives next to `ai/` instead of inside it because `tests/ai_bootstrap.rs`
+//! path-includes this whole module tree as its own standalone crate root
+//! (`#[path = "../src/ai/mod.rs"] mod ai;`, no `foundation`/`content`/`movement` available
+//! there); see `ai_think.rs`'s module doc for the rest of that reasoning.
 
 #![forbid(unsafe_code)]
 

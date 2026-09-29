@@ -8,6 +8,27 @@ extern crate self as oteryn_game_server;
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;
+// AI-3 (#162; GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.4/§5): compiles the
+// bootstrap AI module into the server for the first time (previously only `tests/ai_bootstrap.rs`
+// built it standalone).
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "ai:: has no production caller yet; a later wiring task consumes it from ai_think"
+)]
+mod ai;
+// AI-3's composition root over `ai::`'s public API: builds one creature's per-think decision and,
+// for chase/wander, acts through the real Movement owner. A sibling of `ai`, not a child of it,
+// so `tests/ai_bootstrap.rs`'s standalone path-include of `ai/mod.rs` never pulls in
+// `foundation`/`content`/`movement` (see `ai_think.rs`'s module doc). No production caller wires
+// the composed per-creature think into `ChannelRuntimeV1`'s live owner cycle yet -- same pattern
+// as AI-1's `owner_timer` and AI-2's spawn/respawn code: complete, tested and uncalled, ready for
+// that wiring.
+#[allow(
+    dead_code,
+    reason = "ai_think has no production caller yet; AI-4/a later wiring task composes it into ChannelRuntimeV1's owner cycle"
+)]
+mod ai_think;
 #[allow(
     dead_code,
     reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
