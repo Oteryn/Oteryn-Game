@@ -188,12 +188,42 @@ def census_document_bytes(result):
     ).encode("utf-8")
 
 
+MEMBERSHIP_SCHEMA = "OTERYN_CLIENT_APPEARANCE_MEMBERSHIP/v1"
+
+
+def membership_document_bytes(
+    ids, digest=CLIENT_APPEARANCES_SHA256, size=CLIENT_APPEARANCES_BYTES, name=None
+):
+    """Deterministic id-only membership manifest: object ids and digests, nothing else."""
+    ids = sorted(set(ids))
+    ids_bytes = json.dumps(ids, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    document = {
+        "schema": MEMBERSHIP_SCHEMA,
+        "client_version": CLIENT_VERSION,
+        "appearances_file": name or f"appearances-{digest}.dat",
+        "appearances_sha256": digest,
+        "appearances_bytes": size,
+        "object_count": len(ids),
+        "max_id": ids[-1] if ids else None,
+        "ids_sha256": hashlib.sha256(ids_bytes).hexdigest(),
+        "ids": ids,
+    }
+    return (
+        json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode("utf-8")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--appearances", type=Path, required=True)
-    parser.add_argument("--crystal-source", type=Path, required=True)
-    parser.add_argument("--donor-source", type=Path, required=True)
-    parser.add_argument("--canary-source", type=Path, required=True)
+    parser.add_argument("--crystal-source", type=Path)
+    parser.add_argument("--donor-source", type=Path)
+    parser.add_argument("--canary-source", type=Path)
+    parser.add_argument(
+        "--membership-out",
+        type=Path,
+        help="write only the id-only membership manifest (needs no engine sources)",
+    )
     parser.add_argument("--out", type=Path, default=DEFAULT_SAMPLE)
     parser.add_argument(
         "--check",
@@ -203,6 +233,17 @@ def main():
     args = parser.parse_args()
 
     appearances = load_client_appearances(args.appearances)
+    if args.membership_out is not None:
+        args.membership_out.write_bytes(
+            membership_document_bytes(appearances, name=args.appearances.name)
+        )
+        print(json.dumps({"membership_out": str(args.membership_out)}))
+        return
+    if not (args.crystal_source and args.donor_source and args.canary_source):
+        parser.error(
+            "--crystal-source, --donor-source and --canary-source are required "
+            "unless --membership-out is given"
+        )
     defined, counts = engine_defined_ids(
         args.crystal_source, args.donor_source, args.canary_source
     )

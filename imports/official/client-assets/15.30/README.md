@@ -38,3 +38,17 @@ Server-side Item data currently stays on Canary `47dfd51f` / Crystal `ff7ede5`
 none of which have engine server data yet. Filling those from TibiaWiki (BR/Fandom)
 is separate future work; see
 `docs/architecture/OTERYN_CLIENT_ASSET_VERSION_OWNER_DECISION_2026-09-27.md`.
+
+## Appearance id membership manifest
+
+`appearance-ids.json` (schema `OTERYN_CLIENT_APPEARANCE_MEMBERSHIP/v1`) in this folder
+is allowed: it holds **object ids only** (plus the pinned file name, size, sha256 and
+an `ids_sha256` of the id array), never names, flags or sprites. The owner emits it
+locally, from the repo root in Git Bash; the tool fails closed on a size or sha256
+mismatch:
+
+```
+python tools/content-schema/item-authoring/client_appearance_census.py \
+  --appearances "<PATH_TO_CLIENT>/assets/appearances-2dfa943b….dat" \
+  --membership-out imports/official/client-assets/15.30/appearance-ids.json
+```

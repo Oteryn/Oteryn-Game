@@ -98,12 +98,67 @@ def test_build_census_skips_engine_defined_ids():
     check(json.loads(first)["schema"] == "OTERYN_CLIENT_APPEARANCE_CENSUS/v1", "schema")
 
 
+def synthetic_appearances(ids):
+    """Minimal protobuf: repeated field 1 (object) holding only field 1 (id varint)."""
+
+    def varint(value):
+        out = bytearray()
+        while True:
+            byte = value & 0x7F
+            value >>= 7
+            out.append(byte | (0x80 if value else 0))
+            if not value:
+                return bytes(out)
+
+    data = b""
+    for item_id in ids:
+        inner = b"\x08" + varint(item_id)
+        data += b"\x0a" + varint(len(inner)) + inner
+    return data
+
+
+def test_membership_manifest():
+    data = synthetic_appearances([300, 100, 200, 100])
+    digest = hashlib.sha256(data).hexdigest()
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "appearances.dat"
+        path.write_bytes(data)
+        ids = census.load_client_appearances(path, digest=digest, size=len(data))
+        first = census.membership_document_bytes(ids, digest, len(data), path.name)
+        second = census.membership_document_bytes(
+            dict(reversed(ids.items())), digest, len(data), path.name
+        )
+        check(first == second, "membership bytes are deterministic")
+        check(first.endswith(b"\n") and b" " not in first, "compact, trailing newline")
+        document = json.loads(first)
+        check(document["ids"] == [100, 200, 300], document)
+        check(document["object_count"] == 3 and document["max_id"] == 300, document)
+        canonical = json.dumps([100, 200, 300], separators=(",", ":")).encode()
+        check(document["ids_sha256"] == hashlib.sha256(canonical).hexdigest(), document)
+        check(document["schema"] == census.MEMBERSHIP_SCHEMA, document)
+        check(
+            set(document)
+            == {
+                "schema", "client_version", "appearances_file", "appearances_sha256",
+                "appearances_bytes", "object_count", "max_id", "ids_sha256", "ids",
+            },
+            "id-only fields",
+        )
+        try:
+            census.load_client_appearances(path, digest="0" * 64, size=len(data))
+        except SystemExit:
+            check(True, "digest mismatch fails closed")
+        else:
+            raise AssertionError("digest mismatch accepted")
+
+
 if __name__ == "__main__":
     for test in (
         test_client_key_is_provisional,
         test_client_file_is_pinned_by_size_and_digest,
         test_classify_from_appearance_alone,
         test_build_census_skips_engine_defined_ids,
+        test_membership_manifest,
     ):
         test()
     print(f"PASS {CHECKS} checks")
