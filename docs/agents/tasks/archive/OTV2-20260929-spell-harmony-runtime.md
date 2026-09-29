@@ -4,23 +4,27 @@
 task_id: OTV2-20260929-spell-harmony-runtime
 title: Monk Harmony and Serene engine rules in the runtime actor (SPELL-D8 H-2)
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1243
+merge_pr: 1243
 allocation_comment: "#162 5891701482"
 base_branch: main
 branch: claude/spell-harmony-runtime
 base_sha: b90f85c9aba8f74f344bdb0969ee04f9c6eebe31
-head_sha: null
+head_sha: 32f8d8b71dc07542df6c76ab87952dfb50561ee2
+final_head_sha: 32f8d8b71dc07542df6c76ab87952dfb50561ee2
+final_head_frozen_at: null
+merge_sha: b18ccc4f06175776575a00424ec0ca1c450a186e
 owner: "Oteryn: content" (Claude Code)
 created_at: 2026-09-29T14:00:00Z
-updated_at: 2026-09-29T14:00:00Z
+updated_at: 2026-09-29T16:16:57Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/spell/**
   - apps/game-server/tests/*spell*
-  - docs/agents/tasks/active/OTV2-20260929-spell-harmony-runtime.md
+  - docs/agents/tasks/archive/OTV2-20260929-spell-harmony-runtime.md
   - docs/agents/tasks/archive/OTV2-20260929-spell-part-b.md
   - docs/architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md  # §8.2 forced Serene durability line only
 public_contracts: []
@@ -81,3 +85,14 @@ rules ship behind the gate.
 - `cargo fmt --check`, `cargo clippy --workspace --all-targets --quiet -- -D warnings`,
   `cargo test --quiet -p oteryn-game-server`
 - `python tools/agents/validate_governance.py`
+
+## Terminal integration
+
+- **Final head:** `32f8d8b71dc07542df6c76ab87952dfb50561ee2`.
+- **Integration:** merged into main as PR #1243, merge commit
+  `b18ccc4f06175776575a00424ec0ca1c450a186e` (2026-09-29T16:16:57Z).
+- **Closeout:** the record was archived by `OTV2-20260929-spell-cast-wire-w1` (issue #162, allocation comment
+  5894588548).
+- **Owned paths:** released.
+- **Binding carry-over:** the carry-over list above stays the reference; H-3 (the `ActorVitalsV1` wire) is
+  delivered by `OTV2-20260929-spell-cast-wire-w1`.
