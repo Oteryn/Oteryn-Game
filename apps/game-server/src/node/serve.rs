@@ -42,6 +42,7 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::FreshEvidenceSource;
 use crate::native_admission_source::descriptor::ProducerDescriptor;
+use crate::native_admission_source::runtime_status::RuntimeStatusDescriptor;
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
 use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
 use oteryn_foundation::CancellationToken;
@@ -160,6 +161,8 @@ struct Material {
     gameplay_key: PrivateKeyDer<'static>,
     evidence: FreshEvidenceSource,
     intents: ProducerDescriptor,
+    /// Runtime-status identity and declared epoch; `None` disables reporting.
+    runtime_status: Option<(std::sync::Arc<RuntimeStatusDescriptor>, u64)>,
     descriptor: DescriptorRegistration,
     launch: LaunchAuthorizationFile,
     s2: Option<S2AuthorizationFile>,
@@ -236,6 +239,36 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         client_key.clone_key(),
     )
     .map_err(|_| invalid("platform"))?;
+    let runtime_status = match &platform.runtime_status {
+        None => None,
+        Some(status) => {
+            let chain = certificates(&secret(
+                "platform.runtime_status.client_certificate_file",
+                &status.client_certificate_file,
+                MAX_PEM_BYTES,
+            )?)
+            .map_err(|_| invalid("platform.runtime_status.client_certificate_file"))?;
+            let key = private_key(
+                "platform.runtime_status.client_key_file",
+                &secret(
+                    "platform.runtime_status.client_key_file",
+                    &status.client_key_file,
+                    MAX_GAMEPLAY_KEY_BYTES,
+                )?,
+            )?;
+            // Its own identity, never the evidence one (contract §3).
+            let descriptor = RuntimeStatusDescriptor::new(
+                endpoint.clone(),
+                platform.peer_name.clone(),
+                roots.clone(),
+                chain,
+                key,
+                &[(&client, &client_key)],
+            )
+            .map_err(|_| invalid("platform.runtime_status"))?;
+            Some((std::sync::Arc::new(descriptor), status.assignment_epoch))
+        }
+    };
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -288,6 +321,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         gameplay_key,
         evidence: FreshEvidenceSource::new(evidence),
         intents,
+        runtime_status,
         descriptor,
         launch,
         s2,
@@ -756,7 +790,7 @@ impl Readiness<'_> {
         &self,
         ready: bool,
         budget: Option<tokio::time::Instant>,
-    ) -> Result<(), BootError> {
+    ) -> Result<AdmissionAuthorityPublicationV1, BootError> {
         for _ in 0..2 {
             let publication = self.prepare(ready, budget).await?;
             let mut attempt = 0;
@@ -777,7 +811,7 @@ impl Readiness<'_> {
                             "event=readiness ready={ready} ownership_generation={}",
                             self.generation
                         ));
-                        return Ok(());
+                        return Ok(publication);
                     }
                     Ok(
                         GuardPublicationDisposition::Stale | GuardPublicationDisposition::Conflict,
@@ -1149,7 +1183,21 @@ async fn boot_and_serve(
         stopped_before_ready();
         return Ok(());
     }
-    readiness.publish(true, None).await?;
+    let committed = readiness.publish(true, None).await?;
+    // Contract §8.1: report the committed publication; never gates serving.
+    let reporter = material.runtime_status.as_ref().map(|(descriptor, epoch)| {
+        super::runtime_status::Reporter::start(
+            descriptor.clone(),
+            *epoch,
+            root.clone(),
+            scope,
+            (&config.scope.world_id, &config.scope.channel_id),
+            fact,
+            generation,
+            &committed,
+            unix_now,
+        )
+    });
     // D3 step 9: three loops under one shutdown token.
     let shutdown = CancellationToken::new();
     let listener_config = GameplayListenerConfig {
@@ -1215,6 +1263,9 @@ async fn boot_and_serve(
     })
     .await;
     event(&format!("event=shutdown reason=\"{reason}\""));
+    if let Some(reporter) = &reporter {
+        reporter.stop_heartbeats();
+    }
     // D3 step 10: withdraw readiness first, within the shutdown budget. The
     // loops keep being driven meanwhile, so work already inside a durability
     // pass finishes and releases the holder the withdrawal needs.
@@ -1237,10 +1288,12 @@ async fn boot_and_serve(
         Poll::Pending
     })
     .await;
-    if let Err(error) = withdrawn {
-        event(&format!(
+    match (&withdrawn, &reporter) {
+        (Ok(committed), Some(reporter)) => reporter.publish(committed),
+        (Err(error), _) => event(&format!(
             "event=readiness ready=false result=failed reason=\"{error}\""
-        ));
+        )),
+        (Ok(_), None) => {}
     }
     shutdown.cancel();
     loops_stop.cancel();
@@ -1256,6 +1309,9 @@ async fn boot_and_serve(
     }
     if !expiry_done {
         expiry.as_mut().await;
+    }
+    if let Some(reporter) = reporter {
+        reporter.finish(budget).await;
     }
     let _ = std::fs::remove_file(&config.control.socket_path);
     event("event=shutdown state=complete");

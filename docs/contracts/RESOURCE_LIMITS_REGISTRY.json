@@ -6197,6 +6197,94 @@
         "ACTOR_VITALS state domain 3, delta type 1, snapshot type 1 (crates/protocol-oteryn/src/actor_spell.rs)"
       ],
       "notes": "SPELL-D6 (RL-03 = 1), #162 owner acceptance 5867161696; contract section 7. SPELL-RL-04 (spells in one content-generation spell book) needs a finite measured value at registration (SPELL-D6) and is left to composition. Registered by OTV2-20260929-spell-cast-wire-w1 (#162 allocation 5894588548)."
+    },
+    {
+      "id": "NRS-REPORT-BYTES",
+      "owner_contract": "OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md",
+      "resource": "Encoded ReportRuntimeStatusV1 request body",
+      "unit": "bytes",
+      "hard_maximum": 2048,
+      "configurable_range": {
+        "minimum": 2048,
+        "maximum": 2048
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The body is encoded from grammar-checked fields (revisions at most 64 bytes, identities at most 128) and its length is checked before the exchange opens a connection; nothing is retained after the exchange.",
+      "client_visible": false,
+      "boundary_tests": [
+        "the largest grammar-valid report (every field at its maximum) encodes within 2048 bytes",
+        "a body above 2048 bytes is refused before the exchange opens a connection"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/runtime_status.rs"
+      ],
+      "notes": "Contract sections 3 and 11. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered' and never gates boot, serving, admission or shutdown. Registered by OTV2-20260929-runtime-status-producer (#162 owner-accepted package Q21, 5900403086)."
+    },
+    {
+      "id": "NRS-RESPONSE-BYTES",
+      "owner_contract": "OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md",
+      "resource": "ReportRuntimeStatusV1 success response body",
+      "unit": "bytes",
+      "hard_maximum": 256,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The shared bounded HTTP/1.1 reader caps the body first (NSRC-HTTP-RESPONSE-BODY-BYTES); the report decoder then refuses a body above 256 bytes before decoding.",
+      "client_visible": false,
+      "boundary_tests": [
+        "256 bytes decoded when the exact member set is present",
+        "257 bytes refused before decoding"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/runtime_status.rs"
+      ],
+      "notes": "Contract sections 3 and 11. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered' and never gates boot, serving, admission or shutdown. Registered by OTV2-20260929-runtime-status-producer (#162 owner-accepted package Q21, 5900403086)."
+    },
+    {
+      "id": "NRS-INFLIGHT",
+      "owner_contract": "OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md",
+      "resource": "Runtime reports in flight per node",
+      "unit": "requests",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One reporter task per node sends sequentially on its own capacity, never an admission TransientCapacity slot; the latest committed publication replaces a pending one (no queue).",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 report in flight while the reporter runs",
+        "a second publication during an exchange replaces the pending one and is sent after it (latest wins)"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/runtime_status.rs"
+      ],
+      "notes": "Contract sections 3 and 11. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered' and never gates boot, serving, admission or shutdown. Registered by OTV2-20260929-runtime-status-producer (#162 owner-accepted package Q21, 5900403086)."
+    },
+    {
+      "id": "NRS-HEARTBEAT",
+      "owner_contract": "OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md",
+      "resource": "Runtime report heartbeat interval H",
+      "unit": "milliseconds",
+      "hard_maximum": 60000,
+      "configurable_range": {
+        "minimum": 5000,
+        "maximum": 5000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One timer per reporter; the heartbeat repeats the committed ready publication only while serving, the durability root is ready and the assignment is unchanged.",
+      "client_visible": false,
+      "boundary_tests": [
+        "5000 ms: the compiled H (U-RS1 proposal)",
+        "heartbeats stop when any heartbeat condition fails"
+      ],
+      "consumers": [
+        "apps/game-server/src/native_admission_source/runtime_status.rs"
+      ],
+      "notes": "Compiled H = 5000 ms (U-RS1); 60000 ms is the contract hard maximum. Contract sections 3 and 11. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered' and never gates boot, serving, admission or shutdown. Registered by OTV2-20260929-runtime-status-producer (#162 owner-accepted package Q21, 5900403086)."
     }
   ]
 }

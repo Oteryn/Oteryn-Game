@@ -89,8 +89,18 @@ pub(crate) async fn exchange(
     body: &str,
     permit: &mut super::QueuePermit<'_>,
 ) -> Result<Vec<u8>, SourceError> {
+    exchange_at(desc, operation.path(), 1024, body, permit).await
+}
+/// `exchange` for a compiled path with its own registered request body cap.
+pub(crate) async fn exchange_at(
+    desc: &ProducerDescriptor,
+    path: &'static str,
+    body_max: usize,
+    body: &str,
+    permit: &mut super::QueuePermit<'_>,
+) -> Result<Vec<u8>, SourceError> {
     permit.require_active()?;
-    if body.len() > 1024 {
+    if body.len() > body_max {
         return Err(SourceError::CapacityExceeded);
     }
     let future = async {
@@ -111,7 +121,7 @@ pub(crate) async fn exchange(
         tls.get_mut().0.finish_handshake();
         let request = format!(
             "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-            operation.path(),
+            path,
             desc.host_header,
             body.len(),
             body
