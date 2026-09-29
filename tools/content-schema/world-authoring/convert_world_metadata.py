@@ -103,6 +103,48 @@ def binding(family: str, key: str, namespace: str, external_id: str) -> dict:
     }
 
 
+def committed_keys(root: Path, family: str, namespace: str) -> dict[str, str]:
+    """Source id -> key already committed for `namespace`, read from the family shards."""
+    directory = root / FAMILIES[family]["dir"]
+    index = directory / "index.json"
+    if not index.is_file():
+        return {}
+    found: dict[str, str] = {}
+    for shard in json.loads(index.read_text(encoding="utf-8"))["shards"]:
+        shard_doc = json.loads((root / shard).read_text(encoding="utf-8"))
+        for record in shard_doc["records"]:
+            for row in record["source_bindings"]:
+                if row["identity_namespace"] == namespace:
+                    found[row["external_id"]] = row["target"]["key"]
+    return found
+
+
+def assign_keys(
+    sources: list[tuple[str, str]], committed: dict[str, str], prefix: str, family: str
+) -> dict[str, str]:
+    """Stable identity: reuse the committed key per source id; mint a slug only for new ids.
+
+    `sources` is (source id, display name). Every committed key stays reserved, so a new id
+    can never take over an existing identity; a slug collision fails closed.
+    """
+    taken = set(committed.values())
+    keys = {}
+    for source_id, name in sources:
+        if source_id in committed:
+            keys[source_id] = committed[source_id]
+    for source_id, name in sources:
+        if source_id in keys:
+            continue
+        key = f"{prefix}{slug(name)}"
+        if key in taken:
+            raise ConvertError(
+                f"{family}: new source id {source_id} collides with {key}"
+            )
+        taken.add(key)
+        keys[source_id] = key
+    return keys
+
+
 def unique(records: list[dict], family: str) -> list[dict]:
     records.sort(key=lambda r: r["declaration"]["identity"]["key"])
     keys = [r["declaration"]["identity"]["key"] for r in records]
@@ -124,10 +166,16 @@ def item_keys() -> dict[int, str]:
     }
 
 
-def cities(facts) -> tuple[list[dict], dict[int, str]]:
+def cities(facts, root: Path = ROOT) -> tuple[list[dict], dict[int, str]]:
     records, by_id = [], {}
+    keys = assign_keys(
+        [(str(t["town_id"]), t["name"]) for t in facts.towns],
+        committed_keys(root, "Area.City", "crystalserver/town-id"),
+        "oteryn:area.city.",
+        "Area.City",
+    )
     for town in facts.towns:
-        key = f"oteryn:area.city.{slug(town['name'])}"
+        key = keys[str(town["town_id"])]
         if not in_map(facts, *town["temple"]):
             raise ConvertError(f"{key}: temple outside map")
         by_id[town["town_id"]] = key
@@ -148,16 +196,24 @@ def cities(facts) -> tuple[list[dict], dict[int, str]]:
     return unique(records, "Area.City"), by_id
 
 
-def houses(facts, house_xml: bytes, city_keys: dict[int, str]) -> list[dict]:
+def houses(
+    facts, house_xml: bytes, city_keys: dict[int, str], root: Path = ROOT
+) -> list[dict]:
     records = []
     rows = ET.fromstring(house_xml).findall("house")
     xml_ids = {int(row.get("houseid")) for row in rows}
     if xml_ids != set(facts.houses):
         raise ConvertError("world-house.xml and OTBM house tiles disagree")
+    keys = assign_keys(
+        [(row.get("houseid"), row.get("name")) for row in rows],
+        committed_keys(root, "House", "crystalserver/house-id"),
+        "oteryn:house.",
+        "House",
+    )
     for row in rows:
         house_id = int(row.get("houseid"))
         tiles = facts.houses[house_id]
-        key = f"oteryn:house.{slug(row.get('name'))}"
+        key = keys[row.get("houseid")]
         entry = (int(row.get("entryx")), int(row.get("entryy")), int(row.get("entryz")))
         town_id = int(row.get("townid"))
         if town_id not in city_keys:
@@ -305,15 +361,17 @@ def read_source(crystal_root: Path) -> dict[str, bytes]:
     return blobs
 
 
-def build(blobs: dict[str, bytes]) -> dict[str, bytes]:
+def build(blobs: dict[str, bytes], root: Path = ROOT) -> dict[str, bytes]:
     otbm = blobs["data-global/world/world.otbm"]
     facts = otbm_reader.read(otbm)
     if facts.unknown_item_attrs:
         raise ConvertError(
             f"unknown OTBM item attributes: {dict(facts.unknown_item_attrs)}"
         )
-    city_records, city_keys = cities(facts)
-    house_records = houses(facts, blobs["data-global/world/world-house.xml"], city_keys)
+    city_records, city_keys = cities(facts, root)
+    house_records = houses(
+        facts, blobs["data-global/world/world-house.xml"], city_keys, root
+    )
     candidates, rejected = teleport_candidates(facts)
     present = otbm_reader.read(otbm, probe={tp["to"] for tp in candidates}).present
     tp_records, unbound = teleports(candidates, present, item_keys(), rejected)
