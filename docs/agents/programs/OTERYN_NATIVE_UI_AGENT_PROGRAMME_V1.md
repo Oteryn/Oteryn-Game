@@ -2,6 +2,8 @@
 
 Status: AUTHOR_CANDIDATE / NOT_REGISTERED / NOT_ACTIVE. Prepared 2026-09-11.
 
+2026-09-29: the registered `OTV2_SOL_NATIVE_UI_*` prompts were retired to `docs/agents/prompts/retired/` unused; native client work runs through ADR-0020 lanes. The paths below are historical.
+
 Companion: `docs/architecture/OTERYN_NATIVE_CLIENT_UI_IMPLEMENTATION_PROGRAMME_V1.md` (sections 1-10 and 17-18), called PROGRAMME below. These two files are one planning packet. This document contains full reusable prompt candidates and their future invocation contract, not an active alias registry, worker launch, lease grant or replacement scheduler.
 
 Current source baseline: `Oteryn/Oteryn-Game@5ec6ca6369e98a6f66f679cfc7fc1248fb5992fb`; bound META `Oteryn/Oteryn@3b39e0be05aef008f1bd442821daefa898a201dd`. These are planning provenance only. Every invocation must resolve current protected main, its policy pin, prompt lifecycle and allocations again.
