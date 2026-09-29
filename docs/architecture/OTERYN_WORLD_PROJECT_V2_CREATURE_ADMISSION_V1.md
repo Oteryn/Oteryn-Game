@@ -152,9 +152,11 @@ materializer (`materialize_content_world_project_v2`) pins the staged file by SH
 to the project with the `oteryn:source.canary` import batch, and writes the canonical v2
 documents with their manifest and Content Lock. Creatures of game version 15.30 that only
 CrystalServer has (`crystal_batch.py`) are recorded in their own import batch
-`g4-creature-crystal-1530-r1`, whose source artifact is the same census index. Their bindings to
-their Crystal files use the one `oteryn:source.crystalserver` source at that revision, which the NPC
-summer supplement batch declares, because a v2 source is unique per key and revision. The content tree is then regenerated from v2. Rust admission (`ProjectV2Draft` load, validation and
+`g4-creature-crystal-1530-r1`, whose source artifact is the same census index. A v2 source is unique
+per key and revision and names one import batch, and the NPC summer supplement already holds
+`oteryn:source.crystalserver` at the commit itself. The creature batch therefore has its own source
+revision `crystalserver-creature-1530:<commit>`, as the TibiaWiki batches of one source do, and the
+bindings to the Crystal files use it. The content tree is then regenerated from v2. Rust admission (`ProjectV2Draft` load, validation and
 `link_reference_playable`) is the acceptance check, together with focused tests over one pilot
 monster of each profile shape.
 

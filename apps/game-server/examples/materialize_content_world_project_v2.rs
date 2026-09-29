@@ -77,6 +77,11 @@ const CREATURE_WIKI_BINDINGS: [(&str, &str); CREATURE_WIKI_COUNT] =
     [("108320", "oteryn:creature.dark_merudri")];
 /// Game version 15.30: creatures CrystalServer has at its pinned 15.30 commit and Canary lacks (`crystal_batch.py`).
 const CREATURE_CRYSTAL_REVISION: &str = "00ce02a57ca5a12e48f32a3476e37471167e4c3f";
+/// A v2 source is unique per key and revision and names one import batch; the NPC summer supplement
+/// already holds `crystalserver` at the commit itself. The creature batch therefore gets its own
+/// source revision, which keeps the commit, as the TibiaWiki batches of one source do.
+const CREATURE_CRYSTAL_SOURCE_REVISION: &str =
+    "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f";
 const CREATURE_CRYSTAL_COUNT: usize = 13;
 const CANARY_BUNDLE_INDEX_SHA256: &str =
     "5251e62c7009a12a4d10d85a7a6ff59aa9526f169ec8c6d27fbdd7a687b571d9";
@@ -1161,9 +1166,8 @@ struct CreaturePopulation {
     source: ProjectV2Source,
     wiki_import: ImportBatch,
     wiki_source: ProjectV2Source,
-    /// The Crystal creature bindings resolve to the one `crystalserver` source at
-    /// this revision, which the NPC summer supplement batch already declares.
     crystal_import: ImportBatch,
+    crystal_source: ProjectV2Source,
     records: Vec<ProjectReferenceRecord>,
     declarations: Vec<ProjectV2Declaration>,
     profiles: Vec<ProjectV2AuthoringProfile>,
@@ -1199,7 +1203,7 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
     let records: Vec<ProjectReferenceRecord> = serde_json::from_value(packet["records"].clone())?;
     let profiles: Vec<ProjectV2AuthoringProfile> =
         serde_json::from_value(packet["authoring_profiles"].clone())?;
-    let bindings: Vec<ProjectV2SourceIdentityBinding> =
+    let mut bindings: Vec<ProjectV2SourceIdentityBinding> =
         serde_json::from_value(packet["source_identity_bindings"].clone())?;
     let declarations: Vec<ProjectV2Declaration> =
         serde_json::from_value(packet["declarations"].clone())?;
@@ -1273,6 +1277,12 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
             .any(|binding| binding.disposition != ProjectV2SourceIdentityDisposition::Exact)
     {
         return Err("wiki-authored creature page binding drifted".into());
+    }
+    // The staged Crystal bindings name the commit; they resolve to the creature batch's own source.
+    for binding in &mut bindings {
+        if binding.source_key == "oteryn:source.crystalserver" {
+            binding.source_revision = CREATURE_CRYSTAL_SOURCE_REVISION.to_owned();
+        }
     }
     // E5: each admitted encounter keeps the digest of the manifest it was mapped from as its reimport baseline.
     let manifests = packet["encounter_manifests"]
@@ -1352,7 +1362,7 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
     let crystal_import = ImportBatch {
         batch_id: "g4-creature-crystal-1530-r1".to_owned(),
         source_repository: "zimbadev/crystalserver".to_owned(),
-        source_revision: CREATURE_CRYSTAL_REVISION.to_owned(),
+        source_revision: CREATURE_CRYSTAL_SOURCE_REVISION.to_owned(),
         source_artifact_sha256: CANARY_BUNDLE_INDEX_SHA256.to_owned(),
         access_disposition: "PENDING".to_owned(),
         source_generation_profile: "OTERYN_MONSTER_AUTHORING_BUNDLE/v1".to_owned(),
@@ -1363,12 +1373,20 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         candidates: Vec::new(),
         reimport_states: Vec::new(),
     };
+    let crystal_source = ProjectV2Source {
+        key: "oteryn:source.crystalserver".to_owned(),
+        import_batch_id: crystal_import.batch_id.clone(),
+        revision: crystal_import.source_revision.clone(),
+        sha256: crystal_import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::OtsHypothesisOnly,
+    };
     Ok(CreaturePopulation {
         import,
         source,
         wiki_import,
         wiki_source,
         crystal_import,
+        crystal_source,
         records,
         declarations,
         profiles,
@@ -1679,6 +1697,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         wiki_import: creature_wiki_import,
         wiki_source: creature_wiki_source,
         crystal_import: creature_crystal_import,
+        crystal_source: creature_crystal_source,
         records: creature_records,
         declarations: encounter_declarations,
         profiles: mut authoring_profiles,
@@ -1738,6 +1757,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     mount_source,
                     creature_source,
                     creature_wiki_source,
+                    creature_crystal_source,
                     npc_source,
                     npc_br_source,
                     npc_tibiopedia_source,
