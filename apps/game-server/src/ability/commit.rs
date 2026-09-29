@@ -251,11 +251,19 @@ fn encode_owner_damage_plan(plan: &EffectPlan) -> Result<Vec<u8>, AbilityError> 
 /// A real typed Ability→Foundation bridge, compiled into the game-server
 /// library but never composed into live gameplay. The fixture BTreeMap engine
 /// above is intentionally not on this path.
+///
+/// D4 (D141): the owner's replay identity for this commit is derived by the carrier from
+/// `(attacker, command.game_session_id(), command.command_id(), sub_ordinal)`, where
+/// `sub_ordinal` is the committed effect's own index in the plan. The plan's opaque
+/// `AbilityOccurrenceId` is never passed as identity. `command` must be the actual
+/// FND-02 [`CommandRef`] of the attacker's command; composing it into live gameplay is later work.
 #[allow(dead_code)]
 pub(crate) fn commit_exact_owner_damage(
     owner: &mut crate::foundation::CurrentOwnerExactActorCommit<'_>,
     resolved: &super::exact_actor_resolution::ResolvedExactActor,
     plan: &EffectPlan,
+    attacker: crate::foundation::CharacterId,
+    command: crate::foundation::CommandRef,
 ) -> Result<crate::foundation::OwnerDamageResult, OwnerCommitError> {
     use super::exact_actor_resolution::ExactActorSource;
     if plan.occurrence() != resolved.occurrence()
@@ -277,13 +285,19 @@ pub(crate) fn commit_exact_owner_damage(
     if target != &plan.intent().resolved_targets()[0] || *magnitude <= 0 {
         return Err(OwnerCommitError::InvalidPlan);
     }
+    let sub_ordinal = plan
+        .sub_occurrence(0)
+        .and_then(|sub| u16::try_from(sub.ordinal()).ok())
+        .ok_or(OwnerCommitError::InvalidPlan)?;
     let binding = encode_owner_damage_plan(plan).map_err(OwnerCommitError::Plan)?;
     owner
-        .commit_damage(
+        .commit_damage_for_attacker(
             resolved.target(),
+            crate::foundation::AttackerCommand::new(attacker, command, sub_ordinal),
             crate::foundation::OwnerDamageCommand {
                 target: target.as_str().as_bytes(),
-                occurrence: plan.occurrence().id().as_str().as_bytes(),
+                // Not read for an attributed commit: the carrier derives the identity.
+                occurrence: &[],
                 binding: &binding,
                 damage: *magnitude,
             },

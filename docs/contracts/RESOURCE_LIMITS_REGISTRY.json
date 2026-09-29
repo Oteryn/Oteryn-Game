@@ -6105,6 +6105,32 @@
         "apps/game-server/src/foundation/runtime_actor_carrier.rs (DamageContributors::record, CurrentOwnerExactActorCommit::commit_damage_for_attacker, CurrentOwnerCombatDeath::top_damage_character)"
       ],
       "notes": "D132, \u00a74.3 of the D3 corpse container/loot window/decay decision. Ephemeral, per-creature-generation state only: a fresh, empty map on every creature admission, dropped with the slot on removal or respawn (D52: nothing duplicated, nothing silently completed by a later generation). No production caller yet; D3-2 wires CurrentOwnerCombatDeath::top_damage_character into settle_creature_death_rewards. Registered by OTV2-20260929-d3-3-top-damage."
+    },
+    {
+      "id": "COMBAT01-DAMAGE-RECEIPTS-PER-CREATURE-GENERATION",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_D4_MULTI_HIT_DAMAGE_RECEIPT_DECISION_2026-09-29.md",
+      "resource": "Committed damage receipts retained at once per live creature actor generation",
+      "unit": "retained damage receipts per creature generation",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Retention, not admission: when 16 receipts are retained, a new distinct occurrence evicts the oldest evictable receipt (sequenced, and either from a superseded session or covered by its attacker's current high-water mark) and still applies; the evicted occurrence's resubmission is refused StaleAttackerSequence, never re-applied. Only when no retained receipt is evictable (unsequenced, or its attacker is untracked past COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE) is the new occurrence refused DamageReceiptCapacityExceeded, fail-closed with HP and every receipt untouched (GAME-ABILITY-01 section 12). Each receipt retains at most MAX_OWNER_COMMIT_BINDING_BYTES = 4096 bytes of binding.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=16: sixteen distinct occurrences from one attacker all retain and apply",
+        "max+1=17: a 17th evictable occurrence evicts the oldest receipt and still applies; the evicted occurrence's replay is StaleAttackerSequence and mutates nothing",
+        "max=16 non-evictable: sixteen unsequenced receipts retain, with never an eviction of an unsequenced receipt",
+        "max+1=17 non-evictable: a 17th occurrence with no evictable receipt is DamageReceiptCapacityExceeded and mutates nothing",
+        "a 20 HP creature is killed by more than 16 distinct occurrences with none refused by capacity and exactly one lethal receipt"
+      ],
+      "consumers": [
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs (DamageReceipts, ChannelActorCarrier::commit_creature_damage_inner, CurrentOwnerExactActorCommit::commit_damage_for_attacker, committed_lethal_receipt_inner, validate_lethal_receipt)",
+        "apps/game-server/src/ability/commit.rs (commit_exact_owner_damage)"
+      ],
+      "notes": "D140-D144, D4 multi-hit damage receipt decision. Ephemeral, per-creature-generation state only, dropped with the slot (D52). The replay identity of an attributed commit is carrier-derived from (CharacterId, GameSessionId, CommandId sequence, sub_ordinal); sub_ordinal is bounded by the already-registered ABILITY01-EFFECT-PLAN-ENTRIES = 2 (mirrored, not re-registered). Registered by OTV2-20260929-d4-1-multi-hit."
     }
   ]
 }

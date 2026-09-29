@@ -20,7 +20,9 @@ mod protocol;
 mod runtime_actor_carrier;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
-    COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX, CarrierError, ChannelContentPin,
+    ABILITY01_EFFECT_PLAN_ENTRIES_MAX, AttackerCommand,
+    COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX,
+    COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX, CarrierError, ChannelContentPin,
     ChannelRuntimeV1, CommittedLethalReceipt, ControlLossMark, CreatureDeathOccurrenceKey,
     CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit,
     CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition,
