@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/death0-character-death-receipts
 issue: 162
 allocation: "#162 comment 5895588092"
-pr: null
+pr: 1264
 base_sha: 48de3868
 head_sha: null
 final_head_sha: null
@@ -161,6 +161,6 @@ finding_dispositions: {p0_p1_accepted_and_repaired: [], p0_p1_rejected_with_exac
 
 ## PR and closeout
 
-- PR: opened by this worker as one non-draft PR; no auto-merge, no paid review.
-- merge commit/result: squash merge of the PR, if it merges.
+- PR: #1264 (non-draft; no auto-merge, no paid review).
+- merge commit/result: squash merge of #1264.
 - ownership release: at merge.
