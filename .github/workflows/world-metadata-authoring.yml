@@ -13,6 +13,7 @@ on:
       - content/world/objects/**
       - imports/crystalserver/bindings/items.json
       - imports/tibiawiki/hunting-places/**
+      - imports/tibiawiki/islands/**
       - .github/workflows/world-metadata-authoring.yml
   workflow_dispatch:
 
@@ -50,6 +51,8 @@ jobs:
         run: |
           set -euo pipefail
           python convert_hunting_places.py --check
+          python convert_islands.py --check
+          python validate_islands.py
           python validate_world_metadata.py
           python validate_world_base.py
           python convert_world_record.py --check
@@ -64,6 +67,7 @@ jobs:
           python test_world_base.py
           python test_world_record.py
           python test_floor_changes.py
+          python test_islands.py
 
       - name: Ruff check and format
         working-directory: .
@@ -77,8 +81,8 @@ jobs:
         working-directory: .
         run: test -z "$(git status --short --untracked-files=all)"
 
-  # `convert_world_metadata.py --check`, `convert_world_base.py --check` and
-  # `convert_floor_changes.py --check` need the pinned
+  # `convert_world_metadata.py --check`, `convert_world_base.py --check`,
+  # `convert_floor_changes.py --check` and `convert_islands.py --crystal-root` need the pinned
   # zimbadev/crystalserver checkout, which this repository's CI does not fetch; whoever
   # regenerates the families runs them locally and commits the output together with
   # samples/source-capture-v1.json, samples/world-base-capture-v1.json and

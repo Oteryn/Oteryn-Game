@@ -21,6 +21,8 @@ owned_paths:
   - content/world/placements/
   - content/world/worlds/
   - content/world/objects/
+  - content/world/areas/islands/
+  - imports/tibiawiki/islands/
   - tools/content-schema/validate_materialized_game_tree.py
   - .gitattributes
   - .github/workflows/world-metadata-authoring.yml
@@ -85,6 +87,17 @@ sha256-pinned and `OtsHypothesisOnly`.
       item key, with the engine mapping documented and `occurrences_on_base_map` counted
       from the region files (329 types, 26,919 occurrences). Ladders up, rope spots, sewer
       grates and tool holes are scripted uses and are listed as excluded, not invented.
+- [x] `Area.Island` holds only islands the base map confirms (owner rule): 52 records
+      (48 island, 3 archipelago, 1 continent; 2 event-only) computed by
+      `convert_islands.py --check` from the committed region files, the pinned TibiaWiki
+      snapshot (`imports/tibiawiki/islands/fandom-snapshot-v1.json`, 67 candidate pages) and
+      `island-ground-classes.json` (water and lava ids from the pinned `items.xml` names).
+      Each record has a map-computed footprint and anchor, the cities whose temple lies in
+      the component, page-id bindings and the wiki evidence sentence. Percht Island merges
+      into Orcsoberfest Island; Fibula uses the map-corrected 9,196 tile island
+      (`anchor_corrected_from_wiki`). 14 candidates are excluded with a reason
+      (9 without coordinates, 3 part of the landmass, 2 event-only not on the map) in
+      `samples/islands-capture-v1.json`. `validate_islands.py` and `test_islands.py` pass.
 - [ ] Required checks pass on the frozen PR head.
 
 ## Excluded scope
@@ -101,6 +114,7 @@ sha256-pinned and `OtsHypothesisOnly`.
   pass.
 - `convert_floor_changes.py --check` (pinned checkout), `validate_floor_changes.py` and
   `test_floor_changes.py` pass.
+- `convert_islands.py --check`, `validate_islands.py` and `test_islands.py` pass.
 - `validate_world_base.py` passes; `test_world_base.py` and `test_world_authoring.py` pass.
 - `ruff check` and `ruff format --check` pass from the repository root.
 - `validate_materialized_game_tree.py`, `validate_governance.py` and

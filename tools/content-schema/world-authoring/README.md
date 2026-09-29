@@ -1,4 +1,4 @@
-# World metadata authoring (City and HuntingPlace Area, House, teleport Transition)
+# World metadata authoring (City, HuntingPlace and Island Area, House, teleport Transition)
 
 This package populates the world tree from the pinned CrystalServer map. Steps 1 and 2
 cover **metadata**: towns, houses and teleports, plus hunting places from the English
@@ -9,6 +9,7 @@ format selected by measurement (see "Base map (step 3)" below).
 |---|---|---:|---|
 | `Area.City` | `content/world/areas/cities/` | 35 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `Area.HuntingPlace` | `content/world/areas/hunting-places/` | 445 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
+| `Area.Island` | `content/world/areas/islands/` | 52 | `OTERYN_AREA_AUTHORING_SHARD/v1` (`island.schema.json`) |
 | `House` | `content/houses/` | 995 | `OTERYN_HOUSE_AUTHORING_SHARD/v1` |
 | `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
 | `World` | `content/world/worlds/` | 1 | `OTERYN_WORLD_AUTHORING_SHARD/v1` (`world-record.schema.json`) |
@@ -64,6 +65,64 @@ of `tibia.fandom.com` (the Portuguese wiki refuses build containers). Evidence i
 - The validator checks the snapshot pin and canonical bytes, that every snapshot page is
   bound once with its revision, city references, extent and capture counts.
 
+## Islands (map-verified)
+
+`Area.Island` (`area_kind` `island`, `archipelago` or `continent`) is the one Area family whose
+membership the **base map decides**. Owner rule: import an island only when the committed map
+confirms it, meaning the wiki coordinate lies on a land component that water or lava fully
+encloses. Nothing else is imported, so an island the map does not show stays out until the
+map or the wiki changes.
+
+- `fandom_island_snapshot.py fetch` (network, not run by CI) stores
+  `imports/tibiawiki/islands/fandom-snapshot-v1.json`: 67 candidate pages (`Infobox Geography`
+  pages naming an island or archipelago) and 7 pages that only lend a coordinate, each with
+  page id, revision id, wikitext sha256, the wiki's own `Mapper Coords`, status and event
+  flags and one short factual sentence. No prose. The curated decisions are constants in the
+  tool and are checked against the fetched pages: coordinates borrowed from another page,
+  city-temple coordinates, the Fibula correction, aliases, places inside another island.
+- `island-ground-classes.json` lists the water and lava ground item ids (base map palette ids
+  whose pinned `items.xml` name is one of 12 water or 4 lava names, for example `shallow
+  water` 629-634,880-891,...). `convert_islands.py --crystal-root PATH` re-derives it from the
+  pinned `items.xml` and fails (or rewrites) on a difference.
+- `convert_islands.py [--check]` reads the snapshot, the region files, the ground classes and
+  the City Areas offline (about 20 s). A tile is land unless its first (ground) item is water
+  or lava; an absent tile is void. The component of a coordinate is a 4-neighbour breadth-first
+  search over land tiles of one floor, capped at 400,000 tiles. A coordinate on water starts
+  from the nearest land tile within 5 tiles (squared distance, first strictly nearer wins).
+  - hits the cap: `part_of_landmass`, excluded (Fibula's and Isle of the Mists' wiki
+    coordinates; the mainland is 451,923 floor-7 tiles).
+  - no land within 5 tiles: `not_on_map`, excluded (`event_only_not_on_map` for the two
+    event islands); no coordinate at all: `no_coordinates`.
+  - a page inside another island's component (`place_within`: Ragnir, Chyllfroest in
+    Hrodmir) is excluded; a page that is the same place under another name (`alias_of`:
+    Percht Island is Orcsoberfest Island) merges into `also_known_as` and one extra binding.
+    Any other two pages on one component fail the conversion.
+  - `archipelago` needs at least two distinct confirmed components (Ice Islands, Forbidden
+    Islands, Shattered Isles), each stored with its own anchor and footprint and linked to
+    the island record of the same footprint when there is one. A wiki archipelago with one
+    confirmed component (Marapur, Laguna Islands) is an `island`. Darama, which the wiki calls
+    a continent, is `continent`.
+- Key `oteryn:area.island.<slug(page title)>`, reused by page id once committed. Each record
+  holds `footprint` (floor, `tile_count` and bounding box, computed from the map), `anchor`
+  (the verified start tile), `cities` (City Areas whose temple lies in the component on the
+  same floor), `event_only: true` where the wiki says the island is event-only, and
+  `source_facts` (`evidence`, `wiki_class`, `wiki_status`, `wiki_cities` as separate wiki
+  claims, `anchor_origin`, `source_coordinate` when the anchor differs from it,
+  `removed_from_game`).
+- Fibula: the wiki coordinate is on the mainland. The anchor is the map-corrected 9,196 tile
+  island west of it, named by the Meluna page (Ferryman Kamil in Fibula, 32153,32456,7), with
+  `anchor_corrected_from_wiki: true`. The converter refuses a correction when the wiki
+  coordinate is itself an island.
+- Result: 52 records (48 island, 3 archipelago, 1 continent; 2 event-only) and 14 excluded
+  pages (9 without coordinates, 3 part of the landmass, 2 event-only not on the map), all
+  listed with their reasons in `samples/islands-capture-v1.json`. Tiny footprints such as
+  Newhaven (50) and Laguna Islands (97) are confirmed and kept.
+- `validate_islands.py` checks the pins, snapshot bindings (every snapshot page bound or
+  excluded exactly once), City references and temple containment, footprints and anchors
+  inside the World bounds, the anchor inside its footprint and within 5 tiles of the
+  snapshot coordinate, component links and the capture summary. It does not re-run the
+  search; `convert_islands.py --check` does.
+
 ## What is imported and what is not
 
 Keys are stable across source updates: when the family files are already committed, the
@@ -91,14 +150,14 @@ position-based.
 - **Not here yet:**
   - floor changes that are scripted `use` actions (ladders up, rope spots, sewer grates,
     shovel and pick holes): see "Floor-change objects".
-  - islands and streets; per-place skills, loot and experience ratings of hunting places.
+  - streets; islands the map does not confirm (see "Islands"); per-place skills, loot and experience ratings of hunting places.
   - the 18 editor waypoints.
   - the `data-global/world/15.30/` fragment maps.
 
 ## Coexistence with the legacy WorldProject package
 
 `content/world/` is still the legacy WorldProject package root. The family shards in
-`areas/cities/`, `areas/hunting-places/` and `transitions/` are not WorldProject locators:
+`areas/cities/`, `areas/hunting-places/`, `areas/islands/` and `transitions/` are not WorldProject locators:
 
 - `validate_materialized_game_tree.py` accepts a populated family index there only when its
   shards stay in that directory, the directory holds no other file, and no legacy locator
@@ -196,10 +255,15 @@ python validate_floor_changes.py           # WorldObject.FloorChange incl. recou
 python test_floor_changes.py               # floor-change converter and validator fixtures
 # Needs the pinned crystalserver checkout: python convert_floor_changes.py --crystal-root ... [--check]
 python convert_hunting_places.py --check   # offline, from the committed TibiaWiki snapshot
+python convert_islands.py --check          # offline, from the snapshot, the base map and the City Areas
+python validate_islands.py                 # island family, pins, footprints, capture summary
+python test_islands.py                     # synthetic map: island, landmass, lava, alias, archipelago
+# Needs the pinned crystalserver checkout: python convert_islands.py --crystal-root ... [--check]
 # Regenerate (needs the pinned crystalserver checkout, not fetched by CI):
 python convert_world_metadata.py --crystal-root /path/to/crystalserver [--check]
 # Refresh the wiki snapshot (network), then reconvert:
 python fandom_hunting_snapshot.py fetch && python convert_hunting_places.py
+python fandom_island_snapshot.py fetch && python convert_islands.py
 ```
 
 ## Base map (step 3)
