@@ -4,9 +4,10 @@
 task_id: OTV2-20260929-d3-3-top-damage
 title: D3-3 - deterministic top-damage CharacterId per creature generation
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
-issue: 1198
+issue: 162
+pr: 1215
 allocation_comment: "D132, OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md §4.3"
 base_branch: main
 branch: claude/d3-3-top-damage
