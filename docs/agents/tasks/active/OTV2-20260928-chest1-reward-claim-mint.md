@@ -9,15 +9,15 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
-pr: 1190
+pr: 1217
 allocation: "#162 comment 5879744231 (owner consent in session; D100 routing 5879348805)"
-base_sha: 34ebcef9
+base_sha: 69d85f33
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: CHEST-1 implementation worker (claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk)"
 created_at: 2026-09-28
-updated_at: 2026-09-28
+updated_at: 2026-09-29
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/migrations/0012_reward_claim_backpack_mint.sql
@@ -124,7 +124,7 @@ mutation_operators:
 one_invariant_per_negative_case: yes
 record_derived_matching_helper: not used
 evidence: apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs (every operator at freeze and at commit)
-finding_dispositions: {p0_p1_accepted_and_repaired: [], p0_p1_rejected_with_exact_evidence: [], p2_fixed_accepted_or_deferred: []}
+finding_dispositions: {p0_p1_accepted_and_repaired: [], p0_p1_rejected_with_exact_evidence: [], p2_fixed_accepted_or_deferred: ["worker review on 5c36eaad (#162 5884442968): fixed quantity 0 as InvalidInput, dead empty checks, constant usage check in the locked pass, unused pub(crate); rejected replay RL-08 charge (accepted DUR-03 pattern, as mint and B3-1); deferred four maintainability items (Open follow-ups)"]}
 ```
 
 Self-review finding fixed before freeze (RED then GREEN): a claimed item is live and never
@@ -173,10 +173,15 @@ production.
   item facts from the current Content.
 - Rewards with item attributes (keys, written text), cooldown claims, container rewards and weight,
   each as its own child.
+- Maintainability (worker review on 5c36eaad): bind the Ground MINT to its physical transaction
+  instead of per-family exclusions in `game_item_ground_insertion_guard`; per-operation guard dispatch
+  instead of re-stating whole guard bodies per migration; shared RL-08 and cause-lock helpers across
+  mint, transfer and reward-claim; name the CHEST-1 consumers in `RESOURCE_LIMITS_REGISTRY.json`
+  (registry single-writer).
 
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #1190 open; implementation and local validation complete
-next_action: freeze the head, post the review packet to #162, then Merge Queue
+last_progress: PR #1190 merged via Merge Queue as 69d85f33 (frozen head 5c36eaad, Codex clean)
+next_action: follow-up PR #1217 (worker-review P2 repairs) through Merge Queue, then archive this record
 ```

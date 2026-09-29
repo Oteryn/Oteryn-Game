@@ -1,6 +1,7 @@
-//! VSL-COMBAT-01 Combat D2b: compose one committed creature death into its
-//! two independent reward descendants (§24.1): a bounded loot MINT batch
-//! through `durability::item_mint`, and one XP award through
+//! VSL-COMBAT-01 Combat D2b/D3-2: compose one committed creature death into
+//! its two independent reward descendants (§24.1): the death's corpse MINT
+//! followed by a bounded loot MINT batch into that corpse's container
+//! (D3 §4.1) through `durability::item_mint`, and one XP award through
 //! `durability::character_progression`. They are never one distributed
 //! transaction (~:455): each runs to its own terminal `Result`, and a
 //! failure in one never blocks, retries or rolls back the other.
@@ -26,8 +27,9 @@ use crate::durability::character_progression::{
     ProgressionInitializationRequest,
 };
 use crate::durability::item_mint::{
-    CommittedItemMint, GroundPlacement, ItemMintCause, ItemMintError, ItemMintOutcome,
-    ItemMintRequest, TypedDefinitionRef,
+    CORPSE_CONTAINER_ENTRIES_MAX, CORPSE_MATERIALIZATION_PURPOSE_KEY, CommittedItemMint,
+    CorpseContainerPlacement, CorpseLootMintRequest, GroundPlacement, ItemMintCause, ItemMintError,
+    ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{
@@ -41,6 +43,12 @@ use oteryn_simulation_determinism::ExactI64;
 /// before any entry of a death's plan is minted, against the caller-tracked
 /// count of MINTs already in flight elsewhere in the same scope.
 pub(crate) const COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX: usize = 64;
+/// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): a corpse container
+/// holds at most 16 entries, equal by construction to
+/// `COMBAT01-LOOT-PLAN-ITEMS`. Checked once, against the whole accepted plan,
+/// before the corpse or any entry is frozen.
+pub(crate) const GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX: usize =
+    CORPSE_CONTAINER_ENTRIES_MAX as usize;
 /// `COMBAT01-XP-DESCENDANTS-PER-DEATH` (§4.1, row 9): exactly one. Enforced
 /// structurally: [`settle_creature_death_rewards`] issues at most one
 /// `commit_character_experience` call per invocation, keyed by an occurrence
@@ -59,9 +67,14 @@ pub(crate) const COMBAT01_REWARD_PRINCIPALS_MAX: usize = 1;
 /// no scope-wide active-workflow counter to check. Registering an
 /// unenforced ceiling here would be a fake guard.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    clippy::enum_variant_names,
+    reason = "each variant names its registered ceiling that was exceeded"
+)]
 pub(crate) enum CombatResourceLimitError {
     InflightLootMintsPerScopeExceeded,
     RewardPrincipalsExceeded,
+    CorpseContainerEntriesExceeded,
 }
 
 impl std::fmt::Display for CombatResourceLimitError {
@@ -72,6 +85,9 @@ impl std::fmt::Display for CombatResourceLimitError {
             }
             Self::RewardPrincipalsExceeded => {
                 formatter.write_str("COMBAT01-REWARD-PRINCIPALS exceeded")
+            }
+            Self::CorpseContainerEntriesExceeded => {
+                formatter.write_str("GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX exceeded")
             }
         }
     }
@@ -100,6 +116,19 @@ pub(crate) fn check_inflight_loot_mint_capacity(
         .ok_or(CombatResourceLimitError::InflightLootMintsPerScopeExceeded)?;
     if total > COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX {
         return Err(CombatResourceLimitError::InflightLootMintsPerScopeExceeded);
+    }
+    Ok(())
+}
+
+/// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX`: reject the whole plan, before
+/// the corpse or any entry is frozen, if its accepted entry count exceeds the
+/// corpse container's capacity. This prevents only a capacity-caused partial
+/// commit, never a generation-ending one (D52).
+pub(crate) fn check_corpse_container_capacity(
+    plan_entries: usize,
+) -> Result<(), CombatResourceLimitError> {
+    if plan_entries > GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX {
+        return Err(CombatResourceLimitError::CorpseContainerEntriesExceeded);
     }
     Ok(())
 }
@@ -167,6 +196,10 @@ impl<const N: usize> RewardProgressionBinding<N> {
 /// Complete semantic input of one death's reward composition.
 #[derive(Debug, Clone)]
 pub(crate) struct CreatureDeathRewardInput<const N: usize> {
+    /// The corpse `ItemInstance`'s definition, supplied by the caller exactly
+    /// as the loot definitions are (Content binding of `i00005801` waits on
+    /// the Content revision, D3-7).
+    pub(crate) corpse_item: LootDefinitionRef,
     pub(crate) loot_table_ref: LootDefinitionRef,
     pub(crate) loot_table: LootTableDefinition,
     pub(crate) ground: DeathGroundContext,
@@ -188,7 +221,20 @@ pub(crate) enum CreatureDeathRewardAdmissionError {
 pub(crate) enum CombatDeathRewardLootError {
     Plan(LootPlanError),
     Capacity(CombatResourceLimitError),
+    /// The corpse's own MINT was refused (including the per-scope corpse cap,
+    /// `CapacityExceeded`): no corpse and no loot exist for this death.
+    Corpse(ItemMintError),
+    /// A loot entry's MINT into the committed corpse was refused; already
+    /// committed entries stay committed and the remainder is dropped (D52).
     Mint(ItemMintError),
+}
+
+/// One death's committed corpse and the loot entries minted into it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct CommittedCorpseLoot {
+    pub(crate) corpse: CommittedItemMint,
+    /// In plan order; entry `i` occupies corpse container ordinal `i + 1`.
+    pub(crate) entries: Vec<CommittedItemMint>,
 }
 
 #[derive(Debug)]
@@ -204,7 +250,7 @@ pub(crate) enum CombatDeathRewardXpError {
 #[derive(Debug)]
 pub(crate) struct CreatureDeathRewardOutcome {
     pub(crate) death: CreatureDeathOccurrenceKey,
-    pub(crate) loot: Result<Vec<CommittedItemMint>, CombatDeathRewardLootError>,
+    pub(crate) loot: Result<CommittedCorpseLoot, CombatDeathRewardLootError>,
     pub(crate) xp: Result<ExperienceCommitOutcome, CombatDeathRewardXpError>,
 }
 
@@ -259,28 +305,72 @@ fn ground_placement(
     }
 }
 
-/// Runs the bounded loot descendant: plans, then mints one entry at a time
-/// in table order, stopping at the first MINT failure (a fence failure mid
-/// batch would reject every remaining entry too; nothing is gained by
-/// continuing past it). Already-committed entries stay committed: this
-/// never retries or undoes a prior `freeze_item_mint`/`commit_item_mint`.
+/// Runs the loot descendant (D3 §4.1): plans and preflights the whole plan,
+/// mints the corpse first (an ordinary Ground MINT at the corpse's position,
+/// carrying the owner's top-damage winner), then mints each loot entry, in
+/// table order, into `Container(parent = that corpse)` ordinal `i + 1`,
+/// stopping at the first MINT failure (a fence failure mid batch would reject
+/// every remaining entry too; nothing is gained by continuing past it).
+/// Already-committed entries stay committed: this never retries or undoes a
+/// prior `freeze`/`commit`, so a generation that ends mid-plan leaves the
+/// corpse holding only the entries that did commit (D52).
+#[allow(clippy::too_many_arguments)]
 async fn settle_loot(
     session: &DurabilitySession<'_, '_, '_>,
     death: CreatureDeathOccurrenceKey,
     corpse: MovementLocalPosition,
+    top_damage_character_id: [u8; 16],
     ground: &DeathGroundContext,
+    corpse_item: &LootDefinitionRef,
     loot_table_ref: &LootDefinitionRef,
     loot_table: &LootTableDefinition,
     inflight_before_this_death: usize,
-) -> Result<Vec<CommittedItemMint>, CombatDeathRewardLootError> {
+) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
     let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
     check_inflight_loot_mint_capacity(inflight_before_this_death, plan.entries.len())
         .map_err(CombatDeathRewardLootError::Capacity)?;
+    check_corpse_container_capacity(plan.entries.len())
+        .map_err(CombatDeathRewardLootError::Capacity)?;
 
-    let mut results = Vec::with_capacity(plan.entries.len());
-    for entry in &plan.entries {
-        let request = ItemMintRequest {
+    // The corpse's cause reuses the loot-cause tuple with the reserved
+    // sentinel purpose key, draw ordinal 0 and the corpse's own definition in
+    // place of a loot table (D3 §4.1).
+    let corpse_definition = to_typed_definition(corpse_item);
+    let corpse_request = ItemMintRequest {
+        cause: ItemMintCause::from_creature_death(
+            death,
+            corpse_definition.clone(),
+            CORPSE_MATERIALIZATION_PURPOSE_KEY.to_owned(),
+            0,
+        ),
+        item: corpse_definition,
+        quantity: 1,
+        ground: ground_placement(death, corpse, ground),
+        content_revision: ground.content_revision.clone(),
+        ruleset_revision: ground.ruleset_revision.clone(),
+        sim_revision: ground.sim_revision.clone(),
+    };
+    let mut corpse_candidate = session
+        .root
+        .freeze_item_mint(session.authority, session.node, corpse_request)
+        .await
+        .map_err(CombatDeathRewardLootError::Corpse)?;
+    let corpse_outcome = session
+        .root
+        .commit_corpse_mint(
+            session.authority,
+            session.node,
+            &mut corpse_candidate,
+            top_damage_character_id,
+        )
+        .await
+        .map_err(CombatDeathRewardLootError::Corpse)?;
+    let corpse_mint = committed(corpse_outcome);
+
+    let mut entries = Vec::with_capacity(plan.entries.len());
+    for (index, entry) in plan.entries.iter().enumerate() {
+        let request = CorpseLootMintRequest {
             cause: ItemMintCause::from_creature_death(
                 death,
                 to_typed_definition(&plan.loot_table),
@@ -289,28 +379,38 @@ async fn settle_loot(
             ),
             item: to_typed_definition(&entry.item),
             quantity: entry.quantity,
-            ground: ground_placement(death, corpse, ground),
+            placement: CorpseContainerPlacement {
+                corpse_item_instance_id: corpse_mint.item_instance_id,
+                // The preflight bounds `index` by the container capacity.
+                placement_ordinal: u32::try_from(index + 1)
+                    .map_err(|_| CombatDeathRewardLootError::Mint(ItemMintError::InvalidInput))?,
+            },
             content_revision: ground.content_revision.clone(),
             ruleset_revision: ground.ruleset_revision.clone(),
             sim_revision: ground.sim_revision.clone(),
         };
         let mut candidate = session
             .root
-            .freeze_item_mint(session.authority, session.node, request)
+            .freeze_corpse_loot_mint(session.authority, session.node, request)
             .await
             .map_err(CombatDeathRewardLootError::Mint)?;
         let outcome = session
             .root
-            .commit_item_mint(session.authority, session.node, &mut candidate)
+            .commit_corpse_loot_mint(session.authority, session.node, &mut candidate)
             .await
             .map_err(CombatDeathRewardLootError::Mint)?;
-        results.push(match outcome {
-            ItemMintOutcome::Committed(result) | ItemMintOutcome::AlreadyCommitted(result) => {
-                result
-            }
-        });
+        entries.push(committed(outcome));
     }
-    Ok(results)
+    Ok(CommittedCorpseLoot {
+        corpse: corpse_mint,
+        entries,
+    })
+}
+
+fn committed(outcome: ItemMintOutcome) -> CommittedItemMint {
+    match outcome {
+        ItemMintOutcome::Committed(result) | ItemMintOutcome::AlreadyCommitted(result) => result,
+    }
 }
 
 /// Runs the single XP descendant: the memoized (death, character)
@@ -408,12 +508,26 @@ pub(crate) async fn settle_creature_death_rewards<const N: usize>(
         .projected_death(actor)
         .map_err(CreatureDeathRewardAdmissionError::Death)?;
     let principal = input.reward_principals[0];
+    // D132/§4.3: the owner's already tie-broken top-damage winner, read at the
+    // same moment as `(death, corpse)`. A death with no tracked contributor
+    // (damage-free, or every hit from an untracked attacker) names the death's
+    // single reward principal, the only character with a claim on it in this
+    // single-principal slice (`COMBAT01-REWARD-PRINCIPALS`).
+    let top_damage_character_id = match owner
+        .top_damage_character(actor)
+        .map_err(CreatureDeathRewardAdmissionError::Death)?
+    {
+        Some(character) => *character.as_bytes(),
+        None => *principal.gameplay_fence.character_id.as_bytes(),
+    };
 
     let loot = settle_loot(
         session,
         death,
         corpse,
+        top_damage_character_id,
         &input.ground,
+        &input.corpse_item,
         &input.loot_table_ref,
         &input.loot_table,
         input.inflight_loot_mints_before_this_death,
@@ -466,6 +580,21 @@ mod tests {
         assert_eq!(
             check_inflight_loot_mint_capacity(usize::MAX, 1),
             Err(CombatResourceLimitError::InflightLootMintsPerScopeExceeded)
+        );
+    }
+
+    #[test]
+    fn corpse_container_capacity_accepts_the_full_plan_and_rejects_one_over() {
+        // Equal by construction to the accepted loot-plan ceiling.
+        assert_eq!(
+            GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX,
+            super::super::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX
+        );
+        assert!(check_corpse_container_capacity(0).is_ok());
+        assert!(check_corpse_container_capacity(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX).is_ok());
+        assert_eq!(
+            check_corpse_container_capacity(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX + 1),
+            Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
         );
     }
 

@@ -9,7 +9,10 @@ use std::fmt::{self, Display, Formatter};
 
 use serde_json::Value;
 
+use super::chain::{ChainShape, ChainSpec};
 use super::formula::{Binary, Expression, Extremum, Formula, Input, MAX_EXPRESSION_DEPTH, Unary};
+use super::party::{PartyBuffSpec, PartyMana};
+use super::target::AllowedTargets;
 use super::{Carrier, CooldownGroup, Execution, ManaCost, SpellDefinition, SpellEffect, Vocation};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -149,6 +152,7 @@ pub(crate) fn spell_from_bundle(
         .map(|_| number(targeting, "range_tiles"))
         .transpose()?;
     let execution = field(spell, "execution")?;
+    let mut chain = None;
     let execution = if let Some(conjure) = execution.get("conjure") {
         Execution::Conjure {
             reagent: conjure.get("reagent").map(item_id).transpose()?,
@@ -156,13 +160,49 @@ pub(crate) fn spell_from_bundle(
             count: number(conjure, "count")?,
         }
     } else if let Some(ability) = execution.get("ability") {
-        Execution::Effects(ability_effects(
-            reference_key(ability, "Ability")?,
-            dependencies,
-        )?)
+        let (effects, ability_chain) =
+            ability_effects(reference_key(ability, "Ability")?, dependencies)?;
+        chain = ability_chain;
+        Execution::Effects(effects)
+    } else if let Some(native) = execution.get("native_behavior") {
+        match text(native, "key")? {
+            "party_buff" => {
+                if mana != ManaCost::Fixed(0) {
+                    return fail(
+                        "a party_buff takes its mana from its parameters; costs.mana must be 0",
+                    );
+                }
+                Execution::PartyBuff(party_buff(field(native, "parameters")?, dependencies)?)
+            }
+            // S7/D13: a key without an implementation is rejected.
+            other => {
+                return fail(format!(
+                    "the native behaviour {other} has no implementation in this core (S7, D13)"
+                ));
+            }
+        }
     } else {
-        return fail("the execution is a native behaviour, which this core does not resolve");
+        return fail("unknown execution");
     };
+    let allowed_targets = match targeting.get("allowed_targets") {
+        None => AllowedTargets::Any,
+        Some(_) => {
+            let key = text(targeting, "allowed_targets")?;
+            AllowedTargets::from_key(key)
+                .ok_or_else(|| AuthoringError(format!("unknown allowed_targets {key}")))?
+        }
+    };
+    // D.3: the check reads one resolved target; a chain or a party buff picks its own creatures.
+    if allowed_targets != AllowedTargets::Any
+        && (chain.is_some() || matches!(execution, Execution::PartyBuff(_)))
+    {
+        return fail("allowed_targets applies only to a single-target cast");
+    }
+    let needs_shield = spell.get("needs_shield").is_some() && flag(spell, "needs_shield")?;
+    // D.4: only a spell that requires a shield has a shield defense to read.
+    if !needs_shield && formulas(&execution).any(|formula| formula.reads(Input::ShieldDefense)) {
+        return fail("a formula reads shield_defense but the spell does not need a shield");
+    }
     Ok(SpellDefinition {
         key: text(field(spell, "identity")?, "key")?.to_owned(),
         name: text(spell, "name")?.to_owned(),
@@ -176,54 +216,265 @@ pub(crate) fn spell_from_bundle(
         cooldown_micros: u64::from(number(spell, "cooldown_ms")?) * 1000,
         groups,
         needs_target: flag(targeting, "needs_target")?,
+        target_or_direction: targeting.get("target_or_direction").is_some()
+            && flag(targeting, "target_or_direction")?,
         self_target: flag(targeting, "self_target")?,
+        allowed_targets,
         aggressive: flag(targeting, "aggressive")?,
+        needs_weapon: flag(spell, "needs_weapon")?,
+        needs_shield,
         range_tiles,
         base_power,
         execution,
+        chain,
     })
 }
 
-fn ability_effects(key: &str, dependencies: &Value) -> Result<Vec<SpellEffect>, AuthoringError> {
+/// The damage and heal formulas an execution evaluates.
+fn formulas(execution: &Execution) -> impl Iterator<Item = &Formula> {
+    let effects = match execution {
+        Execution::Effects(effects) => effects.as_slice(),
+        Execution::PartyBuff(buff) => buff.effects.as_slice(),
+        Execution::Conjure { .. } => &[],
+    };
+    effects.iter().filter_map(|effect| match effect {
+        SpellEffect::Damage { formula, .. } | SpellEffect::Heal { formula } => Some(formula),
+        SpellEffect::RemoveCondition { .. } | SpellEffect::Other { .. } => None,
+    })
+}
+
+/// The effects of an Ability and its chain, if any.
+type AbilityEffects = (Vec<SpellEffect>, Option<ChainSpec>);
+
+fn ability_effects(key: &str, dependencies: &Value) -> Result<AbilityEffects, AuthoringError> {
     let ability = find(field(dependencies, "abilities")?, key)?;
     if ability.get("variants").is_some() {
         return fail(format!(
             "{key} picks random variants, which this core does not resolve"
         ));
     }
-    // A chain would otherwise be cast on the first creature only (OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md).
-    if ability.get("chain").is_some() {
-        return fail(format!(
-            "{key} hits a chain of creatures, which this core does not resolve yet"
-        ));
-    }
-    field(ability, "effects")?
+    let chain = ability.get("chain").map(chain_spec).transpose()?;
+    let effects = field(ability, "effects")?
         .as_array()
         .ok_or_else(|| AuthoringError("effects is not an array".into()))?
         .iter()
-        .map(|reference| {
-            let effect = find(
-                field(dependencies, "effects")?,
-                reference_key(reference, "Effect")?,
-            )?;
-            let operation = text(effect, "operation")?;
-            Ok(match operation {
-                "damage" => SpellEffect::Damage {
-                    damage_type: text(effect, "damage_type")?.to_owned(),
-                    formula: effect_formula(effect, dependencies)?,
-                },
-                "heal" => SpellEffect::Heal {
-                    formula: effect_formula(effect, dependencies)?,
-                },
-                "remove_condition" => SpellEffect::RemoveCondition {
-                    condition: text(effect, "removed_condition")?.to_owned(),
-                },
-                other => SpellEffect::Other {
-                    operation: other.to_owned(),
-                },
-            })
+        .map(|reference| spell_effect(reference, dependencies))
+        .collect::<Result<_, AuthoringError>>()?;
+    Ok((effects, chain))
+}
+
+/// The Effect an `EffectRef` names in the bundle's dependencies.
+fn spell_effect(reference: &Value, dependencies: &Value) -> Result<SpellEffect, AuthoringError> {
+    let key = reference_key(reference, "Effect")?;
+    let effect = find(field(dependencies, "effects")?, key)?;
+    Ok(match text(effect, "operation")? {
+        "damage" => SpellEffect::Damage {
+            damage_type: text(effect, "damage_type")?.to_owned(),
+            formula: effect_formula(effect, dependencies)?,
+        },
+        "heal" => SpellEffect::Heal {
+            formula: effect_formula(effect, dependencies)?,
+        },
+        "remove_condition" => SpellEffect::RemoveCondition {
+            condition: text(effect, "removed_condition")?.to_owned(),
+        },
+        other => SpellEffect::Other {
+            operation: other.to_owned(),
+            effect: key.to_owned(),
+        },
+    })
+}
+
+/// `native_behavior` `party_buff` (part C.3). Only the accepted values are admitted: the area on
+/// the caster's floor, a party required, rounding up; anything else fails closed.
+fn party_buff(parameters: &Value, dependencies: &Value) -> Result<PartyBuffSpec, AuthoringError> {
+    const FIELDS: [&str; 6] = [
+        "area",
+        "same_floor",
+        "min_affected",
+        "requires_party",
+        "mana",
+        "effect",
+    ];
+    let object = parameters
+        .as_object()
+        .ok_or_else(|| AuthoringError("party_buff parameters are not an object".into()))?;
+    if let Some(unknown) = object.keys().find(|key| !FIELDS.contains(&key.as_str())) {
+        return fail(format!("unknown party_buff parameter {unknown}"));
+    }
+    if !flag(parameters, "same_floor")? {
+        return fail("a party_buff across floors is not resolved by this core (C.3 Q13)");
+    }
+    if !flag(parameters, "requires_party")? {
+        return fail("a party_buff without a party is not resolved by this core");
+    }
+    let min_affected = match number(parameters, "min_affected")? {
+        0 => return fail("party_buff min_affected must be positive"),
+        value => value,
+    };
+    Ok(PartyBuffSpec {
+        area: area_matrix(field(parameters, "area")?)?,
+        min_affected,
+        mana: party_mana(field(parameters, "mana")?)?,
+        effects: vec![spell_effect(field(parameters, "effect")?, dependencies)?],
+    })
+}
+
+/// A `party_buff` areaMatrix (monster D12 cells) as offsets from its centre; it is not rotated. The
+/// centre is the caster's tile and must be hit (`C`).
+fn area_matrix(matrix: &Value) -> Result<BTreeSet<(i32, i32)>, AuthoringError> {
+    let rows = matrix
+        .as_array()
+        .filter(|rows| !rows.is_empty())
+        .ok_or_else(|| AuthoringError("area is not a non-empty array of rows".into()))?
+        .iter()
+        .map(|row| {
+            row.as_str()
+                .filter(|row| !row.is_empty())
+                .ok_or_else(|| AuthoringError("an area row is not a non-empty string".into()))
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?;
+    let width = rows[0].len();
+    let mut centre = None;
+    let mut cells = Vec::new();
+    for (y, row) in rows.iter().enumerate() {
+        if row.len() != width {
+            return fail("the area is not rectangular");
+        }
+        for (x, cell) in row.bytes().enumerate() {
+            let position = (
+                i32::try_from(x).map_err(|_| AuthoringError("area too wide".into()))?,
+                i32::try_from(y).map_err(|_| AuthoringError("area too tall".into()))?,
+            );
+            match cell {
+                b'.' => {}
+                b'x' => cells.push(position),
+                // C.3 step 2: the caster is always affected, so the centre must be hit.
+                b'c' => return fail("a party_buff area centre must be hit (C, not c)"),
+                b'C' => {
+                    if centre.replace(position).is_some() {
+                        return fail("the area has more than one centre");
+                    }
+                    cells.push(position);
+                }
+                _ => return fail("unknown area cell"),
+            }
+        }
+    }
+    let (cx, cy) = centre.ok_or_else(|| AuthoringError("the area has no centre".into()))?;
+    Ok(cells.into_iter().map(|(x, y)| (x - cx, y - cy)).collect())
+}
+
+fn party_mana(mana: &Value) -> Result<PartyMana, AuthoringError> {
+    let object = mana
+        .as_object()
+        .ok_or_else(|| AuthoringError("party_buff mana is not an object".into()))?;
+    let allowed: &[&str] = match text(mana, "mode")? {
+        "fixed" => &["mode", "base"],
+        "scaled" => &["mode", "base", "falloff", "rounding"],
+        other => return fail(format!("unknown party_buff mana mode {other}")),
+    };
+    if let Some(unknown) = object.keys().find(|key| !allowed.contains(&key.as_str())) {
+        return fail(format!("unknown party_buff mana field {unknown}"));
+    }
+    let base = number(mana, "base")?;
+    if text(mana, "mode")? == "fixed" {
+        return Ok(PartyMana::Fixed(base));
+    }
+    if text(mana, "rounding")? != "up" {
+        return fail("party_buff mana rounding must be up");
+    }
+    // The falloff is a whole percent in (0, 1] (0.9 accepted), kept as an exact fraction.
+    let falloff = field(mana, "falloff")?
+        .as_f64()
+        .ok_or_else(|| AuthoringError("party_buff falloff is not a number".into()))?;
+    let percent = (falloff * 100.0).round();
+    if !(1.0..=100.0).contains(&percent) || (falloff * 100.0 - percent).abs() > 1e-9 {
+        return fail("party_buff falloff must be a whole percent in (0, 1]");
+    }
+    // `percent` is an integer in 1..=100 here, so the cast is exact.
+    let percent = percent as u32;
+    let divisor = gcd(percent, 100);
+    Ok(PartyMana::Scaled {
+        base,
+        numerator: percent / divisor,
+        denominator: 100 / divisor,
+    })
+}
+
+fn gcd(mut a: u32, mut b: u32) -> u32 {
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+    a
+}
+
+/// `Ability.chain` of a player spell (D12, S23). Backtracking and the target filters are not
+/// resolved: no plain player chain spell uses them, and the support chains need a per-creature
+/// behaviour of their own (chain §4.2).
+fn chain_spec(chain: &Value) -> Result<ChainSpec, AuthoringError> {
+    const FIELDS: [&str; 8] = [
+        "max_targets",
+        "range_tiles",
+        "backtracking",
+        "chain_asset_binding",
+        "target_filter",
+        "shape",
+        "initial_range_tiles",
+        "damage_step_percent",
+    ];
+    let object = chain
+        .as_object()
+        .ok_or_else(|| AuthoringError("chain is not an object".into()))?;
+    if let Some(unknown) = object.keys().find(|key| !FIELDS.contains(&key.as_str())) {
+        return fail(format!("unknown chain field {unknown}"));
+    }
+    if flag(chain, "backtracking")? {
+        return fail("a backtracking chain is not resolved by this core");
+    }
+    if chain.get("target_filter").is_some() {
+        return fail(
+            "a chain target filter needs a per-creature behaviour, which has no owner yet",
+        );
+    }
+    let positive = |name: &str| match number(chain, name)? {
+        0 => fail(format!("chain {name} must be positive")),
+        value => Ok(value),
+    };
+    let range_tiles = positive("range_tiles")?;
+    let shape = match chain
+        .get("shape")
+        .map(|_| text(chain, "shape"))
+        .transpose()?
+    {
+        None | Some("sequential") => ChainShape::Sequential,
+        Some("fork") => ChainShape::Fork,
+        Some(other) => return fail(format!("unknown chain shape {other}")),
+    };
+    let damage_step_percent = match chain.get("damage_step_percent") {
+        None => 0,
+        Some(value) => value
+            .as_i64()
+            .filter(|percent| (-100..=100).contains(percent))
+            .and_then(|percent| i32::try_from(percent).ok())
+            .ok_or_else(|| {
+                AuthoringError("chain damage_step_percent is not in -100..=100".into())
+            })?,
+    };
+    Ok(ChainSpec {
+        max_targets: positive("max_targets")?,
+        range_tiles,
+        initial_range_tiles: match chain.get("initial_range_tiles") {
+            None => range_tiles,
+            Some(_) => positive("initial_range_tiles")?,
+        },
+        shape,
+        damage_step_percent,
+        asset_binding: chain
+            .get("chain_asset_binding")
+            .map(|_| text(chain, "chain_asset_binding").map(str::to_owned))
+            .transpose()?,
+    })
 }
 
 fn effect_formula(effect: &Value, dependencies: &Value) -> Result<Formula, AuthoringError> {

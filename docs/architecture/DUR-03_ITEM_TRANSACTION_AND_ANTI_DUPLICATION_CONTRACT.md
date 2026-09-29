@@ -859,6 +859,8 @@ DUR/ANL/data-integrity/privacy review remain required for all successors.
 
 ### 39.3 Generic native one-item binding and staged destination admission
 
+> **Amendment (2026-09-29).** The corpse container rules are those of the D3 decision (`reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md`, the "Corpse container amendment (D3)" paragraph in this section). `reviews/OTERYN_GAME_A10_CORPSE_CONTAINER_DUR03_AMENDMENT_DECISION_2026-09-29.md` is superseded where it differs.
+
 This generic Game specialization records the native semantic bindings needed by
 the B1 allocation on #162. It supplies no production event or implementation
 authority and applies across item families and gameplay domains. Rat, Gold Coin
@@ -987,10 +989,11 @@ conservation) is unchanged.
   new cause shape (unlike `DECAY_RETIRE` below, which names one because none existed for a decay
   reason): it is the existing loot-MINT cause with its destination generalized from "an
   already-equipped backpack entry" (reward chest) to "this death's own corpse entry" (D3). The
-  proto/registry change this needs — widening `OneItemMintV1.destination` from `OneItemGroundV1`
-  only to admit a `Container` alternative — is not defined or registered here; it lands in the
-  D3-6 implementation child alongside `DECAY_RETIRE`'s own registration, under the same
-  non-candidate, no-`_fixture`-field-names conditions.
+  proto/registry change this needs — admitting a `Container` alternative beside
+  `OneItemMintV1.destination` (`OneItemGroundV1`) — is not defined here; the D3-2 implementation
+  child registers it as the additive `OneItemMintV1.corpse_container_entry` (field 5, exactly one of
+  the two set), under the same non-candidate, no-`_fixture`-field-names conditions. `DECAY_RETIRE`'s
+  own registration stays with D3-6.
 - **Whole-plan preflight.** Before any entry of a death's accepted loot plan is frozen — corpse
   included — the composing caller checks the plan's full accepted entry count against
   `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (16, equal by construction to the already-accepted
@@ -1073,6 +1076,11 @@ conservation) is unchanged.
   alternative — is not defined or registered here; it lands in the D3-6 implementation child
   alongside the corpse-loot MINT's and `DECAY_RETIRE`'s own registration, under the same
   non-candidate, no-`_fixture`-field-names conditions.
+  **Allocation note (D3-4):** the control plane allocated this TRANSFER-source widening to D3-4, not
+  D3-6. It landed additively as `OneItemTransferV1.corpse_source` (field 7,
+  `OneItemCorpseSourceV1 { corpse_item_instance_id, placement_ordinal, corpse_ground }`), exactly one
+  of `source`/`corpse_source` present, no existing field changed; the MINT `destination` widening and
+  `DECAY_RETIRE` stay with D3-6.
 - **`COMBAT01-CORPSES-PER-SCOPE` (already accepted at 64,
   `reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md` §4.1 row 6, "reject the
   projection; the death still commits and loot follows D52") is the one bound on concurrent

@@ -49,6 +49,8 @@ pub(crate) enum Input {
     AttackValue,
     AttackFactor,
     ShieldingSkill,
+    /// Defense of the shield the caster wields (part D.4); only a `needs_shield` spell reads it.
+    ShieldDefense,
 }
 
 impl Input {
@@ -61,6 +63,7 @@ impl Input {
             "attack_value" => Self::AttackValue,
             "attack_factor" => Self::AttackFactor,
             "shielding_skill" => Self::ShieldingSkill,
+            "shield_defense" => Self::ShieldDefense,
             _ => return None,
         })
     }
@@ -109,11 +112,14 @@ pub(crate) struct FormulaInputs {
     pub(crate) attack_value: u32,
     pub(crate) attack_factor: f64,
     pub(crate) shielding_skill: u32,
+    /// Defense of the wielded shield; `None` without a shield.
+    pub(crate) shield_defense: Option<u32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FormulaError {
     MissingBasePower,
+    MissingShieldDefense,
     DivisionByZero,
     NegativeSquareRoot,
     NonFinite,
@@ -126,6 +132,9 @@ impl Display for FormulaError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
             Self::MissingBasePower => "the formula reads base_power but the spell has none",
+            Self::MissingShieldDefense => {
+                "the formula reads shield_defense but no shield is wielded"
+            }
             Self::DivisionByZero => "division by zero",
             Self::NegativeSquareRoot => "square root of a negative value",
             Self::NonFinite => "non-finite formula value",
@@ -148,6 +157,17 @@ impl Expression {
         }
     }
 
+    /// Whether the expression reads `input`.
+    pub(crate) fn reads(&self, input: Input) -> bool {
+        match self {
+            Self::Const(_) => false,
+            Self::Var(read) => *read == input,
+            Self::Unary(_, inner) | Self::LevelBaseDamageHealing(inner) => inner.reads(input),
+            Self::Binary(_, left, right) => left.reads(input) || right.reads(input),
+            Self::Extremum(_, args) => args.iter().any(|arg| arg.reads(input)),
+        }
+    }
+
     pub(crate) fn evaluate(&self, inputs: &FormulaInputs) -> Result<f64, FormulaError> {
         let value = match self {
             Self::Const(value) => *value,
@@ -164,6 +184,11 @@ impl Expression {
                 Input::AttackValue => f64::from(inputs.attack_value),
                 Input::AttackFactor => inputs.attack_factor,
                 Input::ShieldingSkill => f64::from(inputs.shielding_skill),
+                Input::ShieldDefense => f64::from(
+                    inputs
+                        .shield_defense
+                        .ok_or(FormulaError::MissingShieldDefense)?,
+                ),
             },
             Self::Unary(op, inner) => {
                 let value = inner.evaluate(inputs)?;
@@ -225,6 +250,11 @@ pub(crate) struct Formula {
 }
 
 impl Formula {
+    /// Whether either bound reads `input`.
+    pub(crate) fn reads(&self, input: Input) -> bool {
+        self.minimum.reads(input) || self.maximum.reads(input)
+    }
+
     /// Truncated `(minimum, maximum)` magnitude for these inputs.
     pub(crate) fn bounds(&self, inputs: &FormulaInputs) -> Result<(i64, i64), FormulaError> {
         let low = truncate(self.minimum.evaluate(inputs)?)?;

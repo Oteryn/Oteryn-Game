@@ -1,5 +1,17 @@
 //! DUR-03 TRANSFER from Ground into the equipped main backpack (B3 decision
-//! `B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1`, D80-D83; child B3-1).
+//! `B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1`, D80-D83; child B3-1), and
+//! (child D3-4, decisions D133/D134) from a live corpse's container into the
+//! same destinations.
+//!
+//! The source family is derived from the durable state of the source item,
+//! never from the request: a live Ground item, or a direct entry of a live
+//! corpse container. A corpse entry is gated by the D133 exclusivity window:
+//! during `[materialized_at, materialized_at + 10 s)` only the corpse's
+//! captured top-damage Character may take it out
+//! ([`ItemTransferRefusal::CorpseExclusiveWindow`]), judged by the database
+//! clock here and again, authoritatively, by the commit-time database guard.
+//! The corpse `ItemInstance` itself is never a legal source, whatever it
+//! holds ([`ItemTransferRefusal::CorpseNotPickupable`]).
 //!
 //! This component owns durable admission, application, idempotency and
 //! reconciliation. It does not prove that the player command was legitimately
@@ -51,15 +63,15 @@ use super::character_authority::{
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
-use super::item_mint::{TypedDefinitionRef, uuid_text};
+use super::item_mint::{CORPSE_MATERIALIZATION_PURPOSE_KEY, TypedDefinitionRef, uuid_text};
 use super::item_mint_audit::{
     self as mint_audit, AuditError, ITEM_LIFECYCLE_LIVE, OneItemGroundV1, OneItemStateV1,
     OneItemTypedDefinitionRevisionV1, RL08_RETRY_WORK_UNITS_MAX,
 };
 use super::item_transfer_audit::{
     self as audit, GROUND_PICKUP_TYPED_CAUSE, ITEM_LIFECYCLE_RETIRED, OneItemCommandRefV1,
-    OneItemContainerEntryV1, OneItemInventoryV1, OneItemReceiverV1, OneItemTransferCauseV1,
-    OneItemTransferV1, TransferEventIdentity,
+    OneItemContainerEntryV1, OneItemCorpseSourceV1, OneItemInventoryV1, OneItemReceiverV1,
+    OneItemTransferCauseV1, OneItemTransferV1, TransferEventIdentity,
 };
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
 use super::{DurabilityError, DurabilityRoot};
@@ -89,6 +101,26 @@ pub const GAMEITEM01_CONTAINER_ENTRIES_MAX: u32 = 20;
 pub const GAMEITEM01_PLACEMENT_DEPTH: u32 = 1;
 /// GAMEITEM01-REACHABLE-ITEMS: the main backpack and its entries.
 pub const GAMEITEM01_REACHABLE_ITEMS: u32 = 1 + GAMEITEM01_CONTAINER_ENTRIES_MAX;
+
+/// D133: the exclusive top-damage window after a corpse's `materialized_at`.
+pub const CORPSE_EXCLUSIVE_WINDOW_MS: i64 = 10_000;
+
+/// Pure D133 gate: may `requester` take an entry out of a corpse at `now`?
+/// The top-damage Character always may; anyone else only at or after
+/// `materialized_at + 10 s` (the deadline itself is already open). Times are
+/// database-clock milliseconds; an overflowing deadline stays closed.
+#[must_use]
+pub fn corpse_window_allows(
+    requester: [u8; 16],
+    top_damage: [u8; 16],
+    materialized_at_unix_ms: i64,
+    now_unix_ms: i64,
+) -> bool {
+    requester == top_damage
+        || materialized_at_unix_ms
+            .checked_add(CORPSE_EXCLUSIVE_WINDOW_MS)
+            .is_some_and(|deadline| now_unix_ms >= deadline)
+}
 
 /// Current gameplay authority supplied by the runtime owner at commit time.
 /// Unlike the XP fence it carries no `expected_character_revision`: an
@@ -165,7 +197,8 @@ pub struct ItemTransferRequest {
 /// stays on Ground.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ItemTransferRefusal {
-    /// The source is not a live Ground item (for example already picked up).
+    /// The source is neither a live Ground item nor a direct entry of a live
+    /// corpse container (for example already picked up).
     SourceNotOnGround,
     /// The supplied facts do not describe the stored item or main backpack.
     DefinitionMismatch,
@@ -186,6 +219,12 @@ pub enum ItemTransferRefusal {
     UnsupportedContainerCapacity,
     /// No free entry, and no full merge is possible.
     MainBackpackFull,
+    /// D133: the source is an entry of a corpse still inside its 10 s
+    /// exclusivity window and the requester is not its top-damage Character.
+    CorpseExclusiveWindow,
+    /// D134: the source item is itself a corpse. A corpse is never a TRANSFER
+    /// source, whether or not it currently holds entries.
+    CorpseNotPickupable,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -330,6 +369,16 @@ pub struct BackpackEntry {
 pub struct CharacterBackpack {
     pub backpack: InventoryItem,
     pub entries: Vec<BackpackEntry>,
+}
+
+/// Where a live TRANSFER source currently is (D3-5). A live item is on at
+/// most one of these, and neither ever becomes the other: Ground items are
+/// never re-parented into a corpse, and corpse entries leave only by TRANSFER
+/// or decay, so a read here stays true until the item stops being a source.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ItemSourceLocation {
+    Ground,
+    CorpseEntry { corpse_item_instance_id: [u8; 16] },
 }
 
 /// Materialized D83 plan over the authoritative before-state.
@@ -524,11 +573,19 @@ impl FrozenTransfer {
     }
 }
 
-/// The source item with its actual Ground.
+/// The corpse container entry a source item currently occupies (D3-4).
+struct CorpseEntrySource {
+    corpse_item_instance_id: [u8; 16],
+    placement_ordinal: u64,
+}
+
+/// The source item with the Ground that is its scope authority: its own
+/// Ground, or (`corpse` present) its parent corpse's Ground.
 struct SourceRow {
     item: InventoryItem,
     world_id: [u8; 16],
     ground: OneItemGroundV1,
+    corpse: Option<CorpseEntrySource>,
 }
 
 struct Admitted {
@@ -855,6 +912,64 @@ impl DurabilityRoot {
             })
             .await?
     }
+
+    /// D3-5: where the live item `item_instance_id` is as a TRANSFER source,
+    /// or `None` when it is neither live on Ground nor a direct entry of a
+    /// live corpse. Read-only; TRANSFER admission re-derives it under lock.
+    pub async fn read_item_source_location(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        item_instance_id: [u8; 16],
+    ) -> Result<Option<ItemSourceLocation>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemTransferError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let on_ground: bool = sqlx::query_scalar(
+                        "SELECT EXISTS (SELECT 1 FROM game_item_instances i \
+                                          JOIN game_item_ground_locations g \
+                                         USING (item_instance_id, world_id) \
+                                         WHERE i.item_instance_id = encode($1,'hex')::uuid \
+                                           AND i.lifecycle = 1)",
+                    )
+                    .bind(item_instance_id.as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    let location = if on_ground {
+                        Some(ItemSourceLocation::Ground)
+                    } else {
+                        let corpse: Option<String> = sqlx::query_scalar(
+                            "SELECT e.parent_item_instance_id::text \
+                               FROM game_item_instances i \
+                               JOIN game_item_corpse_container_entries e \
+                                 ON e.item_instance_id = i.item_instance_id \
+                                AND e.world_id = i.world_id \
+                               JOIN game_item_instances ci \
+                                 ON ci.item_instance_id = e.parent_item_instance_id \
+                                AND ci.lifecycle = 1 \
+                              WHERE i.item_instance_id = encode($1,'hex')::uuid \
+                                AND i.lifecycle = 1",
+                        )
+                        .bind(item_instance_id.as_slice())
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                        match corpse {
+                            Some(corpse) => Some(ItemSourceLocation::CorpseEntry {
+                                corpse_item_instance_id: uuid_text(&corpse)?,
+                            }),
+                            None => None,
+                        }
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(location))
+                })
+            })
+            .await?
+    }
 }
 
 /// The durable reservation row of one CommandRef.
@@ -1043,10 +1158,61 @@ async fn admit(
             ItemTransferRefusal::SourceNotOnGround,
         )));
     };
-    // DUR-03 §32: the fenced runtime scope owns the source Ground.
+    // DUR-03 §32: the fenced runtime scope owns the source Ground (for a
+    // corpse entry, its corpse's Ground).
     if source.world_id != *world_id.as_bytes() || source.ground.channel_id != channel_id.as_bytes()
     {
         return Ok(Err(ItemTransferError::AuthorityRejected));
+    }
+    // D134: the corpse ItemInstance itself is never a legal source, checked
+    // independently of `ContainerNotEmpty` (an emptied corpse would pass it).
+    let is_corpse: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_item_mint_receipts \
+                         WHERE item_instance_id = encode($1,'hex')::uuid \
+                           AND loot_purpose_key = $2)",
+    )
+    .bind(request.source_item_instance_id.as_slice())
+    .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+    .fetch_one(&mut **tx)
+    .await?;
+    if is_corpse {
+        return Ok(Err(ItemTransferError::Refused(
+            ItemTransferRefusal::CorpseNotPickupable,
+        )));
+    }
+    // D133: the exclusivity window, read against the database clock.
+    if let Some(corpse) = source.corpse.as_ref() {
+        let row = sqlx::query(
+            "SELECT corpse_top_damage_character_id::text AS top_damage, materialized_at, \
+                    floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS db_now \
+               FROM game_item_mint_receipts \
+              WHERE item_instance_id = encode($1,'hex')::uuid \
+                AND loot_purpose_key = $2 AND draw_ordinal = 0",
+        )
+        .bind(corpse.corpse_item_instance_id.as_slice())
+        .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+        .fetch_optional(&mut **tx)
+        .await?;
+        let Some(row) = row else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        let top_damage = uuid_text(
+            &row.try_get::<Option<String>, _>("top_damage")?
+                .ok_or(DurabilityError::InvalidStoredState)?,
+        )?;
+        let materialized_at = row
+            .try_get::<Option<i64>, _>("materialized_at")?
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if !corpse_window_allows(
+            *fence.character_id.as_bytes(),
+            top_damage,
+            materialized_at,
+            row.try_get("db_now")?,
+        ) {
+            return Ok(Err(ItemTransferError::Refused(
+                ItemTransferRefusal::CorpseExclusiveWindow,
+            )));
+        }
     }
     let source_has_entries: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_item_container_entries \
@@ -1112,14 +1278,22 @@ async fn load_source(
     .fetch_optional(&mut **tx)
     .await?;
     let Some(row) = row else {
-        return Ok(None);
+        return load_corpse_entry_source(tx, item_instance_id).await;
     };
+    source_row(&row, item_instance_id, None)
+}
+
+fn source_row(
+    row: &sqlx::postgres::PgRow,
+    item_instance_id: [u8; 16],
+    corpse: Option<CorpseEntrySource>,
+) -> std::result::Result<Option<SourceRow>, DurabilityError> {
     let world_id = uuid_text(row.try_get("world_id")?)?;
     Ok(Some(SourceRow {
         item: InventoryItem {
             item_instance_id,
-            definition: decode_definition(&row)?,
-            quantity: decode_quantity(&row)?,
+            definition: decode_definition(row)?,
+            quantity: decode_quantity(row)?,
         },
         world_id,
         ground: OneItemGroundV1 {
@@ -1135,7 +1309,58 @@ async fn load_source(
                 .parse()
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
         },
+        corpse,
     }))
+}
+
+/// D3-4: the item as a direct entry of a live corpse container, with the
+/// corpse's own live Ground as scope authority. The item row is locked in its
+/// own statement first, so the read below is a fresh statement snapshot that
+/// sees a concurrent winner's committed removal of the entry.
+async fn load_corpse_entry_source(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    item_instance_id: [u8; 16],
+) -> std::result::Result<Option<SourceRow>, DurabilityError> {
+    let locked = sqlx::query(
+        "SELECT 1 FROM game_item_instances \
+          WHERE item_instance_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR UPDATE",
+    )
+    .bind(item_instance_id.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    if locked.is_none() {
+        return Ok(None);
+    }
+    let row = sqlx::query(
+        "SELECT i.world_id::text, i.definition_family, i.definition_production_key, \
+                i.definition_revision_ref, i.quantity, \
+                e.parent_item_instance_id::text AS corpse_id, \
+                e.placement_ordinal::text AS placement_ordinal, g.channel_id::text, \
+                g.runtime_scope_ownership_generation::text, g.spatial_position, g.corpse_ref, \
+                g.map_revision, g.content_revision, g.native_room_placement_context \
+           FROM game_item_instances i \
+           JOIN game_item_corpse_container_entries e \
+             ON e.item_instance_id = i.item_instance_id AND e.world_id = i.world_id \
+           JOIN game_item_ground_locations g \
+             ON g.item_instance_id = e.parent_item_instance_id AND g.world_id = e.world_id \
+           JOIN game_item_instances ci \
+             ON ci.item_instance_id = e.parent_item_instance_id AND ci.lifecycle = 1 \
+          WHERE i.item_instance_id = encode($1,'hex')::uuid AND i.lifecycle = 1",
+    )
+    .bind(item_instance_id.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(row) = row else {
+        return Ok(None);
+    };
+    let corpse = CorpseEntrySource {
+        corpse_item_instance_id: uuid_text(row.try_get("corpse_id")?)?,
+        placement_ordinal: row
+            .try_get::<String, _>("placement_ordinal")?
+            .parse()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+    };
+    source_row(&row, item_instance_id, Some(corpse))
 }
 
 pub(crate) async fn load_slot(
@@ -1200,7 +1425,7 @@ pub(crate) async fn load_entries(
         .collect()
 }
 
-pub(crate) fn decode_definition(
+fn decode_definition(
     row: &sqlx::postgres::PgRow,
 ) -> std::result::Result<TypedDefinitionRef, DurabilityError> {
     Ok(TypedDefinitionRef {
@@ -1210,9 +1435,7 @@ pub(crate) fn decode_definition(
     })
 }
 
-pub(crate) fn decode_quantity(
-    row: &sqlx::postgres::PgRow,
-) -> std::result::Result<u32, DurabilityError> {
+fn decode_quantity(row: &sqlx::postgres::PgRow) -> std::result::Result<u32, DurabilityError> {
     u32::try_from(row.try_get::<i64, _>("quantity")?)
         .map_err(|_| DurabilityError::InvalidStoredState)
 }
@@ -1276,10 +1499,24 @@ fn transfer_message(
             Some((receiver, receiver_position)),
         ),
     };
+    // Exactly one source form: the item's own Ground, or its corpse entry
+    // together with that corpse's Ground (scope authority).
+    let (ground_source, corpse_source) = match source.corpse.as_ref() {
+        None => (Some(source.ground.clone()), None),
+        Some(corpse) => (
+            None,
+            Some(Box::new(OneItemCorpseSourceV1 {
+                corpse_item_instance_id: corpse.corpse_item_instance_id.to_vec(),
+                placement_ordinal: corpse.placement_ordinal,
+                corpse_ground: Some(source.ground.clone()),
+            })),
+        ),
+    };
     OneItemTransferV1 {
         before: Some(state(before, ITEM_LIFECYCLE_LIVE)),
         after: Some(after),
-        source: Some(source.ground.clone()),
+        source: ground_source,
+        corpse_source,
         destination: Some(OneItemInventoryV1 {
             character_id: fence.character_id.as_bytes().to_vec(),
             expected_session_generation: fence.connection_generation.get(),
@@ -1330,12 +1567,30 @@ async fn apply_transfer(
     };
     let tx_id = frozen.transaction_id.as_slice();
 
-    let removed = sqlx::query(
-        "DELETE FROM game_item_ground_locations WHERE item_instance_id = encode($1,'hex')::uuid",
-    )
-    .bind(source_id.as_slice())
-    .execute(&mut **tx)
-    .await?;
+    let removed = match source.corpse.as_ref() {
+        None => {
+            sqlx::query(
+                "DELETE FROM game_item_ground_locations \
+                  WHERE item_instance_id = encode($1,'hex')::uuid",
+            )
+            .bind(source_id.as_slice())
+            .execute(&mut **tx)
+            .await?
+        }
+        Some(corpse) => {
+            sqlx::query(
+                "DELETE FROM game_item_corpse_container_entries \
+                  WHERE item_instance_id = encode($1,'hex')::uuid \
+                    AND parent_item_instance_id = encode($2,'hex')::uuid \
+                    AND placement_ordinal = $3::text::numeric(20,0)",
+            )
+            .bind(source_id.as_slice())
+            .bind(corpse.corpse_item_instance_id.as_slice())
+            .bind(corpse.placement_ordinal.to_string())
+            .execute(&mut **tx)
+            .await?
+        }
+    };
     if removed.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState);
     }
@@ -2121,5 +2376,39 @@ mod tests {
             validate_request(&nil),
             Err(ItemTransferError::InvalidInput)
         ));
+    }
+
+    #[test]
+    fn corpse_window_is_exclusive_to_the_top_damage_character_until_the_deadline() {
+        let (owner, other) = (id(1), id(2));
+        let materialized = 1_790_000_000_000_i64;
+        let deadline = materialized + CORPSE_EXCLUSIVE_WINDOW_MS;
+        assert_eq!(CORPSE_EXCLUSIVE_WINDOW_MS, 10_000);
+        // The top-damage character may always take entries out.
+        for now in [materialized, deadline - 1, deadline, deadline + 1] {
+            assert!(corpse_window_allows(owner, owner, materialized, now));
+        }
+        // Anyone else: closed strictly before the deadline, open at it.
+        assert!(!corpse_window_allows(
+            other,
+            owner,
+            materialized,
+            materialized
+        ));
+        assert!(!corpse_window_allows(
+            other,
+            owner,
+            materialized,
+            deadline - 1
+        ));
+        assert!(corpse_window_allows(other, owner, materialized, deadline));
+        assert!(corpse_window_allows(
+            other,
+            owner,
+            materialized,
+            deadline + 1
+        ));
+        // An unrepresentable deadline never opens the window to others.
+        assert!(!corpse_window_allows(other, owner, i64::MAX, i64::MAX));
     }
 }

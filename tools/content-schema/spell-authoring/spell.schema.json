@@ -135,7 +135,8 @@
                 "attack_skill",
                 "attack_value",
                 "attack_factor",
-                "shielding_skill"
+                "shielding_skill",
+                "shield_defense"
               ]
             }
           },
@@ -260,7 +261,7 @@
             "level_magic",
             "skill"
           ],
-          "description": "level_magic: level, magic_level, base_power and the caster's shielding_skill (knight healing); skill: level, attack_skill, attack_value, attack_factor, base_power, shielding_skill. The engine fills attack_* from the wielded weapon (a world combat rule)."
+          "description": "level_magic: level, magic_level, base_power and the caster's shielding_skill (knight healing); skill: level, attack_skill, attack_value, attack_factor, base_power, shielding_skill, shield_defense. The engine fills attack_* from the wielded weapon (a world combat rule) and shield_defense from the wielded shield (only a needs_shield Spell reads it; S27 D.4)."
         },
         "minimum": {
           "$ref": "#/$defs/expression"
@@ -605,6 +606,14 @@
             "cast_at_position": {
               "$ref": "#/$defs/bool",
               "description": "S20: the spell may be cast at a chosen position: with crosshair, at the cursor or at the target (Canary 15.30 spell:optionalTarget)."
+            },
+            "allowed_targets": {
+              "enum": [
+                "any",
+                "self_only",
+                "self_or_own_summons"
+              ],
+              "description": "S27 D.3: who a single-target cast may be aimed at; absent means any. self_or_own_summons: the caster or a creature the caster summoned or convinced (healing runes)."
             }
           },
           "required": [
@@ -665,6 +674,10 @@
         },
         "needs_weapon": {
           "$ref": "#/$defs/bool"
+        },
+        "needs_shield": {
+          "$ref": "#/$defs/bool",
+          "description": "S27 D.4: the caster must wield a shield in the left or right hand (\"You need to equip a shield to cast this spell.\"); absent means false."
         },
         "base_power": {
           "type": "integer",

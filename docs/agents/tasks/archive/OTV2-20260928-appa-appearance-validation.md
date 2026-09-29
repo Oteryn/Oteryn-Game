@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-appa-appearance-validation
 title: APP-a - pure appearance-selection validation
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1172
@@ -12,10 +12,10 @@ allocation_comment: "#162 5878933966 (request), owner-authorized in this window 
 base_branch: main
 branch: claude/appa-appearance-validation
 base_sha: 51abd337c69b4040731a3c830fa538c32dfb2736  # stacked on PR 1171 (PREM-2a)
-head_sha: null
+head_sha: 9b3f84846e7057098ee6497e2a1858b07b738288
 owner: "Oteryn: impl domains" (Claude Code)
 created_at: 2026-09-28T21:00:00Z
-updated_at: 2026-09-28T21:00:00Z
+updated_at: 2026-09-29T06:40:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/domain/appearance.rs

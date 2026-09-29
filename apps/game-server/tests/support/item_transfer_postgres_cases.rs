@@ -59,7 +59,7 @@ pub(crate) const WORLD: u8 = 42;
 pub(crate) const CHANNEL: u8 = 43;
 pub(crate) const CHARACTER: u8 = 41;
 pub(crate) const SESSION: u8 = 50;
-const BACKPACK: &str = "fixture:b3.backpack";
+pub(crate) const BACKPACK: &str = "fixture:b3.backpack";
 const COIN: &str = "fixture:b3.coin";
 const STONE: &str = "fixture:b3.stone";
 
@@ -70,7 +70,7 @@ pub(crate) fn id(seed: u8) -> [u8; 16] {
 }
 
 /// Canonical hyphenated UUID text of `value`.
-fn uuid_text(value: [u8; 16]) -> String {
+pub(crate) fn uuid_text(value: [u8; 16]) -> String {
     let hex: String = value.iter().map(|byte| format!("{byte:02x}")).collect();
     format!(
         "{}-{}-{}-{}-{}",
@@ -86,7 +86,7 @@ pub(crate) fn debug<E: std::fmt::Debug>(error: E) -> String {
     format!("{error:?}")
 }
 
-async fn join_two<A, B>(first: A, second: B) -> (A::Output, B::Output)
+pub(crate) async fn join_two<A, B>(first: A, second: B) -> (A::Output, B::Output)
 where
     A: Future,
     B: Future,
@@ -434,7 +434,7 @@ pub(crate) async fn seed_character(
 }
 
 pub(crate) struct Harness {
-    database: Database,
+    pub(crate) database: Database,
     pub(crate) root: DurabilityRoot,
     pub(crate) pool: sqlx::PgPool,
     pub(crate) recovery: CharacterRecoveryStore,
@@ -521,7 +521,7 @@ impl Harness {
         }
     }
 
-    async fn transfer(
+    pub(crate) async fn transfer(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         fence: CurrentCharacterItemFence,
@@ -551,7 +551,7 @@ impl Harness {
         }
     }
 
-    async fn count(&self, relation: &str) -> TestResult<i64> {
+    pub(crate) async fn count(&self, relation: &str) -> TestResult<i64> {
         Ok(sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
             "SELECT count(*) FROM {relation}"
         )))
@@ -560,7 +560,7 @@ impl Harness {
     }
 
     /// Row counts of every relation a TRANSFER could write.
-    async fn footprint(&self) -> TestResult<Vec<i64>> {
+    pub(crate) async fn footprint(&self) -> TestResult<Vec<i64>> {
         let mut counts = Vec::new();
         for relation in [
             "game_item_transfer_reservations",
@@ -608,7 +608,7 @@ impl Harness {
     }
 
     /// Change one durable authority fact outside the runtime guards.
-    async fn tamper(&self, statement: &str) -> TestResult {
+    pub(crate) async fn tamper(&self, statement: &str) -> TestResult {
         let mut tx = self.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica")
             .execute(&mut *tx)
@@ -646,7 +646,7 @@ fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
 }
 
 /// Test-only backpack: capacity 20 and a complete `container`-slot pattern.
-fn backpack_facts() -> ItemDefinitionFacts {
+pub(crate) fn backpack_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
         definition: definition("Item", BACKPACK),
         stack: ItemStackClass::NonStackable,
@@ -659,14 +659,18 @@ const STACKABLE: ItemStackClass = ItemStackClass::Stackable {
     proven_maximum: None,
 };
 
-fn command(value: u64) -> TestResult<CommandRef> {
+pub(crate) fn command(value: u64) -> TestResult<CommandRef> {
     Ok(CommandRef::new(
         GameSessionId::decode(&id(SESSION)).map_err(debug)?,
         CommandId::new(value).map_err(debug)?,
     ))
 }
 
-fn to_slot(command: CommandRef, item: [u8; 16], facts: ItemDefinitionFacts) -> ItemTransferRequest {
+pub(crate) fn to_slot(
+    command: CommandRef,
+    item: [u8; 16],
+    facts: ItemDefinitionFacts,
+) -> ItemTransferRequest {
     ItemTransferRequest {
         command,
         source_item_instance_id: item,
@@ -679,7 +683,7 @@ fn to_slot(command: CommandRef, item: [u8; 16], facts: ItemDefinitionFacts) -> I
     }
 }
 
-fn to_backpack(
+pub(crate) fn to_backpack(
     command: CommandRef,
     item: [u8; 16],
     facts: ItemDefinitionFacts,
@@ -691,7 +695,7 @@ fn to_backpack(
     }
 }
 
-fn fence() -> TestResult<CurrentCharacterItemFence> {
+pub(crate) fn fence() -> TestResult<CurrentCharacterItemFence> {
     Ok(CurrentCharacterItemFence {
         character_id: CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?,
         game_session_id: GameSessionId::decode(&id(SESSION)).map_err(debug)?,
@@ -702,7 +706,7 @@ fn fence() -> TestResult<CurrentCharacterItemFence> {
     })
 }
 
-fn refused(
+pub(crate) fn refused(
     result: Result<impl std::fmt::Debug, ItemTransferError>,
     expected: ItemTransferRefusal,
 ) -> TestResult {
