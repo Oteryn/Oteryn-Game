@@ -1900,6 +1900,8 @@ name = "oteryn-dev-client"
 version = "0.1.0"
 dependencies = [
  "oteryn-protocol-oteryn",
+ "oteryn-session",
+ "oteryn-session-tcp",
  "rcgen",
  "rustls",
  "tokio",
@@ -2021,6 +2023,24 @@ dependencies = [
  "oteryn-identity",
  "oteryn-platform-client",
  "tokio",
+]
+
+[[package]]
+name = "oteryn-session"
+version = "0.1.0"
+dependencies = [
+ "oteryn-protocol-oteryn",
+ "tokio",
+]
+
+[[package]]
+name = "oteryn-session-tcp"
+version = "0.1.0"
+dependencies = [
+ "oteryn-session",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]

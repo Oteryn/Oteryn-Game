@@ -9,6 +9,8 @@ members = [
     "crates/platform-contracts",
     "crates/platform-client",
     "crates/protocol-oteryn",
+    "crates/session",
+    "crates/session-tcp",
     "crates/identity",
     "crates/client-domain",
     "crates/client-simulation",
