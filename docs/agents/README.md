@@ -25,10 +25,6 @@ Shared execution, authority/trust, recovery, checkpoint/handoff and communicatio
 
 - `prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` — autonomous coordinator prompt for continuing the staged global architecture decision programme from the canonical foundation checkpoint and global decision register.
 - `prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md` — independent read-only programme and architecture audit prompt for exact-SHA, phase-aware review of Game direction, active workstreams, evidence, legacy contamination and the next evidence-producing milestone; short invocation: `Oteryn: audyt`.
-- `prompts/OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR.md` — current upstream-first WP3-v2 programme routing; short invocation: `Oteryn: astra wp3-v2 programme coordinator`.
-- `prompts/OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD.md` — current allocated upstream-first WP3-v2 implementation profile; short invocation: `Oteryn: astra wp3-v2 implementation lead`.
-- `prompts/OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR.md` — current read-only exact-source/evidence support; short invocation: `Oteryn: sol wp3-v2 evidence auditor`.
-- `programs/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md` — current WP3-v2 launch order and gates.
 
 Reusable prompts are task deltas, not project state. Apply current authority, task checkpoints, ADRs/contracts and live PR/CI state when they are material to the requested operation.
 

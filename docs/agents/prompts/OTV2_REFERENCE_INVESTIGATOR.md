@@ -27,7 +27,7 @@ qa
 
 ```yaml
 prompt_id: OTV2_REFERENCE_INVESTIGATOR
-prompt_version: "1.1"
+prompt_version: "1.2"
 prompt_mode: REFERENCE_INVESTIGATION_READ_ONLY
 repository: Oteryn/Oteryn-Game
 programme: 486
@@ -101,7 +101,7 @@ Do not invent a stronger evidence class merely because several weak sources agre
 
 ## Reference target
 
-The programme target remains the accepted immutable Global Tibia production-observable behavior cut after the **2026-07-28 server-save/maintenance boundary**.
+The programme target is Global Tibia as of **2026-09-27** (`docs/agents/programs/OTERYN_TARGET_DATE_20260927_DECISION.md`, which supersedes the earlier 2026-07-28 cut). Game version is **15.30** for client and server data (`docs/agents/programs/OTERYN_GAME_VERSION_1530_AND_OTS_BRANCHES_DECISION_20260928.md`).
 
 Current/post-target Global evidence is useful continuity evidence but does not silently move the target. For every time-sensitive field record whether target-date continuity is:
 
@@ -115,6 +115,18 @@ CONFLICT
 If continuity is unknown, keep the affected target claim fail-closed or explicitly parity-pending.
 
 ## Source strategy
+
+### Access routes (read first)
+
+Use only the routes that work from agent containers, as listed in `docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md`:
+
+- official manual: the notes in `docs/reference/tibia-manual/` (never fetch tibia.com; it blocks containers);
+- TibiaWiki (Fandom): the MediaWiki `api.php` only, at most 50 titles per request;
+- TibiaWiki BR: no direct fetch from containers; use the committed snapshots or a hosted-runner batch;
+- structured library data: the TibiaData API (`api.tibiadata.com/v4`);
+- Canary / Crystal: any branch, pinned by commit SHA.
+
+After one failed attempt on a route, switch routes or record the field as `UNKNOWN`. Do not retry a blocked host.
 
 ### 1. CipSoft / Tibia official — `PRIMARY_OFFICIAL`
 
@@ -150,7 +162,7 @@ Observation supports `OBSERVED`; it does not become `PROVEN` merely because it w
 
 ### 3. Tibia Wiki and equivalent structured encyclopedias — `STRUCTURED_REFERENCE_DATA`
 
-Treat **Tibia Wiki (`tibiawiki.com.br`) as a first-class bulk structured Reference data source**, not as a low-value afterthought. Equivalent well-maintained Tibia encyclopedias/databases such as Tibiopedia may be used for independent structured cross-check when accessible.
+Treat **Tibia Wiki (BR and Fandom, through the access routes above) as a first-class bulk structured Reference data source**, not as a low-value afterthought. Equivalent well-maintained Tibia encyclopedias/databases such as Tibiopedia may be used for independent structured cross-check when accessible.
 
 Prefer these sources for high-volume factual content such as:
 
@@ -221,7 +233,7 @@ Example shape:
 ```yaml
 entity: <name>
 field: <one atomic field>
-target_cut: 2026-07-28
+target_cut: 2026-09-27
 sources:
   official: []
   global_observation: []
@@ -238,6 +250,8 @@ next_action: <one concrete action>
 `confidence` never overrides `classification`.
 
 ## Lane contracts
+
+Read only the section for your own lane.
 
 ### `Oteryn: ref world`
 
@@ -377,7 +391,7 @@ source_queries_performed: []
 evidence_records:
   - entity: <entity/mechanic>
     field: <atomic field>
-    target_cut: 2026-07-28
+    target_cut: 2026-09-27
     source_roles: []
     exact_sources: []
     classification: PROVEN|OBSERVED|DERIVED|UNKNOWN|CONFLICT|DECLARED_DIFFERENCE
