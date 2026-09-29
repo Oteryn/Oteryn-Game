@@ -74,8 +74,22 @@ persistence review.
 ## Closeout
 
 - PR #1265. Merge commit/result: squash merge of #1265 (`git log --grep "(#1265)"`).
-- Review: Codex review requested on the frozen head. Its outcome and any repair are recorded on
-  #162 and in the PR threads.
+- Review: Codex could not review (quota exhausted, 5896518704). The control plane routed a separate
+  non-authoring agent, which reviewed `d4e97ce` (5897183488) with disposition FIX. The repair
+  commit carries these dispositions:
+  - Findings 1-3 (material, A13-RECEIPT-CHAIN, #162 5897202372):
+    1. The vocation choice is one combined build receipt carrying `stance_before` and
+       `stance_after` (STANCE-0 §4.6).
+    2. A death is three single-receipt revisions in one transaction (flush, death, loss), so
+       DEATH-0 is unchanged.
+    3. An idempotent D88-style initializer creates the row at creation and backfills it at the
+       first admission.
+  - Finding 4: the receipt shape now lists the stance, level and XP fields, the cause, the UUIDv7
+    key, `command_binding`, `policy_digest`, replay-or-conflict and the shared state-guard branch.
+  - Findings 5-7: the live magic level changes only after its receipt commits; unchanged
+    checkpoints are skipped; `mana_spent` is progress toward the next magic level; and W2b follows
+    CHAR-BUILD-1.
+  - Re-review of the successor head goes through the control plane.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ## Context checkpoint

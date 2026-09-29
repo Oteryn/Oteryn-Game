@@ -7,6 +7,8 @@
 - Answers: #162 comment 5896414182 (`ARCHITECTURE_ESCALATION_REQUIRED`, SPELL-CASTER-FACTS) and
   the owner question in 5896342127
 - Ruling posted: #162 comment 5896480875
+- Repaired after the independent review of `d4e97ce` (#1265 5897183488; #162 A13-RECEIPT-CHAIN,
+  5897202372)
 - Decides: the "Magic-level training" item in
   `OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md` §10
 - Migration, runtime, content and production authority: **NONE**. Each lane in §5 changes code
@@ -57,19 +59,37 @@ The owner confirmed these directly in this session on 2026-09-29.
 - **Table.** `game_character_build_state` holds one row per Character with three fields:
   - `vocation`: `none` or a vocation key;
   - `magic_level`;
-  - `mana_spent`: progress toward the next magic level.
-- **Creation.** Character creation inserts the row with `vocation = none`, `magic_level = 0` and
-  `mana_spent = 0`. A Character without a row after creation is invalid, and admission fails
-  closed.
+  - `mana_spent`: mana spent toward the next magic level. It resets on an advance (the
+    Canary/Crystal `manaspent` semantics). This is not the cumulative total; W2b confirms it
+    against Reference evidence.
+- **Initializer.** One idempotent initializer creates the row and its first build receipt
+  (`none`, `0`, `0`, cause `initialize`, no before values). It has the same shape as the D88
+  progression initializer.
+  - It runs at Character creation.
+  - It runs at the first admission of an existing Character that has no row (backfill), in the
+    admission transaction.
+  - A replay finds the row and changes nothing.
+  - After it, the row always has a matching receipt.
 - **Admission.** Admission loads the row into the live Character, and `CasterState` reads from it.
 
 ### 4.2 Receipt chain
 
-- **Revisions and receipts.** Every change to the row is a CharacterRevision with a receipt of a
-  new kind, `game_character_build_receipts`, in the `0009` chain.
-  - The receipt holds the before and after values of the three fields.
-  - It is immutable, and the chain cannot be truncated.
+- **Revisions and receipts.** Every change to the row is a CharacterRevision with exactly one
+  receipt of a new kind, `game_character_build_receipts`, in the `0009` chain.
+  - One revision carries one receipt of one kind (STANCE-0 §4.3, DEATH-0 §3.1-§3.2).
+  - The receipt is immutable, and the chain cannot be truncated.
   - Writes are session-generation fenced.
+- **Receipt shape.** CHAR-BUILD-1 defines the columns. Each receipt holds:
+  - the before and after values of `vocation`, `magic_level` and `mana_spent`;
+  - `stance_before` and `stance_after`: equal unless the revision is a vocation change (§4.4);
+  - level and total experience before and after, which are equal, as in STANCE-0;
+  - a cause: `initialize`, `training`, `vocation_choice`, `promotion` or `death_loss`, plus the
+    death receipt reference for `death_loss`;
+  - the UUIDv7 occurrence key, `command_binding` and `policy_digest`.
+- **Retry.** A retry follows the replay-or-conflict rule of `commit_character_experience`: the same
+  occurrence key and content replays, and different content conflicts.
+- **State guard.** The equal-XP-and-level branch is shared with STANCE-0 and is told apart by the
+  receipt kind.
 - **Shared guard.** Build state joins the guard-rewrite chain of DEATH-0, STANCE-0 and H-1.
   Whichever of these migrations merges last carries every receipt kind in the shared guards. The
   migration takes the next free number when it is allocated.
@@ -84,8 +104,12 @@ The owner confirmed these directly in this session on 2026-09-29.
 ### 4.4 Vocation choice (D150)
 
 - **The choice.** The Dawnport vocation choice is one revision that carries:
-  - a build receipt for the vocation change;
-  - the A11 stance-prune receipt, when the new vocation invalidates the stance (A11 combined rule).
+  - exactly one build receipt (cause `vocation_choice`). This is the vocation lane's own receipt
+    from STANCE-0 §4.6;
+  - `stance_before` and `stance_after` in that receipt. The receipt prunes a stance that no longer
+    fits, and the STANCE-0 §4.3 stance chain counts it.
+
+  There is no separate stance receipt, and the stance row is updated in the same revision.
 - **Content.** The Dawnport island, the choice interaction and the departure rule come from
   Reference evidence. They belong to their own content lane.
 - **Promotion.** Promotion (level 20, Premium, NPC) uses the same vocation writer in a later slice.
@@ -94,10 +118,14 @@ The owner confirmed these directly in this session on 2026-09-29.
 
 - **Accumulation.** `mana_spent` accumulates in the live session with each cast's mana cost.
 - **Commits.** It is committed as a build receipt:
-  - on every magic-level advance, which is always durable;
-  - before the death receipt, in the same revision (§4.6);
+  - on every magic-level advance, which is always durable. The live magic level changes only after
+    that receipt commits;
+  - before a death, as its own revision (§4.6);
   - at logout;
   - at a checkpoint of at most 60 seconds.
+
+  A checkpoint is skipped when `mana_spent` has not changed since the last receipt, so receipts do
+  not grow without progress.
 - **Crash loss.** A crash may lose at most one checkpoint of mana-spent progress. It never loses a
   magic level.
 - **Formula.** The advance formula and the per-vocation multipliers come from Reference evidence,
@@ -105,16 +133,22 @@ The owner confirmed these directly in this session on 2026-09-29.
 
 ### 4.6 Death
 
-- Death loss of magic-level progress follows Global.
-- The DEATH lane writes it as a build receipt in the same revision as the death receipt.
-- The loss amounts come from Reference evidence in that lane.
+- Death loss of magic-level progress follows Global. The loss amounts come from Reference evidence
+  in the DEATH lane.
+- A death commits three consecutive revisions in one database transaction:
+  1. revision N-1: the pending `mana_spent` flush (build receipt, cause `training`), skipped when
+     nothing is pending;
+  2. revision N: the unchanged DEATH-0 death receipt;
+  3. revision N+1: the magic-level loss (build receipt, cause `death_loss`, referencing N).
+- Either all three commit or none does. Each revision still carries exactly one receipt, so DEATH-0
+  needs no amendment.
 
 ## 5. Delivery
 
 | Child | Scope | Depends on |
 |---|---|---|
 | CHAR-BUILD-1 | Migration and writers: the table, the receipt kind, creation insert, admission load, vocation writer, training commit, guards (§4.1-§4.2). It needs a persistence review. | this decision; the guard chain order |
-| W2b | `CasterState` facts from build state, `Vocation::None`, training accumulation and the Reference formula | CHAR-BUILD-1 |
+| W2b | `CasterState` facts from build state, `Vocation::None`, training accumulation and the Reference formula. Allocated only after CHAR-BUILD-1, which tightens ruling 5896480875. | CHAR-BUILD-1 |
 | DAWNPORT-1 | Dawnport content and the vocation-choice interaction | CHAR-BUILD-1 |
 | DEATH ML loss | Magic-level progress loss at death | CHAR-BUILD-1, DEATH lane |
 
