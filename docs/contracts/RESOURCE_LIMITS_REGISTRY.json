@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-28T18:58:44+00:00",
+  "updated_at": "2026-09-29T00:00:00+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -6016,6 +6016,29 @@
         "apps/game-server/src/combat/death_reward.rs (check_reward_principal_count, called from settle_creature_death_rewards before planning or minting anything)"
       ],
       "notes": "D77/D78 decision \u00a74.1 row 10: \"1 per death (single-principal slice)\". `COMBAT01-DEATH-WORKFLOWS-PER-SCOPE` (row 3) is deliberately not registered here: its own failure mode is recorded as structurally unreachable, bounded by the still-unregistered D57 creature-count envelope, and this composition keeps no scope-wide active-workflow counter to check; registering an unenforced ceiling would be a fake guard. Registered by OTV2-20260928-combat-d2b-death-reward-wiring."
+    },
+    {
+      "id": "COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
+      "resource": "Distinct CharacterId damage contributors tracked per live creature actor generation",
+      "unit": "distinct contributors per creature generation",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Fail-open for combat, fail-closed only for attribution: past the bound, DamageContributors::record silently declines to add a new (17th+) distinct attacker to the map; the caller's own HP mutation already committed independently and is never affected. An already-tracked contributor keeps accumulating regardless of map size.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=16: 16 distinct contributors are all tracked",
+        "max+1=17: a 17th distinct contributor is never added and never becomes (or affects) the deterministic top-damage winner",
+        "an already-tracked contributor keeps accumulating past the cap once the map is full"
+      ],
+      "consumers": [
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs (DamageContributors::record, CurrentOwnerExactActorCommit::commit_damage_for_attacker, CurrentOwnerCombatDeath::top_damage_character)"
+      ],
+      "notes": "D132, \u00a74.3 of the D3 corpse container/loot window/decay decision. Ephemeral, per-creature-generation state only: a fresh, empty map on every creature admission, dropped with the slot on removal or respawn (D52: nothing duplicated, nothing silently completed by a later generation). No production caller yet; D3-2 wires CurrentOwnerCombatDeath::top_damage_character into settle_creature_death_rewards. Registered by OTV2-20260929-d3-3-top-damage."
     }
   ]
 }

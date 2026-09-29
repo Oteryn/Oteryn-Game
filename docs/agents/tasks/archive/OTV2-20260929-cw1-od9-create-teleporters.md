@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-cw1-od9-create-teleporters
 title: OD9 pre-authored CREATE teleporters - synthesized absent state, create/remove pair and the Q2=b re-kill re-arm (proposal §10.2/§10.4)
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: 5884353101
@@ -12,12 +12,12 @@ base_branch: main
 branch: claude/cw1-od9-create-teleporters
 pr: 1204
 base_sha: 8dfd069594e0b6bd4d4cd9df7226b4b8dcd69d8c
-head_sha: null
-final_head_sha: null
+head_sha: 0a9f88ab602d9f89b70b3d354cd69a52356131b4
+final_head_sha: 0a9f88ab602d9f89b70b3d354cd69a52356131b4
 final_head_frozen_at: null
 owner: Oteryn: content world runtime
 created_at: 2026-09-29T05:40:00Z
-updated_at: 2026-09-29T06:00:00Z
+updated_at: 2026-09-29T09:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/encounter_map_item.rs
@@ -27,7 +27,7 @@ owned_paths:
   - apps/game-server/src/content/project.rs (amendment 5884393736; literal-only `absent: false`)
   - apps/game-server/tests/content_reference_playable.rs (amendment 5884393736; literal-only `absent: false`)
   - docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md (the §10 status line; the §10.4 kill-while-open bullet, Q2=b)
-  - docs/agents/tasks/active/OTV2-20260929-cw1-od9-create-teleporters.md
+  - docs/agents/tasks/archive/OTV2-20260929-cw1-od9-create-teleporters.md
   - docs/agents/tasks/archive/OTV2-20260928-cw1-od8-od9-design.md (closeout of #1182)
   - docs/agents/tasks/archive/OTV2-20260928-cw2-encounter-vocabulary-extensions.md (closeout of #1183)
   - docs/agents/tasks/archive/OTV2-20260928-cw1-d91-typed-transition-origin.md (closeout of #1187)
@@ -158,5 +158,17 @@ The results are in the PR.
 
 ## Context checkpoint
 
-last_progress: #1204 review P1 4130722521 fixed (`rearm_open_create` refuses non-CREATE edges with `NotCreateTransition`; P1 4130255100 fence already in place); returned to AUTHORING, awaiting coordinator freeze
+last_progress: merged as PR #1204; record archived
 jira: pending (no mapped Story resolved in this worker session)
+
+## Terminal integration
+
+- **Final head:** `0a9f88ab602d9f89b70b3d354cd69a52356131b4`.
+- **Integration:** merged into main as PR #1204, merge commit
+  `f611ffe3e44a02c6549b00670473e7bfc6174fba` (2026-09-29T08:01:51Z).
+- **Closeout:** the record was archived by `OTV2-20260929-closeout-batch-4` (issue #162, allocation comment 5886481110).
+- **Owned paths:** released.
+- **Binding carry-over:**
+  - §10.6/§10.7 wording (proposal document): carried over, to be settled with the OD8 work.
+  - §10.2 same-origin bind condition: it is bound to OD8 (the `/consume` edge), and OD9 lowers no second REMOVE edge.
+  - #1165 must add the `absent: false` literal to `LocalObjectStateDefinition` (plus the lowered `tables.event_transitions` and the executing event's owner, per the D91 carry-over). The coordinator records it on #162.
