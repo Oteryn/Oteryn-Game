@@ -184,7 +184,7 @@ This is the most relevant Canary pattern for Oteryn. It aligns with Oteryn's acc
 | Game module | Canary / CrystalServer evidence | Oteryn at pinned baseline | What Oteryn still needs |
 |---|---|---|---|
 | World/map authority | Mature tile/map/spectator and zone runtime; centralized `Game`/`Map` ownership. | `FOUNDATION`: multichannel world model, distinct `WorldId`/`ChannelId`, immutable/shared versus Channel-owned boundaries. | Preserve Oteryn ownership model; do not import centralized OTS authority assumptions. |
-| Content loading | XML/Lua/data loaders feed runtime objects directly. | `CONTENT_ONLY`: deterministic WorldProject/capture/compiler and native entry source exist. | Complete admitted generation activation and construct runtime actors from the pinned generation. |
+| Content loading | XML/Lua/data loaders feed runtime objects directly. | `CONTENT_ONLY`: deterministic WorldProject/capture/compiler and native entry source exist. | Generation activation is protected (`139202f`, #953, post-baseline); construct runtime actors from the pinned generation. |
 | Creature definitions | Large monster corpora with stats, attacks, defenses, voices, summons, loot and scripts. | `CONTENT_ONLY`: one native Rat/room/spawn/behavior/ability/effect/item/loot/XP source plus candidate schemas and unpopulated indexes. | Activate the one-creature slice first; later admit broader content with per-field provenance and conflicts. |
 | Spawn system | XML loading, startup, scheduled checks, zones, player proximity and cleanup in both engines. | `ABSENT_RUNTIME`: authored spawn evidence exists; no composed production population loop. | Owner-scoped bounded spawn occurrence, population key, deterministic retry/idempotency and actor creation. |
 | Creature owner tick | Mature scheduled `onThink` lifecycle. | `ABSENT_RUNTIME`: no production creature think scheduler wired from `lib.rs` to a live actor. | One bounded Channel-owner turn with a stable occurrence identity and explicit budget. |
@@ -206,8 +206,8 @@ This is the most relevant Canary pattern for Oteryn. It aligns with Oteryn's acc
 | NPC/dialogue/trade | Mature NPC object, Lua behavior and shop/dialogue flows. | `CONTENT_ONLY`/`ABSENT_RUNTIME`: source indexes/schema direction but no composed NPC runtime. | Later slice after creature combat journey; explicit dialogue/commerce authority and provenance. |
 | Actions/movement events | Large Lua action, step-in/out, equip and use-item surfaces. | `ABSENT_RUNTIME` for general script parity. | Define explicit script context/capabilities; never allow a script to bypass domain ownership. |
 | Quests/raids/bosses | Data/script-driven quests, raids and scheduled world events. | `CONTENT_ONLY`/`ABSENT_RUNTIME`; broad indexes are not runtime readiness. | Later explicit Instance/Channel/world scope, occurrence identity, recovery and reward ownership. |
-| Party/guild/chat | Mature social systems and shared XP/loot/stat behavior. | Separate Oteryn product/platform contracts; not part of GAME-AI-01. | Do not pull social parity into the first creature slice. Integrate through accepted product boundaries later. |
-| Bank/market/houses | Mature economy modules in both reference engines. | Platform owns commercial/control-plane responsibilities under accepted contracts. | Treat OTS code only as a feature checklist; do not import its authority model. |
+| Party/guild/chat | Mature social systems and shared XP/loot/stat behavior. | `ABSENT_RUNTIME` for the composed creature slice; not part of GAME-AI-01. Ownership is Game-domain per the accepted scope matrix: World communication owner (world/guild chat), Guild service/domain, and the world-level Party/Social authority (canonical `PartyId` issuer, FND-ID-01); shared XP stays `ChannelRuntime`. | Do not pull social parity into the first creature slice. Integrate through the accepted Game-domain owners later. |
+| Bank/market/houses | Mature economy modules in both reference engines. | `ABSENT_RUNTIME` for the composed creature slice. Ownership is Game-domain per the accepted scope matrix: Market service/domain (world), Bank in the Character/account domain, and House service/domain (world). Platform keeps only commercial/control-plane responsibilities under accepted contracts. | Treat OTS code only as a feature checklist; do not import its authority model. |
 | Persistence/login | Mature player/item/login persistence. | `FOUNDATION`: session-generation fencing, durability and identity contracts are stronger/different. | Keep Oteryn fencing and durable occurrence rules; no OTS persistence transplant. |
 | Protocol/client | Large `ProtocolGame` implementations expose gameplay state to OTC/Tibia-style clients. | `ABSENT_RUNTIME`: native gameplay transport reports unavailable; issue [#642](https://github.com/Oteryn/Oteryn-Game/issues/642) is separate. | Publish the minimum authoritative state/commands for the first playable journey; do not clone OTS wire protocol. |
 | Observability/budgets | Canary adds dispatcher budgets, policy and telemetry; Crystal is more traditional. | `FOUNDATION` for registered resource governance; production AI whole-cycle evidence is incomplete. | Instrument every bounded stage and derive numbers from representative Oteryn workload, not upstream constants. |
@@ -219,7 +219,7 @@ The diagram separates what is already protected-main capability from what is onl
 ```mermaid
 flowchart LR
     A[Native entry room + Rat source\nCONTENT_ONLY] --> B[Compile deterministic generation\nFOUNDATION]
-    B --> C[Activate generation for World/Channel\nACTIVE_UNMERGED]
+    B --> C[Activate generation for World/Channel\nFOUNDATION, protected 139202f #953]
     C --> D[Instantiate creature + spawn actor\nABSENT_RUNTIME]
     D --> E[Bounded owner think turn\nABSENT_RUNTIME]
     E --> F[Perception + target decision\nSTRUCTURAL bootstrap only]
@@ -262,7 +262,7 @@ Two common misunderstandings should be avoided:
 
 ### 8.3 Live work must not be mistaken for protected capability
 
-- the native content-activation work is allocated after the pinned main but is not included in this baseline;
+- native content activation landed as protected commit `139202f` (#953) after the pinned baseline `d6c6c18`; it is `FOUNDATION` on protected main but is not part of the baseline snapshot, and it activates and pins the generation to a Channel without instantiating creature actors;
 - PR #950 is a draft exact-head structural death/corpse candidate, not merged production combat;
 - issues [#508](https://github.com/Oteryn/Oteryn-Game/issues/508) and [#530](https://github.com/Oteryn/Oteryn-Game/issues/530) still carry production actor-resolution/carrier work;
 - issue [#504](https://github.com/Oteryn/Oteryn-Game/issues/504) still governs Reference content profile/provenance work;
@@ -281,8 +281,8 @@ The goal is not to recreate the whole OTS engine. The goal is to prove one real,
 
 ### Phase 1 — finish one admitted content generation
 
-1. integrate/qualify native entry content activation;
-2. pin one compiled generation to one admitted World/Channel;
+1. build on the already-integrated native entry content activation (protected `139202f`, #953), which pins one compiled generation to one admitted World/Channel; no further activation integration is needed;
+2. consume that pin as the sole source of the generation for the creature owner;
 3. instantiate exactly the authored room, one spawn and one Rat actor;
 4. prove restart/refusal behavior for missing or mismatched activation evidence.
 
