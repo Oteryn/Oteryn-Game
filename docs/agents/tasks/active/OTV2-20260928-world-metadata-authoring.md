@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260928-world-metadata-authoring
-title: Populate world metadata families (City and HuntingPlace Area, House, teleport Transition)
+title: Populate world metadata families (City, HuntingPlace and Region Area, House, teleport Transition)
 mode: MIGRATE
 status: validating
 repository: Oteryn/Oteryn-Game
@@ -22,6 +22,7 @@ owned_paths:
   - content/houses/
   - content/world/areas/cities/
   - content/world/areas/hunting-places/
+  - content/world/areas/regions/
   - imports/tibiawiki/hunting-places/
   - content/world/transitions/
   - apps/game-server/tests/content_world_project_repository.rs
@@ -40,10 +41,12 @@ jira: KAN-16
 
 This is step 1 of the owner's world-map plan: metadata first, then the full map import
 (terrain, objects, placements) after a measured storage-format decision, then TibiaWiki
-enrichment. Four families move from `READY_UNPOPULATED` to `POPULATED`:
+enrichment. Five families move from `READY_UNPOPULATED` to `POPULATED`:
 
 - `Area.City`: 35 records;
 - `Area.HuntingPlace`: 445 records from the English TibiaWiki (Fandom), described below;
+- `Area.Region`: 465 records (28 regions, 437 subregions) from the official 15.30 client
+  map file, described below;
 - `House`: 995 records;
 - `Transition.Teleport`: 872 records.
 
@@ -67,6 +70,24 @@ records the revision id. A record always has a name (the page title) and may hav
 - `recommended_levels`: knight, paladin and mage levels that are plain integers (386);
 - `source_facts.creature_names`: plain names from every `CreatureList` of the page (439),
   not bound to Creature keys.
+
+`Area.Region` comes from `content/assets/files/map-<sha256>.dat` and its `subarea-*` mask
+images (official client, owner-confirmed redistribution, verified against the client asset
+manifest). Evidence is `OfficialClient`, source key `oteryn:source.tibia_client`, binding
+namespace `tibia-client/map-area-id`. `convert_map_regions.py` converts them offline through
+`client_map_reader.py`, which decodes only checked structure and fails closed. A record has an
+official name and may have:
+
+- `anchor`: the map.dat position (158 records);
+- `parent_regions`: every subregion (437; Tibiadrome has five);
+- `footprint`: floor 7 bounding box, tile count and mask image (209 subregions);
+- `cities`: City Areas whose temple lies in the subregion mask on the same floor (21 of 35
+  cities; a region lists its subregions' cities).
+
+The Thais temple lies in the `Thais City` mask only and the Ab'Dendriel temple in
+`Ab'Dendriel City` only. The hierarchy has two levels, so `areas/streets/` stays untouched.
+Not imported (counted in the capture summary): the meaning of area fields 6 and 7, markers,
+satellite and minimap images, and `staticmapdata-*.dat`.
 
 ## Architecture and source of truth
 
@@ -102,6 +123,9 @@ records the revision id. A record always has a name (the page title) and may hav
 - [x] Hunting places: schema, converter (`--check`, offline from the pinned snapshot),
       validator (city refs, snapshot pin, page/revision bindings, capture counts, extent) and
       fixture tests including negatives.
+- [x] Regions: schema, reader, converter (`--check`, offline from the committed client
+      files), validator (source and mask pins, hierarchy, city links, extent, counts) and
+      fixture tests including negatives.
 - [x] The legacy package guards accept the successor shards: the materialized-tree
       validator, the seed workflow and the Rust inventory test.
 - [ ] Required checks pass on the frozen PR head.
@@ -110,7 +134,7 @@ records the revision id. A record always has a name (the page title) and may hav
 
 - Terrain, map objects, placements and floor changes (stairs, ladders, holes).
 - The World record (bounds and floors).
-- Islands and streets. Hunting-place skills, loot, experience ratings, maps and prose.
+- Islands and streets (the client map has no street tier). Hunting-place skills, loot, experience ratings, maps and prose.
 - The `15.30/` fragment maps.
 - TibiaWiki enrichment.
 - Runtime consumption. `runtime_source` stays `legacy_until_separately_qualified`.
@@ -118,11 +142,12 @@ records the revision id. A record always has a name (the page title) and may hav
 ## Validation
 
 - `python validate_world_metadata.py` passes.
-- `python test_world_authoring.py` passes 34 tests.
+- `python test_world_authoring.py` passes 55 tests.
+- `convert_map_regions.py --check` passes offline against the committed client files.
 - `convert_hunting_places.py --check` passes offline against the committed snapshot.
 - `ruff check` and `ruff format --check` pass (ruff 0.16.1).
 - `convert_world_metadata.py --check` against the pinned checkout passes.
-- `python3 tools/content-schema/validate_materialized_game_tree.py` passes with 13
+- `python3 tools/content-schema/validate_materialized_game_tree.py` passes with 15
   successor files.
 
 ## Independent review

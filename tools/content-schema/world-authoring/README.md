@@ -1,4 +1,4 @@
-# World metadata authoring (City and HuntingPlace Area, House, teleport Transition)
+# World metadata authoring (City, HuntingPlace and Region Area, House, teleport Transition)
 
 This package is the first population of the world tree. It covers **metadata** only: towns,
 houses and teleports, plus hunting places from the English TibiaWiki. Terrain, map objects and placements (19.3 M tiles, 24.9 M items) are
@@ -9,6 +9,7 @@ that format.
 |---|---|---:|---|
 | `Area.City` | `content/world/areas/cities/` | 35 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `Area.HuntingPlace` | `content/world/areas/hunting-places/` | 445 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
+| `Area.Region` | `content/world/areas/regions/` | 465 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `House` | `content/houses/` | 995 | `OTERYN_HOUSE_AUTHORING_SHARD/v1` |
 | `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
 
@@ -62,6 +63,47 @@ of `tibia.fandom.com` (the Portuguese wiki refuses build containers). Evidence i
 - The validator checks the snapshot pin and canonical bytes, that every snapshot page is
   bound once with its revision, city references, extent and capture counts.
 
+## Regions (official Tibia 15.30 client map)
+
+`Area.Region` comes from the official client files committed under `content/assets/files/`
+(owner-confirmed redistribution): `map-<sha256>.dat` and the `subarea-*` mask images. Evidence
+is `OfficialClient`, source key `oteryn:source.tibia_client`, binding namespace
+`tibia-client/map-area-id` (the binding records the sha256 of `map.dat`). The converter reads
+the files offline and verifies each against `imports/official/client-assets/15.30/manifest.json`.
+
+The formats are undocumented; `client_map_reader.py` decodes only what was checked against the
+data and fails closed on anything else (unknown field, wire type, framing, BMP shape).
+
+- `map.dat` is a raw protobuf. It holds 465 areas: 28 with a child list (`region`) and 437
+  without (`subregion`), every subregion listed by at least one region (Tibiadrome by five).
+  The rest of the file: 1270 markers, 948 satellite/minimap image entries, 209 subarea mask
+  entries and two declared corner positions. It carries no third level, so there is no
+  street or district tier.
+- A subarea mask is a Tibia-framed LZMA stream holding a 32-bit BMP of one pixel per tile,
+  anchored at the entry's position. A non-zero pixel is a tile of the area. The file name ends
+  in the sha256 of the decoded BMP, which the reader checks, and the BMP size equals the map
+  entry. The 209 masks hold 1,901,667 tiles, all on floor 7.
+- Coordinate check: the frame is the one City temples use. The Thais temple (32369,32241,7)
+  lies in the mask of `Thais City` only, the Ab'Dendriel temple (32732,31634,7) in
+  `Ab'Dendriel City` only, and 21 of the 22 floor-7 City temples fall inside a mask of a
+  similarly named area. 138 of 139 area anchors on masked areas lie inside their own mask
+  (`Thais Trolls' Cave` does not). The region `Thais` anchors at exactly the Thais temple.
+- Key `oteryn:area.region.<slug(name)>`, reused by area id once committed. 21 names occur twice
+  (a region and a subregion of the same name); the region keeps the plain slug and the
+  subregion gets `_subregion`. A remaining collision fails closed.
+- Records: `area_kind` `region` or `subregion`, official `name`, `anchor` (map.dat position,
+  158 records), `parent_regions` (subregions only, sorted), `footprint` (209 subregions: floor,
+  tight bounding box, `tile_count`, and the mask image path and sha256) and `cities`.
+- `cities` lists City Areas whose temple lies in a subregion's mask on the mask's floor (21 of
+  35 cities). A region lists the cities of its subregions. Temples on another floor than 7 (13
+  cities) and one temple outside every mask are not linked; a mask is proven for floor 7 only.
+- Not imported, counted in `samples/map-regions-capture-v1.json`: the meaning of area field 6
+  (28 areas) and of the secondary names of field 7 (53 areas), the 1270 markers, the satellite
+  and minimap images, the declared corner positions, the 228 subregions without a mask and
+  `staticmapdata-*.dat` (995 blocks of appearance-id tile grids per position, no area data).
+- The validator checks the pinned map file, manifest and mask files, hierarchy, sorted unique
+  lists, city references and temple containment, extent, counts and stray files.
+
 ## What is imported and what is not
 
 Keys are stable across source updates: when the family files are already committed, the
@@ -91,14 +133,16 @@ position-based.
     legacy locator.
   - floor changes through stairs, ladders or holes. These are derived from item types
     together with terrain.
-  - islands and streets; per-place skills, loot and experience ratings of hunting places.
+  - islands and streets (the client map has no street tier); per-place skills, loot and
+    experience ratings of hunting places.
   - the 18 editor waypoints.
   - the `data-global/world/15.30/` fragment maps.
 
 ## Coexistence with the legacy WorldProject package
 
 `content/world/` is still the legacy WorldProject package root. The family shards in
-`areas/cities/`, `areas/hunting-places/` and `transitions/` are not WorldProject locators:
+`areas/cities/`, `areas/hunting-places/`, `areas/regions/` and `transitions/` are not
+WorldProject locators:
 
 - `validate_materialized_game_tree.py` accepts a populated family index there only when its
   shards stay in that directory, the directory holds no other file, and no legacy locator
@@ -114,6 +158,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 python validate_world_metadata.py          # committed families: schema + semantics
 python test_world_authoring.py             # synthetic OTBM and wiki fixtures, converters, validator
 python convert_hunting_places.py --check   # offline, from the committed TibiaWiki snapshot
+python convert_map_regions.py --check      # offline, from the committed official client files
 # Regenerate (needs the pinned crystalserver checkout, not fetched by CI):
 python convert_world_metadata.py --crystal-root /path/to/crystalserver [--check]
 # Refresh the wiki snapshot (network), then reconvert:

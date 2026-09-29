@@ -10,6 +10,10 @@ on:
       - content/world/transitions/**
       - imports/crystalserver/bindings/items.json
       - imports/tibiawiki/hunting-places/**
+      - imports/official/client-assets/15.30/manifest.json
+      - content/assets/files/catalog-content.json
+      - content/assets/files/map-*.dat
+      - content/assets/files/subarea-*
       - .github/workflows/world-metadata-authoring.yml
   workflow_dispatch:
 
@@ -47,6 +51,7 @@ jobs:
         run: |
           set -euo pipefail
           python convert_hunting_places.py --check
+          python convert_map_regions.py --check
           python validate_world_metadata.py
           python ../validate_materialized_game_tree.py
 

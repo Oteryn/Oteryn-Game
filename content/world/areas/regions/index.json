@@ -1,10 +1,1 @@
-{
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/world/areas/regions/",
-  "kind": "static_content",
-  "owner": "Area",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
-  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Region/subregion definitions."
-}
+{"coordinate_frame":"global-target-2026-09-27","family":"Area.Region","generator":"tools/content-schema/world-authoring/convert_map_regions.py","population_state":"POPULATED","record_count":465,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/world/areas/regions/regions-00000-00464.json"],"source":{"client_version":"15.30","evidence":"OfficialClient","files":[{"path":"content/assets/files/map-c54dfeb8f3880e9534f1330fa547f06d99c5afa55f641b875ceee23cc04e3496.dat","sha256":"c54dfeb8f3880e9534f1330fa547f06d99c5afa55f641b875ceee23cc04e3496"}],"manifest":{"archive_sha256":"e48e478dc9071b8ccbb16dfe729c9389be74cd7826ee9ec350d51cb0ff8c65d9","path":"imports/official/client-assets/15.30/manifest.json"},"source_key":"oteryn:source.tibia_client"}}

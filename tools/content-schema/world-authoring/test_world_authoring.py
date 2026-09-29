@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
+import lzma
 import re
 import shutil
 import struct
@@ -11,7 +13,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import client_map_reader as client_map
 import convert_hunting_places as hunting
+import convert_map_regions as regions
 import convert_world_metadata as convert
 import fandom_hunting_snapshot as snapshot_tool
 import otbm_reader
@@ -162,6 +166,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         for path, blob in hunting.build(data, self.root).items():
             (self.root / path).parent.mkdir(parents=True, exist_ok=True)
             (self.root / path).write_bytes(blob)
+        add_regions(self.root)
 
     def tearDown(self):
         shutil.rmtree(self.root)
@@ -447,6 +452,7 @@ class HuntingPlaceEndToEndTest(unittest.TestCase):
         bindings.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(convert.ITEM_BINDINGS, bindings)
         self.load(snapshot_tool.build_snapshot(PAGES, "2026-09-29"))
+        add_regions(self.root)
 
     def tearDown(self):
         shutil.rmtree(self.root)
@@ -659,6 +665,499 @@ class HuntingPlaceEndToEndTest(unittest.TestCase):
 
         self.rewrite(mutate)
         self.assertTrue(any("schema" in e for e in self.errors()))
+
+
+def pb_varint(value: int) -> bytes:
+    out = bytearray()
+    while value >= 0x80:
+        out.append(value & 0x7F | 0x80)
+        value >>= 7
+    return bytes(out + bytes([value]))
+
+
+def pb_field(number: int, value) -> bytes:
+    if isinstance(value, int):
+        return pb_varint(number << 3) + pb_varint(value)
+    if isinstance(value, str):
+        value = value.encode()
+    return pb_varint(number << 3 | 2) + pb_varint(len(value)) + value
+
+
+def pb_position(x: int, y: int, z: int) -> bytes:
+    return pb_field(1, x) + pb_field(2, y) + pb_field(3, z)
+
+
+def pb_area(area_id, name, kind, children=(), anchor=None, flag=None, secondary=()):
+    body = pb_field(1, area_id) + pb_field(2, name) + pb_field(3, kind)
+    body += b"".join(pb_field(4, child) for child in children)
+    if anchor:
+        body += pb_field(5, pb_position(*anchor))
+    if flag is not None:
+        body += pb_field(6, flag)
+    body += b"".join(pb_field(7, name) for name in secondary)
+    return pb_field(1, body)
+
+
+def bmp32(rows) -> bytes:
+    """A bottom-up 32-bit BMP of `rows` (top row first; 1 = opaque white, 0 = transparent)."""
+    height, width = len(rows), len(rows[0])
+    pixels = b"".join(
+        b"".join(b"\xff\xff\xff\xff" if cell else b"\x00\x00\x00\x00" for cell in row)
+        for row in reversed(rows)
+    )
+    header = b"BM" + struct.pack("<IHHI", 54 + len(pixels), 0, 0, 54)
+    header += struct.pack(
+        "<IiiHHIIiiII", 40, width, height, 1, 32, 0, len(pixels), 0, 0, 0, 0
+    )
+    return header + pixels
+
+
+def frame(bmp: bytes) -> bytes:
+    """Tibia framing (zeros, 70 0A, two varints) around an LZMA-alone stream."""
+    return (
+        b"\x00" * 25
+        + b"\x70\x0a\xfa\xad\x02\x98\x06"
+        + lzma.compress(bmp, format=lzma.FORMAT_ALONE)
+    )
+
+
+def sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+TOWN_ROWS = [[0] * 8] + [[0, *([1] * 6), 0] for _ in range(4)] + [[0] * 8]  # 6 rows
+TOWN_BMP = bmp32(TOWN_ROWS)
+TOWN_FILE = f"subarea-0002-{sha(TOWN_BMP)}.bmp.lzma"
+REGION_AREAS = [
+    pb_area(1, "Test Land", 1, [2, 3], (1000, 1000, 7), 0),
+    pb_area(2, "Test Town", 2, [], (1001, 1000, 7)),
+    pb_area(3, "Empty Reach", 2, [], None, None, ["Old Name"]),
+    pb_area(4, "Test Town", 1, [2]),
+]
+
+
+def pb_image(kind, position, file, width, height, tail=b""):
+    body = pb_field(1, kind) + pb_field(2, pb_position(*position))
+    return pb_field(
+        3, body + pb_field(3, file) + pb_field(4, width) + pb_field(5, height) + tail
+    )
+
+
+def client_files(areas=REGION_AREAS, images=None, town=TOWN_BMP) -> dict[str, bytes]:
+    """A synthetic client map, its subarea mask, the catalog and the checksum manifest."""
+    if images is None:
+        images = [
+            pb_image(0, (998, 998, 7), TOWN_FILE, 8, 6, pb_field(6, 2)),
+            pb_image(
+                1,
+                (768, 768, 7),
+                "satellite-16-0003-0003-07-x.bmp.lzma",
+                256,
+                256,
+                pb_varint(7 << 3 | 1) + bytes(8),
+            ),
+        ]
+    data = b"".join(areas) + b"".join(images)
+    data += pb_field(2, pb_field(1, "A Marker") + pb_field(2, pb_position(1, 1, 7)))
+    data += pb_field(4, pb_position(900, 900, 0)) + pb_field(
+        5, pb_position(1100, 1100, 7)
+    )
+    map_name = f"map-{sha(data)}.dat"
+    town = frame(town)
+    files = {
+        f"{regions.FILES}/{map_name}": data,
+        f"{regions.FILES}/{TOWN_FILE}": town,
+    }
+    manifest = {
+        "archive_sha256": "0" * 64,
+        "files": [
+            {"bytes": len(blob), "name": path.rsplit("/", 1)[-1], "sha256": sha(blob)}
+            for path, blob in files.items()
+        ],
+        "schema": "OTERYN_CLIENT_ASSET_MANIFEST/v1",
+    }
+    files[regions.MANIFEST] = json.dumps(manifest).encode()
+    files[regions.CATALOG] = json.dumps([{"type": "map", "file": map_name}]).encode()
+    return files
+
+
+def write_files(root: Path, files: dict[str, bytes]) -> None:
+    for path, data in files.items():
+        (root / path).parent.mkdir(parents=True, exist_ok=True)
+        (root / path).write_bytes(data)
+
+
+def add_regions(root: Path) -> None:
+    write_files(root, client_files())
+    write_files(root, regions.build(root))
+
+
+class ClientMapReaderTest(unittest.TestCase):
+    def test_reads_areas_images_and_counts_the_rest(self):
+        files = client_files()
+        data = next(v for k, v in files.items() if k.endswith(".dat"))
+        facts = client_map.read_map(data)
+        self.assertEqual(
+            [(a.id, a.name, a.kind, a.children) for a in facts.areas],
+            [
+                (1, "Test Land", 1, [2, 3]),
+                (2, "Test Town", 2, []),
+                (3, "Empty Reach", 2, []),
+                (4, "Test Town", 1, [2]),
+            ],
+        )
+        self.assertEqual(facts.areas[0].anchor, (1000, 1000, 7))
+        self.assertEqual(facts.areas[2].secondary_names, ["Old Name"])
+        self.assertEqual((facts.markers, facts.other_images), (1, {"satellite": 1}))
+        self.assertEqual(
+            (facts.minimum, facts.maximum), ((900, 900, 0), (1100, 1100, 7))
+        )
+        image = facts.subareas[0]
+        mask = client_map.read_mask(files[f"{regions.FILES}/{TOWN_FILE}"], image)
+        self.assertEqual(mask.bounds(), (999, 999, 1004, 1002))
+        self.assertEqual(mask.tile_count, 24)
+        self.assertTrue(mask.contains(1001, 1001, 7))
+        self.assertFalse(mask.contains(1001, 1001, 6))
+        self.assertFalse(mask.contains(998, 998, 7))
+
+    def test_rejects_unknown_fields_wire_types_and_truncation(self):
+        with self.assertRaises(client_map.ClientMapError):
+            client_map.read_map(pb_field(9, 1))
+        with self.assertRaises(client_map.ClientMapError):
+            client_map.read_map(pb_field(1, pb_field(1, 1) + pb_field(8, 1)))
+        with self.assertRaises(client_map.ClientMapError):
+            client_map.read_map(b"\x0a\x05abc")
+        with self.assertRaises(client_map.ClientMapError):
+            client_map.read_map(b"\x0f")
+        with self.assertRaises(client_map.ClientMapError):
+            client_map.read_map(pb_field(3, pb_field(1, 5)))
+
+    def test_rejects_foreign_framing_and_mismatched_masks(self):
+        image = client_map.SubareaImage(2, 998, 998, 7, 8, 6, TOWN_FILE)
+        with self.assertRaises(client_map.ClientMapError):
+            client_map.read_mask(b"\x00" * 30, image)
+        wrong_size = client_map.SubareaImage(2, 998, 998, 7, 9, 6, TOWN_FILE)
+        with self.assertRaises(client_map.ClientMapError):
+            client_map.read_mask(frame(TOWN_BMP), wrong_size)
+        renamed = client_map.SubareaImage(
+            2, 998, 998, 7, 8, 6, "subarea-0002-0.bmp.lzma"
+        )
+        with self.assertRaises(client_map.ClientMapError):
+            client_map.read_mask(frame(TOWN_BMP), renamed)
+
+
+class MapRegionEndToEndTest(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        blobs = {
+            "data-global/world/world.otbm": fixture_map(),
+            "data-global/world/world-house.xml": HOUSE_XML,
+        }
+        write_files(self.root, convert.build(blobs, self.root))
+        bindings = self.root / validate.ITEM_BINDINGS
+        bindings.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(convert.ITEM_BINDINGS, bindings)
+        data = snapshot_tool.canonical(
+            snapshot_tool.build_snapshot(PAGES, "2026-09-29")
+        )
+        write_files(self.root, {hunting.SNAPSHOT: data})
+        write_files(self.root, hunting.build(data, self.root))
+        self.load(client_files())
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def load(self, files):
+        write_files(self.root, files)
+        self.out = regions.build(self.root)
+        shutil.rmtree(self.root / "content/world/areas/regions", ignore_errors=True)
+        write_files(self.root, self.out)
+
+    def shard_path(self):
+        index = json.loads(
+            (self.root / "content/world/areas/regions/index.json").read_text()
+        )
+        return self.root / index["shards"][0]
+
+    def records(self):
+        return {
+            r["declaration"]["identity"]["key"]: r["declaration"]
+            for r in json.loads(self.shard_path().read_text())["records"]
+        }
+
+    def rewrite(self, mutate):
+        shard = json.loads(self.shard_path().read_text())
+        mutate(shard)
+        self.shard_path().write_text(validate.canonical(shard), encoding="utf-8")
+
+    def errors(self):
+        return validate.validate(self.root)
+
+    def test_fixture_converts_to_valid_records(self):
+        self.assertEqual(self.errors(), [])
+        records = self.records()
+        self.assertEqual(
+            sorted(records),
+            [
+                "oteryn:area.region.empty_reach",
+                "oteryn:area.region.test_land",
+                "oteryn:area.region.test_town",
+                "oteryn:area.region.test_town_subregion",
+            ],
+        )
+        town = records["oteryn:area.region.test_town_subregion"]
+        self.assertEqual(town["area_kind"], "subregion")
+        self.assertEqual(
+            [p["key"] for p in town["parent_regions"]],
+            ["oteryn:area.region.test_land", "oteryn:area.region.test_town"],
+        )
+        footprint = town["footprint"]
+        self.assertEqual(
+            (
+                footprint["min_x"],
+                footprint["min_y"],
+                footprint["max_x"],
+                footprint["max_y"],
+            ),
+            (999, 999, 1004, 1002),
+        )
+        self.assertEqual((footprint["floor"], footprint["tile_count"]), (7, 24))
+        self.assertEqual(footprint["image"]["path"], f"{regions.FILES}/{TOWN_FILE}")
+        self.assertEqual(
+            town["anchor"],
+            {
+                "coordinate_frame": convert.COORDINATE_FRAME,
+                "floor": 7,
+                "x": 1001,
+                "y": 1000,
+            },
+        )
+        city = [
+            {
+                "family": "Area",
+                "key": "oteryn:area.city.test_town",
+                "revision": "definition-r1",
+            }
+        ]
+        self.assertEqual(town["cities"], city)
+        for key in ("oteryn:area.region.test_land", "oteryn:area.region.test_town"):
+            self.assertEqual(records[key]["area_kind"], "region")
+            self.assertEqual(records[key]["cities"], city)
+            self.assertNotIn("footprint", records[key])
+        empty = records["oteryn:area.region.empty_reach"]
+        self.assertEqual({"anchor", "cities", "footprint"} & set(empty), set())
+        binding = json.loads(self.shard_path().read_text())["records"][0][
+            "source_bindings"
+        ][0]
+        self.assertEqual(
+            (binding["identity_namespace"], binding["external_id"]),
+            ("tibia-client/map-area-id", "3"),
+        )
+        summary = json.loads(self.out[regions.SUMMARY])
+        self.assertEqual(summary["records_by_kind"], {"region": 2, "subregion": 2})
+        self.assertEqual(
+            summary["records_with"],
+            {"anchor": 2, "cities": 3, "footprint": 1, "parent_regions": 2},
+        )
+        self.assertEqual(
+            summary["not_imported"],
+            {
+                "area_flag_field": 1,
+                "areas_with_secondary_names": 1,
+                "cities_outside_every_footprint": 0,
+                "cities_with_temple_floor_absent_from_footprints": 0,
+                "map_markers": 1,
+                "minimap_images": 0,
+                "satellite_images": 1,
+                "subregions_without_footprint": 1,
+            },
+        )
+        self.assertEqual(summary["cities"], {"linked": 1, "total": 1})
+
+    def test_conversion_is_deterministic(self):
+        self.assertEqual(regions.build(self.root), self.out)
+
+    def test_renamed_area_keeps_its_key_and_new_area_gets_a_slug(self):
+        areas = list(REGION_AREAS)
+        areas[2] = pb_area(3, "Renamed Reach", 2, [], None, None, ["Old Name"])
+        areas.append(pb_area(5, "Fresh Place", 2, []))
+        areas[0] = pb_area(1, "Test Land", 1, [2, 3, 5], (1000, 1000, 7), 0)
+        self.load(client_files(areas))
+        records = self.records()
+        self.assertEqual(
+            records["oteryn:area.region.empty_reach"]["name"], "Renamed Reach"
+        )
+        self.assertIn("oteryn:area.region.fresh_place", records)
+        self.assertEqual(self.errors(), [])
+
+    def test_new_area_colliding_with_a_committed_key_fails_closed(self):
+        areas = list(REGION_AREAS)
+        areas[0] = pb_area(1, "Test Land", 1, [2, 3, 5], (1000, 1000, 7), 0)
+        areas.append(pb_area(5, "Test Town Subregion", 2, []))
+        with self.assertRaises(convert.ConvertError):
+            self.load(client_files(areas))
+
+    def test_two_regions_with_one_name_fail_closed(self):
+        areas = [*REGION_AREAS, pb_area(5, "Test Land", 1, [3])]
+        with self.assertRaises(convert.ConvertError):
+            self.load(client_files(areas))
+
+    def test_rejects_broken_hierarchies(self):
+        cases = {
+            "orphan subarea": [*REGION_AREAS, pb_area(5, "Lost", 2, [])],
+            "kind without children": [*REGION_AREAS, pb_area(5, "Empty", 1, [])],
+            "child that is a region": [
+                pb_area(1, "Test Land", 1, [2, 3, 4], None),
+                *REGION_AREAS[1:],
+            ],
+            "unknown child": [pb_area(1, "Test Land", 1, [2, 3, 9]), *REGION_AREAS[1:]],
+            "repeated id": [*REGION_AREAS, pb_area(2, "Again", 2, [])],
+            "unknown kind": [*REGION_AREAS, pb_area(5, "Odd", 3, [])],
+            "repeated child": [
+                pb_area(1, "Test Land", 1, [2, 2, 3]),
+                *REGION_AREAS[1:],
+            ],
+        }
+        for label, areas in cases.items():
+            with self.subTest(label), self.assertRaises(convert.ConvertError):
+                self.load(client_files(areas))
+
+    def test_rejects_images_that_do_not_match_the_map_entry_or_manifest(self):
+        with self.assertRaises(client_map.ClientMapError):
+            self.load(client_files(town=bmp32([[1] * 8] * 5)))
+        files = client_files()
+        manifest = json.loads(files[regions.MANIFEST])
+        manifest["files"][1]["sha256"] = "1" * 64
+        files[regions.MANIFEST] = json.dumps(manifest).encode()
+        with self.assertRaises(convert.ConvertError):
+            self.load(files)
+
+    def test_rejects_mask_outside_the_map_extent(self):
+        image = pb_image(0, (2047, 998, 7), TOWN_FILE, 8, 6, pb_field(6, 2))
+        with self.assertRaises(convert.ConvertError):
+            self.load(client_files(images=[image]))
+
+    def test_city_on_another_floor_or_outside_the_mask_is_not_linked(self):
+        image = pb_image(0, (998, 998, 6), TOWN_FILE, 8, 6, pb_field(6, 2))
+        self.load(client_files(images=[image]))
+        summary = json.loads(self.out[regions.SUMMARY])
+        self.assertEqual(summary["cities"]["linked"], 0)
+        self.assertEqual(
+            summary["not_imported"]["cities_with_temple_floor_absent_from_footprints"],
+            1,
+        )
+        image = pb_image(0, (1003, 998, 7), TOWN_FILE, 8, 6, pb_field(6, 2))
+        self.load(client_files(images=[image]))
+        summary = json.loads(self.out[regions.SUMMARY])
+        self.assertEqual(summary["not_imported"]["cities_outside_every_footprint"], 1)
+        self.assertEqual(self.errors(), [])
+
+    def test_rejects_unknown_parent_and_parent_that_is_not_a_region(self):
+        def mutate(shard):
+            for record in shard["records"]:
+                if "parent_regions" in record["declaration"]:
+                    record["declaration"]["parent_regions"][0]["key"] = (
+                        "oteryn:area.region.empty_reach"
+                    )
+
+        self.rewrite(mutate)
+        self.assertTrue(any("is not a region" in e for e in self.errors()))
+
+    def test_rejects_wrong_city_links(self):
+        def mutate(shard):
+            for record in shard["records"]:
+                declaration = record["declaration"]
+                if declaration["area_kind"] == "region":
+                    declaration.pop("cities", None)
+                elif "cities" in declaration:
+                    declaration["cities"][0]["key"] = "oteryn:area.city.nowhere"
+
+        self.rewrite(mutate)
+        errors = self.errors()
+        self.assertTrue(any("is not a City Area" in e for e in errors))
+        self.assertTrue(
+            any("differ from the cities of its subregions" in e for e in errors)
+        )
+
+    def test_rejects_footprint_that_excludes_the_city_temple_or_leaves_the_map(self):
+        def mutate(shard):
+            for record in shard["records"]:
+                footprint = record["declaration"].get("footprint")
+                if footprint:
+                    footprint["min_x"], footprint["max_x"] = 1002, 5000
+                    footprint["tile_count"] = 10**9
+
+        self.rewrite(mutate)
+        errors = self.errors()
+        self.assertTrue(any("temple is outside the footprint" in e for e in errors))
+        self.assertTrue(any("outside the source map extent" in e for e in errors))
+        self.assertTrue(any("does not fit its bounding box" in e for e in errors))
+
+    def test_rejects_edited_image_wrong_counts_and_stray_files(self):
+        image = self.root / f"{regions.FILES}/{TOWN_FILE}"
+        image.write_bytes(image.read_bytes() + b"x")
+        (self.root / "content/world/areas/regions/extra.json").write_text("{}\n")
+        self.rewrite(
+            lambda shard: [
+                r["declaration"].pop("anchor", None) for r in shard["records"]
+            ]
+        )
+        errors = self.errors()
+        self.assertTrue(any("footprint image differs" in e for e in errors))
+        self.assertTrue(any("files other than" in e for e in errors))
+        self.assertTrue(any("capture counts differ" in e for e in errors))
+
+    def test_rejects_binding_revision_and_area_id_problems(self):
+        def mutate(shard):
+            shard["records"][0]["source_bindings"][0]["source_revision"] = "2" * 64
+            shard["records"][1]["source_bindings"][0]["external_id"] = "3"
+
+        self.rewrite(mutate)
+        errors = self.errors()
+        self.assertTrue(any("differs from the pinned map file" in e for e in errors))
+        self.assertTrue(any("is bound twice" in e for e in errors))
+
+    def test_rejects_unknown_area_kind(self):
+        def mutate(shard):
+            shard["records"][0]["declaration"]["area_kind"] = "district"
+
+        self.rewrite(mutate)
+        self.assertTrue(any("schema" in e for e in self.errors()))
+
+    def test_rejects_subregion_without_parents_and_region_with_footprint(self):
+        def mutate(shard):
+            for record in shard["records"]:
+                declaration = record["declaration"]
+                if declaration["area_kind"] == "subregion":
+                    declaration.pop("parent_regions", None)
+                else:
+                    declaration["footprint"] = {"x": 1}
+
+        self.rewrite(mutate)
+        self.assertTrue(any("schema" in e for e in self.errors()))
+
+
+class CommittedRegionsTest(unittest.TestCase):
+    """The committed regions equal the conversion of the committed official client files."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.out = regions.build(convert.ROOT)
+
+    def test_committed_files_are_current(self):
+        for path, data in self.out.items():
+            self.assertEqual((convert.ROOT / path).read_bytes(), data, path)
+
+    def test_known_cities_lie_in_their_named_footprints(self):
+        shard = json.loads(
+            next(data for path, data in self.out.items() if "regions-00000" in path)
+        )
+        records = {r["declaration"]["name"]: r["declaration"] for r in shard["records"]}
+        for name, city in (
+            ("Thais City", "oteryn:area.city.thais"),
+            ("Ab'Dendriel City", "oteryn:area.city.ab_dendriel"),
+        ):
+            self.assertIn(city, [c["key"] for c in records[name]["cities"]])
 
 
 class CommittedContentTest(unittest.TestCase):
