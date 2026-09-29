@@ -4,12 +4,12 @@
 task_id: OTV2-20260929-a12-clarification-d149
 title: "A12 clarifications: D149 and binding evidence"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1245
 base_sha: cf7777d7
 head_sha: null
 final_head_sha: null
@@ -74,10 +74,10 @@ Not applicable to this docs-only task. ITEM-ID-1 carries the identity and migrat
 
 ```yaml
 last_progress: amendment authored
-status: implementing
+status: validating
 branch: claude/gifted-rubin-a0axzx
 head_sha: null
-pr: null
+pr: 1245
 owner_action_required: null
 blocker: null
 next_action: "open the PR, bind it, freeze, request review"
