@@ -859,7 +859,7 @@ DUR/ANL/data-integrity/privacy review remain required for all successors.
 
 ### 39.3 Generic native one-item binding and staged destination admission
 
-> **Amendment (2026-09-29).** `reviews/OTERYN_GAME_A10_CORPSE_CONTAINER_DUR03_AMENDMENT_DECISION_2026-09-29.md` adds a corpse container destination for loot MINT, corpse-entry TRANSFER into a main-backpack entry, and a corpse retire shape for decay (A10, owner decision D121).
+> **Amendment (2026-09-29).** The corpse container rules are those of the D3 decision (`reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md`, the "Corpse container amendment (D3)" paragraph in this section). `reviews/OTERYN_GAME_A10_CORPSE_CONTAINER_DUR03_AMENDMENT_DECISION_2026-09-29.md` is superseded where it differs.
 
 This generic Game specialization records the native semantic bindings needed by
 the B1 allocation on #162. It supplies no production event or implementation

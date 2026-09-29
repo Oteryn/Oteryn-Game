@@ -1,8 +1,17 @@
 # A10 corpse container DUR-03 amendment decision
 
+> **Superseded in part (2026-09-29).** The D3 decision `reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md` (#1198), merged before
+> this record, is authoritative for the loot-rights window mechanism (§4.2 here), the decay and
+> retire shape (§4.3), the resource rows (§4.4), decay timing and the corpse identity (§3). Those
+> parts of this record do not apply. This record keeps only the D121 citation and the party-rights
+> intent: top-damage character now, party rights in a later decision.
+>
+> Everything below is **historical and non-normative**, including the delivery table and the
+> handback: no lane may be allocated from this record, and its retire shape and resource rows must
+> not be implemented. Allocation follows D3 (D3-1 to D3-7).
+
 - Decision: `A10-CORPSE-CONTAINER-DUR03-V1`
-- Status: **CANDIDATE, no new owner decision (§2)**. Acceptance requires exact-head validation,
-  independent review (DUR-03 value and persistence change) and protected integration.
+- Status: **SUPERSEDED IN PART by D3 (#1198)**; historical except the D121 citation and the party-rights intent.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Profile: `Oteryn Reference` (Global Tibia at 2026-09-27, D33)
 - Answers: architect ruling A10, #162 comment 5882274851, to the Combat escalation #162 comment
@@ -176,7 +185,7 @@ Pointer notes are added to §39.1 and §39.3.
 ## 8. Handback
 
 ```yaml
-result: RESOLVED_WITHOUT_NEW_OWNER_DECISION
+result: SUPERSEDED_IN_PART_BY_D3
 source_escalation: "#162 comment 5881365903; ruling 5882274851 (A10)"
 owner_decisions: [D121]   # context: D109, D118; Combat items D111, D112, D113
 amends: docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md   # §39.1-§39.3, corpse container only
@@ -184,10 +193,10 @@ durable_decision_ref: docs/architecture/reviews/OTERYN_GAME_A10_CORPSE_CONTAINER
 resource_values_changed: true   # registered by the Durability allocation; two values UNKNOWN
 production_authority_changed: false
 cross_repository_authority_changed: false
-implementation_may_resume: true   # the Durability child may be allocated after merge
+implementation_may_resume: false   # superseded by D3; allocate from D3 only
 required_fresh_allocation: true
 required_independent_review: "exact-head independent review (DUR-03 corpse parent, retire shape, idempotency, resource rows)"
-implementation_lanes: [Durability, Combat-D3, Content]
+implementation_lanes: []   # allocate from D3 (D3-1 to D3-7)
 required_revalidation:
   - "MINT: corpse on Ground first, then up to 16 entries with parent = corpse; the 17th, or an entry at capacity, is rejected; ordinals are unique and newest first; retry and restart follow D52"
   - "TRANSFER: corpse entry to backpack under D81-D83; guard denies a non-principal inside 10 s and allows anyone after; no corpse_owner state exists"
@@ -197,5 +206,5 @@ remaining_unknowns:
   - 10 second edge quantization (CORPSE-03)
   - corpse and loot MINT commit grouping
   - retire work units and payload
-next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates the Durability child."
+next_action: "none; D3 governs corpse container, window, decay and rows"
 ```

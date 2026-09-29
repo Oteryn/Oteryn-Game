@@ -4,16 +4,16 @@
 task_id: OTV2-20260929-a10-d39-contract-amendments
 title: "A10 corpse container DUR-03 amendment and D39 chest USE GAME-INTERACTION amendment"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1210
 base_sha: 005550daa1bc2ecc9345d07322bc013eddfa3d06
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 25cf3a5adc86da99b59dcd29a35011f5ec30a333
+final_head_sha: 25cf3a5adc86da99b59dcd29a35011f5ec30a333
+final_head_frozen_at: 2026-09-29T07:04Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-29
 updated_at: 2026-09-29
@@ -56,9 +56,9 @@ allocations.
 
 ## Acceptance criteria
 
-- [ ] The amendments are on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The amendments are on an exact frozen head with passing validators.
+- [x] Independent exact-head review.
+- [x] Protected Merge Queue integration.
 
 ## Excluded scope
 
@@ -79,14 +79,24 @@ changed.
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1210 merged through the Merge Queue on 2026-09-29 as `f5db55e3`.
+- Review: one Codex review of `10ec768` (two P2), repaired in `25cf3a5`; the owner decided to merge.
+- Protected-main readback: every owned file is byte-identical to `25cf3a5`, except DUR-03, which
+  also carries #1198 (the D3 corpse decision), merged first.
+- A10 overlaps #1198 D3; D3 is authoritative for the window, decay shape, rows, timing and corpse
+  identity (#162 5886162546). The reconciliation lands in `OTV2-20260929-a9-adr-a10-reconcile`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1210 open
-status: validating
+last_progress: protected-integrated as f5db55e3; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 25cf3a5adc86da99b59dcd29a35011f5ec30a333
 pr: 1210
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1210
+next_action: null
 ```
