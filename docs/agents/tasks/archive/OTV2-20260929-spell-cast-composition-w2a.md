@@ -153,6 +153,20 @@ record_derived_matching_helper:
 - `python3 tools/agents/validate_governance.py`, `python -m unittest discover -s tools/agents/tests` (36) and
   `python3 tools/repository/validate_repository_policy.py`: pass.
 
+### CI repair (after 8c52192a)
+
+- `Merge gate / Server Seam over TCP+TLS` and `Node boot against the real Platform` failed at `stage=resume`: the
+  resume stages still sent CommandIds 6 and 8, but the added cast (command 5) moved the unknown command to 6, so
+  generation 2's command 6 was a replay answered `COMMAND_OUTCOME_EXPIRED` (1020). The server behaved correctly;
+  the test's resume numbering was stale. Fixed in `qualification.rs` only (see Tests).
+- Evidence: the CI job's received frames were compared byte for byte, in a throwaway test, with the expected
+  resume frames: the new expectation (`server_sequence=8`, `next_command_id=7`) matches the accepted and snapshot
+  frames exactly, the old one does not. The full WP5 harness cannot run in the authoring sandbox (the Platform
+  image build has no egress for composer), so the physical seam and node-boot runs are left to CI.
+- After merging main `ed4d79ba`: `cargo fmt --all --check` and `cargo clippy --locked --workspace --all-targets
+  -- -D warnings` pass; `cargo test --locked -p oteryn-game-server` with a local PostgreSQL 17.6: 9416 passed,
+  0 failed, 7 ignored; governance and repository policy validators and `git diff --check` pass.
+
 ## Remaining for W2b
 
 - Character-owned cast facts (vocation, magic level, level from progression) and vitals maxima per SPELL-D5, which
