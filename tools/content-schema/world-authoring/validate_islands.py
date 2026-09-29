@@ -8,7 +8,9 @@ snapshot / ground class / base map pins, page bindings against the snapshot (eve
 page is bound or excluded exactly once), City references (a listed city's temple lies in the
 island's footprint on its floor), footprints and anchors inside the World bounds and floors,
 the anchor inside its footprint and within 5 tiles of the snapshot coordinate (or equal to
-the map correction), archipelago component links, and the capture summary against the records.
+the map correction or to its evidence anchor, `island-evidence-anchors.json`), additional
+components, archipelago component links, `underground` (exactly the components below floor 7)
+and the capture summary against the records.
 It does not re-run the component search; `convert_islands.py --check` does that from the map.
 """
 
@@ -30,12 +32,14 @@ INDEX = f"{DIRECTORY}/index.json"
 SUMMARY = "tools/content-schema/world-authoring/samples/islands-capture-v1.json"
 SNAPSHOT = "imports/tibiawiki/islands/fandom-snapshot-v1.json"
 GROUND_CLASSES = "tools/content-schema/world-authoring/island-ground-classes.json"
+EVIDENCE = "tools/content-schema/world-authoring/island-evidence-anchors.json"
 PLACEMENT_INDEX = "content/world/placements/index.json"
 CITIES = "content/world/areas/cities"
 WORLD_SHARD = "content/world/worlds/worlds-00000-00000.json"
 SHARD_SIZE = 500
 CAP = 400_000
 ANCHOR_RADIUS = 5
+SURFACE = 7
 NAMESPACE = "tibiawiki-fandom/page-id"
 
 
@@ -134,10 +138,16 @@ def inside_world(x: int, y: int, floor: int, bounds: dict, floors: set[int]) -> 
 
 
 def footprints(declaration: dict) -> list[tuple[dict, dict]]:
-    """(anchor, footprint) per component of a record."""
+    """(anchor, footprint) per component of a record, the primary component first."""
     if declaration["area_kind"] == "archipelago":
         return [(c["anchor"], c["footprint"]) for c in declaration["components"]]
-    return [(declaration["anchor"], declaration["footprint"])]
+    return [
+        (declaration["anchor"], declaration["footprint"]),
+        *(
+            (c["anchor"], c["footprint"])
+            for c in declaration.get("additional_components", [])
+        ),
+    ]
 
 
 def check_footprint(
@@ -171,7 +181,12 @@ def near(a: dict, b: dict) -> bool:
 
 
 def validate_records(
-    root: Path, records: list[dict], snapshot: dict, summary: dict, errors: list[str]
+    root: Path,
+    records: list[dict],
+    snapshot: dict,
+    summary: dict,
+    evidence: dict,
+    errors: list[str],
 ) -> None:
     pages = {str(p["pageid"]): p for p in snapshot["pages"]}
     by_title = {p["title"]: p for p in snapshot["pages"]}
@@ -247,8 +262,27 @@ def validate_records(
         if len(facts.get("wiki_cities", [])) > len(wiki_names):
             errors.append(f"{key}: more wiki cities than the snapshot names")
         parts = footprints(declaration)
-        for anchor, box in parts:
+        entry = evidence.get(primary["pageid"])
+        anchored = facts.get("anchor_origin") == "evidence_anchor"
+        if anchored != (entry is not None) or anchored != ("anchor_source" in facts):
+            errors.append(f"{key}: evidence anchor differs from the evidence file")
+        if entry is not None:
+            expected = (entry["x"], entry["y"], entry["floor"])
+            got = (parts[0][0]["x"], parts[0][0]["y"], parts[0][0]["floor"])
+            if got != expected or facts.get("anchor_source") != entry["anchor_source"]:
+                errors.append(f"{key}: anchor differs from its evidence anchor")
+            if facts.get("component_note") != entry.get("note"):
+                errors.append(f"{key}: component_note differs from the evidence file")
+        elif "component_note" in facts:
+            errors.append(f"{key}: component_note needs an evidence anchor")
+        if declaration.get("underground", False) != (
+            parts[0][1]["floor"] > SURFACE
+        ) or any(box["floor"] > SURFACE for _, box in parts[1:]):
+            errors.append(f"{key}: underground differs from the footprint floors")
+        for number, (anchor, box) in enumerate(parts):
             check_footprint(key, anchor, box, bounds, floors, errors)
+            if number == 0 and anchored:
+                continue
             if corrected:
                 fix = primary["map_correction"]
                 if (anchor["x"], anchor["y"], anchor["floor"]) != (
@@ -348,6 +382,9 @@ def validate_summary(
         errors.append("Area.Island: excluded list must be sorted by title")
     declarations = [r["declaration"] for r in records]
     expected = {
+        "additional_components": sum(
+            "additional_components" in d for d in declarations
+        ),
         "also_known_as": sum("also_known_as" in d for d in declarations),
         "anchor_corrected": sum(
             "anchor_corrected_from_wiki" in d for d in declarations
@@ -358,6 +395,11 @@ def validate_summary(
         ),
         "components": sum(len(footprints(d)) for d in declarations),
         "event_only": sum("event_only" in d for d in declarations),
+        "evidence_anchored": sum(
+            d["source_facts"].get("anchor_origin") == "evidence_anchor"
+            for d in declarations
+        ),
+        "underground": sum("underground" in d for d in declarations),
         "wiki_cities": sum("wiki_cities" in d["source_facts"] for d in declarations),
     }
     got = {k: v for k, v in summary["records_with"].items() if k in expected}
@@ -383,16 +425,27 @@ def validate(root: Path) -> list[str]:
     structural("capture_summary", SUMMARY, summary, errors)
     snapshot = load(root, SNAPSHOT)
     structural("snapshot", SNAPSHOT, snapshot, errors)
+    evidence = load(root, EVIDENCE)
+    structural("evidence_anchors", EVIDENCE, evidence, errors)
     if errors:
         return errors
     if (root / SUMMARY).read_text(encoding="utf-8") != canonical(summary):
         errors.append(f"{SUMMARY}: not canonical JSON")
     if (root / SNAPSHOT).read_text(encoding="utf-8") != canonical(snapshot):
         errors.append(f"{SNAPSHOT}: not canonical JSON")
+    if (root / EVIDENCE).read_text(encoding="utf-8") != canonical(evidence):
+        errors.append(f"{EVIDENCE}: not canonical JSON")
+    titles = {p["title"]: p["pageid"] for p in snapshot["pages"]}
+    anchors = evidence["anchors"]
+    if [a["title"] for a in anchors] != sorted(a["title"] for a in anchors) or any(
+        titles.get(a["title"]) != a["pageid"] for a in anchors
+    ):
+        errors.append(f"{EVIDENCE}: anchors must be sorted snapshot pages")
     source = index["source"]
     for name, path in (
         ("snapshot", SNAPSHOT),
         ("ground_classes", GROUND_CLASSES),
+        ("evidence_anchors", EVIDENCE),
         ("base_map", PLACEMENT_INDEX),
     ):
         if source[name] != {"path": path, "sha256": sha256(root, path)}:
@@ -401,7 +454,9 @@ def validate(root: Path) -> list[str]:
         errors.append(f"{SUMMARY}: search parameters differ from the documented ones")
     if summary["snapshot_pages"] != len(snapshot["pages"]):
         errors.append(f"{SUMMARY}: snapshot_pages differs from the snapshot")
-    validate_records(root, records, snapshot, summary, errors)
+    validate_records(
+        root, records, snapshot, summary, {a["pageid"]: a for a in anchors}, errors
+    )
     validate_summary(records, summary, index, errors)
     return errors
 

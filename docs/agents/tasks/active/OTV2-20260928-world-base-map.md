@@ -87,16 +87,22 @@ sha256-pinned and `OtsHypothesisOnly`.
       item key, with the engine mapping documented and `occurrences_on_base_map` counted
       from the region files (329 types, 26,919 occurrences). Ladders up, rope spots, sewer
       grates and tool holes are scripted uses and are listed as excluded, not invented.
-- [x] `Area.Island` holds only islands the base map confirms (owner rule): 52 records
-      (48 island, 3 archipelago, 1 continent; 2 event-only) computed by
+- [x] `Area.Island` holds only islands the base map confirms (owner rule): 59 records
+      (55 island, 3 archipelago, 1 continent; 2 event-only; 1 underground) computed by
       `convert_islands.py --check` from the committed region files, the pinned TibiaWiki
-      snapshot (`imports/tibiawiki/islands/fandom-snapshot-v1.json`, 67 candidate pages) and
-      `island-ground-classes.json` (water and lava ids from the pinned `items.xml` names).
-      Each record has a map-computed footprint and anchor, the cities whose temple lies in
-      the component, page-id bindings and the wiki evidence sentence. Percht Island merges
-      into Orcsoberfest Island; Fibula uses the map-corrected 9,196 tile island
-      (`anchor_corrected_from_wiki`). 14 candidates are excluded with a reason
-      (9 without coordinates, 3 part of the landmass, 2 event-only not on the map) in
+      snapshot (`imports/tibiawiki/islands/fandom-snapshot-v1.json`, 67 candidate pages),
+      `island-ground-classes.json` (water and lava ids from the pinned `items.xml` names) and
+      `island-evidence-anchors.json` (owner-approved start tiles from pinned CrystalServer
+      NPC/monster spawns or a committed teleport destination for pages without a usable wiki
+      coordinate: Tutorial Island, Isle of Evil, Rascacoon, Ingol, Oskayaat, Isle of the
+      Mists, Robson's Isle (floor 14, `underground`) and the Newhaven main island; each
+      record keeps `anchor_source`). Each record has a map-computed footprint and anchor, the
+      cities whose temple lies in the component, page-id bindings and the wiki evidence
+      sentence. Percht Island merges into Orcsoberfest Island; Fibula uses the map-corrected
+      9,196 tile island (`anchor_corrected_from_wiki`); Newhaven is one island of two
+      components (9,189 tile main island, 50 tile temple islet in `additional_components`;
+      no committed teleport links them). 7 candidates are excluded with a reason
+      (3 without coordinates, 2 part of the landmass, 2 event-only not on the map) in
       `samples/islands-capture-v1.json`. `validate_islands.py` and `test_islands.py` pass.
 - [ ] Required checks pass on the frozen PR head.
 

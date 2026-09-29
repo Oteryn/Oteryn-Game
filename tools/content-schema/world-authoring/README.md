@@ -114,15 +114,47 @@ map or the wiki changes.
   island west of it, named by the Meluna page (Ferryman Kamil in Fibula, 32153,32456,7), with
   `anchor_corrected_from_wiki: true`. The converter refuses a correction when the wiki
   coordinate is itself an island.
-- Result: 52 records (48 island, 3 archipelago, 1 continent; 2 event-only) and 14 excluded
-  pages (9 without coordinates, 3 part of the landmass, 2 event-only not on the map), all
-  listed with their reasons in `samples/islands-capture-v1.json`. Tiny footprints such as
-  Newhaven (50) and Laguna Islands (97) are confirmed and kept.
-- `validate_islands.py` checks the pins, snapshot bindings (every snapshot page bound or
-  excluded exactly once), City references and temple containment, footprints and anchors
-  inside the World bounds, the anchor inside its footprint and within 5 tiles of the
-  snapshot coordinate, component links and the capture summary. It does not re-run the
-  search; `convert_islands.py --check` does.
+- **Evidence anchors** (owner-approved): a page without a usable wiki coordinate may be
+  anchored by `island-evidence-anchors.json`, pinned in the index like the ground classes. An
+  entry names the snapshot page, the anchor tile and its source: a pinned CrystalServer
+  `world-npc.xml` / `world-monster.xml` spawn (`anchor_source` `crystalserver-npc:<name>` or
+  `crystalserver-monster:<name>`; the spawn position is centre plus entry offset, used on the
+  anchor floor) or a committed teleport destination (`teleport:<key>`). The converter requires
+  the anchor to be a land tile of an enclosed component, the spawn xy to equal the anchor,
+  the teleport `to` to equal it and `underground` to be set exactly below floor 7; with
+  `--crystal-root` it also checks the XML sha256 values and that each spawn exists.
+  `use: only` replaces the wiki coordinates (which must not be an island themselves);
+  `use: primary` puts the anchor's component first and keeps the wiki coordinates as further
+  components. The record carries `source_facts.anchor_origin` `evidence_anchor` and
+  `anchor_source`; `underground: true` marks a component below floor 7.
+  Anchors: Tutorial Island (Santiago, 32035,32272; spawn floor 6, anchor floor 7), Isle of
+  Evil (Evil Mastermind spawn 32752,31458), Rascacoon (Pirat Bombardier spawn
+  33839,31223), Ingol (Hawkhurst Ingol 33710,32602), Oskayaat (Tonar Oskayaat 33068,32917),
+  Isle of the Mists (destination of the committed teleport at 32831,32294,
+  32858,32336), Robson's Isle (Lunch 32527,32029 on floor 14, `underground`, the enclosed
+  2,080 tile water-bounded floor-14 component). Not imported: Dwacatra (its floor-13/14
+  pockets are void-bounded, no enclosure), Travora and Temple of Light (no map tile),
+  Redbone Castle (inside Draconia), Isle of Merriment (test server only).
+- **Newhaven** is one island of two components. The wiki coordinate (city temple) lies on a
+  50 tile temple islet; the island itself is the 9,189 tile component west of it. Ground
+  between them is water (no bridge, pier or dock), and the owner states they are joined by a
+  teleport, which no committed teleport in `content/world/transitions/` represents. The
+  primary anchor is the Newhaven guard Gustavo (32560,32488, `use: primary`), the islet is
+  `additional_components[0]` (anchor at the temple) and `tile_count` in the capture is the
+  sum (9,239). No connection is recorded because none is committed; add a
+  `connected_by` link when the teleport enters the map.
+- Result: 59 records (55 island, 3 archipelago, 1 continent; 2 event-only; 1 underground;
+  8 evidence-anchored; 1 with an additional component) and 7 excluded pages (3 without
+  coordinates, 2 part of the landmass, 2 event-only not on the map), all listed with their
+  reasons in `samples/islands-capture-v1.json`. Tiny footprints such as Laguna Islands (97)
+  are confirmed and kept.
+- `validate_islands.py` checks the pins (snapshot, ground classes, evidence anchors, base
+  map), snapshot bindings (every snapshot page bound or excluded exactly once), City
+  references and temple containment, footprints and anchors inside the World bounds, the
+  anchor inside its footprint and within 5 tiles of the snapshot coordinate (or equal to
+  its map correction or evidence anchor), additional components, `underground` (exactly the
+  components below floor 7), component links and the capture summary. It does not re-run
+  the search; `convert_islands.py --check` does.
 
 ## Regions (official Tibia 15.30 client map)
 

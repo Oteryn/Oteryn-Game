@@ -8,7 +8,10 @@ else is excluded and counted with its reason. Reads, all offline:
 - `imports/tibiawiki/islands/fandom-snapshot-v1.json` (`fandom_island_snapshot.py`),
 - the `WorldPlacement.Base` region files (`content/world/placements/`),
 - `island-ground-classes.json` (the water and lava ground item ids, derived from the pinned
-  CrystalServer `items.xml` names) and the committed City Areas,
+  CrystalServer `items.xml` names), the committed City Areas and the committed teleports,
+- `island-evidence-anchors.json`: for wiki pages without a usable coordinate, a start tile that
+  a pinned CrystalServer NPC or monster spawn (or a committed teleport destination) places on
+  an enclosed component. `--crystal-root` re-checks each spawn against the pinned XML files.
 
 and writes content/world/areas/islands/ plus `samples/islands-capture-v1.json`.
 
@@ -18,7 +21,7 @@ Components are found by a bounded 4-neighbour breadth-first search over land til
 floor (a tile is land unless its first, ground, item is water or lava, or the tile is absent).
 The search stops at 400,000 tiles: a component that large is the mainland and is excluded as
 `part_of_landmass`. `--crystal-root` additionally re-derives the ground classes from the pinned
-`items.xml` and fails or rewrites when they differ.
+`items.xml` and fails or rewrites when they differ, and verifies the evidence spawns.
 """
 
 from __future__ import annotations
@@ -42,10 +45,17 @@ HERE = base.HERE
 SNAPSHOT = "imports/tibiawiki/islands/fandom-snapshot-v1.json"
 SUMMARY = "tools/content-schema/world-authoring/samples/islands-capture-v1.json"
 GROUND_CLASSES = "tools/content-schema/world-authoring/island-ground-classes.json"
+EVIDENCE = "tools/content-schema/world-authoring/island-evidence-anchors.json"
+TELEPORTS = "content/world/transitions"
 PLACEMENT_INDEX = "content/world/placements/index.json"
 GENERATOR = "tools/content-schema/world-authoring/convert_islands.py"
 SNAPSHOT_SCHEMA = "OTERYN_TIBIAWIKI_FANDOM_ISLANDS_SNAPSHOT/v1"
 GROUND_SCHEMA = "OTERYN_ISLAND_GROUND_CLASSES/v1"
+EVIDENCE_SCHEMA = "OTERYN_ISLAND_EVIDENCE_ANCHORS/v1"
+SPAWN_KINDS = {
+    "data-global/world/world-monster.xml": "crystalserver-monster",
+    "data-global/world/world-npc.xml": "crystalserver-npc",
+}
 SUMMARY_SCHEMA = "OTERYN_ISLANDS_SOURCE_CAPTURE/v1"
 FAMILY = "Area.Island"
 KEY_PREFIX = "oteryn:area.island."
@@ -316,6 +326,107 @@ class Components:
 
 
 # --------------------------------------------------------------------------------------------
+# Evidence anchors (start tiles for pages without a wiki coordinate)
+# --------------------------------------------------------------------------------------------
+
+
+def committed_teleports(root: Path) -> dict[str, dict]:
+    """Teleport key -> declaration for every committed `Transition.Teleport`."""
+    directory = root / TELEPORTS
+    index = json.loads((directory / "index.json").read_text(encoding="utf-8"))
+    found = {}
+    for shard in index["shards"]:
+        for record in json.loads((root / shard).read_text(encoding="utf-8"))["records"]:
+            found[record["declaration"]["identity"]["key"]] = record["declaration"]
+    return found
+
+
+def load_evidence(data: bytes, snapshot: dict, root: Path) -> dict[str, dict]:
+    """Title -> anchor entry; every entry is tied to its snapshot page and its evidence."""
+    document = json.loads(data)
+    if document.get("schema") != EVIDENCE_SCHEMA:
+        raise ConvertError("evidence anchor file schema differs")
+    pages = {row["title"]: row for row in snapshot["pages"]}
+    teleports = None
+    found: dict[str, dict] = {}
+    for entry in document["anchors"]:
+        title = entry["title"]
+        page = pages.get(title)
+        if page is None or page["pageid"] != entry["pageid"] or title in found:
+            raise ConvertError(
+                f"{title}: evidence anchor is not a unique snapshot page"
+            )
+        if entry.get("underground", False) != (entry["floor"] > 7):
+            raise ConvertError(
+                f"{title}: underground must be set exactly below floor 7"
+            )
+        source = entry["anchor_source"]
+        if "spawn" in entry:
+            spawn = entry["spawn"]
+            expected = f"{SPAWN_KINDS[spawn['file']]}:{spawn['name']}"
+            if source != expected or (spawn["x"], spawn["y"]) != (
+                entry["x"],
+                entry["y"],
+            ):
+                raise ConvertError(f"{title}: anchor differs from its spawn evidence")
+        else:
+            teleports = teleports or committed_teleports(root)
+            key = source.removeprefix("teleport:")
+            destination = teleports.get(key, {}).get("to")
+            if not destination or (
+                destination["x"],
+                destination["y"],
+                destination["floor"],
+            ) != (entry["x"], entry["y"], entry["floor"]):
+                raise ConvertError(f"{title}: anchor is not the destination of {key}")
+        found[title] = entry
+    return found
+
+
+def spawn_positions(xml: bytes) -> set[tuple[str, int, int, int]]:
+    """(name, x, y, z) of every `<npc>` or `<monster>` entry: centre plus the entry offset."""
+    positions = set()
+    for group in ElementTree.fromstring(xml):
+        cx, cy = int(group.attrib["centerx"]), int(group.attrib["centery"])
+        for member in group:
+            positions.add(
+                (
+                    member.attrib["name"],
+                    cx + int(member.attrib["x"]),
+                    cy + int(member.attrib["y"]),
+                    int(member.attrib["z"]),
+                )
+            )
+    return positions
+
+
+def verify_spawns(crystal_root: Path, data: bytes) -> None:
+    """Check the pinned XML digests and that every evidence spawn is present in them."""
+    document = json.loads(data)
+    positions = {}
+    for row in document["source"]["files"]:
+        xml = (crystal_root / row["path"]).read_bytes()
+        if hashlib.sha256(xml).hexdigest() != row["sha256"]:
+            raise ConvertError(f"{row['path']}: sha256 differs from the pinned source")
+        positions[row["path"]] = spawn_positions(xml)
+    if document["source"]["revision"] != base.SOURCE["revision"]:
+        raise ConvertError("evidence source revision differs from the pinned source")
+    for entry in document["anchors"]:
+        spawn = entry.get("spawn")
+        if (
+            spawn
+            and (
+                spawn["name"],
+                spawn["x"],
+                spawn["y"],
+                spawn["z"],
+            )
+            not in positions[spawn["file"]]
+        ):
+            raise ConvertError(f"{entry['title']}: spawn is not in {spawn['file']}")
+
+
+# --------------------------------------------------------------------------------------------
 # Snapshot
 # --------------------------------------------------------------------------------------------
 
@@ -361,13 +472,19 @@ def city_index(root: Path) -> dict[str, dict]:
     return cities
 
 
-def source(snapshot_bytes: bytes, snapshot: dict, root: Path, ground: bytes) -> dict:
+def source(
+    snapshot_bytes: bytes, snapshot: dict, root: Path, ground: bytes, evidence: bytes
+) -> dict:
     return {
         "base_map": {
             "path": PLACEMENT_INDEX,
             "sha256": hashlib.sha256((root / PLACEMENT_INDEX).read_bytes()).hexdigest(),
         },
         "evidence": "Derived",
+        "evidence_anchors": {
+            "path": EVIDENCE,
+            "sha256": hashlib.sha256(evidence).hexdigest(),
+        },
         "fetched_at": snapshot["fetched_at"],
         "ground_classes": {
             "path": GROUND_CLASSES,
@@ -388,8 +505,15 @@ def source(snapshot_bytes: bytes, snapshot: dict, root: Path, ground: bytes) -> 
 # --------------------------------------------------------------------------------------------
 
 
-def evaluate(row: dict, components: Components, cities: dict) -> dict:
-    """Resolve one page to its enclosed components, or to the reason it has none."""
+def evaluate(
+    row: dict, components: Components, cities: dict, anchors: dict | None = None
+) -> dict:
+    """Resolve one page to its enclosed components, or to the reason it has none.
+
+    An evidence anchor (`use: only`) replaces the wiki coordinates, which must not themselves
+    lie on an island; `use: primary` puts the anchor's component first and keeps the wiki
+    coordinates, so a page can own two components (Newhaven: island, then temple islet).
+    """
     title = row["title"]
     results = []
     correction = row.get("map_correction")
@@ -413,10 +537,37 @@ def evaluate(row: dict, components: Components, cities: dict) -> dict:
                 f"{title}: the wiki coordinate is an island, no correction"
             )
         coordinates = [{**correction, "origin": "map_correction"}]
+    entry = (anchors or {}).get(title)
+    if entry:
+        anchor = {
+            "floor": entry["floor"],
+            "origin": "evidence_anchor",
+            "x": entry["x"],
+            "y": entry["y"],
+        }
+        if entry["use"] == "only":
+            for coordinate in coordinates:
+                wiki = components.resolve(
+                    coordinate["x"], coordinate["y"], coordinate["floor"]
+                )
+                if wiki["verdict"] == "island":
+                    raise ConvertError(
+                        f"{title}: the wiki coordinate is an island, no evidence anchor"
+                    )
+            coordinates = [anchor]
+        else:
+            coordinates = [anchor, *coordinates]
     for coordinate in coordinates:
         found = components.resolve(
             coordinate["x"], coordinate["y"], coordinate["floor"]
         )
+        if coordinate["origin"] == "evidence_anchor" and (
+            found["verdict"] != "island"
+            or found["anchor"] != (coordinate["x"], coordinate["y"])
+        ):
+            raise ConvertError(
+                f"{title}: evidence anchor is not a land tile of an island"
+            )
         results.append({**found, "coordinate": coordinate})
     enclosed = []
     for result in results:
@@ -480,10 +631,13 @@ def resolve_relations(evaluated: dict[str, dict]) -> dict[str, list[dict]]:
             continue
         if item["row"]["wiki_class"] == "archipelago" and len(item["results"]) > 1:
             continue
-        component = item["results"][0]["component"]
-        if component in owners:
-            raise ConvertError(f"{title} shares a component with {owners[component]}")
-        owners[component] = title
+        for result in item["results"]:
+            component = result["component"]
+            if component in owners:
+                raise ConvertError(
+                    f"{title} shares a component with {owners[component]}"
+                )
+            owners[component] = title
     return aliases
 
 
@@ -494,6 +648,7 @@ def records_for(
     cities: dict,
     root: Path,
     counts: Counter,
+    anchors: dict,
 ) -> list[dict]:
     owners = {
         title: item
@@ -511,14 +666,16 @@ def records_for(
         row = item["row"]
         merged = [row, *(a["row"] for a in aliases.get(title, []))]
         key = keys[str(row["pageid"])]
-        results = sorted(
-            item["results"],
-            key=lambda r: (
-                components.found[r["component"]]["min_x"],
-                components.found[r["component"]]["min_y"],
-            ),
-        )
+        results = item["results"]
         is_archipelago = row["wiki_class"] == "archipelago" and len(results) > 1
+        if is_archipelago:
+            results = sorted(
+                results,
+                key=lambda r: (
+                    components.found[r["component"]]["min_x"],
+                    components.found[r["component"]]["min_y"],
+                ),
+            )
         kind = "archipelago" if is_archipelago else row.get("kind_hint", "island")
         primary = results[0] if not is_archipelago else None
         declaration: dict = {
@@ -569,7 +726,13 @@ def records_for(
         else:
             declaration["anchor"] = rows_out[0]["anchor"]
             declaration["footprint"] = rows_out[0]["footprint"]
-            counts["components"] += 1
+            counts["components"] += len(rows_out)
+            if len(rows_out) > 1:
+                declaration["additional_components"] = [
+                    {"anchor": r["anchor"], "footprint": r["footprint"]}
+                    for r in rows_out[1:]
+                ]
+                counts["additional_components"] += 1
         facts: dict = {"evidence": row["evidence"], "wiki_class": row["wiki_class"]}
         if "evidence_page" in row:
             facts["evidence_page"] = row["evidence_page"]
@@ -593,7 +756,16 @@ def records_for(
         if primary is not None:
             coordinate = primary["coordinate"]
             facts["anchor_origin"] = coordinate["origin"]
-            if "map_correction" in row:
+            if coordinate["origin"] == "evidence_anchor":
+                entry = anchors[title]
+                facts["anchor_source"] = entry["anchor_source"]
+                if "note" in entry:
+                    facts["component_note"] = entry["note"]
+                if entry.get("underground"):
+                    declaration["underground"] = True
+                    counts["underground"] += 1
+                counts["evidence_anchored"] += 1
+            elif "map_correction" in row:
                 declaration["anchor_corrected_from_wiki"] = True
                 wiki = row["coordinates"][0]
                 facts["source_coordinate"] = coordinate_position(wiki)
@@ -638,6 +810,8 @@ def build(
 ) -> dict[str, bytes]:
     snapshot = load_snapshot(snapshot_bytes)
     ground = (root / GROUND_CLASSES).read_bytes()
+    evidence = (root / EVIDENCE).read_bytes()
+    anchors = load_evidence(evidence, snapshot, root)
     if cls is None:
         water, lava = load_ground_classes(ground)
         cls = GroundMap(root, water, lava).cls
@@ -645,12 +819,13 @@ def build(
     cap = CAP if cap is None else cap
     components = Components(cls, cap)
     evaluated = {
-        row["title"]: evaluate(row, components, cities) for row in snapshot["pages"]
+        row["title"]: evaluate(row, components, cities, anchors)
+        for row in snapshot["pages"]
     }
     aliases = resolve_relations(evaluated)
     counts: Counter = Counter()
-    records = records_for(evaluated, aliases, components, cities, root, counts)
-    pinned = source(snapshot_bytes, snapshot, root, ground)
+    records = records_for(evaluated, aliases, components, cities, root, counts, anchors)
+    pinned = source(snapshot_bytes, snapshot, root, ground, evidence)
     excluded = [
         {
             **({"detail": item["detail"]} if "detail" in item else {}),
@@ -677,6 +852,7 @@ def build(
         "included": included,
         "parameters": {"anchor_radius": ANCHOR_RADIUS, "component_cap": cap},
         "records_with": {
+            "additional_components": counts["additional_components"],
             "also_known_as": counts["also_known_as"],
             "anchor_corrected": counts["anchor_corrected"],
             "anchor_moved": counts["anchor_moved"],
@@ -684,6 +860,8 @@ def build(
             "component_island_links": counts["component_island_links"],
             "components": counts["components"],
             "event_only": counts["event_only"],
+            "evidence_anchored": counts["evidence_anchored"],
+            "underground": counts["underground"],
             "wiki_cities": counts["wiki_cities"],
         },
         "schema": SUMMARY_SCHEMA,
@@ -717,12 +895,14 @@ def main() -> int:
     parser.add_argument(
         "--crystal-root",
         type=Path,
-        help="pinned crystalserver checkout: re-derive the ground classes from items.xml",
+        help="pinned crystalserver checkout: re-derive the ground classes from items.xml "
+        "and verify the evidence spawns",
     )
     args = parser.parse_args()
     try:
         extra: dict[str, bytes] = {}
         if args.crystal_root:
+            verify_spawns(args.crystal_root, (ROOT / EVIDENCE).read_bytes())
             derived, stale = verify_ground_classes(args.crystal_root, ROOT)
             if stale:
                 extra[GROUND_CLASSES] = derived

@@ -204,8 +204,48 @@ def snapshot_bytes(pages: list[dict]) -> bytes:
     )
 
 
+NPC_XML = "data-global/world/world-npc.xml"
+MONSTER_XML = "data-global/world/world-monster.xml"
+
+
+def anchor_entry(pageid: int, title: str, x: int, y: int, **extra) -> dict:
+    entry = {
+        "anchor_source": "crystalserver-npc:Guide",
+        "floor": FLOOR,
+        "pageid": pageid,
+        "spawn": {"file": NPC_XML, "name": "Guide", "x": x, "y": y, "z": FLOOR},
+        "title": title,
+        "use": "only",
+        "x": x,
+        "y": y,
+    }
+    entry.update(extra)
+    return entry
+
+
+def evidence_bytes(anchors: list[dict]) -> bytes:
+    return canonical(
+        {
+            "anchors": sorted(anchors, key=lambda a: a["title"]),
+            "schema": convert.EVIDENCE_SCHEMA,
+            "selection": "test",
+            "source": {
+                "files": [
+                    {"path": MONSTER_XML, "sha256": "1" * 64},
+                    {"path": NPC_XML, "sha256": "2" * 64},
+                ],
+                "repository": "zimbadev/crystalserver",
+                "revision": "0" * 40,
+            },
+        }
+    )
+
+
 def make_root(
-    root: Path, pages: list[dict] | None = None, tiles: dict | None = None
+    root: Path,
+    pages: list[dict] | None = None,
+    tiles: dict | None = None,
+    anchors: list[dict] | None = None,
 ) -> bytes:
     write_regions(root, tiles or make_tiles())
     write(
@@ -219,6 +259,8 @@ def make_root(
     )
     write_cities(root)
     write_world(root)
+    (root / convert.EVIDENCE).parent.mkdir(parents=True, exist_ok=True)
+    (root / convert.EVIDENCE).write_bytes(evidence_bytes(anchors or []))
     data = snapshot_bytes(pages if pages is not None else standard_pages())
     (root / convert.SNAPSHOT).parent.mkdir(parents=True, exist_ok=True)
     (root / convert.SNAPSHOT).write_bytes(data)
@@ -238,7 +280,8 @@ def write_family(root: Path, data: bytes) -> dict[str, bytes]:
 
 
 def records(out: dict) -> dict[str, dict]:
-    shard = json.loads(out["content/world/areas/islands/islands-00000-00009.json"])
+    (path,) = [k for k in out if k.startswith("content/world/areas/islands/islands-")]
+    shard = json.loads(out[path])
     return {r["declaration"]["name"]: r["declaration"] for r in shard["records"]}
 
 
@@ -485,6 +528,149 @@ class ConverterTest(unittest.TestCase):
         )
         self.assertTrue(capped)
         self.assertEqual(len(tiles), 20)
+
+
+def anchor_tiles() -> dict:
+    tiles = make_tiles()
+    paint(tiles, 50, 55, 51, 56, LAND_ID)  # Q: 4 tiles, no wiki coordinate
+    paint(tiles, 60, 55, 61, 56, LAND_ID)  # R: 4 tiles, the wiki coordinate
+    paint(tiles, 75, 55, 76, 57, LAND_ID)  # S: 6 tiles, the evidence anchor
+    return tiles
+
+
+def anchor_pages() -> list[dict]:
+    return [
+        page(1, "Alpha", [(21, 21)]),
+        page(2, "Quill"),  # no wiki coordinate
+        page(3, "Rho", [(60, 55)]),  # wiki coordinate on R, evidence anchor on S
+        page(4, "Sigma", [(65, 25)]),  # wiki coordinate on the landmass
+    ]
+
+
+class EvidenceAnchorTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.addCleanup(self.tmp.cleanup)
+
+    def build(self, anchors: list[dict], pages=None) -> dict:
+        data = make_root(self.root, pages or anchor_pages(), anchor_tiles(), anchors)
+        return build(self.root, data)
+
+    def test_anchor_replaces_missing_and_landmass_coordinates(self) -> None:
+        out = self.build(
+            [
+                anchor_entry(2, "Quill", 50, 55),
+                anchor_entry(4, "Sigma", 76, 57, use="only"),
+            ]
+        )
+        found = records(out)
+        quill = found["Quill"]
+        self.assertEqual(quill["anchor"], pos(50, 55))
+        self.assertEqual(quill["footprint"]["tile_count"], 4)
+        facts = quill["source_facts"]
+        self.assertEqual(facts["anchor_origin"], "evidence_anchor")
+        self.assertEqual(facts["anchor_source"], "crystalserver-npc:Guide")
+        self.assertEqual(found["Sigma"]["footprint"]["tile_count"], 6)
+        summary = json.loads(out[convert.SUMMARY])
+        self.assertEqual(summary["records_with"]["evidence_anchored"], 2)
+        self.assertEqual(summary["excluded"], [])
+
+    def test_primary_anchor_puts_a_second_component_behind_it(self) -> None:
+        out = self.build([anchor_entry(3, "Rho", 75, 55, use="primary", note="joined")])
+        rho = records(out)["Rho"]
+        self.assertEqual(rho["anchor"], pos(75, 55))
+        self.assertEqual(rho["footprint"]["tile_count"], 6)
+        (extra,) = rho["additional_components"]
+        self.assertEqual(extra["anchor"], pos(60, 55))
+        self.assertEqual(extra["footprint"]["tile_count"], 4)
+        self.assertEqual(rho["source_facts"]["component_note"], "joined")
+        summary = json.loads(out[convert.SUMMARY])
+        self.assertEqual(summary["included"][-1]["tile_count"], 10)
+        self.assertEqual(summary["included"][-1]["components"], 2)
+
+    def test_underground_flag_follows_the_floor(self) -> None:
+        with self.assertRaises(ConvertError):
+            self.build([anchor_entry(2, "Quill", 50, 55, underground=True)])
+
+    def test_anchor_must_be_a_land_tile_of_an_island(self) -> None:
+        with self.assertRaises(ConvertError):
+            self.build([anchor_entry(2, "Quill", 52, 55)])  # water beside Q
+        with self.assertRaises(ConvertError):
+            self.build([anchor_entry(2, "Quill", 65, 25)])  # landmass
+
+    def test_only_refuses_a_wiki_coordinate_on_an_island(self) -> None:
+        with self.assertRaises(ConvertError):
+            self.build([anchor_entry(3, "Rho", 75, 55)])
+
+    def test_anchor_must_match_its_spawn_and_page(self) -> None:
+        bad = anchor_entry(2, "Quill", 50, 55)
+        bad["spawn"]["x"] = 51
+        with self.assertRaises(ConvertError):
+            self.build([bad])
+        with self.assertRaises(ConvertError):
+            self.build([anchor_entry(9, "Quill", 50, 55)])
+        with self.assertRaises(ConvertError):
+            self.build(
+                [
+                    anchor_entry(
+                        2, "Quill", 50, 55, anchor_source="crystalserver-npc:Other"
+                    )
+                ]
+            )
+
+    def test_teleport_anchor_must_be_a_committed_destination(self) -> None:
+        directory = "content/world/transitions"
+        key = "oteryn:transition.teleport.x1_y1_z7"
+        shard = f"{directory}/teleports-00000-00000.json"
+        write(
+            self.root,
+            shard,
+            {
+                "records": [
+                    {"declaration": {"identity": {"key": key}, "to": pos(50, 55)}}
+                ]
+            },
+        )
+        write(self.root, f"{directory}/index.json", {"shards": [shard]})
+        entry = anchor_entry(2, "Quill", 50, 55, anchor_source=f"teleport:{key}")
+        del entry["spawn"]
+        out = self.build([entry])
+        self.assertEqual(
+            records(out)["Quill"]["source_facts"]["anchor_source"], f"teleport:{key}"
+        )
+        entry["x"] = 51
+        with self.assertRaises(ConvertError):
+            self.build([entry])
+
+    def test_spawn_positions_add_the_centre_offset(self) -> None:
+        xml = (
+            b'<npcs><npc centerx="10" centery="20" centerz="7" radius="1">'
+            b'<npc name="A" x="2" y="-1" z="6" spawntime="60"/></npc></npcs>'
+        )
+        self.assertEqual(convert.spawn_positions(xml), {("A", 12, 19, 6)})
+
+    def test_validator_pins_anchor_to_the_evidence_file(self) -> None:
+        write_family(
+            self.root,
+            make_root(
+                self.root,
+                anchor_pages(),
+                anchor_tiles(),
+                [anchor_entry(2, "Quill", 50, 55)],
+            ),
+        )
+        with mock.patch.object(validate, "CAP", CAP):
+            self.assertEqual(validate.validate(self.root), [])
+            (path,) = (self.root / "content/world/areas/islands").glob("islands-*.json")
+            shard = json.loads(path.read_text(encoding="utf-8"))
+            for record in shard["records"]:
+                if record["declaration"]["name"] == "Quill":
+                    record["declaration"]["source_facts"]["anchor_source"] = (
+                        "teleport:oteryn:transition.teleport.x1_y1_z7"
+                    )
+            path.write_bytes(canonical(shard))
+            self.assertIn("evidence anchor", "\n".join(validate.validate(self.root)))
 
 
 class GroundClassTest(unittest.TestCase):
