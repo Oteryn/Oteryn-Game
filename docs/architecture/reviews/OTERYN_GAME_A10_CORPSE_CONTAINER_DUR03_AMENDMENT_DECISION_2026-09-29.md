@@ -1,5 +1,11 @@
 # A10 corpse container DUR-03 amendment decision
 
+> **Superseded in part (2026-09-29).** The D3 decision `reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md` (#1198), merged before
+> this record, is authoritative for the loot-rights window mechanism (§4.2 here), the decay and
+> retire shape (§4.3), the resource rows (§4.4), decay timing and the corpse identity (§3). Those
+> parts of this record do not apply. This record keeps only the D121 citation and the party-rights
+> intent: top-damage character now, party rights in a later decision.
+
 - Decision: `A10-CORPSE-CONTAINER-DUR03-V1`
 - Status: **CANDIDATE, no new owner decision (§2)**. Acceptance requires exact-head validation,
   independent review (DUR-03 value and persistence change) and protected integration.
