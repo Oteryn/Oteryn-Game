@@ -124,7 +124,7 @@ mutation_operators:
 one_invariant_per_negative_case: yes
 record_derived_matching_helper: not used
 evidence: apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs (every operator at freeze and at commit)
-finding_dispositions: {p0_p1_accepted_and_repaired: [], p0_p1_rejected_with_exact_evidence: [], p2_fixed_accepted_or_deferred: []}
+finding_dispositions: {p0_p1_accepted_and_repaired: [], p0_p1_rejected_with_exact_evidence: [], p2_fixed_accepted_or_deferred: ["worker review on 5c36eaad (#162 5884442968): fixed quantity 0 as InvalidInput, dead empty checks, constant usage check in the locked pass, unused pub(crate); rejected replay RL-08 charge (accepted DUR-03 pattern, as mint and B3-1); deferred four maintainability items (Open follow-ups)"]}
 ```
 
 Self-review finding fixed before freeze (RED then GREEN): a claimed item is live and never
@@ -173,6 +173,11 @@ production.
   item facts from the current Content.
 - Rewards with item attributes (keys, written text), cooldown claims, container rewards and weight,
   each as its own child.
+- Maintainability (worker review on 5c36eaad): bind the Ground MINT to its physical transaction
+  instead of per-family exclusions in `game_item_ground_insertion_guard`; per-operation guard dispatch
+  instead of re-stating whole guard bodies per migration; shared RL-08 and cause-lock helpers across
+  mint, transfer and reward-claim; name the CHEST-1 consumers in `RESOURCE_LIMITS_REGISTRY.json`
+  (registry single-writer).
 
 ## Context checkpoint
 
