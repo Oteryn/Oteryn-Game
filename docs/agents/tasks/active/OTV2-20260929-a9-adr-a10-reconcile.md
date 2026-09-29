@@ -65,6 +65,22 @@ Not applicable. Contract and ADR text only.
 
 - Code, CI workflow edits, Platform changes and protocol registration.
 
+## Finding dispositions
+
+Codex review of `df5047f`: five P1, all ACCEPTED in repair generation 1 of 1. No owner decision
+changed.
+
+- 4131093113 (Gateway ticket chain): D138 is the unchanged ADR-0003 ticket, redemption and route
+  chain; N4-P is the Gateway operation (ADR-0020 §3, delivery).
+- 4131093123 (FND-04 error classes): fail closed while keeping each FND-04 code's progression,
+  retry authority and public class (§2).
+- 4131093134 (synthetic assets in production closure): `oteryn-synthetic-assets` stays dev/test;
+  shipped placeholders move to a production-owned member (§4, N2).
+- 4131093157 (A10 still actionable): the remainder is historical and non-normative; status and
+  handback no longer allow allocation (A10 banner, status, handback).
+- 4131093146 (three closure gates): N5 changes `merge-gate.yml`, `merge-group-gate.yml` and
+  `rust.yml` together or one shared check (§1, delivery, revalidation).
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.

@@ -43,30 +43,31 @@ Closure negatives after the change:
 - Replace "`oteryn-client` must not contain `protocol-oteryn`" with "`oteryn-client` contains `protocol-oteryn` only through the accepted session crate". The game-server exception stays.
 - `oteryn-dev-client` must stay absent from both production closures.
 
-The CI change (`.github/workflows/merge-gate.yml` closure loop and `workspace-boundaries.toml`) goes into one batched audit rotation with the #1083 game-gate fan-in. It is not a separate rotation.
+The CI change covers every copy of the production-closure check: `.github/workflows/merge-gate.yml`, `.github/workflows/merge-group-gate.yml` and `.github/workflows/rust.yml`, plus `workspace-boundaries.toml`. All three are changed and validated together, or first consolidated into one shared check, so the PR gate, the Merge Queue and protected main apply the same rule. This goes into one batched audit rotation with the #1083 game-gate fan-in.
 
 ### 2. Fail-closed rule (ADR-0011 section 3, amended)
 
 New rule: the client is fail-closed unless admission is available.
 
 - No credential is used for a connection that cannot complete. The ordering from ADR-0011 is preserved: check availability first, then request or consume a credential, then connect.
-- Any admission error or codec error fails closed with one deterministic result. No retry loop, no guessed framing, no fallback, no late failure after a consumed one-shot grant.
+- Any admission error or codec error fails closed. The client keeps the accepted FND-04 classification for each code: its progression, retry authority and public class. For example, a not-yet-valid grant allows only the bounded retry of the same unconsumed grant; an expired grant needs a fresh Gateway attempt; an authentication failure needs reauthentication; a revision mismatch needs a client update. No other retry, no guessed framing, no fallback, no late failure after a consumed one-shot grant.
 - Success is reported only after the server accepts admission. A transport write is not admission.
-- Exact error codes and wording stay with later contracts.
+- Error codes and classes are those of FND-04; this ADR adds none.
 
 The rest of ADR-0011 (no Canary, no stub protocol adapter, no success claims without admission) stays in force.
 
 ### 3. Platform client grant
 
-- The Platform client-grant endpoint is a cross-repository item under Platform authority. This repository has no Platform write authority and creates nothing there.
-- The Game side consumes the FND-04 pre-admission grant profile (`docs/contracts/FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md`, profile `oteryn-pre-admission-v1`) through `crates/platform-client`.
-- The grant is fetched only when the entry check in section 2 says a connection can complete.
-- Endpoint shape, transport and timeline on the Platform side: UNKNOWN.
+- D138 ("real Platform client grant") is the accepted ADR-0003 chain, unchanged: the client obtains a one-time Game Login Ticket, sends it to the Platform Game Gateway for redemption, and the Gateway selects a Registry-authorized route from the supported offer and returns the endpoint and the FND-04 pre-admission material (`docs/contracts/FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md`, profile `oteryn-pre-admission-v1`).
+- The Gateway operation (N4-P) is a cross-repository item under Platform authority. This repository has no Platform write authority and creates nothing there. The ticket, the redemption, the supported offer and the selected route are explicit dependencies of N4.
+- The Game side (N4) implements the client half through `crates/platform-client`; it never bypasses the ticket, redemption or route boundary.
+- The ticket is requested only when the entry check in section 2 says a connection can complete.
+- Gateway timeline on the Platform side: UNKNOWN.
 
 ### 4. Renderer
 
 - Minimal 2D tile and sprite batch on the existing `WindowsRenderer` (`crates/renderer`).
-- Assets come from `crates/synthetic-assets`. Legally approved assets may be added later.
+- `oteryn-synthetic-assets` stays outside the production closure (dev and test evidence only). The shipped placeholder assets live in a production-owned workspace member (name UNKNOWN), with synthetic or legally approved content only. Legally approved art may replace them later.
 - No engine, no scene graph and no asset pipeline beyond this slice.
 
 ### 5. Input
@@ -89,11 +90,11 @@ Each child needs its own #162 allocation. Numbering is provisional.
 | Child | Content | Depends on |
 |---|---|---|
 | N1 | Session crate extraction; dev-client becomes a thin harness | this ADR |
-| N2 | Renderer primitives: tile and sprite batch | this ADR |
+| N2 | Renderer primitives: tile and sprite batch; production-owned placeholder asset member | this ADR |
 | N3 | Mouse input: click to tile, click to target | N2 |
-| N4 | Platform grant client (Game side) | FND-04 profile |
-| N4-P | Platform client-grant endpoint (Platform lane, Platform authority) | Platform decision |
-| N5 | CI closure change, batched with the #1083 game-gate fan-in | N1 |
+| N4 | Client half of the ADR-0003 ticket and Gateway chain, FND-04 error classes kept | ADR-0003, FND-04, N4-P |
+| N4-P | Platform Game Gateway: ticket redemption and Registry-authorized route selection (Platform lane, Platform authority) | Platform decision |
+| N5 | CI closure change in `merge-gate.yml`, `merge-group-gate.yml` and `rust.yml` together (or one shared check), batched with #1083 | N1 |
 | N6 | Entity rendering: creatures and other players | VIS-1, VIS-2, N2 |
 | N7 | Chat UI | chat protocol and server lane (does not exist) |
 
@@ -169,7 +170,8 @@ required_independent_review: "exact-head independent review (crate edge, closure
 implementation_lanes: [N1, N2, N3, N4, N4-P, N5, N6, N7]
 required_revalidation:
   - "N1: dev-client tests pass unchanged over the session crate; the session crate holds no codec of its own"
-  - "N5: oteryn-client closure contains protocol-oteryn only through the session crate; canary, dev-only and synthetic negatives still fail the gate; batched with #1083"
+  - "N5: in all three workflows, the oteryn-client closure contains protocol-oteryn only through the session crate; canary, dev-only and synthetic (including oteryn-synthetic-assets) negatives still fail; batched with #1083"
+  - "N4: every FND-04 code keeps its progression, retry authority and public class; no path bypasses the ticket, redemption or route"
   - "N4: no credential is requested for a connection that cannot complete; admission and codec errors fail closed"
 remaining_unknowns:
   - session crate name
