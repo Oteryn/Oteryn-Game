@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-chest1-reward-claim-mint
 title: CHEST-1 DUR-03 reward-claim MINT into a main-backpack entry with a once RewardClaim
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
-pr: null
+pr: 1217
 allocation: "#162 comment 5879744231 (owner consent in session; D100 routing 5879348805)"
 base_sha: 69d85f33
 head_sha: null
@@ -183,5 +183,5 @@ production.
 
 ```yaml
 last_progress: PR #1190 merged via Merge Queue as 69d85f33 (frozen head 5c36eaad, Codex clean)
-next_action: follow-up PR with the worker-review repairs (P2), then archive this record
+next_action: follow-up PR #1217 (worker-review P2 repairs) through Merge Queue, then archive this record
 ```
