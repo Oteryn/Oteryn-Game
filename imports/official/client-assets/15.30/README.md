@@ -49,6 +49,6 @@ mismatch:
 
 ```
 python tools/content-schema/item-authoring/client_appearance_census.py \
-  --appearances "<PATH_TO_CLIENT>/assets/appearances-2dfa943b….dat" \
+  --appearances "<PATH_TO_CLIENT>/assets/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat" \
   --membership-out imports/official/client-assets/15.30/appearance-ids.json
 ```
