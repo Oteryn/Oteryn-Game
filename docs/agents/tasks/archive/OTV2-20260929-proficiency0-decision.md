@@ -43,7 +43,7 @@ is made.
 
 ## Architecture and source of truth
 
-- `PROVEN`: #162 5899469936; #1283 staged sources; `docs/reference/tibia-manual/combat.md`
+- `PROVEN`: #162 5899469936; item-authoring `ProficiencyRef`; #1283 staged sources; `docs/reference/tibia-manual/combat.md`
   §5.3.4; GAME-CHAR-01 Stage B decision 9; DUR-02 rule 2; `PROTOCOL_OTERYN_V1_REGISTRY.json`;
   A12 item keys; A13 (#1271).
 - `UNKNOWN`: perk code meanings, the point table, shared progress between weapons, and
@@ -74,7 +74,17 @@ persistence review.
 ## Closeout
 
 - PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
-- Self-review: `oteryn-hard-worker`, read-only, on the complete draft before freeze.
+- Self-review: `oteryn-hard-worker`, read-only, on the complete draft before freeze: 7 material
+  findings and 9 evidence gaps, all fixed before freeze:
+  - the whole-chain check split from the per-track check;
+  - late lines rejected;
+  - rule 6 definition revisions and migration;
+  - derived-level corrections;
+  - line keys and FK;
+  - PROF-CONTENT-1 owned paths;
+  - the amendments listed in §9;
+  - wire gating, bounds and command;
+  - the parity gates.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ## Context checkpoint
