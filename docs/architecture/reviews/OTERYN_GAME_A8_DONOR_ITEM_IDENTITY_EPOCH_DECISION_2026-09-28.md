@@ -3,6 +3,8 @@
 - Decision: `A8-DONOR-ITEM-IDENTITY-EPOCH-V1`
 - Status: **CANDIDATE with owner decisions D96-D97 (§2)**. Acceptance requires exact-head
   validation, independent review and protected integration.
+- **SUPERSEDED** by A12 (`OTERYN_GAME_A12_ITEM_IDENTITY_TIBIA_ID_DECISION_2026-09-29.md`, D146): Item keys follow the Tibia id, so the epoch rule no
+  longer mints keys. This record is historical and non-normative.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Routed as architecture package item A8 (#162 comment 5877360232, B1b stopped with
   `DESIGN_DECISION_REQUIRED` under allocation 5877308300)

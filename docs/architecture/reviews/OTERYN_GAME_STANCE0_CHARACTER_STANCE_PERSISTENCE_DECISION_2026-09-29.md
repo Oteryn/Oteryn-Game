@@ -3,8 +3,11 @@
 - Decision: `STANCE0-CHARACTER-STANCE-PERSISTENCE-V1` (architect item A11)
 - Status: **CANDIDATE**. Acceptance requires exact-head validation, independent review and protected
   integration.
+- Renumbered D140 -> D145 by A12
+  (`OTERYN_GAME_A12_ITEM_IDENTITY_TIBIA_ID_DECISION_2026-09-29.md` §6); D140-D144 belong to D4
+  (#1218).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
-- Answers: owner decision D140 (#162 comment 5888104688) for spell native behaviour Part C `stance`
+- Answers: owner decision D145 (#162 comment 5888104688) for spell native behaviour Part C `stance`
   (section C.4)
 - Builds on: migration `0009_character_progression.sql`; the DEATH-0 receipt decision
   (2026-09-28); the Character/item composition decision (2026-09-27, §3.6)
@@ -21,7 +24,7 @@ one XP receipt. Where does the slot live, and how does a change commit without w
 
 ## 2. Owner decisions
 
-- **D140** (#162 comment 5888104688, 2026-09-29): the spell stance slot persists as in Global; it
+- **D145** (#162 comment 5888104688, 2026-09-29): the spell stance slot persists as in Global; it
   survives logout (N8833) and death (N8933). No session-only interim.
 - **S27** (2026-09-29, spell authoring schema) accepted the `stance` native_behavior key and its
   parameters (`persist_across_sessions` true, `keep_on_death` true) as specified in Part C.
@@ -112,7 +115,7 @@ one XP receipt. Where does the slot live, and how does a change commit without w
   revision and a receipt, fails at commit.
 - **Ordering with DEATH-0:** both migrations replace the same guard functions. The one that merges
   second carries every kind and its tests cover the mixed chain. The migration number is the next
-  free number at allocation (0015 at this baseline).
+  free number at allocation (`0015` is taken by corpse decay; see A12 §6).
 
 ### 4.4 Writer (STANCE-1)
 
@@ -173,8 +176,8 @@ The Part C `stance` key unblocks after STANCE-1. Part C Q19-Q22 stay open.
 
 - **A stance column on `game_character_progression_state`.** Every guard branch would have to
   freeze it.
-- **Write-back at logout.** A crash before the write loses D140 persistence.
-- **A runtime-only slot, or clearing on death.** Both violate D140.
+- **Write-back at logout.** A crash before the write loses D145 persistence.
+- **A runtime-only slot, or clearing on death.** Both violate D145.
 - **A stance change without a revision successor, or as a fabricated XP receipt.** Both break the
   chain the guard proves.
 - **One generalized receipt table replacing XP receipts.** It rewrites committed evidence, as
@@ -183,7 +186,7 @@ The Part C `stance` key unblocks after STANCE-1. Part C Q19-Q22 stay open.
 
 ## 7. Decision test
 
-- **Must decide now:** YES. STANCE-1 cannot commit under `0009`, and D140 forbids a runtime-only
+- **Must decide now:** YES. STANCE-1 cannot commit under `0009`, and D145 forbids a runtime-only
   slot.
 - **Blocked:** Part C `stance` persistence until STANCE-1; pruning until a vocation lane exists.
 - **Harder later:** DEATH-0 and STANCE-0 rewrite the same deferred guard; deciding the kind now lets
@@ -198,8 +201,8 @@ The Part C `stance` key unblocks after STANCE-1. Part C Q19-Q22 stay open.
 
 ```yaml
 result: RESOLVED
-source_escalation: "#162 owner decision D140 (5888104688), Part C.4 stance persistence (A11)"
-owner_decisions: [D140, S27]
+source_escalation: "#162 owner decision D145 (5888104688), Part C.4 stance persistence (A11)"
+owner_decisions: [D145, S27]
 durable_decision_ref: docs/architecture/reviews/OTERYN_GAME_STANCE0_CHARACTER_STANCE_PERSISTENCE_DECISION_2026-09-29.md
 resource_values_changed: false
 production_authority_changed: false
