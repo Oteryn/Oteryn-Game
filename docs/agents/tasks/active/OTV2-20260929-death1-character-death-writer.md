@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-death1-character-death-writer
 title: DEATH-1 - Character death writer, D58 calculator, pending-respawn consumption
 mode: IMPLEMENT
-status: implementing
+status: blocked   # LANE_BLOCKED: 0016 runtime EXECUTE grant (see Blocker)
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/death1-character-death-writer
@@ -126,3 +126,16 @@ game_character_blessings`) and with the interpretation `FOR SHARE` (`permission 
 game_character_interpretations`); the concurrent same-occurrence case fails when the receipt replay
 is disabled (`CharacterRevisionMismatch`); the ratio/rounding pin case fails when the pin is
 disabled.
+
+## Blocker (LANE_BLOCKED)
+
+The runtime-role case fails on this head: `permission denied for function
+game_character_is_blessing_set` on the death receipt INSERT. 0016 revokes EXECUTE on that function
+(used by the `blessings_before`/`blessings_after` CHECKs) from PUBLIC and grants it to no role, and
+a CHECK function runs with the inserting role's privileges, so no `oteryn_game_runtime` login can
+commit a death (the owner-run cases never saw it). Fix, outside this packet's scope (migrations
+excluded): an additive migration
+`GRANT EXECUTE ON FUNCTION game_character_is_blessing_set(text[]) TO oteryn_game_runtime;`
+(0016 cannot change after merge). With that grant applied in the test setup, the runtime-role case
+passes and `cargo test -p oteryn-game-server` against PostgreSQL 17.6 passes (48 targets, 9484
+tests, 0 failed); without it exactly that case fails. The case is not weakened to pass.
