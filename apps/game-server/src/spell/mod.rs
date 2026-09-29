@@ -15,6 +15,9 @@ pub(crate) mod chain;
 #[cfg(test)]
 mod chain_tests;
 pub(crate) mod formula;
+pub(crate) mod harmony;
+#[cfg(test)]
+mod harmony_tests;
 pub(crate) mod locate;
 #[cfg(test)]
 mod part_b_tests;
