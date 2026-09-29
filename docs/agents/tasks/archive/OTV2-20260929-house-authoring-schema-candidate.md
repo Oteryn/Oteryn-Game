@@ -65,6 +65,13 @@ Item identity is touched. Runtime House state stays out by the tree contract.
 - PROVEN (owner in-game check): The Lair 166 sqm/3 beds, East Lane 2 108 sqm/2 beds, Lower
   Barracks 1 25 sqm/2 beds, Sorcerer's Avenue Labs 2a 29 sqm/2 beds, Lower Barracks 11 absent; all match the 15.30 client, not the wiki.
 
+- PROVEN: 2,534 layout tiles appear in two neighbouring House layouts; per the official
+  `appearances.dat` `unpass` flag all are impassable walls except one door (East Lane 1a/1b).
+  Documented; ownership of passable tiles and doors is HOUSES-3.
+- DERIVED: renting needs a Premium account (guildhalls: the guild leader); no per-House quest
+  or access requirement found in the tibia.com manual, the Fandom House page or the House
+  pages checked. Account-level rules belong to `rulesets/economy/`, not the House record.
+
 ## Owner decisions (2026-09-29)
 
 1a House key from name slug. 2a Town as city `Area` ref. 3a Engine entry tile as

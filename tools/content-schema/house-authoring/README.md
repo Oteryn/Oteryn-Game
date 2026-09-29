@@ -23,7 +23,7 @@ doors and bed placements belong to `content/world/placements/`.
 | `size_sqm`, `beds`, `rent_gold` | client f7, f5, f4 | official values win over the engine |
 | `entry_restriction` | client f3 | structured form of the only observed text, "Only Sorcerers can enter." (3 houses) |
 | `footprint` | client staticmapdata | bounding box: `origin` (minimum x/y/z) + `width`/`height`/`floors` |
-| `tiles` | client staticmapdata | House area: every position with a non-empty layout cell, `[x, y, z]`, sorted |
+| `tiles` | client staticmapdata | House layout area: every position with a non-empty layout cell, `[x, y, z]`, sorted; includes walls, so neighbouring houses share wall tiles |
 | `provenance` | both | client id + record digests, verbatim name/restriction text, engine House id (the id on House tiles in the engine map) |
 
 ## Cross-source check (CrystalServer `summer-update` @ `00ce02a5`, `data-global/world/world-house.xml`)
@@ -91,6 +91,17 @@ python convert_houses.py extract-crystal --xml <crystal>/data-global/world/world
 python otbm_tile_check.py --otbm <crystal>/data-global/world/world.otbm --check
 python wiki_br_houses.py self-test
 ```
+
+Layout tiles include the House walls: 2,534 positions appear in two neighbouring House
+layouts (`tiles_in_two_house_layouts` in the report). Checked against the official
+`appearances.dat` `unpass` flag, all of them are impassable walls except one door between
+East Lane 1a and 1b. Which House owns a passable tile or a door is settled in HOUSES-3.
+
+## Identity stability
+
+A House key is assigned once from the official name and never changes afterwards, even if
+CipSoft renames the House: the record keeps the key and updates `name` and
+`provenance.source_name`; `provenance.source_id` stays the join to the client.
 
 ## Owner decisions (2026-09-29)
 

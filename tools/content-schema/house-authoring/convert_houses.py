@@ -208,6 +208,10 @@ def convert(staged: list[dict], crystal: dict) -> tuple[dict, dict]:
         "houses": len(houses),
         "joined_by": "crystal clientid == client house id",
         "tiles": sum(len(h["tiles"]) for h in houses),
+        "tiles_in_two_house_layouts": sum(
+            n > 1
+            for n in Counter(tuple(t) for h in houses for t in h["tiles"]).values()
+        ),
         "kinds": dict(sorted(Counter(h["kind"] for h in houses).items())),
         "engine_divergence_counts": dict(sorted(divergence.items())),
         "engine_divergence_examples": {k: v[:5] for k, v in sorted(examples.items())},

@@ -76,6 +76,7 @@
   "shop": 51
  },
  "tiles": 117226,
+ "tiles_in_two_house_layouts": 2534,
  "towns": {
   "oteryn:content.area.city.ab_dendriel": 56,
   "oteryn:content.area.city.ankrahmun": 120,
