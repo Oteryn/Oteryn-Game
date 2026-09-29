@@ -525,7 +525,10 @@ def encounter_position(value: Any) -> dict:
     if 'anchor' in value:
         return {'kind': 'anchor', 'anchor': value['anchor']}
     if 'random_in' in value:
-        return {'kind': 'random_in', 'anchor': value['random_in']}
+        position = {'kind': 'random_in', 'anchor': value['random_in']}
+        if value.get('free'):
+            position['free'] = True
+        return position
     if 'role_position' in value:
         position = {'kind': 'role_position', 'role': value['role_position']}
         if value.get('otherwise') == 'death_position':
@@ -537,7 +540,9 @@ def encounter_position(value: Any) -> dict:
 
 
 def encounter_subject(value: dict) -> dict:
-    return {'kind': 'role', 'role': value['role']} if 'role' in value else {'kind': 'killer' if 'killer' in value else 'spawned'}
+    if 'role' in value:
+        return {'kind': 'role', 'role': value['role']}
+    return {'kind': next(kind for kind in ('killer', 'spawned', 'triggering') if kind in value)}
 
 
 def sorted_refs(values, m: Mapper) -> list:
@@ -607,7 +612,8 @@ def encounter_action(value: dict, m: Mapper) -> dict:
                               'floor_percent': multiplier['floor']})
     elif kind == 'teleport':
         who = value['who']
-        out['who'] = {'kind': 'role', 'role': who['role']} if 'role' in who else {'kind': 'players_in', 'anchor': who['players_in']}
+        out['who'] = ({'kind': 'role', 'role': who['role']} if 'role' in who else
+                      {'kind': 'players_in', 'anchor': who['players_in']} if 'players_in' in who else {'kind': 'triggering'})
     elif kind == 'map_item':
         if 'into' in value:
             out['into'] = m.ref(value['into'])

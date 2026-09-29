@@ -653,3 +653,133 @@ fn unknown_encounter_fields_fail_closed() {
         "unknown trigger admitted"
     );
 }
+
+/// The vortex encounter with one more rule, admitted or refused by the full pipeline.
+fn admit_with_rule(rule: Value) -> Result<WorldProject, String> {
+    let mut value = details_json();
+    value["rules"].as_array_mut().expect("rules").push(rule);
+    let mut broken = draft();
+    *encounter_mut(&mut broken) =
+        serde_json::from_value(value).map_err(|error| error.to_string())?;
+    admit(broken)
+}
+
+fn extra_rule(trigger: Value, actions: Value, conditions: Value) -> Value {
+    json!({"key": "extra_rule", "trigger": trigger, "conditions": conditions, "actions": actions})
+}
+
+fn area_entered() -> Value {
+    json!({"kind": "area_entered", "anchor": "arena", "who": "player"})
+}
+
+fn stepped_corpse() -> Value {
+    json!({"kind": "stepped_on", "role": "the_hunger", "corpse_of": "greed"})
+}
+
+#[test]
+fn cw2_triggering_variants_are_admitted() {
+    // CW2-1: the portal sends the triggering player, gated by in_anchor of the triggering creature.
+    admit_with_rule(extra_rule(
+        area_entered(),
+        json!([{"kind": "teleport", "who": {"kind": "triggering"}, "to": "hunger_vortex"}]),
+        json!([{"kind": "in_anchor", "subject": {"kind": "triggering"}, "anchor": "arena"}]),
+    ))
+    .expect("gorzindel portal");
+    // CW2-2, CW2-3, CW2-4: a corpse step removes the corpse and spawns on a free tile.
+    admit_with_rule(extra_rule(
+        stepped_corpse(),
+        json!([
+            {"kind": "map_item", "operation": "remove", "triggering": true},
+            {"kind": "spawn", "creature": creature_ref(ADD), "role": "greed", "count": {"min": 1, "max": 1},
+             "at": {"kind": "random_in", "anchor": "arena", "free": true}, "owner": "none",
+             "health": {"kind": "full"}}
+        ]),
+        json!([]),
+    ))
+    .expect("sandking brood");
+}
+
+#[test]
+fn cw2_triggering_variants_fail_closed() {
+    let timer = json!({"kind": "timer_elapsed", "timer": "summon_delay"});
+    let remove = json!({"kind": "map_item", "operation": "remove", "triggering": true});
+    let with = |extra: (&str, Value)| {
+        let mut action = remove.clone();
+        action[extra.0] = extra.1;
+        action
+    };
+    let cases: Vec<(&str, Value, Value, Value)> = vec![
+        (
+            "teleport triggering in a timer rule",
+            timer.clone(),
+            json!([{"kind": "teleport", "who": {"kind": "triggering"}, "to": "hunger_vortex"}]),
+            json!([]),
+        ),
+        (
+            "in_anchor triggering in a timer rule",
+            timer.clone(),
+            json!([{"kind": "flag", "flag": "summon_delay", "value": true}]),
+            json!([{"kind": "in_anchor", "subject": {"kind": "triggering"}, "anchor": "arena"}]),
+        ),
+        (
+            "remove triggering for a player",
+            area_entered(),
+            json!([{"kind": "remove", "triggering": true}]),
+            json!([]),
+        ),
+        (
+            "stepped_on with both item and corpse_of",
+            json!({"kind": "stepped_on", "role": "the_hunger", "item": item_ref(VORTEX), "corpse_of": "greed"}),
+            json!([{"kind": "flag", "flag": "summon_delay", "value": true}]),
+            json!([]),
+        ),
+        (
+            "stepped_on with neither item nor corpse_of",
+            json!({"kind": "stepped_on", "role": "the_hunger"}),
+            json!([{"kind": "flag", "flag": "summon_delay", "value": true}]),
+            json!([]),
+        ),
+        (
+            "stepped_on corpse_of an unknown role",
+            json!({"kind": "stepped_on", "role": "the_hunger", "corpse_of": "nobody"}),
+            json!([{"kind": "flag", "flag": "summon_delay", "value": true}]),
+            json!([]),
+        ),
+        (
+            "map_item triggering create",
+            stepped_corpse(),
+            json!([{"kind": "map_item", "operation": "create", "triggering": true}]),
+            json!([]),
+        ),
+        (
+            "map_item triggering transform",
+            stepped_corpse(),
+            json!([{"kind": "map_item", "operation": "transform", "triggering": true}]),
+            json!([]),
+        ),
+        (
+            "map_item triggering outside stepped_on",
+            timer,
+            json!([remove.clone()]),
+            json!([]),
+        ),
+        (
+            "map_item triggering with an item",
+            stepped_corpse(),
+            json!([with(("item", item_ref(VORTEX)))]),
+            json!([]),
+        ),
+        (
+            "map_item triggering with an anchor",
+            stepped_corpse(),
+            json!([with(("anchor", json!("hunger_vortex")))]),
+            json!([]),
+        ),
+    ];
+    for (label, trigger, actions, conditions) in cases {
+        assert!(
+            admit_with_rule(extra_rule(trigger, actions, conditions)).is_err(),
+            "{label}: admitted"
+        );
+    }
+}
