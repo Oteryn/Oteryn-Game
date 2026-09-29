@@ -15,6 +15,8 @@ on:
       - imports/crystalserver/bindings/items.json
       - imports/tibiawiki/hunting-places/**
       - imports/tibiawiki/islands/**
+      - imports/tibiawiki/cities/**
+      - content/npcs/definitions/**
       - imports/official/client-assets/15.30/manifest.json
       - content/assets/files/catalog-content.json
       - content/assets/files/appearances-*.dat
@@ -56,6 +58,7 @@ jobs:
       - name: Validate committed world metadata and base map families
         run: |
           set -euo pipefail
+          python convert_city_facts.py --check
           python convert_hunting_places.py --check
           python convert_islands.py --check
           python validate_islands.py

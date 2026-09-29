@@ -23,7 +23,11 @@ HUNTING_SUMMARY = (
 REGION_SUMMARY = (
     "tools/content-schema/world-authoring/samples/map-regions-capture-v1.json"
 )
+CITY_SUMMARY = "tools/content-schema/world-authoring/samples/cities-capture-v1.json"
 SNAPSHOT = "imports/tibiawiki/hunting-places/fandom-snapshot-v1.json"
+CITY_SNAPSHOT = "imports/tibiawiki/cities/fandom-snapshot-v1.json"
+NPC_INDEX = "content/npcs/definitions/index.json"
+WIKI_NAMESPACE = "tibiawiki-fandom/page-id"
 CLIENT_MANIFEST = "imports/official/client-assets/15.30/manifest.json"
 ITEM_BINDINGS = "imports/crystalserver/bindings/items.json"
 GENERATORS = {
@@ -140,9 +144,11 @@ def family_records(
                 "revision": "definition-r1",
             }:
                 errors.append(f"{key}: source binding target differs from identity")
-            if family not in OWN_SOURCE_REVISION and bound.get(
-                "source_revision"
-            ) != summary["source"].get("revision"):
+            if (
+                family not in OWN_SOURCE_REVISION
+                and bound.get("identity_namespace") != WIKI_NAMESPACE
+                and bound.get("source_revision") != summary["source"].get("revision")
+            ):
                 errors.append(
                     f"{key}: source binding revision differs from the pinned source"
                 )
@@ -198,6 +204,93 @@ def hunting_places(
         )
     if summary.get("records_with") != with_:
         errors.append("Area.HuntingPlace: capture counts differ from the records")
+
+
+def cities(
+    root: Path, summary: dict, families: dict[str, list[dict]], errors: list[str]
+) -> None:
+    """City semantics: snapshot pin, page/revision bindings, NPC references, capture counts."""
+    records = families["Area.City"]
+    try:
+        raw = (root / CITY_SNAPSHOT).read_bytes()
+        snapshot = json.loads(raw)
+    except (OSError, json.JSONDecodeError) as error:
+        errors.append(f"{CITY_SNAPSHOT}: unreadable ({error})")
+        return
+    if summary["source"].get("snapshot") != {
+        "path": CITY_SNAPSHOT,
+        "sha256": hashlib.sha256(raw).hexdigest(),
+    }:
+        errors.append(f"{CITY_SNAPSHOT}: differs from the sha256 pinned in the capture")
+    if raw.decode("utf-8") != canonical(snapshot):
+        errors.append(f"{CITY_SNAPSHOT}: not canonical JSON")
+    index_path = f"{FAMILIES['Area.City'][0]}/index.json"
+    if load(root, index_path).get("enrichment") != summary["source"]:
+        errors.append(f"{index_path}: enrichment differs from the capture summary")
+    pages = {str(row["pageid"]): row for row in snapshot["pages"]}
+    unmatched = {row["name"] for row in snapshot["unmatched"]}
+    npc_keys = set()
+    for shard in load(root, NPC_INDEX)["shards"]:
+        npc_keys.update(
+            r["declaration"]["identity"]["key"] for r in load(root, shard)["records"]
+        )
+    bound, apart = set(), set()
+    with_ = {"implemented": 0, "npcs": 0, "source_facts": 0, "wiki_binding": 0}
+    linked = 0
+    for record in records:
+        declaration = record["declaration"]
+        key = declaration["identity"]["key"]
+        name = declaration["name"]
+        wiki = [
+            b
+            for b in record["source_bindings"]
+            if b["identity_namespace"] == WIKI_NAMESPACE
+        ]
+        if not wiki:
+            apart.add(name)
+            if any(f in declaration for f in ("implemented", "npcs", "source_facts")):
+                errors.append(f"{key}: wiki facts without a wiki binding")
+            continue
+        row = pages.get(wiki[0]["external_id"])
+        if row is None or str(row["revid"]) != wiki[0]["source_revision"]:
+            errors.append(f"{key}: page/revision is not in the pinned snapshot")
+            continue
+        if row["title"] != name:
+            errors.append(f"{key}: bound page {row['title']!r} is not the exact name")
+        bound.add(wiki[0]["external_id"])
+        with_["wiki_binding"] += 1
+        facts = declaration.get("source_facts", {})
+        with_["implemented"] += "implemented" in declaration
+        with_["npcs"] += "npcs" in declaration
+        with_["source_facts"] += "source_facts" in declaration
+        if "implemented" in declaration and (
+            facts.get("implemented") != declaration["implemented"]
+            or row["facts"].get("implemented", "").strip() != declaration["implemented"]
+        ):
+            errors.append(f"{key}: implemented differs from the pinned snapshot")
+        for field in ("ruler", "near"):
+            if (field in facts) != bool(row["facts"].get(field, "").strip()):
+                errors.append(f"{key}: source_facts.{field} differs from the snapshot")
+        npc_refs = [ref["key"] for ref in declaration.get("npcs", [])]
+        if npc_refs != sorted(set(npc_refs)):
+            errors.append(f"{key}: npcs must be unique and sorted")
+        for npc in npc_refs:
+            if npc not in npc_keys:
+                errors.append(f"{key}: npc {npc} is not an NPC definition")
+        names = facts.get("npc_names_unmatched", [])
+        snapshot_names = set(row["facts"]["npc_names"])
+        if names != sorted(names) or not set(names) <= snapshot_names:
+            errors.append(f"{key}: unmatched npc names differ from the snapshot")
+        if len(npc_refs) + len(names) != len(snapshot_names):
+            errors.append(f"{key}: npcs and unmatched names do not cover the snapshot")
+        linked += len(npc_refs)
+    if bound != set(pages) or apart != unmatched:
+        errors.append("Area.City: records must bind each snapshot page exactly once")
+    if (
+        summary.get("records_with") != with_
+        or summary.get("npc_names_linked") != linked
+    ):
+        errors.append("Area.City: capture counts differ from the records")
 
 
 def file_sha256(root: Path, path: str, errors: list[str]) -> str | None:
@@ -332,6 +425,7 @@ def validate(root: Path) -> list[str]:
     summary = load(root, SUMMARY)
     hunting_summary = load(root, HUNTING_SUMMARY)
     region_summary = load(root, REGION_SUMMARY)
+    city_summary = load(root, CITY_SUMMARY)
     own_summaries = {
         "Area.HuntingPlace": hunting_summary,
         "Area.Region": region_summary,
@@ -348,6 +442,7 @@ def validate(root: Path) -> list[str]:
     }
     if any(": schema:" in error for error in errors):
         return errors  # semantic checks assume schema-valid records
+    cities(root, city_summary, families, errors)
     hunting_places(root, hunting_summary, families, errors)
     regions(root, region_summary, families, summary["map"], errors)
     city_keys = {r["declaration"]["identity"]["key"] for r in families["Area.City"]}

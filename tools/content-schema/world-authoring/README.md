@@ -199,6 +199,36 @@ data and fails closed on anything else (unknown field, wire type, framing, BMP s
 - The validator checks the pinned map file, manifest and mask files, hierarchy, sorted unique
   lists, city references and temple containment, extent, counts and stray files.
 
+## Cities (English TibiaWiki)
+
+The 35 City Areas keep their keys, names, temples and CrystalServer bindings, and gain facts
+from `tibia.fandom.com` (evidence `Derived`, source key `oteryn:source.tibiawiki`), by the
+same pattern as the hunting places.
+
+- `fandom_city_snapshot.py fetch` (network, not run by CI) stores
+  `imports/tibiawiki/cities/fandom-snapshot-v1.json`. A city page is matched by exact title
+  and must hold an `Infobox Geography`; per page it records the page id, revision id,
+  wikitext sha256, the raw `implemented`, `ruler` and `near` fields, and the names of the
+  `Category:<City> NPCs` pages (the page's NPC list is a category query, not wikitext). No
+  prose. Cities apart, each with a reason:
+  - no page with the exact title: `Dawnport Tutorial`, `Home`, `Salgadora`;
+  - a page without the city infobox (`Infobox Hunt`): `Bounac`, `Cobra Bastion`;
+  - ambiguous: `Targuna` (a placeholder town sharing its temple with `Dawnport Tutorial`).
+- `convert_city_facts.py [--check]` rewrites the City shard and index offline (29 records
+  enriched) and writes `samples/cities-capture-v1.json`. It is idempotent, so run it after
+  `convert_world_metadata.py` regenerates the plain records. The index gains `enrichment`
+  (the pinned snapshot); its `source` stays the CrystalServer pin.
+- Added: a second binding `tibiawiki-fandom/page-id` (revision id); `source_facts`
+  (`implemented`, cleaned `ruler` and `near` text, `npc_names_unmatched`, 29 records);
+  `implemented` only for a plain version (`6.2`, `Pre-6.0`, `12.20.8834`; 25 records, 4 stay
+  raw); `npcs`, sorted NPC keys (26 records, 969 names linked, 239 unmatched).
+- NPC definitions carry no display name, so a wiki name links only when it equals the key
+  slug with underscores read as spaces (case-insensitive). Names with an apostrophe, dot or
+  hyphen stay unmatched.
+- The validator checks the snapshot pin and canonical bytes, the page/revision bindings, the
+  exact-name match, NPC key existence, that linked and unmatched names cover the snapshot,
+  and the capture counts.
+
 ## What is imported and what is not
 
 Keys are stable across source updates: when the family files are already committed, the
@@ -209,7 +239,7 @@ position-based.
 
 - **City:** one record per OTBM town, holding the name and temple position. All 35 towns
   are kept as the source declares them, including `Dawnport Tutorial`, `Island of
-  Destiny`, `Targuna` and `Home`. TibiaWiki (Cidades) enrichment comes later.
+  Destiny`, `Targuna` and `Home`. The English TibiaWiki adds facts, see "Cities" below.
 - **House:** holds identity, name, city, entry, rent, guildhall flag and beds from
   `world-house.xml`. It also holds the footprint from OTBM house tiles (per-floor tile
   counts, bounding box) and doors (`door_id` and position).
@@ -331,6 +361,7 @@ python test_world_record.py                # World converter, validator, worlds/
 python validate_floor_changes.py           # WorldObject.FloorChange incl. recount on the base map
 python test_floor_changes.py               # floor-change converter and validator fixtures
 # Needs the pinned crystalserver checkout: python convert_floor_changes.py --crystal-root ... [--check]
+python convert_city_facts.py --check       # offline, from the committed city snapshot
 python convert_hunting_places.py --check   # offline, from the committed TibiaWiki snapshot
 python convert_islands.py --check          # offline, from the snapshot, the base map and the City Areas
 python validate_islands.py                 # island family, pins, footprints, capture summary
@@ -342,6 +373,7 @@ python convert_world_metadata.py --crystal-root /path/to/crystalserver [--check]
 # Refresh the wiki snapshot (network), then reconvert:
 python fandom_hunting_snapshot.py fetch && python convert_hunting_places.py
 python fandom_island_snapshot.py fetch && python convert_islands.py
+python fandom_city_snapshot.py fetch && python convert_city_facts.py
 ```
 
 ## Base map (step 3)
