@@ -64,6 +64,10 @@ rent 898/916, `size_sqm` 885/916 (vs 183/995 for the engine), beds 889/916, town
 Outlaw Camp, Tunnel Gardens 10-12, ...) are Kazordoon and Thais/Carlin flats that the 15.30
 client lays out differently; the official client values are kept.
 
+Owner in-game check (2026-09-29) agrees with the 15.30 client, not the wiki: The Lair 166 sqm,
+3 beds; East Lane 2 108 sqm, 2 beds; Lower Barracks 1 25 sqm, 2 beds; Lower Barracks 11 does
+not exist.
+
 ## Files
 
 | File | Purpose |

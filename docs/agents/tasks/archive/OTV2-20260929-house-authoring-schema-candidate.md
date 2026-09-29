@@ -62,6 +62,8 @@ Item identity is touched. Runtime House state stays out by the tree contract.
   `a6900ccb`): 916 of 963 pages joined by name; rent 898, size 885, beds 889 of 916 and
   town 915/915 agree with the official values. Disagreements are mostly houses the 15.30
   client lays out differently (Kazordoon barracks, Outlaw Camp); official values kept.
+- PROVEN (owner in-game check): The Lair 166 sqm/3 beds, East Lane 2 108 sqm/2 beds, Lower
+  Barracks 1 25 sqm/2 beds, Lower Barracks 11 absent; all match the 15.30 client, not the wiki.
 
 ## Owner decisions (2026-09-29)
 
