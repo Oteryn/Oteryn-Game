@@ -320,8 +320,7 @@ impl InterestIndex {
                         }
                     });
                 }
-                let group = merge_bounded(&cells, observer, budget);
-                for id in group {
+                for id in MergeBounded::new(&cells, observer, budget) {
                     examined += 1;
                     if let Some(entity) = self.entities.get(&id)
                         && accept(entity)
@@ -340,36 +339,59 @@ impl InterestIndex {
     }
 }
 
-/// Emits, in ascending order, the `cap` smallest identities across the cells of one canonical
-/// group, excluding `observer`, by a k-way merge. Only an emitted identity is visited, so the
-/// whole group costs at most `cap` visits however dense its cells are; finding a cell's next
-/// identity is an ordered-set range lookup, not a walk. Cells hold disjoint identities.
-fn merge_bounded(
-    cells: &[&BTreeSet<EntityIdentity>],
-    observer: &EntityIdentity,
-    cap: usize,
-) -> Vec<EntityIdentity> {
-    let next_after = |cell: usize, after: Bound<&EntityIdentity>| {
-        cells[cell]
+/// Lazily yields, in ascending order, the `cap` smallest identities across the cells of one
+/// canonical group, excluding `observer`, by a k-way merge. Only a yielded identity is visited,
+/// so the group costs exactly as many visits as the caller pulls, at most `cap`, however dense
+/// its cells are and however early the caller stops; finding a cell's next identity is an
+/// ordered-set range lookup, not a walk. Cells hold disjoint identities.
+struct MergeBounded<'a> {
+    cells: &'a [&'a BTreeSet<EntityIdentity>],
+    observer: &'a EntityIdentity,
+    heads: BinaryHeap<Reverse<(EntityIdentity, usize)>>,
+    remaining: usize,
+}
+
+impl<'a> MergeBounded<'a> {
+    fn new(
+        cells: &'a [&'a BTreeSet<EntityIdentity>],
+        observer: &'a EntityIdentity,
+        cap: usize,
+    ) -> Self {
+        let mut merge = Self {
+            cells,
+            observer,
+            heads: BinaryHeap::with_capacity(cells.len()),
+            remaining: cap,
+        };
+        for cell in 0..cells.len() {
+            merge.push_next(cell, Bound::Unbounded);
+        }
+        merge
+    }
+
+    fn push_next(&mut self, cell: usize, after: Bound<&EntityIdentity>) {
+        let observer = self.observer;
+        if let Some(id) = self.cells[cell]
             .range::<EntityIdentity, _>((after, Bound::Unbounded))
             .find(|id| *id != observer)
-            .copied()
-    };
-    let mut heads: BinaryHeap<Reverse<(EntityIdentity, usize)>> = (0..cells.len())
-        .filter_map(|cell| Some(Reverse((next_after(cell, Bound::Unbounded)?, cell))))
-        .collect();
-    let mut group = Vec::with_capacity(cap.min(cells.iter().map(|cell| cell.len()).sum()));
-    while group.len() < cap
-        && let Some(Reverse((id, cell))) = heads.pop()
-    {
-        group.push(id);
-        if group.len() < cap
-            && let Some(next) = next_after(cell, Bound::Excluded(&id))
         {
-            heads.push(Reverse((next, cell)));
+            self.heads.push(Reverse((*id, cell)));
         }
     }
-    group
+}
+
+impl Iterator for MergeBounded<'_> {
+    type Item = EntityIdentity;
+
+    fn next(&mut self) -> Option<EntityIdentity> {
+        if self.remaining == 0 {
+            return None;
+        }
+        let Reverse((id, cell)) = self.heads.pop()?;
+        self.remaining -= 1;
+        self.push_next(cell, Bound::Excluded(&id));
+        Some(id)
+    }
 }
 
 /// Calls `visit(dx, dy)` for each in-area cell at Chebyshev distance `ring` on the observer plane.
@@ -828,7 +850,9 @@ mod tests {
             .map(|c| (0..dense).map(|n| id(n * 4 + c)).collect())
             .collect();
         let refs: Vec<_> = cells.iter().collect();
-        let group = merge_bounded(&refs, &id(u32::MAX), VISIBILITY_QUERY_CANDIDATES_MAX);
+        let observer = id(u32::MAX);
+        let group: Vec<_> =
+            MergeBounded::new(&refs, &observer, VISIBILITY_QUERY_CANDIDATES_MAX).collect();
         assert_eq!(group.len(), VISIBILITY_QUERY_CANDIDATES_MAX);
         let expected: Vec<_> = (0..VISIBILITY_QUERY_CANDIDATES_MAX as u32)
             .map(id)
@@ -838,8 +862,32 @@ mod tests {
         // The observer is skipped without costing budget, and a small group is fully returned.
         let small: BTreeSet<_> = [id(2), id(5), id(u32::MAX)].into_iter().collect();
         let other: BTreeSet<_> = [id(1), id(3)].into_iter().collect();
-        let group = merge_bounded(&[&small, &other], &id(u32::MAX), 10);
+        let group: Vec<_> = MergeBounded::new(&[&small, &other], &observer, 10).collect();
         assert_eq!(group, vec![id(1), id(2), id(3), id(5)]);
+        Ok(())
+    }
+
+    #[test]
+    fn result_ceiling_stops_the_merge_at_the_pull_that_reaches_it() -> TestResult {
+        // Dense group spread over the four ring-1 cells around the observer; every candidate is
+        // accepted, so the 256-result ceiling is hit long before the 1,024-candidate ceiling.
+        let mut index = index_with_observer()?;
+        for n in 0..4000_u32 {
+            let (x, y) = [(101, 100), (99, 100), (100, 101), (100, 99)][(n % 4) as usize];
+            index.upsert(entity(n, x, y, 7)?);
+        }
+        let mut accepted = 0_usize;
+        let result = index.query_with(&id(u32::MAX), VisibilitySettings::REFERENCE, |_| {
+            accepted += 1;
+            true
+        })?;
+        assert_eq!(result.examined(), VISIBILITY_QUERY_RESULTS_MAX);
+        assert_eq!(accepted, VISIBILITY_QUERY_RESULTS_MAX - 1);
+        let ids: Vec<_> = result.entities().iter().map(|e| e.identity).collect();
+        let expected: Vec<_> = std::iter::once(id(u32::MAX))
+            .chain((0..VISIBILITY_QUERY_RESULTS_MAX as u32 - 1).map(id))
+            .collect();
+        assert_eq!(ids, expected);
         Ok(())
     }
 

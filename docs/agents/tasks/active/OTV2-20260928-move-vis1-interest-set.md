@@ -86,8 +86,10 @@ registry change is six inserted rows after `MOVE-RL-11`.
 - No module-level `dead_code` allow: `movement` is already allowed in `lib.rs`.
 - Codex P1 (unbounded dense-cell scan) accepted and fixed: each cell contributes at most the remaining
   candidate budget of its smallest identities (`extend_bounded`); result order and semantics unchanged.
-- Codex P1 re-review (budget per cell, not per group) accepted and fixed: `merge_bounded` is a k-way merge
+- Codex P1 re-review (budget per cell, not per group) accepted and fixed: `MergeBounded` is a k-way merge
   over the group's cells, so the whole group visits at most the remaining query budget; results unchanged.
+- Codex P2 (merge materialized past the result ceiling) accepted and fixed: the merge is now the lazy
+  `MergeBounded` iterator, so enumeration stops at the pull that reaches 256 results or 1,024 examined.
 
 ## Registry rows
 
