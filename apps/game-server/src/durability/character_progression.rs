@@ -690,11 +690,14 @@ pub(super) async fn assert_gameplay_fence(
         return Ok(Err(CharacterProgressionError::CharacterRevisionMismatch));
     }
 
+    // Interpretation rows are immutable (0005 trigger) and a new one is only
+    // ever inserted, so a row lock here would serialize nothing; it would
+    // also need UPDATE, which the runtime role does not hold (0006).
     let current = sqlx::query(
         "SELECT profile_revision, ruleset_revision, content_revision, \
                 starter_template_revision \
            FROM game_character_interpretations \
-          ORDER BY interpretation_revision DESC LIMIT 1 FOR SHARE",
+          ORDER BY interpretation_revision DESC LIMIT 1",
     )
     .fetch_optional(&mut **tx)
     .await?;
@@ -1043,7 +1046,7 @@ mod tests {
                 ],
                 terminal_exclusive_experience: ExactI64::new(1200),
                 death_loss_numerator: 1,
-                death_loss_denominator: 10,
+                death_loss_denominator: 1,
                 death_loss_rounding: RoundingMode::Floor,
             },
         }

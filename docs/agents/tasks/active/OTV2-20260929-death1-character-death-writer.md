@@ -30,25 +30,32 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260929-death1-character-death-writer.md
 public_contracts: []
 depends_on: [DEATH0-CHARACTER-DEATH-RECEIPT-V1, REFERENCE-FIRST-PLAYER-DEATH-V1, "0016 (#1264)", "0017 (#1270)"]
-blocks: [DEATH-1b, DEATH-2]
+blocks: [DEATH-1 respawn consumption, DEATH-2]
 external_repositories: []
 jira: null   # sync pending (coordinator batch)
 ```
 
 ## Split (packet split rule)
 
-- **DEATH-1a (this PR):** integrity counts all receipt kinds, `commit_character_death`,
-  `reconcile_character_death`, the D58 calculator.
-- **DEATH-1b (next PR, successive head):** pending-respawn consumption at runtime respawn, admission
-  and recovery. It touches `gameplay_transport/**`, which #1263 leases; it starts after #1263 merges.
+The labels `DEATH-1a` (#1154, pure outcome calculator) and `DEATH-1c` (fresh bag) are already
+used on `main`, so this task's two PRs carry no letter:
 
-## DEATH-1a design
+- **DEATH-1 writer (PR #1278):** integrity counts all receipt kinds, `commit_character_death`,
+  `reconcile_character_death`, the `ProgressionOperation` wiring of #1154's D58 calculator.
+- **DEATH-1 respawn consumption (next PR, successive head):** pending-respawn consumption at runtime
+  respawn, admission and recovery. It touches `gameplay_transport/**`, which #1263 leases; it starts
+  after #1263 merges.
 
-- **Calculator** (`domain/progression.rs`, death decision §4.3.1): `ApplyDeathExperienceLoss` now
-  takes `regular_blessings` and `promoted_with_current_premium` and computes
-  `(L+50) × 50 × (L² − 5L + 8) × (100 − 8b − 30p) × num / (10000 × den)` exactly in `i128`, rounded
-  once by the policy mode, then capped at the held experience (never below 0); the level follows.
-  Reductions above 100% fail closed (`InvalidDeathReduction`). The old L→L+1 span is removed.
+## DEATH-1 writer design
+
+- **Calculator** (`domain/progression.rs`, death decision §4.3.1): `ApplyDeathExperienceLoss` takes
+  `regular_blessings: u8` and `promoted_with_current_premium` and delegates to #1154's
+  `domain::death::death_experience_loss` (one source of truth, its bounds: at most
+  `MAX_REGULAR_BLESSINGS` = 7, else `TooManyBlessings`), then caps the loss at the held experience
+  (never below 0); the level follows. The policy ratio and rounding are pinned for a death to
+  D58/D68's 1/1 and `Floor`; any other ratio or rounding is rejected (`InvalidDeathPolicy`)
+  instead of scaling the loss. Awards under the same policy are unaffected. The old L→L+1 span and
+  the duplicate calculator are removed.
 - **Writer** (`durability/character_death.rs`, DEATH-0 §3.5): mirrors `commit_character_experience`
   (recovery fence, admission relation locks, occurrence advisory lock, FND-04 session/lease/scope,
   scope assignment, node incarnation, admission guards, `character_root` row lock). Exact replay
@@ -63,12 +70,29 @@ jira: null   # sync pending (coordinator batch)
 ## Stated assumptions (reversible)
 
 - The D58 closed form is used for the L−1→L span, so level 1 (no L−1 table row) follows D59. The
-  policy `death_loss_numerator/denominator/rounding` stay as a declared scale and rounding (Reference:
-  1/1, `Floor`); their policy-digest encoding is unchanged.
-- No durable promotion or Premium state exists, so `promoted_with_current_premium` is always false
-  in the writer and binds as 0 (D66 applies once Premium activation and promotion land).
-- Every held blessing counts as regular and is consumed until DEATH-4 admits other kinds.
+  policy `death_loss_numerator/denominator/rounding` keep their policy-digest encoding; a death
+  requires them to be 1/1 and `Floor`.
+- **Blessings:** no non-regular blessing kind exists yet, so every held blessing is counted as a
+  regular blessing for D58 and every held blessing is deleted by the death (until DEATH-4 admits
+  other kinds). More than seven held blessings fail the death closed (`TooManyBlessings`).
+- **Promotion:** no durable promotion or Premium state exists, so `promoted_with_current_premium`
+  is always `false` in the writer and binds as 0 (D66 applies once Premium activation and
+  promotion land).
 - Amulet, equipment/backpack snapshot and RNG stream bind as "none" (DEATH-3 delivery gap).
+
+## Runtime role privileges
+
+The writer runs as `oteryn_game_runtime`. Row locks (`FOR UPDATE`/`FOR SHARE`) need UPDATE, which
+0016 does not grant on `game_character_blessings` (SELECT, DELETE) or
+`game_character_pending_respawns` (SELECT, INSERT, DELETE); the death reads of both take no row
+lock (the fence's `character_root` row lock and the admission relation locks already serialize
+every Character writer). The shared gameplay fence read the current interpretation `FOR SHARE`,
+which the runtime (SELECT only, 0006) cannot do either, so no fenced XP award or death could
+commit as the runtime role. That pre-existing XP-writer gap is fixed here because the death commit
+shares the fence: the lock is dropped, which changes nothing else (interpretation rows are
+immutable, 0005 trigger, and a new one is only inserted, so the row lock serialized nothing).
+Follow-up: no PostgreSQL case runs the XP writer (`commit_character_experience`) as the runtime
+role; add one with the next XP-writer change.
 
 ## Validation (local, isolated workspace)
 
@@ -82,3 +106,23 @@ jira: null   # sync pending (coordinator batch)
   `CharacterRevisionMismatch`, no deadlock).
 - RED: with the old XP-only integrity check the restart and mixed-chain cases fail; a chain gap
   (stance receipt removed) fails integrity.
+
+### Repair of 34a3b190 (independent review, disposition FIX)
+
+1. Duplicate D58 calculator: `ApplyDeathExperienceLoss` delegates to
+   `domain::death::death_experience_loss` (#1154 bounds, > 7 regular blessings rejected); PR and
+   task label corrected (no `DEATH-1a`).
+2. Death policy pinned to ratio 1/1 and `Floor`; other ratios/roundings rejected. The XP writer's
+   unit fixture uses 1/1 too.
+3. `FOR UPDATE` removed from the pending-respawn and blessing reads, `FOR SHARE` from the shared
+   fence's interpretation read; a PostgreSQL case commits, replays and rejects a second death as a
+   login in `oteryn_game_runtime`.
+4. A PostgreSQL case commits the same death occurrence concurrently on two roots: exactly one
+   receipt; the other attempt replays it (`AlreadyCommitted`, equal receipt).
+5. Blessing and promotion assumptions recorded above.
+
+RED: the runtime-role case fails with the blessings `FOR UPDATE` (`permission denied for table
+game_character_blessings`) and with the interpretation `FOR SHARE` (`permission denied for table
+game_character_interpretations`); the concurrent same-occurrence case fails when the receipt replay
+is disabled (`CharacterRevisionMismatch`); the ratio/rounding pin case fails when the pin is
+disabled.

@@ -163,9 +163,12 @@ impl DurabilityRoot {
                     };
                     let root_revision = root.revision;
 
+                    // The character_root row lock taken by the fence serializes
+                    // every Character writer, so these reads need no row lock
+                    // (0016 grants the runtime no UPDATE on either relation).
                     let pending: Option<String> = sqlx::query_scalar(
                         "SELECT death_occurrence_id::text FROM game_character_pending_respawns \
-                          WHERE character_id = encode($1,'hex')::uuid FOR UPDATE",
+                          WHERE character_id = encode($1,'hex')::uuid",
                     )
                     .bind(fence.character_id.as_bytes().as_slice())
                     .fetch_optional(&mut *tx)
@@ -202,7 +205,7 @@ impl DurabilityRoot {
 
                     let held: Vec<String> = sqlx::query_scalar(
                         "SELECT blessing_key COLLATE \"C\" FROM game_character_blessings \
-                          WHERE character_id = encode($1,'hex')::uuid ORDER BY 1 FOR UPDATE",
+                          WHERE character_id = encode($1,'hex')::uuid ORDER BY 1",
                     )
                     .bind(fence.character_id.as_bytes().as_slice())
                     .fetch_all(&mut *tx)
@@ -220,8 +223,9 @@ impl DurabilityRoot {
                         magic_progression: (),
                     };
                     // Every held blessing is a regular one until DEATH-4
-                    // admits other kinds; the set is bounded by 32.
-                    let regular_blessings = u32::try_from(held.len())
+                    // admits other kinds; more than D58's seven is rejected
+                    // by the calculator.
+                    let regular_blessings = u8::try_from(held.len())
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     let operation = ProgressionOperation::ApplyDeathExperienceLoss {
                         death_occurrence: request.occurrence,

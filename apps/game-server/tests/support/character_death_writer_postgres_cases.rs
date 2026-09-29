@@ -1,4 +1,4 @@
-// DEATH-1a `commit_character_death` / `reconcile_character_death` cases. A
+// DEATH-1 writer `commit_character_death` / `reconcile_character_death` cases. A
 // child of the shared P03 cases, so both PostgreSQL wrappers run them with
 // the same harness (fenced session, scope assignment, node incarnation).
 
@@ -15,6 +15,7 @@ use crate::durability::character_progression::{
 };
 use crate::foundation::{ConnectionGeneration, ScopeOwnershipGeneration};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+use sqlx::Connection;
 
 /// Hyphenated text of `id(seed)`, as PostgreSQL prints a UUID.
 fn uuid(seed: u8) -> String {
@@ -575,6 +576,183 @@ fn concurrent_xp_award_and_death_serialize_on_the_character_root() -> TestResult
                 }
             };
             assert_eq!(snapshot(&harness.pool).await?, expected);
+            drop(other_authority);
+            drop(authority);
+            drop(seal);
+            drop(other);
+            harness.cleanup().await
+        })
+    })
+}
+
+/// A login in the runtime group (0006): what a deployed GameNode connects as.
+async fn runtime_login(harness: &Harness, tag: &str) -> TestResult<(String, String)> {
+    let suffix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_nanos();
+    let role = format!("death_runtime_{tag}_{suffix}");
+    let password = format!("{role}-secret");
+    for statement in [
+        format!("CREATE ROLE {role} LOGIN PASSWORD '{password}' IN ROLE oteryn_game_runtime"),
+        format!(
+            "GRANT CONNECT ON DATABASE {} TO {role}",
+            harness.database.name
+        ),
+    ] {
+        sqlx::query(sqlx::AssertSqlSafe(statement))
+            .execute(&harness.pool)
+            .await?;
+    }
+    let (_, address) = harness
+        .database
+        .url
+        .split_once('@')
+        .ok_or("database URL has no authority separator")?;
+    Ok((
+        role.clone(),
+        format!("postgresql://{role}:{password}@{address}"),
+    ))
+}
+
+async fn drop_login(admin_url: &str, role: &str) -> TestResult {
+    let mut admin = sqlx::PgConnection::connect(admin_url).await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!("DROP ROLE IF EXISTS {role}")))
+        .execute(&mut admin)
+        .await?;
+    admin.close().await?;
+    Ok(())
+}
+
+#[test]
+fn death_commits_and_replays_under_the_runtime_role_grants() -> TestResult {
+    run(|admin| {
+        Box::pin(async move {
+            let harness =
+                create(admin.clone(), "death_runtime_role", &["embrace", "spark"]).await?;
+            let (role, runtime_url) = runtime_login(&harness, "grant").await?;
+            let result = async {
+                // Every statement below runs as the runtime group, never as
+                // the migration owner: the 0016 grants must be sufficient.
+                let runtime = DurabilityRoot::connect_test_runtime(&runtime_url)?;
+                assert!(runtime.maintain_ready_once().await?);
+                let seal = harness
+                    .recovery
+                    .seal_current()
+                    .map_err(|error| format!("{error:?}"))?;
+                let authority = runtime
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(|error| format!("runtime authority: {error:?}"))?;
+                let request = death(96, &["embrace", "spark"])?;
+                let first = committed(
+                    runtime
+                        .commit_character_death(
+                            &authority,
+                            &harness.node,
+                            fence(1)?,
+                            request.clone(),
+                        )
+                        .await
+                        .map_err(|error| format!("runtime death: {error:?}"))?,
+                )?;
+                assert_eq!((first.experience_after.get(), first.level_after), (5410, 8));
+                assert_eq!(
+                    runtime
+                        .commit_character_death(&authority, &harness.node, fence(1)?, request)
+                        .await
+                        .map_err(|error| format!("runtime replay: {error:?}"))?,
+                    CharacterDeathOutcome::AlreadyCommitted(first)
+                );
+                assert!(matches!(
+                    runtime
+                        .commit_character_death(
+                            &authority,
+                            &harness.node,
+                            fence(2)?,
+                            death(97, &[])?
+                        )
+                        .await,
+                    Err(CharacterProgressionError::RespawnPending)
+                ));
+                assert_eq!(
+                    snapshot(&harness.pool).await?,
+                    format!("2|2,8,5410|0|1|0|-|{}", uuid(96))
+                );
+                let probe = sqlx::PgPool::connect(&runtime_url).await?;
+                let login: (String, bool) = sqlx::query_as(
+                    "SELECT current_user::text, pg_has_role('oteryn_game_runtime', 'MEMBER')",
+                )
+                .fetch_one(&probe)
+                .await?;
+                probe.close().await;
+                assert_eq!(login, (role.clone(), true));
+                drop(authority);
+                drop(seal);
+                drop(runtime);
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            harness.cleanup().await?;
+            drop_login(&admin, &role).await?;
+            result
+        })
+    })
+}
+
+#[test]
+fn concurrent_commits_of_the_same_death_write_exactly_one_receipt() -> TestResult {
+    run(|admin| {
+        Box::pin(async move {
+            let harness = create(admin, "death_same_race", &["spark"]).await?;
+            let other = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+            assert!(other.maintain_ready_once().await?);
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let other_authority = other
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let request = death(98, &["spark"])?;
+            // A lost response retried on another connection while the first
+            // attempt is still in flight: same occurrence, same fence.
+            let first = harness.root.commit_character_death(
+                &authority,
+                &harness.node,
+                fence(1)?,
+                request.clone(),
+            );
+            let second =
+                other.commit_character_death(&other_authority, &harness.node, fence(1)?, request);
+            let outcomes = join_two(first, second).await;
+            let receipt = match outcomes {
+                (
+                    Ok(CharacterDeathOutcome::Committed(winner)),
+                    Ok(CharacterDeathOutcome::AlreadyCommitted(replayed)),
+                )
+                | (
+                    Ok(CharacterDeathOutcome::AlreadyCommitted(replayed)),
+                    Ok(CharacterDeathOutcome::Committed(winner)),
+                ) => {
+                    assert_eq!(winner, replayed);
+                    winner
+                }
+                outcomes => {
+                    return Err(format!("unexpected concurrent outcomes: {outcomes:?}").into());
+                }
+            };
+            // Level 9 with one blessing: 1298 × 0.92 = 1194.16 → 1194.
+            assert_eq!(receipt.experience_lost.get(), 1194);
+            assert_eq!(
+                snapshot(&harness.pool).await?,
+                format!("2|2,8,5306|0|1|0|-|{}", uuid(98))
+            );
             drop(other_authority);
             drop(authority);
             drop(seal);

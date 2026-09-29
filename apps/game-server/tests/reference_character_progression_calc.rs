@@ -1,6 +1,7 @@
 #![allow(clippy::expect_used)]
 //! Structural tests use a synthetic NON_REFERENCE policy. Target threshold parity is UNKNOWN.
 
+use oteryn_game_server::domain::death::death_experience_loss;
 use oteryn_game_server::domain::progression::{
     CurrentProgressionSnapshot, FiniteProgressionPolicy, LevelThreshold,
     ProgressionCalculationError, ProgressionOperation, ProgressionRevisionContext,
@@ -48,8 +49,8 @@ fn policy() -> FiniteProgressionPolicy<&'static str, 4> {
         thresholds: NON_REFERENCE_THRESHOLDS,
         terminal_exclusive_experience: ExactI64::new(2_000),
         death_loss_numerator: 1,
-        death_loss_denominator: 2,
-        death_loss_rounding: RoundingMode::TowardZero,
+        death_loss_denominator: 1,
+        death_loss_rounding: RoundingMode::Floor,
     }
 }
 
@@ -118,10 +119,9 @@ fn non_reference_award_crosses_exact_threshold_and_multiple_thresholds()
 fn declared_difference_death_can_delevel_and_preserves_skill_and_magic()
 -> Result<(), ProgressionCalculationError> {
     let result = calculate(&snapshot(5, 400), &death())?;
-    // D58 at level 5: (55/100) × 50 × (25 − 25 + 8) = 220; the synthetic
-    // policy scale of one half loses 110.
-    assert_eq!(result.death_experience_lost, ExactI64::new(110));
-    assert_eq!(result.experience_after, ExactI64::new(290));
+    // D58 at level 5: (55/100) × 50 × (25 − 25 + 8) = 220.
+    assert_eq!(result.death_experience_lost, ExactI64::new(220));
+    assert_eq!(result.experience_after, ExactI64::new(180));
     assert_eq!(result.level_after, 4);
     assert_eq!(result.skill_progression, "skills-bit-pattern");
     assert_eq!(result.magic_progression, "magic-bit-pattern");
@@ -133,7 +133,7 @@ fn death_loss_depends_on_level_not_within_level_progress() -> Result<(), Progres
 {
     let near_start = calculate(&snapshot(5, 360), &death())?;
     let near_end = calculate(&snapshot(5, 890), &death())?;
-    assert_eq!(near_start.death_experience_lost, ExactI64::new(110));
+    assert_eq!(near_start.death_experience_lost, ExactI64::new(220));
     assert_eq!(
         near_start.death_experience_lost,
         near_end.death_experience_lost
@@ -286,18 +286,8 @@ fn checked_overflow_and_underflow_return_no_outcome() {
         Err(ProgressionCalculationError::Numeric(NumericError::Overflow))
     );
 
-    // Level 3: (53/100) × 50 × 2 = 53, doubled to 106, capped at the 20 held.
-    let mut total_loss = policy();
-    total_loss.death_loss_numerator = 2;
-    total_loss.death_loss_denominator = 1;
-    let capped = calculate_progression(
-        &snapshot(3, 20),
-        &context(),
-        &"synthetic-policy-r4",
-        &death(),
-        &total_loss,
-    )
-    .expect("capped death");
+    // Level 3: (53/100) × 50 × 2 = 53, capped at the 20 held.
+    let capped = calculate(&snapshot(3, 20), &death()).expect("capped death");
     assert_eq!(capped.death_experience_lost, ExactI64::new(20));
     assert_eq!(capped.experience_after, ExactI64::new(0));
     assert_eq!(capped.level_after, 3);
@@ -384,7 +374,7 @@ fn policy_fields() -> FiniteProgressionPolicy<&'static str, REFERENCE_LEVELS> {
 fn reference_death(
     level: u32,
     experience: i64,
-    blessings: u32,
+    blessings: u8,
     promoted: bool,
 ) -> Result<
     oteryn_game_server::domain::progression::StagedProgressionOutcome<&'static str, &'static str>,
@@ -414,7 +404,7 @@ fn d58_loss_matches_the_global_span_form_at_every_required_level()
         // One experience point below the next level: the most a character of
         // this level can hold, so the cap only binds where the loss exceeds it.
         let experience = i64::try_from(global_threshold(at + 1) - 1).expect("experience");
-        for blessings in 0..=4_u32 {
+        for blessings in 0..=4_u8 {
             for promoted in [false, true] {
                 let percent = 100 - 8 * i128::from(blessings) - if promoted { 30 } else { 0 };
                 // Floor of (L+50)/100 × span × percent/100 (D68).
@@ -462,19 +452,61 @@ fn d58_loss_rounds_down_caps_at_zero_and_delevels() -> Result<(), ProgressionCal
 }
 
 #[test]
-fn d58_reductions_beyond_the_whole_loss_fail_closed() {
+fn d58_admits_at_most_the_seven_regular_blessings() {
+    // #1154's bound (`death::MAX_REGULAR_BLESSINGS`): an eighth blessing is
+    // rejected even though 8 × 8% would still leave a positive loss.
+    for blessings in [8_u8, 12, u8::MAX] {
+        assert_eq!(
+            reference_death(100, 16_000_000, blessings, false).map(|_| ()),
+            Err(ProgressionCalculationError::TooManyBlessings)
+        );
+    }
+    // Seven blessings and promotion reduce by 86%, which is admitted and is
+    // exactly `death::death_experience_loss`.
     assert_eq!(
-        reference_death(100, 16_000_000, 13, false).map(|_| ()),
-        Err(ProgressionCalculationError::InvalidDeathReduction)
+        reference_death(100, 16_000_000, 7, true)
+            .map(|outcome| i128::from(outcome.death_experience_lost.get())),
+        Ok(
+            i128::try_from(death_experience_loss(100, 7, true).expect("reference loss"))
+                .expect("loss")
+        )
     );
-    assert_eq!(
-        reference_death(100, 16_000_000, 9, true).map(|_| ()),
-        Err(ProgressionCalculationError::InvalidDeathReduction)
-    );
-    assert_eq!(
-        reference_death(100, 16_000_000, u32::MAX, false).map(|_| ()),
-        Err(ProgressionCalculationError::InvalidDeathReduction)
-    );
-    // Seven blessings and promotion reduce by 86%, which is admitted.
-    assert!(reference_death(100, 16_000_000, 7, true).is_ok());
+}
+
+#[test]
+fn d58_death_loss_is_pinned_to_ratio_one_and_floor() {
+    // Any other ratio or rounding is rejected for a death (D58/D68); an
+    // award under the same policy is unaffected.
+    let mut mutations = Vec::new();
+    for (numerator, denominator) in [(2, 1), (1, 2), (1, 10), (2, 2), (0, 1)] {
+        let mut changed = policy();
+        changed.death_loss_numerator = numerator;
+        changed.death_loss_denominator = denominator;
+        mutations.push(changed);
+    }
+    for rounding in [
+        RoundingMode::TowardZero,
+        RoundingMode::Ceiling,
+        RoundingMode::NearestTiesToEven,
+    ] {
+        let mut changed = policy();
+        changed.death_loss_rounding = rounding;
+        mutations.push(changed);
+    }
+    for changed in mutations {
+        let at = |operation| {
+            calculate_progression(
+                &snapshot(5, 400),
+                &context(),
+                &"synthetic-policy-r4",
+                &operation,
+                &changed,
+            )
+        };
+        assert_eq!(
+            at(death()),
+            Err(ProgressionCalculationError::InvalidDeathPolicy)
+        );
+        assert!(at(award(1)).is_ok());
+    }
 }
