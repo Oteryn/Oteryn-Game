@@ -8,9 +8,11 @@
 //! plane, then identity bytes), so a cutoff always keeps the nearest and the result never
 //! depends on insertion order.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::cmp::Reverse;
+use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 use std::error::Error;
 use std::fmt;
+use std::ops::Bound;
 
 /// `MOVE-RL-08`: enter, leave and update entries in one delta; a larger change is a resync.
 pub(crate) const INTEREST_DELTA_ENTRIES_MAX: usize = 256;
@@ -299,7 +301,7 @@ impl InterestIndex {
                     break 'query;
                 }
                 let budget = VISIBILITY_QUERY_CANDIDATES_MAX - examined;
-                let mut group: Vec<EntityIdentity> = Vec::new();
+                let mut cells: Vec<&BTreeSet<EntityIdentity>> = Vec::new();
                 for floor in floors
                     .iter()
                     .copied()
@@ -314,14 +316,11 @@ impl InterestIndex {
                             return;
                         };
                         if let Some(ids) = self.cells.get(&(floor, x, y)) {
-                            extend_bounded(
-                                &mut group,
-                                ids.iter().filter(|id| *id != observer),
-                                budget,
-                            );
+                            cells.push(ids);
                         }
                     });
                 }
+                let group = merge_bounded(&cells, observer, budget);
                 for id in group {
                     examined += 1;
                     if let Some(entity) = self.entities.get(&id)
@@ -341,27 +340,36 @@ impl InterestIndex {
     }
 }
 
-/// Merges at most `cap` identities from one cell, visited in ascending order, into a group. A
-/// cell can only contribute its `cap` smallest identities to the group's `cap` smallest, so the
-/// scan of a dense cell stops after `cap` visits instead of walking the whole cell.
-fn extend_bounded<'a>(
-    group: &mut Vec<EntityIdentity>,
-    ids: impl Iterator<Item = &'a EntityIdentity>,
+/// Emits, in ascending order, the `cap` smallest identities across the cells of one canonical
+/// group, excluding `observer`, by a k-way merge. Only an emitted identity is visited, so the
+/// whole group costs at most `cap` visits however dense its cells are; finding a cell's next
+/// identity is an ordered-set range lookup, not a walk. Cells hold disjoint identities.
+fn merge_bounded(
+    cells: &[&BTreeSet<EntityIdentity>],
+    observer: &EntityIdentity,
     cap: usize,
-) {
-    for id in ids.take(cap) {
-        insert_bounded(group, *id, cap);
-    }
-}
-
-/// Keeps the `cap` smallest identities of a group in ascending order without exceeding `cap`.
-fn insert_bounded(group: &mut Vec<EntityIdentity>, id: EntityIdentity, cap: usize) {
-    if let Err(position) = group.binary_search(&id)
-        && position < cap
+) -> Vec<EntityIdentity> {
+    let next_after = |cell: usize, after: Bound<&EntityIdentity>| {
+        cells[cell]
+            .range::<EntityIdentity, _>((after, Bound::Unbounded))
+            .find(|id| *id != observer)
+            .copied()
+    };
+    let mut heads: BinaryHeap<Reverse<(EntityIdentity, usize)>> = (0..cells.len())
+        .filter_map(|cell| Some(Reverse((next_after(cell, Bound::Unbounded)?, cell))))
+        .collect();
+    let mut group = Vec::with_capacity(cap.min(cells.iter().map(|cell| cell.len()).sum()));
+    while group.len() < cap
+        && let Some(Reverse((id, cell))) = heads.pop()
     {
-        group.insert(position, id);
-        group.truncate(cap);
+        group.push(id);
+        if group.len() < cap
+            && let Some(next) = next_after(cell, Bound::Excluded(&id))
+        {
+            heads.push(Reverse((next, cell)));
+        }
     }
+    group
 }
 
 /// Calls `visit(dx, dy)` for each in-area cell at Chebyshev distance `ring` on the observer plane.
@@ -814,20 +822,24 @@ mod tests {
             .collect();
         assert_eq!(seen, expected);
 
-        // The cell scan itself is bounded: a dense cell is not walked past the budget.
-        let cell: BTreeSet<_> = (0..dense).map(id).collect();
-        let mut visited = 0_usize;
-        let mut group = Vec::new();
-        extend_bounded(
-            &mut group,
-            cell.iter().inspect(|_| visited += 1),
-            VISIBILITY_QUERY_CANDIDATES_MAX,
-        );
-        assert_eq!(visited, VISIBILITY_QUERY_CANDIDATES_MAX);
+        // Several dense cells of one canonical group share a single budget: exactly `cap`
+        // identities are visited in total and they are the canonical first `cap`.
+        let cells: Vec<BTreeSet<_>> = (0..4_u32)
+            .map(|c| (0..dense).map(|n| id(n * 4 + c)).collect())
+            .collect();
+        let refs: Vec<_> = cells.iter().collect();
+        let group = merge_bounded(&refs, &id(u32::MAX), VISIBILITY_QUERY_CANDIDATES_MAX);
+        assert_eq!(group.len(), VISIBILITY_QUERY_CANDIDATES_MAX);
         let expected: Vec<_> = (0..VISIBILITY_QUERY_CANDIDATES_MAX as u32)
             .map(id)
             .collect();
         assert_eq!(group, expected);
+
+        // The observer is skipped without costing budget, and a small group is fully returned.
+        let small: BTreeSet<_> = [id(2), id(5), id(u32::MAX)].into_iter().collect();
+        let other: BTreeSet<_> = [id(1), id(3)].into_iter().collect();
+        let group = merge_bounded(&[&small, &other], &id(u32::MAX), 10);
+        assert_eq!(group, vec![id(1), id(2), id(3), id(5)]);
         Ok(())
     }
 
