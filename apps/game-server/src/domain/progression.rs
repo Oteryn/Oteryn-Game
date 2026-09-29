@@ -1,6 +1,11 @@
 //! Pure, persistence-neutral Character experience projection.
 
-use oteryn_simulation_determinism::{ExactI64, FixedScale, NumericError, RoundingMode};
+use oteryn_simulation_determinism::{ExactI64, NumericError, RoundingMode};
+
+/// D58 reductions, in percent of the base loss: each regular blessing and a
+/// promotion with current Premium (D66). Additive; together at most 100.
+pub const DEATH_LOSS_REDUCTION_PER_BLESSING_PERCENT: u32 = 8;
+pub const DEATH_LOSS_REDUCTION_PROMOTED_PERCENT: u32 = 30;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProgressionRevisionContext<R> {
@@ -37,6 +42,8 @@ pub struct FiniteProgressionPolicy<R, const N: usize> {
     pub declared_difference_revision: R,
     pub thresholds: [LevelThreshold; N],
     pub terminal_exclusive_experience: ExactI64,
+    /// Declared scale of the D58 death loss (1/1 in the Reference profile),
+    /// applied before the single final rounding (`Floor` in Reference, D68).
     pub death_loss_numerator: i64,
     pub death_loss_denominator: i64,
     pub death_loss_rounding: RoundingMode,
@@ -49,10 +56,17 @@ pub enum ProgressionOperation<O, R> {
         reward_revision: R,
         amount: ExactI64,
     },
+    /// Reference first player death (D58, D59, D66-D68): the loss is
+    /// `((L+50)/100) × 50 × (L² − 5L + 8)`, i.e. the level factor times the
+    /// L−1→L threshold span, reduced by 8% per regular blessing and 30% for a
+    /// promotion with current Premium, scaled by the policy ratio and rounded
+    /// once; experience never drops below 0 and the level follows it.
     ApplyDeathExperienceLoss {
         death_occurrence: O,
         death_policy_revision: R,
         declared_difference_revision: R,
+        regular_blessings: u32,
+        promoted_with_current_premium: bool,
     },
     /// Closed marker allowing callers to reject skill/proficiency families without
     /// translating them into an arbitrary signed experience delta.
@@ -79,6 +93,8 @@ pub enum ProgressionCalculationError {
     InvalidSnapshot,
     InvalidAward,
     ExperienceUnderflow,
+    /// The D58 reductions exceed the whole loss.
+    InvalidDeathReduction,
     Numeric(NumericError),
     UnsupportedOperation,
 }
@@ -133,6 +149,8 @@ where
         ProgressionOperation::ApplyDeathExperienceLoss {
             death_policy_revision,
             declared_difference_revision,
+            regular_blessings,
+            promoted_with_current_premium,
             ..
         } => {
             if death_policy_revision != &policy.death_policy_revision
@@ -140,17 +158,13 @@ where
             {
                 return Err(ProgressionCalculationError::RevisionMismatch);
             }
-            let span = level_span(snapshot.level, policy)?;
-            let lost = FixedScale::new(span.get(), 0)?
-                .checked_mul_ratio(
-                    policy.death_loss_numerator,
-                    policy.death_loss_denominator,
-                    policy.death_loss_rounding,
-                )?
-                .raw();
-            if lost < 0 {
-                return Err(ProgressionCalculationError::InvalidPolicy);
-            }
+            let lost = death_experience_loss(
+                snapshot.level,
+                *regular_blessings,
+                *promoted_with_current_premium,
+                policy,
+            )?
+            .min(snapshot.total_experience.get());
             let after = snapshot.total_experience.checked_sub(ExactI64::new(lost))?;
             if after.get() < 0 {
                 return Err(ProgressionCalculationError::ExperienceUnderflow);
@@ -228,21 +242,49 @@ fn project_level<R, const N: usize>(
         .ok_or(ProgressionCalculationError::MissingThresholdOracle)
 }
 
-fn level_span<R, const N: usize>(
+/// Uncapped D58 loss at `level`, exact until the one final rounding.
+fn death_experience_loss<R, const N: usize>(
     level: u32,
+    regular_blessings: u32,
+    promoted_with_current_premium: bool,
     policy: &FiniteProgressionPolicy<R, N>,
-) -> Result<ExactI64, ProgressionCalculationError> {
-    let index = policy
-        .thresholds
-        .iter()
-        .position(|entry| entry.level == level)
-        .ok_or(ProgressionCalculationError::MissingThresholdOracle)?;
-    let lower = policy.thresholds[index].minimum_experience;
-    let upper = policy
-        .thresholds
-        .get(index + 1)
-        .map_or(policy.terminal_exclusive_experience, |entry| {
-            entry.minimum_experience
-        });
-    Ok(upper.checked_sub(lower)?)
+) -> Result<i64, ProgressionCalculationError> {
+    let overflow = ProgressionCalculationError::Numeric(NumericError::Overflow);
+    let reduction = regular_blessings
+        .checked_mul(DEATH_LOSS_REDUCTION_PER_BLESSING_PERCENT)
+        .and_then(|blessings| {
+            blessings.checked_add(if promoted_with_current_premium {
+                DEATH_LOSS_REDUCTION_PROMOTED_PERCENT
+            } else {
+                0
+            })
+        })
+        .filter(|reduction| *reduction <= 100)
+        .ok_or(ProgressionCalculationError::InvalidDeathReduction)?;
+    let level = i128::from(level);
+    // L² − 5L + 8 is positive for every integer L.
+    let numerator = level
+        .checked_mul(level)
+        .and_then(|square| square.checked_sub(level.checked_mul(5)?))
+        .and_then(|value| value.checked_add(8))
+        .and_then(|span| span.checked_mul(50))
+        .and_then(|span| span.checked_mul(level.checked_add(50)?))
+        .and_then(|value| value.checked_mul(i128::from(100 - reduction)))
+        .and_then(|value| value.checked_mul(i128::from(policy.death_loss_numerator)))
+        .ok_or(overflow)?;
+    let denominator = i128::from(policy.death_loss_denominator)
+        .checked_mul(100 * 100)
+        .ok_or(overflow)?;
+    let quotient = numerator / denominator;
+    let remainder = numerator % denominator;
+    let round_up = match policy.death_loss_rounding {
+        RoundingMode::TowardZero | RoundingMode::Floor => false,
+        RoundingMode::Ceiling => remainder > 0,
+        RoundingMode::NearestTiesToEven => {
+            let twice = remainder.checked_mul(2).ok_or(overflow)?;
+            twice > denominator || (twice == denominator && quotient % 2 == 1)
+        }
+    };
+    let lost = if round_up { quotient + 1 } else { quotient };
+    i64::try_from(lost).map_err(|_| overflow)
 }

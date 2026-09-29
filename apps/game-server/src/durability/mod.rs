@@ -8,6 +8,7 @@ pub mod admission_authority_guards;
 mod admission_journal;
 pub mod character_authority;
 pub mod character_authority_audit;
+pub mod character_death;
 pub mod character_progression;
 pub mod content_activation;
 mod db;
@@ -56,6 +57,22 @@ mod character_progression_linkage {
         let _ = std::mem::size_of::<ProgressionInitializationRequest<2>>();
         let _ = std::mem::size_of::<ProgressionInitializationOutcome>();
         let _ = DurabilityRoot::initialize_character_progression::<2>;
+    }
+
+    #[test]
+    fn character_death_api_is_linked() {
+        use super::character_death::{
+            CharacterDeathOutcome, CharacterDeathRequest, CommittedCharacterDeath, DeathCell,
+            PlayerDeathOccurrence,
+        };
+        let _ = std::mem::size_of::<CharacterDeathOutcome>();
+        let _ = std::mem::size_of::<CharacterDeathRequest<2>>();
+        let _ = std::mem::size_of::<CommittedCharacterDeath>();
+        let _ = std::mem::size_of::<DeathCell>();
+        let _ = PlayerDeathOccurrence::from_bytes;
+        let _ = PlayerDeathOccurrence::as_bytes;
+        let _ = DurabilityRoot::commit_character_death::<2>;
+        let _ = DurabilityRoot::reconcile_character_death;
     }
 }
 

@@ -1264,3 +1264,7 @@ fn existing_progressed_row_is_never_overwritten() -> TestResult {
             harness.cleanup().await
         })
 }
+
+// DEATH-1a death writer cases reuse this harness and run in both wrappers.
+#[path = "character_death_writer_postgres_cases.rs"]
+mod character_death_writer_postgres_cases;
