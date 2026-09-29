@@ -23,6 +23,8 @@ package oteryn.events.v1;
 // §4): the CharacterEquipment `container` slot, direct entries of the equipped
 // main backpack, and the D83 full-merge and top-up shapes. DUR03-RL-01 and
 // DUR03-RL-06 are 2 items / 2 participants / 6 work units for the merge shapes.
+// Its source is a live Ground location or (D3-4, `corpse_source`) a direct
+// entry of a live corpse container; the corpse item itself is never a source.
 // The reward-claim MINT (operation tag 4, chest decisions §5.1, CHEST-1) mints
 // exactly one live item into a new direct entry of the equipped main backpack
 // for a `once` RewardClaim; it has no Ground and no creature-death source.
@@ -143,13 +145,29 @@ message OneItemMintV1 {
   bool before_semantically_absent = 4;
 }
 
+// D3-4 (DUR-03 §39.4 "Pickup source"): Container { parent = a live corpse
+// ItemInstance, entry = placement ordinal } as a TRANSFER source. The corpse's
+// own live Ground location stays carried in full because it is the scope
+// authority of the source (World, Channel, ownership generation), exactly as
+// `OneItemTransferV1.source` is for a Ground source. Additive: new message,
+// new field number; every existing field and golden byte is unchanged.
+message OneItemCorpseSourceV1 {
+  bytes corpse_item_instance_id = 1;  // exactly 16-byte non-nil UUIDv7; never the moved item
+  uint64 placement_ordinal = 2;       // non-zero
+  OneItemGroundV1 corpse_ground = 3;  // the corpse's own live Ground location
+}
+
 message OneItemTransferV1 {
   OneItemStateV1 before = 1;
   OneItemStateV1 after = 2;
+  // Exactly one source: a live Ground location (`source`) or a corpse
+  // container entry (`corpse_source`, D3-4). Both present or both absent
+  // rejects.
   OneItemGroundV1 source = 3;
   OneItemInventoryV1 destination = 4;
   OneItemTransferCauseV1 cause = 5;
   OneItemReceiverV1 receiver = 6; // D83 full merge and top-up only
+  OneItemCorpseSourceV1 corpse_source = 7; // D3-4 corpse-entry source only
 }
 
 // Reward-claim MINT cause: typed_cause "reward_claim_mint", the revisions, the
