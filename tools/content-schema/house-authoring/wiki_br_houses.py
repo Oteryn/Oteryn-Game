@@ -202,7 +202,7 @@ def compare(wiki: dict, catalog: dict) -> dict:
         agree: Counter = Counter()
         seen: Counter = Counter()
 
-        def wiki_value(value):
+        def wiki_value(value, field=field):
             if field == "town":
                 return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
             return number(value)
