@@ -13,6 +13,8 @@ release-role = "tool-only"
 
 [dependencies]
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
+oteryn-session = { version = "=0.1.0", path = "../../crates/session" }
+oteryn-session-tcp = { version = "=0.1.0", path = "../../crates/session-tcp" }
 rustls.workspace = true
 tokio.workspace = true
 tokio-rustls.workspace = true

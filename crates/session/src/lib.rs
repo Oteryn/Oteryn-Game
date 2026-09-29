@@ -1,0 +1,1370 @@
+//! Transport-neutral Oteryn Game session (ADR-0020 section 1, lane N1; ADR-0014 layering
+//! `protocol-oteryn -> session -> TCP adapter`): admission, envelope validation, sequencing,
+//! join-snapshot assembly, the `step`/`use_object` command exchange, command status pairing and
+//! liveness, all over an abstract byte stream ([`SessionStream`]).
+//!
+//! The crate names no TLS or TCP type and opens no connection: a caller (the TCP adapter, a later
+//! QUIC adapter, or a test double) connects, then hands the established stream to
+//! [`Session::admit`]. Transport-level checks that must happen before any Foundation frame is
+//! sent (for the TCP adapter: TLS 1.3 and the exact ALPN `oteryn-game/1`) belong to the adapter.
+//!
+//! Every wire codec used here is `oteryn-protocol-oteryn`'s own (`encode_client_bootstrap`,
+//! `encode_client_command`, `encode_liveness_ack`, `decode_wire_envelope`,
+//! `WireEnvelopeView::validate`, `decode_server_accepted`, `decode_snapshot_chunk_framing`,
+//! `decode_snapshot_body`, `decode_command_result`, `decode_state_delta`,
+//! `decode_liveness_probe`, and the `world_spatial`/`world_object` domain codecs): this crate
+//! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
+//! and its command/sequence discipline. Every admission or codec error fails closed.
+
+use oteryn_protocol_oteryn::world_object::{
+    self, UseDisposition, WorldObjectOverlayEntry, WorldObjectTarget,
+};
+use oteryn_protocol_oteryn::world_spatial::{
+    self, StepDirection, StepDisposition, WorldSpatialObservation,
+};
+use oteryn_protocol_oteryn::{
+    CharacterId, ClientBootstrapValue, ClientCommandValue, CommandStatus, Direction,
+    FoundationProtocolError, FrameLength, GameSessionId, MessageType, decode_command_result,
+    decode_liveness_probe, decode_server_accepted, decode_snapshot_begin, decode_snapshot_body,
+    decode_snapshot_chunk_framing, decode_snapshot_id, decode_state_delta, decode_wire_envelope,
+    encode_client_bootstrap, encode_client_command, encode_liveness_ack,
+};
+use std::error::Error as StdError;
+use std::fmt;
+use std::future::Future;
+use std::io;
+use std::time::Duration;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+
+/// The ALPN protocol id an adapter must negotiate (or otherwise guarantee) before a session is
+/// admitted over its stream. Re-exported so adapters need no direct `protocol-oteryn` edge.
+pub use oteryn_protocol_oteryn::ALPN_OTERYN_GAME_V1;
+
+/// The byte-stream boundary a [`Session`] runs over: an ordered, reliable, bidirectional byte
+/// stream that is already established and, where the transport requires it, already secured and
+/// negotiated. Any tokio `AsyncRead + AsyncWrite` type qualifies; adapters (TCP, later QUIC)
+/// produce one after their own connect/handshake checks.
+pub trait SessionStream: AsyncRead + AsyncWrite + Unpin {}
+
+impl<T: AsyncRead + AsyncWrite + Unpin> SessionStream for T {}
+
+/// Everything [`Session::admit`] needs to admit with one grant and read its join snapshot.
+#[derive(Debug, Clone, Copy)]
+pub struct Admission<'a> {
+    /// FND-02 `ClientBootstrap.schema_revision`. Any nonzero value the server accepts.
+    pub schema_revision: u32,
+    pub character_id: CharacterId,
+    /// The signed admission grant, as the wire's `admission_material` bytes.
+    pub admission_material: &'a [u8],
+    pub client_build_id: &'a str,
+    /// Bounds each individual frame read of the join sequence (`ServerAccepted`, `SnapshotBegin`,
+    /// `SnapshotChunk`, `SnapshotCommit`) and every later per-frame read and write. A stalled
+    /// server fails with `SessionError::Timeout` naming the stage, rather than hanging.
+    pub deadline: Duration,
+}
+
+/// `oteryn-protocol-oteryn`'s own domain codecs (state domains 1 `WORLD_SPATIAL` and 2
+/// `WORLD_OBJECT_OVERLAY`).
+#[derive(Debug, Clone)]
+pub struct JoinSnapshot {
+    pub game_session_id: GameSessionId,
+    pub world_spatial: WorldSpatialObservation,
+    /// The `WORLD_SPATIAL_VISIBILITY` domain revision the snapshot carried: the base every later
+    /// domain-1 `StateDelta` must name.
+    pub world_spatial_revision: u64,
+    pub world_object_overlay: Vec<WorldObjectOverlayEntry>,
+    /// The `WORLD_OBJECT_OVERLAY` domain revision the snapshot carried: the base every later
+    /// domain-2 `StateDelta` must name.
+    pub world_object_overlay_revision: u64,
+}
+
+#[derive(Debug)]
+pub enum SessionError {
+    /// A read or write on the underlying byte stream failed (including an unexpected close).
+    Io(io::Error),
+    /// A `LivenessProbe`'s `probe_id` did not strictly exceed the last one this session acked
+    /// (FND-02 §17: probe ids are monotonic and never reused within a connection generation).
+    ProbeIdNotAdvancing {
+        last: u64,
+        received: u64,
+    },
+    Protocol(FoundationProtocolError),
+    WorldSpatial(world_spatial::WorldSpatialError),
+    WorldObject(world_object::WorldObjectError),
+    /// The server closed, or replied with something other than `ServerAccepted`, before
+    /// admission completed.
+    NotAdmitted(MessageType),
+    /// A later frame's message type did not match what the join sequence expects next.
+    UnexpectedMessage {
+        expected: MessageType,
+        actual: MessageType,
+    },
+    /// A `SnapshotBegin`/`SnapshotChunk`/`SnapshotCommit` frame's own envelope
+    /// `connection_generation` did not match the admitted session's (from `ServerAccepted`).
+    ConnectionGenerationMismatch {
+        expected: u64,
+        actual: u64,
+    },
+    /// `SnapshotChunk`'s or `SnapshotCommit`'s `snapshot_id` did not match `SnapshotBegin`'s —
+    /// the three frames of one join-snapshot transfer no longer correlate.
+    SnapshotIdMismatch {
+        expected: u64,
+        actual: u64,
+    },
+    /// A join-snapshot domain entry named `PROTOCOL_OTERYN_V1_REGISTRY.json` state domain 1
+    /// (`WORLD_SPATIAL_VISIBILITY`) or 2 (`WORLD_OBJECT_OVERLAY`) with a `snapshot_type` other
+    /// than the one registered snapshot type (1) for that domain.
+    UnregisteredSnapshotType {
+        domain_id: u32,
+        snapshot_type: u32,
+    },
+    /// A `SnapshotChunk`'s `chunk_index` did not equal the index this client expected next
+    /// (zero-based, in order — `SnapshotBegin`'s declared `chunk_count`, FND-02 §16).
+    ChunkIndexMismatch {
+        expected: u32,
+        actual: u32,
+    },
+    /// The summed `data` bytes of every received `SnapshotChunk` did not equal `SnapshotBegin`'s
+    /// declared `total_encoded_bytes`.
+    AssembledLengthMismatch {
+        expected: u64,
+        actual: u64,
+    },
+    /// The join snapshot did not carry a domain this client needed.
+    MissingDomain(u32),
+    /// One frame read/write did not complete within `Admission::deadline`.
+    Timeout(&'static str),
+    /// A `step`/`use_object` was attempted on a session that an earlier command exchange failed
+    /// (protocol violation, timeout or I/O): the peer's state is no longer trusted, so nothing
+    /// further is sent on it.
+    SessionUnusable,
+    /// The next `CommandId` would overflow `u64`.
+    CommandIdExhausted,
+    /// A `CommandResult` named a `command_id` other than the one just sent.
+    CommandIdMismatch {
+        expected: u64,
+        actual: u64,
+    },
+    /// A server-sequenced frame (`CommandResult`/`StateDelta`) did not carry exactly the
+    /// previous applied `server_sequence` plus one (FND-02 §14: gapless, in order).
+    ServerSequenceMismatch {
+        expected: u64,
+        actual: u64,
+    },
+    /// A `StateDelta` named a domain other than the one the disposition promised.
+    UnexpectedDomain {
+        expected: u32,
+        actual: u32,
+    },
+    /// A `StateDelta` named a `delta_type` other than the one registered for its domain (1 for
+    /// both `WORLD_SPATIAL` and `WORLD_OBJECT_OVERLAY` in `PROTOCOL_OTERYN_V1_REGISTRY.json`).
+    UnregisteredDeltaType {
+        domain_id: u32,
+        delta_type: u32,
+    },
+    /// A `StateDelta`'s `base_revision` was not the domain revision this client last applied.
+    StateRevisionMismatch {
+        domain_id: u32,
+        expected_base: u64,
+        actual_base: u64,
+    },
+    /// A delta's `content_generation` was not the one the join snapshot loaded.
+    ContentGenerationMismatch {
+        domain_id: u32,
+    },
+    /// A `WORLD_OBJECT_OVERLAY` delta's entry carried a `revision` other than the delta's own
+    /// `new_revision`; nothing from it is applied.
+    OverlayEntryRevisionMismatch {
+        new_revision: u64,
+        entry_revision: u64,
+    },
+    /// A `CommandResult`'s status did not pair with its typed disposition (the server sends
+    /// `ACCEPTED` for every disposition except `REJECTED`, which it sends with `REJECTED`), or
+    /// it carried a duplicate status for the command just sent (a fresh `CommandId` cannot be a
+    /// duplicate).
+    InconsistentCommandResult {
+        command_id: u64,
+        status: CommandStatus,
+    },
+    /// A duplicate-status `CommandResult` (FND-02 §13.2) named a `CommandId` this session never
+    /// sent (below its first, or not yet sent).
+    DuplicateForUnsentCommand {
+        command_id: u64,
+    },
+}
+
+impl fmt::Display for SessionError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Io(error) => write!(formatter, "transport I/O failed: {error}"),
+            Self::Protocol(error) => write!(formatter, "FND-02 protocol error: {error}"),
+            Self::WorldSpatial(error) => {
+                write!(formatter, "WORLD_SPATIAL decode failed: {error:?}")
+            }
+            Self::WorldObject(error) => {
+                write!(formatter, "WORLD_OBJECT_OVERLAY decode failed: {error:?}")
+            }
+            Self::NotAdmitted(message_type) => {
+                write!(formatter, "admission refused: server sent {message_type:?}")
+            }
+            Self::UnexpectedMessage { expected, actual } => write!(
+                formatter,
+                "expected {expected:?} next, server sent {actual:?}"
+            ),
+            Self::ConnectionGenerationMismatch { expected, actual } => write!(
+                formatter,
+                "connection generation mismatch: admitted session is {expected}, frame carried {actual}"
+            ),
+            Self::SnapshotIdMismatch { expected, actual } => write!(
+                formatter,
+                "snapshot id mismatch: SnapshotBegin was {expected}, frame carried {actual}"
+            ),
+            Self::UnregisteredSnapshotType {
+                domain_id,
+                snapshot_type,
+            } => write!(
+                formatter,
+                "domain {domain_id} carried unregistered snapshot_type {snapshot_type}"
+            ),
+            Self::ChunkIndexMismatch { expected, actual } => write!(
+                formatter,
+                "chunk index mismatch: expected {expected} next, chunk carried {actual}"
+            ),
+            Self::AssembledLengthMismatch { expected, actual } => write!(
+                formatter,
+                "assembled snapshot length mismatch: SnapshotBegin declared {expected} bytes, chunks totaled {actual}"
+            ),
+            Self::MissingDomain(domain_id) => {
+                write!(formatter, "join snapshot did not carry domain {domain_id}")
+            }
+            Self::Timeout(stage) => write!(formatter, "timed out waiting for {stage}"),
+            Self::SessionUnusable => write!(
+                formatter,
+                "session is unusable after an earlier failed command exchange"
+            ),
+            Self::CommandIdExhausted => write!(formatter, "CommandId space exhausted"),
+            Self::ProbeIdNotAdvancing { last, received } => write!(
+                formatter,
+                "liveness probe id {received} does not advance past {last}"
+            ),
+            Self::CommandIdMismatch { expected, actual } => write!(
+                formatter,
+                "command id mismatch: sent {expected}, CommandResult carried {actual}"
+            ),
+            Self::ServerSequenceMismatch { expected, actual } => write!(
+                formatter,
+                "server sequence mismatch: expected {expected} next, frame carried {actual}"
+            ),
+            Self::UnexpectedDomain { expected, actual } => write!(
+                formatter,
+                "unexpected state domain: expected a domain {expected} delta, got domain {actual}"
+            ),
+            Self::UnregisteredDeltaType {
+                domain_id,
+                delta_type,
+            } => write!(
+                formatter,
+                "domain {domain_id} delta carried unregistered delta_type {delta_type}"
+            ),
+            Self::StateRevisionMismatch {
+                domain_id,
+                expected_base,
+                actual_base,
+            } => write!(
+                formatter,
+                "domain {domain_id} delta base revision mismatch: applied {expected_base}, delta based on {actual_base}"
+            ),
+            Self::ContentGenerationMismatch { domain_id } => write!(
+                formatter,
+                "domain {domain_id} delta content generation differs from the loaded one"
+            ),
+            Self::OverlayEntryRevisionMismatch {
+                new_revision,
+                entry_revision,
+            } => write!(
+                formatter,
+                "overlay delta new_revision {new_revision} differs from its entry revision {entry_revision}"
+            ),
+            Self::InconsistentCommandResult { command_id, status } => write!(
+                formatter,
+                "command {command_id} result status {status:?} is inconsistent with its disposition"
+            ),
+            Self::DuplicateForUnsentCommand { command_id } => write!(
+                formatter,
+                "duplicate result for command {command_id}, which this session never sent"
+            ),
+        }
+    }
+}
+
+impl StdError for SessionError {}
+
+impl From<io::Error> for SessionError {
+    fn from(error: io::Error) -> Self {
+        Self::Io(error)
+    }
+}
+
+impl From<FoundationProtocolError> for SessionError {
+    fn from(error: FoundationProtocolError) -> Self {
+        Self::Protocol(error)
+    }
+}
+
+impl From<world_spatial::WorldSpatialError> for SessionError {
+    fn from(error: world_spatial::WorldSpatialError) -> Self {
+        Self::WorldSpatial(error)
+    }
+}
+
+impl From<world_object::WorldObjectError> for SessionError {
+    fn from(error: world_object::WorldObjectError) -> Self {
+        Self::WorldObject(error)
+    }
+}
+
+/// One delta a command's outcome carried, already validated and applied to the session's state:
+/// its own `server_sequence` and the domain revisions it moved between.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AppliedDelta<T> {
+    pub server_sequence: u64,
+    pub base_revision: u64,
+    pub new_revision: u64,
+    pub value: T,
+}
+
+/// One command's decoded outcome: the `CommandResult` (its `command_id`, `status`, the typed
+/// `disposition` and the `server_sequence` it arrived at) plus the server-sequenced delta the
+/// disposition promised, if any. `Moved` is followed by exactly one `WORLD_SPATIAL` delta and
+/// `Committed` by exactly one `WORLD_OBJECT_OVERLAY` delta (the server writes each right after
+/// its `CommandResult`); every other disposition carries no delta.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommandOutcome<D> {
+    pub command_id: u64,
+    pub status: CommandStatus,
+    pub disposition: D,
+    pub result_server_sequence: u64,
+    pub world_spatial_delta: Option<AppliedDelta<WorldSpatialObservation>>,
+    pub world_object_overlay_delta: Option<AppliedDelta<WorldObjectOverlayEntry>>,
+}
+
+/// Outcome of `Session::step` (FIRST-CONTROL-WIRE-V1, command type 1).
+pub type StepOutcome = CommandOutcome<StepDisposition>;
+/// Outcome of `Session::use_object` (USE-WIRE-V1, command type 2).
+pub type UseOutcome = CommandOutcome<UseDisposition>;
+
+/// An admitted, joined game session that can issue the registered gameplay commands.
+///
+/// Discipline (FND-02): every `ClientCommand` carries the admitted `connection_generation` and
+/// the next `CommandId` (starting at `ServerAccepted.next_command_id`, strictly increasing,
+/// consumed even when the exchange later fails); every inbound frame is envelope-validated
+/// (`WireEnvelopeView::validate`), must carry the admitted generation, and every
+/// `CommandResult`/`StateDelta` must arrive at exactly the previous applied `server_sequence`
+/// plus one; a `CommandResult` must correlate to the command just sent; a `StateDelta` must name
+/// the domain and registered `delta_type` the disposition promised, be based on exactly the
+/// domain revision last applied, and carry the loaded `content_generation`. A `CommandResult`'s
+/// status must pair with its disposition (`REJECTED` only with `Rejected`). A duplicate-status
+/// result (FND-02 §13.2) for a `CommandId` this session sent is not a violation: it is
+/// recorded and returned by `take_duplicate_outcomes`, never followed by a delta. Any other
+/// violation, timeout or I/O failure makes the session unusable (`SessionUnusable`): the
+/// server's state is no longer known, so nothing further is sent.
+///
+/// Liveness: the session runs no background task. A `LivenessProbe` that arrives while a
+/// command's reply is being read is answered with a `LivenessAck` and otherwise ignored, but
+/// nothing reads (so nothing answers) while the session is idle. A caller that idles longer than
+/// the server's probe cadence (5 s out of combat, three unanswered probes lose control) must
+/// call `service_liveness` for the idle time.
+///
+/// Dropping the session closes the connection.
+#[derive(Debug)]
+pub struct Session<S> {
+    stream: S,
+    deadline: Duration,
+    connection_generation: u64,
+    next_command_id: u64,
+    last_server_sequence: u64,
+    spatial_revision: u64,
+    overlay_revision: u64,
+    world_spatial: WorldSpatialObservation,
+    world_object_overlay: Vec<WorldObjectOverlayEntry>,
+    join_snapshot: JoinSnapshot,
+    unusable: bool,
+    first_command_id: u64,
+    duplicates: Vec<DuplicateOutcome>,
+    last_probe_id: u64,
+}
+
+/// A duplicate-status `CommandResult` (FND-02 §13.2) for an earlier `CommandId` of this session:
+/// the server did not execute that command again. `payload` is the replayed typed result for
+/// `DuplicateReplay` (undecoded; it belongs to the original command's type) and empty for
+/// `DuplicateOutcomeExpired`. It promises no delta.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DuplicateOutcome {
+    pub command_id: u64,
+    pub status: CommandStatus,
+    pub server_sequence: u64,
+    pub payload: Vec<u8>,
+}
+
+/// Most duplicate results retained between `take_duplicate_outcomes` calls; more fails closed.
+const MAX_RETAINED_DUPLICATES: usize = 64;
+
+impl<S: SessionStream> Session<S> {
+    /// Admits over the established `stream` with `admission` and decodes the join snapshot the
+    /// server sends right after `ServerAccepted` (`SnapshotBegin`, `SnapshotChunk`,
+    /// `SnapshotCommit` - FND-02 section 16), keeping the admitted connection: the returned
+    /// session carries the admitted `connection_generation`, the first `CommandId`
+    /// (`ServerAccepted.next_command_id`), the last applied `server_sequence`
+    /// (`SnapshotBegin.target_server_sequence`) and both domain revisions the join snapshot
+    /// established, which `step`/`use_object` then extend under the same envelope, sequence and
+    /// revision discipline.
+    ///
+    /// Every inbound frame is checked with `WireEnvelopeView::validate` (direction, phase,
+    /// sequencing and - pre- vs post-admission - the envelope `connection_generation` presence
+    /// rule) before its payload is consumed at all, then correlated to `SnapshotBegin`'s full
+    /// declaration and the admitted session: `SnapshotBegin`/`SnapshotChunk`/`SnapshotCommit`
+    /// must each carry the admitted `connection_generation`; `SnapshotChunk`'s and
+    /// `SnapshotCommit`'s `snapshot_id` must equal `SnapshotBegin`'s; exactly `SnapshotBegin`'s
+    /// declared `chunk_count` chunks are read, each with the expected `chunk_index` in order; and
+    /// their concatenated `data` bytes must equal `SnapshotBegin`'s declared
+    /// `total_encoded_bytes`. The assembled `SnapshotBody` is protobuf-decoded exactly once, only
+    /// after every chunk and the matching `SnapshotCommit` have validated - never per chunk, since
+    /// a multi-chunk transfer may split a body field at any byte offset. Every frame read is
+    /// bounded by `admission.deadline`.
+    pub async fn admit(mut stream: S, admission: Admission<'_>) -> Result<Self, SessionError> {
+        let bootstrap = encode_client_bootstrap(&ClientBootstrapValue {
+            schema_revision: admission.schema_revision,
+            character_id: admission.character_id,
+            admission_material: admission.admission_material,
+            client_build_id: admission.client_build_id,
+            supported_capabilities: &[],
+        })?;
+        write_frame(&mut stream, &bootstrap).await?;
+
+        let accepted = bounded(
+            admission.deadline,
+            "ServerAccepted",
+            read_frame(&mut stream),
+        )
+        .await?;
+        let accepted_envelope = decode_wire_envelope(&accepted)?;
+        // Pre-admission server traffic: direction, phase (Bootstrap), sequencing (unsequenced) and a
+        // zero envelope `connection_generation` (FND-02 §8/§11/§12/§14) are checked before this
+        // frame's payload is consumed at all.
+        accepted_envelope.validate(Direction::ServerToClient, false)?;
+        if accepted_envelope.message_type() != MessageType::ServerAccepted {
+            return Err(SessionError::NotAdmitted(accepted_envelope.message_type()));
+        }
+        let accepted_fields = decode_server_accepted(accepted_envelope.payload())?;
+        let session_generation = accepted_fields.connection_generation;
+
+        // SnapshotBegin's full declaration: every chunk read below, and the commit that follows
+        // them, is checked against it before being trusted.
+        let begin_frame =
+            bounded(admission.deadline, "SnapshotBegin", read_frame(&mut stream)).await?;
+        let begin_envelope = decode_wire_envelope(&begin_frame)?;
+        // Post-admission server traffic: direction, phase, sequencing (unsequenced — FND-02 §14
+        // snapshot transfer-control frames carry no `server_sequence`) and a nonzero envelope
+        // `connection_generation` are checked before this frame's payload is consumed.
+        begin_envelope.validate(Direction::ServerToClient, true)?;
+        if begin_envelope.message_type() != MessageType::SnapshotBegin {
+            return Err(SessionError::UnexpectedMessage {
+                expected: MessageType::SnapshotBegin,
+                actual: begin_envelope.message_type(),
+            });
+        }
+        if begin_envelope.connection_generation() != session_generation {
+            return Err(SessionError::ConnectionGenerationMismatch {
+                expected: session_generation,
+                actual: begin_envelope.connection_generation(),
+            });
+        }
+        let begin = decode_snapshot_begin(begin_envelope.payload())?;
+
+        // Exactly `begin.chunk_count` `SnapshotChunk` frames, strictly in order: a short transfer
+        // (the server stops early) surfaces here as `UnexpectedMessage` (the next frame is
+        // `SnapshotCommit` instead) or as a bounded `Timeout`/`Io` (the connection stalls or closes).
+        // A multi-chunk transfer may split a `SnapshotBody` protobuf field at any byte offset, not
+        // necessarily a field boundary (FND-02 §16), so every chunk's raw `data` is only ever
+        // concatenated here, in `chunk_index` order, into one owned buffer — never decoded on its
+        // own. `assembled_bytes` is checked against `SnapshotBegin`'s declared
+        // `total_encoded_bytes` with checked arithmetic, and rejected, *before* the chunk's bytes are
+        // appended (before growing the assembly), so an over-declaring or over-sending peer cannot
+        // grow the buffer past the declared bound first and get rejected only afterwards.
+        let mut assembled_body: Vec<u8> = Vec::new();
+        let mut assembled_bytes: u64 = 0;
+        for expected_index in 0..begin.chunk_count {
+            let chunk_frame =
+                bounded(admission.deadline, "SnapshotChunk", read_frame(&mut stream)).await?;
+            let chunk_envelope = decode_wire_envelope(&chunk_frame)?;
+            // Post-admission server traffic, same as `SnapshotBegin` above.
+            chunk_envelope.validate(Direction::ServerToClient, true)?;
+            if chunk_envelope.message_type() != MessageType::SnapshotChunk {
+                return Err(SessionError::UnexpectedMessage {
+                    expected: MessageType::SnapshotChunk,
+                    actual: chunk_envelope.message_type(),
+                });
+            }
+            if chunk_envelope.connection_generation() != session_generation {
+                return Err(SessionError::ConnectionGenerationMismatch {
+                    expected: session_generation,
+                    actual: chunk_envelope.connection_generation(),
+                });
+            }
+            let chunk_snapshot_id = decode_snapshot_id(chunk_envelope.payload())?;
+            if chunk_snapshot_id != begin.snapshot_id {
+                return Err(SessionError::SnapshotIdMismatch {
+                    expected: begin.snapshot_id,
+                    actual: chunk_snapshot_id,
+                });
+            }
+            let (chunk_index, chunk_data) =
+                decode_snapshot_chunk_framing(chunk_envelope.payload())?;
+            if chunk_index != expected_index {
+                return Err(SessionError::ChunkIndexMismatch {
+                    expected: expected_index,
+                    actual: chunk_index,
+                });
+            }
+            let chunk_len = u64::try_from(chunk_data.len()).unwrap_or(u64::MAX);
+            assembled_bytes = assembled_bytes
+                .checked_add(chunk_len)
+                .filter(|total| *total <= begin.total_encoded_bytes)
+                .ok_or(SessionError::AssembledLengthMismatch {
+                    expected: begin.total_encoded_bytes,
+                    actual: assembled_bytes.saturating_add(chunk_len),
+                })?;
+            assembled_body.extend_from_slice(chunk_data);
+        }
+        if assembled_bytes != begin.total_encoded_bytes {
+            return Err(SessionError::AssembledLengthMismatch {
+                expected: begin.total_encoded_bytes,
+                actual: assembled_bytes,
+            });
+        }
+
+        // The commit is accepted only once every declared chunk arrived, in order, and the
+        // assembled length matched.
+        let commit_snapshot_id = read_snapshot_marker(
+            &mut stream,
+            admission.deadline,
+            "SnapshotCommit",
+            MessageType::SnapshotCommit,
+            session_generation,
+        )
+        .await?;
+        if commit_snapshot_id != begin.snapshot_id {
+            return Err(SessionError::SnapshotIdMismatch {
+                expected: begin.snapshot_id,
+                actual: commit_snapshot_id,
+            });
+        }
+
+        // Only now — every declared chunk arrived in order, the assembled length matched, and the
+        // matching `SnapshotCommit` validated — is the assembled `SnapshotBody` decoded, exactly
+        // once (FND-02 §16: "protobuf decode occurs only after a full bounded body is assembled" and
+        // "apply is atomic only after all chunks and matching SnapshotCommit validate").
+        let mut world_spatial_observation = None;
+        let mut world_object_overlay = None;
+        let (mut spatial_revision, mut overlay_revision) = (0, 0);
+        for domain in decode_snapshot_body(&assembled_body)? {
+            match (domain.domain_id, domain.snapshot_type) {
+                (
+                    world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    world_spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                ) => {
+                    world_spatial_observation =
+                        Some(world_spatial::decode_world_spatial(domain.payload)?);
+                    spatial_revision = domain.revision;
+                }
+                (
+                    world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                ) => {
+                    world_object_overlay = Some(
+                        world_object::decode_world_object_overlay_snapshot(domain.payload)?,
+                    );
+                    overlay_revision = domain.revision;
+                }
+                // PROTOCOL_OTERYN_V1_REGISTRY.json registers exactly one snapshot_type (1) for
+                // domains 1 and 2; anything else naming one of those domains is a registry
+                // violation, not a domain this client merely doesn't need.
+                (
+                    domain_id @ world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    snapshot_type,
+                )
+                | (domain_id @ world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, snapshot_type) => {
+                    return Err(SessionError::UnregisteredSnapshotType {
+                        domain_id,
+                        snapshot_type,
+                    });
+                }
+                _ => {}
+            }
+        }
+
+        let snapshot = JoinSnapshot {
+            game_session_id: accepted_fields.game_session_id,
+            world_spatial: world_spatial_observation.ok_or(SessionError::MissingDomain(
+                world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            ))?,
+            world_spatial_revision: spatial_revision,
+            world_object_overlay: world_object_overlay.ok_or(SessionError::MissingDomain(
+                world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            ))?,
+            world_object_overlay_revision: overlay_revision,
+        };
+        Ok(Self {
+            stream,
+            deadline: admission.deadline,
+            connection_generation: session_generation,
+            first_command_id: accepted_fields.next_command_id,
+            next_command_id: accepted_fields.next_command_id,
+            last_server_sequence: begin.target_server_sequence,
+            spatial_revision,
+            overlay_revision,
+            world_spatial: snapshot.world_spatial,
+            world_object_overlay: snapshot.world_object_overlay.clone(),
+            join_snapshot: snapshot,
+            unusable: false,
+            duplicates: Vec::new(),
+            last_probe_id: 0,
+        })
+    }
+
+    pub fn join_snapshot(&self) -> &JoinSnapshot {
+        &self.join_snapshot
+    }
+
+    pub fn into_join_snapshot(self) -> JoinSnapshot {
+        self.join_snapshot
+    }
+
+    /// The own-actor position after every delta applied so far.
+    pub fn world_spatial(&self) -> &WorldSpatialObservation {
+        &self.world_spatial
+    }
+
+    /// The overlay entries after every delta applied so far.
+    pub fn world_object_overlay(&self) -> &[WorldObjectOverlayEntry] {
+        &self.world_object_overlay
+    }
+
+    /// The `CommandId` the next `step`/`use_object` will send.
+    pub fn next_command_id(&self) -> u64 {
+        self.next_command_id
+    }
+
+    /// The `server_sequence` of the last frame applied (initially the snapshot's target).
+    pub fn last_server_sequence(&self) -> u64 {
+        self.last_server_sequence
+    }
+
+    /// Returns (and clears) the duplicate-status results received while reading command results.
+    pub fn take_duplicate_outcomes(&mut self) -> Vec<DuplicateOutcome> {
+        std::mem::take(&mut self.duplicates)
+    }
+
+    /// Keeps an otherwise idle session alive: for up to `duration`, reads frames and answers each
+    /// `LivenessProbe` with a `LivenessAck` (last applied `server_sequence`). Returns `Ok` when
+    /// the time elapses. Any other frame, a failed validation, a closed connection or an I/O
+    /// error fails closed and makes the session unusable. Runs on the caller's task only.
+    pub async fn service_liveness(&mut self, duration: Duration) -> Result<(), SessionError> {
+        self.ensure_usable()?;
+        let until = tokio::time::Instant::now() + duration;
+        let outcome = self.serve_liveness_until(until).await;
+        self.poison_on_error(outcome)
+    }
+
+    async fn serve_liveness_until(
+        &mut self,
+        until: tokio::time::Instant,
+    ) -> Result<(), SessionError> {
+        loop {
+            // Waiting for the first byte is cancel-safe (a plain `read` either returns data or
+            // consumes nothing), so the idle window can end without losing part of a frame; the
+            // rest of a started frame is then read under the ordinary per-frame deadline.
+            let mut first = [0_u8; 1];
+            match tokio::time::timeout_at(until, self.stream.read(&mut first)).await {
+                Err(_elapsed) => return Ok(()),
+                Ok(Err(error)) => return Err(error.into()),
+                Ok(Ok(0)) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
+                Ok(Ok(_)) => {}
+            }
+            let frame = bounded(
+                self.deadline,
+                "idle frame",
+                read_frame_after(&mut self.stream, first[0]),
+            )
+            .await?;
+            let envelope = decode_wire_envelope(&frame)?;
+            envelope.validate(Direction::ServerToClient, true)?;
+            self.check_generation(&envelope)?;
+            if envelope.message_type() != MessageType::LivenessProbe {
+                return Err(SessionError::UnexpectedMessage {
+                    expected: MessageType::LivenessProbe,
+                    actual: envelope.message_type(),
+                });
+            }
+            self.answer_probe(envelope.payload()).await?;
+        }
+    }
+
+    fn check_generation(
+        &self,
+        envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+    ) -> Result<(), SessionError> {
+        if envelope.connection_generation() != self.connection_generation {
+            return Err(SessionError::ConnectionGenerationMismatch {
+                expected: self.connection_generation,
+                actual: envelope.connection_generation(),
+            });
+        }
+        Ok(())
+    }
+
+    async fn answer_probe(&mut self, payload: &[u8]) -> Result<(), SessionError> {
+        let probe_id = decode_liveness_probe(payload)?;
+        if probe_id <= self.last_probe_id {
+            return Err(SessionError::ProbeIdNotAdvancing {
+                last: self.last_probe_id,
+                received: probe_id,
+            });
+        }
+        self.last_probe_id = probe_id;
+        let ack = encode_liveness_ack(
+            self.connection_generation,
+            probe_id,
+            self.last_server_sequence,
+        )?;
+        bounded(
+            self.deadline,
+            "LivenessAck write",
+            write_frame(&mut self.stream, &ack),
+        )
+        .await
+    }
+
+    /// Sends the FND-02 `ClientCommand` type 1 `WORLD_ACTOR_STEP_INTENT` for `direction` and
+    /// decodes its `CommandResult` and, when it `Moved`, the one `WORLD_SPATIAL` delta.
+    pub async fn step(&mut self, direction: StepDirection) -> Result<StepOutcome, SessionError> {
+        self.ensure_usable()?;
+        let payload = world_spatial::encode_step_intent(direction);
+        let outcome = self.exchange_step(&payload).await;
+        self.poison_on_error(outcome)
+    }
+
+    /// Sends the FND-02 `ClientCommand` type 2 `USE_INTENT` (USE-WIRE-V1) for the object at
+    /// `placement`, naming the overlay revision this client believes current
+    /// (`expected_revision`), and decodes its `CommandResult` and, when `Committed`, the one
+    /// `WORLD_OBJECT_OVERLAY` delta.
+    pub async fn use_object(
+        &mut self,
+        placement: &[u8],
+        expected_revision: u64,
+    ) -> Result<UseOutcome, SessionError> {
+        self.ensure_usable()?;
+        let payload = world_object::encode_use_intent(&WorldObjectTarget {
+            placement: placement.to_vec(),
+            expected_revision,
+        })?;
+        let outcome = self.exchange_use(&payload).await;
+        self.poison_on_error(outcome)
+    }
+
+    fn ensure_usable(&self) -> Result<(), SessionError> {
+        if self.unusable {
+            Err(SessionError::SessionUnusable)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn poison_on_error<T>(&mut self, outcome: Result<T, SessionError>) -> Result<T, SessionError> {
+        if outcome.is_err() {
+            self.unusable = true;
+        }
+        outcome
+    }
+
+    async fn exchange_step(&mut self, payload: &[u8]) -> Result<StepOutcome, SessionError> {
+        let result = self
+            .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
+            .await?;
+        let disposition = world_spatial::decode_step_result(&result.payload)?;
+        check_status_pairing(
+            result.command_id,
+            result.status,
+            disposition == StepDisposition::Rejected,
+        )?;
+        let world_spatial_delta =
+            if result.status == CommandStatus::Accepted && disposition == StepDisposition::Moved {
+                Some(self.read_spatial_delta().await?)
+            } else {
+                None
+            };
+        Ok(CommandOutcome {
+            command_id: result.command_id,
+            status: result.status,
+            disposition,
+            result_server_sequence: result.server_sequence,
+            world_spatial_delta,
+            world_object_overlay_delta: None,
+        })
+    }
+
+    async fn exchange_use(&mut self, payload: &[u8]) -> Result<UseOutcome, SessionError> {
+        let result = self
+            .send_and_read_result(world_object::COMMAND_TYPE_USE_INTENT, payload)
+            .await?;
+        let disposition = world_object::decode_use_result(&result.payload)?;
+        check_status_pairing(
+            result.command_id,
+            result.status,
+            disposition == UseDisposition::Rejected,
+        )?;
+        let world_object_overlay_delta = if result.status == CommandStatus::Accepted
+            && disposition == UseDisposition::Committed
+        {
+            Some(self.read_overlay_delta().await?)
+        } else {
+            None
+        };
+        Ok(CommandOutcome {
+            command_id: result.command_id,
+            status: result.status,
+            disposition,
+            result_server_sequence: result.server_sequence,
+            world_spatial_delta: None,
+            world_object_overlay_delta,
+        })
+    }
+
+    /// Sends one command under the next `CommandId` and reads its correlated `CommandResult`.
+    async fn send_and_read_result(
+        &mut self,
+        command_type: u32,
+        payload: &[u8],
+    ) -> Result<ReceivedResult, SessionError> {
+        let command_id = self.next_command_id;
+        // Consumed before the write: an attempted (possibly half-written) command's id is never
+        // reused.
+        self.next_command_id = command_id
+            .checked_add(1)
+            .ok_or(SessionError::CommandIdExhausted)?;
+        let frame = encode_client_command(
+            self.connection_generation,
+            &ClientCommandValue {
+                command_id,
+                command_type,
+                payload,
+            },
+        )?;
+        bounded(
+            self.deadline,
+            "ClientCommand write",
+            write_frame(&mut self.stream, &frame),
+        )
+        .await?;
+
+        loop {
+            let (server_sequence, result_payload) = self
+                .read_sequenced("CommandResult", MessageType::CommandResult)
+                .await?;
+            let result = decode_command_result(&result_payload)?;
+            if matches!(
+                result.status,
+                CommandStatus::DuplicateReplay | CommandStatus::DuplicateOutcomeExpired
+            ) {
+                // FND-02 §13.2: a duplicate names an already reserved lower CommandId and is
+                // never executed again, so it is only ever valid for a CommandId this session
+                // sent before the current one; the current command's own result is never a
+                // duplicate. It carries no delta and does not end the wait for the real result.
+                if result.command_id == command_id {
+                    return Err(SessionError::InconsistentCommandResult {
+                        command_id,
+                        status: result.status,
+                    });
+                }
+                if result.command_id < self.first_command_id || result.command_id > command_id {
+                    return Err(SessionError::DuplicateForUnsentCommand {
+                        command_id: result.command_id,
+                    });
+                }
+                if self.duplicates.len() >= MAX_RETAINED_DUPLICATES {
+                    return Err(FoundationProtocolError::PayloadLimitExceeded.into());
+                }
+                self.duplicates.push(DuplicateOutcome {
+                    command_id: result.command_id,
+                    status: result.status,
+                    server_sequence,
+                    payload: result.payload.to_vec(),
+                });
+                continue;
+            }
+            if result.command_id != command_id {
+                return Err(SessionError::CommandIdMismatch {
+                    expected: command_id,
+                    actual: result.command_id,
+                });
+            }
+            return Ok(ReceivedResult {
+                command_id,
+                status: result.status,
+                server_sequence,
+                payload: result.payload.to_vec(),
+            });
+        }
+    }
+
+    async fn read_spatial_delta(
+        &mut self,
+    ) -> Result<AppliedDelta<WorldSpatialObservation>, SessionError> {
+        let delta = self
+            .read_delta(
+                world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                world_spatial::DELTA_TYPE_WORLD_SPATIAL_V1,
+                self.spatial_revision,
+            )
+            .await?;
+        let observation = world_spatial::decode_world_spatial(&delta.payload)?;
+        if observation.content_generation != self.world_spatial.content_generation {
+            return Err(SessionError::ContentGenerationMismatch {
+                domain_id: world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            });
+        }
+        self.world_spatial = observation;
+        self.spatial_revision = delta.new_revision;
+        Ok(AppliedDelta {
+            server_sequence: delta.server_sequence,
+            base_revision: delta.base_revision,
+            new_revision: delta.new_revision,
+            value: observation,
+        })
+    }
+
+    async fn read_overlay_delta(
+        &mut self,
+    ) -> Result<AppliedDelta<WorldObjectOverlayEntry>, SessionError> {
+        let delta = self
+            .read_delta(
+                world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                world_object::DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                self.overlay_revision,
+            )
+            .await?;
+        let entry = world_object::decode_world_object_overlay_delta(&delta.payload)?;
+        if entry.revision != delta.new_revision {
+            return Err(SessionError::OverlayEntryRevisionMismatch {
+                new_revision: delta.new_revision,
+                entry_revision: entry.revision,
+            });
+        }
+        if entry.content_generation != self.world_spatial.content_generation {
+            return Err(SessionError::ContentGenerationMismatch {
+                domain_id: world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            });
+        }
+        match self
+            .world_object_overlay
+            .iter_mut()
+            .find(|existing| existing.placement == entry.placement)
+        {
+            Some(existing) => *existing = entry.clone(),
+            None => self.world_object_overlay.push(entry.clone()),
+        }
+        self.overlay_revision = delta.new_revision;
+        Ok(AppliedDelta {
+            server_sequence: delta.server_sequence,
+            base_revision: delta.base_revision,
+            new_revision: delta.new_revision,
+            value: entry,
+        })
+    }
+
+    /// Reads one server-sequenced `StateDelta` and checks it names `domain_id`, its registered
+    /// `delta_type`, and is based on exactly `applied_revision`. The caller decodes the typed
+    /// payload and only then commits the new revision.
+    async fn read_delta(
+        &mut self,
+        domain_id: u32,
+        delta_type: u32,
+        applied_revision: u64,
+    ) -> Result<RawDelta, SessionError> {
+        let (server_sequence, payload) = self
+            .read_sequenced("StateDelta", MessageType::StateDelta)
+            .await?;
+        let delta = decode_state_delta(&payload)?;
+        if delta.domain_id != domain_id {
+            return Err(SessionError::UnexpectedDomain {
+                expected: domain_id,
+                actual: delta.domain_id,
+            });
+        }
+        if delta.delta_type != delta_type {
+            return Err(SessionError::UnregisteredDeltaType {
+                domain_id,
+                delta_type: delta.delta_type,
+            });
+        }
+        if delta.base_revision != applied_revision {
+            return Err(SessionError::StateRevisionMismatch {
+                domain_id,
+                expected_base: applied_revision,
+                actual_base: delta.base_revision,
+            });
+        }
+        Ok(RawDelta {
+            server_sequence,
+            base_revision: delta.base_revision,
+            new_revision: delta.new_revision,
+            payload: delta.payload.to_vec(),
+        })
+    }
+
+    /// Reads the next post-admission frame that is not a `LivenessProbe` (each probe is answered
+    /// with a `LivenessAck` first). The envelope is validated as post-admission server traffic
+    /// and must carry the admitted `connection_generation`.
+    async fn read_post_admission(&mut self, label: &'static str) -> Result<Vec<u8>, SessionError> {
+        loop {
+            let frame = bounded(self.deadline, label, read_frame(&mut self.stream)).await?;
+            let envelope = decode_wire_envelope(&frame)?;
+            envelope.validate(Direction::ServerToClient, true)?;
+            self.check_generation(&envelope)?;
+            if envelope.message_type() != MessageType::LivenessProbe {
+                return Ok(frame);
+            }
+            self.answer_probe(envelope.payload()).await?;
+        }
+    }
+
+    /// Reads the next non-probe frame, requires it to be `expected`, and requires its
+    /// `server_sequence` to be exactly the last applied one plus one. Returns that sequence and
+    /// the frame's payload.
+    async fn read_sequenced(
+        &mut self,
+        label: &'static str,
+        expected: MessageType,
+    ) -> Result<(u64, Vec<u8>), SessionError> {
+        let frame = self.read_post_admission(label).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() != expected {
+            return Err(SessionError::UnexpectedMessage {
+                expected,
+                actual: envelope.message_type(),
+            });
+        }
+        let expected_sequence = self
+            .last_server_sequence
+            .checked_add(1)
+            .ok_or(FoundationProtocolError::ServerSequenceGap)?;
+        if envelope.server_sequence() != expected_sequence {
+            return Err(SessionError::ServerSequenceMismatch {
+                expected: expected_sequence,
+                actual: envelope.server_sequence(),
+            });
+        }
+        self.last_server_sequence = expected_sequence;
+        Ok((expected_sequence, envelope.payload().to_vec()))
+    }
+}
+
+/// A validated, correlated `CommandResult` with its typed payload still undecoded.
+struct ReceivedResult {
+    command_id: u64,
+    status: CommandStatus,
+    server_sequence: u64,
+    payload: Vec<u8>,
+}
+
+/// A validated `StateDelta` with its domain-typed payload still undecoded.
+struct RawDelta {
+    server_sequence: u64,
+    base_revision: u64,
+    new_revision: u64,
+    payload: Vec<u8>,
+}
+
+/// Reads one bounded frame expected to be `expected` (`SnapshotBegin` or `SnapshotCommit`),
+/// checks its envelope `connection_generation` matches the admitted session's, and returns its
+/// `snapshot_id` (`decode_snapshot_id`) for the caller to correlate against `SnapshotBegin`'s.
+async fn read_snapshot_marker<S: SessionStream>(
+    stream: &mut S,
+    deadline: Duration,
+    label: &'static str,
+    expected: MessageType,
+    session_generation: u64,
+) -> Result<u64, SessionError> {
+    let frame = bounded(deadline, label, read_frame(stream)).await?;
+    let envelope = decode_wire_envelope(&frame)?;
+    // Post-admission server traffic, same rules as `SnapshotBegin`/`SnapshotChunk`.
+    envelope.validate(Direction::ServerToClient, true)?;
+    if envelope.message_type() != expected {
+        return Err(SessionError::UnexpectedMessage {
+            expected,
+            actual: envelope.message_type(),
+        });
+    }
+    if envelope.connection_generation() != session_generation {
+        return Err(SessionError::ConnectionGenerationMismatch {
+            expected: session_generation,
+            actual: envelope.connection_generation(),
+        });
+    }
+    Ok(decode_snapshot_id(envelope.payload())?)
+}
+
+/// Bounds `future` by `deadline`, mapping an elapsed deadline to `SessionError::Timeout(label)`
+/// and any inner error through `SessionError`'s existing `From` conversions.
+async fn bounded<T, E, F>(
+    deadline: Duration,
+    label: &'static str,
+    future: F,
+) -> Result<T, SessionError>
+where
+    F: Future<Output = Result<T, E>>,
+    SessionError: From<E>,
+{
+    match tokio::time::timeout(deadline, future).await {
+        Ok(result) => result.map_err(SessionError::from),
+        Err(_elapsed) => Err(SessionError::Timeout(label)),
+    }
+}
+
+/// Writes one length-prefixed frame. Generic over the stream type (client or server side of any
+/// transport) so a fake peer can frame with the exact same code the session uses.
+pub async fn write_frame<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    body: &[u8],
+) -> Result<(), SessionError> {
+    let length = FrameLength::new(
+        u32::try_from(body.len()).map_err(|_error| FoundationProtocolError::FrameTooLarge)?,
+    )?;
+    stream.write_all(&length.to_prefix()).await?;
+    stream.write_all(body).await?;
+    stream.flush().await?;
+    Ok(())
+}
+
+/// Reads one length-prefixed frame body (bounded by `FrameLength`).
+pub async fn read_frame<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, SessionError> {
+    let mut prefix = [0_u8; 4];
+    stream.read_exact(&mut prefix).await?;
+    read_frame_body(stream, prefix).await
+}
+
+/// `read_frame` for a frame whose first length-prefix byte was already read.
+async fn read_frame_after<S: AsyncRead + Unpin>(
+    stream: &mut S,
+    first: u8,
+) -> Result<Vec<u8>, SessionError> {
+    let mut prefix = [first, 0, 0, 0];
+    stream.read_exact(&mut prefix[1..]).await?;
+    read_frame_body(stream, prefix).await
+}
+
+async fn read_frame_body<S: AsyncRead + Unpin>(
+    stream: &mut S,
+    prefix: [u8; 4],
+) -> Result<Vec<u8>, SessionError> {
+    let length = FrameLength::from_prefix(&prefix)?;
+    let mut body = vec![0_u8; length.get() as usize];
+    stream.read_exact(&mut body).await?;
+    Ok(body)
+}
+
+/// The server sends `ACCEPTED` for every typed disposition except `REJECTED`, which it sends
+/// with `REJECTED` (`connection.rs` `serve_admitted`, both `STEP` and `USE_INTENT`); any other
+/// pairing is a violation.
+fn check_status_pairing(
+    command_id: u64,
+    status: CommandStatus,
+    disposition_rejected: bool,
+) -> Result<(), SessionError> {
+    let consistent = match status {
+        CommandStatus::Accepted => !disposition_rejected,
+        CommandStatus::Rejected => disposition_rejected,
+        CommandStatus::DuplicateReplay | CommandStatus::DuplicateOutcomeExpired => false,
+    };
+    if consistent {
+        Ok(())
+    } else {
+        Err(SessionError::InconsistentCommandResult { command_id, status })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_protocol_oteryn::world_object::{
+        SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+        WorldObjectOverlayEntry as WireOverlayEntry, encode_world_object_overlay_snapshot,
+    };
+    use oteryn_protocol_oteryn::world_spatial::{
+        ActorPosition, DELTA_TYPE_WORLD_SPATIAL_V1, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+        STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, WorldSpatialObservation as WireSpatialObservation,
+        encode_step_result, encode_world_spatial,
+    };
+    use oteryn_protocol_oteryn::{
+        ChannelId, DomainSnapshot, ServerAcceptedValue, WorldId, encode_command_result,
+        encode_server_accepted, encode_single_chunk_snapshot, encode_state_delta,
+    };
+    use tokio::io::DuplexStream;
+
+    type BoxError = Box<dyn StdError + Send + Sync>;
+
+    const CONTENT_GENERATION: [u8; 32] = [0x11; 32];
+    const DEADLINE: Duration = Duration::from_secs(5);
+
+    fn uuid_v7(marker: u8) -> [u8; 16] {
+        [
+            0x01, 0x93, 0x4f, 0x10, 0x7c, 0x00, 0x70, marker, 0x80, 0x5b, 0x3b, 0x11, 0x22, 0x33,
+            0x44, marker,
+        ]
+    }
+
+    fn spatial(x: i32) -> Vec<u8> {
+        encode_world_spatial(&WireSpatialObservation {
+            content_generation: CONTENT_GENERATION,
+            actor_position: ActorPosition { x, y: 0, floor: 0 },
+        })
+    }
+
+    /// A scripted peer over an in-memory duplex: no TLS, no TCP, no socket. Reads the
+    /// `ClientBootstrap`, admits, sends the join snapshot, then answers one `step` with `Moved`
+    /// and its one `WORLD_SPATIAL` delta.
+    async fn scripted_server(mut stream: DuplexStream) -> Result<(), BoxError> {
+        let bootstrap = read_frame(&mut stream).await?;
+        assert_eq!(
+            decode_wire_envelope(&bootstrap)?
+                .client_bootstrap()?
+                .admission_material,
+            b"grant"
+        );
+        write_frame(
+            &mut stream,
+            &encode_server_accepted(&ServerAcceptedValue {
+                game_session_id: GameSessionId::decode(&uuid_v7(1))?,
+                world_id: WorldId::decode(&uuid_v7(2))?,
+                channel_id: ChannelId::decode(&uuid_v7(3))?,
+                connection_generation: 1,
+                current_server_sequence: 0,
+                next_command_id: 7,
+                schema_revision: 1,
+                selected_capabilities: &[],
+            })?,
+        )
+        .await?;
+        let spatial_payload = spatial(0);
+        let overlay_payload = encode_world_object_overlay_snapshot(&[WireOverlayEntry {
+            content_generation: CONTENT_GENERATION,
+            placement: b"oteryn:cell/entry-door".to_vec(),
+            state: b"oteryn:reference.state.closed".to_vec(),
+            revision: 0,
+        }])
+        .map_err(|error| format!("overlay snapshot: {error:?}"))?;
+        for frame in encode_single_chunk_snapshot(
+            1,
+            1,
+            40,
+            &[
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    revision: 5,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                    payload: &spatial_payload,
+                },
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    revision: 2,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                    payload: &overlay_payload,
+                },
+            ],
+        )? {
+            write_frame(&mut stream, &frame).await?;
+        }
+
+        let command = read_frame(&mut stream).await?;
+        let command = decode_wire_envelope(&command)?;
+        assert_eq!(command.client_command(1)?.command_id, 7);
+        write_frame(
+            &mut stream,
+            &encode_command_result(
+                1,
+                41,
+                7,
+                CommandStatus::Accepted,
+                &encode_step_result(StepDisposition::Moved),
+            )?,
+        )
+        .await?;
+        write_frame(
+            &mut stream,
+            &encode_state_delta(
+                1,
+                42,
+                STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                5,
+                6,
+                DELTA_TYPE_WORLD_SPATIAL_V1,
+                &spatial(1),
+            )?,
+        )
+        .await?;
+        Ok(())
+    }
+
+    fn admission() -> Result<Admission<'static>, BoxError> {
+        Ok(Admission {
+            schema_revision: 1,
+            character_id: CharacterId::decode(&uuid_v7(4))?,
+            admission_material: b"grant",
+            client_build_id: "oteryn-session-test",
+            deadline: DEADLINE,
+        })
+    }
+
+    fn block_on<F: Future>(future: F) -> Result<F::Output, BoxError> {
+        Ok(tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()?
+            .block_on(future))
+    }
+
+    /// The session runs over any byte stream: admission, join snapshot, and one `step` with its
+    /// sequenced delta, with no TLS or TCP anywhere.
+    #[test]
+    fn admits_joins_and_steps_over_an_in_memory_stream() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, server) = tokio::io::duplex(64 * 1024);
+            let server = tokio::spawn(scripted_server(server));
+            let mut session = Session::admit(client, admission()?).await?;
+            assert_eq!(session.next_command_id(), 7);
+            assert_eq!(session.last_server_sequence(), 40);
+            assert_eq!(session.join_snapshot().world_spatial_revision, 5);
+            assert_eq!(session.join_snapshot().world_object_overlay_revision, 2);
+            let outcome = session.step(StepDirection::East).await?;
+            server.await??;
+            assert_eq!(outcome.disposition, StepDisposition::Moved);
+            assert_eq!(outcome.result_server_sequence, 41);
+            let delta = outcome.world_spatial_delta.ok_or("Moved carries a delta")?;
+            assert_eq!((delta.server_sequence, delta.new_revision), (42, 6));
+            assert_eq!(session.world_spatial().actor_position.x, 1);
+            assert_eq!(session.last_server_sequence(), 42);
+            Ok(())
+        })?
+    }
+
+    /// A peer that closes before `ServerAccepted` fails admission closed: no session.
+    #[test]
+    fn a_stream_closed_before_admission_fails_closed() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, server) = tokio::io::duplex(1024);
+            drop(server);
+            let result = Session::admit(client, admission()?).await;
+            assert!(matches!(result, Err(SessionError::Io(_))));
+            Ok(())
+        })?
+    }
+}
