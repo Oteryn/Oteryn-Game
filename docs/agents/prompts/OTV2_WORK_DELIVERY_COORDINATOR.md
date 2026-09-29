@@ -185,6 +185,17 @@ After every worker/review/integration result or material state change:
 
 A blocked preferred lane does not stop unrelated legal work. `PROGRAMME_BLOCKED` is allowed only when a fresh full-DAG pass proves zero legal mutation, useful review/evidence, blocker-reducing preparation and coordinator action. Persist blockers and exact recheck triggers before stopping.
 
+## Token economy (owner decision 2026-09-29)
+
+These rules cut repeated reading and writing; they change no authority, review or integration rule above.
+
+- **One state comment.** Keep one `STATE` comment on #162, edited in place: active tasks (task_id, PR, branch, state), held paths and leases, next free migration, blockers with recheck triggers, and the owner decision queue. Read it first; read older comments only when a concrete decision needs them.
+- **Short entries.** Allocation, FREEZE_SHA and request comments are the YAML packet plus at most five lines. Do not quote diffs, logs or file contents.
+- **Subagent workers.** Run workers as subagents from `.claude/agents/` and name the choice in the allocation packet (`worker: impl|hard|ref` with a one-line reason). Run at most two implementation subagents and one Rust build at a time. A worker report is at most 15 lines.
+- **Batches.** Collect owner decisions into one decision PR per day. Archive the task records of merged PRs in one archive PR per day, after each one's protected-main readback.
+- **Paid review only where required.** Trigger the owner-funded review only when the bound review policy requires it for that head. Do not request it for heads that change only docs, content data or task records unless the policy requires it.
+- **Context.** After closing a task in a long session, run `/compact` keeping task_ids, PRs, SHAs, blockers, decisions and the next step. After a second compaction, hand off to a new session with a 20-line state summary.
+
 ## Architecture escalation
 
 Before mutation, use `ARCHITECTURE_ESCALATION_REQUIRED` for a new/conflicting architecture decision, public API/wire/schema/stable identity change, persistence/value ownership decision, unaccepted hard resource maximum, security/session/crypto/fencing authority change, cross-repository responsibility change, production topology/secret decision, permanent Content/Reference semantics or weakening of fail-closed/review/provenance rules.
