@@ -64,6 +64,22 @@ Not applicable to this docs-only task. ITEM-ID-1 carries the identity and migrat
 
 - Code, content, keys, bindings and migrations.
 
+## Finding dispositions
+
+The Codex review of `ca8cece` raised four P1 findings. All were accepted and fixed in the repair
+commit.
+
+- 4135778774, continuity for retired ids: the comparison file is the last admitted file that
+  contains the id. Its removal is proven by absence from every later manifest.
+- 4135778781, `CONFLICT` as a binding: every source row is kept as a crosswalk evidence row with a
+  disposition. Only `EXACT` and `ACCEPTED_ALIAS` emit target-bearing G4 bindings, which matches the
+  current binding schema and importer.
+- 4135778789, requalification: every crosswalk row is re-derived from its own §4.2 evidence. The
+  manifests now carry per-id appearance record digests, so continuity can be proven.
+- 4135778798, D149 history: each D149 key keeps a tombstone (its last authored definition and
+  digest) in a historical archive. Durable rows resolve to it, and live materialization fails
+  closed for that item only.
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`

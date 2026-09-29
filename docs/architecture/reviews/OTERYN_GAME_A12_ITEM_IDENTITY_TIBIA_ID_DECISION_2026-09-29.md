@@ -79,7 +79,8 @@ Crystal and donor `.dat` files)
   The set only grows. A later admitted client adds ids and never changes what an existing key
   means.
 - **Membership manifests.** Each admitted CipSoft file has a membership manifest:
-  - the complete list of its appearance object ids;
+  - the complete list of its appearance object ids, each with a digest of that id's appearance
+    record (the meaning-bearing fields), so continuity (§4.2) can be proven per id;
   - derived from the exact file bytes, bound to that file's digest, with its own digest recorded.
 
   A census that emits only the difference (for example the B3 "undefined ids" output) is not a
@@ -98,7 +99,8 @@ Crystal and donor `.dat` files)
 - **OT records without a CipSoft appearance (D149).** The 4,590 such records in the current OT
   corpus are removed from authored content.
   - Their old keys get `retired_without_successor` (§4.5).
-  - Historical durable rows that hold them still resolve.
+  - Each old key keeps a tombstone: its last authored definition and that definition's digest, kept
+    in a historical archive outside authored content. Historical durable rows resolve to it (§4.5).
   - Keeping one of them as an Oteryn-only item needs a separate owner decision under D148.
 
 ### 4.2 G4 amendment
@@ -106,18 +108,26 @@ Crystal and donor `.dat` files)
 - The Reference for Oteryn is Global Tibia (CipSoft). CipSoft's item id therefore counts as
   canonical identity, not as a source numeric id. This is the only exception to G4's "never from a
   source numeric id" rule.
-- Canary, Crystal, donors, TibiaWiki and every other source keep G4 unchanged. Their ids are
-  bindings (`ots/item_server_id` and the like) that target the Tibia key.
+- Canary, Crystal, donors, TibiaWiki and every other source keep G4 unchanged.
+  - Every source row is kept as a crosswalk evidence row with a disposition, such as `EXACT`,
+    `ACCEPTED_ALIAS`, `CONFLICT` or `AMBIGUOUS`.
+  - Only `EXACT` and `ACCEPTED_ALIAS` rows emit a target-bearing G4 binding
+    (`ots/item_server_id` and the like) to the Tibia key.
+  - The other dispositions stay unbound crosswalk states, as in the existing importer, and emit no
+    binding.
   - `EXACT` needs G4 identity evidence that both records are the same item. That evidence has two
     parts:
     1. The source row's appearance reference is that Tibia id in an admitted membership manifest.
-    2. CipSoft record continuity holds for that id: its appearance record means the same object in
-       the source's pinned CipSoft file and in the newest admitted file.
+    2. CipSoft record continuity holds for that id. Its appearance record digest in the source's
+       pinned CipSoft file matches the digest in the comparison file:
+       - for a current id, the newest admitted file;
+       - for a retired id, the last admitted file that contains it. Its removal is proven by its
+         absence from every later manifest.
   - A different OT name alone does not block `EXACT`, because OT names are editorial. It is recorded
-    as a note on the binding.
+    as a note on the crosswalk row.
   - Equal numbers alone never prove identity (G4 rule 3).
   - A source row that describes a different item than its id's CipSoft record, such as an OT
-    repurposed id, becomes `CONFLICT` with no target and no alias.
+    repurposed id, becomes a `CONFLICT` crosswalk row. It emits no binding and no alias.
   - A continuity break (the same id with a different CipSoft meaning) is `CONFLICT` and
     `ARCHITECTURE_ESCALATION_REQUIRED`, never `EXACT`.
 - The four-layer separation stays in force: canonical key, source id, presentation identity and
@@ -167,7 +177,11 @@ Crystal and donor `.dat` files)
   or code still references blocks ITEM-ID-1 (fail-closed). It is never guessed.
 - **Durable rows.** Durable rows are not rewritten:
   - A stored row or receipt that holds a retired key keeps it, because it was true when written.
-  - Readers resolve it through the alias table.
+  - Readers resolve it through the alias table:
+    - an alias entry resolves to its Tibia key;
+    - a `retired_without_successor` entry resolves to the key's tombstone (§4.1, D149).
+  - A tombstoned key is readable history only. Live materialization of it fails closed for that one
+    item: the row is held unchanged and reported, and it is never deleted or rewritten.
   - Writers accept only canonical keys, so a write naming a retired key is rejected.
   - This leaves receipt immutability intact.
 
@@ -200,10 +214,16 @@ ITEM-ID-1 must prove all of the following:
 - No two retired keys that meant different items map to the same key.
 - Every key reference in authored content and code is rewritten, and none names a retired key.
 - Every durable row with a retired key resolves through the alias table.
-- No binding is lost: every source binding row survives with a disposition.
-  - `EXACT` and `ACCEPTED_ALIAS` rows target the new keys.
-  - `CONFLICT` rows, such as repurposed ids, keep no target.
-- Every D149 record is removed from authored content, and its old key is `retired_without_successor`.
+- Every crosswalk row is requalified, never copied: its disposition, target and notes are derived
+  again from its own §4.2 evidence. That evidence is:
+  - the source appearance reference;
+  - the source-pinned and comparison appearance record digests;
+  - any name-difference note.
+- No source row is lost: every crosswalk row survives with its derived disposition.
+  - Only `EXACT` and `ACCEPTED_ALIAS` rows emit target-bearing bindings to the new keys.
+  - `CONFLICT` and other unbound rows emit none.
+- Every D149 record is removed from authored content. Its old key is `retired_without_successor`
+  with a tombstone, and every durable row that holds such a key resolves to that tombstone.
 - Semantic constants resolve to existing Tibia keys.
 - No Tibia key coincides with an Oteryn-namespace key.
 
