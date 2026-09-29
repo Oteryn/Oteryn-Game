@@ -305,9 +305,9 @@ both (S21). Fandom `Harmony` r1136128 and `Serene` r1104593 are silent on death,
 | Existing actor | A same-GameSession reconnect and FND-04B §21 recovery keep the actor's value exactly, as for vitals. |
 | Change | A builder, spender, Focus spell or refund changes it at the cast's PRIMARY COMMIT, in the same owner mutation as mana and cooldowns (SPELL-D3). A failed or rejected cast changes nothing. |
 | Durable write | Canary writes at each player save. V1 has two save points. **(1) Actor end:** before the Character lease is released, the owner writes the actor's value in a Character event fenced by the session generation that owns the actor. **(2) Death:** the death Character transaction (see Death). A write whose fence is stale writes nothing. |
-| Death | Harmony becomes 0, as in Canary. At the lethal commit the actor's value becomes 0. The DEATH-1 Character transaction also writes 0 (an added item for the death decision, §4.3 of `reviews/OTERYN_GAME_REFERENCE_FIRST_PLAYER_DEATH_DECISION_2026-09-28.md`, which that decision's owner must accept). If no durable death commits, the durable value is unchanged. |
+| Death | Harmony becomes 0, as in Canary. At the lethal commit the actor's value becomes 0. The DEATH-1 Character transaction also writes 0. This is a binding cross-owner dependency: the item joins §4.3 of `reviews/OTERYN_GAME_REFERENCE_FIRST_PLAYER_DEATH_DECISION_2026-09-28.md`, and the DEATH owner must accept it. It does not block this contract. If no durable death commits, the durable value is unchanged. |
 | Logout and login | Harmony is kept across logout, as Canary saves and loads it. |
-| Crash | After a crash the value returns to the last committed save point. This is a declared limitation that matches Canary's save model. Harmony is not DUR-03 value and cannot be transferred. |
+| Crash | After a crash the value returns to the last committed save point. There is no periodic save point (control-plane resolution, #1205). This is an accepted limitation, consistent with the existing durability model. Harmony is not DUR-03 value and cannot be transferred. |
 
 The actor-end write must commit, or be fenced out, before the Character lease is released. A fresh
 admission therefore always loads the final value of the previous actor, or the last committed one when
@@ -327,7 +327,8 @@ the previous actor's write was fenced out.
   removes a timed Serene at death. It is evaluated again after respawn.
 - **Declared difference.** Canary saves the remaining ticks of a forced Serene at logout (a timed
   condition). V1 does not persist Serene at all (the allocation), so at most 7000 ms of forced Serene
-  is lost when a new runtime actor starts. See question Q1.
+  is lost when a new runtime actor starts. This is the control-plane default (#1205); owner
+  confirmation is pending, and it is not a blocker.
 
 **Wire and compatibility (`ActorVitalsV1`, §3).**
 - Two fields are added: `harmony = 6` and `serene = 7`. They carry the actor's live values, and a
@@ -348,11 +349,15 @@ the previous actor's write was fenced out.
 - The client only displays the values; it never sends Harmony or Serene. Virtue and party data are not
   in this message (§4 interim rule).
 
-**Open questions for the owner or reviewer.**
-- **Q1** Should a forced Serene survive logout, as it does in Canary? The allocation says non-durable;
-  the effect lasts at most 7 s.
-- **Q2** Is a periodic save point wanted in addition to actor end and death? Canary also saves
-  periodically; without one, a crash can reset one session's Harmony changes.
+**Resolutions (control plane, #1205; standing rule 6).**
+- **Q1, forced Serene across logout: non-durable.** This is the control-plane default; owner
+  confirmation is pending, and it is not a blocker. A confirmation that follows Canary would make only
+  the forced-until time durable.
+- **Q2, periodic save point: none.** Actor end and death are the only save points. The crash reset in
+  the table above is accepted.
+
+**Cross-owner dependency.** The death reset of Harmony is a binding item for DEATH-1 (see Death in the
+table above). The DEATH owner must accept it; it does not block this contract.
 
 **Delivery (each child with its own #162 allocation).**
 - **H-1:** the durable field, its migration, the fenced actor-end write and the load into a new actor.

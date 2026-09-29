@@ -95,8 +95,15 @@ read slot points directly.
   - every decrease happens where Canary allows removal (§2).
 - A rejected change writes nothing.
 - The runtime actor's derived values (§3.4) change only after the commit.
-- Available points in V1 are `max(0, level - 50)`. Extra points from scrolls and the monk quest are 0
-  until their owner exists (§5).
+- Available points are `max(0, level - 50) + extra_points`, following Canary (resolution Q3).
+  `extra_points` counts promotion scrolls and the monk quest. Their sources are later items (§5), so
+  `extra_points` is 0 until their owners exist.
+- **Level loss (resolution Q2, as Canary).** The allocation is kept when the character loses levels, and
+  its stages still derive from it.
+  - Unused points are computed with saturating arithmetic: `unused = available - allocated` if
+    `available >= allocated`, else 0. They never go below 0, unlike Canary's `u16` underflow.
+  - While allocated points exceed available points, the owner rejects any increase and accepts
+    decreases under the §2 removal rule.
 
 ### 3.4 Derived values (the hooks the spells read)
 
@@ -113,13 +120,19 @@ read slot points directly.
 
 ### 3.5 Eligibility
 
-Canary's rule applies: a vocation, level above 50, promotion and Premium. The Premium activation
-decision (`reviews/OTERYN_GAME_PREMIUM_ACTIVATION_DECISION_2026-09-28.md` §7) leaves the Wheel
-undecided; see question Q1.
-- Proposal: eligibility is checked at each use, like the promotion benefits under D76. When Premium
-  lapses, the stages become 0 at once, and the allocation is kept.
-- Until Premium and promotion have runtime owners (PREM-1, PREM-2), no character is eligible and every
-  revelation spell stays fail-closed.
+Resolution Q1 follows Canary. Eligibility requires all of these:
+- a vocation;
+- level above 50;
+- promotion;
+- Premium.
+
+The Premium activation decision (`reviews/OTERYN_GAME_PREMIUM_ACTIVATION_DECISION_2026-09-28.md` §7)
+left the Wheel undecided, and this candidate closes that gap.
+- Eligibility is checked at each use, like the promotion benefits under D76. When Premium lapses, the
+  stages become 0 at once, and the allocation is kept.
+- **Explicit dependency.** Eligibility depends on the PREM-1 (Premium entitlement) and PREM-2
+  (promotion) runtime owners. Until both exist, no character is eligible and every revelation spell
+  stays fail-closed.
 
 ## 4. Playable-first slice: what the spell gate needs first
 
@@ -155,7 +168,7 @@ Premium (PREM-1) and promotion (PREM-2).
 | Child | Scope | Depends on |
 |---|---|---|
 | W-R | Wheel ruleset data and its validator | content pipeline |
-| W-1 | Durable allocation, fence, load, derivation, spell-core input | W-R; Character progression storage and migration numbering; high-risk authority/recovery qualification |
+| W-1 | Durable allocation, fence, load, derivation, spell-core input | W-R; Character progression storage and migration numbering; high-risk authority/recovery qualification; PREM-1 and PREM-2 before any stage can be above 0 |
 | W-2 | Allocation change intent and validation | W-1; protocol lane (registry lease) |
 | W-3 | Client Wheel window | W-2; client owner |
 
@@ -166,6 +179,8 @@ Premium (PREM-1) and promotion (PREM-2).
 - The same allocation gives the §2 perk for each vocation.
 - An augment with one full slot gives stage 1, and with two full slots stage 2. A partly filled slot
   counts 0.
+- After a level loss below the allocated points, the stages are unchanged, unused points are 0, an
+  increase is rejected and a decrease near a temple is accepted.
 - A change is rejected, and writes nothing, when:
   - a slot is above its capacity;
   - the sum is above the available points;
@@ -174,13 +189,14 @@ Premium (PREM-1) and promotion (PREM-2).
   - the fence is stale.
 - After a Premium lapse the stages are 0 at the next use, and the allocation survives relog.
 
-## 8. Open questions
+## 8. Questions (resolved)
 
-- **Q1** Is the Wheel a Premium benefit in Oteryn V1, as in Canary and Global? If yes, is it checked
-  at each use (D76)?
-- **Q2** Level loss below the allocated points: Canary keeps the allocation. Does Global reset points,
-  or block only new allocations? The wikis in the repository are silent.
-- **Q3** Should V1 count scroll and monk quest extra points once the item and quest owners exist?
+None open. The control plane resolved all three on #1205, following Canary (standing rule 6):
+- **Q1, eligibility:** Premium, promotion and level above 50, checked at each use. Explicit dependency
+  on PREM-1 and PREM-2 (§3.5).
+- **Q2, level loss:** the allocation is kept, and unused points saturate at 0 (§3.3).
+- **Q3, extra points:** scroll and monk quest points count. Their sources stay later items, so they
+  are 0 until their owners exist (§3.3, §5).
 
 ## 9. Handback
 

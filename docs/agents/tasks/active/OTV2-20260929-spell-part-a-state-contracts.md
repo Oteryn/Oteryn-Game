@@ -55,8 +55,15 @@ No runtime, migration, proto, registry or content change.
   `Harmony` r1136128 and `Serene` r1104593 pages at the target date (silent on death and logout); on
   main, no `ACTOR_VITALS` proto, codec or registry entry.
 - `DERIVED`: the V1 save points (actor end and death); the `ActorVitalsV1` value bounds.
-- `UNKNOWN`: whether the Wheel is Premium-gated in Oteryn V1; the Global rule when levels are lost
-  below the allocated points; whether a forced Serene should persist.
+- `DECIDED` (control plane, #1205, standing rule 6):
+  - no periodic Harmony save point; the crash reset is accepted;
+  - Serene is non-durable (control-plane default, owner confirmation pending);
+  - Wheel eligibility requires Premium, promotion and level above 50, checked at each use (depends on
+    PREM-1 and PREM-2);
+  - the Wheel allocation is kept on level loss, and unused points saturate at 0;
+  - scroll and monk quest extra points count, and are 0 until their owners exist.
+- Cross-owner: the DEATH owner must accept the DEATH-1 Harmony reset. It is binding but does not block
+  this contract.
 
 ## High-risk authority/recovery qualification
 
@@ -83,11 +90,11 @@ fenced durable Character writes. Their implementing children carry the qualifica
 ## Context checkpoint
 
 ```yaml
-last_progress: authored both documents; PR #1205 open
+last_progress: control-plane resolutions encoded; PR #1205 open
 status: validating
 branch: claude/spell-part-a-state-contracts
 pr: 1205
-owner_action_required: "Q1-Q2 of SPELL-D8 and Q1-Q3 of the Wheel candidate"
+owner_action_required: "confirm the non-durable Serene default (SPELL-D8 Q1)"
 blocker: null
 next_action: exact-head review and Merge Queue integration; then the Part A runtime resumes
 ```
