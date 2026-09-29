@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-death1-character-death-writer
 title: DEATH-1 - Character death writer, D58 calculator, pending-respawn consumption
 mode: IMPLEMENT
-status: blocked   # LANE_BLOCKED: 0016 runtime EXECUTE grant (see Blocker)
+status: blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/death1-character-death-writer
