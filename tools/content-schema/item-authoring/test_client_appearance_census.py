@@ -32,6 +32,12 @@ def test_client_key_is_provisional():
     check(not key.startswith("oteryn:"), key)
 
 
+def test_default_appearances_is_the_in_repo_pinned_file():
+    path = census.DEFAULT_APPEARANCES
+    check(path.name == f"appearances-{census.CLIENT_APPEARANCES_SHA256}.dat", path)
+    check(path.parent == census.REPO_ROOT / "content/assets/files", path)
+
+
 def test_client_file_is_pinned_by_size_and_digest():
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / "appearances.dat"
@@ -162,6 +168,7 @@ def test_membership_manifest():
 if __name__ == "__main__":
     for test in (
         test_client_key_is_provisional,
+        test_default_appearances_is_the_in_repo_pinned_file,
         test_client_file_is_pinned_by_size_and_digest,
         test_classify_from_appearance_alone,
         test_build_census_skips_engine_defined_ids,

@@ -1,6 +1,7 @@
 //! Production gameplay TCP/TLS seam. Transport-only: Foundation owns protocol
 //! semantics and the composed owners decide admission.
 
+pub(crate) mod actor_spell;
 mod connection;
 pub(crate) mod fresh_evidence;
 #[cfg(test)]
@@ -325,6 +326,8 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// `ComposedFreshAdmission::step` and `::use_object` both lock, alongside `runtime`, to
     /// decide movement blocking and USE_INTENT transitions.
     pub(crate) door: &'a Mutex<crate::world_runtime::LocalObjectRuntime>,
+    /// The V1 spell book the cast intent's index resolves against (spell cast §3, SPELL-D1).
+    pub(crate) spells: &'a crate::spell::SpellBook,
 }
 
 /// Explicit listener configuration; nothing has a production default.
@@ -394,6 +397,9 @@ pub async fn serve_gameplay(
         runtime: owners.runtime,
         movement_cells: owners.movement_cells,
         door: owners.door,
+        spells: owners.spells,
+        spell_states: Mutex::default(),
+        clock_origin: std::time::Instant::now(),
         lost: std::sync::Mutex::default(),
     };
     serve_listener(
@@ -462,6 +468,13 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// `runtime`, never before, so `step` and `use_object` can never deadlock against each
     /// other.
     pub(crate) door: &'a Mutex<crate::world_runtime::LocalObjectRuntime>,
+    pub(crate) spells: &'a crate::spell::SpellBook,
+    /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
+    /// `runtime`, never before, like `door`.
+    pub(crate) spell_states: Mutex<actor_spell::ChannelSpellStates>,
+    /// Origin of the owner clock cooldowns are measured on: process-local and monotonic, never a
+    /// client or wall-clock time (spell cast §2).
+    pub(crate) clock_origin: std::time::Instant,
     /// Ended admitted sessions whose loss is durably recorded and whose grace has not ended:
     /// the only sessions a `ClientResume` can name. At most one entry per admitted session.
     pub(crate) lost: std::sync::Mutex<std::collections::HashMap<GameSessionId, AdmittedSession>>,
@@ -747,6 +760,42 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 UseOutcome::rejected()
             }
         }
+    }
+
+    async fn observe_vitals(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let runtime = self.runtime.lock().await;
+        let states = self.spell_states.lock().await;
+        actor_spell::observe_vitals(&runtime, &states, actor, game_session_id)
+    }
+
+    /// One cast as one Channel-owner work item (`SPELL-RL-01` = 1), under the same runtime lock
+    /// `step` and `use_object` take.
+    async fn cast_spell(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        command_id: u64,
+        intent: actor_spell::SpellCastIntent,
+    ) -> actor_spell::SpellCastOutcome {
+        let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+            u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX),
+        );
+        let runtime = self.runtime.lock().await;
+        let mut states = self.spell_states.lock().await;
+        actor_spell::cast_in_channel(
+            &runtime,
+            &mut states,
+            self.spells,
+            actor,
+            game_session_id,
+            command_id,
+            &intent,
+            now,
+        )
     }
 
     async fn lose_control(&self, admitted: AdmittedSession, wait: Duration) -> ControlLossResult {
@@ -1313,11 +1362,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !first_entry_authority_is_current(&expected, current, character.as_ref()) {
             return FirstEntryOutcome::RefusedStaleAuthority;
         }
-        match runtime.initialize_first_entry_position(actor) {
+        let outcome = match runtime.initialize_first_entry_position(actor) {
             Ok(FirstEntryPosition::Initialized(_)) => FirstEntryOutcome::Positioned,
             Ok(FirstEntryPosition::Reconciled(_)) => FirstEntryOutcome::Reconciled,
-            Err(_) => FirstEntryOutcome::RefusedByChannel,
+            Err(_) => return FirstEntryOutcome::RefusedByChannel,
+        };
+        // Spell cast §4: the vitals and cooldowns are created in this same owner step, before the
+        // actor's first command, and only from Character-owned facts.
+        if let Some(facts) = character_cast_facts(current.commit().character_id())
+            && self
+                .spell_states
+                .lock()
+                .await
+                .initialize(&runtime, actor, game_session_id, facts)
+                .is_none()
+        {
+            return FirstEntryOutcome::RefusedByChannel;
         }
+        outcome
     }
 
     async fn rollback_runtime_player(
@@ -1461,6 +1523,16 @@ impl FreshAdmissionDurabilityPortV1 for PreparedRequest {
     fn reconcile(&mut self, _: &FreshAdmissionOperationV1) -> FreshAdmissionSubmissionV1 {
         FreshAdmissionSubmissionV1::Unavailable
     }
+}
+
+/// Spell cast §4 and SPELL-D4: the Character-owned cast facts of an admitted Character. Level is
+/// Character progression (R7 P03, D88), but vocation and magic level have no GAME-CHAR owner yet,
+/// so no Character has cast facts: casting stays gated (`REJECTED`, no `ACTOR_VITALS`) until that
+/// owner supplies them here. The client is never a source.
+const fn character_cast_facts(
+    _character: crate::foundation::CharacterId,
+) -> Option<crate::spell::cast::CharacterCastFacts> {
+    None
 }
 
 fn unix_seconds() -> Option<i64> {

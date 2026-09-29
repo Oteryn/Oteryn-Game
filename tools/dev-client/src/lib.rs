@@ -17,12 +17,14 @@
 //! allows, and it is kept out of both production closures (`oteryn-client`, `oteryn-game-server`)
 //! by `workspace-boundaries.toml`.
 
+use oteryn_protocol_oteryn::actor_spell::{ActorSpellError, ActorVitals, SpellTarget};
 use oteryn_protocol_oteryn::world_object::{self, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObservation};
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError, MessageType};
 use oteryn_session::{Admission, Session, SessionError};
 pub use oteryn_session::{
-    AppliedDelta, CommandOutcome, DuplicateOutcome, JoinSnapshot, StepOutcome, UseOutcome,
+    AppliedDelta, CastOutcome, CommandOutcome, DuplicateOutcome, JoinSnapshot, StepOutcome,
+    UseOutcome,
 };
 use oteryn_session_tcp::{TcpAdapterError, TcpConnect, TcpTlsStream};
 use rustls::pki_types::CertificateDer;
@@ -30,6 +32,7 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::io;
 use std::net::SocketAddr;
+use std::num::NonZeroU32;
 use std::time::Duration;
 
 /// Everything `connect_and_join` needs to admit with one grant and read its join snapshot.
@@ -75,6 +78,7 @@ pub enum DevClientError {
     Protocol(FoundationProtocolError),
     WorldSpatial(world_spatial::WorldSpatialError),
     WorldObject(world_object::WorldObjectError),
+    ActorSpell(ActorSpellError),
     /// The server closed, or replied with something other than `ServerAccepted`, before
     /// admission completed.
     NotAdmitted(MessageType),
@@ -178,6 +182,7 @@ impl From<SessionError> for DevClientError {
             SessionError::Protocol(error) => Self::Protocol(error),
             SessionError::WorldSpatial(error) => Self::WorldSpatial(error),
             SessionError::WorldObject(error) => Self::WorldObject(error),
+            SessionError::ActorSpell(error) => Self::ActorSpell(error),
             SessionError::NotAdmitted(message_type) => Self::NotAdmitted(message_type),
             SessionError::UnexpectedMessage { expected, actual } => {
                 Self::UnexpectedMessage { expected, actual }
@@ -299,6 +304,12 @@ impl fmt::Display for DevClientError {
             Self::Protocol(error) => write!(formatter, "FND-02 protocol error: {error}"),
             Self::WorldSpatial(error) => {
                 write!(formatter, "WORLD_SPATIAL decode failed: {error:?}")
+            }
+            Self::ActorSpell(error) => {
+                write!(
+                    formatter,
+                    "ACTOR_SPELL/ACTOR_VITALS decode failed: {error:?}"
+                )
             }
             Self::WorldObject(error) => {
                 write!(formatter, "WORLD_OBJECT_OVERLAY decode failed: {error:?}")
@@ -461,7 +472,12 @@ impl DevClientSession {
         self.session.world_object_overlay()
     }
 
-    /// The `CommandId` the next `step`/`use_object` will send.
+    /// The own-actor vitals after every delta applied so far, if the server has sent any.
+    pub fn actor_vitals(&self) -> Option<&ActorVitals> {
+        self.session.actor_vitals()
+    }
+
+    /// The `CommandId` the next `step`/`use_object`/`cast_spell` will send.
     pub fn next_command_id(&self) -> u64 {
         self.session.next_command_id()
     }
@@ -484,6 +500,19 @@ impl DevClientSession {
     /// See `Session::step`.
     pub async fn step(&mut self, direction: StepDirection) -> Result<StepOutcome, DevClientError> {
         Ok(self.session.step(direction).await?)
+    }
+
+    /// See `Session::cast_spell`.
+    pub async fn cast_spell(
+        &mut self,
+        spell: NonZeroU32,
+        target: SpellTarget,
+        aim_at_target: bool,
+    ) -> Result<CastOutcome, DevClientError> {
+        Ok(self
+            .session
+            .cast_spell(spell, target, aim_at_target)
+            .await?)
     }
 
     /// See `Session::use_object`.
