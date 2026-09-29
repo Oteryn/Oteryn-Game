@@ -1,9 +1,10 @@
 # Oteryn spell native behaviours (candidate v1)
 
 - Date: 2026-09-28
-- Status: CANDIDATE / behaviour specifications for review. There is no schema, converter, runtime or `content/`
-  change. Each proposed `native_behavior` key or schema field needs the owner's acceptance, and its implementation
-  needs an implementing owner allocated through #162 (S7, D13).
+- Status: CANDIDATE / behaviour specifications. The owner accepted the proposed `native_behavior` keys and
+  parameters on 2026-09-29 (S27); the open questions stay open for in-game tests. There is no schema, converter,
+  runtime or `content/` change. Each key's implementation needs an implementing owner allocated through #162
+  (S7, D13); until then the content compiler rejects it.
 - Request: owner request of 2026-09-28 (finish the spell work as far as possible without the owner); programme story
   KAN-16; coordination #162.
 - Parent: `OTERYN_SPELL_AUTHORING_SCHEMA_V1.md` (S3, S7, S11, S21, S24, S25, S26). The chain pattern is specified
