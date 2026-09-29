@@ -1865,6 +1865,7 @@ dependencies = [
  "oteryn-identity",
  "oteryn-input-actions",
  "oteryn-input-platform",
+ "oteryn-placeholder-assets",
  "oteryn-platform-client",
  "oteryn-platform-contracts",
  "oteryn-renderer",
@@ -1967,6 +1968,10 @@ dependencies = [
  "oteryn-input-actions",
  "winit",
 ]
+
+[[package]]
+name = "oteryn-placeholder-assets"
+version = "0.1.0"
 
 [[package]]
 name = "oteryn-platform-client"

@@ -1,4 +1,5 @@
 use oteryn_client::pre_native_status;
+use oteryn_client::scene::PlaceholderScene;
 use oteryn_foundation::ProcessGeneration;
 use oteryn_renderer::{SurfacePhase, WindowsRenderer};
 use std::fmt::{self, Display, Formatter};
@@ -44,6 +45,7 @@ struct Application {
     smoke: bool,
     window: Option<Arc<Window>>,
     renderer: Option<WindowsRenderer<Arc<Window>>>,
+    scene: Option<PlaceholderScene>,
     generation: ProcessGeneration,
     fatal_error: Option<ShellError>,
 }
@@ -54,6 +56,7 @@ impl Application {
             smoke,
             window: None,
             renderer: None,
+            scene: None,
             generation: ProcessGeneration::new(1),
             fatal_error: None,
         }
@@ -104,7 +107,11 @@ impl ApplicationHandler for Application {
             return;
         }
         let size = window.inner_size();
-        let Ok(renderer) = WindowsRenderer::new(
+        let Ok(scene) = PlaceholderScene::new() else {
+            self.fail(event_loop, ShellError::RendererInitialization);
+            return;
+        };
+        let Ok(mut renderer) = WindowsRenderer::new(
             Arc::clone(&window),
             self.generation,
             size.width,
@@ -113,9 +120,11 @@ impl ApplicationHandler for Application {
             self.fail(event_loop, ShellError::RendererInitialization);
             return;
         };
+        renderer.set_atlas(scene.atlas().clone());
         window.request_redraw();
         self.window = Some(window);
         self.renderer = Some(renderer);
+        self.scene = Some(scene);
     }
 
     fn suspended(&mut self, event_loop: &ActiveEventLoop) {
@@ -152,9 +161,11 @@ impl ApplicationHandler for Application {
                 }
             }
             WindowEvent::RedrawRequested => {
-                if let Some(renderer) = &mut self.renderer
+                if let (Some(renderer), Some(scene)) = (&mut self.renderer, &self.scene)
                     && redraw_eligible(Some(renderer.state().phase()))
-                    && renderer.render(self.generation).is_err()
+                    && renderer
+                        .render_batches(self.generation, scene.tiles(), scene.sprites())
+                        .is_err()
                 {
                     self.fail(event_loop, ShellError::RendererRender);
                 }
