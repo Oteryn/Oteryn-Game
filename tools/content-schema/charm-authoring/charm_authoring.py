@@ -15,12 +15,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import itertools
 import json
-from pathlib import Path
 import re
 import sys
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
@@ -204,7 +205,7 @@ def wiki_facts(
     title: str, pageid: int, revid: int, timestamp: str, wikitext: str
 ) -> dict:
     """Infobox Charm facts of one page; rejects any page whose shape or phrases differ."""
-    fields = dict(re.findall(r"^\|\s*(\w+)\s*=\s*(.*?)\s*$", wikitext, re.M))
+    fields = dict(re.findall(r"^\|\s*(\w+)\s*=\s*(.*?)\s*$", wikitext, re.MULTILINE))
     if not re.search(r"\{\{Infobox[ _]Charm\|", wikitext):
         raise ValueError(f"{title}: no Infobox Charm")
     for field in ("name", "type", "cost", "effect", "implemented"):
@@ -255,7 +256,9 @@ def canary_facts(source: bytes) -> list[dict]:
     if sha256(source) != CANARY_SHA256:
         raise ValueError("canary: bestiary_charms.lua digest mismatch")
     text = source.decode("utf-8")
-    blocks = re.findall(r"^\t\[(\d+)\] = \{\n(.*?)^\t\},$", text, re.M | re.S)
+    blocks = re.findall(
+        r"^\t\[(\d+)\] = \{\n(.*?)^\t\},$", text, re.MULTILINE | re.DOTALL
+    )
     rows = []
     for position, (index, body) in enumerate(blocks, 1):
         if int(index) != position:
@@ -264,7 +267,7 @@ def canary_facts(source: bytes) -> list[dict]:
         def one(
             pattern: str, *, required: bool = True, body: str = body, index: str = index
         ) -> str | None:
-            found = re.findall(pattern, body, re.M)
+            found = re.findall(pattern, body, re.MULTILINE)
             if len(found) > 1 or (required and not found):
                 raise ValueError(
                     f"canary charm {index}: {pattern!r} matched {len(found)} times"
@@ -275,7 +278,9 @@ def canary_facts(source: bytes) -> list[dict]:
             field: str, body: str = body, index: str = index
         ) -> list[int | float]:
             found = re.findall(
-                rf"^\t\t{field} = \{{ ([\d.]+), ([\d.]+), ([\d.]+) \}},$", body, re.M
+                rf"^\t\t{field} = \{{ ([\d.]+), ([\d.]+), ([\d.]+) \}},$",
+                body,
+                re.MULTILINE,
             )
             if len(found) != 1:
                 raise ValueError(f"canary charm {index}: {field} triple")
@@ -315,7 +320,7 @@ def fetch_wiki(titles: list[str]) -> list[dict]:
     request = urllib.request.Request(
         f"{WIKI_API}?{query}", headers={"User-Agent": "Oteryn charm source capture"}
     )
-    with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310 (fixed https endpoint)
+    with urllib.request.urlopen(request, timeout=60) as response:
         pages = json.load(response)["query"]["pages"]
     if sorted(p["title"] for p in pages) != sorted(titles) or any(
         "missing" in p for p in pages
@@ -493,9 +498,9 @@ def validate(catalogue: dict) -> list[str]:
         stages = charm["stages"]
         if [s["stage"] for s in stages] != [1, 2, 3]:
             errors.append(f"{where}: stages must be 1, 2, 3 in order")
-        if not all(a["cost"] < b["cost"] for a, b in zip(stages, stages[1:])):
+        if not all(a["cost"] < b["cost"] for a, b in itertools.pairwise(stages)):
             errors.append(f"{where}: stage costs must increase")
-        if not all(a["value"] < b["value"] for a, b in zip(stages, stages[1:])):
+        if not all(a["value"] < b["value"] for a, b in itertools.pairwise(stages)):
             errors.append(f"{where}: stage values must increase")
         if charm["stage_value"] == CHANCE and stages[-1]["value"] > 100:
             errors.append(f"{where}: a trigger chance cannot exceed 100%")
