@@ -139,3 +139,19 @@ Each slice is playable-first on its own: CHARM-2 alone makes Bestiary progress v
 - Charm reset, Charm Upgrade potions, the Store "all charms" expansion, slot limits by premium status, and Bosstiary.
   These are later decisions.
 - Any wire message numbers, DDL or code. Those follow in the accepted slice's own contract and PR.
+
+## 7. Owner answers (2026-09-29, in session)
+
+The owner answered in session. Decision-register numbers are assigned by the coordinator batch on `#162`.
+
+| Question | Answer | Effect |
+|---|---|---|
+| 1. Scope order | **c**: all slices in parallel | CHARM-1..5 start together. Each slice has its own writer and disjoint owned paths. Dependent slices code against the interfaces in §4 and merge in dependency order (1, 2, 3, 4, 5). |
+| 2. Economy storage | **a** | Only unlocks and assignments are stored; Charm Points and Echoes are derived. |
+| 3. Unassign fee | **c** | No unassign command until `GAME-ITEM-01`/`DUR-03` prove the Character and Item boundary. Unassign then ships with the gold fee from the start. |
+| 4. First effect group | **c**: all 25 | CHARM-4 covers every effect type in the catalogue. Effects whose runtime system does not exist yet (loot, skinning, death penalty, leech, critical hits, fleeing, mana drain) fail closed until that system exists. |
+| 5. Source conflicts | **a**: follow TibiaWiki | The owner verifies Bless, Carnage, Overpower, Overflux and Parry in the live game. A result that disagrees with the wiki reopens the item. |
+| 6. Credit rule | **a** | Credit is given when the character damaged the creature within the last 5 minutes before its death. |
+
+Also verified by the owner in the live game before CHARM-3 freezes: how many charms one creature may hold at once
+(§4.2 `UNKNOWN`).
