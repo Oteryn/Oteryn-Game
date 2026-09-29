@@ -65,7 +65,8 @@ Outlaw Camp, Tunnel Gardens 10-12, ...) are Kazordoon and Thais/Carlin flats tha
 client lays out differently; the official client values are kept.
 
 Owner in-game check (2026-09-29) agrees with the 15.30 client, not the wiki: The Lair 166 sqm,
-3 beds; East Lane 2 108 sqm, 2 beds; Lower Barracks 1 25 sqm, 2 beds; Lower Barracks 11 does
+3 beds; East Lane 2 108 sqm, 2 beds; Lower Barracks 1 25 sqm, 2 beds; Sorcerer's Avenue
+Labs 2a 29 sqm, 2 beds; Lower Barracks 11 does
 not exist.
 
 ## Files

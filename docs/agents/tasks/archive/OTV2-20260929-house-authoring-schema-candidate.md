@@ -63,7 +63,7 @@ Item identity is touched. Runtime House state stays out by the tree contract.
   town 915/915 agree with the official values. Disagreements are mostly houses the 15.30
   client lays out differently (Kazordoon barracks, Outlaw Camp); official values kept.
 - PROVEN (owner in-game check): The Lair 166 sqm/3 beds, East Lane 2 108 sqm/2 beds, Lower
-  Barracks 1 25 sqm/2 beds, Lower Barracks 11 absent; all match the 15.30 client, not the wiki.
+  Barracks 1 25 sqm/2 beds, Sorcerer's Avenue Labs 2a 29 sqm/2 beds, Lower Barracks 11 absent; all match the 15.30 client, not the wiki.
 
 ## Owner decisions (2026-09-29)
 
