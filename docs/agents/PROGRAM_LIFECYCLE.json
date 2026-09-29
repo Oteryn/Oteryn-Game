@@ -24,11 +24,41 @@
       "authoritative": false,
       "terminal_evidence": [
         "archived on protected main before Issue #740",
-        "WP3-v2 launch successor is docs/agents/programs/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md"
+        "WP3-v2 launch successor is docs/agents/programs/archive/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md"
       ],
       "superseded_by": [
-        "docs/agents/programs/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md",
+        "docs/agents/programs/archive/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md",
         "live GitHub WP3 lifecycle state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK",
+      "path": "docs/agents/programs/archive/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "WP3-v2 family prompts retired to docs/agents/prompts/retired/ on 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_V2_MULTI_AGENT_DELIVERY_PROGRAMME",
+      "path": "docs/agents/programs/archive/OTV2_WP3_V2_MULTI_AGENT_DELIVERY_PROGRAMME.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "WP5 G0 READY on #319 (comment 5809797683)",
+        "Server Seam #247 closed via PR #823",
+        "programme role prompts A0-A6 retired on 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
       ]
     },
     {

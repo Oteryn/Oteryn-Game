@@ -13,15 +13,9 @@ Prompts are task-specific deltas over root/nearest instructions, bound META and 
 
 The former `Oteryn: terra game coordinator` and `Oteryn: implementation coordinator` profiles are retired provenance. `OTV2_WORK_DELIVERY_COORDINATOR.md` is the sole reusable mutating Game control-plane profile; live allocation still governs whether it may mutate.
 
-## Current WP3-v2 / upstream-first family
+## Retired programme families
 
-- `OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR.md` — **`Oteryn: astra wp3-v2 programme coordinator`.**
-- `OTV2_ASTRA_WP3_V2_ARCHITECTURE_LEAD.md` — **`Oteryn: astra wp3-v2 architecture lead`.**
-- `OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR.md` — **`Oteryn: sol wp3-v2 evidence auditor`.**
-- `OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD.md` — **`Oteryn: astra wp3-v2 implementation lead`.**
-- `../programs/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md` — current launch order and gates.
-
-The old `OTV2_WP3_WRITER`, `OTV2_WP3_TLS_AUDITOR` and `OTV2_WP3_QUALIFICATION_AUDITOR` aliases targeted the broad #356 lineage and are retired. #356 remains read-only research/evidence; do not dispatch those aliases or restore their broad-fork-first authority.
+The WP3-v2 / upstream-first family (`Oteryn: astra wp3-v2 programme coordinator`, `... architecture lead`, `... implementation lead`, `Oteryn: sol wp3-v2 evidence auditor`), `Oteryn: astra child-b durability lead` and `Oteryn: astra wp5 source composition lead` are retired provenance in `retired/`: WP5 G0 is READY (#319) and Server Seam #247 is closed. Their launch runbook is in `../programs/archive/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md`. The older `OTV2_WP3_WRITER`, `OTV2_WP3_TLS_AUDITOR` and `OTV2_WP3_QUALIFICATION_AUDITOR` aliases for the broad #356 lineage are also retired. Do not dispatch any of them; use the Work coordinator and live #162 allocations.
 
 ## Specialist families
 
