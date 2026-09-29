@@ -25,17 +25,21 @@ This ADR is the accepted gate that ADR-0011 asked for. It does not change protoc
 
 ### 1. Crate edge
 
-Extract the session and transport logic from `oteryn-dev-client` into a new production crate, the session crate. Its scope is TLS 1.3, ALPN `oteryn-game/1`, admission, join snapshot, deltas, `step` and `use`. It holds no codec of its own. It uses `oteryn-protocol-oteryn`.
+Extract the logic of `oteryn-dev-client` into two production members, following ADR-0014 (`protocol-oteryn -> transport-neutral session boundary -> TCP adapter`):
+
+- the **session crate**: transport-neutral admission, join snapshot, deltas, `step` and `use` over an abstract byte stream; it holds no codec of its own and uses `oteryn-protocol-oteryn`;
+- the **TCP adapter**: TLS 1.3 over TCP with ALPN `oteryn-game/1`, implementing the session crate's stream boundary. A later QUIC adapter is added beside it without changing the session crate.
 
 ```text
 oteryn-client -> session crate -> oteryn-protocol-oteryn
-oteryn-dev-client -> session crate      (thin harness)
+oteryn-client -> TCP adapter -> session crate (stream boundary)
+oteryn-dev-client -> session crate + TCP adapter      (thin harness)
 ```
 
-- The crate name is UNKNOWN. It must not contain the fragments `transport` or `game-session`, which `workspace-boundaries.toml` forbids.
+- Both names are UNKNOWN. Neither may contain the fragments `transport` or `game-session`, which `workspace-boundaries.toml` forbids.
 - `oteryn-client` gets no direct edge to `oteryn-protocol-oteryn`.
 - `oteryn-dev-client` stays tool-only and dev-only. It keeps its public test surface and delegates to the session crate. It is not rewritten.
-- The session crate is a production member. It is added to `workspace-boundaries.toml` (production list and edges).
+- The session crate and the TCP adapter are production members, added to `workspace-boundaries.toml` (production list and edges).
 
 Closure negatives after the change:
 
@@ -52,7 +56,7 @@ New rule: the client is fail-closed unless admission is available.
 - No credential is used for a connection that cannot complete. The ordering from ADR-0011 is preserved: check availability first, then request or consume a credential, then connect.
 - Any admission error or codec error fails closed. The client keeps the accepted FND-04 classification for each code: its progression, retry authority and public class. For example, a not-yet-valid grant allows only the bounded retry of the same unconsumed grant; an expired grant needs a fresh Gateway attempt; an authentication failure needs reauthentication; a revision mismatch needs a client update. No other retry, no guessed framing, no fallback, no late failure after a consumed one-shot grant.
 - Success is reported only after the server accepts admission. A transport write is not admission.
-- Error codes and classes are those of FND-04; this ADR adds none.
+- Error codes and classes are those of FND-04; this ADR adds none. Today the server refuses without a response and `PROTOCOL_OTERYN_V1_REGISTRY.json` has no admission-result message, so the client cannot learn the code. Child N8 adds a bounded admission refusal and reconciliation message (server and protocol lanes, registry lease). Until N8 lands, the client treats every refusal as fail-closed with no retry and shows one generic unavailable state.
 
 The rest of ADR-0011 (no Canary, no stub protocol adapter, no success claims without admission) stays in force.
 
@@ -97,8 +101,9 @@ Each child needs its own #162 allocation. Numbering is provisional.
 | N5 | CI closure change in `merge-gate.yml`, `merge-group-gate.yml` and `rust.yml` together (or one shared check), batched with #1083 | N1 |
 | N6 | Entity rendering: creatures and other players | VIS-1, VIS-2, N2 |
 | N7 | Chat UI | chat protocol and server lane (does not exist) |
+| N8 | Bounded admission refusal and reconciliation message carrying the FND-04 code (server, protocol-oteryn registry) | FND-04, protocol lane |
 
-The production entry replaces the fail-closed one only when N1, N3, N4, N4-P, N5, N6 and N7 have landed and the entry check in section 2 passes, because D129 makes creatures, other players and chat part of the first entry. A reduced first entry (without N6 or N7) needs a new explicit owner decision. Whether an intermediate build (before N4-P) may ship is UNKNOWN. It must stay fail-closed.
+The production entry replaces the fail-closed one only when N1, N3, N4, N4-P, N5, N6, N7 and N8 have landed and the entry check in section 2 passes, because D129 makes creatures, other players and chat part of the first entry. A reduced first entry (without N6 or N7) needs a new explicit owner decision. Whether an intermediate build (before N4-P) may ship is UNKNOWN. It must stay fail-closed.
 
 ## Decision timing
 
@@ -172,10 +177,10 @@ durable_decision_ref: docs/architecture/ADR-0020-native-client-gameplay-entry.md
 resource_values_changed: false
 production_authority_changed: false
 cross_repository_authority_changed: false   # Platform endpoint stays under Platform authority
-implementation_may_resume: true   # N1, N2, N4 may be allocated after acceptance
+implementation_may_resume: true   # N1 and N2 after acceptance; N4 only after the N4-P Platform contract is accepted
 required_fresh_allocation: true
 required_independent_review: "exact-head independent review (crate edge, closure negatives, fail-closed ordering)"
-implementation_lanes: [N1, N2, N3, N4, N4-P, N5, N6, N7]
+implementation_lanes: [N1, N2, N3, N4, N4-P, N5, N6, N7, N8]
 required_revalidation:
   - "N1: dev-client tests pass unchanged over the session crate; the session crate holds no codec of its own"
   - "N5: in all three workflows, the oteryn-client closure contains protocol-oteryn only through the session crate; canary, dev-only and synthetic (including oteryn-synthetic-assets) negatives still fail; batched with #1083"
@@ -186,5 +191,5 @@ remaining_unknowns:
   - Platform client-grant endpoint shape and timeline
   - chat protocol and server lane design
   - whether an intermediate fail-closed build ships before the Platform endpoint
-next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates N1, N2 and N4."
+next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates N1 and N2; N4 waits for the accepted N4-P Platform contract, N8 goes to the protocol lane."
 ```

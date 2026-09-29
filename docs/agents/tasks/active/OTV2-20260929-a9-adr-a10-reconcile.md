@@ -84,6 +84,15 @@ changed.
   entry needs a new owner decision (§7). 4131549000 (decision test): added "Decision timing" with
   the mandatory now/blocked/harder-later/supersession answers.
 
+Third review of `547a17f` (after the owner-requested re-review): two P1 and one P2, accepted.
+
+- 4131859464 (no channel for classified admission failures): child N8 adds a bounded refusal and
+  reconciliation message; until then every refusal fails closed without retry (§2, delivery).
+- 4131859472 (session boundary is TCP-specific): transport-neutral session crate plus a separate
+  TCP adapter per ADR-0014 (§1).
+- 4131859479 (N4 allocated before the Platform contract): N4 waits for the accepted N4-P contract
+  (handback).
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
