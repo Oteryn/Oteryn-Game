@@ -27,8 +27,10 @@ fn session(seed: u8) -> GameSessionId {
 
 /// `character(who)`'s command `sequence` (sub-occurrence `sub_ordinal`) of session `session_seed`.
 fn attack(who: u8, session_seed: u8, sequence: u64, sub_ordinal: u16) -> AttackerCommand {
+    // The lease generation is the session seed: a higher session seed is a newer session.
     AttackerCommand::new(
         character(who),
+        u64::from(session_seed),
         CommandRef::new(
             session(session_seed),
             super::super::CommandId::new(sequence).expect("non-zero command"),
@@ -544,7 +546,7 @@ fn eviction_never_resets_the_ordinal_or_the_attackers_high_water_mark() {
     assert_eq!(receipts.next_ordinal, 20);
     assert_eq!(
         contributors.high_water(character(1)),
-        Some((session(1), 20, 0))
+        Some((1, session(1), 20, 0))
     );
     assert_eq!(top(&mut carrier, &owner, actor), Some(character(1)));
 }

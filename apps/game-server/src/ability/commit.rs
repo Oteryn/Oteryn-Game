@@ -253,7 +253,9 @@ fn encode_owner_damage_plan(plan: &EffectPlan) -> Result<Vec<u8>, AbilityError> 
 /// above is intentionally not on this path.
 ///
 /// D4 (D141): the owner's replay identity for this commit is derived by the carrier from
-/// `(attacker, command.game_session_id(), command.command_id(), sub_ordinal)`, where
+/// `(attacker, lease_generation, command.game_session_id(), command.command_id(), sub_ordinal)`,
+/// where `lease_generation` is the attacker's current `character_lease_generation`
+/// (`CharacterLease::generation()`), which orders sessions, and
 /// `sub_ordinal` is the committed effect's own index in the plan. The plan's opaque
 /// `AbilityOccurrenceId` is never passed as identity. `command` must be the actual
 /// FND-02 [`CommandRef`] of the attacker's command; composing it into live gameplay is later work.
@@ -263,6 +265,7 @@ pub(crate) fn commit_exact_owner_damage(
     resolved: &super::exact_actor_resolution::ResolvedExactActor,
     plan: &EffectPlan,
     attacker: crate::foundation::CharacterId,
+    lease_generation: u64,
     command: crate::foundation::CommandRef,
 ) -> Result<crate::foundation::OwnerDamageResult, OwnerCommitError> {
     use super::exact_actor_resolution::ExactActorSource;
@@ -293,7 +296,12 @@ pub(crate) fn commit_exact_owner_damage(
     owner
         .commit_damage_for_attacker(
             resolved.target(),
-            crate::foundation::AttackerCommand::new(attacker, command, sub_ordinal),
+            crate::foundation::AttackerCommand::new(
+                attacker,
+                lease_generation,
+                command,
+                sub_ordinal,
+            ),
             crate::foundation::OwnerDamageCommand {
                 target: target.as_str().as_bytes(),
                 // Not read for an attributed commit: the carrier derives the identity.

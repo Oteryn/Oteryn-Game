@@ -24,7 +24,7 @@ mod foundation {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct AttackerCommand;
     impl AttackerCommand {
-        pub(crate) const fn new(_: CharacterId, _: CommandRef, _: u16) -> Self {
+        pub(crate) const fn new(_: CharacterId, _: u64, _: CommandRef, _: u16) -> Self {
             Self
         }
     }

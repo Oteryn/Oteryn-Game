@@ -50,8 +50,14 @@ tests):
 - Each receipt carries immutable `origin` and the owner damage-application `ordinal` (D142). The
   ordinal is monotonic per generation, feeds `DamageContributors::record`, and replaces its
   private counter.
-- Per-attacker `high_water` `(GameSessionId, sequence, sub_ordinal)` in `DamageContributor`;
-  a new current session replaces it; at or below it is `StaleAttackerSequence`.
+- Per-attacker `high_water` `(character_lease_generation, GameSessionId, sequence, sub_ordinal)`
+  in `DamageContributor`. D141 is enforced by the per-character `character_lease_generation`
+  (`CharacterLease::generation()`, the value `CurrentCharacterGameplayFence` carries), which
+  `AttackerCommand` carries and which proves at the mutation boundary which session is current:
+  a lower generation, or an equal one with a differing session, is `SupersededAttackerSession`
+  (a delayed old-session command is refused even after its receipt was evicted); a higher one
+  replaces the mark; equal generation and session at or below the mark is `StaleAttackerSequence`.
+  A zero generation is `InvalidCommitBinding`; an unsequenced occurrence containing NUL is too.
 - Full list: the oldest evictable receipt (sequenced, superseded session or covered by the current
   mark) is evicted; unsequenced receipts never are; `DamageReceiptCapacityExceeded` only when none
   is evictable. `OccurrenceConflict` is removed (`CreatureNotActionable` replaces it).

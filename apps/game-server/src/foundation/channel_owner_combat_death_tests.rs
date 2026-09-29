@@ -29,6 +29,7 @@ fn typed_commit(
         resolved,
         plan,
         CharacterId::decode(&character).expect("attacker"),
+        1,
         CommandRef::new(
             GameSessionId::decode(&session).expect("session"),
             super::super::CommandId::new(1).expect("command"),
@@ -937,6 +938,7 @@ fn typed_commit_at(
         resolved,
         plan,
         CharacterId::decode(&character).expect("attacker"),
+        1,
         CommandRef::new(
             GameSessionId::decode(&session).expect("session"),
             super::super::CommandId::new(sequence).expect("command"),
@@ -1073,6 +1075,7 @@ fn twenty_distinct_single_hp_hits_kill_past_the_sixteen_receipt_bound() {
                 direct_command(b"unread", &binding, 1),
                 Some(AttackerCommand::new(
                     attacker,
+                    1,
                     CommandRef::new(
                         session,
                         super::super::CommandId::new(sequence).expect("command"),

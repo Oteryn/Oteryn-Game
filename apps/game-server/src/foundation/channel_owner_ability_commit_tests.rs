@@ -28,6 +28,7 @@ fn typed_commit(
         resolved,
         plan,
         CharacterId::decode(&character).expect("attacker"),
+        1,
         CommandRef::new(
             GameSessionId::decode(&session).expect("session"),
             super::super::CommandId::new(1).expect("command"),
@@ -464,8 +465,10 @@ fn session(seed: u8) -> GameSessionId {
 }
 
 fn attack(character: u8, session_seed: u8, sequence: u64, sub_ordinal: u16) -> AttackerCommand {
+    // The lease generation is the session seed: a higher session seed is a newer session.
     AttackerCommand::new(
         who(character),
+        u64::from(session_seed),
         CommandRef::new(
             session(session_seed),
             super::super::CommandId::new(sequence).expect("non-zero command"),
@@ -972,4 +975,96 @@ fn receipts_of_untracked_seventeenth_attackers_are_not_evictable() {
         Err(CarrierError::DamageReceiptCapacityExceeded)
     );
     assert_eq!(health(&carrier), Some(1_000 - 32));
+}
+
+fn attack_with_lease(
+    character: u8,
+    lease_generation: u64,
+    session_seed: u8,
+    sequence: u64,
+) -> AttackerCommand {
+    AttackerCommand::new(
+        who(character),
+        lease_generation,
+        CommandRef::new(
+            session(session_seed),
+            super::super::CommandId::new(sequence).expect("non-zero command"),
+        ),
+        0,
+    )
+}
+
+#[test]
+fn a_delayed_command_of_a_superseded_session_is_refused_even_after_its_receipt_was_evicted() {
+    let (continuity, mut carrier, actor) = tall_fixture(290, 1_000);
+    // Session A (lease generation 1) lands a hit, then the attacker reconnects: session B (lease
+    // generation 2) replaces the mark and 16 more B hits evict A's receipt.
+    hit(&mut carrier, &continuity, actor, attack(1, 1, 1, 0), 2).expect("A1");
+    for sequence in 1..=17_u64 {
+        hit(
+            &mut carrier,
+            &continuity,
+            actor,
+            attack(1, 2, sequence, 0),
+            1,
+        )
+        .expect("B hit");
+    }
+    assert!(!origins(&carrier).contains(&Some(attack(1, 1, 1, 0).origin())));
+    let before = carrier.slots.clone();
+    let hp = health(&carrier);
+    // The delayed A command (its receipt is gone) and a never-seen A command are both refused.
+    for delayed in [attack(1, 1, 1, 0), attack(1, 1, 99, 0)] {
+        assert_eq!(
+            hit(&mut carrier, &continuity, actor, delayed, 2),
+            Err(CarrierError::SupersededAttackerSession)
+        );
+        assert_eq!(carrier.slots, before);
+    }
+    assert_eq!(health(&carrier), hp);
+    // Equal lease generation with a differing session is superseded too.
+    assert_eq!(
+        hit(
+            &mut carrier,
+            &continuity,
+            actor,
+            attack_with_lease(1, 2, 3, 1),
+            1
+        ),
+        Err(CarrierError::SupersededAttackerSession)
+    );
+    assert_eq!(carrier.slots, before);
+    // A strictly higher lease generation is a newer session and replaces the mark.
+    assert!(
+        hit(
+            &mut carrier,
+            &continuity,
+            actor,
+            attack_with_lease(1, 3, 3, 1),
+            1
+        )
+        .expect("newer lease")
+        .applied
+    );
+    assert_eq!(
+        hit(&mut carrier, &continuity, actor, attack(1, 2, 18, 0), 1),
+        Err(CarrierError::SupersededAttackerSession)
+    );
+}
+
+#[test]
+fn an_unsequenced_occurrence_containing_the_nul_delimiter_is_rejected_before_mutation() {
+    let (continuity, mut carrier, actor) = tall_fixture(295, 1_000);
+    let before = carrier.slots.clone();
+    assert_eq!(
+        carrier.commit_creature_damage_inner(
+            &continuity,
+            actor.0,
+            command_with(b"cast\0ambiguous", b"cast\0ambiguous\0plan", 1),
+            None,
+            false,
+        ),
+        Err(CarrierError::InvalidCommitBinding)
+    );
+    assert_eq!(carrier.slots, before);
 }

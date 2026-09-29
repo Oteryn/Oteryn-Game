@@ -56,6 +56,10 @@ pub(crate) enum CarrierError {
     DamageReceiptCapacityExceeded,
     /// D4/D141: `sub_ordinal` is at or past `ABILITY01_EFFECT_PLAN_ENTRIES_MAX`.
     SubOrdinalOutOfRange,
+    /// D4/D141: an attributed command's `character_lease_generation` is lower than its
+    /// attacker's recorded one, or equal with a differing `GameSessionId`. Its session was
+    /// superseded, so it is refused and never applied even when its own receipt was evicted.
+    SupersededAttackerSession,
     InjectedCommitFailure,
     CommittedLethalUnavailable,
     CorpseReceiptMismatch,
@@ -398,12 +402,16 @@ pub(crate) const COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX: usize = 1
 /// value is mirrored here and pinned to it by a test in `channel_owner_ability_commit_tests.rs`.
 pub(crate) const ABILITY01_EFFECT_PLAN_ENTRIES_MAX: u16 = 2;
 
-/// `(CharacterId, GameSessionId, CommandId sequence, sub_ordinal)`: the carrier-derived replay
-/// identity of one attributed damage occurrence (D141 point 3).
-type DamageOrigin = (CharacterId, GameSessionId, u64, u16);
+/// `(CharacterId, character_lease_generation, GameSessionId, CommandId sequence, sub_ordinal)`:
+/// the carrier-derived replay identity of one attributed damage occurrence (D141 point 3).
+type DamageOrigin = (CharacterId, u64, GameSessionId, u64, u16);
 
-/// `(GameSessionId, sequence, sub_ordinal)`: one attacker's high-water mark (D141 point 4).
-type HighWater = (GameSessionId, u64, u16);
+/// `(character_lease_generation, GameSessionId, sequence, sub_ordinal)`: one attacker's
+/// high-water mark (D141 point 4). The lease generation is the per-character monotonic
+/// generation of the durable `CharacterLease` (`CurrentCharacterGameplayFence::
+/// character_lease_generation`), which is what proves at this mutation boundary which session is
+/// current: a lower generation is a superseded session.
+type HighWater = (u64, GameSessionId, u64, u16);
 
 /// D141: the command identity of one attributed damage occurrence. Built only from a real
 /// [`CommandRef`] (never a caller-supplied opaque id) plus the attacking `CharacterId` and the
@@ -411,15 +419,23 @@ type HighWater = (GameSessionId, u64, u16);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct AttackerCommand {
     character: CharacterId,
+    lease_generation: u64,
     session: GameSessionId,
     sequence: u64,
     sub_ordinal: u16,
 }
 
 impl AttackerCommand {
-    pub(crate) const fn new(character: CharacterId, command: CommandRef, sub_ordinal: u16) -> Self {
+    /// `lease_generation` is the attacker's current `character_lease_generation` (non-zero).
+    pub(crate) const fn new(
+        character: CharacterId,
+        lease_generation: u64,
+        command: CommandRef,
+        sub_ordinal: u16,
+    ) -> Self {
         Self {
             character,
+            lease_generation,
             session: command.game_session_id(),
             sequence: command.command_id().get(),
             sub_ordinal,
@@ -429,6 +445,16 @@ impl AttackerCommand {
     const fn origin(self) -> DamageOrigin {
         (
             self.character,
+            self.lease_generation,
+            self.session,
+            self.sequence,
+            self.sub_ordinal,
+        )
+    }
+
+    const fn high_water(self) -> HighWater {
+        (
+            self.lease_generation,
             self.session,
             self.sequence,
             self.sub_ordinal,
@@ -468,19 +494,24 @@ impl DamageReceipts {
     }
 
     /// D141 point 4: the oldest evictable receipt. A receipt is evictable iff it is sequenced,
-    /// its attacker is currently tracked with a high-water mark, and either its origin session
-    /// was superseded (fenced, so it can never be resubmitted) or the current session's mark
-    /// covers its `(sequence, sub_ordinal)`. An unsequenced receipt is never evictable.
+    /// its attacker is currently tracked with a high-water mark, and either its origin lease
+    /// generation was superseded (fenced, and refused by [`DamageContributors::admission`], so
+    /// it can never be re-applied) or the current session's mark covers its
+    /// `(sequence, sub_ordinal)`. An unsequenced receipt is never evictable.
     fn oldest_evictable(&self, contributors: &DamageContributors) -> Option<usize> {
         self.entries.iter().position(|record| {
-            let Some((character, session, sequence, sub_ordinal)) = record.origin else {
+            let Some((character, lease, session, sequence, sub_ordinal)) = record.origin else {
                 return false;
             };
-            let Some((mark_session, mark_sequence, mark_sub)) = contributors.high_water(character)
+            let Some((mark_lease, mark_session, mark_sequence, mark_sub)) =
+                contributors.high_water(character)
             else {
                 return false;
             };
-            mark_session != session || (mark_sequence, mark_sub) >= (sequence, sub_ordinal)
+            mark_lease > lease
+                || (mark_lease == lease
+                    && mark_session == session
+                    && (mark_sequence, mark_sub) >= (sequence, sub_ordinal))
         })
     }
 }
@@ -567,16 +598,30 @@ impl DamageContributors {
             .and_then(|contributor| contributor.high_water)
     }
 
-    /// `true` when a new occurrence at `(session, sequence, sub_ordinal)` is at or below this
-    /// attacker's mark for that same session (D141 stale check). A different session is never
-    /// stale: it is a genuinely new, current session (FND-04B sections 16 and 21).
-    fn is_stale(&self, attacker: AttackerCommand) -> bool {
-        matches!(
-            self.high_water(attacker.character),
-            Some((session, sequence, sub_ordinal))
-                if session == attacker.session
-                    && (attacker.sequence, attacker.sub_ordinal) <= (sequence, sub_ordinal)
-        )
+    /// D141 admission of a new attributed occurrence against its attacker's mark, ordered by
+    /// the per-character `character_lease_generation` (which proves which session is current):
+    /// a lower generation, or an equal one with a differing `GameSessionId`, is a superseded
+    /// session (`SupersededAttackerSession`); an equal generation and session at or below the
+    /// mark's `(sequence, sub_ordinal)` is `StaleAttackerSequence`; a higher generation is a
+    /// genuinely newer session (FND-04B sections 16 and 21) and replaces the mark.
+    fn admission(&self, attacker: AttackerCommand) -> Result<(), CarrierError> {
+        let Some((lease, session, sequence, sub_ordinal)) = self.high_water(attacker.character)
+        else {
+            return Ok(());
+        };
+        match attacker.lease_generation.cmp(&lease) {
+            std::cmp::Ordering::Less => Err(CarrierError::SupersededAttackerSession),
+            std::cmp::Ordering::Greater => Ok(()),
+            std::cmp::Ordering::Equal if attacker.session != session => {
+                Err(CarrierError::SupersededAttackerSession)
+            }
+            std::cmp::Ordering::Equal
+                if (attacker.sequence, attacker.sub_ordinal) <= (sequence, sub_ordinal) =>
+            {
+                Err(CarrierError::StaleAttackerSequence)
+            }
+            std::cmp::Ordering::Equal => Ok(()),
+        }
     }
 
     /// D132's deterministic two-rule tie-break: the highest running total wins; among equal top
@@ -2095,7 +2140,12 @@ impl ChannelActorCarrier {
             return Err(CarrierError::SubOrdinalOutOfRange);
         }
         let index = self.validate_ref(continuity, actor_ref)?;
-        if binding.is_empty() || (attacker.is_none() && occurrence.is_empty()) {
+        if binding.is_empty()
+            || attacker.is_some_and(|attacker| attacker.lease_generation == 0)
+            || (attacker.is_none() && (occurrence.is_empty() || occurrence.contains(&0)))
+        {
+            // An unsequenced occurrence containing the NUL delimiter would make its identity
+            // ambiguous against `binding.split(0)`, so it is rejected here.
             return Err(CarrierError::InvalidCommitBinding);
         }
         if binding.len() > MAX_OWNER_COMMIT_BINDING_BYTES
@@ -2148,8 +2198,8 @@ impl ChannelActorCarrier {
         if *health == 0 {
             return Err(CarrierError::CreatureNotActionable);
         }
-        if attacker.is_some_and(|attacker| damage_contributors.is_stale(attacker)) {
-            return Err(CarrierError::StaleAttackerSequence);
+        if let Some(attacker) = attacker {
+            damage_contributors.admission(attacker)?;
         }
         let read_len = committed.entries.len();
         let evict = if read_len >= COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX {
@@ -2245,7 +2295,7 @@ impl ChannelActorCarrier {
                 attacker.character,
                 u64::try_from(removed).unwrap_or(u64::MAX),
                 ordinal,
-                Some((attacker.session, attacker.sequence, attacker.sub_ordinal)),
+                Some(attacker.high_water()),
             );
         }
         Ok(result)
@@ -3357,7 +3407,7 @@ impl CombatDeathFixture {
             .current_owner_exact_commit(&self.owner)
             .commit_damage_for_attacker(
                 self.actor,
-                AttackerCommand::new(attacker, command, 0),
+                AttackerCommand::new(attacker, 1, command, 0),
                 OwnerDamageCommand {
                     target: Self::TARGET.as_bytes(),
                     occurrence: occurrence.as_bytes(),
