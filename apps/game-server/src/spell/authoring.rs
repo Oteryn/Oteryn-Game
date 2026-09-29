@@ -12,6 +12,7 @@ use serde_json::Value;
 use super::chain::{ChainShape, ChainSpec};
 use super::formula::{Binary, Expression, Extremum, Formula, Input, MAX_EXPRESSION_DEPTH, Unary};
 use super::party::{PartyBuffSpec, PartyMana};
+use super::target::AllowedTargets;
 use super::{Carrier, CooldownGroup, Execution, ManaCost, SpellDefinition, SpellEffect, Vocation};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -183,6 +184,25 @@ pub(crate) fn spell_from_bundle(
     } else {
         return fail("unknown execution");
     };
+    let allowed_targets = match targeting.get("allowed_targets") {
+        None => AllowedTargets::Any,
+        Some(_) => {
+            let key = text(targeting, "allowed_targets")?;
+            AllowedTargets::from_key(key)
+                .ok_or_else(|| AuthoringError(format!("unknown allowed_targets {key}")))?
+        }
+    };
+    // D.3: the check reads one resolved target; a chain or a party buff picks its own creatures.
+    if allowed_targets != AllowedTargets::Any
+        && (chain.is_some() || matches!(execution, Execution::PartyBuff(_)))
+    {
+        return fail("allowed_targets applies only to a single-target cast");
+    }
+    let needs_shield = spell.get("needs_shield").is_some() && flag(spell, "needs_shield")?;
+    // D.4: only a spell that requires a shield has a shield defense to read.
+    if !needs_shield && formulas(&execution).any(|formula| formula.reads(Input::ShieldDefense)) {
+        return fail("a formula reads shield_defense but the spell does not need a shield");
+    }
     Ok(SpellDefinition {
         key: text(field(spell, "identity")?, "key")?.to_owned(),
         name: text(spell, "name")?.to_owned(),
@@ -199,11 +219,27 @@ pub(crate) fn spell_from_bundle(
         target_or_direction: targeting.get("target_or_direction").is_some()
             && flag(targeting, "target_or_direction")?,
         self_target: flag(targeting, "self_target")?,
+        allowed_targets,
         aggressive: flag(targeting, "aggressive")?,
+        needs_weapon: flag(spell, "needs_weapon")?,
+        needs_shield,
         range_tiles,
         base_power,
         execution,
         chain,
+    })
+}
+
+/// The damage and heal formulas an execution evaluates.
+fn formulas(execution: &Execution) -> impl Iterator<Item = &Formula> {
+    let effects = match execution {
+        Execution::Effects(effects) => effects.as_slice(),
+        Execution::PartyBuff(buff) => buff.effects.as_slice(),
+        Execution::Conjure { .. } => &[],
+    };
+    effects.iter().filter_map(|effect| match effect {
+        SpellEffect::Damage { formula, .. } | SpellEffect::Heal { formula } => Some(formula),
+        SpellEffect::RemoveCondition { .. } | SpellEffect::Other { .. } => None,
     })
 }
 

@@ -72,6 +72,8 @@ fn sorcerer() -> CasterState {
         attack_value: 7,
         attack_factor: 1.0,
         shielding_skill: 10,
+        melee_weapon: false,
+        shield_defense: None,
     }
 }
 

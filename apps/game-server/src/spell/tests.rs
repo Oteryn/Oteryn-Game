@@ -66,6 +66,8 @@ fn caster(vocation: Vocation, level: u32, magic_level: u32, mana: u32) -> Caster
         attack_value: 7,
         attack_factor: 1.0,
         shielding_skill: 10,
+        melee_weapon: false,
+        shield_defense: None,
     }
 }
 
@@ -331,6 +333,7 @@ fn every_starter_formula_is_valid_over_the_level_grid() {
                         attack_value: 7,
                         attack_factor: 1.0,
                         shielding_skill: 10,
+                        shield_defense: None,
                     };
                     formula.bounds(&inputs).expect("valid bounds");
                 }

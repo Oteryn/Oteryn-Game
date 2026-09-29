@@ -4,25 +4,27 @@
 task_id: OTV2-20260929-spell-part-c
 title: Engine runtime for the Part C spell native behaviours (S27)
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1224
 allocation_comment: "#162 5887751302"
 base_branch: main
 branch: claude/spell-part-c
 base_sha: 4ebb1bffaa24112fe21f950131342fcd206beba2
-head_sha: null
+head_sha: c2596f3199eac7a2d4fa91d9c97ebc3cefc51ff8
+final_head_sha: c2596f3199eac7a2d4fa91d9c97ebc3cefc51ff8
+final_head_frozen_at: null
 owner: "Oteryn: content" (Claude Code)
 created_at: 2026-09-29T10:30:00Z
-updated_at: 2026-09-29T10:30:00Z
+updated_at: 2026-09-29T11:30:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/spell/**
   - apps/game-server/src/ability/**
   - apps/game-server/tests/*spell*
   - tools/content-schema/spell-authoring/**
-  - docs/agents/tasks/active/OTV2-20260929-spell-part-c.md
+  - docs/agents/tasks/archive/OTV2-20260929-spell-part-c.md
   - docs/agents/tasks/archive/OTV2-20260929-spell-chain-runtime.md
 public_contracts: []
 depends_on: []
@@ -84,3 +86,13 @@ The live cast wire and scheduler, the condition runtime, a party service, the co
 - `python validate_spell.py` over the starter bundles and a Heal Party `party_buff` bundle,
   `python verify_formal_schema.py`, `python tools/agents/validate_governance.py`,
   `python tools/repository/validate_repository_policy.py`
+
+## Terminal integration
+
+- **Final head:** `c2596f3199eac7a2d4fa91d9c97ebc3cefc51ff8`.
+- **Integration:** merged into main as PR #1224, merge commit
+  `da1b2ac54147160ff30df46b479e3240211073f3` (2026-09-29T10:49:02Z).
+- **Closeout:** the record was archived by `OTV2-20260929-spell-part-d` (issue #162, allocation comment 5888930608).
+- **Owned paths:** released.
+- **Binding carry-over:** the design packet above stays the reference for the Part C keys still rejected
+  (`familiar_summon`, `acquire_summon`, `stance_toggle`, the virtues); Q13-Q18 stay with the owner's in-game tests.
