@@ -169,9 +169,18 @@ def shield_formula(needs_shield):
     return mutate('light_healing', change, None)
 
 
+def not_self(**targeting):
+    """light_healing aimed at anyone but the caster (S27 B.5, Nature's Embrace)."""
+    def change(spell, deps):
+        spell['targeting'].update(needs_target=True, self_target=False, **targeting)
+    return change
+
+
 VALID_MUTATIONS.update({
     'allowed targets self or own summons': case('light_healing', 'spell', ('targeting', 'allowed_targets'),
                                                 'self_or_own_summons', None),
+    'allowed targets not self': mutate('light_healing', not_self(allowed_targets='not_self'), None),
+    'allow_on_self false': mutate('light_healing', not_self(allow_on_self=False), None),
     'shield formula with needs_shield': shield_formula(True)})
 
 
@@ -244,7 +253,14 @@ NEGATIVE = {
         spell['targeting'].update(cast_at_position=True, needs_target=True)), 'was expected'),
     'unknown allowed targets': case('light_healing', 'spell', ('targeting', 'allowed_targets'), 'own_party',
                                     'is not one of'),
-    'needs_shield not boolean': case('light_healing', 'spell', ('needs_shield',), 'yes', 'is not of type'),
+    'not self with a self target': mutate('light_healing', lambda spell, deps: (
+        spell['targeting'].update(allowed_targets='not_self', needs_target=True)), 'was expected'),
+    'not self without a target': mutate('light_healing', lambda spell, deps: (
+        spell['targeting'].update(allowed_targets='not_self', self_target=False)), 'was expected'),
+    'allow_on_self false with self only': mutate('light_healing', not_self(allow_on_self=False,
+                                                                           allowed_targets='self_only'),
+                                                 'is not one of'),
+    'needs_shield not boolean':case('light_healing', 'spell', ('needs_shield',), 'yes', 'is not of type'),
     'shield formula without needs_shield': expecting(shield_formula(None), 'does not need a shield'),
     'shield formula with needs_shield false': expecting(shield_formula(False), 'does not need a shield'),
     'shield_defense in a level formula': case('light_healing', 'deps', ('formulas', 0, 'minimum'), var('shield_defense'),

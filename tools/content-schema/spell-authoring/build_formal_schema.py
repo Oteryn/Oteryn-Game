@@ -131,13 +131,20 @@ d['spell'] = obj({
                           'the attacked creature before casting (client "Aim at Target"; BR aimattarget).'},
         'cast_at_position': {**use('bool'), 'description': 'S20: the spell may be cast at a chosen position: with '
                              'crosshair, at the cursor or at the target (Canary 15.30 spell:optionalTarget).'},
-        'allowed_targets': {**enum('any', 'self_only', 'self_or_own_summons'), 'description': 'S27 D.3: who a '
-                            'single-target cast may be aimed at; absent means any. self_or_own_summons: the caster or '
-                            'a creature the caster summoned or convinced (healing runes).'}},
+        'allowed_targets': {**enum('any', 'self_only', 'self_or_own_summons', 'not_self'), 'description': 'S27 D.3 '
+                            'and B.5: who a single-target cast may be aimed at; absent means any. self_or_own_summons: '
+                            'the caster or a creature the caster summoned or convinced (healing runes). not_self: any '
+                            'creature but the caster (Nature\'s Embrace); needs a target and no self target. '
+                            'allow_on_self false means not_self.'}},
         ('aggressive', 'self_target', 'needs_target', 'needs_direction', 'target_or_direction', 'block_walls',
          'parameter'),
         allOf=[{'if': when('aim_at_target', True), 'then': when('needs_direction', True)},
-               {'if': when('cast_at_position', True), 'then': {'properties': {'needs_target': {'const': False}}}}]),
+               {'if': when('cast_at_position', True), 'then': {'properties': {'needs_target': {'const': False}}}},
+               {'if': when('allowed_targets', 'not_self'),
+                'then': {'properties': {'needs_target': {'const': True}, 'self_target': {'const': False}}}},
+               {'if': when('allow_on_self', False),
+                'then': {'properties': {'needs_target': {'const': True}, 'self_target': {'const': False},
+                                        'allowed_targets': enum('any', 'not_self')}}}]),
     'pz_locks_caster': use('bool'), 'needs_weapon': use('bool'),
     'needs_shield': {**use('bool'), 'description': 'S27 D.4: the caster must wield a shield in the left or right '
                      'hand ("You need to equip a shield to cast this spell."); absent means false.'},

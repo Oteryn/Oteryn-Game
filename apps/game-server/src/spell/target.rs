@@ -1,10 +1,11 @@
 //! Who a targeted cast may be aimed at, `targeting.allowed_targets`
-//! (`docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md` part D.3, owner S27).
+//! (`docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md` parts D.3 and B.5, owner S27).
 //!
 //! The healing runes may be used only on the caster or on the caster's own summoned or convinced
-//! creatures (D.3.1 step 1, the F reading of Q7). The Target Resolver names the creature and its
-//! master in a [`CastTarget`]; no summon owner exists yet, so every live creature has no master
-//! and only the caster qualifies.
+//! creatures (D.3.1 step 1, the F reading of Q7). Nature's Embrace may be aimed at anyone but the
+//! caster (B.5 step 1, `not_self`). The Target Resolver names the creature and its master in a
+//! [`CastTarget`]; no summon owner exists yet, so every live creature has no master and only the
+//! caster qualifies for the runes.
 
 /// `targeting.allowed_targets`; `Any` when the field is absent.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -13,6 +14,8 @@ pub(crate) enum AllowedTargets {
     Any,
     SelfOnly,
     SelfOrOwnSummons,
+    /// Any creature but the caster (B.5, the `caster_restriction` target rule `not_self`).
+    NotSelf,
 }
 
 impl AllowedTargets {
@@ -21,6 +24,7 @@ impl AllowedTargets {
             "any" => Self::Any,
             "self_only" => Self::SelfOnly,
             "self_or_own_summons" => Self::SelfOrOwnSummons,
+            "not_self" => Self::NotSelf,
             _ => return None,
         })
     }
@@ -32,6 +36,7 @@ impl AllowedTargets {
             Self::Any => true,
             Self::SelfOnly => own,
             Self::SelfOrOwnSummons => own || target.master == Some(target.caster),
+            Self::NotSelf => !own,
         }
     }
 }

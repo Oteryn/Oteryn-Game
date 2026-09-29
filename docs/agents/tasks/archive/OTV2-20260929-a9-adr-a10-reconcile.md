@@ -4,16 +4,16 @@
 task_id: OTV2-20260929-a9-adr-a10-reconcile
 title: "ADR-0020 native client gameplay entry (A9) and A10/D3 reconciliation"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1214
 base_sha: f5db55e39fce41e7435eb467a990e89c07bfce13
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: e9db33a2dbf5baad2151571da732a6ef22d7d832
+final_head_sha: e9db33a2dbf5baad2151571da732a6ef22d7d832
+final_head_frozen_at: 2026-09-29T10:02Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-29
 updated_at: 2026-09-29
@@ -57,9 +57,9 @@ Not applicable. Contract and ADR text only.
 
 ## Acceptance criteria
 
-- [ ] The documents are on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The documents are on an exact frozen head with passing validators.
+- [x] Independent exact-head review.
+- [x] Protected Merge Queue integration.
 
 ## Excluded scope
 
@@ -98,14 +98,25 @@ Third review of `547a17f` (after the owner-requested re-review): two P1 and one 
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1214 merged through the Merge Queue on 2026-09-29 as `c10d3387`.
+- Reviews: `df5047f` (five P1), re-review of `48eaf7f` requested by the owner (one P1, one P2),
+  and `547a17f` (two P1, one P2); all fixed by `e9db33a`. The owner decided to wait for all
+  children before the first entry and to merge after green CI.
+- Protected-main readback: all owned files are byte-identical to `e9db33a`; DUR-03 also carries
+  #1222, merged in between.
+- Archived under `OTV2-20260929-a11-stance-persistence-decision`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1214 open
-status: validating
+last_progress: protected-integrated as c10d3387; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: e9db33a2dbf5baad2151571da732a6ef22d7d832
 pr: 1214
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1214
+next_action: null
 ```

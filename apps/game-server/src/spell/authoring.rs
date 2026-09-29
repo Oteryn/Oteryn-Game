@@ -192,6 +192,22 @@ pub(crate) fn spell_from_bundle(
                 .ok_or_else(|| AuthoringError(format!("unknown allowed_targets {key}")))?
         }
     };
+    // B.5: `allow_on_self` false (Canary `allowOnSelf`) refuses the caster as the target, which is
+    // the `not_self` rule; it cannot narrow a rule that admits only the caster and its summons.
+    let allowed_targets = match (
+        targeting.get("allow_on_self").is_some() && !flag(targeting, "allow_on_self")?,
+        allowed_targets,
+    ) {
+        (false, rule) => rule,
+        (true, AllowedTargets::Any | AllowedTargets::NotSelf) => AllowedTargets::NotSelf,
+        (true, _) => return fail("allow_on_self false contradicts allowed_targets"),
+    };
+    // B.5: a spell aimed at anyone but the caster needs a target and never falls back to the caster.
+    if allowed_targets == AllowedTargets::NotSelf
+        && (!flag(targeting, "needs_target")? || flag(targeting, "self_target")?)
+    {
+        return fail("allowed_targets not_self needs a target and no self target");
+    }
     // D.3: the check reads one resolved target; a chain or a party buff picks its own creatures.
     if allowed_targets != AllowedTargets::Any
         && (chain.is_some() || matches!(execution, Execution::PartyBuff(_)))
