@@ -265,3 +265,73 @@ fn accumulation_never_survives_removal_or_respawn() {
         None
     );
 }
+
+#[test]
+fn an_overkill_hit_credits_only_remaining_hp_and_never_overtakes_a_higher_prior_contributor() {
+    let scope = grant(220, 1);
+    let mut owner = NamespaceContinuityGuard::from_pre_production_grant(scope);
+    let mut carrier =
+        ChannelActorCarrier::bootstrap_pre_production(&mut owner, 1).expect("one slot");
+    let actor = carrier
+        .admit_creature(&owner, ActorState(1), "fixture:d3-3.overkill", 1)
+        .expect("one-hp creature");
+
+    // Seed a prior, higher-total contributor directly on the live slot: today's carrier commits
+    // exactly one hit per creature generation (the separately routed "multiple hits per creature
+    // generation" P1), so this is the only way to prove the fix against a pre-existing higher
+    // total without also depending on that unrelated gap being closed first.
+    match &mut carrier.slots[0] {
+        Slot::CreatureOccupied {
+            damage_contributors,
+            ..
+        } => Some(damage_contributors),
+        _ => None,
+    }
+    .expect("expected the admitted creature slot")
+    .record(character(9), 50);
+
+    // Codex P1: 100 requested damage against 1 remaining HP must credit only the 1 HP actually
+    // removed, never the requested amount.
+    let result = carrier
+        .current_owner_exact_commit(&owner)
+        .commit_damage_for_attacker(
+            ExactActorRef(actor),
+            character(1),
+            OwnerDamageCommand {
+                target: b"fixture:d3-3.overkill",
+                occurrence: b"strike:overkill",
+                binding: b"strike:overkill\0fixture:d3-3.overkill.v1",
+                damage: 100,
+            },
+        )
+        .expect("overkill commit");
+    assert!(result.applied);
+    assert_eq!(result.health_before, 1);
+    assert_eq!(result.health_after, 0);
+
+    let damage_contributors = match &carrier.slots[0] {
+        Slot::CreatureOccupied {
+            damage_contributors,
+            ..
+        } => Some(damage_contributors),
+        _ => None,
+    }
+    .expect("expected the admitted creature slot");
+    let overkill_attacker_total = damage_contributors
+        .entries
+        .iter()
+        .find(|entry| entry.character == character(1))
+        .expect("overkill attacker is tracked")
+        .total;
+    assert_eq!(overkill_attacker_total, 1);
+
+    // The overkill attacker, credited only 1, never overtakes the pre-existing 50-total
+    // contributor as the deterministic top-damage winner.
+    assert_eq!(
+        carrier
+            .current_owner_combat_death(&owner)
+            .top_damage_character(ExactActorRef(actor))
+            .expect("lookup"),
+        Some(character(9))
+    );
+}

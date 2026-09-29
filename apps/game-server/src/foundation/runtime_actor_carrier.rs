@@ -2037,7 +2037,11 @@ impl ChannelActorCarrier {
         // so it can never double-attribute.
         let mut damage_contributors = damage_contributors.clone();
         if let Some(attacker) = attacker {
-            damage_contributors.record(attacker, u64::try_from(damage).unwrap_or(u64::MAX));
+            // Codex P1: credit the HP actually removed, not the requested/planned damage -- an
+            // overkill hit (e.g. 100 damage on 1 remaining HP) must only ever credit the 1 HP
+            // that could actually be removed (`next <= health` always, since `damage > 0`).
+            let removed = result.health_before.saturating_sub(result.health_after);
+            damage_contributors.record(attacker, u64::try_from(removed).unwrap_or(u64::MAX));
         }
         self.slots[index] = Slot::CreatureOccupied {
             generation,
