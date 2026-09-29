@@ -137,8 +137,9 @@ Surrounding whitespace is trimmed from voice lines and bestiary locations; four 
 and one location list carry it, and v2 source text rejects it.
 
 A profile never overrides a Reference record field. When both carry a value, the writer emits
-equal values or fails. Health admits `max_health` as `health`; every wave A monster has
-`initial_health == max_health`.
+equal values or fails. Health admits `max_health` as `health`. A creature that spawns below its
+maximum health (the 15.30 Energy Cannons, 1 of 100) is deferred as `initial_health` until the
+profile has a field for it.
 
 ## 6. Writer and regeneration
 
@@ -149,7 +150,10 @@ Reference records, the authoring profiles and the source identity bindings, in t
 shapes of the game server. It also lists every deferred monster with its reason. The
 materializer (`materialize_content_world_project_v2`) pins the staged file by SHA-256, adds it
 to the project with the `oteryn:source.canary` import batch, and writes the canonical v2
-documents with their manifest and Content Lock. The content tree is then regenerated from v2. Rust admission (`ProjectV2Draft` load, validation and
+documents with their manifest and Content Lock. Creatures of game version 15.30 that only
+CrystalServer has (`crystal_batch.py`) are bound to their Crystal file under their own
+`oteryn:source.crystalserver` import batch `g4-creature-crystal-1530-r1`. The same census index is
+their source artifact. The content tree is then regenerated from v2. Rust admission (`ProjectV2Draft` load, validation and
 `link_reference_playable`) is the acceptance check, together with focused tests over one pilot
 monster of each profile shape.
 

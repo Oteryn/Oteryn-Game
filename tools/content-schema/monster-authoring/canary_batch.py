@@ -353,6 +353,8 @@ class Converter:
         self.wiki = {}
         self.br = {}
         self.official = {}
+        # Where the monster files come from; another source (crystal_batch.py) keeps the Canary engine rules.
+        self.monster_root, self.monster_dir, self.source = canary, MONSTER_DIR, {'repository': REPOSITORY, 'revision': REVISION}
         self.spell_scripts = None
         self.magic_effects, self.missiles = load_effect_constants(canary / EFFECT_CONSTANTS)
         self.magic_effect_names = {v: k for k, v in self.magic_effects.items()}
@@ -378,14 +380,14 @@ class Converter:
         return f'canary.appearance:{kind}/{key}', note
 
     def convert(self, relative):
-        path = self.canary / MONSTER_DIR / (relative + '.lua')
+        path = self.monster_root / self.monster_dir / (relative + '.lua')
         text = path.read_text(encoding='utf-8')
         lines = text.splitlines()
         late_errors = []
         name, m, callbacks = load_monster(path, late_errors)
         s = slug(name)
         self.current_slug = s
-        source_file = f'{MONSTER_DIR}/{relative}.lua'
+        source_file = f'{self.monster_dir}/{relative}.lua'
         rows = []
         assets = set()
         definitions = set()
@@ -814,7 +816,7 @@ class Converter:
                 row(f'mType.{callback}', 'unresolved_semantics', 'script', line=line,
                     resolution='Inline Lua callback; needs an explicit native behaviour resolution.')
 
-        sources = [{'repository': REPOSITORY, 'revision': REVISION}]
+        sources = [dict(self.source)]
         self.adopt_wiki(s, monster, rows, sources, definitions, line_of)
         self.adopt_br(s, monster, rows, sources, line_of)
         self.adopt_official(s, monster, rows, sources, line_of)

@@ -326,7 +326,9 @@ class Stage:
         self.add(self.profiles, 'Presentation', presentation_ref['key'],
                  profile(presentation_ref, 'Presentation', self.presentation_profile(presentation)), owner)
         if binding:
-            self.bindings.append({'source_key': binding['source_key'], 'source_revision': WIKI_AUTHORED_REVISION,
+            # D44 wiki-authored bindings carry no revision of their own; the Crystal 15.30 ones name their commit.
+            self.bindings.append({'source_key': binding['source_key'],
+                                  'source_revision': binding.get('source_revision', WIKI_AUTHORED_REVISION),
                                   'identity_namespace': binding['identity_namespace'], 'external_id': binding['external_id'],
                                   'target': identity, 'disposition': 'EXACT'})
         else:
@@ -717,7 +719,7 @@ def main() -> None:
     candidates: dict[str, tuple[dict, dict, dict, set, set]] = {}
     spells_need: dict[str, set[str]] = {}
     deferred: dict[str, list] = {'encounter': [], 'unregistered_items': [], 'reference_loot_contract': [],
-                                 'unresolved_reference': [], 'encounters': []}
+                                 'unresolved_reference': [], 'encounters': [], 'initial_health': []}
     for row in index['monsters']:
         if args.pilot and row['monster'] not in PILOT:
             continue
@@ -734,6 +736,10 @@ def main() -> None:
             continue
         if any(entry['min_count'] < 1 for entry in (monster.get('loot') or {}).get('entries', [])):
             deferred['reference_loot_contract'].append(row['monster'])
+            continue
+        # The Creature profile has one health value; a creature that spawns below its maximum waits for a field.
+        if monster['creature']['stats']['initial_health'] != monster['creature']['stats']['max_health']:
+            deferred['initial_health'].append(row['monster'])
             continue
         probe = Stage(mapper)
         probe.stage_dependencies(dependencies, key)
@@ -825,6 +831,7 @@ def main() -> None:
         data = stage.profiles[('Creature', key)]['data']['profile']
         data['encounters'] = sorted(identities, key=lambda r: r['key'])
 
+    admitted_rows = [candidates[name][0] for name in admitted if candidates[name][0].get('binding')]
     order = lambda item: (item[0][0], item[0][1])  # noqa: E731
     staged = {
         'schema': SCHEMA,
@@ -833,12 +840,17 @@ def main() -> None:
                    'census_index_sha256': hashlib.sha256(INDEX.read_bytes()).hexdigest(),
                    'item_allocation_sha256': ITEM_ALLOCATION_SHA256, 'item_rekeys': rekeys,
                    'wiki_authored': {'revision': WIKI_AUTHORED_REVISION, 'sample_sha256': WIKI_AUTHORED_SHA256,
-                                     'creatures': sorted(r['monster'] for r in index['monsters'] if r.get('binding'))}},
+                                     'creatures': sorted(r['monster'] for r in index['monsters']
+                                                         if r.get('binding', {}).get('source_key') == 'oteryn:source.tibiawiki')},
+                   'crystal': {'repository': index['crystal']['repository'], 'revision': index['crystal']['revision'],
+                               'creatures': sorted(r['monster'] for r in admitted_rows
+                                                   if r['binding']['source_key'] == 'oteryn:source.crystalserver')}},
         'counts': {'creatures': len(admitted), 'records': len(stage.records), 'profiles': len(stage.profiles),
                    'deferred_encounter': len(deferred['encounter']),
                    'deferred_unregistered_items': len(deferred['unregistered_items']),
                    'deferred_reference_loot_contract': len(deferred['reference_loot_contract']),
                    'deferred_unresolved_reference': len(deferred['unresolved_reference']),
+                   'deferred_initial_health': len(deferred['initial_health']),
                    'encounters': len(declarations), 'deferred_encounters': len(deferred['encounters'])},
         'encounter_manifests': {name: encounters[name]['manifest_sha256'] for name in sorted(admitted_encounters)},
         'declarations': declarations,

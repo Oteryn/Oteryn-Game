@@ -64,9 +64,9 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "93220e7275ffd2be7ac92dcb9ab62b2dc76929256a63dec357bce9eaf0ead251";
+    "0c5fe49325cefec7e56ab75f09bda6a4d7a248f839b9137eee9659d2a9b06c3d";
 const CREATURE_STAGE_TOOL_SHA256: &str =
-    "8e4f3cec836d89c12f4769ef27924d924ade614b39dcf6b7097c56d3766e6e24";
+    "5f90ac7acfd4611633a8c6c936061b9e13cec6cbd4a7cbceaca07635c67430f8";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 /// D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki (`wiki_authored.py`).
 const CREATURE_WIKI_SAMPLE_SHA256: &str =
@@ -75,8 +75,11 @@ const CREATURE_WIKI_REVISION: &str = "tibiawiki-wiki-authored-creature-88d21c748
 const CREATURE_WIKI_COUNT: usize = 1;
 const CREATURE_WIKI_BINDINGS: [(&str, &str); CREATURE_WIKI_COUNT] =
     [("108320", "oteryn:creature.dark_merudri")];
+/// Game version 15.30: creatures CrystalServer has at its pinned 15.30 commit and Canary lacks (`crystal_batch.py`).
+const CREATURE_CRYSTAL_REVISION: &str = "00ce02a57ca5a12e48f32a3476e37471167e4c3f";
+const CREATURE_CRYSTAL_COUNT: usize = 13;
 const CANARY_BUNDLE_INDEX_SHA256: &str =
-    "4485ee0b032ac64f6fa19a6e641cf57e34d50c809bf9f549c9adecc88b8b9e95";
+    "5251e62c7009a12a4d10d85a7a6ff59aa9526f169ec8c6d27fbdd7a687b571d9";
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
@@ -110,9 +113,9 @@ const NPC_DIALOGUE_STAGED_SHA256: &str =
 const NPC_DIALOGUES: usize = 701;
 const NPC_DIALOGUE_NODES: usize = 6313;
 const NPC_BINDINGS: usize = 2330;
-const CREATURE_COUNT: usize = 1450;
-const CREATURE_RECORDS: usize = 20379;
-const CREATURE_PROFILES: usize = 19435;
+const CREATURE_COUNT: usize = 1463;
+const CREATURE_RECORDS: usize = 20464;
+const CREATURE_PROFILES: usize = 19519;
 /// Encounter admission E1-E5: encounters admitted with the creatures they cover.
 const ENCOUNTER_COUNT: usize = 58;
 
@@ -127,7 +130,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 9,
+        max_import_records: 10,
         max_reimport_states: ENCOUNTER_COUNT,
     }
 }
@@ -1154,6 +1157,8 @@ struct CreaturePopulation {
     source: ProjectV2Source,
     wiki_import: ImportBatch,
     wiki_source: ProjectV2Source,
+    crystal_import: ImportBatch,
+    crystal_source: ProjectV2Source,
     records: Vec<ProjectReferenceRecord>,
     declarations: Vec<ProjectV2Declaration>,
     profiles: Vec<ProjectV2AuthoringProfile>,
@@ -1178,6 +1183,11 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         || counts["encounters"] != ENCOUNTER_COUNT
         || packet["source"]["wiki_authored"]["revision"] != CREATURE_WIKI_REVISION
         || packet["source"]["wiki_authored"]["sample_sha256"] != CREATURE_WIKI_SAMPLE_SHA256
+        || packet["source"]["crystal"]["repository"] != "zimbadev/crystalserver"
+        || packet["source"]["crystal"]["revision"] != CREATURE_CRYSTAL_REVISION
+        || packet["source"]["crystal"]["creatures"]
+            .as_array()
+            .is_none_or(|creatures| creatures.len() != CREATURE_CRYSTAL_COUNT)
     {
         return Err("staged creature admission source identity drifted".into());
     }
@@ -1208,6 +1218,11 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
             .filter(|binding| binding.source_key == "oteryn:source.tibiawiki")
             .count()
             != CREATURE_WIKI_COUNT
+        || bindings
+            .iter()
+            .filter(|binding| binding.source_key == "oteryn:source.crystalserver")
+            .count()
+            != CREATURE_CRYSTAL_COUNT
         || bindings.iter().any(|binding| {
             !matches!(
                 (
@@ -1231,6 +1246,11 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
                     "oteryn:source.tibiawiki",
                     CREATURE_WIKI_REVISION,
                     "mediawiki/page_id"
+                ) | (
+                    ProjectV2Family::Creature,
+                    "oteryn:source.crystalserver",
+                    CREATURE_CRYSTAL_REVISION,
+                    "crystalserver/monster-file"
                 )
             )
         })
@@ -1324,11 +1344,34 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         sha256: wiki_import.source_artifact_sha256.clone(),
         evidence: ProjectV2EvidenceClass::Derived,
     };
+    let crystal_import = ImportBatch {
+        batch_id: "g4-creature-crystal-1530-r1".to_owned(),
+        source_repository: "zimbadev/crystalserver".to_owned(),
+        source_revision: CREATURE_CRYSTAL_REVISION.to_owned(),
+        source_artifact_sha256: CANARY_BUNDLE_INDEX_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_MONSTER_AUTHORING_BUNDLE/v1".to_owned(),
+        importer: "OTERYN_CANARY_MONSTER_POPULATION_CENSUS/v1".to_owned(),
+        mapper: "OTERYN_CREATURE_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "creature-admission-r1".to_owned(),
+        mapper_sha256: CREATURE_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let crystal_source = ProjectV2Source {
+        key: "oteryn:source.crystalserver".to_owned(),
+        import_batch_id: crystal_import.batch_id.clone(),
+        revision: crystal_import.source_revision.clone(),
+        sha256: crystal_import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::OtsHypothesisOnly,
+    };
     Ok(CreaturePopulation {
         import,
         source,
         wiki_import,
         wiki_source,
+        crystal_import,
+        crystal_source,
         records,
         declarations,
         profiles,
@@ -1611,6 +1654,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         source: creature_source,
         wiki_import: creature_wiki_import,
         wiki_source: creature_wiki_source,
+        crystal_import: creature_crystal_import,
+        crystal_source: creature_crystal_source,
         records: creature_records,
         declarations: encounter_declarations,
         profiles: mut authoring_profiles,
@@ -1652,6 +1697,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     mount_import,
                     creature_import,
                     creature_wiki_import,
+                    creature_crystal_import,
                     npc_import,
                     npc_br_import,
                     npc_tibiopedia_import,
@@ -1666,6 +1712,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     mount_source,
                     creature_source,
                     creature_wiki_source,
+                    creature_crystal_source,
                     npc_source,
                     npc_br_source,
                     npc_tibiopedia_source,

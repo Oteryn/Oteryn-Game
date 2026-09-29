@@ -97,6 +97,27 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D45 | An ability may point to an encounter (`encounter`) instead of listing effects or variants. A monster spell whose Canary script summons creatures, and keeps counters, flags or timers for it, is converted this way: the monster keeps the ability with its range and targeting, and the encounter's `ability_cast` rule does the summon (OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1 D45). | Owner answer 2026-09-28 ("Tak, przez encountery"). |
 | D47 | Source order for the reference-date state (owner answer 2026-09-28): a Tibia.com news item dated on or before the target date, then the Tibia.com creature library, then the wiki at the target date, then Canary and CrystalServer as hypotheses. The library has no history, so a capture counts as the target-date state only while no news item between the target date and the capture changes the creature. `official_library.py` records the library health and experience from TibiaData captures; the converter adopts them over Canary and the wiki as an `official_capture` source. A percentage from a news item is applied directly only where the library has no entry, and its rounding is marked uncertain. A change without numbers is recorded as known but not quantified. Library descriptions stay out of the repository; the entry keeps the library URL. | Guessing values for changes without numbers. |
 
+### Game version 15.30 monsters from CrystalServer
+
+Rule from the game version 15.30 decision
+(`docs/agents/programs/OTERYN_GAME_VERSION_1530_AND_OTS_BRANCHES_DECISION_20260928.md` §1–2); it is not a new
+owner decision. The Summer Update 2026 monsters are in no Canary branch, so `crystal_batch.py` takes them from
+`zimbadev/crystalserver`, branch `summer-update`, pinned at commit `00ce02a57ca5a12e48f32a3476e37471167e4c3f`
+(read 2026-09-28). It selects the files under `data-global/monster/summer_update_2026` whose monster name no Canary
+file creates: 49 files, 8 of them bosses.
+
+- The files are in the Canary format. The normal converter reads them with its Canary `47dfd51f` engine rules, and
+  resolves loot names through the 15.30 `items.xml` and `appearances.dat` of the same Crystal commit.
+- Each manifest names the Crystal repository and commit as source 0 and the Crystal file as the source file of its
+  rows.
+- The source order of D47 applies unchanged. The reference-date wiki values
+  (`samples/wiki-population-crystal-00ce02a5-2026-09-27.json`, D15) and the library values
+  (`samples/official-library-crystal-00ce02a5-2026-09-28.json`, from the same TibiaData captures) are adopted over
+  the Crystal values.
+- `population_census.py` adds the result to the census as its own group, `crystal_*` counts. The admission binds
+  each admitted creature to its Crystal file under the `oteryn:source.crystalserver` import batch
+  `g4-creature-crystal-1530-r1`.
+
 ## 4. Carried semantics
 
 Retained from the proposal without change (details in the origin `README.md`/`REPAIR_NOTES.md`):
