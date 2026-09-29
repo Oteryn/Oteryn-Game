@@ -19,38 +19,32 @@
 
 ## Playable-first, minimum-sufficient, upstream-first doctrine
 
-`docs/repository/PLAYABLE_FIRST_ENGINEERING_POLICY.md` is the repository-wide engineering policy for dependency customization and minimum-sufficient delivery. Advance the real playable Oteryn path with the smallest change that satisfies the current accepted requirement; do not build speculative infrastructure, generalized abstractions, future-scale machinery or dependency forks merely because they may become useful later.
-
-Default to mature upstream implementations and supported configuration/APIs. Do not fork, vendor-modify, reimplement or deeply instrument third-party components without concrete evidence that the exact upstream version cannot satisfy an accepted Oteryn requirement through upstream configuration, extension points or a bounded Oteryn-owned layer. When an exception is proven, use the smallest maintainable patch and preserve a clear path back to upstream.
-
-Minimum effort never means lowering accepted correctness, security, durability, compatibility, validation or measured performance requirements. It means removing unnecessary work, speculative hardening and premature optimization from the critical path to a real playable server. Existing forks are not automatically justified forever and must be re-evaluated when touched or superseded.
+`docs/repository/PLAYABLE_FIRST_ENGINEERING_POLICY.md` is the repository-wide engineering policy. Advance the real playable path with the smallest change that satisfies the current accepted requirement; build no speculative infrastructure, abstractions or dependency forks. Default to mature upstream implementations; fork or vendor-modify only with concrete evidence that upstream cannot satisfy an accepted requirement, with the smallest patch and a path back to upstream. Minimum effort never means lowering accepted correctness, security, durability, compatibility, validation or measured performance requirements, and existing forks are re-evaluated when touched.
 
 ## Repository boundaries
 
 Read the nearest `AGENTS.md` for a touched path. Use `docs/architecture/` for accepted architecture, `docs/contracts/` for durable integration contracts, and `docs/agents/` for routed specialist procedures and task records. Live GitHub Issue, PR and check state governs task lifecycle; historical prompts, handoffs and reports are evidence only.
 
-## Context economy and live-state reads
-
-Treat `docs/agents/CONTEXT_ROUTING.md` as a cost boundary as well as a correctness router. A requirement to read, refresh or resolve current state means the smallest authoritative slice needed for the current decision, not a recursive or full-history fetch.
-
-- Do not bulk-fetch complete Issue/PR comment timelines, all open PRs, whole live-allocation history, the full prompt lifecycle registry or every architecture/contract family merely because a reusable prompt names the container.
-- For long-lived coordinator Issues, use Issue metadata, the current task/checkpoint and specifically referenced or latest material comments. Read older comments only when a concrete historical claim is material and cannot be resolved from the current checkpoint.
-- Resolve one alias through its targeted lifecycle entry; ordinary alias invocation does not require loading the whole registry or re-running prompt evaluation.
-- `OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` is owner-facing launch/status guidance, not a technical-worker bootstrap dependency unless the current request is owner-facing placement/status guidance.
-- Reuse already verified immutable exact-revision sources inside one coherent task. Refresh only changing facts that are material to the next mutation, lifecycle, review or integration decision.
-
 Do not write outside the current task's repository, branch and owned paths. Preserve unrelated work. Changes to protocol, identities, authority, persistence, public contracts or production trust require their accepted owning contract and applicable independent review. Production, protected-environment, live-account, credential and external-repository mutations require separate explicit authority.
 
 Run the checks selected by changed paths and preserve `game-gate`, repository protection and Merge Queue. Never weaken authorization, tests, provenance, compatibility or protection to make work pass. Do not expose secrets or private data. Third-party and proprietary materials may be used as reference evidence for compatibility research, reverse engineering, data extraction, comparison and faithful reimplementation. Reference use does not automatically grant the right to redistribute original third-party asset files.
 
+## Context economy and live-state reads
+
+`docs/agents/CONTEXT_ROUTING.md` is a cost boundary as well as a correctness router: read the smallest authoritative slice for the current decision, never a recursive or full-history fetch (whole Issue/PR timelines, all open PRs, the full prompt lifecycle registry). Its live-state read budget, large-document rules and subagent routing apply to every session.
+
+## Work in batches
+
+- **Defect finding and audits:** one sweep per lane or module produces one findings list (one Issue or one comment), not an Issue or PR per finding.
+- **Fixes:** group the findings of one module into one fix PR, within one lane's owned paths and one writer. Keep a batch reviewable: at most about five findings or 500 changed lines of hand-written code (generated data excluded); split larger batches. Only a P0 (security, data loss, broken `main`) gets its own PR at once.
+- **Review:** request review on the final frozen head with every known fix in, not on intermediate heads. Answer all findings of a review round in one push; later non-blocking findings go to the next batch. This never removes a review or re-review that the bound review policy requires, including after a materially risk-bearing repair.
+- **CI:** run the local checks for every changed path before pushing, and fix all failures of a run in one push.
+- **Task records:** a task that ends with one PR moves its record to `docs/agents/tasks/archive/` in that PR's final authoring commit (`docs/agents/tasks/archive/README.md`). The record reaches `main` only if the PR merges, so no separate archive PR is needed.
+
+## Owner questions in batches
+
+Do not ask the owner one question at a time. Collect open owner questions and decisions, and keep working on everything they do not block; for a reversible, ungoverned detail, proceed on a stated assumption and list it. Workers and lane leads send questions to the active control plane (in their report or the `STATE` decision queue on the coordination Issue) instead of asking the owner; with no control plane, collect them into one message of your own. When the owner writes to you directly, answer, and put any question back to them in that same reply. The control plane asks the owner at most twice a day, in one message: numbered questions, each with one line of context, lettered options and a recommendation, so the owner can answer `1a 2b`. Ask at once only when all remaining work is blocked, or the step is destructive, spends owner funds outside standing authorization, or touches production, credentials or safety.
+
 ## Jira programme coordination
 
-Oteryn programme coordination is mirrored in Jira project `KAN` at `https://oteryn.atlassian.net`; `KAN-23` is the programme overview. When an Atlassian/Jira connector is available in the current session, use it as a bounded programme-coordination surface.
-
-- After the normal GitHub preflight for a substantial start or resume, resolve an **existing mapped Jira Story** for the current workstream. Prefer a native GitHub source link on the Jira item; otherwise require an exact repository/workstream label match. Do not map work by a similar title alone.
-- Read only the mapped Story, its parent Epic, priority, status, fixVersion/milestone and readiness labels needed for the current decision. Do not bulk-load unrelated Jira history.
-- **GitHub remains repository lifecycle and technical source of truth** for repository identity, Issues/tasks, branches, PRs, exact SHAs, checks, review, Merge Queue and integration. Repository contracts/task records remain implementation authority. Jira is the programme roadmap/readiness/milestone view and never grants repository, merge, production, secret or cross-repository mutation authority.
-- Ordinary repository workers may update only their already-mapped programme Story after a verified material state transition. Broad Jira restructuring, new programme Epics/Versions, cross-workstream reprioritization and edits to `KAN-23` belong to the programme coordinator unless the owner explicitly delegates them.
-- Use the established programme state convention: queued/blocked/stalled work stays `Do zrobienia` with the matching `readiness-queued`, `readiness-blocked` or `readiness-stalled` label; active work is `W toku` with `readiness-active`; completed work is `Gotowe` with `readiness-complete` only after the Story's full acceptance is verified. Use `W trakcie weryfikacji` when implementation is complete but required review/qualification is still pending.
-- Fresh-read both Jira and the linked GitHub state before a Jira mutation. Do not spam comments or rewrite unchanged fields. A closed individual GitHub Issue/PR does not make an aggregate Jira Story complete while another linked acceptance source remains open.
-- If the Jira connector is unavailable, the mapping is absent, or Jira write capability is unavailable, continue otherwise-authorized repository work. Record Jira synchronization as pending/unknown rather than inventing a mapping, creating duplicate programme items, or treating Jira availability as an implementation blocker.
+Programme coordination is mirrored in Jira project `KAN` (`KAN-23` is the overview); `docs/agents/JIRA_PROGRAMME_COORDINATION.md` has the mapping and state rules. GitHub remains the repository lifecycle and technical source of truth, and Jira never grants repository, merge, production, secret or cross-repository authority. Only the programme coordinator writes to Jira, once per day in one batch; workers report state transitions in their task record and #162 instead. If the connector or mapping is unavailable, record Jira sync as pending and continue.

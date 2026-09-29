@@ -33,7 +33,7 @@ Reusable prompts are task deltas, not project state. Apply current authority, ta
 Substantial work uses:
 
 - `tasks/active/OTV2-YYYYMMDD-short-slug.md` while active;
-- `tasks/archive/` after terminal completion;
+- `tasks/archive/` after terminal completion; a task that ends with one PR moves its record there in that PR's final authoring commit (see `tasks/archive/README.md`);
 - `tasks/TASK_TEMPLATE.md` as the required template.
 
 Do not use chat history as project state. A replacement agent must be able to continue from Git, the task checkpoint and live PR/CI state.

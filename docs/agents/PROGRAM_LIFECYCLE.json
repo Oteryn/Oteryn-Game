@@ -698,6 +698,34 @@
         "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
         "live GitHub #162 allocation state"
       ]
+    },
+    {
+      "program_id": "OTERYN_DEFECT_DISCOVERY_OPERATOR_RUNBOOK",
+      "path": "docs/agents/programs/archive/OTERYN_DEFECT_DISCOVERY_OPERATOR_RUNBOOK.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "Defect Discovery dormant since the 2026-09-15 P0-P3 allocation",
+        "prompt family retired by owner decision on 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
+    },
+    {
+      "program_id": "OTV2_DEFECT_DISCOVERY_P0_P3_ALLOCATION_20260915",
+      "path": "docs/agents/programs/archive/OTV2_DEFECT_DISCOVERY_P0_P3_ALLOCATION_20260915.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "Defect Discovery dormant since the 2026-09-15 P0-P3 allocation",
+        "prompt family retired by owner decision on 2026-09-29"
+      ],
+      "superseded_by": [
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "live GitHub #162 allocation state"
+      ]
     }
   ]
 }

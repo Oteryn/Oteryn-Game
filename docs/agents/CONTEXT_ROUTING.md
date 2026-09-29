@@ -32,6 +32,10 @@ Run builds and tests quietly (`cargo ... --quiet`, keep the last ~20 lines of ou
 
 Many data files are multi-megabyte JSON on a single line (`content/**/definitions/*.json`, `content/loot/`, `content/world/definitions/`, `imports/**/bindings/*.json`, `docs/agents/evidence/*.json`). A plain `grep`/`rg` match there prints the whole line. Search them with `rg -l` or `--count` first, then extract the record with `jq` or Python; never print matching lines from them. `docs/agents/evidence/.rgignore` excludes that directory's JSON from ripgrep searches entirely.
 
+### Finding a decision
+
+To find what a numbered decision (`D84`, `SPELL-D7`) says, read its row in `docs/agents/DECISION_INDEX.md` and open the linked document, instead of searching the repository. The numbers are not unique across lanes, so check the subject.
+
 ### Subagent routing
 
 Leads that run workers as subagents use the definitions in `.claude/agents/`:
@@ -41,6 +45,25 @@ Leads that run workers as subagents use the definitions in `.claude/agents/`:
 - `oteryn-ref-reader` (Haiku, read-only): code search, Reference evidence and live-state lookups.
 
 A subagent's final report is at most 15 lines. Subagents never trigger paid review, allocate or merge.
+
+### Local checks by changed path
+
+Run the narrow local check for what you changed and leave the full workspace build, Windows client and E2E lanes to CI. Do not read `.github/workflows/merge-gate.yml` to discover checks.
+
+| Changed path | Local check |
+|---|---|
+| `crates/<name>/`, `apps/<name>/`, a Rust crate under `tools/` | `cargo fmt --all --check`; `cargo clippy --locked -p <package> --all-targets --quiet -- -D warnings`; `cargo test --locked -p <package> --quiet` |
+| `Cargo.toml`, `Cargo.lock`, `workspace-boundaries.toml` | the above for each affected package, plus `cargo run --locked -p oteryn-architecture-check -- workspace .` |
+| `content/`, `imports/`, `rulesets/` | the tests of the package that loads the file (`rg -l '<file name>' crates apps --glob '*.rs'`) and the path's own validator named in its `AGENTS.md` or README |
+| `docs/agents/`, `tools/agents/`, `.claude/` | `python tools/agents/validate_governance.py`; `python -m unittest discover -s tools/agents/tests` |
+| `tools/repository/`, `.github/` | `python tools/repository/validate_repository_policy.py` and the matching `tools/repository/test_*.py` |
+| other docs | `git diff --check` |
+
+The package name is the `name` in that directory's `Cargo.toml`. A PR that touches `tools/agents/`, `tools/repository/`, `.github/workflows/` or the Cargo manifests runs the full Rust Linux and Windows lanes in CI (about 15 minutes), even when it changes no Rust. Keep ordinary docs, task-record and content PRs away from those paths, and put prompt-version pin updates into the coordinator's daily batch.
+
+### Waiting for CI
+
+After a push, do not poll check status in a loop: each poll re-reads the whole session. Report `waiting for CI` with the head SHA and end the turn; PR activity events or the lead resume you. Re-check once when resumed.
 
 A current-state read may expand only when the smaller slice leaves a material authority, ownership, dependency, safety or acceptance fact unresolved. Reuse authenticated immutable exact-revision material within the coherent task instead of re-reading it merely because another step begins.
 

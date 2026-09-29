@@ -46,7 +46,7 @@ The allocation was prepared against protected
 The worker prompt is therefore already canonical at:
 
 ```text
-docs/agents/prompts/OTV2_DEFECT_DISCOVERY_P0_P3_LEAD.md
+docs/agents/prompts/retired/OTV2_DEFECT_DISCOVERY_P0_P3_LEAD.md
 ```
 
 Binding #162 architecture/proof comments are exactly:
@@ -450,7 +450,7 @@ following in Issue #628:
 
 ```text
 protected_main: <current exact protected main SHA containing this allocation>
-allocation_path: docs/agents/programs/OTV2_DEFECT_DISCOVERY_P0_P3_ALLOCATION_20260915.md
+allocation_path: docs/agents/programs/archive/OTV2_DEFECT_DISCOVERY_P0_P3_ALLOCATION_20260915.md
 allocation_state: ACTIVE
 worker_state: ADMITTED
 worker_profile: OTV2_DEFECT_DISCOVERY_P0_P3_LEAD
