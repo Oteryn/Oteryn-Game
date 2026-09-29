@@ -33,10 +33,15 @@ SOURCE_NOTE = (f'{REPOSITORY} branch {BRANCH} at {REVISION} (read {READ}): the o
 
 
 def require_revision(crystal):
-    """Every output records REVISION, so the Crystal checkout must be at that commit."""
-    head = subprocess.run(['git', '-C', str(crystal), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
+    """Every output records REVISION, so the files read must be those of that commit: HEAD is REVISION and they are clean."""
+    def git(*args):
+        return subprocess.run(['git', '-C', str(crystal), *args], capture_output=True, text=True).stdout.strip()
+    head = git('rev-parse', 'HEAD')
     if head != REVISION:
         raise SystemExit(f'{crystal} is at {head or "no git commit"}, not the pinned CrystalServer revision {REVISION}')
+    dirty = git('status', '--porcelain', '--untracked-files=all', '--', MONSTER_DIR, *SHARED_SOURCES)
+    if dirty:
+        raise SystemExit(f'{crystal} has local changes to files read at {REVISION}:\n{dirty}')
 
 
 def converter(canary, crystal):
