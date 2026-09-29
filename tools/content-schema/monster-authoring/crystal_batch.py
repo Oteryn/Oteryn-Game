@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 from pathlib import Path
 
 import canary_batch as cb
@@ -31,8 +32,16 @@ SOURCE_NOTE = (f'{REPOSITORY} branch {BRANCH} at {REVISION} (read {READ}): the o
                f'(Canary {cb.REVISION[:8]}); loot names resolve through the 15.30 item tables of this commit.')
 
 
+def require_revision(crystal):
+    """Every output records REVISION, so the Crystal checkout must be at that commit."""
+    head = subprocess.run(['git', '-C', str(crystal), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
+    if head != REVISION:
+        raise SystemExit(f'{crystal} is at {head or "no git commit"}, not the pinned CrystalServer revision {REVISION}')
+
+
 def converter(canary, crystal):
     """A converter that reads the Crystal monster files and item tables and keeps the Canary engine rules."""
+    require_revision(crystal)
     objects = cb.load_appearance_objects(crystal / 'data/items/appearances.dat')
     items = cb.load_items_xml(crystal / 'data/items/items.xml')
     names, index = cb.name_index(objects, items)
@@ -49,6 +58,7 @@ def created_name(path):
 
 def files(canary, crystal):
     """Relative paths (no .lua) of the Crystal monsters whose name no Canary monster file creates."""
+    require_revision(crystal)
     canary_slugs = {cb.slug(name) for path in (canary / cb.MONSTER_DIR).rglob('*.lua') if (name := created_name(path))}
     result = []
     for path in sorted((crystal / MONSTER_DIR).rglob('*.lua')):
