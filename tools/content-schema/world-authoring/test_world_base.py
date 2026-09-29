@@ -355,7 +355,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         self.assertEqual(index["totals"]["items"], 4 + 3)
         # the tile the base has keeps its own items; the added tiles are in the region files
         palette = [row["source_item_id"] for row in index["palette"]]
-        z, rx, ry, sectors = codec.decode_region(self.decode_path(out, 7))
+        _z, _rx, _ry, sectors = codec.decode_region(self.decode_path(out, 7))
         tiles = {
             (x, y): [(palette[i], d, a) for i, d, a in items]
             for x, y, _f, _h, _z, items in sectors[0][1]
@@ -481,9 +481,11 @@ class ConvertAndValidateTest(unittest.TestCase):
             self.build_with_fill(raw)
 
     def test_reading_the_archive_needs_py7zr(self):
-        with mock.patch.dict(sys.modules, {"py7zr": None}):
-            with self.assertRaises(convert.ConvertError):
-                convert.extract_member(b"", "blue_valley.otbm")
+        with (
+            mock.patch.dict(sys.modules, {"py7zr": None}),
+            self.assertRaises(convert.ConvertError),
+        ):
+            convert.extract_member(b"", "blue_valley.otbm")
 
     def test_without_a_fill_the_source_lists_none(self):
         self.assertEqual(json.loads(self.out[validate.INDEX])["source"]["fill"], [])
