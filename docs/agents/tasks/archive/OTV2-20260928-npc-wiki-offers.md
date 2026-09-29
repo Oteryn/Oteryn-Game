@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-npc-wiki-offers
 title: NPC D13 offers - admit the plain offers two of three wikis list with the same price
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
@@ -12,15 +12,15 @@ issue: 162
 pr: 1185
 jira: KAN-16
 base_sha: 0b5c92c21fe8992666234b0cdf3210dc1e733786
-head_sha: null
-final_head_sha: null
+head_sha: 2252c76d31b3f97409b23c14a9638930a0b79f63
+final_head_sha: 2252c76d31b3f97409b23c14a9638930a0b79f63
 final_head_frozen_at: null
 owner: claude-code-session-01RTD1d7GsT7uFSBHg5syB4T
 created_at: 2026-09-28
 updated_at: 2026-09-28
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260928-npc-wiki-offers.md
+  - docs/agents/tasks/archive/OTV2-20260928-npc-wiki-offers.md
   - tools/content-schema/npc-authoring/promotion_candidates.py
   - tools/content-schema/npc-authoring/validate_promotion.py
   - tools/content-schema/npc-authoring/test_promotion.py
@@ -79,3 +79,9 @@ Authority: owner decision in this session ("tak" on D13, which includes new offe
   2,166 declarations.
 - The tree generator, its validator and tests, and `validate_materialized_game_tree` pass.
   `content_world_project_repository` passes with new pins.
+
+## PR and closeout
+
+- Merged through Merge Queue as PR #1185, squash commit `98223ad4c19fd708c798843604e40595216ba20f`; final head `2252c76d31b3f97409b23c14a9638930a0b79f63`. Codex findings (left-out
+  source offers re-added, missing provenance, held shops, source-backed rebuild) fixed before merge; ownership
+  released.
