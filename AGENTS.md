@@ -45,6 +45,10 @@ Run the checks selected by changed paths and preserve `game-gate`, repository pr
 
 Do not ask the owner one question at a time. Collect open owner questions and decisions, and keep working on everything they do not block; for a reversible, ungoverned detail, proceed on a stated assumption and list it. Workers and lane leads send questions to the active control plane (in their report or the `STATE` decision queue on the coordination Issue) instead of asking the owner; with no control plane, collect them into one message of your own. When the owner writes to you directly, answer, and put any question back to them in that same reply. The control plane asks the owner at most twice a day, in one message: numbered questions, each with one line of context, lettered options and a recommendation, so the owner can answer `1a 2b`. Ask at once only when all remaining work is blocked, or the step is destructive, spends owner funds outside standing authorization, or touches production, credentials or safety.
 
+## Compact Instructions
+
+When compacting, always preserve: task_id and owned paths; branch, frozen SHA and PR number with CI and review state; open review findings and blockers; pending owner questions and decisions taken in this session; the next step. Drop file contents, logs and diffs; they can be re-read.
+
 ## Jira programme coordination
 
 Programme coordination is mirrored in Jira project `KAN` (`KAN-23` is the overview); `docs/agents/JIRA_PROGRAMME_COORDINATION.md` has the mapping and state rules. GitHub remains the repository lifecycle and technical source of truth, and Jira never grants repository, merge, production, secret or cross-repository authority. Only the programme coordinator writes to Jira, once per day in one batch; workers report state transitions in their task record and #162 instead. If the connector or mapping is unavailable, record Jira sync as pending and continue.
