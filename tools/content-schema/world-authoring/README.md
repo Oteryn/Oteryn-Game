@@ -12,7 +12,7 @@ format selected by measurement (see "Base map (step 3)" below).
 | `Area.Island` | `content/world/areas/islands/` | 59 | `OTERYN_AREA_AUTHORING_SHARD/v1` (`island.schema.json`) |
 | `Area.Region` | `content/world/areas/regions/` | 465 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `House` | `content/houses/` | 995 | `OTERYN_HOUSE_AUTHORING_SHARD/v1` |
-| `Terrain` | `content/world/terrain/` | 5,942 | `OTERYN_TERRAIN_AUTHORING_SHARD/v1` (`terrain-appearance.schema.json`) |
+| `Terrain` | `content/world/terrain/` | 5,948 | `OTERYN_TERRAIN_AUTHORING_SHARD/v1` (`terrain-appearance.schema.json`) |
 | `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
 | `World` | `content/world/worlds/` | 1 | `OTERYN_WORLD_AUTHORING_SHARD/v1` (`world-record.schema.json`) |
 | `WorldObject.FloorChange` | `content/world/objects/` | 447 | `OTERYN_WORLD_OBJECT_AUTHORING_SHARD/v1` (`floor-change.schema.json`) |
@@ -306,7 +306,7 @@ committed base map, and writes the shard `floor-changes-00000-00446.json`, the i
   missing name, or an id that items.xml declares in two nodes.
 - **Counts** (see the capture summary): 194 `down`, 73 `up_north`, 52 `up_south`,
   50 `up_east`, 69 `up_west`, 5 `up_south_alt`, 4 `up_east_alt`; 329 of the 447 types
-  occur on the map, 26,929 occurrences in all (fill included).
+  occur on the map, 26,935 occurrences in all (fills included).
 - **Excluded:** ladders that go up, rope spots, sewer grates and shovel or pick holes are
   scripted `use` actions (or runtime terrain changes), not static item attributes, so they
   are listed in the capture summary and not invented here. Item types named `ramp`,
@@ -346,8 +346,8 @@ python fandom_island_snapshot.py fetch && python convert_islands.py
 ## Base map (step 3)
 
 `WorldPlacement.Base` holds every tile and item of `world.otbm` (19,325,129 tiles,
-24,925,845 items, floors 0-15) plus the fill from `maps.7z` below (19,328,094 tiles,
-24,929,209 items in all) in `content/world/placements/`. JSON is not used: the same
+24,925,845 items, floors 0-15) plus the fills from `maps.7z` below (19,345,022 tiles,
+24,948,876 items in all) in `content/world/placements/`. JSON is not used: the same
 data is 3.25 GB as JSON sectors and about 22 MB in the format below.
 
 - **Layout:** `index.json` (`OTERYN_FAMILY_INDEX/v1`, family `WorldPlacement.Base`) plus one
@@ -391,7 +391,7 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   palette entries in `index.json` only. The 22 MB of region files do not change. The
   capture summary counts provisional entries and occurrences, split into ids that
   `items.xml` declares at the pinned revision and appearance-only ids, and the Terrain-keyed
-  entries. Current counts: 25,963 palette entries; 5,942 Terrain keys (757,028
+  entries. Current counts: 25,983 palette entries; 5,948 Terrain keys (760,247
   occurrences); 5 provisional (24 occurrences): 4 ids that `items.xml` declares and id 99,
   which neither `items.xml` nor the client declares.
   `validate_world_base.py` accepts a non-provisional key that is an Item binding target or
@@ -423,6 +423,39 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   `totals` minus the fill equals the pinned `world.otbm` totals (19,325,129 tiles,
   24,925,845 items). Reading the archive needs `py7zr` (`requirements-regenerate.txt`, not
   installed by CI); `--check` reproduces everything from the pinned checkout.
+- **Partial fill from `summer-update-2025.otbm`** (owner decision 2b; second `FILL` entry,
+  same archive, member sha256 `d4b4baee...`, 2,964,786 bytes, 286,241 tiles on floors 0-15,
+  absolute coordinates). Nothing in CrystalServer loads this file. The rule is computed by
+  `select_tiles` (recorded as `select` in the pin), not a hand list. Candidates are the
+  fragment tiles whose (x, y, z) the base has no tile at **after** the Blue Valley fill
+  (45,047 tiles), then:
+  - **Floors 8-15:** 4-connected components per floor. A component is included whole unless
+    one of its tiles lies in the exclusion box `edron-underground`: x 33274-33456, y
+    31786-31884, floors 8-12 (the bounds of the Edron Surroundings/Stonehome clusters). Edron
+    is **deferred** as a cave rework (the base already has Edron caves, so a fill-only mix
+    would combine two layouts). Components below a size threshold are kept: the research
+    found no noise, so there is no threshold. Result: 127 components included (16,777 tiles:
+    floor 8 1,913, 9 5,678, 10 584, 11 611, 12 169, 13 3,608, 14 3,619, 15 595) and 16
+    excluded (27,359 tiles: floor 8 1,816, 9 6,567, 10 7,901, 11 8,822, 12 2,253). By area
+    (a description by bounding box, not part of the rule): Liberty Bay/Vandura floors 12-15
+    7,519 tiles in 19 components (floor 13 3,139, 14 3,619, 15 595, 12 166), Port
+    Hope/Tiquanda floors 9-13 4,808 in 73 (floor 9 4,056), Kazordoon/Femor Hills floors 8-11
+    3,902 in 4, and 548 elsewhere in 31 small components.
+  - **Floors 0-7:** a single tile is kept only if the official 15.30 minimap
+    (`content/assets/files/minimap-32-*`, floors 0-7 only) shows land there: a pixel that is
+    neither black nor water `#336699`. Result: 151 tiles (floor 2 30, floor 3 91, floor 4 4,
+    floor 5 11, floor 6 15); 760 tiles without minimap land are dropped (floor 3 111, 4 241,
+    5 303, 6 105).
+  - Nothing existing is overwritten (a position the base has is skipped, 241,194 tiles).
+    A tile with a house, zone or teleport destination is still refused; a teleport item
+    whose destination is unset (0, 0, 0) leads nowhere and is carried (4 tiles, floor 14).
+  Total 16,928 tiles and 19,667 items added; 6 new palette entries (append-only), all
+  appearance-only, with 6 new `Terrain` records (5,948 in all). The summary `fill.sources[1]`
+  holds the counts per floor, `selection` (components and tiles excluded or without land)
+  and `tiles_not_selected`; `--check` reproduces it (the minimap is read from the committed
+  client assets, the fragment from the pinned archive). Underground validity rests on the
+  file being the official summer-2025 update placed under official surface; the official
+  minimap cannot check floors 8-15.
   Still to draw (no source): Blue Valley north-east, east and south blocks, Temple of
   Light, Great Expedition Island and Wharf, Marapur/Thalassara floors 2-6, Nargor floors
   4-6, Upper Roshamuul floor 6, Great Expedition floors 3-6.
@@ -497,11 +530,11 @@ Item business.
   agrees: the water and lava ids of the island ground classes (501) all have appearances,
   ids named `grass` carry bank speed 150 most often, `stone wall` ids are `unpass` (913 of
   934) and water ground is `unpass`. No id is shifted.
-- **Records:** one per appearance-only palette id that has an appearance: 5,942 (id 99 has
+- **Records:** one per appearance-only palette id that has an appearance: 5,948 (id 99 has
   none and stays provisional). Key `oteryn:terrain.a<id, six digits>`, fields only from the
   appearance: `appearance_id`, `class`, `flags` (the subset of `bank`, `clip`, `unmove`,
   `unpass` the appearance sets), `speed` (bank waypoints, ground only), `name` (7 records),
-  `automap_color` (2,942), `occurrences_on_base_map` (top-level tile items over the region
+  `automap_color` (2,946), `occurrences_on_base_map` (top-level tile items over the region
   files, container contents excluded). Binding: namespace `tibia-client/appearance-id`,
   source `oteryn:source.tibia_client`, source revision the sha256 of the appearances file.
 - **Class rule** (first match): `bank` -> `ground`; else `clip` -> `border`; else `unpass`
@@ -509,8 +542,8 @@ Item business.
   splash decals) occurs on none of these ids, `liquidcontainer` (drinkable containers) on
   three that are not ground, and water or lava ground has no flag of its own (it is `bank`
   or `clip`, usually `unpass`).
-- **Counts** (capture summary): ground 740, border 1,533, blocking 2,611, decoration 1,058;
-  757,028 occurrences on the base map (fill included).
+- **Counts** (capture summary): ground 740, border 1,534, blocking 2,613, decoration 1,061;
+  760,247 occurrences on the base map (fills included).
 - **Generation order:** `convert_terrain.py --crystal-root PATH` derives the set (palette
   ids with no Item binding, not declared by `items.xml`, known to the client) and writes the
   records; `convert_world_base.py --crystal-root PATH` then switches those palette keys (only

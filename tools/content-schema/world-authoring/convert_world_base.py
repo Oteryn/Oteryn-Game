@@ -27,6 +27,7 @@ import argparse
 import hashlib
 import io
 import json
+import struct
 import sys
 import tempfile
 from collections import Counter
@@ -38,6 +39,7 @@ import convert_world_metadata as metadata
 import otbm_reader
 import world_region_codec as codec
 import zstandard
+from client_map_reader import unframe
 from convert_world_metadata import ConvertError, canonical
 
 ROOT = metadata.ROOT
@@ -70,7 +72,33 @@ FILL = [
             "name": "blue_valley.otbm",
             "sha256": "9f0bd617651de2219b5f4227d8e34166fd143eeb519a3bdde6658346ba68d63d",
         },
-    }
+    },
+    {
+        "archive": {
+            "path": MAPS_ARCHIVE,
+            "sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+        },
+        "member": {
+            "name": "summer-update-2025.otbm",
+            "sha256": "d4b4baeedbccdae35011e197a78cab557ec6de774aeb52a1e47cec0646e99a26",
+        },
+        # Selection rule of a partial fill, computed by `select_tiles`: the fragment tiles
+        # the base (after the earlier fills) lacks, on floors 8-15 whole 4-connected
+        # components except those touching an exclusion box, on floors 0-7 single tiles
+        # that the official 15.30 minimap shows as land.
+        "select": {
+            "connectivity": 4,
+            "exclude": [
+                {
+                    "bbox": [33274, 31786, 33456, 31884],
+                    "floors": [8, 12],
+                    "name": "edron-underground",
+                }
+            ],
+            "surface": {"floors": [0, 7], "test": "official-minimap-land"},
+            "underground": {"floors": [8, 15], "unit": "component"},
+        },
+    },
 ]
 
 SOURCE = {
@@ -97,6 +125,7 @@ CARRIED = {
     22: "charges",
 }
 DEST_KEY = "dest"
+UNSET_DEST = (0, 0, 0)
 _INDEX = list(range(codec.SECTOR_SIZE * codec.SECTOR_SIZE))
 
 
@@ -308,21 +337,159 @@ def sector_slot(x: int, y: int) -> int:
     return _INDEX[(y % codec.SECTOR_SIZE) * codec.SECTOR_SIZE + x % codec.SECTOR_SIZE]
 
 
-def apply_fill(collector: Collector, raw: bytes, width: int, height: int) -> dict:
+def minimap_land(root: Path = ROOT):
+    """A function `(x, y, z) -> bool`: the official 15.30 minimap shows land there.
+
+    Land is a pixel that is neither black (no data) nor water (`#336699`). The minimap
+    exists for floors 0-7 only; a position outside its files is not land. Files load
+    lazily from the committed client assets.
+    """
+    # A file name holds the top-left tile of a 512 x 512 block divided by 32.
+    files: dict[tuple[int, int, int], Path] = {}
+    for path in (root / "content/assets/files").glob("minimap-32-*.bmp.lzma"):
+        a, b, z = (int(v) for v in path.name.split("-")[2:5])
+        files[(a * 32, b * 32, z)] = path
+    if len({(x % 512, y % 512) for x, y, _z in files}) > 1:
+        raise ConvertError("minimap blocks are not on one 512-tile grid")
+    grid_x, grid_y = next(iter(files))[:2] if files else (0, 0)
+    grid_x, grid_y = grid_x % 512, grid_y % 512
+    cache: dict[tuple[int, int, int], tuple[bytes, int, int, int] | None] = {}
+
+    def load(key):
+        if key not in cache:
+            path = files.get(key)
+            if path is None:
+                cache[key] = None
+            else:
+                bmp = unframe(path.read_bytes())
+                offset = struct.unpack("<I", bmp[10:14])[0]
+                width, height = struct.unpack("<ii", bmp[18:26])
+                if height <= 0 or bmp[28] != 32:
+                    raise ConvertError(f"{path.name}: unexpected minimap bitmap")
+                cache[key] = (bmp, offset, width, height)
+        return cache[key]
+
+    def land(x: int, y: int, z: int) -> bool:
+        block_x, block_y = x - (x - grid_x) % 512, y - (y - grid_y) % 512
+        tile = load((block_x, block_y, z))
+        if tile is None:
+            return False
+        bmp, offset, width, height = tile
+        if x - block_x >= width or y - block_y >= height:
+            return False
+        row = height - 1 - (y - block_y)
+        at = offset + (row * width + (x - block_x)) * 4
+        blue, green, red = bmp[at], bmp[at + 1], bmp[at + 2]
+        return (red, green, blue) not in ((0, 0, 0), (0x33, 0x66, 0x99))
+
+    return land
+
+
+def select_tiles(pending: dict, select: dict, land) -> tuple[set, dict]:
+    """The positions of `pending` (`{(x, y, z): tile}`) that a partial fill takes.
+
+    Surface floors keep a tile if `land` says so. Underground floors keep every
+    4-connected component (per floor) that has no tile inside an exclusion box.
+    """
+    low, high = select["underground"]["floors"]
+    surface_low, surface_high = select["surface"]["floors"]
+    taken: set = set()
+    stats = {
+        "components_excluded": 0,
+        "components_included": 0,
+        "tiles_excluded": Counter(),
+        "tiles_without_land": Counter(),
+    }
+    boxes = select["exclude"]
+    by_floor: dict[int, set] = {}
+    for x, y, z in pending:
+        if surface_low <= z <= surface_high:
+            if land(x, y, z):
+                taken.add((x, y, z))
+            else:
+                stats["tiles_without_land"][z] += 1
+        elif low <= z <= high:
+            by_floor.setdefault(z, set()).add((x, y))
+        else:
+            raise ConvertError(
+                f"fill tile on floor {z} is outside the selection floors"
+            )
+    for z, points in sorted(by_floor.items()):
+        seen: set = set()
+        for start in sorted(points):
+            if start in seen:
+                continue
+            seen.add(start)
+            stack, component = [start], []
+            while stack:
+                x, y = stack.pop()
+                component.append((x, y))
+                for near in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if near in points and near not in seen:
+                        seen.add(near)
+                        stack.append(near)
+            excluded = any(
+                box["floors"][0] <= z <= box["floors"][1]
+                and any(
+                    box["bbox"][0] <= x <= box["bbox"][2]
+                    and box["bbox"][1] <= y <= box["bbox"][3]
+                    for x, y in component
+                )
+                for box in boxes
+            )
+            if excluded:
+                stats["components_excluded"] += 1
+                stats["tiles_excluded"][z] += len(component)
+            else:
+                stats["components_included"] += 1
+                taken.update((x, y, z) for x, y in component)
+    return taken, stats
+
+
+def apply_fill(
+    collector: Collector,
+    raw: bytes,
+    width: int,
+    height: int,
+    select: dict | None = None,
+    land=None,
+) -> dict:
     """Add the tiles of one fragment map that the collected base map lacks.
 
     A tile whose position the base map (or an earlier tile of this fragment) already has is
     skipped, so nothing is overwritten or merged. A tile that would be added with a house, a
     tile zone or a teleport destination is refused: houses and teleports are bound to
-    `world.otbm` metadata, and this fill carries terrain and decoration only.
+    `world.otbm` metadata, and this fill carries terrain and decoration only. A teleport
+    item whose destination is unset (0, 0, 0) leads nowhere and is carried as an item. With
+    `select`, only the tiles `select_tiles` takes are added (in map order); the rest count
+    as not selected.
     """
     present: dict[tuple[int, int, int], set[int]] = {}
+    pending: dict[tuple[int, int, int], tuple] = {}
     stats = {
         "added": Counter(),
         "items_added": 0,
+        "not_selected": Counter(),
+        "selection": None,
         "source": Counter(),
         "skipped": Counter(),
     }
+
+    def add(x, y, z, flags, house, zones, items) -> None:
+        if (
+            house is not None
+            or zones
+            or any(
+                (attrs or {}).get(DEST_KEY, UNSET_DEST) != UNSET_DEST
+                for *_, attrs in items
+            )
+        ):
+            raise ConvertError(
+                f"fill tile ({x}, {y}, {z}) carries a house, zone or teleport"
+            )
+        collector(x, y, z, flags, house, zones, items)
+        stats["added"][z] += 1
+        stats["items_added"] += len(items)
 
     def on_tile(x, y, z, flags, house, zones, items) -> None:
         stats["source"][z] += 1
@@ -336,18 +503,23 @@ def apply_fill(collector: Collector, raw: bytes, width: int, height: int) -> dic
         if slot in present[key]:
             stats["skipped"][z] += 1
             return
-        if house is not None or zones or any(DEST_KEY in attrs for *_, attrs in items):
-            raise ConvertError(
-                f"fill tile ({x}, {y}, {z}) carries a house, zone or teleport"
-            )
         present[key].add(slot)
-        collector(x, y, z, flags, house, zones, items)
-        stats["added"][z] += 1
-        stats["items_added"] += len(items)
+        if select is None:
+            add(x, y, z, flags, house, zones, items)
+        else:
+            pending[(x, y, z)] = (flags, house, zones, items)
 
     facts = otbm_reader.read_tiles(raw, on_tile)
     if facts.unknown_item_attrs or facts.unknown_tile_attrs:
         raise ConvertError("fill map has unknown OTBM attributes")
+    if select is not None:
+        taken, chosen = select_tiles(pending, select, land)
+        for position, tile in pending.items():
+            if position in taken:
+                add(*position, *tile)
+            else:
+                stats["not_selected"][position[2]] += 1
+        stats["selection"] = chosen
     return stats
 
 
@@ -355,7 +527,7 @@ def fill_summary(row: dict, raw: bytes, stats: dict) -> dict:
     def by_floor(counter: Counter) -> dict[str, int]:
         return {str(z): n for z, n in sorted(counter.items())}
 
-    return {
+    summary = {
         "archive": row["archive"],
         "items_added": stats["items_added"],
         "member": {**row["member"], "bytes": len(raw)},
@@ -365,6 +537,16 @@ def fill_summary(row: dict, raw: bytes, stats: dict) -> dict:
         "tiles_skipped_existing": sum(stats["skipped"].values()),
         "tiles_skipped_existing_by_floor": by_floor(stats["skipped"]),
     }
+    if stats["selection"] is not None:
+        chosen = stats["selection"]
+        summary["selection"] = {
+            "components_excluded": chosen["components_excluded"],
+            "components_included": chosen["components_included"],
+            "tiles_excluded_by_floor": by_floor(chosen["tiles_excluded"]),
+            "tiles_not_selected": sum(stats["not_selected"].values()),
+            "tiles_without_land_by_floor": by_floor(chosen["tiles_without_land"]),
+        }
+    return summary
 
 
 def zstd_info() -> dict:
@@ -380,9 +562,11 @@ def build(
     bindings: bytes | None = None,
     previous: list[dict] | None = None,
     terrain: dict[int, str] | None = None,
+    land=None,
 ) -> dict[str, bytes]:
     """Build every output; `previous` is the committed palette to extend, if any and
-    `terrain` the committed Terrain keys of appearance-only ids."""
+    `terrain` the committed Terrain keys of appearance-only ids and `land` the minimap land
+    test of a partial fill (default: the committed 15.30 minimap)."""
     if bindings is None:
         bindings = ITEM_BINDINGS.read_bytes()
     bound = bound_keys(bindings)
@@ -403,7 +587,11 @@ def build(
         raw = blobs.get(fill_key(row))
         if raw is None:
             continue
-        stats = apply_fill(collector, raw, facts.width, facts.height)
+        if "select" in row and land is None:
+            land = minimap_land()
+        stats = apply_fill(
+            collector, raw, facts.width, facts.height, row.get("select"), land
+        )
         fills.append(fill_summary(row, raw, stats))
         applied.append(row)
     collector.check()

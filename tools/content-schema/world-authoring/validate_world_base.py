@@ -234,7 +234,9 @@ def check_fill(index: dict, summary: dict, errors: list[str]) -> None:
             or not isinstance(skipped, dict)
             or sum(added.values()) != source.get("tiles_added")
             or sum(skipped.values()) != source.get("tiles_skipped_existing")
-            or source["tiles_added"] + source["tiles_skipped_existing"]
+            or source["tiles_added"]
+            + source["tiles_skipped_existing"]
+            + source.get("selection", {}).get("tiles_not_selected", 0)
             != source.get("tiles_in_source")
         ):
             errors.append(

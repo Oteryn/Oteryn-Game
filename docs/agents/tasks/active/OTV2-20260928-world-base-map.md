@@ -43,7 +43,7 @@ jira: KAN-16
 
 Step 3 of the owner's world-map plan: the whole base map of `world.otbm` in
 `zimbadev/crystalserver@00ce02a5` (`summer-update`) becomes `WorldPlacement.Base`:
-19,325,129 tiles and 24,925,845 items on floors 0-15 (plus the 2,965 tile Blue Valley fill),
+19,325,129 tiles and 24,925,845 items on floors 0-15 (plus the 19,893 tile `maps.7z` fills),
 in 1,208 region files
 (`OTERYN_WORLD_REGION_B3/v1`, about 21.6 MB) plus a 2.5 MB `index.json`. The source is
 sha256-pinned and `OtsHypothesisOnly`.
@@ -56,7 +56,7 @@ sha256-pinned and `OtsHypothesisOnly`.
   - A bound id (`imports/crystalserver/bindings/items.json`, `ots/item_server_id`) takes its
     binding target key, registry or named, with `provisional: false`.
   - An appearance-only id (declared by the official client, not by `items.xml`) takes the
-    `oteryn:terrain.a<id>` key of its `Terrain` record with `provisional: false` (5,942 ids).
+    `oteryn:terrain.a<id>` key of its `Terrain` record with `provisional: false` (5,948 ids).
   - Any other id takes `donor:crystalserver@00ce02a5:item/<id>` with `provisional: true`
     (4 items that `items.xml` declares and the appearance-less id 99).
   - **Ownership rule: ids present in `items.xml` -> Item registry (item agent, B1b);
@@ -93,7 +93,7 @@ sha256-pinned and `OtsHypothesisOnly`.
       `floorchange` attribute (447 types: 194 `down`, 73 `up_north`, 52 `up_south`,
       50 `up_east`, 69 `up_west`, 5 `up_south_alt`, 4 `up_east_alt`), keyed from the palette
       item key, with the engine mapping documented and `occurrences_on_base_map` counted
-      from the region files (329 types, 26,929 occurrences). Ladders up, rope spots, sewer
+      from the region files (329 types, 26,935 occurrences). Ladders up, rope spots, sewer
       grates and tool holes are scripted uses and are listed as excluded, not invented.
 - [x] `Area.Island` holds only islands the base map confirms (owner rule): 59 records
       (55 island, 3 archipelago, 1 continent; 2 event-only; 1 underground) computed by
@@ -119,18 +119,24 @@ sha256-pinned and `OtsHypothesisOnly`.
       tile at every fragment position, 905 of them land over base water), pinned by the
       sha256 of the archive and member, counts in the capture summary `fill`, reproduced by
       `convert_world_base.py --check` (needs `py7zr`, `requirements-regenerate.txt`).
+- [x] `maps.7z:summer-update-2025.otbm` is partially filled (owner decision 2b, fill-only,
+      pinned, `--check`): the converter takes fragment tiles the base lacks, floors 8-15 by
+      4-connected component except the deferred Edron underground (box x33274-33456,
+      y31786-31884, floors 8-12; a cave rework), floors 0-7 only where the official 15.30
+      minimap shows land. 16,928 tiles, 19,667 items (floors 2-6 151, floor 8 1,913, 9 5,678,
+      10 584, 11 611, 12 169, 13 3,608, 14 3,619, 15 595), 6 palette and 6 `Terrain` entries.
       Still to draw: Blue Valley NE/E/S blocks, Temple of Light, Great Expedition Island and
       Wharf, Marapur/Thalassara floors 2-6, Nargor floors 4-6, Upper Roshamuul floor 6,
-      Great Expedition floors 3-6.
-- [x] `Terrain` holds 5,942 records (`oteryn:terrain.a<id>`), one per appearance-only palette
+      Great Expedition floors 3-6, Edron floors 8-12 (deferred).
+- [x] `Terrain` holds 5,948 records (`oteryn:terrain.a<id>`), one per appearance-only palette
       id that the official 15.30 client `appearances-2dfa943b….dat` declares (owner-confirmed
       redistribution), from `convert_terrain.py --check` and `client_appearance_reader.py`.
       Ownership rule: ids present in `items.xml` -> Item registry (item agent, B1b);
       appearance-only ids -> Terrain (world). Fields come only from the appearance: `class`
-      by the documented rule (ground 740, border 1,533, blocking 2,611, decoration 1,058),
+      by the documented rule (ground 740, border 1,534, blocking 2,613, decoration 1,061),
       `flags`, `speed`, `name`, `automap_color` and `occurrences_on_base_map`. Client ids
       equal server ids (checked against `items.xml` names and ground evidence). The base map
-      palette switched those 5,942 keys from `donor:` to Terrain keys (region files
+      palette switched those 5,948 keys from `donor:` to Terrain keys (region files
       byte-identical; 5 provisional remain: 4 `items.xml` ids for B1b and id 99). Validators
       `validate_terrain.py` and `validate_world_base.py` (a non-provisional key is an Item
       binding target or a Terrain key of that id) and `test_terrain.py` pass.
@@ -147,9 +153,8 @@ sha256-pinned and `OtsHypothesisOnly`.
   and no boss uses their coordinates; they overlap the Movement Trainer area of
   `custom/global-custom.otbm` (off by default, `toggleMapCustom=false`). Owner decision: not
   imported, deferred.
-- The other members of `maps.7z` (not approved): measured against base positions only,
-  `summer-update-2025` (286,241 tiles) would add 45,047 tiles on floors 2-6 and 8-15,
-  `newheaven` and `winter-update-2025` one tile each.
+- The other members of `maps.7z`: `newheaven` and `winter-update-2025` add one tile each
+  (not imported).
 - The other six `15.30/` fragment maps (Thalassara, castle, asura_sanctuary,
   asura_sanctuary_boss, mimar_haffar, werepanther_boss_map) are already contained in
   `world.otbm` (0 missing tiles); only water ground and decoration variants differ and the
@@ -175,7 +180,7 @@ sha256-pinned and `OtsHypothesisOnly`.
 
 ## Handover
 
-Open owner decisions (Blue Valley floor 7 water-to-land, `summer-update-2025` import),
+Owner decisions 1a (Blue Valley floor 7) and 2b (summer-update-2025, Edron deferred),
 research results and next steps: `docs/agents/reports/OTV2-20260929-world-map-handover.md`.
 
 ## Independent review

@@ -19,15 +19,14 @@ The owner asked for a handover to the next agent. State at handover:
    `maps.7z:blue_valley.otbm`, only where the official 15.30 minimap shows land? Recommended
    yes. That needs a replace rule beside the fill-only rule, limited to base water with
    official land, and pinned, counted and tested like the fill.
-2. `maps.7z:summer-update-2025.otbm`: 45,047 tiles missing from the base, nothing in
-   CrystalServer loads the file. Options: (a) fill all empty positions; (b) only clusters where
-   the base is empty (Liberty Bay/Vandura floors 13-15, 6,991 tiles; Kazordoon floors 8-11,
-   3,902; Port Hope/Tiquanda floors 9 and 13, 4,503; the 151 floor 2-6 tiles that the minimap
-   proves as official land) and defer Edron floors 8-12 (27,072 tiles, a rework of caves the
-   base already has, so a fill-only mix would combine two layouts), recommended; (c) nothing.
-   The underground cannot be proven: the official client map images (`minimap-*` and
-   `satellite-*` in `content/assets/files/`) hold floors 00-07 only. Floor numbering is the
-   same as OTS (07 is ground level), proven by the city temples and the Thalassara floor-7 fit.
+2. `maps.7z:summer-update-2025.otbm`: answered **2b** (owner). Imported as a partial fill:
+   underground components that the base lacks (16,777 tiles on floors 8-15) plus the 151
+   floor 2-6 tiles that the official minimap shows as land; the Edron underground (floors
+   8-12, box x33274-33456, y31786-31884, 27,359 tiles) is **deferred** as a cave rework, so a
+   fill-only mix does not combine two layouts. The underground cannot be proven by the
+   official client map images (`minimap-*` and `satellite-*` in `content/assets/files/` hold
+   floors 00-07 only); floor numbering is the same as OTS (07 is ground level), proven by the
+   city temples and the Thalassara floor-7 fit.
 
 ## Research results (the session scratchpad is not kept)
 
@@ -61,7 +60,8 @@ The owner asked for a handover to the next agent. State at handover:
    - Marapur/Thalassara floors 2-6;
    - Nargor floors 4-6;
    - Upper Roshamuul floor 6;
-   - Great Expedition floors 3-6.
+   - Great Expedition floors 3-6;
+   - Edron floors 8-12 (deferred cave rework, decision 2b).
 3. Outside this task:
    - item B1b: 4 provisional `items.xml` ids plus id 99, owned by the item agent;
    - ladders, ropes and sewer grates: floor-change use rules, owned by the item/interactions

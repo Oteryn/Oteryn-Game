@@ -351,7 +351,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         self.assertEqual(summary["totals"]["tiles"], 4 + 3)
         self.assertEqual(summary["tiles_by_floor"], {"6": 1, "7": 6})
         index = json.loads(out[validate.INDEX])
-        self.assertEqual(index["source"]["fill"], convert.FILL)
+        self.assertEqual(index["source"]["fill"], convert.FILL[:1])
         self.assertEqual(index["totals"]["items"], 4 + 3)
         # the tile the base has keeps its own items; the added tiles are in the region files
         palette = [row["source_item_id"] for row in index["palette"]]
@@ -479,6 +479,82 @@ class ConvertAndValidateTest(unittest.TestCase):
         )
         with self.assertRaises(convert.ConvertError):
             self.build_with_fill(raw)
+
+    def selected_fill(self, exclude_box):
+        """The summer-style partial fill with its exclusion box moved onto the fixture."""
+        row = json.loads(json.dumps(convert.FILL[1]))
+        row["select"]["exclude"][0].update(bbox=exclude_box, floors=[12, 12])
+        return row
+
+    def test_selective_fill_takes_components_land_tiles_and_never_overwrites(self):
+        row = self.selected_fill([1010, 1010, 1012, 1012])
+        one = [self.item(100)]
+        raw = self.fill_map(
+            (
+                12,
+                [
+                    (10, 10, one),  # inside the box: the whole component is excluded
+                    (11, 10, one),
+                    (11, 11, one),
+                    (16, 16, one),  # elsewhere: included
+                    (17, 16, one),
+                    (20, 20, one),  # diagonal to (21, 21): 4-connectivity splits them
+                    (21, 21, one),
+                ],
+            ),
+            (
+                9,
+                [(10, 10, one)],  # same box, but floor 9 is outside its floors 12-12
+            ),
+            (
+                7,
+                [
+                    (1, 1, [self.item(555)]),  # the base has it: never overwritten
+                    (22, 22, one),  # official land: kept
+                    (23, 22, one),  # no official land: dropped
+                ],
+            ),
+        )
+        key = convert.fill_key(row)
+        rows = [convert.FILL[0], row]
+        land = lambda x, y, z: (x, y, z) == (1022, 1022, 7)
+        with (
+            mock.patch.object(convert, "FILL", rows),
+            mock.patch.object(validate, "FILL", rows),
+        ):
+            out = convert.build({**self.blobs, key: raw}, ITEMS_BY_SERVER_ID, land=land)
+            self.assertEqual(validate.validate(self.install(out), workers=1), [])
+        source = self.summary(out)["fill"]["sources"][0]
+        self.assertEqual(source["tiles_added"], 6)
+        self.assertEqual(source["tiles_added_by_floor"], {"12": 4, "7": 1, "9": 1})
+        self.assertEqual(source["tiles_skipped_existing"], 1)
+        self.assertEqual(
+            source["selection"],
+            {
+                "components_excluded": 1,
+                "components_included": 4,
+                "tiles_excluded_by_floor": {"12": 3},
+                "tiles_not_selected": 4,
+                "tiles_without_land_by_floor": {"7": 1},
+            },
+        )
+        palette = [
+            r["source_item_id"] for r in json.loads(out[validate.INDEX])["palette"]
+        ]
+        _z, _rx, _ry, sectors = codec.decode_region(self.decode_path(out, 7))
+        tiles = {
+            (x, y): [(palette[i], d, a) for i, d, a in items]
+            for _local, rows_ in sectors
+            for x, y, _f, _h, _z, items in rows_
+        }
+        self.assertEqual(tiles[(1001, 1001)], [(1234, 0, {"door": 3})])
+        self.assertEqual(tiles[(1022, 1022)], [(100, 0, None)])
+        self.assertNotIn((1023, 1022), tiles)
+        floor12 = codec.decode_region(self.decode_path(out, 12))[3]
+        self.assertEqual(
+            sorted((x, y) for _local, tiles in floor12 for x, y, *_ in tiles),
+            [(1016, 1016), (1017, 1016), (1020, 1020), (1021, 1021)],
+        )
 
     def test_reading_the_archive_needs_py7zr(self):
         with (
