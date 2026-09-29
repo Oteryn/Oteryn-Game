@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260928-world-metadata-authoring
-title: Populate world metadata families (City Area, House, teleport Transition) from CrystalServer
+title: Populate world metadata families (City and HuntingPlace Area, House, teleport Transition)
 mode: MIGRATE
 status: validating
 repository: Oteryn/Oteryn-Game
@@ -21,6 +21,8 @@ owned_paths:
   - tools/content-schema/validate_materialized_game_tree.py
   - content/houses/
   - content/world/areas/cities/
+  - content/world/areas/hunting-places/
+  - imports/tibiawiki/hunting-places/
   - content/world/transitions/
   - apps/game-server/tests/content_world_project_repository.rs
   - .github/workflows/g4-canonical-worldproject-package-seed.yml
@@ -38,14 +40,33 @@ jira: KAN-16
 
 This is step 1 of the owner's world-map plan: metadata first, then the full map import
 (terrain, objects, placements) after a measured storage-format decision, then TibiaWiki
-enrichment. Three families move from `READY_UNPOPULATED` to `POPULATED`:
+enrichment. Four families move from `READY_UNPOPULATED` to `POPULATED`:
 
 - `Area.City`: 35 records;
+- `Area.HuntingPlace`: 445 records from the English TibiaWiki (Fandom), described below;
 - `House`: 995 records;
 - `Transition.Teleport`: 872 records.
 
 The source is `zimbadev/crystalserver@00ce02a5` (`summer-update`, chosen by the owner):
 `world.otbm` and `world-house.xml`. It is sha256-pinned and `OtsHypothesisOnly`.
+
+`Area.HuntingPlace` comes from `Category:Hunting Places` of `tibia.fandom.com` (the
+Portuguese TibiaWiki is blocked for builds). `fandom_hunting_snapshot.py fetch` stores, per
+page, the page id, revision id, wikitext sha256 and only the raw values of a few factual
+`Infobox Hunt` fields in `imports/tibiawiki/hunting-places/fandom-snapshot-v1.json`
+(fetched 2026-09-29: 445 pages with the infobox, 14 without). `convert_hunting_places.py`
+converts that snapshot offline. Evidence is `Derived`, with source key
+`oteryn:source.tibiawiki` and binding namespace `tibiawiki-fandom/page-id`; the binding
+records the revision id. A record always has a name (the page title) and may have:
+
+- `city`: only when the wiki city equals one of the 35 City Area names (433 records; 12
+  unmatched are omitted; the wiki city name stays in `source_facts.city_name`);
+- `position`: only when the `location` field holds exactly one `{{Mapper Coords}}` in
+  `sector.offset` form, converted to absolute tiles (321 records; 113 have none and 11
+  hold several, which is ambiguous);
+- `recommended_levels`: knight, paladin and mage levels that are plain integers (386);
+- `source_facts.creature_names`: plain names from every `CreatureList` of the page (439),
+  not bound to Creature keys.
 
 ## Architecture and source of truth
 
@@ -78,6 +99,9 @@ The source is `zimbadev/crystalserver@00ce02a5` (`summer-update`, chosen by the 
       and map extent.
 - [x] `test_world_authoring.py` runs synthetic OTBM fixtures through the reader,
       converter and validator.
+- [x] Hunting places: schema, converter (`--check`, offline from the pinned snapshot),
+      validator (city refs, snapshot pin, page/revision bindings, capture counts, extent) and
+      fixture tests including negatives.
 - [x] The legacy package guards accept the successor shards: the materialized-tree
       validator, the seed workflow and the Rust inventory test.
 - [ ] Required checks pass on the frozen PR head.
@@ -86,7 +110,7 @@ The source is `zimbadev/crystalserver@00ce02a5` (`summer-update`, chosen by the 
 
 - Terrain, map objects, placements and floor changes (stairs, ladders, holes).
 - The World record (bounds and floors).
-- Hunting places, islands and streets.
+- Islands and streets. Hunting-place skills, loot, experience ratings, maps and prose.
 - The `15.30/` fragment maps.
 - TibiaWiki enrichment.
 - Runtime consumption. `runtime_source` stays `legacy_until_separately_qualified`.
@@ -94,7 +118,8 @@ The source is `zimbadev/crystalserver@00ce02a5` (`summer-update`, chosen by the 
 ## Validation
 
 - `python validate_world_metadata.py` passes.
-- `python test_world_authoring.py` passes 11 tests.
+- `python test_world_authoring.py` passes 34 tests.
+- `convert_hunting_places.py --check` passes offline against the committed snapshot.
 - `ruff check` and `ruff format --check` pass (ruff 0.16.1).
 - `convert_world_metadata.py --check` against the pinned checkout passes.
 - `python3 tools/content-schema/validate_materialized_game_tree.py` passes with 13

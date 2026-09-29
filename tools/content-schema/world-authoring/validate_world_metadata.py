@@ -7,6 +7,7 @@ python validate_world_metadata.py [--root REPOSITORY_ROOT]
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -16,9 +17,22 @@ from jsonschema import Draft202012Validator
 HERE = Path(__file__).resolve().parent
 SCHEMA = json.loads((HERE / "world-metadata.schema.json").read_text(encoding="utf-8"))
 SUMMARY = "tools/content-schema/world-authoring/samples/source-capture-v1.json"
+HUNTING_SUMMARY = (
+    "tools/content-schema/world-authoring/samples/hunting-places-capture-v1.json"
+)
+SNAPSHOT = "imports/tibiawiki/hunting-places/fandom-snapshot-v1.json"
 ITEM_BINDINGS = "imports/crystalserver/bindings/items.json"
+GENERATORS = {
+    "Area.HuntingPlace": "tools/content-schema/world-authoring/convert_hunting_places.py"
+}
+DEFAULT_GENERATOR = "tools/content-schema/world-authoring/convert_world_metadata.py"
 FAMILIES = {
     "Area.City": ("content/world/areas/cities", "cities", "Area"),
+    "Area.HuntingPlace": (
+        "content/world/areas/hunting-places",
+        "hunting-places",
+        "Area",
+    ),
     "House": ("content/houses", "houses", "House"),
     "Transition.Teleport": ("content/world/transitions", "teleports", "Transition"),
 }
@@ -49,7 +63,7 @@ def structural(path: str, data, errors: list[str]) -> None:
 
 
 def positions(declaration: dict):
-    for name in ("temple", "entry", "from", "to"):
+    for name in ("temple", "entry", "from", "to", "position"):
         if name in declaration:
             yield declaration[name]
     for door in declaration.get("doors", []):
@@ -57,7 +71,7 @@ def positions(declaration: dict):
 
 
 def family_records(
-    root: Path, family: str, summary: dict, errors: list[str]
+    root: Path, family: str, summary: dict, map_extent: dict, errors: list[str]
 ) -> list[dict]:
     directory, stem, identity_family = FAMILIES[family]
     index_path = f"{directory}/index.json"
@@ -67,6 +81,8 @@ def family_records(
         errors.append(f"{index_path}: family must be {family}")
     if index.get("source") != summary["source"]:
         errors.append(f"{index_path}: source differs from the capture summary")
+    if index.get("generator") != GENERATORS.get(family, DEFAULT_GENERATOR):
+        errors.append(f"{index_path}: generator does not belong to {family}")
     records: list[dict] = []
     expected = []
     for shard_index, shard_path in enumerate(index.get("shards", [])):
@@ -117,25 +133,81 @@ def family_records(
                 "revision": "definition-r1",
             }:
                 errors.append(f"{key}: source binding target differs from identity")
-            if bound.get("source_revision") != summary["source"]["revision"]:
+            if family != "Area.HuntingPlace" and bound.get(
+                "source_revision"
+            ) != summary["source"].get("revision"):
                 errors.append(
                     f"{key}: source binding revision differs from the pinned source"
                 )
         for pos in positions(declaration):
-            if not (
-                pos["x"] < summary["map"]["width"]
-                and pos["y"] < summary["map"]["height"]
-            ):
+            if not (pos["x"] < map_extent["width"] and pos["y"] < map_extent["height"]):
                 errors.append(f"{key}: position outside the source map extent")
     return records
+
+
+def hunting_places(
+    root: Path, summary: dict, families: dict[str, list[dict]], errors: list[str]
+) -> None:
+    """HuntingPlace semantics: city refs, snapshot pin, page/revision bindings, capture counts."""
+    records = families["Area.HuntingPlace"]
+    try:
+        raw = (root / SNAPSHOT).read_bytes()
+        snapshot = json.loads(raw)
+    except (OSError, json.JSONDecodeError) as error:
+        errors.append(f"{SNAPSHOT}: unreadable ({error})")
+        return
+    if summary["source"].get("snapshot") != {
+        "path": SNAPSHOT,
+        "sha256": hashlib.sha256(raw).hexdigest(),
+    }:
+        errors.append(f"{SNAPSHOT}: differs from the sha256 pinned in the capture")
+    if raw.decode("utf-8") != canonical(snapshot):
+        errors.append(f"{SNAPSHOT}: not canonical JSON")
+    pinned = {str(row["pageid"]): str(row["revid"]) for row in snapshot["pages"]}
+    city_keys = {r["declaration"]["identity"]["key"] for r in families["Area.City"]}
+    bound, with_ = set(), {"city": 0, "creatures": 0, "levels": 0, "position": 0}
+    for record in records:
+        declaration = record["declaration"]
+        key = declaration["identity"]["key"]
+        for row in record["source_bindings"]:
+            if pinned.get(row["external_id"]) != row["source_revision"]:
+                errors.append(f"{key}: page/revision is not in the pinned snapshot")
+            bound.add(row["external_id"])
+        if "city" in declaration:
+            with_["city"] += 1
+            if declaration["city"]["key"] not in city_keys:
+                errors.append(
+                    f"{key}: city {declaration['city']['key']} is not a City Area"
+                )
+        with_["position"] += "position" in declaration
+        with_["levels"] += "recommended_levels" in declaration
+        with_["creatures"] += "creature_names" in declaration.get("source_facts", {})
+        names = declaration.get("source_facts", {}).get("creature_names", [])
+        if names != sorted(names):
+            errors.append(f"{key}: creature_names must be sorted")
+    if bound != set(pinned) or len(bound) != len(records):
+        errors.append(
+            "Area.HuntingPlace: records must bind each snapshot page exactly once"
+        )
+    if summary.get("records_with") != with_:
+        errors.append("Area.HuntingPlace: capture counts differ from the records")
 
 
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     summary = load(root, SUMMARY)
+    hunting_summary = load(root, HUNTING_SUMMARY)
     families = {
-        family: family_records(root, family, summary, errors) for family in FAMILIES
+        family: family_records(
+            root,
+            family,
+            hunting_summary if family == "Area.HuntingPlace" else summary,
+            summary["map"],
+            errors,
+        )
+        for family in FAMILIES
     }
+    hunting_places(root, hunting_summary, families, errors)
     city_keys = {r["declaration"]["identity"]["key"] for r in families["Area.City"]}
     item_keys = {row["target"]["key"] for row in load(root, ITEM_BINDINGS)["bindings"]}
     for record in families["House"]:

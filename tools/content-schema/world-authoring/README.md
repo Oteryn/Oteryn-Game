@@ -1,13 +1,14 @@
-# World metadata authoring (City Area, House, teleport Transition)
+# World metadata authoring (City and HuntingPlace Area, House, teleport Transition)
 
 This package populates the world tree from the pinned CrystalServer map. Steps 1 and 2
-cover **metadata**: towns, houses and teleports. Step 3 covers the **base map** (19.3 M
-tiles, 24.9 M items) in a binary region format selected by measurement (see "Base map
-(step 3)" below).
+cover **metadata**: towns, houses and teleports, plus hunting places from the English
+TibiaWiki. Step 3 covers the **base map** (19.3 M tiles, 24.9 M items) in a binary region
+format selected by measurement (see "Base map (step 3)" below).
 
 | Family | Path | Records | Shard schema |
 |---|---|---:|---|
 | `Area.City` | `content/world/areas/cities/` | 35 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
+| `Area.HuntingPlace` | `content/world/areas/hunting-places/` | 445 | `OTERYN_AREA_AUTHORING_SHARD/v1` |
 | `House` | `content/houses/` | 995 | `OTERYN_HOUSE_AUTHORING_SHARD/v1` |
 | `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
 
@@ -33,6 +34,33 @@ and `samples/source-capture-v1.json`:
 
 This source is migration evidence (`OtsHypothesisOnly`). Only normalized facts are
 committed. Map, sprite and asset bytes never are.
+
+## Hunting places (English TibiaWiki)
+
+`Area.HuntingPlace` has a different source from the other families: `Category:Hunting Places`
+of `tibia.fandom.com` (the Portuguese wiki refuses build containers). Evidence is `Derived`
+(player-observed reference, CC BY-SA), source key `oteryn:source.tibiawiki`.
+
+- `fandom_hunting_snapshot.py fetch` (network, not run by CI) stores
+  `imports/tibiawiki/hunting-places/fandom-snapshot-v1.json`: per page the page id, revision
+  id, sha256 of the wikitext and the raw values of `city`, `lvlknights`/`lvlpaladins`/
+  `lvlmages`, the `{{Mapper Coords}}` calls in `location` and the `CreatureList` names. No
+  prose. Pages of the category without an `Infobox Hunt` (14, including the overview) are
+  listed apart.
+- `convert_hunting_places.py [--check]` converts the snapshot offline and writes the family,
+  `samples/hunting-places-capture-v1.json` (counts and the pinned source, incl. the snapshot
+  sha256).
+- Key `oteryn:area.hunting_place.<slug(page title)>`, reused by page id once committed
+  (namespace `tibiawiki-fandom/page-id`, the binding records the revision id). The name is
+  the page title, not the infobox `name` (which carries `<br>` and typos).
+- Only unambiguous facts are written; the rest is omitted and counted in the capture
+  summary: `city` (exact case-insensitive match with a City Area name), `position` (a single
+  `Mapper Coords` in `sector.offset` form: x = sector * 256 + offset, same frame as the City
+  temples; a 311-record check against the matched city temple gives a median distance of 177
+  tiles), `recommended_levels` (plain integers per vocation) and `source_facts` (`city_name`,
+  `creature_names`). Creature names are wiki text, not Creature keys.
+- The validator checks the snapshot pin and canonical bytes, that every snapshot page is
+  bound once with its revision, city references, extent and capture counts.
 
 ## What is imported and what is not
 
@@ -63,14 +91,14 @@ position-based.
     legacy locator.
   - floor changes through stairs, ladders or holes. These are derived from item types
     together with terrain.
-  - hunting places, islands and streets.
+  - islands and streets; per-place skills, loot and experience ratings of hunting places.
   - the 18 editor waypoints.
   - the `data-global/world/15.30/` fragment maps.
 
 ## Coexistence with the legacy WorldProject package
 
 `content/world/` is still the legacy WorldProject package root. The family shards in
-`areas/cities/` and `transitions/` are not WorldProject locators:
+`areas/cities/`, `areas/hunting-places/` and `transitions/` are not WorldProject locators:
 
 - `validate_materialized_game_tree.py` accepts a populated family index there only when its
   shards stay in that directory, the directory holds no other file, and no legacy locator
@@ -84,9 +112,12 @@ position-based.
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 python validate_world_metadata.py          # committed families: schema + semantics
-python test_world_authoring.py             # synthetic OTBM fixtures, converter, validator
+python test_world_authoring.py             # synthetic OTBM and wiki fixtures, converters, validator
+python convert_hunting_places.py --check   # offline, from the committed TibiaWiki snapshot
 # Regenerate (needs the pinned crystalserver checkout, not fetched by CI):
 python convert_world_metadata.py --crystal-root /path/to/crystalserver [--check]
+# Refresh the wiki snapshot (network), then reconvert:
+python fandom_hunting_snapshot.py fetch && python convert_hunting_places.py
 ```
 
 ## Base map (step 3)
