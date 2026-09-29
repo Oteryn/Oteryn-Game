@@ -24,6 +24,7 @@ owned_paths:
   - tools/content-schema/item-authoring/test_client_appearance_census.py
   - tools/content-schema/item-authoring/README.md
   - imports/official/client-assets/15.30/README.md
+  - imports/official/client-assets/15.30/appearance-ids.json
   - docs/agents/tasks/active/OTV2-20260929-client-1530-membership-manifest.md
 public_contracts: []
 depends_on: []
@@ -38,4 +39,6 @@ external_repositories: []
 (`OTERYN_CLIENT_APPEARANCE_MEMBERSHIP/v1`) of the pinned 15.30 `appearances-2dfa943b….dat`, which is
 loaded through the existing size and sha256 guard (fail closed). It needs no engine-source arguments.
 The proprietary `.dat` is never committed; the owner runs the tool locally and commits only
-`imports/official/client-assets/15.30/appearance-ids.json`. This task does not produce that file.
+`imports/official/client-assets/15.30/appearance-ids.json`. The coordinator generated it once from the
+owner-supplied file (size and sha256 verified, two runs byte-identical: 43,516 ids, max 55117) and
+committed only the id list.
