@@ -4,6 +4,11 @@
 //! (north is `y - 1`); N4 maps it 1:1 onto the session's `step` command. No command, wire
 //! message or server behaviour is added.
 
+use oteryn_input_actions::{
+    ActionId, ActionPhase, Binding, BindingMap, ContextDefinition, ContextId, ContextKind,
+    InputAtom, InputChord, InputError, InputRouter, Modifiers, MouseButton, NormalizedInputEvent,
+    RepeatPolicy,
+};
 use oteryn_renderer::{TileCoord, TileView};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -129,9 +134,105 @@ pub fn pick_target(tile: TileCoord, visible: &[Targetable]) -> Option<Targetable
         .copied()
 }
 
+/// Action id of the primary-button click in the gameplay context.
+pub const CLICK_ACTION: &str = "client.click";
+
+/// A gameplay click at a window pixel, produced only by the routed `client.click` action.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ClickAction {
+    pub x: f64,
+    pub y: f64,
+}
+
+/// Routes normalized platform events (from `InputPlatformAdapter`) through `InputRouter`, so a
+/// click reaches select or walk only as the gameplay `client.click` action. An active text or
+/// modal context suppresses it; focus loss and device loss cancel held input in the router.
+#[derive(Debug)]
+pub struct MouseActions {
+    router: InputRouter,
+    gameplay: ContextId,
+    text: ContextId,
+    modal: ContextId,
+    pointer: (f64, f64),
+}
+
+impl MouseActions {
+    pub fn new() -> Result<Self, InputError> {
+        let gameplay = ContextId::new("gameplay".to_owned())?;
+        let text = ContextId::new("text".to_owned())?;
+        let modal = ContextId::new("modal".to_owned())?;
+        let map = BindingMap::new(
+            vec![
+                ContextDefinition::new(gameplay.clone(), ContextKind::Gameplay, 0),
+                ContextDefinition::new(text.clone(), ContextKind::Text, 10),
+                ContextDefinition::new(modal.clone(), ContextKind::Modal, 20),
+            ],
+            vec![Binding::new(
+                gameplay.clone(),
+                InputChord::new(
+                    Modifiers::NONE,
+                    vec![InputAtom::Mouse(MouseButton::PRIMARY)],
+                )?,
+                ActionId::new(CLICK_ACTION.to_owned())?,
+                RepeatPolicy::Ignore,
+            )],
+            &[],
+        )?;
+        let mut router = InputRouter::new(map);
+        router.set_context_active(&gameplay, true)?;
+        Ok(Self {
+            router,
+            gameplay,
+            text,
+            modal,
+            pointer: (0.0, 0.0),
+        })
+    }
+
+    /// Text entry (chat, later) suppresses gameplay clicks while active.
+    pub fn set_text_active(&mut self, active: bool) -> Result<(), InputError> {
+        self.router.set_context_active(&self.text, active).map(drop)
+    }
+
+    /// A modal (menu, dialog) suppresses gameplay clicks while active.
+    pub fn set_modal_active(&mut self, active: bool) -> Result<(), InputError> {
+        self.router
+            .set_context_active(&self.modal, active)
+            .map(drop)
+    }
+
+    #[must_use]
+    pub const fn gameplay_context(&self) -> &ContextId {
+        &self.gameplay
+    }
+
+    /// Feeds normalized events and returns the gameplay clicks they produced.
+    pub fn route(&mut self, events: &[NormalizedInputEvent]) -> Vec<ClickAction> {
+        let mut clicks = Vec::new();
+        for event in events {
+            if let NormalizedInputEvent::PointerMoved { position, .. } = event {
+                self.pointer = (f64::from(position.x().get()), f64::from(position.y().get()));
+            }
+            for action in self.router.process(event) {
+                if action.action().as_str() == CLICK_ACTION
+                    && action.context() == &self.gameplay
+                    && action.phase() == ActionPhase::Started
+                {
+                    clicks.push(ClickAction {
+                        x: self.pointer.0,
+                        y: self.pointer.1,
+                    });
+                }
+            }
+        }
+        clicks
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oteryn_input_actions::ButtonState;
 
     fn t(x: i32, y: i32) -> TileCoord {
         TileCoord::new(x, y)
@@ -224,5 +325,59 @@ mod tests {
             Some(TargetKind::Object)
         );
         assert_eq!(pick_target(t(3, 3), &visible), None);
+    }
+
+    fn moved(x: i32, y: i32) -> Result<NormalizedInputEvent, InputError> {
+        use oteryn_input_actions::{
+            PointerCoordinate, PointerDelta, PointerMotion, PointerPosition,
+        };
+        Ok(NormalizedInputEvent::PointerMoved {
+            position: PointerPosition::new(PointerCoordinate::new(x)?, PointerCoordinate::new(y)?),
+            motion: PointerMotion::new(PointerDelta::new(0)?, PointerDelta::new(0)?),
+        })
+    }
+
+    fn primary(state: ButtonState) -> NormalizedInputEvent {
+        NormalizedInputEvent::MouseButton {
+            button: MouseButton::PRIMARY,
+            state,
+            modifiers: Modifiers::NONE,
+        }
+    }
+
+    #[test]
+    fn primary_click_becomes_a_gameplay_action_at_the_pointer() -> Result<(), InputError> {
+        let mut actions = MouseActions::new()?;
+        let clicks = actions.route(&[moved(100, 60)?, primary(ButtonState::Pressed)]);
+        assert_eq!(clicks, vec![ClickAction { x: 100.0, y: 60.0 }]);
+        assert!(actions.route(&[primary(ButtonState::Released)]).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn text_and_modal_contexts_suppress_the_click_action() -> Result<(), InputError> {
+        let mut actions = MouseActions::new()?;
+        actions.set_text_active(true)?;
+        assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
+        actions.route(&[primary(ButtonState::Released)]);
+        actions.set_text_active(false)?;
+        actions.set_modal_active(true)?;
+        assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
+        actions.route(&[primary(ButtonState::Released)]);
+        actions.set_modal_active(false)?;
+        assert_eq!(actions.route(&[primary(ButtonState::Pressed)]).len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn focus_loss_drops_a_held_click() -> Result<(), InputError> {
+        let mut actions = MouseActions::new()?;
+        assert!(
+            actions
+                .route(&[NormalizedInputEvent::FocusChanged { focused: false }])
+                .is_empty()
+        );
+        assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
+        Ok(())
     }
 }

@@ -19,7 +19,7 @@ pub struct PlaceholderScene {
     view: TileView,
     tiles: TileBatch,
     sprites: SpriteBatch,
-    visible: Vec<Targetable>,
+    visible: Vec<(Targetable, PlaceholderCell)>,
     target: Option<Targetable>,
 }
 
@@ -37,14 +37,21 @@ impl PlaceholderScene {
             }
         }
         let tiles = TileBatch::from_cells(&view, &atlas, &cells)?;
+        // Fixtures until VIS-2: three entities and one tile object (a boulder).
         let visible = [
-            TileCoord::new(0, 0),
-            TileCoord::new(3, -1),
-            TileCoord::new(-3, 2),
+            (0, 0, TargetKind::Entity, PlaceholderCell::Player),
+            (3, -1, TargetKind::Entity, PlaceholderCell::Creature),
+            (-3, 2, TargetKind::Entity, PlaceholderCell::OtherPlayer),
+            (-2, -2, TargetKind::Object, PlaceholderCell::Stone),
         ]
-        .map(|tile| Targetable {
-            tile,
-            kind: TargetKind::Entity,
+        .map(|(x, y, kind, cell)| {
+            (
+                Targetable {
+                    tile: TileCoord::new(x, y),
+                    kind,
+                },
+                cell,
+            )
         })
         .to_vec();
         let mut scene = Self {
@@ -68,7 +75,10 @@ impl PlaceholderScene {
     /// Selects what is drawn on `tile` (entity before object). Returns the new target; a tile
     /// with nothing on it leaves the target unchanged and returns `None`.
     pub fn select_tile(&mut self, tile: TileCoord) -> Result<Option<Targetable>, BatchError> {
-        let Some(picked) = pick_target(tile, &self.visible) else {
+        let Some(picked) = pick_target(
+            tile,
+            &self.visible.iter().map(|(t, _)| *t).collect::<Vec<_>>(),
+        ) else {
             return Ok(None);
         };
         self.target = Some(picked);
@@ -84,11 +94,7 @@ impl PlaceholderScene {
     /// Entity sprites first, then the highlight on the target tile drawn over them.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
         let mut sprites = SpriteBatch::new();
-        for (entity, cell) in self.visible.iter().zip([
-            PlaceholderCell::Player,
-            PlaceholderCell::Creature,
-            PlaceholderCell::OtherPlayer,
-        ]) {
+        for (entity, cell) in &self.visible {
             sprites.push(&self.view, &self.atlas, entity.tile, cell.index())?;
         }
         if let Some(target) = self.target {
@@ -145,8 +151,8 @@ mod tests {
         let scene = PlaceholderScene::new()?;
         assert_eq!(scene.tiles().len(), (SCENE_COLUMNS * SCENE_ROWS) as usize);
         assert_eq!(scene.tiles().vertex_count(), 165 * 6);
-        assert_eq!(scene.sprites().len(), 3);
-        assert_eq!(scene.sprites().vertex_count(), 18);
+        assert_eq!(scene.sprites().len(), 4);
+        assert_eq!(scene.sprites().vertex_count(), 24);
         Ok(())
     }
 
@@ -166,19 +172,30 @@ mod tests {
     }
 
     #[test]
-    fn clicking_an_entity_targets_it_and_draws_a_highlight() -> Result<(), BatchError> {
+    fn clicking_an_entity_or_an_object_targets_it_and_draws_a_highlight() -> Result<(), BatchError>
+    {
         let mut scene = PlaceholderScene::new()?;
         assert_eq!(scene.target(), None);
-        let picked = scene.select_tile(TileCoord::new(3, -1))?;
-        assert_eq!(picked.map(|p| p.kind), Some(TargetKind::Entity));
-        assert_eq!(scene.sprites().len(), 4);
-        let [x, y] = scene.view().tile_to_screen(TileCoord::new(3, -1));
-        assert_eq!(scene.sprites().instances()[3].position, [x, y]);
+        for (tile, kind) in [
+            (TileCoord::new(3, -1), TargetKind::Entity),
+            (TileCoord::new(-2, -2), TargetKind::Object),
+        ] {
+            // Click position -> tile -> selection -> highlight on the batch.
+            let [x, y] = scene.view().tile_to_screen(tile);
+            let clicked =
+                crate::input::click_tile(scene.view(), f64::from(x) + 5.0, f64::from(y) + 5.0);
+            assert_eq!(clicked, Some(tile));
+            let picked = scene.select_tile(tile)?;
+            assert_eq!(picked.map(|p| p.kind), Some(kind));
+            assert_eq!(scene.target(), picked);
+            assert_eq!(scene.sprites().len(), 5);
+            assert_eq!(scene.sprites().instances()[4].position, [x, y]);
+        }
         // An empty tile keeps the target; clearing removes the highlight.
         assert_eq!(scene.select_tile(TileCoord::new(5, 3))?, None);
-        assert_eq!(scene.sprites().len(), 4);
+        assert_eq!(scene.sprites().len(), 5);
         scene.clear_target()?;
-        assert_eq!(scene.sprites().len(), 3);
+        assert_eq!(scene.sprites().len(), 4);
         Ok(())
     }
 
