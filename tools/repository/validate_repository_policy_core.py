@@ -52,8 +52,8 @@ EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a8765
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
 EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "be8c77c0d9a267c582a3bcfbdbc45005055a6e827af6af66fd4a1799cfa76d4f"
 EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "66eb857be0512adc4df0b6854074deda5b4c323d5f7054996d0cb3d354f20095"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "c7e605afe115cd66f838ab5c05e2ce88c53f9ed2"
-EXPECTED_POST_MERGE_RUST_SHA256 = "24f621e15c7ed48a56382e886a3373507c4597edcc001687b0e3c6ee66bb7460"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "4b87ac36723578e0bfa8af701ffb0b3e97b57081"
+EXPECTED_POST_MERGE_RUST_SHA256 = "3b01c30bab7988572670b47bf5dccda7dafb8db7879ec59b6da99a3d061fdf75"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -499,8 +499,8 @@ def main() -> int:
             "codeql": (
                 "    name: Merge Queue / CodeQL (${{ matrix.language }})\n",
                 "language: [python, actions]",
-                "github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938",
-                "github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938",
+                "github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2",
+                "github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2",
             ),
             "rust_linux": (
                 "    name: Merge Queue / Rust Linux workspace\n",
