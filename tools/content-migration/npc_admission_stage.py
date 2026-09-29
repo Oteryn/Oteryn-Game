@@ -217,7 +217,10 @@ def stage(report: dict, registered: set[str], pilot_only: bool, dialogue_index: 
             if source in candidate['provenance']:
                 stem = candidate['provenance'][source]['key'].split(':npc/', 1)[1]
                 namespace = 'canary/npc-file' if source == 'canary' else 'crystalserver/npc-file'
-                bindings.append({'source_key': source_key, 'source_revision': revision, 'identity_namespace': namespace,
+                # D14: a Crystal supplement file binds to the supplement commit it was read at
+                file_revision = candidate['provenance'][source].get('revision', revision)
+                bindings.append({'source_key': source_key, 'source_revision': file_revision,
+                                 'identity_namespace': namespace,
                                  'external_id': stem, 'target': ref('NPC', key), 'disposition': 'EXACT'})
         if wiki_decided(candidate) and candidate['wiki']['pageid'] not in shared_pages:
             wiki_pages += 1
@@ -236,6 +239,9 @@ def stage(report: dict, registered: set[str], pilot_only: bool, dialogue_index: 
     if 'br_facts_sha256' in report:  # D12: prices both wikis agree on also come from the TibiaWiki BR facts
         source['br_facts_sha256'] = report['br_facts_sha256']
         source['br_revision'] = f'tibiawiki-br-npc-{report["br_facts_sha256"][:16]}'
+    if 'crystal_supplement' in report:  # D14: NPC files Crystal added after the pinned revision
+        source['crystal_supplement_revision'] = report['crystal_supplement']['revision']
+        source['crystal_supplement_bundles_sha256'] = report['crystal_supplement']['bundles_sha256']
     if 'tibiopedia_facts_sha256' in report:  # D13: prices two of three wikis agree on also come from Tibiopedia
         source['tibiopedia_facts_sha256'] = report['tibiopedia_facts_sha256']
         source['tibiopedia_revision'] = f'tibiopedia-npc-{report["tibiopedia_facts_sha256"][:16]}'
