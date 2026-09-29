@@ -4,12 +4,12 @@
 task_id: OTV2-20260929-client-1530-membership-manifest
 title: Emit the 15.30 client appearance membership manifest (ITEM-ID-1 prerequisite)
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/client-1530-membership-manifest
 issue: 162
-pr: null
+pr: 1240
 allocation: "#162 work coordinator allocation (A12 #1237 prerequisite)"
 base_sha: null
 head_sha: null
