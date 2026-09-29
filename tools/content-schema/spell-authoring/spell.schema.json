@@ -611,9 +611,10 @@
               "enum": [
                 "any",
                 "self_only",
-                "self_or_own_summons"
+                "self_or_own_summons",
+                "not_self"
               ],
-              "description": "S27 D.3: who a single-target cast may be aimed at; absent means any. self_or_own_summons: the caster or a creature the caster summoned or convinced (healing runes)."
+              "description": "S27 D.3 and B.5: who a single-target cast may be aimed at; absent means any. self_or_own_summons: the caster or a creature the caster summoned or convinced (healing runes). not_self: any creature but the caster (Nature's Embrace); needs a target and no self target. allow_on_self false means not_self."
             }
           },
           "required": [
@@ -663,6 +664,56 @@
                 "properties": {
                   "needs_target": {
                     "const": false
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "allowed_targets": {
+                    "const": "not_self"
+                  }
+                },
+                "required": [
+                  "allowed_targets"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "needs_target": {
+                    "const": true
+                  },
+                  "self_target": {
+                    "const": false
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "allow_on_self": {
+                    "const": false
+                  }
+                },
+                "required": [
+                  "allow_on_self"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "needs_target": {
+                    "const": true
+                  },
+                  "self_target": {
+                    "const": false
+                  },
+                  "allowed_targets": {
+                    "enum": [
+                      "any",
+                      "not_self"
+                    ]
                   }
                 }
               }

@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-spell-part-d
 title: Engine runtime for the Part D spell native behaviours (S27)
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1228
@@ -12,17 +12,19 @@ allocation_comment: "#162 5888930608"
 base_branch: main
 branch: claude/spell-part-d
 base_sha: da1b2ac54147160ff30df46b479e3240211073f3
-head_sha: null
+head_sha: cbf62c0503eee558082b63a2823586cf6721f6e9
+final_head_sha: cbf62c0503eee558082b63a2823586cf6721f6e9
+final_head_frozen_at: null
 owner: "Oteryn: content" (Claude Code)
 created_at: 2026-09-29T11:30:00Z
-updated_at: 2026-09-29T11:30:00Z
+updated_at: 2026-09-29T12:30:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/spell/**
   - apps/game-server/src/ability/**
   - apps/game-server/tests/*spell*
   - tools/content-schema/spell-authoring/**
-  - docs/agents/tasks/active/OTV2-20260929-spell-part-d.md
+  - docs/agents/tasks/archive/OTV2-20260929-spell-part-d.md
   - docs/agents/tasks/archive/OTV2-20260929-spell-part-c.md
 public_contracts: []
 depends_on: []
@@ -103,3 +105,14 @@ authoring schema, the converter and data. The disposition mapping of the new rej
 - `python build_formal_schema.py` (regenerated), `python verify_formal_schema.py`, `python validate_spell.py` over
   the starter bundles and an Ultimate Healing Rune and a Shield Bash bundle,
   `python tools/agents/validate_governance.py`, `python tools/repository/validate_repository_policy.py`
+
+## Terminal integration
+
+- **Final head:** `cbf62c0503eee558082b63a2823586cf6721f6e9`.
+- **Integration:** merged into main as PR #1228, merge commit
+  `23f9535a31e4d5544be9107b509d5a0b95b3b06a` (2026-09-29T12:03:27Z).
+- **Closeout:** the record was archived by `OTV2-20260929-spell-part-b` (issue #162, allocation comment 5890192652).
+- **Owned paths:** released.
+- **Binding carry-over:** the design packet above stays the reference for the Part D keys still rejected
+  (`owned_field_buff`, `delayed_strike`, `tile_item_operation`, `monster_ai_override`, `cast_at_position`);
+  Q1-Q3, Q5, Q9, Q10, Q12-Q14, Q16, Q19 and Q20 stay with the owner's in-game tests.
