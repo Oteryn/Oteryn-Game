@@ -79,11 +79,16 @@ d = {
     'baseVocation': enum('knight', 'paladin', 'sorcerer', 'druid', 'monk'),
     # D34: closest_free_tile is the free tile nearest the subject (Canary getClosestFreePosition), searched outward ring by ring.
     'position': {'oneOf': [enum('death_position', 'subject_position', 'closest_free_tile'), obj({'anchor': NAME}, ('anchor',)),
-                           obj({'random_in': NAME}, ('random_in',)),
+                           # CW2-4: `free` draws only among the area's tiles a creature can be placed on now; without it,
+                           # or with false, `random_in` keeps its original semantics.
+                           obj({'random_in': NAME, 'free': BOOL}, ('random_in',)),
                            obj({'role_position': NAME, 'otherwise': enum('death_position')}, ('role_position',)),
                            obj({'offset_tiles': integer(0)}, ('offset_tiles',)),
                            # D46: the tile at a fixed offset from the subject on its floor, used even when occupied.
                            obj({'relative': obj({'x': {'type': 'integer'}, 'y': {'type': 'integer'}}, ('x', 'y'))}, ('relative',))]},
+    # CW2-1: the creature or player that fired the rule. Only `teleport.who` and the `in_anchor` subject take it; it is
+    # not part of the shared `subject` of say, heal, damage and the other actions.
+    'triggering': obj({'triggering': const(True)}, ('triggering',)),
 }
 
 d['trigger'] = {'oneOf': [
@@ -104,7 +109,9 @@ d['trigger'] = {'oneOf': [
     kinded('phase_entered', {'phase': NAME}, ('phase',)),
     kinded('item_used', {'role': NAME, 'item': use('ItemRef'), 'base_vocation': use('baseVocation')}, ('role', 'item')),
     # D46: a creature of the role steps onto a tile that holds the item (a MoveEvent stepin registered on the item id).
-    kinded('stepped_on', {'role': NAME, 'item': use('ItemRef')}, ('role', 'item')),
+    # CW2-2: or onto a tile holding the corpse a creature of the `corpse_of` role left in this instance, at any decay stage.
+    {**kinded('stepped_on', {'role': NAME, 'item': use('ItemRef'), 'corpse_of': NAME}, ('role',)),
+     'oneOf': [{'required': ['item']}, {'required': ['corpse_of']}]},
     kinded('encounter_started'), kinded('encounter_reset')]}
 
 d['condition'] = {'oneOf': [
@@ -119,7 +126,7 @@ d['condition'] = {'oneOf': [
     kinded('creature_present', {'role': NAME, 'anchor': NAME, 'near': obj({'role': NAME, 'radius': integer(0), 'shape': enum('square', 'circle')}, ('role', 'radius')),
                                  'present': BOOL}, ('role', 'present')),
     kinded('world_state', {'state': KEY, 'op': OP, 'value': {'type': ['integer', 'boolean']}}, ('state', 'op', 'value')),
-    kinded('in_anchor', {'subject': use('subject'), 'anchor': NAME}, ('subject', 'anchor')),
+    kinded('in_anchor', {'subject': {'oneOf': [use('subject'), use('triggering')]}, 'anchor': NAME}, ('subject', 'anchor')),
     kinded('killer_is_player'),
     kinded('has_master', {'role': NAME, 'value': BOOL}, ('role', 'value')),
     kinded('summon_count', {'role': NAME, 'op': OP, 'value': integer(0)}, ('role', 'op', 'value')),
@@ -154,11 +161,13 @@ d['action'] = {'oneOf': [
            ('role', 'multiplier_percent', 'sources', 'until')),
     kinded('reflect_damage', {'role': NAME, 'percent': integer(1, 100), 'damage_types': array(NAME, 0, True)}, ('role', 'percent')),
     kinded('convert_damage_to_heal', {'role': NAME, 'damage_types': array(NAME, 0, True), 'component': COMPONENT}, ('role',)),
-    kinded('teleport', {'who': {'oneOf': [obj({'role': NAME}, ('role',)), obj({'players_in': NAME}, ('players_in',))]},
+    kinded('teleport', {'who': {'oneOf': [obj({'role': NAME}, ('role',)), obj({'players_in': NAME}, ('players_in',)), use('triggering')]},
                         'to': NAME}, ('who', 'to')),
-    kinded('map_item', {'operation': enum('create', 'transform', 'remove'), 'item': use('ItemRef'), 'into': use('ItemRef'),
-                        'anchor': NAME, 'at': const('death_position'), 'revert_after_ms': integer(1), 'destination': NAME,
-                        'revert_destination': NAME, 'effect': TEXT, 'interaction': KEY}, ('operation', 'item')),
+    # CW2-3: `triggering` removes the item that fired a `stepped_on` rule, in place of `item` and a place.
+    {**kinded('map_item', {'operation': enum('create', 'transform', 'remove'), 'item': use('ItemRef'), 'triggering': const(True),
+                           'into': use('ItemRef'), 'anchor': NAME, 'at': const('death_position'), 'revert_after_ms': integer(1),
+                           'destination': NAME, 'revert_destination': NAME, 'effect': TEXT, 'interaction': KEY}, ('operation',)),
+     'oneOf': [{'required': ['item']}, {'required': ['triggering']}]},
     kinded('counter', {'counter': NAME, 'operation': enum('set', 'add'), 'value': {'type': 'integer'}}, ('counter', 'operation', 'value')),
     kinded('flag', {'flag': NAME, 'value': BOOL}, ('flag', 'value')),
     kinded('timer', {'timer': NAME, 'operation': enum('start', 'stop', 'add'), 'ms': integer(1)}, ('timer', 'operation')),
@@ -201,7 +210,7 @@ schema = obj({
     'reset_after_ms': integer(1)},
     ('identity', 'display_name', 'scope', 'participants', 'anchors', 'phases', 'state', 'rules', 'outcomes'),
     **{'$schema': 'https://json-schema.org/draft/2020-12/schema', '$id': 'oteryn:encounter-authoring/v1', '$defs': d,
-       'description': 'Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34).'})
+       'description': 'Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34; CW2-1..4 accepted in section 12).'})
 
 
 if __name__ == '__main__':

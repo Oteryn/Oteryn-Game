@@ -571,6 +571,9 @@
             "random_in": {
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "free": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -633,6 +636,18 @@
             "relative"
           ]
         }
+      ]
+    },
+    "triggering": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "triggering": {
+          "const": true
+        }
+      },
+      "required": [
+        "triggering"
       ]
     },
     "trigger": {
@@ -971,12 +986,27 @@
             },
             "item": {
               "$ref": "#/$defs/ItemRef"
+            },
+            "corpse_of": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
             }
           },
           "required": [
             "kind",
-            "role",
-            "item"
+            "role"
+          ],
+          "oneOf": [
+            {
+              "required": [
+                "item"
+              ]
+            },
+            {
+              "required": [
+                "corpse_of"
+              ]
+            }
           ]
         },
         {
@@ -1226,7 +1256,14 @@
               "const": "in_anchor"
             },
             "subject": {
-              "$ref": "#/$defs/subject"
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/subject"
+                },
+                {
+                  "$ref": "#/$defs/triggering"
+                }
+              ]
             },
             "anchor": {
               "type": "string",
@@ -1910,6 +1947,9 @@
                   "required": [
                     "players_in"
                   ]
+                },
+                {
+                  "$ref": "#/$defs/triggering"
                 }
               ]
             },
@@ -1940,6 +1980,9 @@
             },
             "item": {
               "$ref": "#/$defs/ItemRef"
+            },
+            "triggering": {
+              "const": true
             },
             "into": {
               "$ref": "#/$defs/ItemRef"
@@ -1974,8 +2017,19 @@
           },
           "required": [
             "kind",
-            "operation",
-            "item"
+            "operation"
+          ],
+          "oneOf": [
+            {
+              "required": [
+                "item"
+              ]
+            },
+            {
+              "required": [
+                "triggering"
+              ]
+            }
           ]
         },
         {
@@ -2395,5 +2449,5 @@
       ]
     }
   },
-  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34)."
+  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34; CW2-1..4 accepted in section 12)."
 }

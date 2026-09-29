@@ -34,13 +34,14 @@ def fixture():
 results = []
 
 
-def case(name, mutate=None, expected=False):
+def case(name, mutate=None, expected=False, error=None):
+    """`error`, for a negative case, is a text that one of the errors must contain, so the case fails for its own reason."""
     encounter, catalog = fixture()
     if mutate:
         mutate(encounter, catalog)
     errors = validate(encounter, catalog)
-    results.append({'name': name, 'expected_valid': expected, 'passed': (not errors) == expected,
-                    'first_error': errors[0] if errors else None})
+    passed = (not errors) == expected and (error is None or any(error in e for e in errors))
+    results.append({'name': name, 'expected_valid': expected, 'passed': passed, 'first_error': errors[0] if errors else None})
 
 
 def rule(extra_actions=None, trigger=None, conditions=None):
@@ -267,6 +268,90 @@ case('attribute is closed', rule([{'kind': 'attribute', 'role': 'boss', 'attribu
 case('remembered health accepted', rule([{**add(), 'role': 'boss', 'health': 'remembered'}], trigger=died), True)
 case('remembered health needs a role', rule([{**add(), 'health': 'remembered'}], trigger=died))
 case('transform cannot remember health', rule([{'kind': 'transform', 'role': 'boss', 'into': ref('Creature', 'add'), 'health': 'remembered'}], trigger=died))
+
+# Section 12 (CW2-1..4), accepted 2026-09-29.
+PORTAL = {'kind': 'area_entered', 'anchor': 'arena', 'who': 'player'}
+TRIGGERING = {'triggering': True}
+case('teleport triggering accepted (CW2-1)', rule([{'kind': 'teleport', 'who': TRIGGERING, 'to': 'exit'}], trigger=PORTAL), True)
+case('teleport triggering in a creature trigger accepted', rule([{'kind': 'teleport', 'who': TRIGGERING, 'to': 'exit'}], trigger=HIT), True)
+case('teleport triggering needs a creature or area trigger',
+     rule([{'kind': 'teleport', 'who': TRIGGERING, 'to': 'exit'}], trigger={'kind': 'timer_elapsed', 'timer': 'enrage'}),
+     error='teleport triggering needs')
+case('in_anchor of triggering accepted (CW2-1)',
+     lambda e, c: (rule([{'kind': 'teleport', 'who': TRIGGERING, 'to': 'exit'}], trigger=PORTAL,
+                        conditions=[{'kind': 'in_anchor', 'subject': TRIGGERING, 'anchor': 'arena'}])(e, c),
+                   e['rules'][-1].update(delay_ms=10000)), True)
+case('in_anchor of triggering needs a creature or area trigger',
+     rule(trigger={'kind': 'timer_elapsed', 'timer': 'enrage'}, conditions=[{'kind': 'in_anchor', 'subject': TRIGGERING, 'anchor': 'arena'}]),
+     error='in_anchor of triggering needs')
+case('triggering is not a shared action subject', rule([{'kind': 'heal', 'subject': TRIGGERING, 'amount': 'full'}], trigger=HIT),
+     error='schema')
+case('remove triggering never removes a player', rule([{'kind': 'remove', 'triggering': True}], trigger=PORTAL),
+     error='never removes a player')
+
+
+def gorzindel_portal(e, c):
+    """The section 12.2 portal, room 1 of 5 and the return."""
+    e['anchors'] += [{'key': 'portal_tile', 'kind': 'area', 'description': 'portal tile'},
+                     {'key': 'knowledge_room_1', 'kind': 'point', 'description': 'room 1'},
+                     {'key': 'knowledge_range', 'kind': 'area', 'description': 'main room and knowledge rooms'},
+                     {'key': 'library_middle', 'kind': 'point', 'description': 'middle'}]
+    e['state']['flags'] += [{'name': 'portal_assigned', 'initial': False}, {'name': 'room_1_busy', 'initial': False}]
+    e['state']['timers'].append({'name': 'room_1_hold', 'duration_ms': 10000, 'repeat': False})
+    step = {'kind': 'area_entered', 'anchor': 'portal_tile', 'who': 'player'}
+    e['rules'] += [
+        {'key': 'portal_step_starts', 'trigger': step, 'conditions': [], 'actions': [{'kind': 'flag', 'flag': 'portal_assigned', 'value': False}]},
+        {'key': 'portal_to_room_1', 'trigger': step,
+         'conditions': [{'kind': 'flag', 'flag': 'portal_assigned', 'value': False}, {'kind': 'flag', 'flag': 'room_1_busy', 'value': False}],
+         'actions': [{'kind': 'teleport', 'who': TRIGGERING, 'to': 'knowledge_room_1'},
+                     {'kind': 'flag', 'flag': 'room_1_busy', 'value': True}, {'kind': 'flag', 'flag': 'portal_assigned', 'value': True},
+                     {'kind': 'timer', 'timer': 'room_1_hold', 'operation': 'start'}]},
+        {'key': 'portal_return', 'trigger': step, 'delay_ms': 10000,
+         'conditions': [{'kind': 'in_anchor', 'subject': TRIGGERING, 'anchor': 'knowledge_range'}],
+         'actions': [{'kind': 'teleport', 'who': TRIGGERING, 'to': 'library_middle'}]},
+        {'key': 'room_1_reopens', 'trigger': {'kind': 'timer_elapsed', 'timer': 'room_1_hold'}, 'conditions': [],
+         'actions': [{'kind': 'flag', 'flag': 'room_1_busy', 'value': False}]}]
+
+
+case('Gorzindel portal accepted (section 12.2)', gorzindel_portal, True)
+
+
+def with_brood(mutate):
+    def wrapped(e, c):
+        e['participants'].append({'role': 'brood', 'creatures': [ref('Creature', 'add')]})
+        mutate(e, c)
+    return wrapped
+
+
+CORPSE = {'kind': 'stepped_on', 'role': 'boss', 'corpse_of': 'brood'}
+EAT = [{'kind': 'heal', 'subject': {'role': 'boss'}, 'amount': {'min': 100, 'max': 1000}},
+       {'kind': 'map_item', 'operation': 'remove', 'triggering': True}]
+case('stepped-on corpse accepted (CW2-2, CW2-3)', with_brood(rule(EAT, trigger=CORPSE)), True)
+case('stepped-on takes an item or a corpse, not both',
+     with_brood(rule(trigger={**CORPSE, 'item': ref('Item', 'vortex')})), error='schema')
+case('stepped-on needs an item or a corpse', rule(trigger={'kind': 'stepped_on', 'role': 'boss'}), error='schema')
+case('stepped-on corpse of an unknown role', rule(trigger={**CORPSE, 'corpse_of': 'ghost'}), error="unknown role 'ghost'")
+case('map_item triggering on a stepped-on item accepted (CW2-3)',
+     rule([{'kind': 'map_item', 'operation': 'remove', 'triggering': True}],
+          trigger={'kind': 'stepped_on', 'role': 'boss', 'item': ref('Item', 'vortex')}), True)
+case('map_item triggering cannot create', with_brood(rule([{'kind': 'map_item', 'operation': 'create', 'triggering': True}], trigger=CORPSE)),
+     error='only with operation remove')
+case('map_item triggering cannot transform',
+     with_brood(rule([{'kind': 'map_item', 'operation': 'transform', 'triggering': True, 'into': ref('Item', 'vortex')}], trigger=CORPSE)),
+     error='only with operation remove')
+case('map_item triggering needs a stepped-on trigger', rule([{'kind': 'map_item', 'operation': 'remove', 'triggering': True}], trigger=died),
+     error='needs a stepped_on trigger')
+case('map_item triggering takes no item', with_brood(rule([{'kind': 'map_item', 'operation': 'remove', 'triggering': True,
+                                                            'item': ref('Item', 'vortex')}], trigger=CORPSE)), error='schema')
+case('map_item triggering takes no place', with_brood(rule([{'kind': 'map_item', 'operation': 'remove', 'triggering': True,
+                                                             'anchor': 'exit'}], trigger=CORPSE)), error='forbids')
+case('map_item needs an item or triggering', rule([{'kind': 'map_item', 'operation': 'remove', 'anchor': 'exit'}]), error='schema')
+FREE_SPAWN = {'kind': 'spawn', 'creature': ref('Creature', 'add'), 'role': 'adds', 'count': 1, 'owner': 'none', 'health': 'full'}
+case('random free tile accepted (CW2-4)', rule([{**FREE_SPAWN, 'at': {'random_in': 'arena', 'free': True}}]), True)
+case('random tile with free false accepted', rule([{**FREE_SPAWN, 'at': {'random_in': 'arena', 'free': False}}]), True)
+case('random free tile needs an area', rule([{**FREE_SPAWN, 'at': {'random_in': 'exit', 'free': True}}]), error='an area is required')
+case('free is a boolean', rule([{**FREE_SPAWN, 'at': {'random_in': 'arena', 'free': 'yes'}}]), error='schema')
+case('free applies only to random_in', rule([{**FREE_SPAWN, 'at': {'anchor': 'exit', 'free': True}}]), error='schema')
 
 
 def locate(key, location):
