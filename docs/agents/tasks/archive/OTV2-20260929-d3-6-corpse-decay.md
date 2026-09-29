@@ -4,15 +4,15 @@
 task_id: OTV2-20260929-d3-6-corpse-decay
 title: D3-6 corpse decay - owner-timer decay family and DUR-03 DECAY_RETIRE as N+1 one-item steps
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/d3-6-corpse-decay
 issue: 162
 allocation: "#162 control plane child D3-6 of the merged D3 decision (worker 'Oteryn: sol combat lead')"
 base_sha: d4d5e2c4
-head_sha: null
-final_head_sha: null
+head_sha: b3398ecd0aac87579ecf2645c8766be238c95b39
+final_head_sha: b3398ecd0aac87579ecf2645c8766be238c95b39
 final_head_frozen_at: null
 owner: "Oteryn: sol combat lead (claude-code-session-01U1WRHgL9X8RbuiG1pwczrF)"
 created_at: 2026-09-29
@@ -135,7 +135,7 @@ finding_dispositions: {p0_p1_accepted_and_repaired: [], p0_p1_rejected_with_exac
   `corpse_decay_postgres` (618 passed), `corpse_transfer_postgres` (613 passed),
   `character_authority_postgres` (649 passed; the 10 failures are the canonical PostgreSQL 17.6 version-pin
   assertions on the local 17.11 server), `validate_governance.py`, `git diff --check`.
-- [ ] Protected PostgreSQL 17.6 lane green on the exact frozen head.
+- [x] Protected PostgreSQL 17.6 lane green on the exact frozen head.
 - [ ] PR opened and independent review routed by the control plane (not done by this worker).
 
 ## Deviations and gaps
@@ -149,3 +149,8 @@ finding_dispositions: {p0_p1_accepted_and_repaired: [], p0_p1_rejected_with_exac
 - The corpse step is keyed by the corpse `ItemInstanceId`, which uniquely identifies its
   `CORPSE_MATERIALIZATION` receipt, rather than by repeating the full cause tuple.
 - No PR and no GitHub comment by this worker, per the allocation.
+
+## Closeout
+
+- merge commit/result: `3e3ed1a` on protected `main` (#1229); every file the PR changed is byte-identical to `b3398ec`
+- ownership release: all leases released at merge
