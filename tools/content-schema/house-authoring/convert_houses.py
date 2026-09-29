@@ -2,9 +2,11 @@
 (imports/cipsoft-staticdata/houses/, HOUSES-1) joined with CrystalServer world-house.xml.
 
 `extract-crystal` reads a pinned CrystalServer world-house.xml into the committed
-compact sample; `convert` joins it 1:1 with the client houses (engine clientid ==
-client house id), validates the result and writes the conversion report. Official
-client values win; engine divergences are reported, never merged.
+compact sample; `extract-door-items` reads the door item ids (`type="door"`) of the
+pinned CrystalServer items.xml, because the client does not mark doors; `convert`
+joins them 1:1 with the client houses (engine clientid == client house id), validates
+the result and writes the conversion report. Official client values win; engine
+divergences are reported, never merged.
 """
 
 from __future__ import annotations
@@ -27,6 +29,12 @@ CRYSTAL_REVISION = "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
 CRYSTAL_XML_SHA256 = "36044bf9636c5a84cac7dda6582965fba05378822fdce4a5c1f84d0dd7e6e90b"
 CRYSTAL_SAMPLE = ROOT / "samples" / "crystal-world-house-00ce02a5.json"
 REPORT = ROOT / "samples" / "conversion-report.json"
+ITEMS_XML_SHA256 = "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+DOOR_ITEMS = ROOT / "samples" / "crystal-door-item-ids-00ce02a5.json"
+# A door that is in two House layouts belongs to exactly one House. Only one exists in
+# 15.30; the engine map puts it on East Lane 1a (source id 20801). Any other shared door
+# stops the conversion until it is decided here.
+SHARED_DOOR_OWNERS = {(32391, 31799, 6): 20801}
 CRYSTAL_ATTRS = {
     "name",
     "houseid",
@@ -95,8 +103,32 @@ def extract_crystal(xml_bytes: bytes) -> dict:
     }
 
 
-def layout_tiles(layout: dict) -> list[list[int]]:
-    """Positions of the non-empty staticmapdata cells, sorted.
+def extract_door_items(xml_bytes: bytes) -> dict:
+    if sha256(xml_bytes) != ITEMS_XML_SHA256:
+        raise ValueError("items.xml digest mismatch")
+    ids = set()
+    for node in ET.fromstring(xml_bytes).iter("item"):
+        kinds = [
+            a.get("value") for a in node.findall("attribute") if a.get("key") == "type"
+        ]
+        if kinds != ["door"]:
+            continue
+        if node.get("id"):
+            ids.add(int(node.get("id")))
+        else:
+            ids.update(range(int(node.get("fromid")), int(node.get("toid")) + 1))
+    return {
+        "authority": "OtsHypothesisOnly; engine item classification, never Oteryn truth",
+        "engine": "crystalserver",
+        "path": "data/items/items.xml",
+        "revision": CRYSTAL_REVISION,
+        "sha256": ITEMS_XML_SHA256,
+        "door_item_ids": sorted(ids),
+    }
+
+
+def layout_cells(layout: dict):
+    """(position, items) of each non-empty staticmapdata cell.
 
     Cell order is floors (ascending z), then x, then y; each cell's `skip` counts the
     empty positions that follow it. Derived by testing every axis order against the
@@ -104,18 +136,29 @@ def layout_tiles(layout: dict) -> list[list[int]]:
     """
     origin, dims = layout["origin"], layout["dimensions"]
     width, height, floors = dims["width"], dims["height"], dims["floors"]
-    tiles, index = [], 0
+    index = 0
     for cell in layout["cells"]:
         if index >= width * height * floors:
             raise ValueError("layout cells exceed the footprint")
         if cell["items"]:
             z, rest = divmod(index, width * height)
             x, y = divmod(rest, height)
-            tiles.append([origin["x"] + x, origin["y"] + y, origin["z"] + z])
+            yield (origin["x"] + x, origin["y"] + y, origin["z"] + z), cell["items"]
         index += 1 + cell["skip"]
     if index != width * height * floors:
         raise ValueError("layout cells do not fill the footprint")
-    return sorted(tiles)
+
+
+def layout_tiles(layout: dict) -> list[list[int]]:
+    """Positions of the non-empty staticmapdata cells, sorted."""
+    return sorted(list(p) for p, _ in layout_cells(layout))
+
+
+def layout_doors(layout: dict, door_items: set[int]) -> list[list[int]]:
+    """Positions of the cells that hold a door item, sorted."""
+    return sorted(
+        list(p) for p, items in layout_cells(layout) if door_items & set(items)
+    )
 
 
 def load_staged() -> list[dict]:
@@ -129,7 +172,9 @@ def load_staged() -> list[dict]:
     return records
 
 
-def convert(staged: list[dict], crystal: dict) -> tuple[dict, dict]:
+def convert(
+    staged: list[dict], crystal: dict, door_items: set[int]
+) -> tuple[dict, dict]:
     engine = {r["client_id"]: r for r in crystal["records"]}
     if len(engine) != len(crystal["records"]) or len(staged) != EXPECTED_COUNT:
         raise ValueError("duplicate engine clientid or unexpected house count")
@@ -167,6 +212,12 @@ def convert(staged: list[dict], crystal: dict) -> tuple[dict, dict]:
             "entry_restriction": RESTRICTION_TEXT.get(record["restrictions"]),
             "footprint": footprint,
             "tiles": layout_tiles(layout),
+            "doors": [
+                door
+                for door in layout_doors(layout, door_items)
+                if SHARED_DOOR_OWNERS.get(tuple(door), record["source_id"])
+                == record["source_id"]
+            ],
             "provenance": {
                 "source": "cipsoft/staticdata/house_id",
                 "client_version": "15.30",
@@ -195,6 +246,15 @@ def convert(staged: list[dict], crystal: dict) -> tuple[dict, dict]:
                 examples.setdefault(field, []).append(
                     [record["source_id"], official, observed]
                 )
+        if not any(
+            z == e["entry"]["z"]
+            and max(abs(x - e["entry"]["x"]), abs(y - e["entry"]["y"])) == 1
+            for x, y, z in house["doors"]
+        ):
+            divergence["entrance_not_next_to_a_door"] += 1
+            examples.setdefault("entrance_not_next_to_a_door", []).append(
+                record["source_id"]
+            )
         ex, ey, ez = (e["entry"][a] for a in "xyz")
         if not any(
             z == ez and max(abs(x - ex), abs(y - ey)) == 1 for x, y, z in house["tiles"]
@@ -203,6 +263,10 @@ def convert(staged: list[dict], crystal: dict) -> tuple[dict, dict]:
             examples.setdefault("entrance_not_next_to_house_tile", []).append(
                 record["source_id"]
             )
+    door_houses = Counter(tuple(d) for h in houses for d in h["doors"])
+    shared = sorted(d for d, n in door_houses.items() if n > 1)
+    if shared:
+        raise ValueError(f"doors in two House layouts need an owner: {shared}")
     catalog = {"schema": "OTERYN_HOUSE_AUTHORING/candidate-1", "houses": houses}
     report = {
         "houses": len(houses),
@@ -212,6 +276,10 @@ def convert(staged: list[dict], crystal: dict) -> tuple[dict, dict]:
             n > 1
             for n in Counter(tuple(t) for h in houses for t in h["tiles"]).values()
         ),
+        "doors": sum(len(h["doors"]) for h in houses),
+        "door_owners_decided": {
+            ",".join(map(str, p)): o for p, o in sorted(SHARED_DOOR_OWNERS.items())
+        },
         "kinds": dict(sorted(Counter(h["kind"] for h in houses).items())),
         "engine_divergence_counts": dict(sorted(divergence.items())),
         "engine_divergence_examples": {k: v[:5] for k, v in sorted(examples.items())},
@@ -232,6 +300,14 @@ def main(argv=None) -> int:
         help="crystalserver@00ce02a5 data-global/world/world-house.xml",
     )
     extract.add_argument("--check", action="store_true")
+    doors = sub.add_parser("extract-door-items")
+    doors.add_argument(
+        "--items-xml",
+        type=Path,
+        required=True,
+        help="crystalserver@00ce02a5 data/items/items.xml",
+    )
+    doors.add_argument("--check", action="store_true")
     run = sub.add_parser("convert")
     run.add_argument("--out", type=Path, help="write the candidate catalog here")
     run.add_argument(
@@ -251,13 +327,25 @@ def main(argv=None) -> int:
         CRYSTAL_SAMPLE.write_text(text, encoding="utf-8")
         return 0
 
+    if args.command == "extract-door-items":
+        text = dump(extract_door_items(args.items_xml.read_bytes()))
+        if args.check:
+            ok = DOOR_ITEMS.read_text(encoding="utf-8") == text
+            print(f"{DOOR_ITEMS.name}: {'ok' if ok else 'differs'}")
+            return 0 if ok else 1
+        DOOR_ITEMS.write_text(text, encoding="utf-8")
+        return 0
+
     crystal = json.loads(CRYSTAL_SAMPLE.read_text(encoding="utf-8"))
     if (
         crystal["revision"] != CRYSTAL_REVISION
         or crystal["sha256"] != CRYSTAL_XML_SHA256
     ):
         raise ValueError("crystal sample is not the pinned revision")
-    catalog, report = convert(load_staged(), crystal)
+    door_sample = json.loads(DOOR_ITEMS.read_text(encoding="utf-8"))
+    if door_sample["sha256"] != ITEMS_XML_SHA256:
+        raise ValueError("door item sample is not the pinned items.xml")
+    catalog, report = convert(load_staged(), crystal, set(door_sample["door_item_ids"]))
     errors = validate(catalog)
     for error in errors[:50]:
         print(error, file=sys.stderr)

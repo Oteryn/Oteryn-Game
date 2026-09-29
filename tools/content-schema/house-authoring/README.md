@@ -24,6 +24,7 @@ doors and bed placements belong to `content/world/placements/`.
 | `entry_restriction` | client f3 | structured form of the only observed text, "Only Sorcerers can enter." (3 houses) |
 | `footprint` | client staticmapdata | bounding box: `origin` (minimum x/y/z) + `width`/`height`/`floors` |
 | `tiles` | client staticmapdata | House layout area: every position with a non-empty layout cell, `[x, y, z]`, sorted; includes walls, so neighbouring houses share wall tiles |
+| `doors` | client staticmapdata + CrystalServer items.xml | door positions `[x, y, z]`, sorted: layout cells holding a `type="door"` item; a door is identified by House + position |
 | `provenance` | both | client id + record digests, verbatim name/restriction text, engine House id (the id on House tiles in the engine map) |
 
 ## Cross-source check (CrystalServer `summer-update` @ `00ce02a5`, `data-global/world/world-house.xml`)
@@ -76,9 +77,9 @@ not exist.
 | `house.schema.json` | JSON Schema 2020-12, closed shapes |
 | `validate_houses.py` | schema plus semantic checks: key family, unique key/source id/engine id/name, marker inside footprint, name normalization, restriction text ↔ structured form, shop naming |
 | `verify_formal_schema.py` | positive/negative cases; regenerates `synthetic-valid-house.json` |
-| `otbm_tile_check.py` | local-only: pinned `world.otbm` House tiles → `samples/otbm-tile-check.json` (cell order evidence) |
+| `otbm_tile_check.py` | local-only: pinned `world.otbm` House tiles and doors → `samples/otbm-tile-check.json` (cell order and door evidence) |
 | `wiki_br_houses.py` | TibiaWiki BR `fetch` / `facts` / `compare` / `self-test` |
-| `convert_houses.py` | `extract-crystal`: pinned `world-house.xml` → `samples/crystal-world-house-00ce02a5.json`; `convert`: joins it with `imports/cipsoft-staticdata/houses/` (digest-checked), validates all 995 houses, writes `samples/conversion-report.json` |
+| `convert_houses.py` | `extract-crystal`: pinned `world-house.xml` → `samples/crystal-world-house-00ce02a5.json`; `extract-door-items`: pinned `items.xml` → `samples/crystal-door-item-ids-00ce02a5.json`; `convert`: joins it with `imports/cipsoft-staticdata/houses/` (digest-checked), validates all 995 houses, writes `samples/conversion-report.json` |
 
 ```text
 pip install -r requirements.txt -r requirements-dev.txt
@@ -88,6 +89,7 @@ python convert_houses.py convert --check            # all 995 houses validate; r
 python convert_houses.py convert --out /tmp/houses.json
 # needs a crystalserver@00ce02a5 checkout (local only):
 python convert_houses.py extract-crystal --xml <crystal>/data-global/world/world-house.xml --check
+python convert_houses.py extract-door-items --items-xml <crystal>/data/items/items.xml --check
 python otbm_tile_check.py --otbm <crystal>/data-global/world/world.otbm --check
 python wiki_br_houses.py self-test
 ```
@@ -95,7 +97,25 @@ python wiki_br_houses.py self-test
 Layout tiles include the House walls: 2,534 positions appear in two neighbouring House
 layouts (`tiles_in_two_house_layouts` in the report). Checked against the official
 `appearances.dat` `unpass` flag, all of them are impassable walls except one door between
-East Lane 1a and 1b. Which House owns a passable tile or a door is settled in HOUSES-3.
+East Lane 1a and 1b, which is assigned to one House (see Doors).
+
+## Doors
+
+The client does not mark doors, so the door item ids come from the pinned CrystalServer
+`data/items/items.xml` (`type="door"`, 745 ids, sha256 `13a8773e...cece`,
+`samples/crystal-door-item-ids-00ce02a5.json`); the positions come from the official
+layout. 15.30 has 5,372 House doors; every House has at least one. A door is identified by
+its House and position, with no extra number: every door has its own access list
+(`aleta grav`), a moved or removed door drops its list instead of pointing it at another
+door, and the engine's door numbers are not usable (677 CrystalServer door numbers cover
+several doors far apart, 682 doors have none). A door belongs to exactly one House: the
+only door in two layouts (East Lane 1a/1b) is assigned in `SHARED_DOOR_OWNERS` from the
+engine map, and any new one stops the conversion.
+
+Against the engine map (`otbm_tile_check.py`): 5,037 of 5,156 engine House doors are on
+client doors and 834 houses have identical door sets. The engine `entrance` is next to a
+door for 968 houses, so it is the tile in front of the front door. Beds stay a count: the
+official layout has no bed items, and bed positions come with the world map placements.
 
 ## Identity stability
 

@@ -1,10 +1,22 @@
 {
+ "door_owners_decided": {
+  "32391,31799,6": 20801
+ },
+ "doors": 5372,
  "engine_divergence_counts": {
+  "entrance_not_next_to_a_door": 27,
   "entrance_not_next_to_house_tile": 10,
   "name": 1,
   "size_sqm": 812
  },
  "engine_divergence_examples": {
+  "entrance_not_next_to_a_door": [
+   10505,
+   10510,
+   14008,
+   20203,
+   20314
+  ],
   "entrance_not_next_to_house_tile": [
    20203,
    20314,

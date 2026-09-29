@@ -64,6 +64,7 @@ def semantic(data) -> list[str]:
         "source_id": {},
         "engine_house_id": {},
         "name": {},
+        "door": {},
     }
     for i, house in enumerate(data["houses"]):
         at = f"/houses/{i}"
@@ -86,6 +87,17 @@ def semantic(data) -> list[str]:
             errors.append(f"{at}/tiles: a tile is outside the footprint")
         if house["tiles"] != sorted(house["tiles"]):
             errors.append(f"{at}/tiles: not sorted")
+        if house["doors"] != sorted(house["doors"]):
+            errors.append(f"{at}/doors: not sorted")
+        tile_set = {tuple(t) for t in house["tiles"]}
+        if not all(tuple(d) in tile_set for d in house["doors"]):
+            errors.append(f"{at}/doors: a door is not on a House tile")
+        for door in house["doors"]:
+            if tuple(door) in seen["door"]:
+                errors.append(
+                    f"{at}/doors: door {door} also belongs to /houses/{seen['door'][tuple(door)]}"
+                )
+            seen["door"].setdefault(tuple(door), i)
         if not inside(house["map_marker"], house["footprint"]):
             errors.append(f"{at}/map_marker: outside the footprint")
         if house["name"] != " ".join(house["provenance"]["source_name"].split()):
