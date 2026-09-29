@@ -1852,3 +1852,9 @@ mod item_mint_postgres_cases;
 // cases with the focused standalone target through the same protected lane.
 #[path = "support/item_transfer_postgres_cases.rs"]
 mod item_transfer_postgres_cases;
+
+// CHEST-1 reward-claim MINT (a `once` RewardClaim into a new main backpack
+// entry) shares its cases with the focused standalone target through the same
+// protected lane.
+#[path = "support/reward_claim_mint_postgres_cases.rs"]
+mod reward_claim_mint_postgres_cases;

@@ -48,17 +48,22 @@ use sqlx::{Connection, Executor, Row};
 use std::future::Future;
 use std::task::Poll;
 
-type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+// `pub(crate)` on the generic harness pieces below (TestResult, WORLD/CHANNEL/CHARACTER/
+// SESSION, id, debug, configured_admin, runtime, Database, fence_parent, register, scope,
+// seed_character, Harness) lets `combat_pickup_postgres_cases.rs` reuse the exact same
+// PostgreSQL 17 DB/admission/session bootstrap (B3-2, `combat_pickup_postgres.rs`) instead of
+// duplicating it; behavior is unchanged.
+pub(crate) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-const WORLD: u8 = 42;
-const CHANNEL: u8 = 43;
-const CHARACTER: u8 = 41;
-const SESSION: u8 = 50;
+pub(crate) const WORLD: u8 = 42;
+pub(crate) const CHANNEL: u8 = 43;
+pub(crate) const CHARACTER: u8 = 41;
+pub(crate) const SESSION: u8 = 50;
 const BACKPACK: &str = "fixture:b3.backpack";
 const COIN: &str = "fixture:b3.coin";
 const STONE: &str = "fixture:b3.stone";
 
-fn id(seed: u8) -> [u8; 16] {
+pub(crate) fn id(seed: u8) -> [u8; 16] {
     [
         seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
     ]
@@ -77,7 +82,7 @@ fn uuid_text(value: [u8; 16]) -> String {
     )
 }
 
-fn debug<E: std::fmt::Debug>(error: E) -> String {
+pub(crate) fn debug<E: std::fmt::Debug>(error: E) -> String {
     format!("{error:?}")
 }
 
@@ -113,7 +118,7 @@ where
     .await
 }
 
-fn configured_admin() -> Option<String> {
+pub(crate) fn configured_admin() -> Option<String> {
     match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
         Ok(value) => Some(value),
         Err(_) => {
@@ -125,20 +130,20 @@ fn configured_admin() -> Option<String> {
     }
 }
 
-fn runtime() -> TestResult<tokio::runtime::Runtime> {
+pub(crate) fn runtime() -> TestResult<tokio::runtime::Runtime> {
     Ok(tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?)
 }
 
-struct Database {
+pub(crate) struct Database {
     admin_url: String,
     name: String,
-    url: String,
+    pub(crate) url: String,
 }
 
 impl Database {
-    async fn create(admin_url: String, name: &str) -> TestResult<Self> {
+    pub(crate) async fn create(admin_url: String, name: &str) -> TestResult<Self> {
         if !admin_url.starts_with("postgresql://oteryn_test_admin:")
             || !admin_url.ends_with("@127.0.0.1:5432/postgres")
         {
@@ -179,7 +184,7 @@ impl Database {
         })
     }
 
-    async fn cleanup(self) -> TestResult {
+    pub(crate) async fn cleanup(self) -> TestResult {
         let mut admin = sqlx::PgConnection::connect(&self.admin_url).await?;
         admin
             .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
@@ -192,7 +197,7 @@ impl Database {
     }
 }
 
-fn fence_parent(tag: &str) -> TestResult<std::path::PathBuf> {
+pub(crate) fn fence_parent(tag: &str) -> TestResult<std::path::PathBuf> {
     use std::os::unix::fs::PermissionsExt;
     let parent = std::env::temp_dir().join(format!(
         "oteryn-item-transfer-parent-{}",
@@ -207,7 +212,7 @@ fn fence_parent(tag: &str) -> TestResult<std::path::PathBuf> {
     Ok(retained)
 }
 
-async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationProof> {
+pub(crate) async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationProof> {
     let secret = BootstrapSecret::from_bytes([tag; 32]);
     let launch = LaunchBinding::new(&format!("item-transfer-launch-{tag}")).map_err(debug)?;
     let node = crate::foundation::NodeId::decode(&id(tag)).map_err(debug)?;
@@ -219,7 +224,7 @@ async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationP
         .map_err(|error| debug(error).into())
 }
 
-fn scope() -> TestResult<RuntimeScopeRefV1> {
+pub(crate) fn scope() -> TestResult<RuntimeScopeRefV1> {
     Ok(RuntimeScopeRefV1::channel(
         WorldId::decode(&id(WORLD)).map_err(debug)?,
         ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
@@ -259,7 +264,7 @@ fn bootstrap_binding() -> Vec<u8> {
 /// Character 41 (account 40, World 42) with progression state, an active
 /// GameSession 50 in Channel 43, its admission guards, the runtime-scope
 /// assignment to `node` and runtime readiness.
-async fn seed_character(
+pub(crate) async fn seed_character(
     pool: &sqlx::PgPool,
     root: &DurabilityRoot,
     node: &NodeIncarnationProof,
@@ -428,18 +433,18 @@ async fn seed_character(
     Ok(())
 }
 
-struct Harness {
+pub(crate) struct Harness {
     database: Database,
-    root: DurabilityRoot,
-    pool: sqlx::PgPool,
-    recovery: CharacterRecoveryStore,
+    pub(crate) root: DurabilityRoot,
+    pub(crate) pool: sqlx::PgPool,
+    pub(crate) recovery: CharacterRecoveryStore,
     retained: std::path::PathBuf,
-    node: NodeIncarnationProof,
+    pub(crate) node: NodeIncarnationProof,
     next_actor: std::cell::Cell<u32>,
 }
 
 impl Harness {
-    async fn create(admin: String, tag: &str) -> TestResult<Self> {
+    pub(crate) async fn create(admin: String, tag: &str) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
@@ -468,7 +473,7 @@ impl Harness {
 
     /// MINT one Ground item in Channel 43 (generation 1) through the real
     /// stage C path; returns its ItemInstanceId.
-    async fn mint(
+    pub(crate) async fn mint(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         key: &str,
@@ -571,7 +576,7 @@ impl Harness {
         Ok(counts)
     }
 
-    async fn item_state(&self, item: [u8; 16]) -> TestResult<(i64, i16)> {
+    pub(crate) async fn item_state(&self, item: [u8; 16]) -> TestResult<(i64, i16)> {
         let row = sqlx::query(
             "SELECT quantity, lifecycle FROM game_item_instances \
               WHERE item_instance_id = encode($1,'hex')::uuid",
@@ -582,7 +587,7 @@ impl Harness {
         Ok((row.try_get("quantity")?, row.try_get("lifecycle")?))
     }
 
-    async fn on_ground(&self, item: [u8; 16]) -> TestResult<bool> {
+    pub(crate) async fn on_ground(&self, item: [u8; 16]) -> TestResult<bool> {
         Ok(sqlx::query_scalar(
             "SELECT EXISTS (SELECT 1 FROM game_item_ground_locations \
                              WHERE item_instance_id = encode($1,'hex')::uuid)",
@@ -615,7 +620,7 @@ impl Harness {
         Ok(())
     }
 
-    async fn cleanup(self) -> TestResult {
+    pub(crate) async fn cleanup(self) -> TestResult {
         self.pool.close().await;
         self.database.cleanup().await?;
         std::fs::remove_dir_all(self.retained)?;

@@ -54,7 +54,7 @@ OFFICIAL = ROOT / 'official-changes.json'
 CHAINS = json.loads((ROOT / 'chain-behaviours.json').read_text(encoding='utf-8'))['spells']
 CHAIN_FIELDS = ('max_targets', 'range_tiles', 'backtracking', 'shape', 'initial_range_tiles', 'damage_step_percent')
 CANARY_DECIDES = 'S21: the Canary 15.30 branch decides a Canary/Crystal conflict no wiki or tibia.com states'
-REVISION = 'spell-p2-r11'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level; r9: S23 chains; r10: S24 removed spells, rune groups from the wiki runegroup; r11: S25 unstated secondary groups, Dawnport conjure spells
+REVISION = 'spell-p2-r12'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level; r9: S23 chains; r10: S24 removed spells, rune groups from the wiki runegroup; r11: S25 unstated secondary groups, Dawnport conjure spells; r12: S26 Harmony role
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
                       'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -671,6 +671,11 @@ class Bundle:
         cooldown = self.field(base + '/cooldown_ms', 'cooldown', 'cooldown', spell_pages)
         spell['cooldown_ms'] = cooldown or 1000
         spell['groups'] = self.groups(spell_pages, carrier)
+        # S26: only Canary 15.30 states the monk Harmony role (S21); Crystal has no such call.
+        role = self.field(base + '/harmony_role', None, 'monkSpellType', pages, required=False,
+                          transform=lambda v: {'MonkSpell_Builder': 'builder', 'MonkSpell_Spender': 'spender'}.get(str(v).lstrip('@')))
+        if role:
+            spell['harmony_role'] = role
         spell['targeting'] = self.targeting(spell_pages)
         spell['pz_locks_caster'] = bool(self.field(base + '/pz_locks_caster', None, 'setPzLocked', pages))
         spell['needs_weapon'] = bool(self.field(base + '/needs_weapon', None, 'needWeapon', pages))

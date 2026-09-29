@@ -17,6 +17,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import canary_batch as cb
+import official_library
 import wiki_authored
 import validate_monster as vm
 
@@ -61,6 +62,8 @@ def main():
     converter.wiki = {m['monster']: m for m in json.loads(wiki_text)['monsters']}
     br_text = BR_FILL.read_text(encoding='utf-8')
     converter.br = {m['monster']: m for m in json.loads(br_text)['monsters']}
+    official_text = official_library.SAMPLE.read_text(encoding='utf-8')
+    converter.official = {m['monster']: m for m in json.loads(official_text)['monsters']}
 
     files = sorted((args.canary / cb.MONSTER_DIR).rglob('*.lua'))
     outcome = Counter()
@@ -126,6 +129,8 @@ def main():
 
     report = {'source': {'repository': cb.REPOSITORY, 'revision': cb.REVISION, 'monster_dir': cb.MONSTER_DIR},
               'wiki_reference': {'file': str(WIKI.relative_to(ROOT)), 'sha256': hashlib.sha256(wiki_text.encode('utf-8')).hexdigest()},
+              'official_library': {'file': str(official_library.SAMPLE.relative_to(ROOT)),
+                                   'sha256': hashlib.sha256(official_text.encode('utf-8')).hexdigest()},
               'br_fill_reference': {'file': str(BR_FILL.relative_to(ROOT)), 'sha256': hashlib.sha256(br_text.encode('utf-8')).hexdigest()},
               'wiki_authored_reference': {'file': str(wiki_authored.SAMPLE.relative_to(ROOT)),
                                           'sha256': hashlib.sha256(authored_text.encode('utf-8')).hexdigest()},
@@ -138,7 +143,8 @@ def main():
                                             for k, n in sorted(blockers.items(), key=lambda kv: (-kv[1], kv[0]))],
               'not_converted': not_converted, 'structure_invalid': invalid, 'fully_resolved': sorted(resolved)}
     args.out.write_text(dump(report), encoding='utf-8', newline='\n')
-    head = {'source': report['source'], 'wiki_reference': report['wiki_reference'], 'generator': 'population_census.py',
+    head = {'source': report['source'], 'wiki_reference': report['wiki_reference'],
+            'official_library': report['official_library'], 'generator': 'population_census.py',
             'digest': bundle_digest.__doc__, 'bundle_files': list(BUNDLE_FILES), 'bundles': len(digests), 'monsters': []}
     lines = ',\n'.join('    ' + json.dumps({'monster': s, **d}, ensure_ascii=False, separators=(',', ':')) for s, d in sorted(digests.items()))
     INDEX.write_text(dump(head)[:-len('\n  "monsters": []\n}\n')] + '\n  "monsters": [\n' + lines + '\n  ]\n}\n',

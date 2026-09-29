@@ -84,6 +84,9 @@ pub struct PveDeathOutcome<I> {
     pub amulet_of_loss_consumed: Option<I>,
     /// The lost-item set in canonical slot order; a container is lost with its contents.
     pub lost_items: Vec<EquippedItem<I>>,
+    /// The character lost the item in its container slot, so it receives an empty bag there
+    /// (tibia.com manual §5.1.11). The bag is minted by a DUR-03 operation after the item moves.
+    pub grants_empty_bag: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -193,12 +196,16 @@ pub fn calculate_pve_death<I: Clone>(
         lost
     };
 
+    let grants_empty_bag = lost_items
+        .iter()
+        .any(|lost| lost.slot == EquipmentSlot::Container);
     Ok(PveDeathOutcome {
         experience_lost: ExactI64::new(experience_lost),
         experience_after: ExactI64::new(experience - experience_lost),
         blessings_consumed: input.regular_blessings,
         amulet_of_loss_consumed,
         lost_items,
+        grants_empty_bag,
     })
 }
 
@@ -469,6 +476,38 @@ mod tests {
                     .lost_items
         });
         assert!(differs);
+    }
+
+    #[test]
+    fn an_empty_bag_is_granted_only_when_the_container_is_lost() {
+        let equipment = full_equipment();
+        let mut granted = 0;
+        for seed in 0..64 {
+            let outcome = calculate_pve_death(&input(&equipment, 2), &ROOT, occurrence(seed))
+                .expect("a valid PvE death");
+            let container_lost = outcome
+                .lost_items
+                .iter()
+                .any(|lost| lost.slot == EquipmentSlot::Container);
+            assert_eq!(outcome.grants_empty_bag, container_lost);
+            granted += u32::from(outcome.grants_empty_bag);
+        }
+        assert!(granted > 0 && granted < 64);
+
+        // No container equipped, or no item loss at all: no bag.
+        let without_container: Vec<_> = equipment
+            .iter()
+            .copied()
+            .filter(|entry| entry.slot != EquipmentSlot::Container)
+            .collect();
+        let outcome = calculate_pve_death(&input(&without_container, 0), &ROOT, occurrence(9))
+            .expect("a valid PvE death");
+        assert!(!outcome.grants_empty_bag);
+        let mut protected = input(&equipment, 0);
+        protected.level = ITEM_LOSS_EXEMPT_MAX_LEVEL;
+        let outcome =
+            calculate_pve_death(&protected, &ROOT, occurrence(9)).expect("a valid PvE death");
+        assert!(!outcome.grants_empty_bag);
     }
 
     #[test]
