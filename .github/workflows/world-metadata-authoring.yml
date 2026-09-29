@@ -10,6 +10,7 @@ on:
       - content/world/transitions/**
       - content/world/placements/**
       - content/world/worlds/**
+      - content/world/objects/**
       - imports/crystalserver/bindings/items.json
       - imports/tibiawiki/hunting-places/**
       - .github/workflows/world-metadata-authoring.yml
@@ -53,6 +54,7 @@ jobs:
           python validate_world_base.py
           python convert_world_record.py --check
           python validate_world_record.py
+          python validate_floor_changes.py
           python ../validate_materialized_game_tree.py
 
       - name: Reader, converter and validator fixture tests
@@ -61,6 +63,7 @@ jobs:
           python test_world_authoring.py
           python test_world_base.py
           python test_world_record.py
+          python test_floor_changes.py
 
       - name: Ruff check and format
         working-directory: .
@@ -74,7 +77,9 @@ jobs:
         working-directory: .
         run: test -z "$(git status --short --untracked-files=all)"
 
-  # `convert_world_metadata.py --check` and `convert_world_base.py --check` need the pinned
+  # `convert_world_metadata.py --check`, `convert_world_base.py --check` and
+  # `convert_floor_changes.py --check` need the pinned
   # zimbadev/crystalserver checkout, which this repository's CI does not fetch; whoever
   # regenerates the families runs them locally and commits the output together with
-  # samples/source-capture-v1.json and samples/world-base-capture-v1.json.
+  # samples/source-capture-v1.json, samples/world-base-capture-v1.json and
+  # samples/floor-changes-capture-v1.json.

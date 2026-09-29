@@ -12,6 +12,7 @@ format selected by measurement (see "Base map (step 3)" below).
 | `House` | `content/houses/` | 995 | `OTERYN_HOUSE_AUTHORING_SHARD/v1` |
 | `Transition.Teleport` | `content/world/transitions/` | 872 | `OTERYN_TRANSITION_AUTHORING_SHARD/v1` |
 | `World` | `content/world/worlds/` | 1 | `OTERYN_WORLD_AUTHORING_SHARD/v1` (`world-record.schema.json`) |
+| `WorldObject.FloorChange` | `content/world/objects/` | 447 | `OTERYN_WORLD_OBJECT_AUTHORING_SHARD/v1` (`floor-change.schema.json`) |
 
 Each directory has an `OTERYN_FAMILY_INDEX/v1` `index.json`, plus canonical JSON shards of
 500 records named `<stem>-<start>-<end>.json`. Every family index, shard and record shape
@@ -88,8 +89,8 @@ position-based.
   - 1 with a destination outside the map;
   - 5 with a destination on an absent tile.
 - **Not here yet:**
-  - floor changes through stairs, ladders or holes. These are derived from item types
-    together with terrain.
+  - floor changes that are scripted `use` actions (ladders up, rope spots, sewer grates,
+    shovel and pick holes): see "Floor-change objects".
   - islands and streets; per-place skills, loot and experience ratings of hunting places.
   - the 18 editor waypoints.
   - the `data-global/world/15.30/` fragment maps.
@@ -133,6 +134,55 @@ repository test's directory-scan budget grows by exactly the one added entry
   `to` and hunting place position to lie inside the bounds on a declared floor. Base map
   tiles are inside by that equality.
 
+## Floor-change objects
+
+`content/world/objects/` holds `WorldObject.FloorChange`: one record per item type that the
+pinned `data/items/items.xml` declares with a `floorchange` attribute (stairs, ramps, holes,
+trapdoors). `convert_floor_changes.py --crystal-root ... [--check]` needs the pinned
+checkout (its `items.xml` sha256 is the pin already used by `convert_world_base.py`) and the
+committed base map, and writes the shard `floor-changes-00000-00446.json`, the index and
+`samples/floor-changes-capture-v1.json`.
+
+- **Key:** `oteryn:world_object.floor_change.<item key without "oteryn:item.", every
+  non-alphanumeric run as "_">`, for example
+  `oteryn:world_object.floor_change.registry_i00000087`. The item key is resolved as in the
+  base map palette: the `ots/item_server_id` binding target, else the provisional donor
+  `donor:crystalserver@00ce02a5:item/<id>` (key `..floor_change.donor_<id>`,
+  `provisional_item: true`). All 447 types are bound today. Ranges (`fromid`/`toid`) expand
+  to one record per id.
+- **Fields:** `floor_change`, the `item` reference, the items.xml `name`,
+  `source_item_id`, and `occurrences_on_base_map`. It counts top-level tile items in the
+  region files (a floor-change item inside a container is not a floor change) and is `0`
+  for the 118 types the map does not use.
+- **`floor_change` mapping** (engine: `TileStatesMap` in `item_parse.hpp`, destination in
+  `Tile::queryDestination`, `src/items/tile.cpp`, both at the pinned revision):
+
+  | items.xml | `floor_change` | Engine meaning |
+  |---|---|---|
+  | `down` | `down` | one floor down; the arrival tile is shifted by the ramp flags of the lower tile |
+  | `north` | `up_north` | one floor up, one tile north (`y - 1`) |
+  | `south` | `up_south` | one floor up, one tile south (`y + 1`) |
+  | `east` | `up_east` | one floor up, one tile east (`x + 1`) |
+  | `west` | `up_west` | one floor up, one tile west (`x - 1`) |
+  | `southalt` | `up_south_alt` | one floor up, two tiles south (`y + 2`) |
+  | `eastalt` | `up_east_alt` | one floor up, two tiles east (`x + 2`) |
+
+  The converter fails closed on any other value, a second `floorchange` on one item, a
+  missing name, or an id that items.xml declares in two nodes.
+- **Counts** (see the capture summary): 194 `down`, 73 `up_north`, 52 `up_south`,
+  50 `up_east`, 69 `up_west`, 5 `up_south_alt`, 4 `up_east_alt`; 329 of the 447 types
+  occur on the map, 26,919 occurrences in all.
+- **Excluded:** ladders that go up, rope spots, sewer grates and shovel or pick holes are
+  scripted `use` actions (or runtime terrain changes), not static item attributes, so they
+  are listed in the capture summary and not invented here. Item types named `ramp`,
+  `stairs` or `ladder` that carry no `floorchange` attribute are decorative or scripted and
+  are not records either. Teleports stay in `Transition.Teleport`.
+- `validate_floor_changes.py` checks the schema and canonical bytes, the pinned source and
+  the item bindings digest, key derivation, that each item key is a bound Item (or the
+  donor key of an unbound id) and equals the base map palette key, sorted unique keys, no
+  stray file, and recounts every `occurrences_on_base_map` and the summary from the region
+  files (about 15 s on four cores).
+
 ## Commands
 
 ```bash
@@ -142,6 +192,9 @@ python test_world_authoring.py             # synthetic OTBM and wiki fixtures, c
 python convert_world_record.py --check     # World record from the committed base map (offline)
 python validate_world_record.py            # World record and positions inside its bounds
 python test_world_record.py                # World converter, validator, worlds/ tree exception
+python validate_floor_changes.py           # WorldObject.FloorChange incl. recount on the base map
+python test_floor_changes.py               # floor-change converter and validator fixtures
+# Needs the pinned crystalserver checkout: python convert_floor_changes.py --crystal-root ... [--check]
 python convert_hunting_places.py --check   # offline, from the committed TibiaWiki snapshot
 # Regenerate (needs the pinned crystalserver checkout, not fetched by CI):
 python convert_world_metadata.py --crystal-root /path/to/crystalserver [--check]

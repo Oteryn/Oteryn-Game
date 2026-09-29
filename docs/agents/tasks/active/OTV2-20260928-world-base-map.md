@@ -20,6 +20,7 @@ owned_paths:
   - tools/content-schema/world-authoring/
   - content/world/placements/
   - content/world/worlds/
+  - content/world/objects/
   - tools/content-schema/validate_materialized_game_tree.py
   - .gitattributes
   - .github/workflows/world-metadata-authoring.yml
@@ -78,6 +79,12 @@ sha256-pinned and `OtsHypothesisOnly`.
       exactly one shard); the repository test scan budget grows by exactly that entry.
       `validate_world_record.py` checks every placement extent, City, House, teleport and
       hunting place position against the bounds and floors.
+- [x] `WorldObject.FloorChange` holds one record per items.xml item type with a
+      `floorchange` attribute (447 types: 194 `down`, 73 `up_north`, 52 `up_south`,
+      50 `up_east`, 69 `up_west`, 5 `up_south_alt`, 4 `up_east_alt`), keyed from the palette
+      item key, with the engine mapping documented and `occurrences_on_base_map` counted
+      from the region files (329 types, 26,919 occurrences). Ladders up, rope spots, sewer
+      grates and tool holes are scripted uses and are listed as excluded, not invented.
 - [ ] Required checks pass on the frozen PR head.
 
 ## Excluded scope
@@ -92,6 +99,8 @@ sha256-pinned and `OtsHypothesisOnly`.
 - `convert_world_base.py --check` against the pinned checkout is byte-identical.
 - `convert_world_record.py --check`, `validate_world_record.py` and `test_world_record.py`
   pass.
+- `convert_floor_changes.py --check` (pinned checkout), `validate_floor_changes.py` and
+  `test_floor_changes.py` pass.
 - `validate_world_base.py` passes; `test_world_base.py` and `test_world_authoring.py` pass.
 - `ruff check` and `ruff format --check` pass from the repository root.
 - `validate_materialized_game_tree.py`, `validate_governance.py` and
