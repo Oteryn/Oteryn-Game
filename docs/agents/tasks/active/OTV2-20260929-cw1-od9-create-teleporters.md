@@ -4,13 +4,13 @@
 task_id: OTV2-20260929-cw1-od9-create-teleporters
 title: OD9 pre-authored CREATE teleporters - synthesized absent state, create/remove pair and the Q2=b re-kill re-arm (proposal §10.2/§10.4)
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: 5884353101
 base_branch: main
 branch: claude/cw1-od9-create-teleporters
-pr: null
+pr: 1204
 base_sha: 8dfd069594e0b6bd4d4cd9df7226b4b8dcd69d8c
 head_sha: null
 final_head_sha: null
@@ -152,5 +152,5 @@ The results are in the PR.
 
 ## Context checkpoint
 
-last_progress: implemented and validated locally; PR pending
+last_progress: implemented and validated locally; PR #1204 opened for CI and review
 jira: pending (no mapped Story resolved in this worker session)
