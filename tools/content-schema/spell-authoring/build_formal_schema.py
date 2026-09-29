@@ -37,7 +37,7 @@ def when(field, value): return {'properties': {field: {'const': value}}, 'requir
 VOCATIONS = ('druid', 'elder_druid', 'sorcerer', 'master_sorcerer', 'knight', 'elite_knight',
              'paladin', 'royal_paladin', 'monk', 'exalted_monk')
 FORMULA_INPUTS = ('level', 'magic_level', 'base_power', 'attack_skill', 'attack_value', 'attack_factor',
-                  'shielding_skill')
+                  'shielding_skill', 'shield_defense')
 
 d = {}
 for name in ('key', 'revision', 'identity', 'bool', 'ms', 'AbilityRef', 'EffectRef', 'FormulaRef', 'ItemRef',
@@ -71,7 +71,8 @@ d['formula'] = obj({
     'identity': use('identity'), 'kind': {'const': 'player_expression'},
     'inputs': {**enum('level_magic', 'skill'), 'description': 'level_magic: level, magic_level, base_power and '
                'the caster\'s shielding_skill (knight healing); skill: level, attack_skill, attack_value, attack_factor, '
-               'base_power, shielding_skill. The engine fills attack_* from the wielded weapon (a world combat rule).'},
+               'base_power, shielding_skill, shield_defense. The engine fills attack_* from the wielded weapon (a world '
+               'combat rule) and shield_defense from the wielded shield (only a needs_shield Spell reads it; S27 D.4).'},
     'minimum': use('expression'), 'maximum': use('expression')},
     ('identity', 'kind', 'inputs', 'minimum', 'maximum'),
     description='S5: magnitude range of a damage or heal Effect cast by a player. Each bound is evaluated, '
@@ -129,12 +130,17 @@ d['spell'] = obj({
         'aim_at_target': {**use('bool'), 'description': 'S20: a direction spell the player may set to turn towards '
                           'the attacked creature before casting (client "Aim at Target"; BR aimattarget).'},
         'cast_at_position': {**use('bool'), 'description': 'S20: the spell may be cast at a chosen position: with '
-                             'crosshair, at the cursor or at the target (Canary 15.30 spell:optionalTarget).'}},
+                             'crosshair, at the cursor or at the target (Canary 15.30 spell:optionalTarget).'},
+        'allowed_targets': {**enum('any', 'self_only', 'self_or_own_summons'), 'description': 'S27 D.3: who a '
+                            'single-target cast may be aimed at; absent means any. self_or_own_summons: the caster or '
+                            'a creature the caster summoned or convinced (healing runes).'}},
         ('aggressive', 'self_target', 'needs_target', 'needs_direction', 'target_or_direction', 'block_walls',
          'parameter'),
         allOf=[{'if': when('aim_at_target', True), 'then': when('needs_direction', True)},
                {'if': when('cast_at_position', True), 'then': {'properties': {'needs_target': {'const': False}}}}]),
     'pz_locks_caster': use('bool'), 'needs_weapon': use('bool'),
+    'needs_shield': {**use('bool'), 'description': 'S27 D.4: the caster must wield a shield in the left or right '
+                     'hand ("You need to equip a shield to cast this spell."); absent means false.'},
     'base_power': integer(1, description='Reference base power (wiki basepower, Crystal basePower); a formula '
                           'input, not a damage value.'),
     'rune': use('rune'), 'execution': use('execution'),

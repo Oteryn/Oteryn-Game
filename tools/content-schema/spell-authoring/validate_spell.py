@@ -25,7 +25,8 @@ REGISTRY = Registry().with_resources((s['$id'], Resource.from_contents(s)) for s
 CATALOG_FAMILIES = {'Item', 'Interaction', 'Creature', 'Ability', 'Effect', 'Formula', 'Spell'}
 INPUT_SETS = {
     'level_magic': {'level', 'magic_level', 'base_power', 'shielding_skill'},
-    'skill': {'level', 'attack_skill', 'attack_value', 'attack_factor', 'base_power', 'shielding_skill'},
+    'skill': {'level', 'attack_skill', 'attack_value', 'attack_factor', 'base_power', 'shielding_skill',
+              'shield_defense'},
 }
 # Evaluation grid for the semantic range check: every combination must give 0 <= minimum <= maximum.
 GRID = {
@@ -35,6 +36,7 @@ GRID = {
     'attack_value': (7, 20, 50, 100),
     'attack_factor': (Decimal('1'), Decimal('1.2')),
     'shielding_skill': (10, 60, 110),
+    'shield_defense': (1, 20, 40),
 }
 MAX_EXPRESSION_NODES = 256
 MAX_EXPRESSION_DEPTH = 32
@@ -136,7 +138,7 @@ def grid(inputs, used, base_power):
         yield env
 
 
-def check_formula(formula, base_power, label, errors):
+def check_formula(formula, base_power, label, errors, needs_shield=False):
     used = set()
     for bound in ('minimum', 'maximum'):
         nodes, depth, names = expression_shape(formula[bound])
@@ -150,6 +152,9 @@ def check_formula(formula, base_power, label, errors):
         return
     if 'base_power' in used and base_power is None:
         errors.append(f'{label}: uses base_power but the casting Spell has no base_power')
+        return
+    if 'shield_defense' in used and not needs_shield:
+        errors.append(f'{label}: uses shield_defense but the casting Spell does not need a shield (S27 D.4)')
         return
     for env in grid(formula['inputs'], used, base_power):
         try:
@@ -241,7 +246,8 @@ def validate(bundle, deps, catalog=None, manifest=None):
         if key not in reached:
             errors.append('formula ' + key[1] + ': player_expression is not reached from this Spell')
             continue
-        check_formula(formula, spell.get('base_power'), 'formula ' + key[1], errors)
+        check_formula(formula, spell.get('base_power'), 'formula ' + key[1], errors,
+                      spell.get('needs_shield', False))
     if manifest is not None:
         for entry in manifest['entries']:
             if entry['source_index'] >= len(manifest['sources']):

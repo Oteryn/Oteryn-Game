@@ -15,10 +15,13 @@ pub(crate) mod chain;
 #[cfg(test)]
 mod chain_tests;
 pub(crate) mod formula;
+#[cfg(test)]
+mod part_d_tests;
 pub(crate) mod party;
 #[cfg(test)]
 mod party_tests;
 pub(crate) mod plan;
+pub(crate) mod target;
 #[cfg(test)]
 mod tests;
 
@@ -31,6 +34,7 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use chain::{ChainCreature, ChainHit, ChainSpec, ChainStart, ChainWorld, pick_chain, step_value};
 pub(crate) use formula::{Formula, FormulaError, FormulaInputs};
 use party::{PartyBuffSpec, PartyFailure, PartyWorld};
+use target::{AllowedTargets, CastTarget};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum Vocation {
@@ -139,7 +143,13 @@ pub(crate) struct SpellDefinition {
     /// Cast at a target or, without one, in the looking direction (Canary `needCasterTargetOrDirection`).
     pub(crate) target_or_direction: bool,
     pub(crate) self_target: bool,
+    /// Who the cast may be aimed at (D.3, `targeting.allowed_targets`).
+    pub(crate) allowed_targets: AllowedTargets,
     pub(crate) aggressive: bool,
+    /// The caster must wield a melee weapon (Canary/Crystal `needWeapon`; D.4).
+    pub(crate) needs_weapon: bool,
+    /// The caster must wield a shield (D.4, `needs_shield`).
+    pub(crate) needs_shield: bool,
     pub(crate) range_tiles: Option<u32>,
     pub(crate) base_power: Option<i64>,
     pub(crate) execution: Execution,
@@ -273,6 +283,11 @@ pub(crate) struct CasterState {
     pub(crate) attack_value: u32,
     pub(crate) attack_factor: f64,
     pub(crate) shielding_skill: u32,
+    /// The caster wields a sword, club, axe or fist weapon (Canary/Crystal `needWeapon`), as the
+    /// equipment owner reports it.
+    pub(crate) melee_weapon: bool,
+    /// Defense of the first shield in the caster's left or right hand; `None` without a shield (D.4).
+    pub(crate) shield_defense: Option<u32>,
 }
 
 /// Ready times of a caster's spell and group cooldowns.
@@ -317,6 +332,15 @@ pub(crate) enum CastRejection {
     VocationCannotUse,
     PremiumRequired,
     TargetRequired,
+    /// A `needs_weapon` spell cast without a melee weapon (D.4); nothing is spent.
+    WeaponRequired,
+    /// A `needs_shield` spell cast without a shield (D.4.1); nothing is spent.
+    ShieldRequired,
+    /// The target is not one `allowed_targets` permits (D.3.1 step 1); nothing is spent.
+    TargetNotAllowed,
+    /// A spell with `allowed_targets` was resolved with a target but without the target facts
+    /// ([`resolve_targeted_cast`]).
+    TargetFactsRequired,
     /// A chain cast found no first creature (chain §3 step 2); nothing is spent.
     NoChainTarget,
     /// A chain cast was resolved without the world facts it needs ([`resolve_chain_cast`]).
@@ -351,6 +375,14 @@ impl Display for CastRejection {
             Self::VocationCannotUse => formatter.write_str("the vocation cannot use this spell"),
             Self::PremiumRequired => formatter.write_str("a premium account is required"),
             Self::TargetRequired => formatter.write_str("the spell needs a target"),
+            Self::WeaponRequired => formatter.write_str("a weapon is required"),
+            Self::ShieldRequired => formatter.write_str("a shield is required"),
+            Self::TargetNotAllowed => {
+                formatter.write_str("the spell cannot be used on this target")
+            }
+            Self::TargetFactsRequired => {
+                formatter.write_str("a targeted cast needs the target facts")
+            }
             Self::NoChainTarget => formatter.write_str("no valid creature is in range"),
             Self::ChainWorldRequired => formatter.write_str("a chain cast needs the world facts"),
             Self::NoPartyMembers => formatter.write_str("no party members in range"),
@@ -432,10 +464,12 @@ enum Facts<'a> {
     None,
     Chain(&'a dyn ChainWorld, ChainStart),
     Party(&'a dyn PartyWorld),
+    Target(CastTarget),
 }
 
 /// Check and resolve one cast at `now`. `draw(minimum, maximum)` is the world damage distribution.
-/// A cast that chains needs [`resolve_chain_cast`], a party buff [`resolve_party_cast`].
+/// A cast that chains needs [`resolve_chain_cast`], a party buff [`resolve_party_cast`], a cast
+/// at a target of a spell with `allowed_targets` [`resolve_targeted_cast`].
 pub(crate) fn resolve_cast(
     spell: &SpellDefinition,
     caster: &CasterState,
@@ -447,7 +481,31 @@ pub(crate) fn resolve_cast(
     if spell.chains(has_target) {
         return Err(CastRejection::ChainWorldRequired);
     }
+    if has_target && spell.allowed_targets != AllowedTargets::Any {
+        return Err(CastRejection::TargetFactsRequired);
+    }
     resolve(spell, caster, cooldowns, now, has_target, Facts::None, draw)
+}
+
+/// [`resolve_cast`] at a resolved target creature (part D.3). The cast checks run first; then a
+/// target that `allowed_targets` does not permit fails the cast before anything is spent.
+pub(crate) fn resolve_targeted_cast(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    target: CastTarget,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<CastResolution, CastRejection> {
+    resolve(
+        spell,
+        caster,
+        cooldowns,
+        now,
+        true,
+        Facts::Target(target),
+        draw,
+    )
 }
 
 /// [`resolve_cast`] for a party buff (part C.3), with the party facts it reads. The cast checks
@@ -553,11 +611,25 @@ fn resolve(
     } else if !spell.vocations.contains(&caster.vocation) {
         return Err(CastRejection::VocationCannotUse);
     }
+    // Canary/Crystal check the weapon after the vocation and before premium.
+    if spell.needs_weapon && !caster.melee_weapon {
+        return Err(CastRejection::WeaponRequired);
+    }
     if spell.premium && !caster.premium {
         return Err(CastRejection::PremiumRequired);
     }
     if spell.needs_target && !has_target {
         return Err(CastRejection::TargetRequired);
+    }
+    // The script checks of D.3 and D.4 run after the engine checks (Canary `onCastSpell`).
+    if spell.allowed_targets != AllowedTargets::Any
+        && let Facts::Target(target) = facts
+        && !spell.allowed_targets.allows(&target)
+    {
+        return Err(CastRejection::TargetNotAllowed);
+    }
+    if spell.needs_shield && caster.shield_defense.is_none() {
+        return Err(CastRejection::ShieldRequired);
     }
     let hits = match (&spell.chain, facts) {
         (Some(chain), Facts::Chain(world, start)) if spell.chains(has_target) => {
@@ -598,6 +670,7 @@ fn resolve(
         attack_value: caster.attack_value,
         attack_factor: caster.attack_factor,
         shielding_skill: caster.shielding_skill,
+        shield_defense: caster.shield_defense,
     };
     let resolve_effects = |draw: &mut dyn FnMut(i64, i64) -> i64| match &spell.execution {
         Execution::Conjure {

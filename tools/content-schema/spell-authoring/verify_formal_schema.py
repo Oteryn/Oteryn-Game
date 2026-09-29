@@ -159,6 +159,22 @@ VALID_MUTATIONS = {'light condition': condition_effect(LIGHT), 'regeneration con
                        needs_direction=True, aim_at_target=True), None)}
 
 
+def shield_formula(needs_shield):
+    """light_healing with a shield_defense formula (S27 D.4); needs_shield None leaves the field out."""
+    def change(spell, deps):
+        deps['formulas'][0].update(inputs='skill', minimum=var('shield_defense'),
+                                   maximum=op('mul', var('shield_defense'), const('2')))
+        if needs_shield is not None:
+            spell['needs_shield'] = needs_shield
+    return mutate('light_healing', change, None)
+
+
+VALID_MUTATIONS.update({
+    'allowed targets self or own summons': case('light_healing', 'spell', ('targeting', 'allowed_targets'),
+                                                'self_or_own_summons', None),
+    'shield formula with needs_shield': shield_formula(True)})
+
+
 def expecting(mutation, expect):
     return (*mutation[:3], expect)
 
@@ -226,6 +242,13 @@ NEGATIVE = {
                                               'was expected'),
     'cast at position needing a target': mutate('light_healing', lambda spell, deps: (
         spell['targeting'].update(cast_at_position=True, needs_target=True)), 'was expected'),
+    'unknown allowed targets': case('light_healing', 'spell', ('targeting', 'allowed_targets'), 'own_party',
+                                    'is not one of'),
+    'needs_shield not boolean': case('light_healing', 'spell', ('needs_shield',), 'yes', 'is not of type'),
+    'shield formula without needs_shield': expecting(shield_formula(None), 'does not need a shield'),
+    'shield formula with needs_shield false': expecting(shield_formula(False), 'does not need a shield'),
+    'shield_defense in a level formula': case('light_healing', 'deps', ('formulas', 0, 'minimum'), var('shield_defense'),
+                                              'do not provide shield_defense'),
 }
 
 
