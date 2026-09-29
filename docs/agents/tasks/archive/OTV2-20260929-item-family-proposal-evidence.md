@@ -1,8 +1,11 @@
 # OTV2-20260929-item-family-proposal-evidence
 
-**Task ID:** OTV2-20260929-item-family-proposal-evidence  
-**Status:** COMPLETED  
-**Issue:** #162  
+**Task ID:** OTV2-20260929-item-family-proposal-evidence
+
+**Status:** COMPLETED
+
+**Issue:** #162
+
 **Date:** 2026-09-29
 
 ## Objective
