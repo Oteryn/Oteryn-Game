@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-npc-crystal-supplement
 title: NPC D14 - admit the NPC files Crystal added after its pinned revision from the pinned summer-update commit
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
@@ -12,15 +12,15 @@ issue: 162
 pr: 1200
 jira: KAN-16
 base_sha: fb204ea3bac7b89b051e7a60c2036c65e506d7e7
-head_sha: null
-final_head_sha: null
+head_sha: b3178f1e92eb4fd32ae6ff4c908f5149af94cfe2
+final_head_sha: b3178f1e92eb4fd32ae6ff4c908f5149af94cfe2
 final_head_frozen_at: null
 owner: claude-code-session-01RTD1d7GsT7uFSBHg5syB4T
 created_at: 2026-09-29
 updated_at: 2026-09-29
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260929-npc-crystal-supplement.md
+  - docs/agents/tasks/archive/OTV2-20260929-npc-crystal-supplement.md
   - tools/content-schema/npc-authoring/convert.py
   - tools/content-schema/npc-authoring/promotion_candidates.py
   - tools/content-schema/npc-authoring/validate_promotion.py
@@ -86,3 +86,9 @@ their reasons") and "kontynuuj" once the permission mode allowed the `convert.py
 - `materialize_content_world_project_v2` verifies 1,094 NPCs and 2,179 declarations.
 - The tree generator, its validator and tests, `validate_materialized_game_tree` and
   `content_world_project_repository` pass.
+
+## PR and closeout
+
+- Merged through Merge Queue as PR #1200, squash commit `67d31f1db03fa5a842d57703b925b359f71bb06b`; final head `b3178f1e92eb4fd32ae6ff4c908f5149af94cfe2`. Codex review
+  found no issues; the Doctor Marrow hold reason was sharpened before merge (a boss on TibiaWiki and Tibiopedia);
+  ownership released.
