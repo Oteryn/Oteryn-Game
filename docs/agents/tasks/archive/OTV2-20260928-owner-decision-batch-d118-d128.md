@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-owner-decision-batch-d118-d128
 title: "Owner decision batch D118-D128"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1180
 base_sha: 3dcf3c82abc5d424542388a9f65ca1507e8746a4
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 393ef8e698a8ea9f9254c4d9cad866ebdbabec24
+final_head_sha: 393ef8e698a8ea9f9254c4d9cad866ebdbabec24
+final_head_frozen_at: 2026-09-28T22:18Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -54,9 +54,9 @@ Not applicable. Owner decisions and routing only.
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review.
+- [x] Protected Merge Queue integration.
 
 ## Excluded scope
 
@@ -84,14 +84,25 @@ owner's D109 (party principal ceiling, 5879706425) is recorded with the Global v
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1180 merged through the Merge Queue on 2026-09-29 as `53c0e004`.
+- Review: one Codex review of `caaf436` (two P1, one P2), repaired in `e4cd78b`; renumbered to
+  D118-D128 with D109 recorded in `393ef8e` (no logic change, no re-review under D101); the owner
+  decided to merge.
+- Protected-main readback: the decision document and this record are byte-identical to `393ef8e`;
+  the A8 archive differs only by the #1179 edit merged into the branch.
+- Archived under `OTV2-20260929-a10-d39-contract-amendments`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1180 open
-status: validating
+last_progress: protected-integrated as 53c0e004; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 393ef8e698a8ea9f9254c4d9cad866ebdbabec24
 pr: 1180
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1180
+next_action: null
 ```
