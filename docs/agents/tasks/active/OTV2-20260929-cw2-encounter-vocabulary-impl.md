@@ -4,12 +4,12 @@
 task_id: OTV2-20260929-cw2-encounter-vocabulary-impl
 title: Implement the accepted section 12 encounter vocabulary extensions CW2-1..4
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw2-encounter-vocabulary-impl
-pr: null
+pr: 1202
 base_sha: fb204ea3
 head_sha: null
 final_head_sha: null
@@ -91,5 +91,5 @@ Owner answers applied in section 12:
 
 ## Context checkpoint
 
-last_progress: vocabulary, section 12 acceptance and checks authored; PR pending
+last_progress: PR #1202 opened; awaiting CI and control-plane freeze
 jira: pending (no mapped Story resolved in this worker session)
