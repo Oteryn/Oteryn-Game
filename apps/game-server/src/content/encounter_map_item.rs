@@ -3,12 +3,18 @@
 //! OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md §9, owner-accepted
 //! 2026-09-28).
 //!
-//! Admitted shape: `map_item transform` at a pre-authored `anchor`, optionally carrying
-//! `destination`, `revert_after_ms` and `revert_destination` (which needs both `revert_after_ms`
-//! and `destination`); `effect` is presentational and ignored. The forward transition must carry
-//! the TRANSFORM intent family, and a synthesized inverse carries it too (§7 pairing). Everything else stays rejected fail-closed with a named
-//! error: `at: death_position` (§7 open decision 8), `create` carrying `destination` (§7 open
-//! decision 9), any other non-`transform` operation, `interaction`, and any other field.
+//! Admitted shapes:
+//! - `map_item transform` at a pre-authored `anchor`, optionally carrying `destination`,
+//!   `revert_after_ms` and `revert_destination` (which needs both `revert_after_ms` and
+//!   `destination`). The forward transition must carry the TRANSFORM intent family, and a
+//!   synthesized inverse carries it too (§7 pairing).
+//! - §10.4 (OD9): `map_item create` at a pre-authored `anchor`, with `destination` and
+//!   `revert_after_ms` both required.
+//!
+//! `effect` is presentational and ignored. Everything else stays rejected fail-closed with a
+//! named error: `at: death_position` (§10.3, OD8, in any rule, delayed or not), `revert_destination`
+//! or `interaction` on a `create`, a `create` without `destination` or `revert_after_ms`, any other
+//! operation, `interaction`, and any other field.
 //!
 //! Representation defaults (§9 leaves them to the owning lane):
 //! - an encounter anchor lowers to `PlacementKey` `<encounter key>/anchor/<anchor key>`; a
@@ -28,13 +34,24 @@
 //!   anchor (the authored forward, the dedicated `/revert` inverse and the `/rearm` forward) is
 //!   `TransitionOrigin::Event` at that anchor's placement, owned by the encounter key. None of
 //!   them is USE-selectable or session-invocable there.
+//! - §10.2/§10.4 (OD9), a pre-authored `create`: its anchor object gains the synthesized absent
+//!   state `<action id>/absent` (`absent: true`, `collision: Absent`, no attributes), which is the
+//!   placement's initial state; the forward `<action id>/create` (absent -> the created item's
+//!   state, CREATE family) and its inverse `<action id>/remove` (back to absent, REMOVE family).
+//!   The present state exposes `destination`, and the create carries the authored
+//!   `revert_after_ms`. Both edges are `Event(<encounter key>)`. The revert lands on the absent
+//!   initial state, where the create matches again, so no re-arm edge is lowered (D90). A kill
+//!   while it is open re-arms the pending revert to the full duration and lowers nothing extra
+//!   (owner decision Q2=b, `world_object_revert::ScopeRevertDriver::rearm_open_create`).
 
 use super::{
-    ContentError, FootprintCell, FootprintRelation, LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY,
-    LocalObjectIntentFamily, LocalObjectStateAttributes, LocalObjectStateDefinition,
-    LoweredActionId, MapRevisionRef, PlacementKey, PlacementRef, ProductionKey,
-    ReferenceDefinitionKind, ReferencePlayableContentSource, SpatialAddress, TransitionBinding,
-    TransitionEventOwner, TransitionKey, TypedDefinitionRef,
+    ContentError, FootprintCell, FootprintRelation, LOCAL_OBJECT_CREATE_INTENT_FAMILY,
+    LOCAL_OBJECT_REMOVE_INTENT_FAMILY, LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY,
+    LocalObjectCollisionPresence, LocalObjectIntentFamily, LocalObjectStateAttributes,
+    LocalObjectStateDefinition, LoweredActionId, MapRevisionRef, OwnerCapabilityRequirement,
+    PlacementKey, PlacementRef, ProductionKey, ReferenceDefinitionKind,
+    ReferencePlayableContentSource, SpatialAddress, TransitionBinding, TransitionEventOwner,
+    TransitionKey, TypedDefinitionRef,
 };
 use serde_json::{Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -51,17 +68,48 @@ const ADMITTED_FIELDS: [&str; 9] = [
     "effect",
 ];
 
+/// §10.4: the fields a pre-authored `create` may carry.
+const ADMITTED_CREATE_FIELDS: [&str; 7] = [
+    "kind",
+    "operation",
+    "item",
+    "anchor",
+    "destination",
+    "revert_after_ms",
+    "effect",
+];
+
+/// §10.2: the capability of the synthesized create/remove pair, the one
+/// `LocalObjectRuntime::bind` supports (as `native_entry::accepted::DOOR_OWNER_CAPABILITY`).
+const CREATED_OBJECT_CAPABILITY: &str = "oteryn:runtime.capability.local-object-transition";
+
 /// A named, fail-closed lowering rejection. `action` is the would-be `LoweredActionId`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EncounterMapItemError {
     InvalidEncounter(&'static str),
-    /// §7 open decision 8: a runtime-resolved `at: death_position` has no pre-authored placement.
+    /// §10.3 (OD8): a runtime-resolved `at: death_position` stays rejected until its
+    /// prerequisites land, in every rule, delayed or not.
     DeathPositionNotAdmitted {
         action: String,
     },
-    /// §7 open decision 9: §9 admits only `transform`, never `create` carrying `destination`.
-    CreateWithDestinationNotAdmitted {
+    /// §10.4: a `create` must carry `destination` and `revert_after_ms`.
+    CreateWithoutDestination {
         action: String,
+    },
+    CreateWithoutRevert {
+        action: String,
+    },
+    /// §10.4: reverting a `create` lands on absent, which carries no destination.
+    CreateRevertDestinationNotAdmitted {
+        action: String,
+    },
+    /// §10.4: the created item is not a state of the anchor object's vocabulary.
+    CreatedItemNotDeclared {
+        action: String,
+    },
+    /// §10.4: a `create` anchor starts absent, so no other `map_item` action may share it.
+    CreateAnchorShared {
+        anchor: String,
     },
     OperationNotAdmitted {
         action: String,
@@ -133,10 +181,26 @@ pub struct AdmittedMapItemTransform {
     pub revert_after_ms: Option<u64>,
 }
 
+/// §10.4: one admitted pre-authored `map_item create`, validated against the encounter alone.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AdmittedMapItemCreate {
+    pub action: LoweredActionId,
+    pub anchor: String,
+    pub item: ProductionKey,
+    pub destination: String,
+    pub revert_after_ms: u64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdmittedEncounterMapItems {
     pub encounter: String,
     pub transforms: Vec<AdmittedMapItemTransform>,
+    pub creates: Vec<AdmittedMapItemCreate>,
+}
+
+enum AdmittedMapItem {
+    Transform(AdmittedMapItemTransform),
+    Create(AdmittedMapItemCreate),
 }
 
 /// The per-placement §9 tables lowered for one transform anchor.
@@ -147,6 +211,9 @@ pub struct LoweredPlacementTables {
     pub revert_after_ms: BTreeMap<(TransitionKey, LoweredActionId), u64>,
     /// D91: every transition lowered at this anchor, as `TransitionOrigin::Event` of its owner.
     pub event_transitions: BTreeMap<TransitionKey, TransitionEventOwner>,
+    /// §10.4: the synthesized absent state for a `create` anchor. `None` for a transform anchor,
+    /// whose initial state is the caller's authored natural state.
+    pub initial_state: Option<ProductionKey>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -158,6 +225,11 @@ pub struct LoweredEncounterMapItems {
     /// D90 re-arm forwards (post-revert state -> forward target), one per
     /// `revert_destination`-bearing action.
     pub rearm_transitions: Vec<TransitionBinding>,
+    /// §10.2 absent states to add to their `LocalObject` definition's vocabulary, one per
+    /// `create`.
+    pub absent_states: Vec<(TypedDefinitionRef, LocalObjectStateDefinition)>,
+    /// §10.2 create forwards and their remove inverses, two per `create`.
+    pub create_transitions: Vec<TransitionBinding>,
     /// Keyed by the transform anchor's placement.
     pub placements: BTreeMap<PlacementKey, LoweredPlacementTables>,
     /// Destination anchors; each is one Generic marker placement (`marker_placement`).
@@ -165,14 +237,14 @@ pub struct LoweredEncounterMapItems {
 }
 
 impl LoweredEncounterMapItems {
-    /// Adds the synthesized post-revert states, inverse transitions and re-arm forwards to
-    /// `source` before it is linked; the linker then validates every declared
-    /// `attribute_variant_of`.
+    /// Adds the synthesized post-revert and absent states, inverse transitions, re-arm forwards
+    /// and create/remove pairs to `source` before it is linked; the linker then validates every
+    /// declared `attribute_variant_of` and `absent` marker.
     pub fn apply_to_source(
         &self,
         source: &mut ReferencePlayableContentSource,
     ) -> Result<(), EncounterMapItemError> {
-        for (definition, state) in &self.post_revert_states {
+        for (definition, state) in self.post_revert_states.iter().chain(&self.absent_states) {
             let states = source
                 .definitions
                 .iter_mut()
@@ -182,7 +254,7 @@ impl LoweredEncounterMapItems {
                     _ => None,
                 })
                 .ok_or(EncounterMapItemError::InvalidEncounter(
-                    "post-revert state targets a definition absent from the content",
+                    "synthesized state targets a definition absent from the content",
                 ))?;
             states.push(state.clone());
         }
@@ -192,6 +264,9 @@ impl LoweredEncounterMapItems {
         source
             .transitions
             .extend(self.rearm_transitions.iter().cloned());
+        source
+            .transitions
+            .extend(self.create_transitions.iter().cloned());
         Ok(())
     }
 }
@@ -259,16 +334,14 @@ fn classify(
     action: &str,
     object: &Map<String, Value>,
     anchors: &BTreeSet<String>,
-) -> Result<AdmittedMapItemTransform, EncounterMapItemError> {
+) -> Result<AdmittedMapItem, EncounterMapItemError> {
     let named = || action.to_owned();
     if object.contains_key("at") {
         return Err(EncounterMapItemError::DeathPositionNotAdmitted { action: named() });
     }
     let operation = string_field(object, "operation").unwrap_or_default();
-    if operation == "create" && object.contains_key("destination") {
-        return Err(EncounterMapItemError::CreateWithDestinationNotAdmitted { action: named() });
-    }
-    if operation != "transform" {
+    let create = operation == "create";
+    if operation != "transform" && !create {
         return Err(EncounterMapItemError::OperationNotAdmitted {
             action: named(),
             operation: operation.to_owned(),
@@ -277,9 +350,17 @@ fn classify(
     if object.contains_key("interaction") {
         return Err(EncounterMapItemError::InteractionNotAdmitted { action: named() });
     }
+    if create && object.contains_key("revert_destination") {
+        return Err(EncounterMapItemError::CreateRevertDestinationNotAdmitted { action: named() });
+    }
+    let admitted_fields: &[&str] = if create {
+        &ADMITTED_CREATE_FIELDS
+    } else {
+        &ADMITTED_FIELDS
+    };
     if let Some(field) = object
         .keys()
-        .find(|field| !ADMITTED_FIELDS.contains(&field.as_str()))
+        .find(|field| !admitted_fields.contains(&field.as_str()))
     {
         return Err(EncounterMapItemError::UnsupportedField {
             action: named(),
@@ -300,7 +381,7 @@ fn classify(
         Ok(Some(anchor.to_owned()))
     };
     let anchor = anchor_of("anchor")?.ok_or(EncounterMapItemError::InvalidEncounter(
-        "map_item transform requires a pre-authored anchor",
+        "map_item transform or create requires a pre-authored anchor",
     ))?;
     let revert_after_ms = match object.get("revert_after_ms") {
         None => None,
@@ -308,6 +389,19 @@ fn classify(
             EncounterMapItemError::InvalidEncounter("revert_after_ms must be a positive integer"),
         )?),
     };
+    if create {
+        let destination = anchor_of("destination")?
+            .ok_or(EncounterMapItemError::CreateWithoutDestination { action: named() })?;
+        let revert_after_ms = revert_after_ms
+            .ok_or(EncounterMapItemError::CreateWithoutRevert { action: named() })?;
+        return Ok(AdmittedMapItem::Create(AdmittedMapItemCreate {
+            action: LoweredActionId::new(action)?,
+            anchor,
+            item: item_key(object, "item")?,
+            destination,
+            revert_after_ms,
+        }));
+    }
     let revert_destination = anchor_of("revert_destination")?;
     if revert_destination.is_some() && revert_after_ms.is_none() {
         return Err(EncounterMapItemError::RevertDestinationWithoutRevert { action: named() });
@@ -316,7 +410,7 @@ fn classify(
     if revert_destination.is_some() && destination.is_none() {
         return Err(EncounterMapItemError::RevertDestinationWithoutDestination { action: named() });
     }
-    Ok(AdmittedMapItemTransform {
+    Ok(AdmittedMapItem::Transform(AdmittedMapItemTransform {
         action: LoweredActionId::new(action)?,
         anchor,
         item: item_key(object, "item")?,
@@ -324,14 +418,14 @@ fn classify(
         destination,
         revert_destination,
         revert_after_ms,
-    })
+    }))
 }
 
 fn walk_actions(
     prefix: &str,
     actions: &[Value],
     anchors: &BTreeSet<String>,
-    admitted: &mut Vec<AdmittedMapItemTransform>,
+    admitted: &mut Vec<AdmittedMapItem>,
 ) -> Result<(), EncounterMapItemError> {
     for (index, action) in actions.iter().enumerate() {
         let path = format!("{prefix}/{index}");
@@ -359,8 +453,8 @@ fn walk_actions(
     Ok(())
 }
 
-/// Validates every `map_item` action of one encounter against §9's admitted shape, using the
-/// encounter alone.
+/// Validates every `map_item` action of one encounter against the §9 and §10.4 admitted shapes,
+/// using the encounter alone.
 pub fn admitted_map_item_transforms(
     encounter_json: &str,
 ) -> Result<AdmittedEncounterMapItems, EncounterMapItemError> {
@@ -386,7 +480,7 @@ pub fn admitted_map_item_transforms(
     let rules = encounter.get("rules").and_then(Value::as_array).ok_or(
         EncounterMapItemError::InvalidEncounter("encounter requires rules"),
     )?;
-    let mut transforms = Vec::new();
+    let mut items = Vec::new();
     for rule in rules {
         let rule_key = rule.get("key").and_then(Value::as_str).ok_or(
             EncounterMapItemError::InvalidEncounter("encounter rule requires a key"),
@@ -394,22 +488,42 @@ pub fn admitted_map_item_transforms(
         let actions = rule.get("actions").and_then(Value::as_array).ok_or(
             EncounterMapItemError::InvalidEncounter("encounter rule requires actions"),
         )?;
-        walk_actions(
-            &format!("{key}/{rule_key}"),
-            actions,
-            &anchors,
-            &mut transforms,
-        )?;
+        walk_actions(&format!("{key}/{rule_key}"), actions, &anchors, &mut items)?;
+    }
+    let mut transforms = Vec::new();
+    let mut creates = Vec::new();
+    for item in items {
+        match item {
+            AdmittedMapItem::Transform(transform) => transforms.push(transform),
+            AdmittedMapItem::Create(create) => creates.push(create),
+        }
+    }
+    // §10.4: a create anchor starts absent; any other action at it would need another start.
+    for create in &creates {
+        let sharing = creates
+            .iter()
+            .filter(|other| other.anchor == create.anchor)
+            .count()
+            + transforms
+                .iter()
+                .filter(|transform| transform.anchor == create.anchor)
+                .count();
+        if sharing > 1 {
+            return Err(EncounterMapItemError::CreateAnchorShared {
+                anchor: create.anchor.clone(),
+            });
+        }
     }
     Ok(AdmittedEncounterMapItems {
         encounter: key.to_owned(),
         transforms,
+        creates,
     })
 }
 
-/// Lowers every admitted `map_item transform` of one encounter against `source`, whose
-/// `LocalObject` definitions and transitions the transform anchors already carry.
-/// `anchor_objects` names the `LocalObject` definition authored at each transform anchor.
+/// Lowers every admitted `map_item transform` and pre-authored `create` of one encounter against
+/// `source`, whose `LocalObject` definitions (and, for a transform, transitions) the anchors
+/// already carry. `anchor_objects` names the `LocalObject` definition authored at each anchor.
 pub fn lower_map_item_transforms(
     encounter_json: &str,
     source: &ReferencePlayableContentSource,
@@ -421,6 +535,8 @@ pub fn lower_map_item_transforms(
         post_revert_states: Vec::new(),
         inverse_transitions: Vec::new(),
         rearm_transitions: Vec::new(),
+        absent_states: Vec::new(),
+        create_transitions: Vec::new(),
         placements: BTreeMap::new(),
         destination_markers: BTreeSet::new(),
     };
@@ -489,6 +605,7 @@ pub fn lower_map_item_transforms(
                     state_attributes: BTreeMap::new(),
                     revert_after_ms: BTreeMap::new(),
                     event_transitions: BTreeMap::new(),
+                    initial_state: None,
                 });
         // D91: the owning event commits the forward; players never USE it at this anchor.
         tables
@@ -530,6 +647,7 @@ pub fn lower_map_item_transforms(
                 key: post_revert.clone(),
                 collision: source_collision,
                 attribute_variant_of: Some(forward.source_state.clone()),
+                absent: false,
             },
         ));
         let revert = TransitionKey::new(&format!("{action}/revert"))?;
@@ -574,7 +692,115 @@ pub fn lower_map_item_transforms(
             },
         );
     }
+    for create in &admitted.creates {
+        lower_create(
+            create,
+            &admitted.encounter,
+            &owner,
+            source,
+            anchor_objects,
+            &mut lowered,
+        )?;
+    }
     Ok(lowered)
+}
+
+/// §10.2/§10.4: one pre-authored `create` onto its anchor placement. Admission already made the
+/// anchor exclusive to this action.
+fn lower_create(
+    create: &AdmittedMapItemCreate,
+    encounter: &str,
+    owner: &TransitionEventOwner,
+    source: &ReferencePlayableContentSource,
+    anchor_objects: &BTreeMap<String, TypedDefinitionRef>,
+    lowered: &mut LoweredEncounterMapItems,
+) -> Result<(), EncounterMapItemError> {
+    let action = create.action.as_str();
+    let unbound = || EncounterMapItemError::UnboundAnchor {
+        action: action.to_owned(),
+        anchor: create.anchor.clone(),
+    };
+    let definition = anchor_objects.get(&create.anchor).ok_or_else(unbound)?;
+    let states = source
+        .definitions
+        .iter()
+        .find(|candidate| &candidate.definition == definition)
+        .and_then(|candidate| match &candidate.kind {
+            ReferenceDefinitionKind::LocalObjectStates(states) => Some(states),
+            _ => None,
+        })
+        .ok_or_else(unbound)?;
+    // The present state is the created item's own state (§9 convention), never an absent one.
+    if !states
+        .iter()
+        .any(|state| state.key == create.item && !state.absent)
+    {
+        return Err(EncounterMapItemError::CreatedItemNotDeclared {
+            action: action.to_owned(),
+        });
+    }
+    let absent = ProductionKey::new(&format!("{action}/absent"))?;
+    lowered.absent_states.push((
+        definition.clone(),
+        LocalObjectStateDefinition {
+            key: absent.clone(),
+            collision: LocalObjectCollisionPresence::Absent,
+            attribute_variant_of: None,
+            absent: true,
+        },
+    ));
+    let capability = OwnerCapabilityRequirement {
+        capability_key: ProductionKey::new(CREATED_OBJECT_CAPABILITY)?,
+    };
+    let forward = TransitionKey::new(&format!("{action}/create"))?;
+    let inverse = TransitionKey::new(&format!("{action}/remove"))?;
+    for (key, family, from, to) in [
+        (
+            &forward,
+            LOCAL_OBJECT_CREATE_INTENT_FAMILY,
+            &absent,
+            &create.item,
+        ),
+        (
+            &inverse,
+            LOCAL_OBJECT_REMOVE_INTENT_FAMILY,
+            &create.item,
+            &absent,
+        ),
+    ] {
+        lowered.create_transitions.push(TransitionBinding {
+            key: key.clone(),
+            definition: definition.clone(),
+            source_state: from.clone(),
+            normalized_intent_family: ProductionKey::new(family)?,
+            target_state: to.clone(),
+            owner_capability: capability.clone(),
+            policy_guard_refs: Vec::new(),
+        });
+    }
+    let destination = anchor_placement_key(encounter, &create.destination)?;
+    lowered.destination_markers.insert(destination.clone());
+    let placement = anchor_placement_key(encounter, &create.anchor)?;
+    lowered.placements.insert(
+        placement,
+        LoweredPlacementTables {
+            definition: definition.clone(),
+            state_attributes: BTreeMap::from([(
+                create.item.clone(),
+                LocalObjectStateAttributes {
+                    destination: Some(destination),
+                },
+            )]),
+            revert_after_ms: BTreeMap::from([(
+                (forward.clone(), create.action.clone()),
+                create.revert_after_ms,
+            )]),
+            // D91: the encounter commits the create, and its revert driver the remove.
+            event_transitions: BTreeMap::from([(forward, owner.clone()), (inverse, owner.clone())]),
+            initial_state: Some(absent),
+        },
+    );
+    Ok(())
 }
 
 #[cfg(test)]
@@ -708,6 +934,7 @@ mod tests {
             key: ProductionKey::new(key)?,
             collision,
             attribute_variant_of: variant_of.map(ProductionKey::new).transpose()?,
+            absent: false,
         })
     }
 
@@ -1555,13 +1782,14 @@ mod tests {
             Err(EncounterMapItemError::DeathPositionNotAdmitted { action: action() })
         );
 
+        // §10.4: the duke action as a `create` still carries `revert_destination`.
         let create = edit_first(|object| {
             object.insert("operation".to_owned(), Value::from("create"));
             object.remove("into");
         })?;
         assert_eq!(
             lower(&create)?,
-            Err(EncounterMapItemError::CreateWithDestinationNotAdmitted { action: action() })
+            Err(EncounterMapItemError::CreateRevertDestinationNotAdmitted { action: action() })
         );
 
         let interaction = edit_first(|object| {
@@ -1743,18 +1971,20 @@ mod tests {
     }
 
     #[test]
-    fn open_decision_samples_stay_rejected_and_covered_samples_are_admitted() -> TestResult {
+    fn od8_samples_stay_rejected_and_od9_and_covered_samples_are_admitted() -> TestResult {
         for (name, json) in OPEN_DECISION_SAMPLES {
             let result = admitted_map_item_transforms(json);
             let open_decision_9 = matches!(name, "death_priest_shargon" | "the_ravager");
-            let rejected = match &result {
-                Err(EncounterMapItemError::CreateWithDestinationNotAdmitted { .. }) => {
-                    open_decision_9
+            let expected = match &result {
+                // §10.4: OD9 is admitted as one `create` and no transform.
+                Ok(admitted) => {
+                    open_decision_9 && admitted.transforms.is_empty() && admitted.creates.len() == 1
                 }
+                // §10.3: OD8 stays rejected fail-closed.
                 Err(EncounterMapItemError::DeathPositionNotAdmitted { .. }) => !open_decision_9,
                 _ => false,
             };
-            assert!(rejected, "{name}: {result:?}");
+            assert!(expected, "{name}: {result:?}");
         }
 
         // `the_lord_of_the_lice` also carries a presentational `effect`, which is ignored.
@@ -1820,6 +2050,362 @@ mod tests {
         let id = LoweredActionId::new(ACTION_A)?;
         assert_eq!(a.revert_after_ms(&key, &id), Some(1_000));
         assert_eq!(b.revert_after_ms(&key, &id), None);
+        Ok(())
+    }
+
+    // §10.4 (OD9): the pre-authored `CREATE` teleporters, `(encounter key, exit anchor, JSON)`.
+    const OD9_SAMPLES: [(&str, &str, &str); 2] = [
+        (
+            "canary:encounter/death_priest_shargon",
+            "shargon_exit",
+            OPEN_DECISION_SAMPLES[0].1,
+        ),
+        (
+            "canary:encounter/the_ravager",
+            "ravager_exit",
+            OPEN_DECISION_SAMPLES[1].1,
+        ),
+    ];
+
+    /// The OD9 action id: `<encounter key>/<rule key>/0`, the rule being `<boss>_death`.
+    fn od9_action(key: &str) -> TestResult<String> {
+        let boss = key.rsplit('/').next().ok_or(fixture("encounter key"))?;
+        Ok(format!("{key}/{boss}_death/0"))
+    }
+
+    /// An OD9 encounter lowered against a teleporter definition that declares only the created
+    /// item, linked, with its anchor (at the lowered initial state) and markers injected.
+    fn od9_content(
+        encounter: &str,
+        key: &str,
+    ) -> TestResult<(CanonicalReferencePlayableContent, LoweredEncounterMapItems)> {
+        let mut source = source_with(
+            vec![state(
+                SEALED_ITEM,
+                LocalObjectCollisionPresence::Absent,
+                None,
+            )?],
+            vec![],
+        )?;
+        let lowered = lower_map_item_transforms(encounter, &source, &duke_anchors()?)?;
+        lowered.apply_to_source(&mut source)?;
+        let mut content = link_reference_playable(source)?;
+        let anchor = anchor_placement_key(key, "exit_teleporter")?;
+        let tables = lowered
+            .placements
+            .get(&anchor)
+            .ok_or(fixture("lowered anchor tables"))?;
+        let mut placement = placement_at(&content, anchor, teleporter()?, 100)?;
+        placement.local_object_initial_state = tables.initial_state.clone();
+        placement.local_object_state_attributes = tables.state_attributes.clone();
+        placement.local_object_revert_after_ms = tables.revert_after_ms.clone();
+        placement.local_object_event_transitions = tables.event_transitions.clone();
+        let mut placements = vec![placement];
+        for (x, marker) in (200..).zip(&lowered.destination_markers) {
+            placements.push(placement_at(
+                &content,
+                marker.clone(),
+                marker_definition()?,
+                x,
+            )?);
+        }
+        content.placements = placements;
+        Ok((content, lowered))
+    }
+
+    #[test]
+    fn od9_samples_lower_to_an_absent_start_and_bind_the_create_remove_pair() -> TestResult {
+        for (key, exit, encounter) in OD9_SAMPLES {
+            let action = od9_action(key)?;
+            let absent = ProductionKey::new(&format!("{action}/absent"))?;
+            let create = TransitionKey::new(&format!("{action}/create"))?;
+            let remove = TransitionKey::new(&format!("{action}/remove"))?;
+            let owner = TransitionEventOwner::new(key)?;
+            let anchor = anchor_placement_key(key, "exit_teleporter")?;
+            let exit = anchor_placement_key(key, exit)?;
+            let (content, lowered) = od9_content(encounter, key)?;
+
+            // The absent state: `absent: true`, collision Absent, no variant, no attributes.
+            assert_eq!(
+                lowered.absent_states,
+                vec![(
+                    teleporter()?,
+                    LocalObjectStateDefinition {
+                        key: absent.clone(),
+                        collision: LocalObjectCollisionPresence::Absent,
+                        attribute_variant_of: None,
+                        absent: true,
+                    },
+                )]
+            );
+            // The create/remove pair with the CREATE/REMOVE families, and no §9 edges.
+            let pair = lowered
+                .create_transitions
+                .iter()
+                .map(|edge| {
+                    (
+                        edge.key.clone(),
+                        edge.source_state.as_str().to_owned(),
+                        edge.normalized_intent_family.as_str().to_owned(),
+                        edge.target_state.as_str().to_owned(),
+                    )
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                pair,
+                vec![
+                    (
+                        create.clone(),
+                        absent.as_str().to_owned(),
+                        LOCAL_OBJECT_CREATE_INTENT_FAMILY.to_owned(),
+                        SEALED_ITEM.to_owned(),
+                    ),
+                    (
+                        remove.clone(),
+                        SEALED_ITEM.to_owned(),
+                        LOCAL_OBJECT_REMOVE_INTENT_FAMILY.to_owned(),
+                        absent.as_str().to_owned(),
+                    ),
+                ]
+            );
+            assert!(lowered.post_revert_states.is_empty());
+            assert!(lowered.inverse_transitions.is_empty());
+            assert!(lowered.rearm_transitions.is_empty());
+            assert_eq!(lowered.destination_markers, BTreeSet::from([exit.clone()]));
+            let tables = lowered
+                .placements
+                .get(&anchor)
+                .ok_or(fixture("anchor tables"))?;
+            assert_eq!(tables.initial_state, Some(absent.clone()));
+            assert_eq!(
+                tables.state_attributes,
+                BTreeMap::from([(
+                    ProductionKey::new(SEALED_ITEM)?,
+                    LocalObjectStateAttributes {
+                        destination: Some(exit.clone()),
+                    },
+                )])
+            );
+            assert_eq!(
+                tables.revert_after_ms,
+                BTreeMap::from([((create.clone(), LoweredActionId::new(&action)?), 300_000)])
+            );
+            assert_eq!(
+                tables.event_transitions,
+                BTreeMap::from([
+                    (create.clone(), owner.clone()),
+                    (remove.clone(), owner.clone())
+                ])
+            );
+
+            // `bind` accepts remove as the unique inverse of create under the unwidened rule.
+            // Before any kill the placement is absent, blocks nothing and exposes no destination.
+            let mut runtime = bind(
+                &content,
+                anchor.as_str(),
+                &[create.as_str(), remove.as_str()],
+            )?;
+            assert_eq!(runtime.revert_inverse(&create), Some(&remove));
+            assert_eq!(runtime.state_key(), &absent);
+            assert!(runtime.is_absent());
+            assert_eq!(runtime.attributes(), None);
+            assert!(runtime.blocking_cells().is_empty());
+            for edge in [&create, &remove] {
+                assert_eq!(
+                    runtime.transition_origin(edge),
+                    TransitionOrigin::Event(owner.clone())
+                );
+            }
+            // Stepping on or using the anchor does nothing, and no session command commits.
+            assert_eq!(
+                runtime.attempt_use(0, &BTreeSet::new())?,
+                crate::world_runtime::LocalObjectUseOutcome::NothingToUse
+            );
+            let mut ingress = CommandIngress::new();
+            assert!(invoke(&mut runtime, &mut ingress, 1, create.as_str()).is_err());
+            assert_eq!(ingress.outstanding(), 0);
+            assert_eq!((runtime.state_key(), runtime.revision()), (&absent, 0));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn od9_create_rejections_and_od8_in_a_delayed_rule_stay_named() -> TestResult {
+        let (key, _, encounter) = OD9_SAMPLES[0];
+        let action = || od9_action(key);
+        let edit = |edit: &dyn Fn(&mut Value) -> Option<()>| -> TestResult<String> {
+            let mut json: Value = serde_json::from_str(encounter)?;
+            edit(&mut json).ok_or(fixture("OD9 sample edit"))?;
+            Ok(serde_json::to_string(&json)?)
+        };
+        let edit_create = |change: &dyn Fn(&mut Map<String, Value>)| {
+            edit(&|json| {
+                change(json.pointer_mut("/rules/0/actions/0")?.as_object_mut()?);
+                Some(())
+            })
+        };
+        let lower = |json: &str| {
+            let source = source_with(
+                vec![state(
+                    SEALED_ITEM,
+                    LocalObjectCollisionPresence::Absent,
+                    None,
+                )?],
+                vec![],
+            )?;
+            Ok::<_, Box<dyn Error>>(lower_map_item_transforms(json, &source, &duke_anchors()?))
+        };
+
+        let revert_destination = edit_create(&|object| {
+            object.insert("revert_destination".to_owned(), Value::from("shargon_exit"));
+        })?;
+        assert_eq!(
+            lower(&revert_destination)?,
+            Err(EncounterMapItemError::CreateRevertDestinationNotAdmitted { action: action()? })
+        );
+        let interaction = edit_create(&|object| {
+            object.insert(
+                "interaction".to_owned(),
+                Value::from("canary:interaction/4951"),
+            );
+        })?;
+        assert_eq!(
+            lower(&interaction)?,
+            Err(EncounterMapItemError::InteractionNotAdmitted { action: action()? })
+        );
+        let into = edit_create(&|object| {
+            object.insert(
+                "into".to_owned(),
+                serde_json::json!({"family": "Item", "key": OPEN_ITEM}),
+            );
+        })?;
+        assert_eq!(
+            lower(&into)?,
+            Err(EncounterMapItemError::UnsupportedField {
+                action: action()?,
+                field: "into".to_owned(),
+            })
+        );
+        let no_destination = edit_create(&|object| {
+            object.remove("destination");
+        })?;
+        assert_eq!(
+            lower(&no_destination)?,
+            Err(EncounterMapItemError::CreateWithoutDestination { action: action()? })
+        );
+        let no_revert = edit_create(&|object| {
+            object.remove("revert_after_ms");
+        })?;
+        assert_eq!(
+            lower(&no_revert)?,
+            Err(EncounterMapItemError::CreateWithoutRevert { action: action()? })
+        );
+        let undeclared = edit_create(&|object| {
+            object.insert(
+                "item".to_owned(),
+                serde_json::json!({"family": "Item", "key": OPEN_ITEM}),
+            );
+        })?;
+        assert_eq!(
+            lower(&undeclared)?,
+            Err(EncounterMapItemError::CreatedItemNotDeclared { action: action()? })
+        );
+        let shared = edit(&|json| {
+            let actions = json.pointer_mut("/rules/0/actions")?.as_array_mut()?;
+            let copy = actions.first()?.clone();
+            actions.push(copy);
+            Some(())
+        })?;
+        assert_eq!(
+            lower(&shared)?,
+            Err(EncounterMapItemError::CreateAnchorShared {
+                anchor: "exit_teleporter".to_owned(),
+            })
+        );
+
+        // §10.3 (OD8): `at: death_position` stays rejected, also in a delayed rule.
+        let delayed_death_position = edit(&|json| {
+            json.pointer_mut("/rules/0")?
+                .as_object_mut()?
+                .insert("delay_ms".to_owned(), Value::from(1_000));
+            let object = json.pointer_mut("/rules/0/actions/0")?.as_object_mut()?;
+            object.remove("anchor");
+            object.insert("at".to_owned(), Value::from("death_position"));
+            Some(())
+        })?;
+        assert_eq!(
+            lower(&delayed_death_position)?,
+            Err(EncounterMapItemError::DeathPositionNotAdmitted { action: action()? })
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn the_absent_marker_is_validated_fail_closed_at_link_and_bind() -> TestResult {
+        let absent = |collision, variant_of: Option<&str>| -> TestResult<_> {
+            let mut state = state("oteryn:reference.state.absent", collision, variant_of)?;
+            state.absent = true;
+            Ok(state)
+        };
+        let link = |states: Vec<LocalObjectStateDefinition>| -> TestResult<_> {
+            Ok(link_reference_playable(source_with(states, vec![])?))
+        };
+        let refused = |result: Result<CanonicalReferencePlayableContent, ContentError>,
+                       reason: &str| {
+            matches!(result, Err(ContentError::InvalidArtifact(actual)) if actual == reason)
+        };
+
+        // An absent state is collision Absent and never an attribute variant.
+        assert!(refused(
+            link(vec![absent(LocalObjectCollisionPresence::Present, None)?])?,
+            "reference-playable local object absent state must declare collision Absent"
+        ));
+        assert!(refused(
+            link(vec![
+                state(SEALED_ITEM, LocalObjectCollisionPresence::Absent, None)?,
+                absent(LocalObjectCollisionPresence::Absent, Some(SEALED_ITEM))?,
+            ])?,
+            "reference-playable local object absent state must not be an attribute variant"
+        ));
+        // No state is an attribute variant of an absent state (nothing is rendered there).
+        assert!(refused(
+            link(vec![
+                absent(LocalObjectCollisionPresence::Absent, None)?,
+                state(
+                    SEALED_ITEM,
+                    LocalObjectCollisionPresence::Absent,
+                    Some("oteryn:reference.state.absent"),
+                )?,
+            ])?,
+            "reference-playable local object attribute variant must not name an absent base state"
+        ));
+
+        // A placement carrying attributes for an absent state never reaches a bound runtime.
+        let (key, exit, encounter) = OD9_SAMPLES[0];
+        let action = od9_action(key)?;
+        let (mut content, _) = od9_content(encounter, key)?;
+        let anchor = anchor_placement_key(key, "exit_teleporter")?;
+        let placement = content
+            .placements
+            .iter_mut()
+            .find(|placement| placement.key == anchor)
+            .ok_or(fixture("OD9 anchor placement"))?;
+        placement.local_object_state_attributes.insert(
+            ProductionKey::new(&format!("{action}/absent"))?,
+            LocalObjectStateAttributes {
+                destination: Some(anchor_placement_key(key, exit)?),
+            },
+        );
+        let bound = bind(
+            &content,
+            anchor.as_str(),
+            &[&format!("{action}/create"), &format!("{action}/remove")],
+        );
+        assert!(matches!(
+            bound,
+            Err(WorldRuntimeError::Content(ContentError::InvalidArtifact(reason)))
+                if reason == "reference-playable placement declares attributes for an absent local object state"
+        ));
         Ok(())
     }
 }

@@ -1,6 +1,9 @@
 //! Production pre-native client composition.
 //! Terminal evidence is revalidated after the MPL-2.0 and Linux lint corrections.
 
+pub mod input;
+pub mod scene;
+
 use oteryn_client_runtime::{ClientRuntime, RuntimeError};
 use oteryn_foundation::ProcessGeneration;
 use oteryn_identity::{IdentityError, PkceMaterial};

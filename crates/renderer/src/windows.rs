@@ -1,4 +1,8 @@
-use crate::{RendererError, SurfaceDecision, SurfaceEvent, SurfaceSize, SurfaceState};
+use crate::scene_gpu::SceneGpu;
+use crate::{
+    AtlasImage, RendererError, SpriteBatch, SurfaceDecision, SurfaceEvent, SurfaceSize,
+    SurfaceState, TileBatch,
+};
 use oteryn_foundation::ProcessGeneration;
 
 pub struct WindowsRenderer<T>
@@ -13,6 +17,15 @@ where
     queue: wgpu::Queue,
     configuration: Option<wgpu::SurfaceConfiguration>,
     state: SurfaceState,
+    atlas: Option<AtlasImage>,
+    scene: Option<SceneGpu>,
+}
+
+/// Tile and sprite batches for one frame; sprites are drawn over tiles.
+#[derive(Clone, Copy)]
+struct FrameBatches<'a> {
+    tiles: &'a TileBatch,
+    sprites: &'a SpriteBatch,
 }
 
 impl<T> WindowsRenderer<T>
@@ -58,6 +71,8 @@ where
             queue,
             configuration: None,
             state: SurfaceState::new(process_generation),
+            atlas: None,
+            scene: None,
         };
         renderer.resize(process_generation, width, height)?;
         Ok(renderer)
@@ -101,13 +116,45 @@ where
         self.execute(resize, generation)
     }
 
+    /// Installs the atlas the batches sample. Required before `render_batches`.
+    pub fn set_atlas(&mut self, atlas: AtlasImage) {
+        self.atlas = Some(atlas);
+        self.scene = None;
+    }
+
+    /// Clears the surface.
     pub fn render(&mut self, generation: ProcessGeneration) -> Result<(), RendererError> {
+        self.render_frame(generation, None)
+    }
+
+    /// Clears the surface, then draws the tile batch and the sprite batch over it.
+    pub fn render_batches(
+        &mut self,
+        generation: ProcessGeneration,
+        tiles: &TileBatch,
+        sprites: &SpriteBatch,
+    ) -> Result<(), RendererError> {
+        self.render_frame(generation, Some(FrameBatches { tiles, sprites }))
+    }
+
+    fn render_frame(
+        &mut self,
+        generation: ProcessGeneration,
+        batches: Option<FrameBatches<'_>>,
+    ) -> Result<(), RendererError> {
+        if batches.is_some() && self.atlas.is_none() {
+            return Err(RendererError::Validation);
+        }
         let frame = crate::resources::acquire_frame(&self.state, generation, || {
             self.surface.get_current_texture()
         })?;
         match frame {
-            wgpu::CurrentSurfaceTexture::Success(frame) => self.present(frame, generation, false),
-            wgpu::CurrentSurfaceTexture::Suboptimal(frame) => self.present(frame, generation, true),
+            wgpu::CurrentSurfaceTexture::Success(frame) => {
+                self.present(frame, generation, false, batches)
+            }
+            wgpu::CurrentSurfaceTexture::Suboptimal(frame) => {
+                self.present(frame, generation, true, batches)
+            }
             wgpu::CurrentSurfaceTexture::Timeout => {
                 let decision = self.state.apply(SurfaceEvent::Timeout { generation })?;
                 self.execute(decision, generation)
@@ -138,7 +185,9 @@ where
         frame: wgpu::SurfaceTexture,
         generation: ProcessGeneration,
         suboptimal: bool,
+        batches: Option<FrameBatches<'_>>,
     ) -> Result<(), RendererError> {
+        self.prepare_scene(batches)?;
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -162,11 +211,14 @@ where
             },
         })];
         {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("oteryn-renderer-clear-pass"),
                 color_attachments: &attachments,
                 ..wgpu::RenderPassDescriptor::default()
             });
+            if let (Some(batches), Some(scene)) = (batches, &self.scene) {
+                scene.draw(&mut render_pass, batches.tiles, batches.sprites);
+            }
         }
         let _submission = self.queue.submit([encoder.finish()]);
         self.queue.present(frame);
@@ -176,6 +228,38 @@ where
             suboptimal,
         })?;
         self.execute(decision, generation)
+    }
+
+    /// Builds (or rebuilds after a surface format change) the scene resources and uploads the
+    /// batches. Runs before the render pass so the pass only records draws.
+    fn prepare_scene(&mut self, batches: Option<FrameBatches<'_>>) -> Result<(), RendererError> {
+        let Some(batches) = batches else {
+            return Ok(());
+        };
+        let (Some(atlas), Some(configuration)) = (&self.atlas, &self.configuration) else {
+            return Err(RendererError::Validation);
+        };
+        if self
+            .scene
+            .as_ref()
+            .is_none_or(|scene| scene.format() != configuration.format)
+        {
+            self.scene = Some(SceneGpu::new(
+                &self.device,
+                &self.queue,
+                configuration.format,
+                atlas,
+            ));
+        }
+        if let Some(scene) = &self.scene {
+            scene.upload(
+                &self.queue,
+                self.state.size(),
+                batches.tiles,
+                batches.sprites,
+            );
+        }
+        Ok(())
     }
 
     fn execute(

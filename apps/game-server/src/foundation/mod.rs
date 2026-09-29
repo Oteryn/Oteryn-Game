@@ -7,21 +7,27 @@ mod admission {
 mod admission_facade;
 pub mod fnd04_verifier;
 // AI-1 (#162; GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.2): the Channel owner
-// timer lane (FND-03 §10). Not yet consumed outside its own tests: AI-2/AI-3 wire it into
-// `ChannelRuntimeV1`'s owner cycle from their own owned paths.
+// timer lane (FND-03 §10). AI-3 (§4.4) is the first consumer outside this module's own tests
+// (`ai::think::{ThinkFamily, ThinkOccurrence, ThinkSequenceTracker, schedule_next_think}`), so
+// this module is now `pub(crate)` -- a pure visibility widening, no behavior change. Full live
+// wiring into `ChannelRuntimeV1`'s owner cycle still awaits a `foundation`-owned follow-up:
+// `ScopeRuntimeFence`'s own scope-bound constructor (`from_external_grant`/`with_scope`) stays
+// private to this module, so no outside caller can yet obtain a fence to schedule/drain with.
 #[allow(dead_code)]
-mod owner_timer;
+pub(crate) mod owner_timer;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
-    CarrierError, ChannelContentPin, ChannelRuntimeV1, CommittedLethalReceipt, ControlLossMark,
-    CreatureDeathOccurrenceKey, CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath,
-    CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition,
-    ExactActorRef, FirstEntryPosition, MovementLocalPosition, MovementPositionContext,
-    MovementPositionSnapshot, OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation,
-    RuntimeCorpseProjection,
+    ABILITY01_EFFECT_PLAN_ENTRIES_MAX, AttackerCommand,
+    COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX,
+    COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX, CarrierError, ChannelContentPin,
+    ChannelRuntimeV1, CommittedLethalReceipt, ControlLossMark, CreatureDeathOccurrenceKey,
+    CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit,
+    CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition,
+    MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot, OwnerDamageCommand,
+    OwnerDamageResult, PlayerActorReservation, RuntimeCorpseProjection,
 };
 #[cfg(test)]
 #[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.

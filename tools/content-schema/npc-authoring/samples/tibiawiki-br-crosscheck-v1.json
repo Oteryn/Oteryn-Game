@@ -2,9 +2,9 @@
  "close_tiles": 10,
  "evidence": "REFERENCE_CROSSCHECK_ONLY",
  "inputs": {
-  "admission_sha256": "ba0420e31d7ca2224bde87d0bb862905dbcb0c7607990ae9a1d33ccf6fb74599",
-  "candidates_sha256": "56ec168437adfb6644fe15cf711edfd259f6d8f038b2f44a162860ea4e006191",
-  "dialogues_sha256": "74eabaacff26ed25894e8156d642aa99746f153e7b1e1c0df8d3a68a8cb791f6",
+  "admission_sha256": "44d11c4cb3075c7bf54d43f968e9d366da1e985bafdafc0fe342571f095c898b",
+  "candidates_sha256": "16e6ec0b41e228176da0c021c1278801c09e48f0378a9820541c698924b48589",
+  "dialogues_sha256": "bb1f72f371b86ebd294d4eea20d623f94c858b3155a203cedf9a6b262536cc68",
   "facts_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
@@ -5140,6 +5140,25 @@
      6
     ],
     "status": "CLOSE"
+   }
+  },
+  {
+   "br": {
+    "pageid": 67603,
+    "revid": 441508,
+    "title": "Captain Corsarah"
+   },
+   "dialogue": {
+    "br_lines": 7,
+    "matched": 7,
+    "near": 0,
+    "status": "CHECKED",
+    "texts": 11
+   },
+   "name": "Captain Corsarah",
+   "npc": "oteryn:npc.captain_corsarah",
+   "position": {
+    "status": "MATCH"
    }
   },
   {
@@ -15349,6 +15368,22 @@
   },
   {
    "br": {
+    "pageid": 67594,
+    "revid": 440493,
+    "title": "Javala"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 8
+   },
+   "name": "Javala",
+   "npc": "oteryn:npc.javala",
+   "position": {
+    "status": "MATCH"
+   }
+  },
+  {
+   "br": {
     "pageid": 11536,
     "revid": 357212,
     "title": "Jean Claude"
@@ -18309,6 +18344,25 @@
      "SellToPlayer:spectral bolt"
     ],
     "status": "DIFFER"
+   }
+  },
+  {
+   "br": {
+    "pageid": 67591,
+    "revid": 441510,
+    "title": "Mayor Pocaro"
+   },
+   "dialogue": {
+    "br_lines": 22,
+    "matched": 14,
+    "near": 5,
+    "status": "CHECKED",
+    "texts": 41
+   },
+   "name": "Mayor Pocaro",
+   "npc": "oteryn:npc.mayor_pocaro",
+   "position": {
+    "status": "MATCH"
    }
   },
   {
@@ -21642,6 +21696,35 @@
      }
     ],
     "status": "DIFFER"
+   }
+  },
+  {
+   "br": {
+    "pageid": 67602,
+    "revid": 440501,
+    "title": "Pescadu"
+   },
+   "dialogue": {
+    "br_lines": 2,
+    "matched": 4,
+    "near": 0,
+    "status": "CHECKED",
+    "texts": 4
+   },
+   "name": "Pescadu",
+   "npc": "oteryn:npc.pescadu",
+   "position": {
+    "br": [
+     34021,
+     32505,
+     7
+    ],
+    "ours": [
+     34020,
+     32505,
+     7
+    ],
+    "status": "NEAR"
    }
   },
   {
@@ -26899,6 +26982,25 @@
   },
   {
    "br": {
+    "pageid": 67597,
+    "revid": 440496,
+    "title": "Thorim"
+   },
+   "dialogue": {
+    "br_lines": 2,
+    "matched": 4,
+    "near": 0,
+    "status": "CHECKED",
+    "texts": 4
+   },
+   "name": "Thorim",
+   "npc": "oteryn:npc.thorim",
+   "position": {
+    "status": "MATCH"
+   }
+  },
+  {
+   "br": {
     "pageid": 12089,
     "revid": 436898,
     "title": "Thorwulf"
@@ -28699,6 +28801,32 @@
   },
   {
    "br": {
+    "pageid": 67587,
+    "revid": 440488,
+    "title": "Wayland Smythers"
+   },
+   "dialogue": {
+    "status": "NO_BR_TRANSCRIPT",
+    "texts": 27
+   },
+   "name": "Wayland Smythers",
+   "npc": "oteryn:npc.wayland_smythers",
+   "position": {
+    "br": [
+     32960,
+     32075,
+     6
+    ],
+    "ours": [
+     32961,
+     32076,
+     6
+    ],
+    "status": "NEAR"
+   }
+  },
+  {
+   "br": {
     "pageid": 26429,
     "revid": 353777,
     "title": "Weaponmaster"
@@ -30478,24 +30606,24 @@
  ],
  "schema": "OTERYN_NPC_TIBIAWIKI_BR_CROSSCHECK/v1",
  "totals": {
-  "dialogue:admitted": 701,
+  "dialogue:admitted": 707,
   "dialogue:br_only": 178,
-  "dialogue:checked": 368,
-  "dialogue:matched": 2856,
-  "dialogue:near": 348,
+  "dialogue:checked": 372,
+  "dialogue:matched": 2885,
+  "dialogue:near": 353,
   "dialogue:no_br_page": 8,
   "dialogue:no_br_page_texts": 64,
-  "dialogue:no_br_transcript": 325,
-  "dialogue:no_br_transcript_texts": 2699,
+  "dialogue:no_br_transcript": 327,
+  "dialogue:no_br_transcript_texts": 2734,
   "dialogue:no_text_matched": 65,
-  "dialogue:texts": 5851,
+  "dialogue:texts": 5911,
   "matched_by_position_alias": 8,
   "no_br_page": 14,
-  "npcs": 1088,
+  "npcs": 1094,
   "position:CLOSE": 98,
-  "position:MATCH": 230,
+  "position:MATCH": 234,
   "position:MISMATCH": 36,
-  "position:NEAR": 680,
+  "position:NEAR": 682,
   "position:NO_BR_POSITION": 1,
   "position:NO_PLACEMENT": 2,
   "position:OTHER_FLOOR": 27,

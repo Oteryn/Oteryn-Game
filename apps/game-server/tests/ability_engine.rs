@@ -17,6 +17,17 @@ mod foundation {
         pub(crate) health_before: i64,
         pub(crate) health_after: i64,
     }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct CharacterId;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct CommandRef;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct AttackerCommand;
+    impl AttackerCommand {
+        pub(crate) const fn new(_: CharacterId, _: u64, _: CommandRef, _: u16) -> Self {
+            Self
+        }
+    }
     pub(crate) struct OwnerDamageCommand<'a> {
         pub(crate) target: &'a [u8],
         pub(crate) occurrence: &'a [u8],
@@ -29,9 +40,10 @@ mod foundation {
     }
     pub(crate) struct CurrentOwnerExactActorCommit<'a>(pub(crate) &'a mut Option<Vec<u8>>);
     impl CurrentOwnerExactActorCommit<'_> {
-        pub(crate) fn commit_damage(
+        pub(crate) fn commit_damage_for_attacker(
             &mut self,
             _actor: ExactActorRef,
+            _attacker: AttackerCommand,
             command: OwnerDamageCommand<'_>,
         ) -> Result<OwnerDamageResult, CarrierError> {
             if self.0.is_some() {

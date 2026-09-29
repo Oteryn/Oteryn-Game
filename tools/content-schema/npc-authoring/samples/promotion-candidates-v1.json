@@ -31876,6 +31876,79 @@
    "arbitration": [],
    "identity": {
     "family": "NPC",
+    "key": "oteryn:npc.captain_corsarah",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 1
+   },
+   "name": "Captain Corsarah",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 34010,
+      "y": 32475,
+      "z": 6
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 1,
+     "body": 79,
+     "feet": 114,
+     "head": 40,
+     "legs": 100,
+     "look_type": 151,
+     "mount": 0
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/captain_corsarah",
+     "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+     "sha256": "2010a7bb0d69b06a70a08256496e6df75af918b0c1c8253496128292b9c15ace"
+    }
+   },
+   "trade_service": null,
+   "travel_service": {
+    "identity": {
+     "family": "Service",
+     "key": "oteryn:service.travel.captain_corsarah",
+     "revision": "definition-r1"
+    },
+    "routes": [
+     {
+      "destination": {
+       "x": 32954,
+       "y": 32022,
+       "z": 6
+      },
+      "destination_keyword": "venore",
+      "discount": "postman",
+      "min_level": null,
+      "premium": false,
+      "price": 200
+     }
+    ]
+   },
+   "wiki": {
+    "pageid": 110740,
+    "revid": 1195603
+   }
+  },
+  {
+   "arbitration": [],
+   "identity": {
+    "family": "NPC",
     "key": "oteryn:npc.captain_dreadnought",
     "revision": "definition-r1"
    },
@@ -106149,6 +106222,59 @@
    }
   },
   {
+   "arbitration": [],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.javala",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 0,
+    "walk_radius": 0
+   },
+   "name": "Javala",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 33889,
+      "y": 32654,
+      "z": 8
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 97,
+     "feet": 94,
+     "head": 114,
+     "legs": 114,
+     "look_type": 1068,
+     "mount": 0
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/javala",
+     "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+     "sha256": "62604261c37494c80a574e2975ba265a1b1851f86cbcbe8ad5a6857bd05fe304"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 110730,
+    "revid": 1195643
+   }
+  },
+  {
    "arbitration": [
     {
      "chosen": "wiki",
@@ -122207,6 +122333,59 @@
    "wiki": {
     "pageid": 65981,
     "revid": 908585
+   }
+  },
+  {
+   "arbitration": [],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.mayor_pocaro",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 1
+   },
+   "name": "Mayor Pocaro",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 34073,
+      "y": 32504,
+      "z": 6
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 63,
+     "feet": 70,
+     "head": 57,
+     "legs": 124,
+     "look_type": 132,
+     "mount": 0
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/mayor_pocaro",
+     "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+     "sha256": "26c02f928e72aef3e684028c5cf03128481478ff87f96095674a5141aeae2618"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 110728,
+    "revid": 1195644
    }
   },
   {
@@ -146877,6 +147056,59 @@
    "wiki": {
     "pageid": 5160,
     "revid": 908630
+   }
+  },
+  {
+   "arbitration": [],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.pescadu",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 1
+   },
+   "name": "Pescadu",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 34020,
+      "y": 32505,
+      "z": 7
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 3,
+     "body": 76,
+     "feet": 95,
+     "head": 76,
+     "legs": 116,
+     "look_type": 153,
+     "mount": 0
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/pescadu",
+     "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+     "sha256": "6fe10a1bddc2e0618da306d56fe492050bada96fa0370eeb8a4cb31bd80d833b"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 110738,
+    "revid": 1197366
    }
   },
   {
@@ -195552,6 +195784,59 @@
    "arbitration": [],
    "identity": {
     "family": "NPC",
+    "key": "oteryn:npc.thorim",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 1
+   },
+   "name": "Thorim",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 34022,
+      "y": 32495,
+      "z": 7
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 1,
+     "body": 95,
+     "feet": 38,
+     "head": 97,
+     "legs": 58,
+     "look_type": 143,
+     "mount": 0
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/thorim",
+     "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+     "sha256": "4d115361698f751a54daee60eb7284d377a50f194412609f572b4313bce66135"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 110733,
+    "revid": 1197368
+   }
+  },
+  {
+   "arbitration": [],
+   "identity": {
+    "family": "NPC",
     "key": "oteryn:npc.thorwulf",
     "revision": "definition-r1"
    },
@@ -205702,13 +205987,7 @@
    }
   },
   {
-   "arbitration": [
-    {
-     "chosen": "wiki",
-     "fact": "identity",
-     "rule": "WIKI_BASE_NAME"
-    }
-   ],
+   "arbitration": [],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.uzon_back",
@@ -205750,6 +206029,11 @@
     "canary": {
      "key": "canary:npc/uzon_back",
      "sha256": "af15f28b6273fee87f4efc502e9adf2ea908958efac303991e13613d8d256bf7"
+    },
+    "crystal": {
+     "key": "crystal:npc/uzon_back",
+     "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+     "sha256": "b9d4cf8db310b790d2351d7219c838984238df1296794654e398e8aba38d1aa4"
     }
    },
    "trade_service": null,
@@ -205774,10 +206058,7 @@
      }
     ]
    },
-   "wiki": {
-    "pageid": 4689,
-    "revid": 1114022
-   }
+   "wiki": null
   },
   {
    "arbitration": [
@@ -211156,6 +211437,69 @@
    "wiki": {
     "pageid": 5214,
     "revid": 852260
+   }
+  },
+  {
+   "arbitration": [],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.wayland_smythers",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 0,
+    "walk_radius": 0
+   },
+   "name": "Wayland Smythers",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 32961,
+      "y": 32076,
+      "z": 6
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    },
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 33955,
+      "y": 32642,
+      "z": 6
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 0,
+     "feet": 105,
+     "head": 37,
+     "legs": 76,
+     "look_type": 133,
+     "mount": 0
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/wayland_smythers",
+     "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+     "sha256": "9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 110727,
+    "revid": 1195728
    }
   },
   {
@@ -234711,6 +235055,10 @@
    "wiki": null
   }
  ],
+ "crystal_supplement": {
+  "bundles_sha256": "154083cc71de6e41d73c13854307c4c2cbc134df5afdd1e1c899cfc12f5b3fb5",
+  "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+ },
  "decisions": [
   "D4",
   "D5",
@@ -234719,7 +235067,8 @@
   "D8",
   "D11",
   "D12",
-  "D13"
+  "D13",
+  "D14"
  ],
  "evidence": "OTS_HYPOTHESIS_ONLY",
  "held": [
@@ -234974,6 +235323,110 @@
    }
   },
   {
+   "detail": "placeholder outfit in the summer-update source",
+   "name": "Dhira",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/dhira"
+   }
+  },
+  {
+   "detail": "a boss, not an NPC, on TibiaWiki and Tibiopedia",
+   "name": "Doctor Marrow",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/doctor_marrow"
+   }
+  },
+  {
+   "detail": "dialogue written by Crystal, not Tibia text (TODO(text))",
+   "name": "G'Ezkho",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/g_ezkho"
+   }
+  },
+  {
+   "detail": "dialogue written by Crystal, not Tibia text (TODO(text))",
+   "name": "Goldro",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/goldro"
+   }
+  },
+  {
+   "detail": "dialogue written by Crystal, not Tibia text (TODO(text))",
+   "name": "Nekaret",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/nekaret"
+   }
+  },
+  {
+   "detail": "placeholder outfit in the summer-update source",
+   "name": "Nilavarna",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/nilavarna"
+   }
+  },
+  {
+   "detail": "placeholder outfit in the summer-update source",
+   "name": "Niral",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/niral"
+   }
+  },
+  {
+   "detail": "dialogue written by Crystal, not Tibia text (TODO(text))",
+   "name": "Omar",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/omar"
+   }
+  },
+  {
+   "detail": "placeholder outfit in the summer-update source",
+   "name": "Saraki",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/saraki"
+   }
+  },
+  {
+   "detail": "placeholder outfit in the summer-update source",
+   "name": "Sharai",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/sharai"
+   }
+  },
+  {
+   "detail": "placeholder outfit in the summer-update source",
+   "name": "Tarisu",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/tarisu"
+   }
+  },
+  {
+   "detail": "placeholder outfit in the summer-update source",
+   "name": "Udu",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/udu"
+   }
+  },
+  {
+   "detail": "dialogue written by Crystal, not Tibia text (TODO(text))",
+   "name": "Zofia Bolter",
+   "reason": "SUPPLEMENT_HELD",
+   "sources": {
+    "crystal": "crystal:npc/zofia_bolter"
+   }
+  },
+  {
    "detail": null,
    "name": "Archery Rook",
    "reason": "UNPLACED",
@@ -235042,8 +235495,8 @@
  "snapshot_sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42",
  "tibiopedia_facts_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
  "totals": {
-  "arbitrated_facts": 1433,
-  "candidates": 1089,
+  "arbitrated_facts": 1432,
+  "candidates": 1095,
   "held:DEFINITION_CONFLICT": 9,
   "held:EMPTY_SLUG": 1,
   "held:KEY_COLLISION": 2,
@@ -235052,12 +235505,13 @@
   "held:PLACEMENT_CONFLICT_NO_WIKI_POSITION": 1,
   "held:REMOVED_FROM_GAME": 5,
   "held:SINGLE_SOURCE_NOT_ON_WIKI": 9,
+  "held:SUPPLEMENT_HELD": 13,
   "held:UNPLACED": 7,
   "left_out_offers": 219,
   "left_out_routes": 68,
   "offers": 12626,
-  "routes": 197,
+  "routes": 198,
   "with_trade": 322,
-  "with_travel": 55
+  "with_travel": 56
  }
 }

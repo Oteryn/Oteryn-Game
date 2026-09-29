@@ -40,6 +40,14 @@ SOURCES = {
         'npc_dir': 'data-global/npc',
         'world_dir': 'data-global/world',
     },
+    # the Crystal `summer-update` supplement: NPCs added after ff7ede59, pinned to their own exact commit
+    'crystal-summer': {
+        'repository': 'zimbadev/crystalserver',
+        'revision': '00ce02a57ca5a12e48f32a3476e37471167e4c3f',
+        'namespace': 'crystal',  # the same Crystal NPC files, so the same `crystal:npc/<stem>` keys
+        'npc_dir': 'data-global/npc',
+        'world_dir': 'data-global/world',
+    },
 }
 NPCLIB = 'data/npclib/npc_system'
 STRING_LIB = 'data/libs/functions/string.lua'
@@ -248,7 +256,7 @@ class Converter:
     def bundle(self, lua_path, placements_by_name):
         relative = str(lua_path.relative_to(self.checkout))
         stem = lua_path.stem
-        base = {'schema': SCHEMA, 'key': f'{self.source}:npc/{stem}', 'evidence': 'OTS_HYPOTHESIS_ONLY',
+        base = {'schema': SCHEMA, 'key': f'{self.meta.get("namespace", self.source)}:npc/{stem}', 'evidence': 'OTS_HYPOTHESIS_ONLY',
                 'source': {'repository': self.meta['repository'], 'revision': self.meta['revision'], 'path': relative,
                            'sha256': sha256(lua_path.read_bytes())}}
         try:

@@ -7,8 +7,7 @@ target client version 15.30. It records, for every file in that folder: `name`,
 `total_bytes`. It contains **no image data and no other proprietary file content** —
 only cryptographic digests and plain file metadata.
 
-The proprietary asset files themselves (sprites, `.dat`/`.spr`/`.bin` client
-resources, etc.) are **not** and must **never** be committed to this repository.
+The manifest itself remains checksum-only. As of 2026-09-29, the project owner confirmed redistribution rights for the currently present local asset set and directed its 6,248 files to be committed under `content/assets/files/`. Those 6,248 files match their manifest SHA-256 entries. The manifest-only 122,882,530-byte `minimap-32-0996-0984-02-dce27ae4b4d345201c9cc7f9d4f7576fc9144583779e8716b29032d6c1731073.bmp.zip` is absent from the current local source and is not committed.
 
 ## How it is produced
 
@@ -38,3 +37,17 @@ Server-side Item data currently stays on Canary `47dfd51f` / Crystal `ff7ede5`
 none of which have engine server data yet. Filling those from TibiaWiki (BR/Fandom)
 is separate future work; see
 `docs/architecture/OTERYN_CLIENT_ASSET_VERSION_OWNER_DECISION_2026-09-27.md`.
+
+## Appearance id membership manifest
+
+`appearance-ids.json` (schema `OTERYN_CLIENT_APPEARANCE_MEMBERSHIP/v1`) in this folder
+is allowed: it holds **object ids only** (plus the pinned file name, size, sha256 and
+an `ids_sha256` of the id array), never names, flags or sprites. The owner emits it
+locally, from the repo root in Git Bash; the tool fails closed on a size or sha256
+mismatch:
+
+```
+python tools/content-schema/item-authoring/client_appearance_census.py \
+  --appearances "<PATH_TO_CLIENT>/assets/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat" \
+  --membership-out imports/official/client-assets/15.30/appearance-ids.json
+```

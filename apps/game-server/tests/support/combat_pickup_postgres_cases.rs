@@ -5,7 +5,8 @@
 
 use crate::combat::DurabilitySession;
 use crate::combat_pickup::{
-    GroundPickupError, GroundPickupRequest, PickupContentError, settle_ground_pickup,
+    CorpsePickupRequest, GroundPickupError, GroundPickupRequest, PickupContentError,
+    settle_corpse_pickup, settle_ground_pickup,
 };
 use crate::content::{
     CanonicalReferencePlayableContent, ClientProjectionClass, ContentLockBinding, ContentLockEntry,
@@ -18,10 +19,14 @@ use crate::content::{
     ReferenceItemStackClass, ReferencePlayableContentSource, Sha256HexDigest,
     TypedDefinitionRef as ContentTypedDefinitionRef, link_reference_playable,
 };
+use crate::corpse_transfer_postgres_cases::{
+    OTHER_TOP, mint_corpse, put_loot_of, set_materialized_ago,
+};
 use crate::domain::CharacterId;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{
-    CurrentCharacterItemFence, ItemTransferDestination, ItemTransferOutcome,
+    CurrentCharacterItemFence, ItemTransferDestination, ItemTransferError, ItemTransferOutcome,
+    ItemTransferRefusal,
 };
 use crate::foundation::{
     CommandId, CommandRef, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration, WorldId,
@@ -63,7 +68,7 @@ fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
         package_revision.clone(),
         ProductionAtom::new("pickup PG schema", "schema-v1")?,
         ProductionAtom::new("pickup PG license", "license:project-owned-v1")?,
-        Sha256HexDigest::new("cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")?,
+        Sha256HexDigest::new("cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")?,
     );
     let provenance = package_manifest.package_provenance_digest()?;
     let content_lock = ContentLockBinding {
@@ -270,7 +275,7 @@ fn pickup_is_refused_before_any_write_when_content_has_no_definition_for_the_cla
         return Ok(());
     };
     runtime()?.block_on(async move {
-        let harness = Harness::create(admin, "pickup-unknown").await?;
+        let harness = Harness::create(admin, "pickupunknown").await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
@@ -308,6 +313,205 @@ fn pickup_is_refused_before_any_write_when_content_has_no_definition_for_the_cla
         // Content resolution failed before `freeze_item_transfer` ever ran: nothing moved.
         assert!(harness.on_ground(stray).await?);
         assert_eq!(harness.item_state(stray).await?, before);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+fn corpse_request(
+    command: CommandRef,
+    corpse: [u8; 16],
+    item_instance: [u8; 16],
+) -> CorpsePickupRequest {
+    CorpsePickupRequest {
+        command,
+        corpse_item_instance_id: corpse,
+        source_item_instance_id: item_instance,
+        source_definition: item(COIN),
+        destination: ItemTransferDestination::MainBackpack,
+        content_revision: "content-1".into(),
+        ruleset_revision: "ruleset-1".into(),
+        sim_revision: "sim-1".into(),
+    }
+}
+
+fn is_refusal(
+    outcome: &Result<ItemTransferOutcome, GroundPickupError>,
+    reason: ItemTransferRefusal,
+) -> bool {
+    matches!(
+        outcome,
+        Err(GroundPickupError::Transfer(ItemTransferError::Refused(found))) if *found == reason
+    )
+}
+
+/// D3-5 (D134): a corpse pickup names its corpse, and each request only takes from the source
+/// it names; the D133 window and the corpse's own exclusion come through unchanged from the
+/// TRANSFER admission; a replayed command transfers once.
+#[test]
+fn corpse_pickup_takes_only_from_the_named_corpse_within_the_window_rules() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "corpsepickup").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let content = pg_content()?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+
+        let backpack_item = harness.mint(&authority, BACKPACK, 1).await?;
+        let equipped = settle_ground_pickup(
+            &session,
+            &content,
+            fence()?,
+            pickup_request(
+                command(1)?,
+                backpack_item,
+                item(BACKPACK),
+                ItemTransferDestination::ContainerSlot,
+            ),
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(equipped, ItemTransferOutcome::Committed(_)));
+        let ground_coin = harness.mint(&authority, COIN, 1).await?;
+
+        let owned = mint_corpse(&harness, &authority, 2000, id(CHARACTER)).await?;
+        let foreign = mint_corpse(&harness, &authority, 2001, id(OTHER_TOP)).await?;
+        let owned_loot = put_loot_of(&harness, &item(COIN), owned, 2000, 1, 120).await?;
+        let foreign_loot = put_loot_of(&harness, &item(COIN), foreign, 2001, 1, 124).await?;
+        set_materialized_ago(&harness, owned, 1_000).await?;
+        set_materialized_ago(&harness, foreign, 1_000).await?;
+
+        // A request naming the wrong source family or the wrong corpse is refused before any
+        // TRANSFER is frozen, and nothing moves.
+        let before = harness.footprint().await?;
+        let ground_for_entry = settle_ground_pickup(
+            &session,
+            &content,
+            fence()?,
+            pickup_request(
+                command(2)?,
+                owned_loot,
+                item(COIN),
+                ItemTransferDestination::MainBackpack,
+            ),
+        )
+        .await;
+        assert!(matches!(
+            ground_for_entry,
+            Err(GroundPickupError::SourceMismatch)
+        ));
+        for (corpse, entry) in [(foreign, owned_loot), (owned, ground_coin)] {
+            let outcome = settle_corpse_pickup(
+                &session,
+                &content,
+                fence()?,
+                corpse_request(command(2)?, corpse, entry),
+            )
+            .await;
+            assert!(matches!(outcome, Err(GroundPickupError::SourceMismatch)));
+        }
+        assert_eq!(harness.footprint().await?, before);
+
+        // The top-damage Character takes its entry inside the window; a replay transfers once.
+        let taken = settle_corpse_pickup(
+            &session,
+            &content,
+            fence()?,
+            corpse_request(command(3)?, owned, owned_loot),
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(taken, ItemTransferOutcome::Committed(_)));
+        let replay = settle_corpse_pickup(
+            &session,
+            &content,
+            fence()?,
+            corpse_request(command(3)?, owned, owned_loot),
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(replay, ItemTransferOutcome::AlreadyCommitted(_)));
+
+        // Someone else's corpse: refused inside the window, allowed at and after its end.
+        let early = settle_corpse_pickup(
+            &session,
+            &content,
+            fence()?,
+            corpse_request(command(4)?, foreign, foreign_loot),
+        )
+        .await;
+        assert!(is_refusal(
+            &early,
+            ItemTransferRefusal::CorpseExclusiveWindow
+        ));
+        set_materialized_ago(&harness, foreign, 11_000).await?;
+        let late = settle_corpse_pickup(
+            &session,
+            &content,
+            fence()?,
+            corpse_request(command(4)?, foreign, foreign_loot),
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(late, ItemTransferOutcome::Committed(_)));
+
+        // The corpse item itself: as a corpse "entry" it is a Ground item (mismatch); named as a
+        // Ground item it reaches the TRANSFER, which refuses it even now that it is empty.
+        let corpse_as_entry = settle_corpse_pickup(
+            &session,
+            &content,
+            fence()?,
+            corpse_request(command(5)?, owned, owned),
+        )
+        .await;
+        assert!(matches!(
+            corpse_as_entry,
+            Err(GroundPickupError::SourceMismatch)
+        ));
+        let corpse_as_ground = settle_ground_pickup(
+            &session,
+            &content,
+            fence()?,
+            pickup_request(
+                command(5)?,
+                owned,
+                item(COIN),
+                ItemTransferDestination::MainBackpack,
+            ),
+        )
+        .await;
+        assert!(is_refusal(
+            &corpse_as_ground,
+            ItemTransferRefusal::CorpseNotPickupable
+        ));
+        assert!(harness.on_ground(owned).await?);
+
+        let backpack = harness
+            .root
+            .read_character_backpack(&authority, fence()?.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("expected an equipped backpack")?;
+        let held: u32 = backpack
+            .entries
+            .iter()
+            .map(|entry| entry.item.quantity)
+            .sum();
+        assert_eq!(held, 2);
+        assert!(harness.on_ground(ground_coin).await?);
 
         drop(authority);
         drop(seal);

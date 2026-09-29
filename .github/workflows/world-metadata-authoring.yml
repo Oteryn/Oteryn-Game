@@ -14,6 +14,10 @@ on:
       - imports/crystalserver/bindings/items.json
       - imports/tibiawiki/hunting-places/**
       - imports/tibiawiki/islands/**
+      - imports/official/client-assets/15.30/manifest.json
+      - content/assets/files/catalog-content.json
+      - content/assets/files/map-*.dat
+      - content/assets/files/subarea-*
       - .github/workflows/world-metadata-authoring.yml
   workflow_dispatch:
 
@@ -53,6 +57,7 @@ jobs:
           python convert_hunting_places.py --check
           python convert_islands.py --check
           python validate_islands.py
+          python convert_map_regions.py --check
           python validate_world_metadata.py
           python validate_world_base.py
           python convert_world_record.py --check

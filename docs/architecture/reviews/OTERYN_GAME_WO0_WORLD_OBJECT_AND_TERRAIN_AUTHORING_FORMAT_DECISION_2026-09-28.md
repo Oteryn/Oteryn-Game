@@ -3,6 +3,8 @@
 - Decision: `WO0-WORLD-OBJECT-TERRAIN-FORMAT-V1`
 - Status: **CANDIDATE with owner decisions D93-D94 (§2)**. Acceptance requires exact-head
   validation, independent review and protected integration.
+- **Amended** by A12 (`OTERYN_GAME_A12_ITEM_IDENTITY_TIBIA_ID_DECISION_2026-09-29.md` §4.6): D93 family keys use the Tibia numbering,
+  `oteryn:world-object.tibia.i<id>` and `oteryn:terrain.tibia.i<id>`.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Routed as architecture package item A7 (#162 comments 5876505672, 5876526764)
 - Owner decisions posted: #162 comment 5876870559

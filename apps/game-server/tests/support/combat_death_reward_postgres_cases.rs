@@ -18,7 +18,10 @@ use crate::durability::admission_authority_guards::GuardPublicationDisposition;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceCommitOutcome,
 };
-use crate::durability::item_mint::ItemMintError;
+use crate::durability::item_mint::{
+    CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintError,
+    ItemMintRequest, TypedDefinitionRef,
+};
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
     LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
@@ -461,6 +464,37 @@ fn rat_loot_table() -> LootTableDefinition {
     }
 }
 
+/// The corpse item definition is caller-supplied (Content binding of
+/// `i00005801` waits on the Content revision, D3-7).
+fn corpse_item_ref() -> LootDefinitionRef {
+    LootDefinitionRef::new(
+        "ItemType",
+        "fixture:combat-death-reward.item.rat_corpse",
+        "VSL_COMBAT_FIXTURE_PROFILE/v1",
+    )
+}
+
+fn guaranteed_entry(key: &str) -> LootTableEntry {
+    LootTableEntry {
+        item: LootDefinitionRef::new("ItemType", key, "VSL_COMBAT_FIXTURE_PROFILE/v1"),
+        min_count: 1,
+        max_count: 1,
+        probability_ppm: Some(1_000_000),
+    }
+}
+
+/// Two guaranteed entries: plan order (cheese, apple) is corpse container
+/// ordinals 1 and 2.
+fn two_entry_loot_table() -> LootTableDefinition {
+    LootTableDefinition {
+        algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+        entries: vec![
+            guaranteed_entry("fixture:combat-death-reward.item.cheese"),
+            guaranteed_entry("fixture:combat-death-reward.item.apple"),
+        ],
+    }
+}
+
 fn unsupported_algorithm_loot_table() -> LootTableDefinition {
     LootTableDefinition {
         algorithm: LootSelectionAlgorithm::GuaranteedEntries,
@@ -546,6 +580,7 @@ fn input(
     character_revision: u64,
 ) -> TestResult<CreatureDeathRewardInput<2>> {
     Ok(CreatureDeathRewardInput {
+        corpse_item: corpse_item_ref(),
         loot_table_ref: rat_loot_table_ref(),
         loot_table,
         ground: ground(),
@@ -557,6 +592,76 @@ fn input(
         xp_amount: ExactI64::new(RAT_XP),
         progression: progression_binding(),
     })
+}
+
+fn uuid_text(bytes: [u8; 16]) -> String {
+    let hex: String = bytes.iter().map(|byte| format!("{byte:02x}")).collect();
+    format!(
+        "{}-{}-{}-{}-{}",
+        &hex[0..8],
+        &hex[8..12],
+        &hex[12..16],
+        &hex[16..20],
+        &hex[20..32]
+    )
+}
+
+impl Harness {
+    /// Live items with a Ground location (the corpses; never loot).
+    async fn ground_items(&self) -> TestResult<i64> {
+        self.count("game_item_ground_locations").await
+    }
+
+    async fn corpse_entries(&self) -> TestResult<i64> {
+        self.count("game_item_corpse_container_entries").await
+    }
+
+    /// `(item, parent, ordinal)` of every corpse container entry, ordered by
+    /// ordinal.
+    async fn entry_rows(&self) -> TestResult<Vec<([u8; 16], [u8; 16], String)>> {
+        use sqlx::Row;
+        let rows = sqlx::query(
+            "SELECT item_instance_id::text AS item, parent_item_instance_id::text AS parent, \
+                    placement_ordinal::text AS ordinal \
+               FROM game_item_corpse_container_entries ORDER BY placement_ordinal",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        rows.iter()
+            .map(|row| {
+                let parse = |text: String| -> TestResult<[u8; 16]> {
+                    let hex: String = text.chars().filter(|c| *c != '-').collect();
+                    let mut out = [0_u8; 16];
+                    for (index, byte) in out.iter_mut().enumerate() {
+                        *byte = u8::from_str_radix(&hex[index * 2..index * 2 + 2], 16)?;
+                    }
+                    Ok(out)
+                };
+                Ok((
+                    parse(row.try_get("item")?)?,
+                    parse(row.try_get("parent")?)?,
+                    row.try_get("ordinal")?,
+                ))
+            })
+            .collect()
+    }
+
+    /// `corpse_top_damage_character_id::text` and whether `materialized_at`
+    /// was set, for the corpse receipt of `corpse`.
+    async fn corpse_receipt(&self, corpse: [u8; 16]) -> TestResult<(String, bool)> {
+        use sqlx::Row;
+        let row = sqlx::query(
+            "SELECT corpse_top_damage_character_id::text AS winner, \
+                    materialized_at IS NOT NULL AS materialized \
+               FROM game_item_mint_receipts \
+              WHERE item_instance_id = encode($1,'hex')::uuid AND loot_purpose_key = $2",
+        )
+        .bind(corpse.as_slice())
+        .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok((row.try_get("winner")?, row.try_get("materialized")?))
+    }
 }
 
 #[test]
@@ -578,9 +683,15 @@ fn one_creature_death_mints_the_plan_and_awards_xp_once() -> TestResult {
             node: &harness.node,
         };
 
+        // The lethal hit is attributed, so the owner's top-damage winner
+        // (not the reward principal) is captured on the corpse receipt.
         let mut fixture = death_fixture()?;
         fixture
-            .strike("fixture:reward.strike.lethal", CombatDeathFixture::HEALTH)
+            .strike_by(
+                "fixture:reward.strike.lethal",
+                CombatDeathFixture::HEALTH,
+                crate::foundation::CharacterId::decode(&id(60)).map_err(debug)?,
+            )
             .map_err(debug)?;
         fixture.project_death().map_err(debug)?;
         let actor = fixture.actor();
@@ -594,17 +705,36 @@ fn one_creature_death_mints_the_plan_and_awards_xp_once() -> TestResult {
         .await
         .map_err(debug)?;
 
+        // One corpse with the loot inside, and nothing loot on Ground.
         let minted = outcome.loot.map_err(debug)?;
-        assert_eq!(minted.len(), 1);
+        assert_eq!(minted.entries.len(), 1);
         let ExperienceCommitOutcome::Committed(award) = outcome.xp.map_err(debug)? else {
             return Err("first XP award must be freshly committed".into());
         };
         assert_eq!(award.experience_before.get(), 0);
         assert_eq!(award.experience_after.get(), RAT_XP);
 
-        harness.count("game_item_instances").await.map(|count| {
-            assert_eq!(count, 1);
-        })?;
+        assert_eq!(harness.count("game_item_instances").await?, 2);
+        assert_eq!(harness.ground_items().await?, 1);
+        let ground_item: String =
+            sqlx::query_scalar("SELECT item_instance_id::text FROM game_item_ground_locations")
+                .fetch_one(&harness.pool)
+                .await?;
+        assert_eq!(ground_item, uuid_text(minted.corpse.item_instance_id));
+        assert_eq!(harness.corpse_entries().await?, 1);
+        assert_eq!(
+            harness.entry_rows().await?,
+            vec![(
+                minted.entries[0].item_instance_id,
+                minted.corpse.item_instance_id,
+                "1".to_owned()
+            )]
+        );
+        let (winner, materialized) = harness
+            .corpse_receipt(minted.corpse.item_instance_id)
+            .await?;
+        assert_eq!(winner, uuid_text(id(60)));
+        assert!(materialized);
         assert_eq!(harness.count("game_character_progression_state").await?, 1);
         assert_eq!(harness.count("game_character_xp_receipts").await?, 1);
         drop(authority);
@@ -645,6 +775,7 @@ fn replay_is_idempotent_with_no_duplicate_mint_or_xp() -> TestResult {
         // `settle_experience` reaches the D88 initializer only on
         // `MissingProgressionState`, so the stale revision on the retry never
         // needs re-validating.
+        let mut settled = Vec::new();
         for _ in 0..2 {
             fixture.project_death().map_err(debug)?;
             let outcome = settle_creature_death_rewards(
@@ -655,12 +786,16 @@ fn replay_is_idempotent_with_no_duplicate_mint_or_xp() -> TestResult {
             )
             .await
             .map_err(debug)?;
-            outcome.loot.map_err(debug)?;
+            settled.push(outcome.loot.map_err(debug)?);
             outcome.xp.map_err(debug)?;
         }
 
-        assert_eq!(harness.count("game_item_instances").await?, 1);
-        assert_eq!(harness.count("game_item_mint_receipts").await?, 1);
+        // The replay resolves to the same corpse and the same entry.
+        assert_eq!(settled[0], settled[1]);
+        assert_eq!(harness.count("game_item_instances").await?, 2);
+        assert_eq!(harness.count("game_item_mint_receipts").await?, 2);
+        assert_eq!(harness.ground_items().await?, 1);
+        assert_eq!(harness.corpse_entries().await?, 1);
         assert_eq!(harness.count("game_character_xp_receipts").await?, 1);
         drop(authority);
         drop(seal);
@@ -734,7 +869,7 @@ fn generation_change_leaves_a_stale_death_rejected_with_no_write() -> TestResult
 
         assert!(matches!(
             outcome.loot,
-            Err(CombatDeathRewardLootError::Mint(
+            Err(CombatDeathRewardLootError::Corpse(
                 ItemMintError::AuthorityRejected
             ))
         ));
@@ -797,14 +932,14 @@ fn a_stale_xp_fence_rejects_xp_without_blocking_loot() -> TestResult {
         .await
         .map_err(debug)?;
 
-        assert_eq!(outcome.loot.map_err(debug)?.len(), 1);
+        assert_eq!(outcome.loot.map_err(debug)?.entries.len(), 1);
         assert!(matches!(
             outcome.xp,
             Err(CombatDeathRewardXpError::Progression(
                 CharacterProgressionError::AuthorityRejected
             ))
         ));
-        assert_eq!(harness.count("game_item_instances").await?, 1);
+        assert_eq!(harness.count("game_item_instances").await?, 2);
         assert_eq!(harness.count("game_character_progression_state").await?, 0);
         drop(authority);
         drop(seal);
@@ -857,6 +992,303 @@ fn an_unsupported_loot_table_rejects_loot_without_blocking_xp() -> TestResult {
         assert_eq!(award.experience_after.get(), RAT_XP);
         assert_eq!(harness.count("game_item_instances").await?, 0);
         assert_eq!(harness.count("game_character_progression_state").await?, 1);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+fn definition(family: &str, key: &str, revision: &str) -> TypedDefinitionRef {
+    TypedDefinitionRef {
+        family: family.into(),
+        production_key: key.into(),
+        revision_ref: revision.into(),
+    }
+}
+
+#[test]
+fn a_damage_free_death_names_the_reward_principal_as_the_window_winner() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "no_winner").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+
+        // An unattributed lethal hit leaves no tracked contributor.
+        let mut fixture = death_fixture()?;
+        fixture
+            .strike("fixture:reward.strike.lethal", CombatDeathFixture::HEALTH)
+            .map_err(debug)?;
+        fixture.project_death().map_err(debug)?;
+        let actor = fixture.actor();
+
+        let outcome = settle_creature_death_rewards(
+            actor,
+            &mut fixture.borrow_combat_death(),
+            &session,
+            input(rat_loot_table(), 1, 1)?,
+        )
+        .await
+        .map_err(debug)?;
+        let minted = outcome.loot.map_err(debug)?;
+        let (winner, materialized) = harness
+            .corpse_receipt(minted.corpse.item_instance_id)
+            .await?;
+        assert_eq!(winner, uuid_text(id(41)));
+        assert!(materialized);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn a_death_with_no_loot_entries_still_materializes_a_corpse() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "empty_plan").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+
+        let mut fixture = death_fixture()?;
+        fixture
+            .strike("fixture:reward.strike.lethal", CombatDeathFixture::HEALTH)
+            .map_err(debug)?;
+        fixture.project_death().map_err(debug)?;
+        let actor = fixture.actor();
+
+        let empty = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+            entries: vec![],
+        };
+        let outcome = settle_creature_death_rewards(
+            actor,
+            &mut fixture.borrow_combat_death(),
+            &session,
+            input(empty, 1, 1)?,
+        )
+        .await
+        .map_err(debug)?;
+        let minted = outcome.loot.map_err(debug)?;
+        assert!(minted.entries.is_empty());
+        assert_eq!(harness.count("game_item_instances").await?, 1);
+        assert_eq!(harness.ground_items().await?, 1);
+        assert_eq!(harness.corpse_entries().await?, 0);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "mid_plan").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+
+        let mut fixture = death_fixture()?;
+        fixture
+            .strike("fixture:reward.strike.lethal", CombatDeathFixture::HEALTH)
+            .map_err(debug)?;
+        fixture.project_death().map_err(debug)?;
+        let actor = fixture.actor();
+
+        // Generation 1 commits the corpse and the first entry only.
+        let first = settle_creature_death_rewards(
+            actor,
+            &mut fixture.borrow_combat_death(),
+            &session,
+            input(rat_loot_table(), 1, 1)?,
+        )
+        .await
+        .map_err(debug)?
+        .loot
+        .map_err(debug)?;
+        assert_eq!(first.entries.len(), 1);
+
+        // D52: the scope moves to another node, ending generation 1.
+        let predecessor = harness
+            .root
+            .read_runtime_scope_predecessor(scope()?)
+            .await
+            .map_err(debug)?
+            .ok_or("expected a live assignment predecessor")?;
+        let node2 = register(&harness.root, 2).await?;
+        let moved = harness
+            .writer
+            .submit(&AssignmentRequest {
+                operation_key: OperationKey::from_bytes([8_u8; 32]),
+                actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+                command: AssignmentCommand::Replace {
+                    scope: scope()?,
+                    predecessor,
+                    target: node2.fact(),
+                },
+            })
+            .await
+            .map_err(debug)?;
+        let AssignmentOutcome::Committed(moved) = moved else {
+            return Err(format!("unexpected replacement outcome: {moved:?}").into());
+        };
+        assert_eq!(moved.assignment.ownership_generation, 2);
+
+        // The same death now plans a second entry: the corpse and the first
+        // entry replay to their original results; the second entry is
+        // refused terminally, never minted by a later generation.
+        let outcome = settle_creature_death_rewards(
+            actor,
+            &mut fixture.borrow_combat_death(),
+            &session,
+            input(two_entry_loot_table(), 1, 1)?,
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(
+            outcome.loot,
+            Err(CombatDeathRewardLootError::Mint(
+                ItemMintError::AuthorityRejected
+            ))
+        ));
+        assert_eq!(harness.count("game_item_instances").await?, 2);
+        assert_eq!(harness.ground_items().await?, 1);
+        assert_eq!(
+            harness.entry_rows().await?,
+            vec![(
+                first.entries[0].item_instance_id,
+                first.corpse.item_instance_id,
+                "1".to_owned()
+            )]
+        );
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "corpse_cap").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+
+        // Fill the scope to COMBAT01-CORPSES-PER-SCOPE = 64 live corpses.
+        for actor in 10_000_u32..10_064 {
+            let request = ItemMintRequest {
+                cause: ItemMintCause::for_test(
+                    WorldId::decode(&id(WORLD)).map_err(debug)?,
+                    ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+                    ScopeOwnershipGeneration::new(1).map_err(debug)?,
+                    actor,
+                    1,
+                    definition("ItemType", "fixture:seed.corpse", "corpse-r1"),
+                    CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+                    0,
+                ),
+                item: definition("ItemType", "fixture:seed.corpse", "corpse-r1"),
+                quantity: 1,
+                ground: GroundPlacement {
+                    spatial_position: vec![9, 9, 0],
+                    corpse_ref: id(3).to_vec(),
+                    map_revision: "map-1".into(),
+                    content_revision: "content-1".into(),
+                    native_room_placement_context: id(6).to_vec(),
+                },
+                content_revision: "content-1".into(),
+                ruleset_revision: "ruleset-1".into(),
+                sim_revision: "sim-1".into(),
+            };
+            let mut candidate = harness
+                .root
+                .freeze_item_mint(&authority, &harness.node, request)
+                .await
+                .map_err(debug)?;
+            harness
+                .root
+                .commit_corpse_mint(&authority, &harness.node, &mut candidate, id(61))
+                .await
+                .map_err(debug)?;
+        }
+        assert_eq!(harness.ground_items().await?, 64);
+
+        let mut fixture = death_fixture()?;
+        fixture
+            .strike("fixture:reward.strike.lethal", CombatDeathFixture::HEALTH)
+            .map_err(debug)?;
+        fixture.project_death().map_err(debug)?;
+        let actor = fixture.actor();
+
+        let outcome = settle_creature_death_rewards(
+            actor,
+            &mut fixture.borrow_combat_death(),
+            &session,
+            input(rat_loot_table(), 1, 1)?,
+        )
+        .await
+        .map_err(debug)?;
+
+        // The death still settles (XP commits); the 65th corpse is refused
+        // and, with it, its whole loot plan.
+        assert!(matches!(
+            outcome.loot,
+            Err(CombatDeathRewardLootError::Corpse(
+                ItemMintError::CapacityExceeded
+            ))
+        ));
+        let ExperienceCommitOutcome::Committed(award) = outcome.xp.map_err(debug)? else {
+            return Err("XP award must commit despite the corpse cap".into());
+        };
+        assert_eq!(award.experience_after.get(), RAT_XP);
+        assert_eq!(harness.count("game_item_instances").await?, 64);
+        assert_eq!(harness.ground_items().await?, 64);
+        assert_eq!(harness.corpse_entries().await?, 0);
         drop(authority);
         drop(seal);
         harness.cleanup().await

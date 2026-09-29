@@ -2,7 +2,9 @@
 
 - Date: 2026-09-28
 - Status: CANDIDATE / behaviour specification. The owner accepted the §5 authoring shape on 2026-09-28 (spell
-  rule S23). Its independent review goes through #162. The data is in
+  rule S23). The §5 shape and the D12 wording in `OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md` are carried to independent
+  review by the PR `OTV2-20260929-spell-d12-chain-acceptance` through #162; they are accepted when that review closes
+  with no P1 open. Q1-Q3 remain for the owner's in-game tests; Q4 is addressed by that PR. The data is in
   `tools/content-schema/spell-authoring/chain-behaviours.json` for Chained Penance, the Forked spells and Lightning.
   The chain runtime is not implemented; the game core rejects a spell with a chain.
 - Request: owner request of 2026-09-28 (specify the native behaviours that block spells, starting with the chain);
@@ -272,4 +274,6 @@ Each of these is a deterministic world with fixed creature ids.
 - **Q3. Chained Penance jump range 4.** BR states 4 and it matches Canary. The owner can confirm it with a
   creature 4 tiles from the first.
 - **Q4. The `max_targets` wording in D12.** Clarifying the wording (§5) is a monster contract text change. It
-  needs the monster schema owner's acceptance together with this shape.
+  needs the monster schema owner's acceptance together with this shape. Addressed by the
+  `OTV2-20260929-spell-d12-chain-acceptance` PR (the D12 wording and the new fields in
+  `OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md` §8.6).

@@ -11,8 +11,23 @@
 //! lowering of P3b.
 
 pub(crate) mod authoring;
+pub(crate) mod chain;
+#[cfg(test)]
+mod chain_tests;
 pub(crate) mod formula;
+pub(crate) mod harmony;
+#[cfg(test)]
+mod harmony_tests;
+pub(crate) mod locate;
+#[cfg(test)]
+mod part_b_tests;
+#[cfg(test)]
+mod part_d_tests;
+pub(crate) mod party;
+#[cfg(test)]
+mod party_tests;
 pub(crate) mod plan;
+pub(crate) mod target;
 #[cfg(test)]
 mod tests;
 
@@ -22,7 +37,10 @@ use std::fmt::{self, Display, Formatter};
 
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
+use chain::{ChainCreature, ChainHit, ChainSpec, ChainStart, ChainWorld, pick_chain, step_value};
 pub(crate) use formula::{Formula, FormulaError, FormulaInputs};
+use party::{PartyBuffSpec, PartyFailure, PartyWorld};
+use target::{AllowedTargets, CastTarget, CheckedTarget};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum Vocation {
@@ -94,9 +112,11 @@ pub(crate) enum SpellEffect {
     RemoveCondition {
         condition: String,
     },
-    /// An authored effect this core does not resolve yet (conditions, fields, presentation).
+    /// An authored effect this core does not resolve yet (conditions, fields, presentation);
+    /// `effect` is its Effect key for the owner that applies it.
     Other {
         operation: String,
+        effect: String,
     },
 }
 
@@ -108,6 +128,8 @@ pub(crate) enum Execution {
         result: u32,
         count: u32,
     },
+    /// `native_behavior` `party_buff` (part C.3).
+    PartyBuff(PartyBuffSpec),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -124,11 +146,33 @@ pub(crate) struct SpellDefinition {
     pub(crate) cooldown_micros: u64,
     pub(crate) groups: Vec<CooldownGroup>,
     pub(crate) needs_target: bool,
+    /// Cast at a target or, without one, in the looking direction (Canary `needCasterTargetOrDirection`).
+    pub(crate) target_or_direction: bool,
     pub(crate) self_target: bool,
+    /// Who the cast may be aimed at (D.3 and B.5, `targeting.allowed_targets`).
+    pub(crate) allowed_targets: AllowedTargets,
     pub(crate) aggressive: bool,
+    /// The caster must wield a melee weapon (Canary/Crystal `needWeapon`; D.4).
+    pub(crate) needs_weapon: bool,
+    /// The caster must wield a shield (D.4, `needs_shield`).
+    pub(crate) needs_shield: bool,
     pub(crate) range_tiles: Option<u32>,
     pub(crate) base_power: Option<i64>,
     pub(crate) execution: Execution,
+    /// The ability hits a chain of creatures (D12, S23).
+    pub(crate) chain: Option<ChainSpec>,
+}
+
+impl SpellDefinition {
+    /// Whether a cast chains: a chain spell cast by direction, without a target, hits the tile in
+    /// front and does not chain (Canary `lightning.lua`).
+    pub(crate) fn chains(&self, has_target: bool) -> bool {
+        self.chain.is_some() && (has_target || !self.target_or_direction)
+    }
+
+    fn takes_target(&self) -> bool {
+        self.needs_target || self.target_or_direction
+    }
 }
 
 /// Two admitted spells claim the same words, rune item or key.
@@ -178,7 +222,13 @@ impl SpellBook {
             }
             match &spell.carrier {
                 Carrier::Instant { words, .. } => {
-                    if book.by_words.insert(words.clone(), index).is_some() {
+                    // Spoken words match case-insensitively, so they are indexed and deduplicated
+                    // that way too.
+                    if book
+                        .by_words
+                        .insert(words.to_ascii_lowercase(), index)
+                        .is_some()
+                    {
                         return Err(SpellBookError::Words(words.clone()));
                     }
                 }
@@ -193,36 +243,56 @@ impl SpellBook {
         Ok(book)
     }
 
-    /// The instant spell a spoken message casts, if any. Words compare case-insensitively with
-    /// collapsed whitespace; a spell that takes a parameter also matches `words "parameter`.
+    /// The instant spell a spoken message casts, if any (part B.3 P1 and P2, Canary
+    /// `getInstantSpell` and `playerSaySpell`). Whitespace runs collapse to one space and the ends
+    /// are trimmed. The spell whose words are the longest case-insensitive prefix is chosen; a
+    /// spell without a parameter must match exactly, one with a parameter needs a space and at
+    /// least one more character after its words. A parameter that opens with a quote is the text
+    /// up to the next quote (an unclosed quote runs to the end; text after the closing quote makes
+    /// the message chat); any other parameter is a single word kept as spoken, quotes included
+    /// (two words make it chat). It keeps the
+    /// spoken case; an empty parameter is `None`. `None` means the message is chat.
     pub(crate) fn spoken(&self, message: &str) -> Option<SpokenSpell<'_>> {
-        let normalized = message
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join(" ")
-            .to_lowercase();
-        if let Some(&index) = self.by_words.get(&normalized) {
-            return Some(SpokenSpell {
-                spell: &self.spells[index],
-                parameter: None,
-            });
-        }
-        let (words, parameter) = normalized.split_once(" \"")?;
-        let &index = self.by_words.get(words)?;
+        let message = message.split_whitespace().collect::<Vec<_>>().join(" ");
+        let (words, &index) = self
+            .by_words
+            .iter()
+            .filter(|(words, _)| {
+                message
+                    .as_bytes()
+                    .get(..words.len())
+                    .is_some_and(|prefix| prefix.eq_ignore_ascii_case(words.as_bytes()))
+            })
+            .max_by_key(|(words, _)| words.len())?;
         let spell = &self.spells[index];
-        match spell.carrier {
+        let takes_parameter = matches!(
+            spell.carrier,
             Carrier::Instant {
                 takes_parameter: true,
                 ..
-            } => {
-                let parameter = parameter.trim_end_matches('"').trim();
-                Some(SpokenSpell {
-                    spell,
-                    parameter: (!parameter.is_empty()).then(|| parameter.to_owned()),
-                })
             }
-            _ => None,
+        );
+        let rest = message.get(words.len()..)?;
+        if rest.is_empty() {
+            return Some(SpokenSpell {
+                spell,
+                parameter: None,
+            });
         }
+        let parameter = rest.strip_prefix(' ').filter(|_| takes_parameter)?;
+        let parameter = match parameter.strip_prefix('"') {
+            Some(quoted) => match quoted.find('"') {
+                None => quoted,
+                Some(close) if close + 1 == quoted.len() => &quoted[..close],
+                Some(_) => return None,
+            },
+            None if parameter.contains(' ') => return None,
+            None => parameter,
+        };
+        Some(SpokenSpell {
+            spell,
+            parameter: (!parameter.is_empty()).then(|| parameter.to_owned()),
+        })
     }
 
     pub(crate) fn rune(&self, item: u32) -> Option<&SpellDefinition> {
@@ -245,6 +315,11 @@ pub(crate) struct CasterState {
     pub(crate) attack_value: u32,
     pub(crate) attack_factor: f64,
     pub(crate) shielding_skill: u32,
+    /// The caster wields a sword, club, axe or fist weapon (Canary/Crystal `needWeapon`), as the
+    /// equipment owner reports it.
+    pub(crate) melee_weapon: bool,
+    /// Defense of the first shield in the caster's left or right hand; `None` without a shield (D.4).
+    pub(crate) shield_defense: Option<u32>,
 }
 
 /// Ready times of a caster's spell and group cooldowns.
@@ -289,6 +364,27 @@ pub(crate) enum CastRejection {
     VocationCannotUse,
     PremiumRequired,
     TargetRequired,
+    /// A `needs_weapon` spell cast without a melee weapon (D.4); nothing is spent.
+    WeaponRequired,
+    /// A `needs_shield` spell cast without a shield (D.4.1); nothing is spent.
+    ShieldRequired,
+    /// The target is not one `allowed_targets` permits (D.3.1 step 1, B.5 step 1); nothing is
+    /// spent.
+    TargetNotAllowed,
+    /// A spell with `allowed_targets` was resolved with a target but without the target facts
+    /// ([`resolve_targeted_cast`]).
+    TargetFactsRequired,
+    /// A chain cast found no first creature (chain §3 step 2); nothing is spent.
+    NoChainTarget,
+    /// A chain cast was resolved without the world facts it needs ([`resolve_chain_cast`]).
+    ChainWorldRequired,
+    /// A party buff found no party, or too few members in its area (C.3 steps 1 and 3); nothing
+    /// is spent.
+    NoPartyMembers,
+    /// A party buff was resolved without the party facts it needs ([`resolve_party_cast`]).
+    PartyWorldRequired,
+    /// A party buff's scaled mana does not fit the exact integer computation.
+    PartyCostOverflow,
     TimeOverflow,
     Formula(FormulaError),
 }
@@ -312,6 +408,19 @@ impl Display for CastRejection {
             Self::VocationCannotUse => formatter.write_str("the vocation cannot use this spell"),
             Self::PremiumRequired => formatter.write_str("a premium account is required"),
             Self::TargetRequired => formatter.write_str("the spell needs a target"),
+            Self::WeaponRequired => formatter.write_str("a weapon is required"),
+            Self::ShieldRequired => formatter.write_str("a shield is required"),
+            Self::TargetNotAllowed => {
+                formatter.write_str("the spell cannot be used on this target")
+            }
+            Self::TargetFactsRequired => {
+                formatter.write_str("a targeted cast needs the target facts")
+            }
+            Self::NoChainTarget => formatter.write_str("no valid creature is in range"),
+            Self::ChainWorldRequired => formatter.write_str("a chain cast needs the world facts"),
+            Self::NoPartyMembers => formatter.write_str("no party members in range"),
+            Self::PartyWorldRequired => formatter.write_str("a party cast needs the party facts"),
+            Self::PartyCostOverflow => formatter.write_str("party mana cost overflow"),
             Self::TimeOverflow => formatter.write_str("cooldown time overflow"),
             Self::Formula(error) => write!(formatter, "formula: {error}"),
         }
@@ -339,7 +448,23 @@ pub(crate) enum ResolvedEffect {
     },
     Unresolved {
         operation: String,
+        effect: String,
     },
+}
+
+/// One creature of a chain cast and the spell's effects on it, scaled by its step.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ChainHitResolution {
+    pub(crate) hit: ChainHit,
+    pub(crate) effects: Vec<ResolvedEffect>,
+}
+
+/// One party member a party buff affects and the effects it receives.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct PartyMemberResolution {
+    pub(crate) creature: u64,
+    pub(crate) actor: String,
+    pub(crate) effects: Vec<ResolvedEffect>,
 }
 
 /// The outcome of an accepted cast; nothing is applied yet.
@@ -347,7 +472,14 @@ pub(crate) enum ResolvedEffect {
 pub(crate) struct CastResolution {
     pub(crate) mana_spent: u32,
     pub(crate) soul_spent: u32,
+    /// Effects of a cast that neither chains nor buffs a party.
     pub(crate) effects: Vec<ResolvedEffect>,
+    /// Creatures of a chain cast in hit order, each with its own effects; empty otherwise.
+    pub(crate) chain: Vec<ChainHitResolution>,
+    /// Members a party buff affects, by creature id, each with its own effects; empty otherwise.
+    pub(crate) party: Vec<PartyMemberResolution>,
+    /// The target of a cast by [`resolve_targeted_cast`]; its plan applies to this creature only.
+    pub(crate) target: Option<CheckedTarget>,
     pub(crate) cooldowns: Cooldowns,
 }
 
@@ -361,13 +493,114 @@ pub(crate) fn mana_cost(spell: &SpellDefinition, caster: &CasterState) -> u32 {
     }
 }
 
+/// The world facts a cast reads beyond the caster.
+#[derive(Clone, Copy)]
+enum Facts<'a> {
+    None,
+    Chain(&'a dyn ChainWorld, ChainStart),
+    Party(&'a dyn PartyWorld),
+    Target(&'a CastTarget),
+}
+
 /// Check and resolve one cast at `now`. `draw(minimum, maximum)` is the world damage distribution.
+/// A cast that chains needs [`resolve_chain_cast`], a party buff [`resolve_party_cast`], a cast
+/// at a target of a spell with `allowed_targets` [`resolve_targeted_cast`].
 pub(crate) fn resolve_cast(
     spell: &SpellDefinition,
     caster: &CasterState,
     cooldowns: &Cooldowns,
     now: SemanticTimeMicros,
     has_target: bool,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<CastResolution, CastRejection> {
+    if spell.chains(has_target) {
+        return Err(CastRejection::ChainWorldRequired);
+    }
+    if has_target && spell.allowed_targets != AllowedTargets::Any {
+        return Err(CastRejection::TargetFactsRequired);
+    }
+    resolve(spell, caster, cooldowns, now, has_target, Facts::None, draw)
+}
+
+/// [`resolve_cast`] at a resolved target creature (part D.3). The cast checks run first; then a
+/// target that `allowed_targets` does not permit fails the cast before anything is spent.
+pub(crate) fn resolve_targeted_cast(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    target: CastTarget,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<CastResolution, CastRejection> {
+    resolve(
+        spell,
+        caster,
+        cooldowns,
+        now,
+        true,
+        Facts::Target(&target),
+        draw,
+    )
+}
+
+/// [`resolve_cast`] for a party buff (part C.3), with the party facts it reads. The cast checks
+/// run first; then a caster without a party, or with fewer than `min_affected` members in the
+/// area, fails the cast, and then the caster must have the computed mana. Nothing is spent on a
+/// failure. Each affected member draws its own values.
+pub(crate) fn resolve_party_cast(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    world: &dyn PartyWorld,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<CastResolution, CastRejection> {
+    resolve(
+        spell,
+        caster,
+        cooldowns,
+        now,
+        false,
+        Facts::Party(world),
+        draw,
+    )
+}
+
+/// [`resolve_cast`] for any spell, with the world facts a chain reads (chain §3). The cast checks
+/// run first; a chain with no first creature then fails the cast before anything is spent. Each
+/// creature hit draws its own value (Canary `doCombat` per chain target), scaled by its step.
+pub(crate) fn resolve_chain_cast(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    world: &dyn ChainWorld,
+    start: ChainStart,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<CastResolution, CastRejection> {
+    // A spell that takes no target starts from the attacked or the nearest creature (§3 step 1).
+    let start = ChainStart {
+        target: start.target.filter(|_| spell.takes_target()),
+        ..start
+    };
+    resolve(
+        spell,
+        caster,
+        cooldowns,
+        now,
+        start.target.is_some(),
+        Facts::Chain(world, start),
+        draw,
+    )
+}
+
+fn resolve(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    has_target: bool,
+    facts: Facts<'_>,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<CastResolution, CastRejection> {
     // Order of Canary Spell::playerSpellCheck (group, spell, secondary group cooldowns first).
@@ -396,7 +629,7 @@ pub(crate) fn resolve_cast(
             required: magic_level,
         });
     }
-    let mana = mana_cost(spell, caster);
+    let mut mana = mana_cost(spell, caster);
     if caster.mana < mana {
         return Err(CastRejection::NotEnoughMana { required: mana });
     }
@@ -413,12 +646,57 @@ pub(crate) fn resolve_cast(
     } else if !spell.vocations.contains(&caster.vocation) {
         return Err(CastRejection::VocationCannotUse);
     }
+    // Canary/Crystal check the weapon after the vocation and before premium.
+    if spell.needs_weapon && !caster.melee_weapon {
+        return Err(CastRejection::WeaponRequired);
+    }
     if spell.premium && !caster.premium {
         return Err(CastRejection::PremiumRequired);
     }
     if spell.needs_target && !has_target {
         return Err(CastRejection::TargetRequired);
     }
+    // The script checks of D.3 and D.4 run after the engine checks (Canary `onCastSpell`).
+    if spell.allowed_targets != AllowedTargets::Any
+        && let Facts::Target(target) = facts
+        && !spell.allowed_targets.allows(target)
+    {
+        return Err(CastRejection::TargetNotAllowed);
+    }
+    if spell.needs_shield && caster.shield_defense.is_none() {
+        return Err(CastRejection::ShieldRequired);
+    }
+    let hits = match (&spell.chain, facts) {
+        (Some(chain), Facts::Chain(world, start)) if spell.chains(has_target) => {
+            let target_range = spell.range_tiles.unwrap_or(chain.initial_range_tiles);
+            let hits = pick_chain(chain, world, start, target_range);
+            if hits.is_empty() {
+                return Err(CastRejection::NoChainTarget);
+            }
+            hits
+        }
+        (Some(_), _) if spell.chains(has_target) => {
+            return Err(CastRejection::ChainWorldRequired);
+        }
+        _ => Vec::new(),
+    };
+    let members = match (&spell.execution, facts) {
+        (Execution::PartyBuff(buff), Facts::Party(world)) => {
+            let members = buff.affected(world).map_err(party_rejection)?;
+            // The authored `costs.mana` is 0 for a party buff (reader rule); the buff's mana is added.
+            mana = buff
+                .mana_cost(members.len())
+                .ok()
+                .and_then(|cost| mana.checked_add(cost))
+                .ok_or(CastRejection::PartyCostOverflow)?;
+            if caster.mana < mana {
+                return Err(CastRejection::NotEnoughMana { required: mana });
+            }
+            members
+        }
+        (Execution::PartyBuff(_), _) => return Err(CastRejection::PartyWorldRequired),
+        _ => Vec::new(),
+    };
     let inputs = FormulaInputs {
         level: caster.level,
         magic_level: caster.magic_level,
@@ -427,24 +705,60 @@ pub(crate) fn resolve_cast(
         attack_value: caster.attack_value,
         attack_factor: caster.attack_factor,
         shielding_skill: caster.shielding_skill,
+        shield_defense: caster.shield_defense,
     };
-    let effects = match &spell.execution {
+    let resolve_effects = |draw: &mut dyn FnMut(i64, i64) -> i64| match &spell.execution {
         Execution::Conjure {
             reagent,
             result,
             count,
-        } => {
-            vec![ResolvedEffect::Conjure {
-                reagent: *reagent,
-                result: *result,
-                count: *count,
-            }]
-        }
+        } => Ok(vec![ResolvedEffect::Conjure {
+            reagent: *reagent,
+            result: *result,
+            count: *count,
+        }]),
         Execution::Effects(effects) => effects
             .iter()
             .map(|effect| resolve_effect(effect, &inputs, draw))
-            .collect::<Result<_, _>>()
-            .map_err(CastRejection::Formula)?,
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(CastRejection::Formula),
+        Execution::PartyBuff(buff) => buff
+            .effects
+            .iter()
+            .map(|effect| resolve_effect(effect, &inputs, draw))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(CastRejection::Formula),
+    };
+    let step_percent = spell
+        .chain
+        .as_ref()
+        .map_or(0, |chain| chain.damage_step_percent);
+    let party = members
+        .into_iter()
+        .map(|member: &ChainCreature| {
+            Ok(PartyMemberResolution {
+                creature: member.id,
+                actor: member.actor.clone(),
+                effects: resolve_effects(draw)?,
+            })
+        })
+        .collect::<Result<Vec<_>, CastRejection>>()?;
+    let (effects, chain) = if !party.is_empty() {
+        (Vec::new(), Vec::new())
+    } else if hits.is_empty() {
+        (resolve_effects(draw)?, Vec::new())
+    } else {
+        let chain = hits
+            .into_iter()
+            .map(|hit| {
+                let effects = resolve_effects(draw)?
+                    .into_iter()
+                    .map(|effect| scale(effect, hit.step, step_percent))
+                    .collect();
+                Ok(ChainHitResolution { hit, effects })
+            })
+            .collect::<Result<Vec<_>, CastRejection>>()?;
+        (Vec::new(), chain)
     };
     let mut after = cooldowns.clone();
     let ready = |delay: u64| {
@@ -463,8 +777,38 @@ pub(crate) fn resolve_cast(
         mana_spent: mana,
         soul_spent: spell.soul,
         effects,
+        chain,
+        party,
+        target: match facts {
+            Facts::Target(target) => Some(target.checked()),
+            Facts::None | Facts::Chain(..) | Facts::Party(_) => None,
+        },
         cooldowns: after,
     })
+}
+
+fn party_rejection(failure: PartyFailure) -> CastRejection {
+    match failure {
+        PartyFailure::NoMembersInRange => CastRejection::NoPartyMembers,
+        PartyFailure::CostOverflow => CastRejection::PartyCostOverflow,
+    }
+}
+
+/// A chain step scales the rolled damage or heal value (chain §3 step 8; D12 rounding).
+fn scale(effect: ResolvedEffect, step: u32, step_percent: i32) -> ResolvedEffect {
+    match effect {
+        ResolvedEffect::Damage {
+            damage_type,
+            magnitude,
+        } => ResolvedEffect::Damage {
+            damage_type,
+            magnitude: step_value(magnitude, step, step_percent),
+        },
+        ResolvedEffect::Heal { magnitude } => ResolvedEffect::Heal {
+            magnitude: step_value(magnitude, step, step_percent),
+        },
+        other => other,
+    }
 }
 
 fn check_group(
@@ -506,8 +850,9 @@ fn resolve_effect(
         SpellEffect::RemoveCondition { condition } => ResolvedEffect::RemoveCondition {
             condition: condition.clone(),
         },
-        SpellEffect::Other { operation } => ResolvedEffect::Unresolved {
+        SpellEffect::Other { operation, effect } => ResolvedEffect::Unresolved {
             operation: operation.clone(),
+            effect: effect.clone(),
         },
     })
 }

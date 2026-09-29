@@ -65,6 +65,11 @@ FAMILIES = {
         "stem": "islands",
         "schema": "OTERYN_AREA_AUTHORING_SHARD/v1",
     },
+    "Area.Region": {
+        "dir": "content/world/areas/regions",
+        "stem": "regions",
+        "schema": "OTERYN_AREA_AUTHORING_SHARD/v1",
+    },
     "House": {
         "dir": "content/houses",
         "stem": "houses",

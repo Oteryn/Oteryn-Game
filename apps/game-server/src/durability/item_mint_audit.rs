@@ -23,6 +23,9 @@ pub const AUDIT_RETENTION_P90D_MS: i64 = 7_776_000_000;
 /// Typed cause of a loot-output MINT (the registered B4 binding value).
 pub const LOOT_MINT_TYPED_CAUSE: &str = "loot_mint";
 pub const ITEM_LIFECYCLE_LIVE: u32 = 1;
+/// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): the corpse-loot MINT's
+/// placement ordinal is `1..=` this many.
+pub const GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX: u64 = 16;
 
 pub(super) const ENVELOPE_REVISION: u32 = 1;
 pub(super) const DURABLE_AUDIT: i32 = 2;
@@ -151,22 +154,33 @@ pub struct OneItemMintV1 {
     pub source: Option<OneItemProvenanceV1>,
     #[prost(bool, tag = "4")]
     pub before_semantically_absent: bool,
+    /// D3-2 corpse-loot MINT destination: exactly one of `destination`
+    /// (Ground) and this is set.
+    #[prost(message, optional, tag = "5")]
+    pub corpse_container_entry: Option<super::item_transfer_audit::OneItemContainerEntryV1>,
 }
 
-/// `mint` (tag 2) and the B3 `transfer` (tag 3, [`super::item_transfer_audit`]).
+/// `mint` (tag 2), the B3 `transfer` (tag 3, [`super::item_transfer_audit`]),
+/// the CHEST-1 `reward_claim_mint` (tag 4,
+/// [`super::reward_claim_mint_audit`]) and the D3-6 `decay_retire` (tag 5,
+/// [`super::item_decay_retire_audit`]).
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum OneItemOperationV1 {
     #[prost(message, tag = "2")]
     Mint(OneItemMintV1),
     #[prost(message, tag = "3")]
     Transfer(super::item_transfer_audit::OneItemTransferV1),
+    #[prost(message, tag = "4")]
+    RewardClaimMint(super::reward_claim_mint_audit::OneItemRewardClaimMintV1),
+    #[prost(message, tag = "5")]
+    DecayRetire(super::item_decay_retire_audit::OneItemDecayRetireV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2, 3")]
+    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5")]
     pub operation: Option<OneItemOperationV1>,
 }
 
@@ -336,7 +350,6 @@ pub(super) fn check_definition(
 /// Complete closed MINT shape and every registered per-field bound.
 pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
     let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
-    let ground = value.destination.as_ref().ok_or(AuditError::InvalidInput)?;
     let source = value.source.as_ref().ok_or(AuditError::InvalidInput)?;
     let death = source
         .death_occurrence
@@ -345,13 +358,6 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
     check_uuid_v7(&after.item_instance_id)?;
     check_uuid_v7(&after.world_id)?;
     check_definition(after.definition.as_ref())?;
-    check_uuid_v7(&ground.world_id)?;
-    check_uuid_v7(&ground.channel_id)?;
-    check_technical_bytes(&ground.spatial_position)?;
-    check_technical_bytes(&ground.corpse_ref)?;
-    check_content_key(&ground.map_revision)?;
-    check_content_key(&ground.content_revision)?;
-    check_technical_bytes(&ground.native_room_placement_context)?;
     check_technical_text(&source.typed_cause)?;
     check_uuid_v7(&death.world_id)?;
     check_uuid_v7(&death.channel_id)?;
@@ -360,18 +366,45 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
     check_content_key(&source.content_revision)?;
     check_content_key(&source.ruleset_revision)?;
     check_content_key(&source.sim_revision)?;
-    // One live item in the death's own Ground scope and generation, with
-    // explicit semantic absence before it.
+    // Exactly one destination: the death's Ground scope (with its exact
+    // World, Channel and generation) or, for a corpse-loot MINT, the entry of
+    // the death's own corpse container.
+    match (&value.destination, &value.corpse_container_entry) {
+        (Some(ground), None) => {
+            check_uuid_v7(&ground.world_id)?;
+            check_uuid_v7(&ground.channel_id)?;
+            check_technical_bytes(&ground.spatial_position)?;
+            check_technical_bytes(&ground.corpse_ref)?;
+            check_content_key(&ground.map_revision)?;
+            check_content_key(&ground.content_revision)?;
+            check_technical_bytes(&ground.native_room_placement_context)?;
+            if after.world_id != ground.world_id
+                || death.world_id != ground.world_id
+                || death.channel_id != ground.channel_id
+                || ground.runtime_scope_ownership_generation != death.scope_ownership_generation
+            {
+                return Err(AuditError::InvalidInput);
+            }
+        }
+        (None, Some(entry)) => {
+            check_uuid_v7(&entry.parent_item_instance_id)?;
+            if entry.parent_item_instance_id == after.item_instance_id
+                || !(1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX).contains(&entry.placement_ordinal)
+                || after.world_id != death.world_id
+                || source.loot_purpose_key == super::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY
+            {
+                return Err(AuditError::InvalidInput);
+            }
+        }
+        _ => return Err(AuditError::InvalidInput),
+    }
+    // One live item with explicit semantic absence before it.
     if !value.before_semantically_absent
         || after.quantity == 0
         || after.lifecycle != ITEM_LIFECYCLE_LIVE
         || source.typed_cause != LOOT_MINT_TYPED_CAUSE
-        || after.world_id != ground.world_id
-        || death.world_id != ground.world_id
-        || death.channel_id != ground.channel_id
         || death.scope_ownership_generation == 0
         || death.actor_local_generation == 0
-        || ground.runtime_scope_ownership_generation != death.scope_ownership_generation
     {
         return Err(AuditError::InvalidInput);
     }
@@ -467,9 +500,9 @@ pub fn decode_payload(wire: &[u8]) -> Result<OneItemMintV1, AuditError> {
 pub fn decode_envelope(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemMintV1), AuditError> {
     let value = decode_common_envelope(wire)?;
     let mint = decode_payload(&value.payload)?;
-    let ground = mint.destination.as_ref().ok_or(AuditError::InvalidInput)?;
-    if value.world_id.as_deref() != Some(ground.world_id.as_slice())
-        || value.channel_id.as_deref() != Some(ground.channel_id.as_slice())
+    let (world_id, channel_id) = mint_scope(&mint)?;
+    if value.world_id.as_deref() != Some(world_id.as_slice())
+        || value.channel_id.as_deref() != Some(channel_id.as_slice())
         || value.game_session_id.is_some()
         || value.command_id.is_some()
         || value.causation.is_some()
@@ -477,6 +510,18 @@ pub fn decode_envelope(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemMintV1), 
         return Err(AuditError::InvalidInput);
     }
     Ok((value, mint))
+}
+
+/// The event's World and Channel: the death's own scope, which a Ground
+/// destination repeats exactly ([`check_mint`]) and a corpse-container
+/// destination leaves implicit.
+fn mint_scope(mint: &OneItemMintV1) -> Result<(Vec<u8>, Vec<u8>), AuditError> {
+    let death = mint
+        .source
+        .as_ref()
+        .and_then(|source| source.death_occurrence.as_ref())
+        .ok_or(AuditError::InvalidInput)?;
+    Ok((death.world_id.clone(), death.channel_id.clone()))
 }
 
 /// Operation-independent RL-07 envelope gate shared by MINT and TRANSFER:
@@ -541,8 +586,7 @@ pub fn encode_mint_event(
         return Err(AuditError::InvalidInput);
     }
     check_mint(&mint)?;
-    let ground = mint.destination.as_ref().ok_or(AuditError::InvalidInput)?;
-    let (world_id, channel_id) = (ground.world_id.clone(), ground.channel_id.clone());
+    let (world_id, channel_id) = mint_scope(&mint)?;
     let payload = encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: INTERPRETATION_REVISION,
@@ -666,6 +710,7 @@ pub(super) mod tests {
                 sim_revision: "sim-1".into(),
             }),
             before_semantically_absent: true,
+            corpse_container_entry: None,
         }
     }
 
@@ -727,6 +772,7 @@ pub(super) mod tests {
                     sim_revision: content,
                 }),
                 before_semantically_absent: true,
+                corpse_container_entry: None,
             })),
         };
         worst_case_envelope(encode_bounded(&payload, RL07_PAYLOAD_BYTES_MAX).unwrap())
@@ -1061,6 +1107,113 @@ pub(super) mod tests {
         assert_eq!(
             encode_mint_event(identity(), other_generation),
             Err(AuditError::InvalidInput)
+        );
+    }
+
+    fn corpse_mint(ordinal: u64) -> OneItemMintV1 {
+        let mut value = mint();
+        value.destination = None;
+        value.corpse_container_entry =
+            Some(super::super::item_transfer_audit::OneItemContainerEntryV1 {
+                parent_item_instance_id: uuid(10),
+                placement_ordinal: ordinal,
+            });
+        value
+    }
+
+    #[test]
+    fn corpse_loot_mint_round_trips_in_the_death_scope() {
+        for ordinal in [1, GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX] {
+            let wire = encode_mint_event(identity(), corpse_mint(ordinal)).unwrap();
+            let (envelope, decoded) = decode_envelope(&wire).unwrap();
+            assert_eq!(decoded, corpse_mint(ordinal));
+            assert!(decoded.destination.is_none());
+            // The event scope is the death's own World and Channel.
+            assert_eq!(envelope.world_id, Some(uuid(1)));
+            assert_eq!(envelope.channel_id, Some(uuid(2)));
+            assert_eq!(
+                encode_mint_event(identity(), corpse_mint(ordinal)).unwrap(),
+                wire
+            );
+        }
+    }
+
+    #[test]
+    fn corpse_loot_mint_destination_is_closed() {
+        // Ordinal 0 and the 17th entry are outside 1..=16.
+        for ordinal in [0, GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX + 1] {
+            assert_eq!(
+                encode_mint_event(identity(), corpse_mint(ordinal)),
+                Err(AuditError::InvalidInput)
+            );
+        }
+        // Exactly one destination: both and neither are refused.
+        let mut both = corpse_mint(1);
+        both.destination = mint().destination;
+        assert_eq!(
+            encode_mint_event(identity(), both),
+            Err(AuditError::InvalidInput)
+        );
+        let mut neither = corpse_mint(1);
+        neither.corpse_container_entry = None;
+        assert_eq!(
+            encode_mint_event(identity(), neither),
+            Err(AuditError::InvalidInput)
+        );
+        // The parent is a UUIDv7 other than the item itself.
+        let mut bad_parent = corpse_mint(1);
+        bad_parent
+            .corpse_container_entry
+            .as_mut()
+            .unwrap()
+            .parent_item_instance_id = vec![0; 15];
+        assert_eq!(
+            encode_mint_event(identity(), bad_parent),
+            Err(AuditError::InvalidInput)
+        );
+        let mut self_parent = corpse_mint(1);
+        self_parent
+            .corpse_container_entry
+            .as_mut()
+            .unwrap()
+            .parent_item_instance_id = uuid(9);
+        assert_eq!(
+            encode_mint_event(identity(), self_parent),
+            Err(AuditError::InvalidInput)
+        );
+        // A loot entry never carries the corpse's reserved cause, and stays
+        // in its death's World.
+        let mut reserved = corpse_mint(1);
+        reserved.source.as_mut().unwrap().loot_purpose_key =
+            super::super::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY.into();
+        assert_eq!(
+            encode_mint_event(identity(), reserved),
+            Err(AuditError::InvalidInput)
+        );
+        let mut other_world = corpse_mint(1);
+        other_world.after.as_mut().unwrap().world_id = uuid(5);
+        assert_eq!(
+            encode_mint_event(identity(), other_world),
+            Err(AuditError::InvalidInput)
+        );
+    }
+
+    #[test]
+    fn corpse_container_entry_is_additive_field_five() {
+        // Wire field 5, length-delimited: the first byte alone names it, and
+        // a pre-D3 Ground MINT (field 5 absent) never emits it.
+        let only_entry = OneItemMintV1 {
+            corpse_container_entry: corpse_mint(3).corpse_container_entry,
+            ..OneItemMintV1::default()
+        };
+        assert_eq!(only_entry.encode_to_vec()[0], 0x2a);
+        let ground = mint();
+        let mut without = ground.clone();
+        without.corpse_container_entry = None;
+        assert_eq!(ground.encode_to_vec(), without.encode_to_vec());
+        assert_eq!(
+            OneItemMintV1::decode(corpse_mint(3).encode_to_vec().as_slice()).unwrap(),
+            corpse_mint(3)
         );
     }
 }
