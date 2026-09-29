@@ -196,6 +196,15 @@ def render(sources, family):
     return files, summary
 
 
+def stale_paths(root, family, files):
+    """On-disk `*.json` in the family's generated directory that the render omits."""
+    directory = FAMILY_DIRECTORY[family][0]
+    on_disk = {
+        path.relative_to(root).as_posix() for path in (root / directory).glob("*.json")
+    }
+    return sorted(on_disk - set(files))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--source", type=Path, required=True)
@@ -215,17 +224,14 @@ def main():
             if not (args.root / path).is_file()
             or (args.root / path).read_bytes() != body
         ]
-        directory = FAMILY_DIRECTORY[args.family][0]
-        on_disk = {
-            path.relative_to(args.root).as_posix()
-            for path in (args.root / directory).glob("*.json")
-        }
-        drift += sorted(on_disk - set(files))
+        drift += stale_paths(args.root, args.family, files)
         if drift:
             print(json.dumps({"check": "DRIFT", "paths": drift[:10]}))
             raise SystemExit(1)
         print(json.dumps({"check": "PASS", **summary}, sort_keys=True))
         return
+    for path in stale_paths(args.root, args.family, files):
+        (args.root / path).unlink()
     for path, body in files.items():
         target = args.root / path
         target.parent.mkdir(parents=True, exist_ok=True)

@@ -22,6 +22,7 @@ owned_paths:
   - content/world/objects/**
   - tools/content-schema/world-object-authoring/**   # one new emitter and its test only
   - docs/agents/tasks/active/OTV2-20260928-wo2-world-object-population.md
+  - apps/game-server/tests/content_world_project_repository.rs   # narrow lease, this one file only; see Leases
 public_contracts: []
 depends_on:
   - "docs/architecture/reviews/OTERYN_GAME_WO0_WORLD_OBJECT_AND_TERRAIN_AUTHORING_FORMAT_DECISION_2026-09-28.md"
@@ -69,12 +70,16 @@ records) is slice 2 and needs its own allocation.
 Two full regenerations into separate roots are byte-identical (`diff -r` empty). `--check` diffs the
 committed files against an in-memory regeneration. The WO-1 census `--check` is unchanged and PASS.
 
+## Leases
+
+- `apps/game-server/tests/content_world_project_repository.rs` (this one file only): required by the D93/D94 population, and granted by the coordinator on #162. The edit excludes populated successor `definitions/` catalogs from the legacy package inventory assertion. No other `apps/game-server/**` path is leased.
+
 ## Excluded scope and follow-ups
 
 - **WorldObject slice.** Also holds the 21 `magicfield` ids routed to WorldObject, in conflict with
   the 104 Terrain fields.
 - **Item `routed_to` pointers.** They need the Rust `ProjectReferenceRecord::Item` amendment and
-  `DefinitionFamily::WorldObject`: `SHARED_LEASE_REQUIRED` (`apps/game-server/**`).
+  `DefinitionFamily::WorldObject`: `SHARED_LEASE_REQUIRED` (`apps/game-server/**`; the narrow test-file lease above does not cover `src/`).
 - **Marker state.** `content/world/terrain/index.json` stays `READY_UNPOPULATED`. Only its notes are
   updated, because `validate_materialized_game_tree.py`, the Rust tree test and the materialization
   evidence admit only `READY_UNPOPULATED` or `LEGACY_COMPAT_PRESENT`. A populated state needs a

@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import tempfile
+from pathlib import Path
 
 import populate_content as pc
 import world_objects as wo
@@ -97,6 +99,32 @@ def test_family_keys_are_disjoint_from_other_families():
             for record in load(path)["records"]:
                 keys.setdefault(record["identity"]["key"], family)
                 check(keys[record["identity"]["key"]] == family, "cross-family key")
+
+
+def test_stale_shards_are_reported_and_only_generated_directory_is_scoped():
+    directory = pc.FAMILY_DIRECTORY["Terrain"][0]
+    files = {f"{directory}/terrain-00001-00002.json": b"{}\n"}
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        target = root / directory
+        target.mkdir(parents=True)
+        (target / "terrain-00001-00002.json").write_bytes(b"{}\n")
+        (target / "terrain-00003-00004.json").write_bytes(b"{}\n")
+        (target / "notes.txt").write_bytes(b"keep")
+        sibling = root / "content/world/objects/definitions"
+        sibling.mkdir(parents=True)
+        (sibling / "objects-00001-00002.json").write_bytes(b"{}\n")
+        stale = pc.stale_paths(root, "Terrain", files)
+        check(
+            stale == [f"{directory}/terrain-00003-00004.json"], "stale shard reported"
+        )
+        for path in stale:
+            (root / path).unlink()
+        check(not (target / "terrain-00003-00004.json").exists(), "stale shard removed")
+        check((target / "terrain-00001-00002.json").is_file(), "current shard kept")
+        check((target / "notes.txt").is_file(), "non-json file kept")
+        check((sibling / "objects-00001-00002.json").is_file(), "other family kept")
+        check(pc.stale_paths(root, "Terrain", files) == [], "no stale after removal")
 
 
 if __name__ == "__main__":
