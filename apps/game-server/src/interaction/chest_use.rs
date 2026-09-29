@@ -1,0 +1,284 @@
+//! D39: server-side `USE` on a placed plain `once` reward chest, wired to the CHEST-1
+//! reward-claim MINT (`durability::reward_claim_mint`).
+//!
+//! Accepted contract text: GAME-INTERACTION-01 chest `USE` slice (§4.1, §4.3, §5.1, §5.3-§5.7,
+//! §17, §19.1) in `OTERYN_GAME_D39_CHEST_USE_GAME_INTERACTION_AMENDMENT_DECISION_2026-09-29.md`.
+//!
+//! - **Child identity (§5.1, §5.3-§5.7).** The chest `USE` is a first-level child of the `USE`
+//!   command's root occurrence. Its definition is the claimed RewardClaim, its target the placed
+//!   chest (resolved from the current Content, never trusted), its edge [`USE_EDGE`], no ordinal,
+//!   and the revisions in force at the `USE`. The occurrence key is therefore the placed chest
+//!   plus the claim identity (D40).
+//! - **Retry (§17).** DUR-03 keys the MINT by the `USE` `CommandRef`: the same `CommandRef`
+//!   returns its first outcome, a changed intent under it conflicts, and a second command on a
+//!   claimed `once` claim is refused. An ambiguous commit stays pending on the same DUR-03
+//!   reservation; calling [`settle_chest_use`] again with the same request reconciles it.
+//! - **DUR-03 (§19.1).** Durable value, refusal and ambiguity stay in
+//!   `durability::reward_claim_mint`. This module only resolves facts from Content, builds the
+//!   correlation identity and calls freeze and commit.
+//!
+//! Facts: the reward item's and the equipped backpack's `ItemDefinitionFacts` are read from the
+//! current [`CanonicalReferencePlayableContent`] through B3-2's
+//! [`resolve_item_definition_facts`], never from the caller. Content has no RewardClaim
+//! definition yet (no claim-to-reward binding), so the caller names the claim, the reward item
+//! and its quantity, as B3-2's caller names the item it picks up. That binding is a declared
+//! Content gap; the MINT's own admission still enforces every D40-D42 and D92 rule.
+//!
+//! Like B3-2, this has no production caller yet: the client `USE` command (control-wire lane)
+//! and its network dispatch are a later stage. This is a top-level module
+//! (`crate::interaction_chest_use`), not `interaction::chest_use`, because
+//! `tests/interaction_workflow.rs` recompiles `interaction/mod.rs` without Content or
+//! durability.
+
+use crate::combat::DurabilitySession;
+use crate::combat_pickup::{PickupContentError, resolve_item_definition_facts};
+use crate::content::{CanonicalReferencePlayableContent, DefinitionFamily, PlacementKey};
+use crate::durability::item_mint::TypedDefinitionRef;
+use crate::durability::item_transfer::{CurrentCharacterItemFence, ItemTransferError};
+use crate::durability::reward_claim_mint::{
+    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
+};
+use crate::foundation::CommandRef;
+use crate::interaction::{
+    ChildOccurrenceRef, InteractionError, RootSourceOccurrenceRef, SemanticRevisionContext,
+};
+
+/// §5.5 typed edge of a player `USE` on a placed object.
+pub(crate) const USE_EDGE: &str = "USE";
+
+/// A player's `USE` of one placed reward chest, as GAME-INTERACTION resolves it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ChestUseRequest {
+    /// The FND-02 `CommandRef` of the player's `USE`; the DUR-03 cause key.
+    pub(crate) command: CommandRef,
+    /// The placed chest the player used. It must be an Item placement in the current Content.
+    pub(crate) chest: PlacementKey,
+    /// The claimed RewardClaim definition (caller-named until Content declares claims).
+    pub(crate) claim: TypedDefinitionRef,
+    /// The one top-level reward item. Its facts are read from Content.
+    pub(crate) reward_item: TypedDefinitionRef,
+    pub(crate) quantity: u32,
+    pub(crate) content_revision: String,
+    pub(crate) ruleset_revision: String,
+    pub(crate) sim_revision: String,
+}
+
+/// Committed or replayed result of one chest `USE`, with its GAME-INTERACTION correlation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ChestUseOutcome {
+    pub(crate) child: ChildOccurrenceRef,
+    pub(crate) mint: RewardClaimMintOutcome,
+}
+
+#[derive(Debug)]
+pub(crate) enum ChestUseError {
+    /// No placement with the named key exists in the current Content.
+    ChestNotPlaced,
+    /// The placement is not an Item placement, so it cannot be a chest.
+    ChestNotAnItem,
+    /// The reward item or the equipped backpack has no admissible Content definition.
+    Content(PickupContentError),
+    /// The child occurrence identity could not be built (empty key).
+    Identity(InteractionError),
+    /// The equipped backpack could not be read.
+    Backpack(ItemTransferError),
+    /// DUR-03 refused, conflicted or could not commit; nothing was written on a refusal.
+    Mint(RewardClaimMintError),
+}
+
+impl From<RewardClaimMintError> for ChestUseError {
+    fn from(error: RewardClaimMintError) -> Self {
+        Self::Mint(error)
+    }
+}
+
+impl From<InteractionError> for ChestUseError {
+    fn from(error: InteractionError) -> Self {
+        Self::Identity(error)
+    }
+}
+
+impl std::fmt::Display for ChestUseError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::ChestNotPlaced => formatter.write_str("chest use: no such placement in Content"),
+            Self::ChestNotAnItem => {
+                formatter.write_str("chest use: the placement is not an Item placement")
+            }
+            Self::Content(error) => write!(formatter, "chest use content resolution: {error}"),
+            Self::Identity(error) => write!(formatter, "chest use occurrence identity: {error}"),
+            Self::Backpack(error) => write!(formatter, "chest use backpack read: {error}"),
+            Self::Mint(error) => write!(formatter, "chest use reward claim: {error}"),
+        }
+    }
+}
+
+impl std::error::Error for ChestUseError {}
+
+/// §4.1 `RootSourceOccurrenceRef`: the player's `USE` command occurrence.
+fn root_occurrence(command: CommandRef) -> Result<RootSourceOccurrenceRef, InteractionError> {
+    let session: String = command
+        .game_session_id()
+        .as_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    RootSourceOccurrenceRef::new(&format!(
+        "use-command:{session}:{}",
+        command.command_id().get()
+    ))
+}
+
+/// §5.1 child identity of the chest `USE`. Pure; the target must already be resolved.
+pub(crate) fn chest_use_occurrence(
+    request: &ChestUseRequest,
+) -> Result<ChildOccurrenceRef, InteractionError> {
+    let revisions = SemanticRevisionContext::new(
+        &request.content_revision,
+        &request.ruleset_revision,
+        &request.sim_revision,
+    )?;
+    let claim = &request.claim;
+    ChildOccurrenceRef::for_root(
+        &root_occurrence(request.command)?,
+        &format!(
+            "{}:{}@{}",
+            claim.family, claim.production_key, claim.revision_ref
+        ),
+        request.chest.as_str(),
+        USE_EDGE,
+        None,
+        &revisions,
+    )
+}
+
+/// §5.4: the server resolves the target. The named chest must be an Item placement of the
+/// current Content generation.
+pub(crate) fn resolve_chest_placement(
+    content: &CanonicalReferencePlayableContent,
+    chest: &PlacementKey,
+) -> Result<(), ChestUseError> {
+    let placement = content
+        .placements
+        .iter()
+        .find(|placement| &placement.key == chest)
+        .ok_or(ChestUseError::ChestNotPlaced)?;
+    if placement.definition.family() != DefinitionFamily::Item {
+        return Err(ChestUseError::ChestNotAnItem);
+    }
+    Ok(())
+}
+
+/// D39 entry point: resolve the chest and the facts from `content`, build the child
+/// occurrence, then claim through CHEST-1's freeze and commit. Every failure before freeze
+/// writes nothing.
+pub(crate) async fn settle_chest_use(
+    session: &DurabilitySession<'_, '_, '_>,
+    content: &CanonicalReferencePlayableContent,
+    fence: CurrentCharacterItemFence,
+    request: ChestUseRequest,
+) -> Result<ChestUseOutcome, ChestUseError> {
+    resolve_chest_placement(content, &request.chest)?;
+    let child = chest_use_occurrence(&request)?;
+    let item = resolve_item_definition_facts(content, &request.reward_item)
+        .map_err(ChestUseError::Content)?;
+    let Some(current) = session
+        .root
+        .read_character_backpack(session.authority, fence.character_id)
+        .await
+        .map_err(ChestUseError::Backpack)?
+    else {
+        return Err(RewardClaimMintError::Refused(RewardClaimRefusal::NoMainBackpack).into());
+    };
+    let backpack = resolve_item_definition_facts(content, &current.backpack.definition)
+        .map_err(ChestUseError::Content)?;
+    let mint_request = RewardClaimMintRequest {
+        command: request.command,
+        claim: request.claim,
+        item,
+        quantity: request.quantity,
+        backpack,
+        content_revision: request.content_revision,
+        ruleset_revision: request.ruleset_revision,
+        sim_revision: request.sim_revision,
+    };
+    let mut candidate = session
+        .root
+        .freeze_reward_claim_mint(session.authority, session.node, fence, mint_request)
+        .await?;
+    let mint = session
+        .root
+        .commit_reward_claim_mint(session.authority, session.node, fence, &mut candidate)
+        .await?;
+    Ok(ChestUseOutcome { child, mint })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::foundation::{CommandId, GameSessionId};
+
+    type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+    fn request(command_id: u64, chest: &str, claim_key: &str) -> TestResult<ChestUseRequest> {
+        let session =
+            GameSessionId::decode(&[7, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 7])
+                .map_err(|error| format!("{error:?}"))?;
+        let command_id = CommandId::new(command_id).map_err(|error| format!("{error:?}"))?;
+        Ok(ChestUseRequest {
+            command: CommandRef::new(session, command_id),
+            chest: PlacementKey::new(chest)?,
+            claim: TypedDefinitionRef {
+                family: "RewardClaim".into(),
+                production_key: claim_key.into(),
+                revision_ref: "claim-r1".into(),
+            },
+            reward_item: TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "oteryn:item.test.coin".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            quantity: 1,
+            content_revision: "content-1".into(),
+            ruleset_revision: "ruleset-1".into(),
+            sim_revision: "sim-1".into(),
+        })
+    }
+
+    #[test]
+    fn same_use_builds_the_same_child_occurrence() -> TestResult {
+        let first = chest_use_occurrence(&request(1, "oteryn:chest.a", "oteryn:claim.a")?)?;
+        let again = chest_use_occurrence(&request(1, "oteryn:chest.a", "oteryn:claim.a")?)?;
+        assert_eq!(first, again);
+        assert_eq!(first.ancestry_depth(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn chest_claim_and_command_each_change_the_child_occurrence() -> TestResult {
+        let base = chest_use_occurrence(&request(1, "oteryn:chest.a", "oteryn:claim.a")?)?;
+        for other in [
+            request(1, "oteryn:chest.b", "oteryn:claim.a")?,
+            request(1, "oteryn:chest.a", "oteryn:claim.b")?,
+            request(2, "oteryn:chest.a", "oteryn:claim.a")?,
+        ] {
+            assert_ne!(base, chest_use_occurrence(&other)?);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn revisions_are_part_of_the_child_and_must_be_present() -> TestResult {
+        let base = request(1, "oteryn:chest.a", "oteryn:claim.a")?;
+        let mut later = base.clone();
+        later.content_revision = "content-2".into();
+        assert_ne!(chest_use_occurrence(&base)?, chest_use_occurrence(&later)?);
+        let mut empty = base;
+        empty.sim_revision = " ".into();
+        assert_eq!(
+            chest_use_occurrence(&empty),
+            Err(InteractionError::EmptySemanticKey)
+        );
+        Ok(())
+    }
+}
