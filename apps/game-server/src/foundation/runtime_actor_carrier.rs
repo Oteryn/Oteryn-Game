@@ -746,10 +746,11 @@ pub(crate) struct SpawnSourceId(pub(crate) u16);
 /// values; a missing one is a content-validation failure at a higher layer, not here.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SpawnDefinition {
-    /// One declared cell per creature (`placement_cells.len() <= AI01_SPAWN_PLACEMENT_CELLS_MAX`).
-    /// Placement never searches beyond these.
+    /// §4.3: "one placement cell per creature" -- exactly `population` cells, never more
+    /// (`placement_cells.len() == population <= AI01_SPAWN_PLACEMENT_CELLS_MAX`). Placement
+    /// never searches beyond these.
     placement_cells: Vec<LocalPosition>,
-    /// `1..=population.min(placement_cells.len())`; `<= AI01_SPAWN_POPULATION_MAX`.
+    /// `1..=AI01_SPAWN_POPULATION_MAX`, and exactly `placement_cells.len()`.
     population: usize,
     /// D115: 60,000,000 (60 s, in the owner clock's microsecond unit).
     respawn_delay_micros: u64,
@@ -772,8 +773,11 @@ impl SpawnDefinition {
         if placement_cells.is_empty() || placement_cells.len() > AI01_SPAWN_PLACEMENT_CELLS_MAX {
             return Err(CarrierError::InvalidSpawnDefinition);
         }
+        // §4.3: "one declared cell per creature" -- a mismatch either way (fewer cells than
+        // the population, or extra unused cells) is invalid, not merely clamped, so
+        // `resolve_respawn_timer` can never respawn more than the declared population.
         if population == 0
-            || population > placement_cells.len()
+            || population != placement_cells.len()
             || population > AI01_SPAWN_POPULATION_MAX
         {
             return Err(CarrierError::InvalidSpawnDefinition);
@@ -2406,6 +2410,15 @@ impl ChannelActorCarrier {
     /// generation. Every fallible check (duplicate source, the registered
     /// `AI01-SPAWN-SOURCES-PER-SCOPE` ceiling, general slot capacity) precedes any admission
     /// (GAME-AI-01 §6: over budget means zero mutation).
+    /// Every fallible check that does not itself mutate `self` (continuity, the position
+    /// context, duplicate source, the registered source/population ceilings, general
+    /// capacity) precedes any admission. Admission itself is staged: `self.slots`/
+    /// `self.free_head` are snapshotted first, and a failure partway through the population
+    /// (for example `ActorGenerationExhausted`, the one documented exception that still
+    /// mutates a single slot on failure, `admit_inner`) rolls the complete realization back
+    /// to that snapshot before returning the error, so a retry never accumulates untracked,
+    /// unpositioned creatures (GAME-AI-01 §6: over budget means zero mutation, applied here
+    /// to any per-creature failure, not only capacity).
     fn realize_spawn(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -2414,6 +2427,7 @@ impl ChannelActorCarrier {
         position_context: PreProductionPositionContext,
     ) -> Result<(), CarrierError> {
         self.validate_current_continuity(continuity)?;
+        self.validate_position_context(position_context)?;
         if self.spawns.iter().any(|spawn| spawn.source == source) {
             return Err(CarrierError::DuplicateSpawnSource);
         }
@@ -2430,28 +2444,35 @@ impl ChannelActorCarrier {
         }
         let target_identity = definition.creature_target_identity.clone();
         let initial_health = definition.creature_initial_health;
+
+        let slots_before = self.slots.clone();
+        let free_head_before = self.free_head;
         let mut cells = Vec::with_capacity(definition.placement_cells.len());
-        for (index, cell) in definition.placement_cells.iter().enumerate() {
-            if index < definition.population {
-                let actor = self.admit_creature(
-                    continuity,
-                    ActorState(0),
-                    &target_identity,
-                    initial_health,
-                )?;
-                self.initialize_position(continuity, actor, position_context, *cell)?;
-                cells.push(SpawnCellState {
-                    live: Some(ExactActorRef(actor)),
-                    attempt: 0,
-                    successor: 0,
-                });
-            } else {
-                cells.push(SpawnCellState {
-                    live: None,
-                    attempt: 0,
-                    successor: 0,
-                });
+        for cell in &definition.placement_cells {
+            let actor = match self.admit_creature(
+                continuity,
+                ActorState(0),
+                &target_identity,
+                initial_health,
+            ) {
+                Ok(actor) => actor,
+                Err(error) => {
+                    self.slots = slots_before;
+                    self.free_head = free_head_before;
+                    return Err(error);
+                }
+            };
+            if let Err(error) = self.initialize_position(continuity, actor, position_context, *cell)
+            {
+                self.slots = slots_before;
+                self.free_head = free_head_before;
+                return Err(error);
             }
+            cells.push(SpawnCellState {
+                live: Some(ExactActorRef(actor)),
+                attempt: 0,
+                successor: 0,
+            });
         }
         self.spawns.push(SpawnRealization {
             source,
@@ -2532,6 +2553,12 @@ impl ChannelActorCarrier {
     /// cell's retry/successor bookkeeping and reports what the caller should schedule next
     /// (`RespawnResolution`); this method itself never calls `OwnerTimerLane::schedule` (that
     /// needs the caller's own fence-issued `RuntimeWorkStamp`, binding item (b)).
+    /// The context is validated before any lookup or mutation. On the free-cell path, the
+    /// dead actor's removal, the replacement's admission, its positioning and the cell's
+    /// `live` update are staged and applied atomically: `self.slots`/`self.free_head` are
+    /// snapshotted before the removal, and any failure from admission or positioning rolls
+    /// the whole step back to that snapshot (so the cell keeps naming the original dead actor
+    /// and no unpositioned replacement is left admitted) before returning the error.
     fn resolve_respawn_timer(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -2540,6 +2567,7 @@ impl ChannelActorCarrier {
         position_context: PreProductionPositionContext,
     ) -> Result<RespawnResolution, CarrierError> {
         self.validate_current_continuity(continuity)?;
+        self.validate_position_context(position_context)?;
         let spawn_index = self
             .spawns
             .iter()
@@ -2567,6 +2595,9 @@ impl ChannelActorCarrier {
                 }
             });
         }
+
+        let slots_before = self.slots.clone();
+        let free_head_before = self.free_head;
         if let Some(dead_actor) = self.spawns[spawn_index].cells[cell_index].live {
             // Best effort: an already-removed actor (e.g. a repeated call) is not an error here.
             let _ = self.remove(continuity, dead_actor.0);
@@ -2576,9 +2607,24 @@ impl ChannelActorCarrier {
             .creature_target_identity
             .clone();
         let initial_health = self.spawns[spawn_index].definition.creature_initial_health;
-        let actor =
-            self.admit_creature(continuity, ActorState(0), &target_identity, initial_health)?;
-        self.initialize_position(continuity, actor, position_context, cell)?;
+        let actor = match self.admit_creature(
+            continuity,
+            ActorState(0),
+            &target_identity,
+            initial_health,
+        ) {
+            Ok(actor) => actor,
+            Err(error) => {
+                self.slots = slots_before;
+                self.free_head = free_head_before;
+                return Err(error);
+            }
+        };
+        if let Err(error) = self.initialize_position(continuity, actor, position_context, cell) {
+            self.slots = slots_before;
+            self.free_head = free_head_before;
+            return Err(error);
+        }
         let state = &mut self.spawns[spawn_index].cells[cell_index];
         state.live = Some(ExactActorRef(actor));
         state.attempt = 0;
@@ -3632,6 +3678,35 @@ mod tests {
     }
 
     #[test]
+    fn realize_spawn_with_an_invalid_context_mutates_nothing() {
+        // P1 (Codex review, PR #1193): the context is now validated before any admission, so a
+        // rejected realization never leaves an untracked, unpositioned creature behind; a
+        // retry with a valid context starts from byte-identical state.
+        let (continuity, mut carrier) = carrier(4);
+        let mut invalid_context = spawn_position_context(&continuity);
+        invalid_context.coordinate_frame_marker = 0;
+        let slots_before = carrier.slots.clone();
+        let free_head_before = carrier.free_head;
+        assert_eq!(
+            carrier.realize_spawn(
+                &continuity,
+                SpawnSourceId(1),
+                d116_definition(),
+                invalid_context
+            ),
+            Err(CarrierError::InvalidPreProductionPositionContext)
+        );
+        assert_eq!(carrier.slots, slots_before);
+        assert_eq!(carrier.free_head, free_head_before);
+        assert!(carrier.spawns.is_empty());
+
+        let context = spawn_position_context(&continuity);
+        carrier
+            .realize_spawn(&continuity, SpawnSourceId(1), d116_definition(), context)
+            .expect("a valid context still realizes the spawn afterward");
+    }
+
+    #[test]
     fn spawn_population_max_accepted_max_plus_one_rejected() {
         assert!(
             SpawnDefinition::new(
@@ -3665,7 +3740,7 @@ mod tests {
         assert!(
             SpawnDefinition::new(
                 max_cells,
-                1,
+                AI01_SPAWN_PLACEMENT_CELLS_MAX,
                 60_000_000,
                 5_000_000,
                 "oteryn:creature/rat".to_string(),
@@ -3679,13 +3754,57 @@ mod tests {
         assert_eq!(
             SpawnDefinition::new(
                 over_cells,
-                1,
+                AI01_SPAWN_PLACEMENT_CELLS_MAX + 1,
                 60_000_000,
                 5_000_000,
                 "oteryn:creature/rat".to_string(),
                 20,
             ),
             Err(CarrierError::InvalidSpawnDefinition)
+        );
+    }
+
+    #[test]
+    fn spawn_population_and_placement_cells_mismatch_rejected_both_directions() {
+        // P2 (Codex review, PR #1193): §4.3 "one declared cell per creature" -- fewer cells
+        // than the population must not clamp down, and extra unused cells must not be
+        // tolerated either, since `realize_spawn`/`resolve_respawn_timer` would otherwise be
+        // able to respawn more creatures than the declared population.
+        assert_eq!(
+            SpawnDefinition::new(
+                vec![(0, 0, 0)],
+                2,
+                60_000_000,
+                5_000_000,
+                "oteryn:creature/rat".to_string(),
+                20,
+            ),
+            Err(CarrierError::InvalidSpawnDefinition),
+            "population above the declared cell count is rejected"
+        );
+        assert_eq!(
+            SpawnDefinition::new(
+                vec![(0, 0, 0), (1, 0, 0)],
+                1,
+                60_000_000,
+                5_000_000,
+                "oteryn:creature/rat".to_string(),
+                20,
+            ),
+            Err(CarrierError::InvalidSpawnDefinition),
+            "extra, unused cells beyond the population are rejected"
+        );
+        assert!(
+            SpawnDefinition::new(
+                vec![(0, 0, 0), (1, 0, 0)],
+                2,
+                60_000_000,
+                5_000_000,
+                "oteryn:creature/rat".to_string(),
+                20,
+            )
+            .is_ok(),
+            "an exact population/cell-count match is accepted"
         );
     }
 
@@ -3789,6 +3908,45 @@ mod tests {
                 .live,
             Some(new_actor)
         );
+    }
+
+    #[test]
+    fn respawn_with_an_invalid_context_mutates_nothing_and_returns_err() {
+        // P1 (Codex review, PR #1193): the context is validated before the dead actor is
+        // removed or a replacement admitted, so a rejected respawn never leaves the cell
+        // pointing at a removed actor while an unpositioned replacement stays admitted.
+        let (continuity, mut carrier) = carrier(4);
+        let context = spawn_position_context(&continuity);
+        carrier
+            .realize_spawn(&continuity, SpawnSourceId(1), d116_definition(), context)
+            .expect("D116 realizes");
+        let dead = kill_spawn_cell(&continuity, &mut carrier, SpawnSourceId(1), 0);
+
+        let mut invalid_context = context;
+        invalid_context.coordinate_frame_marker = 0;
+        let slots_before = carrier.slots.clone();
+        let free_head_before = carrier.free_head;
+        let spawns_before = carrier.spawns.clone();
+        assert_eq!(
+            carrier.resolve_respawn_timer(&continuity, SpawnSourceId(1), 0, invalid_context),
+            Err(CarrierError::InvalidPreProductionPositionContext)
+        );
+        assert_eq!(carrier.slots, slots_before);
+        assert_eq!(carrier.free_head, free_head_before);
+        assert_eq!(carrier.spawns, spawns_before);
+        assert_eq!(
+            carrier
+                .spawn_cell_state(SpawnSourceId(1), 0)
+                .expect("cell tracked")
+                .live,
+            Some(dead),
+            "the cell still names the original dead actor"
+        );
+
+        let resolution = carrier
+            .resolve_respawn_timer(&continuity, SpawnSourceId(1), 0, context)
+            .expect("a valid context still resolves afterward");
+        assert!(matches!(resolution, RespawnResolution::Admitted(_)));
     }
 
     #[test]
