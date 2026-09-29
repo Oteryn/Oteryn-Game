@@ -7,7 +7,7 @@ mode: IMPLEMENT
 status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: pending
+pr: 1268
 base_branch: main
 branch: claude/spell-cast-client-w3
 base_sha: 92cfc2fe
