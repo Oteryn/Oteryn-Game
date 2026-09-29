@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-d3-1-corpse-migration
 title: D3-1 corpse receipt migration, materialized_at trigger and corpse-cap enforcement
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/d3-1-corpse-migration
@@ -110,6 +110,11 @@ at 63 live corpses; exactly one success, N-1 `CapacityExceeded`, never more than
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #1213 open on claude/d3-1-corpse-migration; single-location, top-damage-replay-binding and corpse-draw-ordinal fixes applied and locally validated
-next_action: "#162 allocates D3-2/D3-4/D3-6 against this migration; requires independent review before Merge Queue"
+last_progress: PR #1213 merged via Merge Queue as 6133bde; protected-main readback matched 889ad88; record archived
+next_action: none for this task; follow-ups routed on #162
 ```
+
+## Closeout
+
+- merge commit/result: `6133bde` on protected `main` (#1213); readback byte-identical to `889ad88`
+- ownership release: all leases released at merge
