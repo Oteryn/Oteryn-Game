@@ -677,18 +677,32 @@ aggregate payload for each distinct logical transaction:
 
 - `MINT`: one fresh transaction-scoped ItemInstance lifecycle, absent before and
   live after, established in typed `Ground` custody with applicable corpse
-  association/provenance;
+  association/provenance. (The reward-chest and D3 amendments in §39.3 each admit
+  one named shape whose only location is a `Container` entry instead — no Ground
+  custody, no separate TRANSFER for that placement.)
 - `TRANSFER`: that already-existing live ItemInstance moves from typed `Ground`
   custody to direct-root `CharacterInventory`, preserving identity, type and
-  quantity and leaving exactly one authoritative immediate location.
+  quantity and leaving exactly one authoritative immediate location. (The D3
+  amendment in §39.3 additionally admits a `Container { parent = a live corpse
+  ItemInstance }` source, alongside Ground, for that one named shape.)
+- `DECAY_RETIRE` (D3 amendment, §39.3 below): one already-existing live
+  ItemInstance moves from its live location (typed `Ground`, for a corpse
+  ItemInstance, or a `Container` entry, for a loot ItemInstance) to `RETIRED`
+  with no location, under a named, non-caller `CorpseDecay` cause. This is not
+  `burn`: it exists only for the single corpse/loot-decay cause the D3
+  amendment names, admits no caller-chosen retire cause or reason code, and
+  every other retire path (a TRANSFER full-merge source retiring per §11.4/
+  §11.5, DUR-03's ordinary stack-to-zero retirement) is unamended by it.
 
-MINT and the later TRANSFER are separate transactions, with separate
-TransactionIds, event candidates and atomic boundaries. Aggregation does not
+MINT, the later TRANSFER, and (where admitted) `DECAY_RETIRE` are separate
+transactions, with separate TransactionIds, event candidates and atomic
+boundaries. Aggregation does not
 combine their sequence into one commit. This child does not support mint into an
-existing stack, multiple touched items, quantity redistribution, burn, transform,
+existing stack, multiple touched items, quantity redistribution, burn (outside
+the one named `DECAY_RETIRE` cause above), transform,
 non-item accounts, nested containers or additional custody families. (The B3
 amendment in §39.3 admits the two-item merge and top-up shapes and direct entries of
-the equipped main backpack.) Unsupported
+the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`.) Unsupported
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
 Content definition or a production quantity ceiling.
@@ -946,6 +960,216 @@ that a MINT establishes typed Ground custody before a separate TRANSFER. For thi
   live item in its `Container` entry, its type and quantity, and the committed `RewardClaim` row;
 - mint into an existing stack stays excluded (§39.1).
 Every other §39 obligation is unchanged.
+
+**Corpse container amendment (D3).** `D3-CORPSE-CONTAINER-LOOT-WINDOW-DECAY-V1` (owner decisions
+D111-D113, `reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md` §4)
+admits, for creature-death loot only, the following besides the destinations already listed
+above; every other §39 obligation (fences, cause, evidence, idempotency, current authority,
+conservation) is unchanged.
+
+- **Corpse MINT is unamended.** A creature's corpse is one fresh, ordinary MINT under the
+  existing §39.1/§39.2 shape: typed Ground custody, its own cause (the death key with a reserved
+  `CORPSE_MATERIALIZATION` purpose key and `draw_ordinal = 0` in the existing loot-cause tuple
+  shape, `CREATURE-DEATH-OCCURRENCE-IDENTITY-V1` §4.2). No new MINT destination is admitted for
+  the corpse item itself.
+- **Loot MINT into the corpse.** A loot entry's MINT establishes its first and only location as a
+  fresh entry of `Container { parent_item_instance_id = <that same death's committed corpse
+  `ItemInstance` >, entry }` — no Ground custody, never a separate TRANSFER for that placement.
+  The parent must itself carry a live `CORPSE_MATERIALIZATION` receipt for the *same* death key;
+  a loot MINT naming any other parent (including a character's own equipped container) is
+  rejected. A loot entry's own MINT commits only after its death's corpse MINT has itself
+  committed (retry-safe: an uncommitted corpse cause is retried first, exactly as any other MINT
+  cause is). **Admitted audit aggregate (extends the reward-chest amendment's MINT-into-container
+  shape above, the same way it extends §39.1's MINT bullet — no additional gap):** before, explicit
+  semantic nonexistence of the item (same as every MINT); after, the live item in its `Container`
+  entry (parent = the corpse), its type and quantity; cause, the same full loot-output cause
+  §39.2/§4.2 (`CREATURE-DEATH-OCCURRENCE-IDENTITY-V1`) already defines, unchanged. This needs no
+  new cause shape (unlike `DECAY_RETIRE` below, which names one because none existed for a decay
+  reason): it is the existing loot-MINT cause with its destination generalized from "an
+  already-equipped backpack entry" (reward chest) to "this death's own corpse entry" (D3). The
+  proto/registry change this needs — widening `OneItemMintV1.destination` from `OneItemGroundV1`
+  only to admit a `Container` alternative — is not defined or registered here; it lands in the
+  D3-6 implementation child alongside `DECAY_RETIRE`'s own registration, under the same
+  non-candidate, no-`_fixture`-field-names conditions.
+- **Whole-plan preflight.** Before any entry of a death's accepted loot plan is frozen — corpse
+  included — the composing caller checks the plan's full accepted entry count against
+  `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (16, equal by construction to the already-accepted
+  `COMBAT01-LOOT-PLAN-ITEMS`/`COMBAT01-ITEMS-PER-CORPSE` ceilings,
+  `reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md` §4.1 row 6). The whole
+  plan is admitted or the whole plan is refused up front — the same up-front-whole-plan posture
+  `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE` already uses — never partially admitted mid-sequence.
+  Because the ceilings are equal, an accepted plan can never itself exceed corpse capacity; the
+  preflight exists to keep that invariant explicit and checked, not merely coincidental. The
+  corpse's own entry-count check locks the corpse's row before counting (the same
+  `FOR UPDATE`-before-count pattern `game_item_placement_proven()` already uses for the backpack,
+  migration `0011_item_transfer_backpack.sql`), so concurrent loot MINTs for the same corpse
+  serialize instead of racing the count. Each entry's MINT remains its own DUR-03 transaction
+  (never combined into one commit, §39.1). **This is not cross-generation retry.** Per
+  `CREATURE-DEATH-OCCURRENCE-IDENTITY-V1` §4.2/§4.3 (D52): a loot entry's MINT retries only while
+  the death's runtime-scope ownership generation is still the current assignment; if that
+  generation ends (restart, crash, scope move) before every preflight-admitted entry has
+  committed, the remaining entries are dropped terminally — no later generation retries them, and
+  none can produce the same key. The corpse may therefore durably hold fewer live entries than its
+  accepted plan's count; this is the same accepted D52 loss ("Przepadają, bez duplikatów"), never
+  a duplicate and never silently completed by a later generation. The whole-plan preflight above
+  prevents only a *capacity*-caused partial commit (an over-capacity plan is refused before any
+  entry freezes, so it never partially lands); it does not and cannot prevent a generation-ending
+  crash from leaving a already-admitted plan partially committed, which D52 already accepts.
+- **`materialized_at`: the latest pre-commit anchor reachable, not the exact commit/visibility
+  time.** The existing `occurred_at` column is written once, at `freeze_item_mint`
+  (PREPARE/reservation) time, and reused unchanged through `commit_item_mint`
+  (`item_mint.rs:410-447` reserves it; `item_mint.rs:620-628` reuses the frozen value without
+  re-reading the clock) — a delayed commit would silently shrink both the D3 pickup window and
+  decay if either were derived from it. `statement_timestamp()` is not a fix either: it is fixed
+  per SQL statement, not per transaction, so an `INSERT`'s own `statement_timestamp()` can still
+  precede the transaction's actual commit (and so its durable visibility to other transactions) by
+  however long the transaction stays open afterward. The corpse's own `game_item_mint_receipts`
+  row instead gets a new nullable column, `materialized_at BIGINT`, set from `NULL` to
+  `clock_timestamp()` — which re-evaluates on every call, unlike `statement_timestamp()` — by a
+  new `AFTER INSERT ... DEFERRABLE INITIALLY DEFERRED` constraint trigger (the same mechanism
+  `game_item_mint_consistency_guard` already uses), scoped to a receipt whose
+  `loot_purpose_key = 'CORPSE_MATERIALIZATION'`. A deferred constraint trigger fires immediately
+  before the transaction's own commit finalizes — the latest point reachable from inside the
+  transaction, regardless of how many statements the application issues before it, so this anchor
+  does not depend on `insert_mint` being the transaction's last statement. The receipt-immutability
+  guard (`game_item_mint_receipt_immutable`) gains one narrow, one-way exception for this — the
+  same idiom the audit-outbox `publication_state` mark already uses: `materialized_at` may move
+  from `NULL` to a value once, for a `CORPSE_MATERIALIZATION` receipt only, with every other column
+  unchanged; only the trigger's own `SECURITY DEFINER` function performs this update (matching the
+  `game_item_ground_removal_evidence_capture` idiom), so the runtime role needs no direct `UPDATE`
+  grant on the column. This is still not the exact instant of durable visibility, only the closest
+  anchor reachable from inside the transaction; the residual gap is bounded by however much of the
+  transaction's configured `transaction_timeout`/`statement_timeout`/`lock_timeout` remains at that
+  point — set, for every semantic transaction, to the remaining time of the already-registered
+  `DFR-DB-PASS-MS` budget (2,000 ms, `durability/db.rs::begin_semantic_transaction`, lines
+  1088-1096). **The D112 window and D113 decay may therefore be early by up to that bound (at most
+  2,000 ms in the worst case), never late; this is accepted, not a correctness defect** (a 10 s
+  window or a 60 s decay firing up to ~2 s early is immaterial to either's purpose).
+  `materialized_at` is `NOT NULL`, after commit, exactly when `loot_purpose_key =
+  'CORPSE_MATERIALIZATION'`, and `NULL` for every other MINT shape. The D112 exclusivity window and
+  D113 decay are both derived from this column, never from `occurred_at`.
+- **The corpse `ItemInstance` is never a legal TRANSFER source**, regardless of whether it
+  currently has live entries (closing the gap `plan_transfer`'s existing `ContainerNotEmpty` check
+  leaves open once a corpse's entries are all picked out or its loot plan was empty): a new
+  refusal (`ItemTransferRefusal::CorpseNotPickupable`) rejects any TRANSFER whose source item
+  carries a live `CORPSE_MATERIALIZATION` receipt, enforced both in the Rust admission and by a
+  new deferred constraint trigger symmetric to `game_item_ground_removal_proven`, so a corpse's
+  Ground row can never be deleted by a TRANSFER by construction. A corpse leaves Ground only
+  through `DECAY_RETIRE` below. Corpse content declares no `container`-slot equip pattern, so a
+  corpse is independently refused (`NotContainerSlotEquippable`) as a `ContainerSlot` destination
+  even if the source check above were ever bypassed.
+- **Pickup source.** TRANSFER additionally admits `Container { parent = a live corpse
+  ItemInstance }` as a source (alongside the existing Ground source), gated by the D112/D133
+  exclusivity window: before the window's deadline, only the death's captured top-damage
+  `CharacterId` may transfer; at or after it, any character may. This reuses every other D80-D83
+  destination, capacity, stack and merge rule unchanged and needs no new `DUR03-RL-*` row.
+  **Admitted audit aggregate:** identical in kind to the existing TRANSFER shape (before: the
+  item's live state and its exact source location — now a `Container` entry rather than Ground;
+  after: the item's live state at its legal destination, as D80-D83 already define; cause: the
+  same `typed_cause "ground_pickup_transfer"`-style player `CommandRef` provenance TRANSFER
+  already carries, unchanged; receiver: the existing D83 merge/top-up shape, unchanged) — only the
+  *source location's family* is new, not the aggregate's shape. The proto/registry change this
+  needs — widening `OneItemTransferV1.source` from `OneItemGroundV1` only to admit a `Container`
+  alternative — is not defined or registered here; it lands in the D3-6 implementation child
+  alongside the corpse-loot MINT's and `DECAY_RETIRE`'s own registration, under the same
+  non-candidate, no-`_fixture`-field-names conditions.
+- **`COMBAT01-CORPSES-PER-SCOPE` (already accepted at 64,
+  `reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md` §4.1 row 6, "reject the
+  projection; the death still commits and loot follows D52") is the one bound on concurrent
+  corpses per scope; no competing or derived value is introduced here.** **The authoritative check
+  is at the corpse's own MINT commit, under a per-scope lock, never a freeze-time-only count.** A
+  count read at `freeze_item_mint` time alone cannot serialize against another death's concurrent
+  freeze for the same scope: several deaths can each observe 63 live corpses, each pass that
+  freeze-time check, and all commit, overshooting 64. The corpse's `commit_item_mint` pass instead
+  takes a per-scope transaction advisory lock,
+  `pg_advisory_xact_lock(hashtextextended('oteryn:corpse-cap:' || <scope_key hex>, 0))`, *before*
+  `fence_is_live` and before its own insert (not `FOR UPDATE` on `game_runtime_scope_assignments`:
+  `fence_is_live` already holds `FOR SHARE` on that row, so two corpse commits upgrading to `FOR
+  UPDATE` would deadlock, and an exclusive row lock would also serialize every other MINT,
+  TRANSFER and XP writer of the scope). Only corpse MINT commits take this key, so it serializes
+  exactly the corpse-cap recount.
+  It then recounts live corpses for that scope (live
+  `game_item_ground_locations` rows joined to a `CORPSE_MATERIALIZATION` receipt, scoped to the
+  same `world_id`/`channel_id`); if the count is already ≥ 64, the commit pass refuses
+  (`CapacityExceeded`) and inserts nothing, all inside the same transaction as the corpse's own
+  insert — so no two concurrent corpse commits for one scope can both observe room and both
+  succeed. Any earlier `freeze_item_mint`-time count is **advisory only**: a cheap early rejection
+  for the obvious case, never the authority; only the locked commit-time recount admits or refuses.
+  On refusal, the new corpse's MINT (and therefore its whole loot plan, which has no destination
+  without it under D111) is rejected; the creature's death itself still
+  commits, and its loot is lost exactly as D52 already accepts loot loss (never duplicated). No
+  corpse is retired early to make room, so no already-committed loot already inside an existing
+  corpse is ever touched by another death's overflow. **D3-1 must prove a concurrency test**: N
+  concurrent corpse-MINT commits for one scope already holding 63 live corpses produce exactly one
+  success and N-1 `CapacityExceeded` refusals, never more than 64 live corpses and never a lost
+  update.
+- **Recovery is Ground-only and terminal-state-aware.** A corpse's own location is always Ground,
+  never a `Container` entry of anything; the scope (re)admission query that reconstructs pending
+  D113 decay timers (VSL-COMBAT-01 §17 above) reads only live `game_item_ground_locations` rows
+  joined to a `CORPSE_MATERIALIZATION` receipt with `lifecycle = 1` (never a retired corpse, and
+  never a `Container` row), so a corpse already retired by `DECAY_RETIRE` elsewhere is never
+  rescheduled.
+- **`DECAY_RETIRE` is N+1 separate one-item transactions, never one N-item transaction.** A full
+  corpse (corpse item plus up to 16 live entries) is 17 `ItemInstance`s — far past
+  `DUR03-RL-01`/`DUR03-RL-06`'s existing 1-2 touched-item/participant ceiling (§3.1). Rather than
+  registering a new, corpse-sized resource row, decay is restructured to fit the existing default
+  shape exactly: one new minimal DUR-03 transaction type, applied **once per live entry currently
+  parented to the corpse, then once more for the now-empty corpse itself** — each application
+  touches exactly **1** `ItemInstance`, with **1** location line (its removal) and the existing
+  default `DUR03-RL-06` (1 participant / 3 work units), so **no new `DUR03-RL-*` row is needed**.
+  Each entry-step is keyed by its own cause (that entry's `ItemInstanceId` under the corpse's decay
+  marker), idempotent and non-duplicable exactly like any other DUR-03 cause. The final
+  corpse-retirement step is keyed by the corpse's own `CORPSE_MATERIALIZATION` cause and is
+  admitted only when zero live `Container` entries remain parented to it (checked the same way the
+  entry-count preflight above is), so a corpse can never retire while orphaning a still-live entry.
+  Every step commits under VSL-COMBAT-01 §17's "accepted DUR-03/domain policy" clause (§9.1/§17
+  above). This is the only path by which a corpse's Ground row is ever removed, and `CorpseNotPickupable`
+  above applies throughout — a corpse mid-drain is exactly as unpickupable as a fresh one.
+  **Resumable from durable state, not from an in-memory decay-progress marker:** the scope
+  (re)admission recovery query above finds any corpse still live on Ground past its
+  `materialized_at + 60_000` deadline — whether decay never started or was interrupted after
+  retiring some but not all entries — and simply (re)issues the remaining entry-retirement steps
+  followed by the corpse step; each step's own idempotent cause makes a repeated or resumed attempt
+  safe, and an entry already removed from the corpse by a legitimate D133-gated pickup before decay
+  reached it is not re-targeted (decay only ever retires entries it finds still live and still
+  parented to the corpse at the moment each step runs).
+- **`DECAY_RETIRE`'s admitted audit aggregate (closes the §39.1 gap: that section closed the
+  aggregate to MINT and TRANSFER and excluded burn).** Each `DECAY_RETIRE` step (a corpse's own
+  step or one of its entries', §5.2) is a third closed one-item aggregate, additive to §39.1,
+  covering exactly the same complete applicable §39 semantic evidence as MINT/TRANSFER:
+  - **Before:** the item's exact live state — identity, type, quantity — and its exact live
+    location/custody: typed `Ground` (the corpse's own step) or the `Container { parent =
+    <corpse>, entry }` it occupied (an entry's step). Not absence, not an already-retired state.
+  - **After:** `RETIRED`, quantity 0, no location — the same terminal shape §11.4/§11.5 already
+    define for a stack reduced to zero, now reached as this aggregate's own explicit after-state
+    rather than folded into a TRANSFER receipt.
+  - **Cause:** a new closed cause shape, `CorpseDecay { corpse_item, deadline }` — `corpse_item` is
+    the corpse `ItemInstanceId` this retirement belongs to (the corpse's own id, for its own step;
+    the parent corpse's id, for an entry's step) and `deadline` is the exact `materialized_at +
+    60_000` value that authorized the retirement, so the evidence itself proves the retirement was
+    not early. No caller-chosen retire reason, burn cause or free-form label is admitted; this is
+    the one named decay cause only.
+  - **Event:** one ANL-01 `OneItemTransactionV1` operation (the same envelope MINT/TRANSFER already
+    use) with a new `oneof operation` member alongside the existing `mint`/`transfer` tags (the next
+    unused tag number in sequence), carrying this before/after/cause payload. One event per logical
+    `DECAY_RETIRE` step, exactly as MINT and TRANSFER are one event per logical transaction.
+  - **Evidence obligations:** identical in kind to §39.1's closing paragraph — typed item
+    identity/lifecycle/type/quantity before and after; location/custody before and after;
+    authorized cause and conservation summary (before-quantity retires to exactly 0, never a
+    partial reduction); WorldId and applicable concrete runtime scope; compatible interpretation
+    and definition revisions; safe applicable fence references without secrets. Resource maxima are
+    the existing defaults this document already states (§3.1: `DUR03-RL-01` = 1, `DUR03-RL-02` = 2,
+    `DUR03-RL-06` = 1 participant / 3 work units); no new `DUR03-RL-*` row.
+  - **Selects no schema, no field numbers and no production authority.** The exact protobuf message
+    (`docs/contracts/game-events/v1/native_one_item_transaction.proto`) and its
+    `GAME_EVENT_FOUNDATION_REGISTRY.json` event-type/profile registration are not defined or
+    registered here; they land in the D3-6 implementation child (§6 of the decision), under its own
+    fresh allocation and independent review, following exactly the same non-candidate,
+    no-`_fixture`-field-names registration conditions §39.2 already states for the native MINT
+    binding. Every other retire cause (burn, or any cause outside this one named `CorpseDecay`
+    shape) stays excluded.
+
+Every other §39 obligation is unchanged. Pointer notes are added to §39.1, §39.2 and §5.2.
 
 **Expected bindings versus current authority.** The immutable MINT/TRANSFER
 candidate binds expected item definition/state, source occurrence, WorldId,

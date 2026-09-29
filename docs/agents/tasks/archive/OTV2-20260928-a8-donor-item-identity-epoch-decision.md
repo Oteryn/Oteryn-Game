@@ -11,9 +11,9 @@ branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1163
 base_sha: e19b19d63d5ad45a5e97f298051fb46afcaf6236
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: e4e447bf6c71b313e1e797aa75876ee7aff69bca
+final_head_sha: e4e447bf6c71b313e1e797aa75876ee7aff69bca
+final_head_frozen_at: 2026-09-28T20:14Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -79,12 +79,23 @@ Codex review of `c97bd25`: one P1, ACCEPTED in repair generation 1 of 1 (#162 co
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1163 merged through the Merge Queue on 2026-09-28 as `9f98b067`.
+- Review: one Codex review of `c97bd25` (one P1), repaired in the single repair generation
+  `e4e447b`; the owner decided to merge after green CI.
+- Protected-main readback: all four changed files on `9f98b067` are byte-identical to the frozen
+  head `e4e447b`.
+- The PR body predates the repair (the alias gate); the documents are authoritative.
+- Archived under `OTV2-20260928-owner-decision-batch-d118-d128`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #1163 merged as 9f98b067
+last_progress: PR #1163 merged as 9f98b067; archived
 status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: e4e447bf6c71b313e1e797aa75876ee7aff69bca
 pr: 1163
 owner_action_required: null
 blocker: null

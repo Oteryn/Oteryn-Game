@@ -41,6 +41,7 @@ protected Item identity map for Item references.
 | Offer prices from both wikis | 21 later (§7 slice 4d) |
 | Offer prices from two of three wikis | 236 later (§7 slice 4e) |
 | Offers two of three wikis list | 894 later, 15 new trade Services (§7 slice 4f) |
+| NPCs from the Crystal summer-update supplement | 6 new, Uzon Back gains its Crystal file, 13 held (§7 slice 4g) |
 
 Held back and reported in the candidates: 145 NPCs (91 unplaced in both sources, 32 single-source
 NPCs the wiki does not know, 7 outfit/movement conflicts, 6 placement conflicts the wiki cannot
@@ -210,6 +211,12 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    Service from these offers alone, among them Rock In A Hard Place, Raffael, Tefrit and Blind Orc. Quest, event
    and token shops stay out (`WIKI_SHOP_HELD`). Wave A keeps 1,088 NPCs and 701 Dialogues, with 322 trade and
    55 travel Services, 12,626 offer rows and 2,330 bindings.
+4g. Crystal summer-update supplement (D14): `OTV2-20260929-npc-crystal-supplement`. Seven NPC files Crystal added after
+   `ff7ede59` come from the pinned `summer-update` commit `00ce02a5`: Captain Corsarah, Javala, Mayor Pocaro,
+   Pescadu, Thorim and Wayland Smythers are new, and Uzon Back gains its Crystal file. Thirteen new files are held
+   `SUPPLEMENT_HELD` (a placeholder outfit, dialogue Crystal wrote itself, or a boss rather than an NPC on the wikis). Wave A
+   becomes 1,094 NPCs with 707 Dialogues, 322 trade and 56 travel Services and 2,344 bindings. The supplement is
+   its own Crystal import (`g4-npc-crystal-summer-supplement-r1`).
 5. Later:
    - placements after World admission;
    - conditional dialogue and dialogue conflicts;
