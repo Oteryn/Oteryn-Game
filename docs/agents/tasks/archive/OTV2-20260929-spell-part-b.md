@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-spell-part-b
 title: Engine runtime for the Part B spell native behaviours (S27)
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1231
@@ -12,17 +12,19 @@ allocation_comment: "#162 5890192652"
 base_branch: main
 branch: claude/spell-part-b
 base_sha: 23f9535a31e4d5544be9107b509d5a0b95b3b06a
-head_sha: null
+head_sha: 2dd1966e098e9201b3f9da31fd2dbad5de54afca
+final_head_sha: 2dd1966e098e9201b3f9da31fd2dbad5de54afca
+final_head_frozen_at: null
 owner: "Oteryn: content" (Claude Code)
 created_at: 2026-09-29T12:30:00Z
-updated_at: 2026-09-29T12:30:00Z
+updated_at: 2026-09-29T13:31:33Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/spell/**
   - apps/game-server/src/ability/**
   - apps/game-server/tests/*spell*
   - tools/content-schema/spell-authoring/**
-  - docs/agents/tasks/active/OTV2-20260929-spell-part-b.md
+  - docs/agents/tasks/archive/OTV2-20260929-spell-part-b.md
   - docs/agents/tasks/archive/OTV2-20260929-spell-part-d.md
 public_contracts: []
 depends_on: []
@@ -98,3 +100,14 @@ the Part B spells; regenerating the readiness sample needs the pinned Canary che
 - `python build_formal_schema.py` (regenerated), `python verify_formal_schema.py`, `python validate_spell.py` over
   the starter bundles and a Nature's Embrace `not_self` bundle, `python tools/agents/validate_governance.py`,
   `python tools/repository/validate_repository_policy.py`
+
+## Terminal integration
+
+- **Final head:** `2dd1966e098e9201b3f9da31fd2dbad5de54afca`.
+- **Integration:** merged into main as PR #1231, merge commit
+  `70bdced2de448a173ba13caed832fc94b5ef2635` (2026-09-29T13:31:33Z).
+- **Closeout:** the record was archived by `OTV2-20260929-spell-harmony-runtime` (issue #162, allocation comment
+  5891701482).
+- **Owned paths:** released.
+- **Binding carry-over:** the design packet above stays the reference for the Part B keys still rejected
+  (`world_query`, `house`, `player_parameter`, `item_grant` and the B.3 remainder).

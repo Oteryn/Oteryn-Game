@@ -332,10 +332,12 @@ the previous actor's write was fenced out.
   re-evaluate `serene` as above.
 - Death: at the lethal commit `serene` becomes false and the forced time is cleared, as Canary
   removes a timed Serene at death. Respawn evaluates it again before any command.
-- **Declared difference.** Canary saves the remaining ticks of a forced Serene at logout (a timed
-  condition). V1 does not persist Serene at all (the allocation), so at most 7000 ms of forced Serene
-  is lost when a new runtime actor starts. This is the control-plane default (#1205); owner
-  confirmation is pending, and it is not a blocker.
+- **Forced Serene durability (owner decision Q1=b, 2026-09-29).** The remaining forced time is
+  durable, as in Canary, which saves the remaining ticks of a forced Serene at logout (a timed
+  condition). A new runtime actor loads the remaining time together with Harmony, and the forced time
+  runs that long from its initialization evaluation. The `serene` flag itself is never stored: it is
+  evaluated again at every initialization, as above. The durable write follows Harmony (H-1). This
+  replaces "A new runtime actor starts with no forced time" above and the Q1 resolution below.
 
 **Wire and compatibility (`ActorVitalsV1`, §3).**
 - Two fields are added: `harmony = 6` and `serene = 7`. They carry the actor's live values, and a
