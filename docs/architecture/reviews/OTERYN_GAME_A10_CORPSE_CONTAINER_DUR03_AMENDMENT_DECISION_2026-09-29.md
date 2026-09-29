@@ -109,8 +109,8 @@ D112, D113, D118 and D121 are taken from #162 as cited in the ruling; this recor
   transfer and a decay serialize on the corpse row: the first commit wins. A transfer after decay
   finds the source retired and is rejected.
 - Evidence follows §39 and §15: each retired item has a before line (live, location, quantity)
-  and an after line (retired), plus the sink and cause. If the measured payload or work units exceed
-  the registered rows, the shape returns for decision. No cap is widened here.
+  and an after line (retired), plus the sink and cause. If the measured payload exceeds the registered
+  rows, the shape returns for decision. No cap is widened here.
 - The runtime scope owner triggers decay. What happens to a pending decay across a restart, beyond
   D52, is not decided. The idempotent key lets a later decision retire a past-deadline corpse.
 
@@ -123,9 +123,11 @@ max+1 tests, checked before allocation, never truncated. Row ids are working lab
 |---|---|---|
 | corpse-parent container locations per corpse | 16 | equals `COMBAT01-ITEMS-PER-CORPSE`; new |
 | retire touched items per transaction | 17 | 1 corpse plus 16 children; new; `DUR03-RL-01` for TRANSFER stays 2 |
-| retire work units | **UNKNOWN** | the Durability lane measures it; `DUR03-RL-08` is 3 today |
-| retire evidence payload | **UNKNOWN** | measured against `DUR03-RL-07` |
-| `DUR03-RL-05` container expansion | 0 for MINT and TRANSFER | the retire shape names its own row above |
+| retire container expansion | 1 corpse, 16 children, depth 1 | new; the retire enumerates exactly the corpse's direct children; `DUR03-RL-05` stays 0 for MINT and TRANSFER |
+| retire participants | 1 | new; the corpse's runtime scope only, no Character; `DUR03-RL-06-PARTICIPANTS` for other shapes unchanged |
+| retire effect work units | 17 | new; one retire effect per touched item; `DUR03-RL-06-EFFECT-WORK-UNITS` for other shapes unchanged |
+| retire evidence payload | **UNKNOWN** | measured against the `DUR03-RL-07-*` rows; above them the shape returns for decision |
+| `DUR03-RL-08` retry and reconciliation passes | unchanged | the retire's retry budget, separate from its effect work |
 
 ### 4.5 DUR-03 amendment
 

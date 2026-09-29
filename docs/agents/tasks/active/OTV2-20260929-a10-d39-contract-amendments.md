@@ -39,7 +39,7 @@ external_repositories: []
 This task records two architect rulings as contract amendments: A10 (#162 5882274851), a DUR-03 §39
 corpse container destination, corpse-entry transfer and corpse retire for decay under owner decision
 D121; and D39 (#162 5884689001), which accepts only the chest USE slice of the GAME-INTERACTION-01
-successor (§5.1, §5.5, §17, §19.1) and sets the live-allocations row to READY for that slice.
+successor (§4.1, §4.3, §5.1, §5.3-§5.7, §17, §19.1) and sets the live-allocations row to READY for that slice.
 
 No schema, migration, runtime or registry change is made.
 
@@ -63,6 +63,16 @@ allocations.
 ## Excluded scope
 
 - Migrations, tables, runtime code, protocol and content values.
+
+## Finding dispositions
+
+Codex review of `10ec768`: two P2, both ACCEPTED in repair generation 1 of 1. No owner decision
+changed.
+
+- 4130553990 (incomplete corpse-retire resource envelope): explicit retire container expansion,
+  participants (1) and effect work units (17) rows; `DUR03-RL-08` stays the retry budget (A10 §4.4).
+- 4130554004 (§5.1 identity dependencies): §4.1, §4.3, §5.3, §5.4, §5.6 and §5.7 are accepted for
+  the chest slice with the revision binding restated (D39 §4.1, pointers).
 
 ## Validation
 

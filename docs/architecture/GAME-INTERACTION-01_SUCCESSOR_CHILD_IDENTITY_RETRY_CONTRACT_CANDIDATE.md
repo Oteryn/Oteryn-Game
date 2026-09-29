@@ -11,7 +11,7 @@
 - Merge authority: `ARCHITECTURE_COORDINATOR_ONLY`
 - Implementation authority: `NONE`
 
-> **Amendment (2026-09-29).** `docs/architecture/reviews/OTERYN_GAME_D39_CHEST_USE_GAME_INTERACTION_AMENDMENT_DECISION_2026-09-29.md` accepts from this candidate only §5.1, §5.5, §17 and §19.1, and only for a player `USE` on a placed plain `once` reward chest (owner decisions D39 and D40). Everything else here stays `PROPOSED / NONCANONICAL`, including §19.2 to §19.5, nested cascades and the D37/D38 world-object owners. The `Implementation authority` line above still applies to every other interaction.
+> **Amendment (2026-09-29).** `docs/architecture/reviews/OTERYN_GAME_D39_CHEST_USE_GAME_INTERACTION_AMENDMENT_DECISION_2026-09-29.md` accepts from this candidate only §4.1, §4.3, §5.1, §5.3 to §5.7, §17 and §19.1, and only for a player `USE` on a placed plain `once` reward chest (owner decisions D39 and D40). Everything else here stays `PROPOSED / NONCANONICAL`, including §19.2 to §19.5, nested cascades and the D37/D38 world-object owners. The `Implementation authority` line above still applies to every other interaction.
 
 ## 1. Successor boundary
 

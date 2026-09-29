@@ -7,7 +7,7 @@
 - Profile: `Oteryn Reference` (Global Tibia at 2026-09-27, D33)
 - Answers: the chest USE wiring question, #162 comment 5884603451, by the ruling in #162
   comment 5884689001 (item 2)
-- Amends: GAME-INTERACTION-01 successor candidate (§5.1, §5.5, §17, §19.1 only, for one slice)
+- Amends: GAME-INTERACTION-01 successor candidate (§4.1, §4.3, §5.1, §5.3-§5.7, §17, §19.1 only, for one slice)
 - Owner decisions already taken: D39 and D40 (`OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md`
   §4), D92 (§5.1 of the same file)
 - Admission baseline: `main@005550da`
@@ -80,7 +80,16 @@ they apply to a player `USE` on a placed reward chest:
   `USE` `CommandRef` plus the claim (D40). GAME-INTERACTION keeps correlation only, and an
   ambiguous result stays pending on the same DUR-03 transaction.
 
-No successor text outside these four sections is accepted.
+- **Identity dependencies of §5.1**, accepted only as §5.1 uses them for the chest:
+  - §4.1 `RootSourceOccurrenceRef`: the root is the player's `USE` command occurrence.
+  - §4.3 and §5.7 `SemanticRevisionContext`: the content and runtime revisions in force at the
+    `USE` are recorded in the child identity and are immutable. Retry and reconciliation rebuild
+    the child from the recorded revisions, never from the current content revision.
+  - §5.3 `InteractionDefinitionRef`: the reward chest definition key and revision at the `USE`.
+  - §5.4 `AuthoritativeTargetDiscriminator`: the placed chest instance, resolved by the server.
+  - §5.6 `OptionalCanonicalChildOrdinal`: absent for a `once` chest.
+
+No successor text outside the sections named above is accepted.
 
 ### 4.2 What stays PROPOSED / NONCANONICAL
 
@@ -101,14 +110,14 @@ cascades, and the D37 and D38 world-object owners. Their blockers are unchanged.
 
 The row "Interaction Use orchestration" in
 `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md` becomes `READY` for the chest
-USE slice only. The rest of the lane stays `WAITING_ARCHITECTURE`. The exact current and proposed
-lines are in the companion file `live-allocations-row.txt`. `Oteryn: impl interaction` stays
+USE slice only, in the same PR. The rest of the lane stays `WAITING_ARCHITECTURE`.
+`Oteryn: impl interaction` stays
 read-only outside the slice. Each child still needs its own #162 allocation.
 
 ### 4.5 Pointer
 
 A short pointer paragraph is added near the top of the successor document. It names this decision
-and the four accepted sections. The text and its anchor are in `game-interaction-pointer.txt`.
+and the accepted sections. It sits after the successor's header list.
 
 ## 5. Delivery (each child needs its own #162 allocation)
 
@@ -144,7 +153,7 @@ The CHEST-1 worker takes this child after the merge.
 result: RESOLVED_WITHOUT_NEW_OWNER_DECISION
 source_escalation: "#162 comment 5884603451; ruling 5884689001 (item 2)"
 owner_decisions: [D39, D40, D92]   # already taken
-amends: docs/architecture/GAME-INTERACTION-01_SUCCESSOR_CHILD_IDENTITY_RETRY_CONTRACT_CANDIDATE.md   # §5.1, §5.5, §17, §19.1, chest USE slice only
+amends: docs/architecture/GAME-INTERACTION-01_SUCCESSOR_CHILD_IDENTITY_RETRY_CONTRACT_CANDIDATE.md   # §4.1, §4.3, §5.1, §5.3-§5.7, §17, §19.1, chest USE slice only
 durable_decision_ref: docs/architecture/reviews/OTERYN_GAME_D39_CHEST_USE_GAME_INTERACTION_AMENDMENT_DECISION_2026-09-29.md
 resource_values_changed: false
 production_authority_changed: false
