@@ -1065,6 +1065,10 @@ async fn boot_and_serve(
     let (_active_content, content) =
         activate_content(root, material.world, material.channel).await?;
     let (channel_pin, movement_cells, door_content) = content.into_channel_parts();
+    // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
+    // the Channel runtime; a book that does not load refuses readiness.
+    let spells = crate::spell::cast::v1_spell_book()
+        .map_err(|_| BootError::ContentActivation("spell book"))?;
     // #162 5868482467 (M2b): bind the entry room's one door `LocalObjectRuntime` once, at
     // Channel activation, from this exact activated content — never from a value a later
     // `USE_INTENT` is validating against it. `scope`/`generation` are this same activation's
@@ -1167,6 +1171,7 @@ async fn boot_and_serve(
         runtime: &runtime,
         movement_cells: &movement_cells,
         door: &door,
+        spells: &spells,
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(
