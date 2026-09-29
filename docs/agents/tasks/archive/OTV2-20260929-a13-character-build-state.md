@@ -21,6 +21,7 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_A13_CHARACTER_BUILD_STATE_DECISION_2026-09-29.md
   - docs/architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md
+  - docs/architecture/reviews/OTERYN_GAME_DEATH0_CHARACTER_DEATH_RECEIPT_DECISION_2026-09-28.md
   - docs/agents/tasks/active/OTV2-20260929-a13-character-build-state.md
   - docs/agents/tasks/archive/OTV2-20260929-a13-character-build-state.md
 public_contracts: []
@@ -46,8 +47,8 @@ No code, migration or content change is made.
 
 ## Architecture and source of truth
 
-- `PROVEN`: #162 5896414182; migrations `0001`-`0016`; `0017` on #1270 head `ff7ba430`;
-  `CasterState`; the spell cast contract §10.
+- `PROVEN`: #162 5896414182; migrations `0001`-`0017` (`0017` merged in #1270 as `878f6fad`; next
+  free migration `0018`); DUR-02 rule 2; `CasterState`; the spell cast contract §10.
 - `UNKNOWN`: the Dawnport choice details, the magic-level formula and multipliers, and the death
   loss amounts. These are for the implementation lanes.
 
@@ -107,6 +108,16 @@ persistence review.
        flush found by revision could be an earlier checkpoint) is fixed by the `death_flush` cause
        and typed reference; per-cause direction CHECKs, the advisory lock, the stance prune
        shape, the guard order, growth measurement and the retry binding are added.
+  - Independent review of `ef18a7ca` (#1271 5898945224), disposition FIX:
+    1. Material (F2): the death composite advanced up to three revisions in one transaction,
+       against DUR-02 rule 2. Fixed in §4.6: the flush is its own earlier `training` transaction,
+       and the loss is carried by the death receipt's new nullable build fields. That is a DEATH-0
+       §3.1 amendment, applied in the DEATH-0 document. DEATH-0 §3.5 is unchanged, and the
+       `death_flush` and `death_loss` causes are removed.
+    2. The clauses of ruling 5896480875 that this document supersedes are listed in its header.
+    3. W2b measures guard latency against chain length (§4.5 "Growth").
+    4. One session orders its own Character commits (§4.2 "Writer").
+    5. `0017` is merged (`878f6fad`); CHAR-BUILD-1 is `0018`.
   - Re-review of the successor head goes through the control plane.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 

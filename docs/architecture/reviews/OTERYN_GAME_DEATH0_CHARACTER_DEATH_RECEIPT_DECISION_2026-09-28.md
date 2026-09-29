@@ -13,6 +13,8 @@
 - Runtime, migration and production authority: **NONE**. The migration belongs to the DEATH-0
   implementation allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
+- Amended by A13 (`OTERYN_GAME_A13_CHARACTER_BUILD_STATE_DECISION_2026-09-29.md` §4.6): §3.1
+  death receipt build fields
 
 ## 1. Question
 
@@ -67,7 +69,12 @@ without weakening that chain?
     is a digest of the complete death intent (character, original revision, occurrence, the
     policy contents, blessings held, the promotion and Premium evaluation, the Amulet of Loss
     state, the equipment and backpack snapshot, the RNG stream binding and the death cell);
-  - the same revision fields as an XP receipt, and `committed_at`.
+  - the same revision fields as an XP receipt, and `committed_at`;
+  - the build fields (A13 amendment): `vocation`, and the before and after values of
+    `magic_level` and `mana_spent`. They are all NULL, or all non-NULL when the death lowers
+    magic-level progress. The rules, the build-row update and the binding are in A13 §4.6. The
+    death still advances one revision with this one receipt; pending `mana_spent` is flushed in an
+    earlier, separate transaction.
 - The XP receipt table is unchanged. A `CharacterRevision` successor now has exactly one receipt
   of either kind.
 
