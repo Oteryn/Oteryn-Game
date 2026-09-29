@@ -1,6 +1,6 @@
 //! Nonshipping fixed-one-creature lethal -> death -> corpse proof.
 
-use super::super::exact_actor_test_ability::commit::commit_exact_owner_damage;
+use super::super::exact_actor_test_ability::commit::{OwnerCommitError, commit_exact_owner_damage};
 use super::super::exact_actor_test_ability::exact_actor_resolution::{
     ExactActorProposal, ResolvedExactActor, resolve_exact_actor,
 };
@@ -9,6 +9,33 @@ use super::super::exact_actor_test_ability::{
 };
 use super::super::exact_actor_test_combat::project_fixed_one_creature_death;
 use super::*;
+
+/// D4: the typed bridge now needs the attacker and its actual FND-02 `CommandRef`; these tests
+/// commit every typed plan as attacker 1 of session 1 at command 1, so an identical plan replays
+/// as the same command.
+fn typed_commit(
+    owner: &mut CurrentOwnerExactActorCommit<'_>,
+    resolved: &ResolvedExactActor,
+    plan: &EffectPlan,
+) -> Result<OwnerDamageResult, OwnerCommitError> {
+    let mut session = [0_u8; 16];
+    session[6] = 0x70;
+    session[8] = 0x80;
+    session[15] = 1;
+    let mut character = session;
+    character[15] = 2;
+    commit_exact_owner_damage(
+        owner,
+        resolved,
+        plan,
+        CharacterId::decode(&character).expect("attacker"),
+        1,
+        CommandRef::new(
+            GameSessionId::decode(&session).expect("session"),
+            super::super::CommandId::new(1).expect("command"),
+        ),
+    )
+}
 
 const FIXTURE_POSITION: LocalPosition = LocalPosition {
     x: 120,
@@ -121,7 +148,7 @@ fn commit_ability(
 ) -> OwnerDamageResult {
     let resolved = resolve(carrier, owner, actor, occurrence, source);
     let plan = plan(occurrence.clone(), source, damage);
-    commit_exact_owner_damage(
+    typed_commit(
         &mut carrier.current_owner_exact_commit(owner),
         &resolved,
         &plan,
@@ -177,10 +204,9 @@ fn client_and_ai_lethal_commits_project_their_exact_owner_lineage() {
             .slots
             .iter()
             .find_map(|slot| match slot {
-                Slot::CreatureOccupied {
-                    committed: Some(committed),
-                    ..
-                } => Some(committed.binding.to_vec()),
+                Slot::CreatureOccupied { committed, .. } => {
+                    committed.lethal().map(|record| record.binding.to_vec())
+                }
                 _ => None,
             })
             .expect("lethal owner commit must be retained");
@@ -217,7 +243,7 @@ fn lethal_replay_returns_the_same_projection_without_a_second_write() {
     let cast = occurrence("cast:replay", "rules:1");
     let resolved = resolve(&carrier, &owner, actor, &cast, ProposalSource::Client);
     let lethal_plan = plan(cast, ProposalSource::Client, 20);
-    let first_commit = commit_exact_owner_damage(
+    let first_commit = typed_commit(
         &mut carrier.current_owner_exact_commit(&owner),
         &resolved,
         &lethal_plan,
@@ -229,7 +255,7 @@ fn lethal_replay_returns_the_same_projection_without_a_second_write() {
             .expect("first projection"),
     );
 
-    let replay = commit_exact_owner_damage(
+    let replay = typed_commit(
         &mut carrier.current_owner_exact_commit(&owner),
         &resolved,
         &lethal_plan,
@@ -274,9 +300,10 @@ fn different_lethal_occurrence_cannot_replace_the_retained_death() {
             &owner,
             actor.0,
             direct_command(b"cast:different", b"cast:different\0different-binding", 20,),
+            None,
             false,
         ),
-        Err(CarrierError::OccurrenceConflict)
+        Err(CarrierError::CreatureNotActionable)
     );
     assert_eq!(carrier.slots, slots);
     assert_eq!(
@@ -316,6 +343,7 @@ fn nonlethal_and_precommit_failure_leave_no_death_projection() {
             &owner,
             actor.0,
             direct_command(b"cast:failed", b"cast:failed\0binding", 20),
+            None,
             true,
         ),
         Err(CarrierError::InjectedCommitFailure)
@@ -589,6 +617,7 @@ fn maximum_commit_binding_projects_and_max_plus_one_rejects_before_write() {
                 &owner,
                 actor.0,
                 direct_command(b"cast:max", &maximum, 20),
+                None,
                 false,
             )
             .is_ok()
@@ -611,6 +640,7 @@ fn maximum_commit_binding_projects_and_max_plus_one_rejects_before_write() {
             &owner,
             actor.0,
             direct_command(b"cast:max", &maximum, 20),
+            None,
             false,
         ),
         Err(CarrierError::CommitBindingTooLarge)
@@ -643,7 +673,7 @@ fn committed_lethal_death_key_is_the_exact_owner_actor_ref_and_replay_stable() {
     let cast = occurrence("cast:death-key", "rules:1");
     let resolved = resolve(&carrier, &owner, actor, &cast, ProposalSource::Client);
     let lethal_plan = plan(cast, ProposalSource::Client, 20);
-    let lethal = commit_exact_owner_damage(
+    let lethal = typed_commit(
         &mut carrier.current_owner_exact_commit(&owner),
         &resolved,
         &lethal_plan,
@@ -666,7 +696,7 @@ fn committed_lethal_death_key_is_the_exact_owner_actor_ref_and_replay_stable() {
         )
     );
 
-    let replay = commit_exact_owner_damage(
+    let replay = typed_commit(
         &mut carrier.current_owner_exact_commit(&owner),
         &resolved,
         &lethal_plan,
@@ -885,5 +915,202 @@ fn projected_death_is_read_only_from_the_owner_projection() {
     assert_eq!(
         fixture.borrow_combat_death().projected_death(actor),
         Ok(projected)
+    );
+}
+
+// --- D4 (D140-D144): multi-hit kills ----------------------------------------------------------
+
+/// The same attacker as [`typed_commit`], at an explicit command `sequence` of the same session.
+fn typed_commit_at(
+    owner: &mut CurrentOwnerExactActorCommit<'_>,
+    resolved: &ResolvedExactActor,
+    plan: &EffectPlan,
+    sequence: u64,
+) -> Result<OwnerDamageResult, OwnerCommitError> {
+    let mut session = [0_u8; 16];
+    session[6] = 0x70;
+    session[8] = 0x80;
+    session[15] = 1;
+    let mut character = session;
+    character[15] = 2;
+    commit_exact_owner_damage(
+        owner,
+        resolved,
+        plan,
+        CharacterId::decode(&character).expect("attacker"),
+        1,
+        CommandRef::new(
+            GameSessionId::decode(&session).expect("session"),
+            super::super::CommandId::new(sequence).expect("command"),
+        ),
+    )
+}
+
+fn receipts(carrier: &ChannelActorCarrier) -> &DamageReceipts {
+    match &carrier.slots[0] {
+        Slot::CreatureOccupied { committed, .. } => Some(committed),
+        _ => None,
+    }
+    .expect("expected the creature slot")
+}
+
+fn lethal_receipt_count(carrier: &ChannelActorCarrier) -> usize {
+    receipts(carrier)
+        .entries
+        .iter()
+        .filter(|record| record.result.health_after == 0)
+        .count()
+}
+
+#[test]
+fn several_typed_hits_kill_a_twenty_hp_creature_and_the_last_is_the_one_lethal_receipt() {
+    let (owner, mut carrier, actor) = fixture(300, true);
+    let mut committed = Vec::new();
+    for (index, damage) in [5_i64, 5, 5, 5].into_iter().enumerate() {
+        let cast = occurrence(&format!("cast:multi:{index}"), "rules:1");
+        let resolved = resolve(&carrier, &owner, actor, &cast, ProposalSource::Client);
+        let plan = plan(cast, ProposalSource::Client, damage);
+        let sequence = u64::try_from(index).expect("index") + 1;
+        let result = typed_commit_at(
+            &mut carrier.current_owner_exact_commit(&owner),
+            &resolved,
+            &plan,
+            sequence,
+        )
+        .expect("every non-lethal and the lethal hit commit");
+        assert!(result.applied);
+        assert_eq!(
+            (result.health_before, result.health_after),
+            (
+                20 - 5 * i64::try_from(index).expect("index"),
+                15 - 5 * i64::try_from(index).expect("index")
+            )
+        );
+        if index < 3 {
+            assert_eq!(
+                project_fixed_one_creature_death(
+                    &mut carrier.current_owner_combat_death(&owner),
+                    actor
+                ),
+                Err(CarrierError::CommittedLethalUnavailable)
+            );
+        }
+        committed.push((resolved, plan, sequence, result));
+    }
+    assert_eq!(lethal_receipt_count(&carrier), 1);
+    let mut combat = carrier.current_owner_combat_death(&owner);
+    let projection = project_fixed_one_creature_death(&mut combat, actor)
+        .expect("the fourth hit is the lethal receipt");
+    assert_eq!(projection.occurrence().damage(), 5);
+    assert_eq!(projection.occurrence().health_before(), 5);
+    let lethal_binding = projection.occurrence().commit_binding().to_vec();
+    // The lethal receipt is the fourth commit's own record (owner ordinal 3), not any earlier one.
+    {
+        let committed = receipts(&carrier);
+        let ordinals: Vec<u64> = committed
+            .entries
+            .iter()
+            .map(|record| record.ordinal)
+            .collect();
+        assert_eq!(ordinals, vec![0, 1, 2, 3]);
+        let lethal = committed.lethal().expect("one lethal receipt");
+        assert_eq!(lethal.ordinal, 3);
+        assert_eq!(lethal.binding.as_ref(), lethal_binding.as_slice());
+        assert!(
+            committed.entries[..3]
+                .iter()
+                .all(|record| record.binding.as_ref() != lethal_binding.as_slice())
+        );
+    }
+    // Every earlier occurrence still replays its original transition after death.
+    for (resolved, plan, sequence, original) in &committed[..3] {
+        let replay = typed_commit_at(
+            &mut carrier.current_owner_exact_commit(&owner),
+            resolved,
+            plan,
+            *sequence,
+        )
+        .expect("retained replay after death");
+        assert_eq!(
+            replay,
+            OwnerDamageResult {
+                applied: false,
+                ..*original
+            }
+        );
+    }
+    // A genuinely new occurrence against the dead creature is not actionable.
+    let slots = carrier.slots.clone();
+    assert_eq!(
+        carrier.commit_creature_damage_inner(
+            &owner,
+            actor.0,
+            direct_command(b"cast:after-death", b"cast:after-death\0binding", 1),
+            None,
+            false,
+        ),
+        Err(CarrierError::CreatureNotActionable)
+    );
+    assert_eq!(carrier.slots, slots);
+    assert_eq!(lethal_receipt_count(&carrier), 1);
+}
+
+#[test]
+fn twenty_distinct_single_hp_hits_kill_past_the_sixteen_receipt_bound() {
+    let (owner, mut carrier, actor) = fixture(310, true);
+    let mut character = [0x11_u8; 16];
+    character[6] = 0x70;
+    character[8] = 0x80;
+    let mut session = character;
+    session[15] = 9;
+    let attacker = CharacterId::decode(&character).expect("attacker");
+    let session = GameSessionId::decode(&session).expect("session");
+    let mut last_binding = Vec::new();
+    for sequence in 1..=20_u64 {
+        let binding = format!("hit:{sequence}\0plan").into_bytes();
+        let result = carrier
+            .commit_creature_damage_inner(
+                &owner,
+                actor.0,
+                direct_command(b"unread", &binding, 1),
+                Some(AttackerCommand::new(
+                    attacker,
+                    1,
+                    CommandRef::new(
+                        session,
+                        super::super::CommandId::new(sequence).expect("command"),
+                    ),
+                    0,
+                )),
+                false,
+            )
+            .expect("no distinct occurrence is ever refused by the receipt bound");
+        assert!(result.applied);
+        assert_eq!(
+            result.health_after,
+            20 - i64::try_from(sequence).expect("seq")
+        );
+        last_binding = binding;
+    }
+    {
+        let committed = receipts(&carrier);
+        assert_eq!(
+            committed.entries.len(),
+            COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX
+        );
+        assert_eq!(committed.next_ordinal, 20);
+    }
+    assert_eq!(lethal_receipt_count(&carrier), 1);
+    let mut combat = carrier.current_owner_combat_death(&owner);
+    let projection = project_fixed_one_creature_death(&mut combat, actor)
+        .expect("the twentieth hit is the lethal receipt");
+    assert_eq!(projection.occurrence().commit_binding(), last_binding);
+    assert_eq!(projection.occurrence().health_before(), 1);
+    assert_eq!(
+        carrier
+            .current_owner_combat_death(&owner)
+            .top_damage_character(actor)
+            .expect("lookup"),
+        Some(attacker)
     );
 }

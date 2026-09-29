@@ -5,6 +5,9 @@
   verdicts in #162 comment 5867161696; §8). SPELL-D7 (owner decision D89, #162 comment
   5875958040) amends the target intent (§3, §8.1). Each delivery child still needs its own allocation and
   independent review.
+- Amendment candidate SPELL-D8 (2026-09-29, #162 comment 5884682203): the monk Harmony and Serene state
+  (§3, §4, §8.2). **CANDIDATE**; it needs independent review and protected integration before any
+  implementation. SPELL-D1 to SPELL-D7 are unchanged by it, except the `ActorVitalsV1` bound in §3.
 - Scope: the first connected player spell cast. It covers the client cast intent, the cast
   result, observation of own-actor vitals, and where cast inputs come from on the server.
 - Authority: none. This document changes no protocol or resource registry, proto file, schema, DDL,
@@ -114,13 +117,18 @@ message WorldActorSpellCastResultV1 {
 }
 
 // StateDelta.payload of the proposed domain 3 ACTOR_VITALS, delta type 1, and
-// StateDomainSnapshot.payload of snapshot type 1. Own actor only. At most 32 bytes.
+// StateDomainSnapshot.payload of snapshot type 1. Own actor only. At most 32 bytes
+// (SPELL-D8 value bounds, §8.2: at most 27 bytes).
 message ActorVitalsV1 {
-  uint32 health = 1;
-  uint32 max_health = 2;
-  uint32 mana = 3;
-  uint32 max_mana = 4;
-  uint32 soul = 5;
+  uint32 health = 1;      // SPELL-D8: at most 2^28 - 1
+  uint32 max_health = 2;  // SPELL-D8: at most 2^28 - 1
+  uint32 mana = 3;        // SPELL-D8: at most 2^28 - 1
+  uint32 max_mana = 4;    // SPELL-D8: at most 2^28 - 1
+  uint32 soul = 5;        // SPELL-D8: at most 16383
+  // SPELL-D8: monk Harmony, 0..5; always 0 for another vocation. A value above 5 fails closed.
+  uint32 harmony = 6;
+  // SPELL-D8: the monk is Serene; always false for another vocation.
+  bool serene = 7;
 }
 ```
 
@@ -166,6 +174,9 @@ Why these choices:
 | Learned spells, premium | GAME-CHAR and Platform entitlements | V1 serves spells without `learning_required`; premium follows PROD-ENTITLEMENTS-01. |
 | HP, mana, soul (current and max) | Current ChannelRuntime (runtime actor owner, as VSL-COMBAT-01 §6 for creatures) | Runtime-actor-local and non-durable, stated explicitly as the cooldown baseline allows (SPELL-D2): the values belong to the runtime actor, not to a GameSession, and are lost only when the actor ends. Vitals start at the current maximum only when a new runtime actor is created (the actor was absent). Any session that attaches to an existing present actor keeps its vitals exactly: a same-GameSession reconnect, and the post-grace new-GameSession recovery of FND-04B §21 ("no heal, refill"). A fresh admission after the actor is gone restarts at the maximum. Durable vitals through DUR-02 are required before any external or production evaluation. Max values per vocation and level follow SPELL-D5: the official tibia.com library, then the wikis decide where they state the per-vocation base and per-level gains (S15, S3, S11, S13, S14), Canary/Crystal fill only what they do not state (S4), every value keeps its provenance, and a remaining conflict goes to the owner. |
 | Cooldowns | Current ChannelRuntime, keyed by (actor, spell) and (actor, group) | Runtime-actor-local and non-durable; kept across a same-GameSession reconnect and FND-04B §21 recovery (no cooldown reset); `SemanticTimeMicros` from the owner clock. |
+| Monk Harmony (0..5) | Durable: GAME-CHAR Character state under DUR-02. Live: the runtime actor (Current ChannelRuntime) | SPELL-D8 candidate (§8.2): loaded into a new runtime actor, changed at the cast's PRIMARY COMMIT, written back under the session-generation fence at the actor's end and by the death transaction. |
+| Monk Serene (flag and forced-until time) | Current ChannelRuntime | SPELL-D8 candidate (§8.2): runtime-actor-local and non-durable, evaluated by the owner every 1000 ms. |
+| Monk virtue, party membership | Part C `stance` owner; party service | No owner yet. Interim rule (#162 comment 5884682203): no party service means solo; no stance owner means virtue none. |
 | Damage and heal draw | SIM determinism: RNG stream bound to the occurrence | `uniform_draw` over the owner stream; retry never redraws. |
 
 ## 5. Commit anchor (Reference behaviour)
@@ -258,6 +269,117 @@ Seam/protocol composition), which #162 allocates with the single-writer lease on
 **Independent review.** Required for step 1 (protocol and security; independent exact-byte fixtures)
 and step 2 (authority and state, with the high-risk authority/recovery qualification).
 
+### 8.2 SPELL-D8 (amendment candidate): monk Harmony and Serene
+
+Status: **CANDIDATE**, allocation `OTV2-20260929-spell-part-a-state-contracts` (#162 comment
+5884682203). It needs independent review before any child starts. It gives the state owner that
+`OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md` §A.2 step 1 needs; the Harmony rules themselves
+(multiplier, builders, spenders, Virtue Healing, the Serene rule) stay in §A.2.
+
+**Sources** (standing rule 6: follow Canary/Crystal where they are clear; S21: Canary wins a
+conflict; S24: an official or wiki statement wins where one exists). Canary `99902524`:
+- save: `src/io/functions/iologindata_save_player.cpp:878-883`, KV `spells.harmony`, removed at 0;
+- load: `src/io/functions/iologindata_load_player.cpp:1059-1061`;
+- death: `src/creatures/players/player.cpp:4271-4273`, where `Player::death` empties a monk's Harmony;
+- Serene: `player.cpp:8542-8555` and `:8568` (evaluated on every player think), `:13377-13396`
+  (a forced Serene ignores the evaluation while its ticks run);
+- Focus Serenity: `data/scripts/spells/support/focus_serenity.lua:10` (forced for 7000 ms);
+- conditions: `src/creatures/combat/condition.cpp:464-500` (a timed default-id condition is saved at
+  logout and removed at death);
+- client: `src/server/network/protocol/protocolgame.cpp:8976-8979` and `:12386-12430` (Harmony and
+  Serene are sent at login and on change, one byte each).
+
+Crystal `ff7ede5` also keeps Harmony durable, in the column `players.harmony` (`schema.sql:180`,
+`iologindata_load_player.cpp:249`, `iologindata_save_player.cpp:341`). Crystal does not empty it at
+death, and it clamps it to at least 1 under Virtue of Harmony (`player.cpp:12442-12445`); Canary wins
+both (S21). Fandom `Harmony` r1136128 and `Serene` r1104593 are silent on death, logout and login.
+
+**Harmony (durable Character field).**
+
+| Aspect | Rule |
+|---|---|
+| Owner | GAME-CHAR Character state, persisted under DUR-02 and the character authority (ADR-0012). The physical schema and the migration belong to the implementing child. |
+| Value | `harmony`, an integer 0..5, default 0. Storage rejects any other value. A stored value outside 0..5 is corrupt Character state and fails the load closed. It is 0 for every character that is not a monk. |
+| Live copy | While a runtime actor exists, it holds the current value. Casts read and change only that copy. |
+| New runtime actor | It loads the durable value: a fresh admission, and the first actor after a restart. |
+| Existing actor | A same-GameSession reconnect and FND-04B §21 recovery keep the actor's value exactly, as for vitals. |
+| Change | A builder, spender, Focus spell or refund changes it at the cast's PRIMARY COMMIT, in the same owner mutation as mana and cooldowns (SPELL-D3). A failed or rejected cast changes nothing. |
+| Durable write | Canary writes at each player save. V1 has two save points. **(1) Actor end:** before the Character lease is released, the owner writes the actor's value in a Character event fenced by the session generation that owns the actor. **(2) Death:** the death Character transaction (see Death). A write whose fence is stale writes nothing. |
+| Death | Harmony becomes 0, as in Canary. At the lethal commit the actor's value becomes 0. The DEATH-1 Character transaction also writes 0. This is a binding cross-owner dependency: the item joins §4.3 of `reviews/OTERYN_GAME_REFERENCE_FIRST_PLAYER_DEATH_DECISION_2026-09-28.md`, and the DEATH owner must accept it. It does not block this contract. If no durable death commits, the durable value is unchanged. |
+| Logout and login | Harmony is kept across logout, as Canary saves and loads it. |
+| Crash | After a crash the value returns to the last committed save point. There is no periodic save point (control-plane resolution, #1205). This is an accepted limitation, consistent with the existing durability model. Harmony is not DUR-03 value and cannot be transferred. |
+
+The actor-end write must commit, or be fenced out, before the Character lease is released. A fresh
+admission therefore always loads the final value of the previous actor, or the last committed one when
+the previous actor's write was fenced out.
+
+**Serene (runtime-actor-local, non-durable).**
+- State: `serene` (flag) and `serene_forced_until` (optional `SemanticTimeMicros` from the owner clock).
+  Both exist for monks only.
+- Evaluation: the Channel owner evaluates the §A.2 step 6 rule at every actor initialization (below)
+  and then every 1000 ms, as Canary does on each player think. While the owner time is before
+  `serene_forced_until`, the evaluation leaves `serene` true.
+- Focus Serenity: at its PRIMARY COMMIT, `serene` becomes true and `serene_forced_until` becomes now
+  + 7000 ms.
+- **Initialization evaluation (fix for #1205 finding 4130296767).** The owner evaluates the rule in the
+  same owner step that makes the actor playable, before it accepts any command from the actor. This
+  covers a fresh admission (new runtime actor), respawn after death, a same-GameSession reconnect and
+  FND-04B §21 recovery. A monk outside a party is therefore Serene for its first cast (§A.2 step 6).
+  Canary instead sends Serene off at login and sets it at the first think (up to 1000 ms later); V1
+  does not keep that gap.
+- A new runtime actor starts with no forced time.
+- A same-GameSession reconnect and FND-04B §21 recovery keep `serene_forced_until` exactly, and then
+  re-evaluate `serene` as above.
+- Death: at the lethal commit `serene` becomes false and the forced time is cleared, as Canary
+  removes a timed Serene at death. Respawn evaluates it again before any command.
+- **Declared difference.** Canary saves the remaining ticks of a forced Serene at logout (a timed
+  condition). V1 does not persist Serene at all (the allocation), so at most 7000 ms of forced Serene
+  is lost when a new runtime actor starts. This is the control-plane default (#1205); owner
+  confirmation is pending, and it is not a blocker.
+
+**Wire and compatibility (`ActorVitalsV1`, §3).**
+- Two fields are added: `harmony = 6` and `serene = 7`. They carry the actor's live values, and a
+  change of either publishes an `ACTOR_VITALS` delta, as a change of health does. For any other
+  vocation they are 0 and false, so proto3 omits them.
+- Byte cap. The cap stays 32 bytes, which needs value bounds on the existing fields:
+  - without bounds the worst case would grow from 30 to 34 bytes (five varints of up to 5 bytes each
+    with their tags, plus 2 + 2);
+  - with health, max_health, mana and max_mana at most 2^28 - 1 and soul at most 16383, the worst case
+    is 4 × 5 + 3 + 2 + 2 = 27 bytes;
+  - no SPELL-D5 maximum comes near these bounds (the soul maximum is 200; about 30 mana per level would
+    need millions of levels to reach 2^28);
+  - the encoder refuses a value above its bound as a server fault, and the decoder rejects it.
+- Compatibility. No proto file, codec or registry entry for `ACTOR_VITALS` exists yet (§9 step 1 is not
+  delivered), so the fields join V1 before registration and no deployed peer changes. If step 1 is
+  delivered first, these fields need a new message revision behind a capability, because unknown fields
+  fail closed (§2).
+- The client only displays the values; it never sends Harmony or Serene. Virtue and party data are not
+  in this message (§4 interim rule).
+
+**Resolutions (control plane, #1205; standing rule 6).**
+- **Q1, forced Serene across logout: non-durable.** This is the control-plane default; owner
+  confirmation is pending, and it is not a blocker. A confirmation that follows Canary would make only
+  the forced-until time durable.
+- **Q2, periodic save point: none.** Actor end and death are the only save points. The crash reset in
+  the table above is accepted.
+
+**Cross-owner dependency.** The death reset of Harmony is a binding item for DEATH-1 (see Death in the
+table above). The DEATH owner must accept it; it does not block this contract.
+
+**Delivery (each child with its own #162 allocation).**
+- **H-1:** the durable field, its migration, the fenced actor-end write and the load into a new actor.
+  It needs the Character progression storage and a receipt design, as DEATH-0 does, and the high-risk
+  authority/recovery qualification.
+- **H-2:** Harmony and Serene in the runtime actor, the initialization and 1000 ms evaluations, and
+  the death reset together with DEATH-1. Its engine tests must show that:
+  - a solo monk's first cast after a fresh admission, after respawn, after a same-GameSession reconnect
+    and after FND-04B §21 recovery uses Serene effects, with no periodic step having run;
+  - a forced Serene set before a reconnect holds until its time runs out;
+  - death clears `serene` and the forced time;
+  - no command is accepted from an actor before its initialization evaluation.
+- **H-3:** the `ActorVitalsV1` fields in §9 step 1.
+- The Part A runtime (§A.2) consumes H-1 and H-2.
+
 ## 9. Delivery after acceptance (each child with its own allocation)
 
 1. **Registries and codecs.**
@@ -281,7 +403,8 @@ and step 2 (authority and state, with the high-risk authority/recovery qualifica
 - Exact rejection texts.
 - Cast animations and effects.
 - Exhaustion between different groups beyond the authored cooldowns.
-- Durable persistence of vitals and cooldowns.
+- Durable persistence of vitals and cooldowns. (Monk Harmony is durable under SPELL-D8, §8.2.)
+- The monk virtue slot (Part C `stance`) and party membership (party service).
 - Mana and health regeneration (conditions S8).
 - Magic-level training.
 - PvP rules.

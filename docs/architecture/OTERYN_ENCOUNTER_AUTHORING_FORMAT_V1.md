@@ -2,7 +2,7 @@
 
 - Date: 2026-09-27
 - DecisionStatus: CANDIDATE (D20 draft; owner decisions D26-D29 recorded in §10; the vocabulary is
-  implemented offline before any runtime work; §12 holds CW2 candidate extensions pending owner acceptance)
+  implemented offline before any runtime work; §12 holds the CW2 extensions, ACCEPTED 2026-09-29)
 - DeliveryStatus: OPEN (design draft only)
 - ImplementationStatus: NOT_STARTED
 - Programme: KAN-16 / #504
@@ -508,11 +508,12 @@ location: they subtract safe areas and include the Goshnar boss rooms, so that e
 83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 148/148. No manifest changes, so the
 census is unchanged.
 
-## 12. Candidate extensions for the remaining unresolved rows (CW2)
+## 12. Extensions for the remaining unresolved rows (CW2)
 
-- Status: **CANDIDATE**, pending owner acceptance (owner batch item 4 on #162, 2026-09-28: the lane proposes
-  extensions from CrystalServer/Canary behaviour; the owner accepts the finished design).
-- Task: `OTV2-20260928-cw2-encounter-vocabulary-extensions`.
+- Status: **ACCEPTED** 2026-09-29 (owner batch 2 on #162, comments 5884513528 and 5884527699). The owner questions
+  are answered in §12.6. CW2-1..4 join the closed v1 vocabulary of §9 rule 1: §4-6 are read with these widenings.
+- Tasks: design `OTV2-20260928-cw2-encounter-vocabulary-extensions`; implementation
+  `OTV2-20260929-cw2-encounter-vocabulary-impl` (schema, validator and focused checks, §12.5 step 1).
 - Scope: Alptramun, Gorzindel, Melting Frozen Horror and The Sandking. Ferumbras Mortal Shell waits for a
   quest-domain contract and is not covered here.
 - Evidence: CrystalServer (`zimbadev/crystalserver` at `ff7ede593c69d4c658b382c97443e8155926924a`) is the donor
@@ -520,21 +521,21 @@ census is unchanged.
   on these bosses and holds none of their fight scripts, so it adds nothing. Paths below are relative to that clone;
   the Canary transcription source stays the manifest source.
 - Rule: where the Canary behaviour is clear it is followed; a deviation or a product choice is an owner question
-  (§12.6), never decided here. Nothing in this section changes the schema, the samples or the tools. Until accepted,
-  §4-6 stay the closed vocabulary and the four manifest rows stay `unresolved_semantics`.
+  (§12.6), never decided here. The four manifest rows stay `unresolved_semantics` until their transcription slice
+  (§12.5 step 2).
 
-| Boss | Unresolved mechanic | Proposal |
+| Boss | Unresolved mechanic | Resolution |
 |---|---|---|
-| Alptramun | the `alptramun summon` escalation | no extension: D29 `ability_cast` with D45 covers it; resolvable once Q1 is answered |
+| Alptramun | the `alptramun summon` escalation | no extension: global replacement by the next tier on death, with `creature_died` and `spawn` (Q1) |
 | Gorzindel | the Stolen Tome of Portals portal: each player to the next free knowledge room for 10 s | CW2-1: `teleport` and `in_anchor` of the `triggering` creature |
-| Melting Frozen Horror | death actions on "the top creature" of two fixed tiles | no extension: the lever script names both roles; resolvable now |
+| Melting Frozen Horror | death actions on "the top creature" of two fixed tiles | no extension: the lever script names both roles; the Solid form is always removed (Q4) |
 | The Sandking | the stage counter the credit reads, and the fight that advances it | CW2-2: `stepped_on` a role's `corpse_of`; CW2-3: `map_item remove triggering`; CW2-4: `random_in` with `free: true` |
 
 All four extensions widen a parameter of an existing term. No trigger, condition or action kind is added, so the
 counts in E1 of `OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1.md` (17 triggers, 14 conditions, 25 actions) stay
 the same.
 
-### 12.1 Alptramun: no extension (D29 covers it)
+### 12.1 Alptramun: no extension (global replacement, Q1)
 
 1. **Mechanic.** `alptramun summon`: dreams whose type rises with the `dreams_killed` counter.
 2. **Canary behaviour.**
@@ -550,27 +551,30 @@ the same.
    - The only dreams it counts are the two unmastered unpleasant dreams the lever places
      (`data-global/scripts/quests/the_dream_courts/actions_dreamscar_levers.lua:22-25`). As shipped, the fight never
      escalates.
-3. **Extension.** None. Rechecked against D29: the script is a summon spell, which D45 already converts. The spell
-   stays an Ability whose `encounter` is `alptramun`. Its `ability_cast` rules use `summon_count` (D45),
-   `counter_compare`, a `{min, max}` spawn count (D29), `offset_tiles` 1 (D34, as for the Rage and the Destruction)
-   and a four-branch `one_of` (D31). **The row is resolvable in the vocabulary.** What blocks it is evidence, not
-   vocabulary: D45 needs a monster that owns and casts the ability, and Canary has none (Q1).
-4. **Authored JSON** (one band; only if Q1 adopts the escalation):
+3. **Owner answer (Q1): follow global, not Canary.**
+   - A killed dream is replaced at once by the next tier: unpleasant, then horrible, then nightmarish, then
+     mind-wrecking. The tier is capped at 4, so a killed mind-wrecking dream is replaced by another mind-wrecking
+     dream.
+   - The initial dreams are the two unmastered unpleasant dreams the lever places (`actions_dreamscar_levers.lua:22-25`,
+     entry placement), which matches the wiki's "initially appear with several summons".
+   - The dreams' own healing stays the Canary monster data: horrible 20-30, nightmarish 120-190, mind-wrecking
+     130-205 (the `COMBAT_HEALING` defenses of their monster files). It is monster content, not encounter content.
+4. **Extension.** None. The replacement is one `creature_died` rule per tier with a `spawn` at `death_position`,
+   `owner: none` (like the lever's dreams, so the next death fires again) and `health: full`. It has no delay. The
+   `has_master` condition keeps Canary's skip of summoned copies. The spell, its `ability_cast` form (D45) and the
+   `dreams_killed` counter are not used: nothing casts the spell, and nothing reads the counter once it is gone.
    ```json
-   {"key": "alptramun_calls_unpleasant_dreams",
-    "trigger": {"kind": "ability_cast", "role": "alptramun",
-                "ability": {"family": "Ability", "key": "canary:ability/spell/alptramun_summon", "revision": "canary-47dfd51f"}},
-    "conditions": [{"kind": "summon_count", "role": "alptramun", "op": "<", "value": 5},
-                   {"kind": "counter_compare", "counter": "dreams_killed", "op": "<=", "value": 9}],
-    "actions": [{"kind": "spawn", "role": "unpleasant_dream",
-                 "creature": {"family": "Creature", "key": "canary:creature/unpleasant_dream", "revision": "canary-47dfd51f"},
-                 "count": {"min": 1, "max": 4}, "at": {"offset_tiles": 1}, "owner": "subject", "health": "full"}]}
+   {"key": "unpleasant_dream_replaced", "trigger": {"kind": "creature_died", "role": "unpleasant_dream"},
+    "conditions": [{"kind": "has_master", "role": "unpleasant_dream", "value": false}],
+    "actions": [{"kind": "spawn", "role": "horrible_dream",
+                 "creature": {"family": "Creature", "key": "canary:creature/horrible_dream", "revision": "canary-47dfd51f"},
+                 "count": 1, "at": "death_position", "owner": "none", "health": "full"}]}
    ```
-   Three more band rules follow the same pattern, and an above-36 rule uses `one_of`. If Q1 follows Canary, no rule
-   is added and the manifest row becomes `approved_omission`: the spell is never cast.
-5. **Validation and tests.** None for the vocabulary. With the escalation, the transcription maps
-   `alptramun_summon.lua` lines 1-59, `validate_encounter.py` accepts the rules, and the Rust admission checks the
-   D45 ownership: Alptramun's ability list names the spell and the encounter covers Alptramun.
+   The horrible and nightmarish rules follow the same pattern, and the mind-wrecking rule spawns a mind-wrecking
+   dream.
+5. **Validation and tests.** None for the vocabulary: the four rules validate against the current schema with the
+   sample's catalog. The transcription records `alptramun_summon.lua` 1-59 as `approved_omission` (never cast;
+   superseded by the global replacement) and replaces the Canary counter rules with the four replacement rules.
 6. **Out of scope.** Alptramun's other spells, `facelessHealth` (already mapped) and the lever's day-of-week boss
    rotation (entry, not encounter).
 
@@ -589,6 +593,8 @@ the same.
      player to the first of five rooms still marked open, in index order (lines 1-7, 20-23), and marks it busy. 10 s
      later the player, if still online, goes to the middle (32687, 32719, 10) and the room reopens (lines 24-30).
    - The five rooms are the tiles of the five stolen knowledges (`gorzindel.lua:22-26`).
+   - **Owner answer (Q2): yes.** The rooms are per instance and reopen after 10 s in every case. The delayed return
+     teleports only players still in the instance, which fixes Canary's server-wide room leak.
 3. **Extension CW2-1.** `teleport.who` also takes `{"triggering": true}`: the creature or player that fired the
    rule. This extends the D31 `remove triggering`. It is valid in a rule fired by one creature (§9 rule 2) and in
    `area_entered`/`area_left`, which also fire per creature.
@@ -647,7 +653,7 @@ the same.
      movement scripts (E2); every line of `creaturescripts_gorzindel.lua` 38-50 and `movements_gorzindel.lua` 1-38
      mapped.
 6. **Out of scope.** The lever, its cooldown and player positions (entry contract); the step-in exits of
-   `movements_timers.lua` (interaction domain); the defects in Q2, which this design does not reproduce.
+   `movements_timers.lua` (interaction domain); the defects in Q2, which the owner answer fixes.
 
 ### 12.3 Melting Frozen Horror: no extension (the lever names the roles)
 
@@ -669,23 +675,27 @@ the same.
    case names its role from evidence. The lever gives the roles `dragon_egg` and `solid_frozen_horror`, as
    `actions_gorzindel.lua` gives Gorzindel's knowledges. `role_position`, `remove` of a role and `creature_present`
    express the rest. **The row is resolvable now.**
+   - **Owner answer (Q4): follow global.** Forgotten Knowledge has one form-changing boss (TibiaWiki spoiler), so the
+     death of the Melting form always removes the Solid form. This deviates from Canary, which removes the top creature
+     of the parking tile. The removal is a rule of its own, with no condition.
 4. **Authored JSON** (the arena anchor is the lever's cleanup area (32264, 31070)-(32284, 31104, 14),
    `actions_frozen_horror.lua:86`):
    ```json
-   {"key": "melting_frozen_horror_hatches_the_egg",
-    "trigger": {"kind": "creature_died", "role": "melting_frozen_horror"},
-    "conditions": [{"kind": "creature_present", "role": "dragon_egg", "anchor": "horror_arena", "present": true}],
-    "actions": [{"kind": "remove", "role": "dragon_egg"},
-                {"kind": "spawn", "creature": {"family": "Creature", "key": "canary:creature/baby_dragon", "revision": "canary-47dfd51f"},
-                 "count": 1, "at": {"role_position": "dragon_egg"}, "owner": "none", "health": "full"},
-                {"kind": "remove", "role": "solid_frozen_horror"}]}
+   [{"key": "melting_frozen_horror_hatches_the_egg",
+     "trigger": {"kind": "creature_died", "role": "melting_frozen_horror"},
+     "conditions": [{"kind": "creature_present", "role": "dragon_egg", "anchor": "horror_arena", "present": true}],
+     "actions": [{"kind": "remove", "role": "dragon_egg"},
+                 {"kind": "spawn", "creature": {"family": "Creature", "key": "canary:creature/baby_dragon", "revision": "canary-47dfd51f"},
+                  "count": 1, "at": {"role_position": "dragon_egg"}, "owner": "none", "health": "full"}]},
+    {"key": "melting_frozen_horror_removes_the_solid_form",
+     "trigger": {"kind": "creature_died", "role": "melting_frozen_horror"},
+     "conditions": [], "actions": [{"kind": "remove", "role": "solid_frozen_horror"}]}]
    ```
    `role_position` is taken when the trigger fires (§9 rule 2), so the dragon appears on the egg's tile after the egg
    is removed. If damage over time kills the parked horror, Canary removes the dying horror itself and leaves the
-   solid horror in the room, while this rule removes the solid horror. That deviation is owner question Q4; the rule
-   above stays as drafted until Q4 is answered.
+   solid horror in the room; under Q4 the second rule removes the solid horror in every case.
 5. **Validation and tests.** No vocabulary change. The transcription adds the two participants, the anchor and the
-   rule, maps `creaturescripts_bosses_kill.lua` 37-48 and `creaturescripts_melting_death.lua` 1-21, and adds
+   two rules, maps `creaturescripts_bosses_kill.lua` 37-48 and `creaturescripts_melting_death.lua` 1-21, and adds
    `MeltingDeath` to the manifest `covers`. `validate_encounter.py` must pass with the catalog.
 6. **Out of scope.** The rest of the fight is the dragon egg's `DragonEggHealthChange` and `DragonEggPrepareDeath`
    (fire heals the egg, a full egg swaps the horrors). These events block the Dragon Egg creature in the census, and
@@ -726,7 +736,7 @@ the same.
      area that a creature can be placed on now. If no such tile exists, that spawn creates nothing and the remaining
      actions still run. Without `free`, or with `free: false`, `random_in` keeps its current semantics exactly:
      existing uses such as `razzagorn`, whose manifest records that a failed random creation ends the cast, are
-     untouched. `free` is used only for the Sandking broods, and only if Q3 accepts it.
+     untouched. `free` is used only for the Sandking broods (Q3 accepted).
    - Everything else uses existing terms:
      - `health_crossed` (a think check, as in the ninth slice);
      - the `stage` and `broods_left` counters, and repeating 5 s timers `brood_wave` and `brood_check`;
@@ -776,42 +786,46 @@ the same.
    - The lever, its 60-minute kick and the boss cooldown (entry and reward domains).
    - `SandHealth`, transcribed as Canary's no-op (`approved_omission`). Its intended reflection is a D25 wiki check,
      and `reflect_damage` already expresses it if the wiki confirms it.
-   - The defect in Q3.
+   - The defect in Q3, which CW2-4 fixes.
 
 ### 12.5 Implementation order after acceptance
 
-1. Schema, `validate_encounter.py` and `verify_encounter_schema.py` for CW2-1..4.
-2. Transcriptions: the Melting Frozen Horror death rule after Q4; Gorzindel and The Sandking with CW2-1..4;
-   Alptramun after Q1.
+1. Schema, `validate_encounter.py` and `verify_encounter_schema.py` for CW2-1..4. **Done** in
+   `OTV2-20260929-cw2-encounter-vocabulary-impl`; every existing sample validates unchanged.
+2. Transcriptions with the owner answers: Alptramun (Q1), Gorzindel (CW2-1, Q2), Melting Frozen Horror (Q4) and The
+   Sandking (CW2-2..4, Q3). The samples are the output of `canary_encounters.py` and feed the monster census, so this
+   slice owns that tool, the four samples and the census outputs.
 3. The Rust typed profile and its tests (slice 3 of the admission design).
 4. Restaging under E4. Melting Frozen Horror then stays deferred behind the dragon egg.
 
 Each step is its own owned slice.
 
-### 12.6 Owner questions (deviations and product choices only)
+### 12.6 Owner questions and answers (deviations and product choices only)
 
-| # | Question | Canary behaviour | Proposed default |
-|---|---|---|---|
-| Q1 | Alptramun's escalation: follow Canary, or adopt the wiki? | The spell is never cast, and a cast would not escalate because the counter skips summons (§12.1). The reference-date wiki says killed summons are replaced by stronger ones, without numbers. | Follow Canary: record the spell as `approved_omission`. Adopting the wiki needs owner-chosen numbers: the cast interval and chance, and whether summoned dreams count. |
-| Q2 | Gorzindel's portal defects: free each room after 10 s in every case, and return only players still in the instance? | The room table is server-wide. A room stays busy forever if its player is gone when the 10 s end, and a player who died and respawned is still pulled back to the middle (`movements_gorzindel.lua:24-30`). | Yes. The room state is per instance (D26), and the return acts only on a player still in the fight (§9 rule 2). |
-| Q3 | The Sandking's brood calls: spawn each brood on a free tile of the area? | A brood is created on an unchecked random tile. If that fails, the call chain stops and the Sandking never returns (`creaturescripts_sandking.lua:43-44`). | Yes. Only the brood spawns use `random_in` with `free: true` (CW2-4); every existing `random_in` keeps its semantics. |
-| Q4 | Melting Frozen Horror: when damage over time kills the parked melting horror, remove the Solid Frozen Horror anyway? | The death script removes the top creature of the parking tile, which is then the dying melting horror itself. The solid horror stays in the room, and `revertHorror` finds no melting horror to swap back (`creaturescripts_bosses_kill.lua:44-47`, `creaturescripts_dragon_egg.lua:1-22`). The egg still hatches and the kill is still credited. | Follow Canary. Gate the removal with the existing `creature_present(solid_frozen_horror, parking_tile, present)` on a one-tile anchor, in a rule of its own. The fight is already credited, and the leftover solid horror goes when the instance resets (D26). Removing it everywhere would be a deviation with no evidence. |
+The owner answered in batch 2 on #162 (2026-09-29), where these questions are numbered Q4, Q5, Q6 and Q8. The
+answers deviate from the proposed default for Q1 and Q4.
+
+| # | Question | Canary behaviour | Proposed default | Owner answer |
+|---|---|---|---|---|
+| Q1 | Alptramun's escalation: follow Canary, or adopt the wiki? | The spell is never cast, and a cast would not escalate because the counter skips summons (§12.1). The reference-date wiki says killed summons are replaced by stronger ones, without numbers. | Follow Canary: record the spell as `approved_omission`. Adopting the wiki needs owner-chosen numbers: the cast interval and chance, and whether summoned dreams count. | Batch Q4: follow global. A killed dream is replaced at once by the next tier, capped at tier 4; the healing values are Canary's; the initial dreams come from Canary (§12.1). |
+| Q2 | Gorzindel's portal defects: free each room after 10 s in every case, and return only players still in the instance? | The room table is server-wide. A room stays busy forever if its player is gone when the 10 s end, and a player who died and respawned is still pulled back to the middle (`movements_gorzindel.lua:24-30`). | Yes. The room state is per instance (D26), and the return acts only on a player still in the fight (§9 rule 2). | Batch Q5: yes. The return teleports only players still in the instance (CW2-1 `in_anchor` of `triggering`). |
+| Q3 | The Sandking's brood calls: spawn each brood on a free tile of the area? | A brood is created on an unchecked random tile. If that fails, the call chain stops and the Sandking never returns (`creaturescripts_sandking.lua:43-44`). | Yes. Only the brood spawns use `random_in` with `free: true` (CW2-4); every existing `random_in` keeps its semantics. | Batch Q6: yes, as proposed. |
+| Q4 | Melting Frozen Horror: when damage over time kills the parked melting horror, remove the Solid Frozen Horror anyway? | The death script removes the top creature of the parking tile, which is then the dying melting horror itself. The solid horror stays in the room, and `revertHorror` finds no melting horror to swap back (`creaturescripts_bosses_kill.lua:44-47`, `creaturescripts_dragon_egg.lua:1-22`). The egg still hatches and the kill is still credited. | Follow Canary. Gate the removal with the existing `creature_present(solid_frozen_horror, parking_tile, present)` on a one-tile anchor, in a rule of its own. The fight is already credited, and the leftover solid horror goes when the instance resets (D26). Removing it everywhere would be a deviation with no evidence. | Batch Q8: follow global. The Melting death always removes the Solid form (one form-changing boss, TibiaWiki Forgotten Knowledge spoiler); a deviation from Canary (§12.3). |
 
 ### 12.7 Decision test (`ARCHITECTURE_DECISION_DISCIPLINE.md`)
 
 The test covers CW2-1..4 together, because each one widens the closed v1 vocabulary of §9 rule 1. Where the
-extensions differ, the differences are named. Alptramun (Q1) and Melting Frozen Horror (Q4) need no vocabulary change,
-only evidence answers.
+extensions differ, the differences are named. Alptramun (Q1) and Melting Frozen Horror (Q4) need no vocabulary change;
+their answers are recorded in §12.6.
 
 1. **Must decide now?**
    - **CW2-1..3: YES.** E4 admits an encounter only when its manifest has no `unresolved_semantics` row. Without these
      terms the Gorzindel and The Sandking rows cannot resolve, and the closed vocabulary rules out approximating or
      scripting them (D28). The owner scheduled this proposal on #162 (batch item 4).
-   - **CW2-4: YES only if Q3 accepts** the free-tile brood spawn. If Q3 declines, CW2-4 is dropped: the Sandking
-     transcription keeps plain `random_in` and records Canary's failed-spawn behaviour.
+   - **CW2-4: YES**, because the owner accepted the free-tile brood spawn (Q3).
    - No runtime work waits on any of this. The decision concerns content admission only.
 2. **What concrete downstream work is blocked?**
-   - Slice 1 of §12.5: the schema, validator and `verify_encounter_schema.py` additions.
+   - Slice 1 of §12.5: the schema, validator and `verify_encounter_schema.py` additions (now done).
    - The Gorzindel and The Sandking transcriptions in `canary_encounters.py` and their manifests.
    - The typed Encounter profile variants in `apps/game-server/src/content/project/v2/encounter.rs`, which are slice 3
      of the admission design.
@@ -825,8 +839,8 @@ only evidence answers.
      - CW2-4: `free`, default false.
      Every existing sample and admitted encounter stays valid with its meaning unchanged, and §12.4 makes that a
      validation obligation.
-   - **Older readers.** Documents that use the new branches are rejected by the current schema, validator and Rust
-     profile.
+   - **Older readers.** Documents that use the new branches are rejected by older schemas and validators, and by the
+     Rust profile until slice 3 of §12.5.
    - **Profile revision.** Under the E1 decision test, a change to the v2 Encounter profile shape needs a new profile
      revision and a restage. That happens once, for all four extensions.
    - **Runtime obligations**, which bind a future Encounter runtime once these encounters are admitted:
@@ -844,13 +858,11 @@ only evidence answers.
    - An activity-instance admission contract whose rule for leaving an instance differs from the one `in_anchor` of
      `triggering` assumes. The check would follow that contract.
    - Reference-date wiki evidence (D25) that contradicts the Canary behaviour of these fights.
-   - The owner declines Q3, which drops CW2-4. A later encounter that needs `triggering` in another subject is a new
-     decision, not an unrecorded widening.
+   - A later encounter that needs `triggering` in another subject is a new decision, not an unrecorded widening.
 5. **What is deliberately not decided?**
    - `triggering` in any subject or action other than `teleport.who`, `in_anchor`, `map_item` and the existing D31
      `remove`.
    - `free` for any position kind other than `random_in`, or for any encounter other than The Sandking.
-   - The Q1-Q4 answers.
    - Ferumbras Mortal Shell and the dragon egg transcription.
    - The Encounter runtime, instancing and map binding.
    - The interaction-domain step-in exits.

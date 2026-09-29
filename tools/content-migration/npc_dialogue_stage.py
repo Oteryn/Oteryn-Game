@@ -30,6 +30,8 @@ ROOT = Path(__file__).resolve().parents[2]
 CANDIDATES = ROOT / 'tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json'
 CANARY_REVISION = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
 CRYSTAL_REVISION = 'ff7ede593c69d4c658b382c97443e8155926924a'
+# D14: the pinned Crystal `summer-update` commit that supplies the NPC files added after CRYSTAL_REVISION
+CRYSTAL_SUPPLEMENT_REVISION = '00ce02a57ca5a12e48f32a3476e37471167e4c3f'
 REVISION = 'definition-r1'
 NPC_PREFIX = 'oteryn:npc.'
 SLUG = re.compile(r'[a-z0-9]+(?:_[a-z0-9]+)*')
@@ -480,7 +482,7 @@ SOURCE_IDENTITY = {'canary': ('opentibiabr/canary', CANARY_REVISION),
                    'crystal': ('zimbadev/crystalserver', CRYSTAL_REVISION)}
 
 
-def load_bundle(bundles_dir: Path, source: str, provenance: dict) -> dict | None:
+def load_bundle(bundles_dir: Path, source: str, provenance: dict, revision: str | None = None) -> dict | None:
     """Loads a converted bundle and binds it to the candidate: its schema, key, pinned repository and
     revision, and the source-file digest the candidate records must all match."""
     source_key = provenance['key']
@@ -489,7 +491,8 @@ def load_bundle(bundles_dir: Path, source: str, provenance: dict) -> dict | None
     if not path.exists():
         return None
     bundle = json.loads(path.read_text())
-    repository, revision = SOURCE_IDENTITY[source]
+    repository, pinned = SOURCE_IDENTITY[source]
+    revision = revision or pinned
     origin = bundle.get('source') or {}
     if (bundle.get('schema') != 'OTERYN_NPC_AUTHORING_CANDIDATE/v1' or bundle.get('key') != source_key
             or origin.get('repository') != repository or origin.get('revision') != revision
@@ -518,6 +521,21 @@ def census_bound_reference(reference_dir: Path, source: str) -> tuple[Path, str]
     return reference_dir, census_digest
 
 
+def supplement_bound_reference(reference_dir: Path, report: dict) -> Path:
+    """D14: the Crystal supplement reference bundles must reproduce the digest the candidates recorded
+    (`crystal_supplement.bundles_sha256`, the same file-digest form as a census), which authenticates them."""
+    supplement = report.get('crystal_supplement') or {}
+    # the listed files: supplement-revision candidates and SUPPLEMENT_HELD rows (promotion_candidates, D14)
+    keys = {c['provenance']['crystal']['key'] for c in report['candidates']
+            if c['provenance'].get('crystal', {}).get('revision') == CRYSTAL_SUPPLEMENT_REVISION}
+    keys |= {h['sources']['crystal'] for h in report['held'] if h['reason'] == 'SUPPLEMENT_HELD'}
+    names = sorted(f"{key.split(':npc/', 1)[1]}.json" for key in keys)
+    lines = [f'{name}:{hashlib.sha256((reference_dir / name).read_bytes()).hexdigest()}' for name in names]
+    if hashlib.sha256('\n'.join(lines).encode()).hexdigest() != supplement.get('bundles_sha256'):
+        raise StageError('Crystal supplement reference bundles do not reproduce crystal_supplement.bundles_sha256')
+    return reference_dir
+
+
 def text_bundle_verified(bundle: dict, reference_dir: Path, source_key: str) -> bool:
     """An --include-text bundle is authenticated when, without its text, it equals the census-bound
     reference bundle; the text itself is bound by the per-reference digests checked in leaf_texts."""
@@ -527,13 +545,21 @@ def text_bundle_verified(bundle: dict, reference_dir: Path, source_key: str) -> 
 
 def stage(report: dict, canary_dir: Path, crystal_dir: Path, canary_reference: Path,
           crystal_reference: Path, transcripts: 'TranscriptIndex | None' = None,
-          transcripts_revision: str | None = None) -> dict:
+          transcripts_revision: str | None = None, supplement_dir: Path | None = None,
+          supplement_reference: Path | None = None) -> dict:
     if report['schema'] != 'OTERYN_NPC_PROMOTION_CANDIDATES/v1':
         raise StageError('promotion candidate report drifted')
     for bundles_dir in (canary_dir, crystal_dir):
         index_path = bundles_dir.parent / 'index.json'
         if not index_path.exists() or json.loads(index_path.read_text()).get('include_text') is not True:
             raise StageError(f'{bundles_dir} is not a convert.py --include-text output (its index.json)')
+    if 'crystal_supplement' in report:  # D14
+        if supplement_dir is None or supplement_reference is None:
+            raise StageError('the candidates carry a Crystal supplement: pass its bundles and reference bundles')
+        index_path = supplement_dir.parent / 'index.json'
+        if not index_path.exists() or json.loads(index_path.read_text()).get('include_text') is not True:
+            raise StageError('the Crystal supplement bundles must be converted with --include-text')
+        supplement_bound_reference(supplement_reference, report)
     references = {'canary': census_bound_reference(canary_reference, 'canary'),
                   'crystal': census_bound_reference(crystal_reference, 'crystal')}
     candidates = sorted(report['candidates'], key=lambda c: c['identity']['key'])
@@ -554,10 +580,15 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path, canary_reference: P
         for source, bundles_dir in (('canary', canary_dir), ('crystal', crystal_dir)):
             if source not in provenance:
                 continue
-            bundle = load_bundle(bundles_dir, source, provenance[source])
+            revision, reference_dir = provenance[source].get('revision'), references[source][0]
+            if revision is not None:  # D14: a listed file of the pinned Crystal supplement commit
+                if supplement_dir is None or revision != CRYSTAL_SUPPLEMENT_REVISION:
+                    raise StageError(f'{npc_key}: supplement revision {revision} needs the supplement bundles')
+                bundles_dir, reference_dir = supplement_dir, supplement_reference
+            bundle = load_bundle(bundles_dir, source, provenance[source], revision)
             if bundle is None:
                 raise StageError(f'missing {source} bundle for {npc_key}: {provenance[source]["key"]}')
-            if not text_bundle_verified(bundle, references[source][0], provenance[source]['key']):
+            if not text_bundle_verified(bundle, reference_dir, provenance[source]['key']):
                 unverified.append(source)
                 continue
             by_source[source] = build_dialogue(bundle, stats)
@@ -638,6 +669,9 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path, canary_reference: P
                                'candidates_sha256': hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
                                'canary_census_bundle_digest': references['canary'][1],
                                'crystal_census_bundle_digest': references['crystal'][1]}
+    if 'crystal_supplement' in report:  # D14
+        source['crystal_supplement_revision'] = report['crystal_supplement']['revision']
+        source['crystal_supplement_bundles_sha256'] = report['crystal_supplement']['bundles_sha256']
     counts: dict[str, Any] = {'npcs_with_dialogue': len(dialogues),
                                'held_dialogue_conflict': sum(h['reason'] == 'DIALOGUE_CONFLICT' for h in held),
                                'held_text_bundle_unverified': sum(h['reason'] == 'TEXT_BUNDLE_UNVERIFIED' for h in held),
@@ -673,6 +707,10 @@ def main() -> int:
                         help='reference-only convert.py output that reproduces the committed Canary census')
     parser.add_argument('--crystal-reference-bundles', type=Path, required=True,
                         help='reference-only convert.py output that reproduces the committed Crystal census')
+    parser.add_argument('--crystal-supplement-bundles', type=Path, default=None,
+                        help='D14: --include-text bundles of the pinned Crystal supplement commit')
+    parser.add_argument('--crystal-supplement-reference-bundles', type=Path, default=None,
+                        help='D14: reference-only bundles of the same commit (checked against the candidates)')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--transcripts', type=Path, default=None,
                         help='Optional root of Tibia Global in-game NPC transcript .txt files '
@@ -690,7 +728,8 @@ def main() -> int:
     report = json.loads(CANDIDATES.read_text())
     try:
         packet = stage(report, args.canary_bundles, args.crystal_bundles, args.canary_reference_bundles,
-                       args.crystal_reference_bundles, transcripts, args.transcripts_revision)
+                       args.crystal_reference_bundles, transcripts, args.transcripts_revision,
+                       args.crystal_supplement_bundles, args.crystal_supplement_reference_bundles)
     except StageError as error:
         print(f'npc dialogue stage: {error}', file=sys.stderr)
         return 1

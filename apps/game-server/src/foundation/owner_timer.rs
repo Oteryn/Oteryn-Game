@@ -469,6 +469,85 @@ where
     }
 }
 
+/// `COMBAT01-CORPSES-PER-SCOPE` (VSL resource-rows decision §4.1 row 6, reused unchanged by the
+/// D3 decision §4.2): at most 64 live corpses per scope. It is the registered hard maximum of the
+/// corpse decay family below: one pending decay timer per live corpse, all sharing the family's
+/// single target-less key, so no new resource row is needed.
+pub const COMBAT01_CORPSES_PER_SCOPE: usize = 64;
+
+/// D135 (`D3-CORPSE-CONTAINER-LOOT-WINDOW-DECAY-V1` §4.6, child D3-6): a corpse decays at the
+/// durable absolute deadline `materialized_at + 60 s`.
+pub const CORPSE_DECAY_AFTER_MS: i64 = 60_000;
+
+/// D135: the corpse decay timer family. Its timers carry no actor target (a corpse is an
+/// `ItemInstance`, not an actor) and fire as durable deadline state: every scheduled corpse's own
+/// decay is delivered, never collapsed with another's (`CatchUpPolicy::DeadlineState`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CorpseDecayFamily;
+
+impl TimerFamily for CorpseDecayFamily {
+    fn registered_maximum(self) -> usize {
+        COMBAT01_CORPSES_PER_SCOPE
+    }
+}
+
+/// The fixed decay family policy a lane is constructed with.
+pub const CORPSE_DECAY_POLICY: FamilyPolicy = FamilyPolicy {
+    max_pending: COMBAT01_CORPSES_PER_SCOPE,
+    catch_up: CatchUpPolicy::DeadlineState,
+};
+
+/// One corpse's decay occurrence: the corpse `ItemInstanceId`, which decays at most once, so it
+/// is never scheduled twice in one lane.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CorpseDecayOccurrence {
+    pub corpse_item_instance_id: [u8; 16],
+}
+
+/// Map a corpse's durable decay deadline (database-clock unix ms) onto this owner's monotonic
+/// timer clock: `now` plus the time still remaining at `database_now_unix_ms`, both read together
+/// (the recovery query returns them in one statement). An already-passed deadline is due now, so
+/// a corpse whose decay was missed or interrupted (a restart, a handoff, a partly drained corpse)
+/// fires on the next drain. The timer is never set later than the deadline; the durable commit
+/// independently refuses a retirement before it, so decay is never early either.
+#[must_use]
+pub fn corpse_decay_due(
+    now: SemanticTimeMicros,
+    database_now_unix_ms: i64,
+    decay_at_unix_ms: i64,
+) -> SemanticTimeMicros {
+    let remaining_ms = decay_at_unix_ms.saturating_sub(database_now_unix_ms).max(0);
+    now.saturating_add_micros(
+        u64::try_from(remaining_ms)
+            .unwrap_or(0)
+            .saturating_mul(1_000),
+    )
+}
+
+/// Schedule one corpse's decay: at corpse-MINT commit and again, from the durable recovery query,
+/// at every scope (re)admission into the new owner's fresh lane. It inherits every
+/// `OwnerTimerLane::schedule` check (fence, stamp, duplicate identity, the registered cap).
+pub fn schedule_corpse_decay(
+    lane: &mut OwnerTimerLane<CorpseDecayFamily, CorpseDecayOccurrence>,
+    owner_fence: &ScopeRuntimeFence,
+    scheduling_stamp: RuntimeWorkStamp,
+    corpse_item_instance_id: [u8; 16],
+    due: SemanticTimeMicros,
+) -> Result<CorpseDecayOccurrence, OwnerTimerError> {
+    let occurrence = CorpseDecayOccurrence {
+        corpse_item_instance_id,
+    };
+    lane.schedule(
+        owner_fence,
+        scheduling_stamp,
+        CorpseDecayFamily,
+        occurrence,
+        None,
+        due,
+    )?;
+    Ok(occurrence)
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used)] // Test-only: fixture construction and schedule() calls whose
 // success is the test's own precondition, not the behavior under test.
@@ -1243,5 +1322,148 @@ mod tests {
 
         let order: Vec<u64> = fired.iter().map(|timer| timer.occurrence).collect();
         assert_eq!(order, vec![3, 2]);
+    }
+
+    fn corpse(seed: u8) -> [u8; 16] {
+        let mut bytes = uuid_v7(seed);
+        bytes[0] = 2;
+        bytes
+    }
+
+    fn decay_lane(
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+    ) -> OwnerTimerLane<CorpseDecayFamily, CorpseDecayOccurrence> {
+        OwnerTimerLane::for_generation(
+            scope,
+            generation,
+            [(CorpseDecayFamily, CORPSE_DECAY_POLICY)],
+        )
+        .expect("decay cap within COMBAT01-CORPSES-PER-SCOPE")
+    }
+
+    #[test]
+    fn corpse_decay_due_is_the_remaining_time_to_the_durable_deadline() {
+        let now = SemanticTimeMicros::from_micros(5_000_000);
+        // materialized_at 1_000 ms, deadline 61_000 ms, database clock at 1_500 ms.
+        assert_eq!(
+            corpse_decay_due(now, 1_500, 1_000 + CORPSE_DECAY_AFTER_MS),
+            SemanticTimeMicros::from_micros(5_000_000 + 59_500_000)
+        );
+        // Exactly at the deadline, and long past it (a resumed or missed decay): due now.
+        assert_eq!(corpse_decay_due(now, 61_000, 61_000), now);
+        assert_eq!(corpse_decay_due(now, 900_000, 61_000), now);
+        // Saturating: an absurd deadline never wraps into the past.
+        assert_eq!(
+            corpse_decay_due(SemanticTimeMicros::from_micros(u64::MAX - 1), 0, i64::MAX),
+            SemanticTimeMicros::from_micros(u64::MAX)
+        );
+    }
+
+    #[test]
+    fn corpse_decay_fires_at_its_deadline_never_before_and_never_collapsed() {
+        let gen1 = generation(1);
+        let scope = scope_for(1);
+        let mut lane = decay_lane(scope, gen1);
+        let mut owner_fence = fence(scope, gen1);
+        let start = SemanticTimeMicros::from_micros(1_000);
+        let due_a = corpse_decay_due(start, 0, CORPSE_DECAY_AFTER_MS);
+        let due_b = corpse_decay_due(start, 0, CORPSE_DECAY_AFTER_MS + 1);
+        for (seed, due) in [(1, due_a), (2, due_b)] {
+            let stamp = issue_stamp(&mut owner_fence, gen1);
+            schedule_corpse_decay(&mut lane, &owner_fence, stamp, corpse(seed), due)
+                .expect("schedule decay");
+        }
+        let clock = VirtualOwnerClock::new(start);
+        clock.advance(59_999_999);
+        assert!(lane.drain_due(&clock, &owner_fence, |_| true).is_empty());
+        clock.advance(1);
+        let fired = lane.drain_due(&clock, &owner_fence, |_| true);
+        assert_eq!(fired.len(), 1);
+        assert_eq!(fired[0].occurrence.corpse_item_instance_id, corpse(1));
+        assert_eq!(fired[0].due, due_a);
+        // Long overdue: the second corpse still fires with its own deadline (DeadlineState).
+        clock.advance(10_000_000);
+        let fired = lane.drain_due(&clock, &owner_fence, |_| true);
+        assert_eq!(fired.len(), 1);
+        assert_eq!(fired[0].occurrence.corpse_item_instance_id, corpse(2));
+        assert_eq!(fired[0].due, due_b);
+        assert_eq!(lane.pending_len(), 0);
+    }
+
+    #[test]
+    fn corpse_decay_cap_is_corpses_per_scope_and_a_corpse_is_scheduled_once() {
+        assert_eq!(CorpseDecayFamily.registered_maximum(), 64);
+        assert!(matches!(
+            OwnerTimerLane::<CorpseDecayFamily, CorpseDecayOccurrence>::for_generation(
+                scope_for(1),
+                generation(1),
+                [(
+                    CorpseDecayFamily,
+                    FamilyPolicy {
+                        max_pending: COMBAT01_CORPSES_PER_SCOPE + 1,
+                        catch_up: CatchUpPolicy::DeadlineState,
+                    },
+                )],
+            ),
+            Err(OwnerTimerError::FamilyCapExceedsRegisteredMaximum)
+        ));
+        let gen1 = generation(1);
+        let scope = scope_for(1);
+        let mut lane = decay_lane(scope, gen1);
+        let mut owner_fence = fence(scope, gen1);
+        let due = SemanticTimeMicros::from_micros(10);
+        for seed in 0..64_u8 {
+            let stamp = issue_stamp(&mut owner_fence, gen1);
+            schedule_corpse_decay(&mut lane, &owner_fence, stamp, corpse(seed), due)
+                .expect("up to COMBAT01-CORPSES-PER-SCOPE");
+        }
+        let stamp = issue_stamp(&mut owner_fence, gen1);
+        assert_eq!(
+            schedule_corpse_decay(&mut lane, &owner_fence, stamp, corpse(64), due),
+            Err(OwnerTimerError::PendingLimitReached)
+        );
+        assert_eq!(lane.pending_len(), 64);
+        let mut lane = decay_lane(scope, gen1);
+        let stamp = issue_stamp(&mut owner_fence, gen1);
+        schedule_corpse_decay(&mut lane, &owner_fence, stamp, corpse(1), due).expect("first");
+        let stamp = issue_stamp(&mut owner_fence, gen1);
+        assert_eq!(
+            schedule_corpse_decay(&mut lane, &owner_fence, stamp, corpse(1), due),
+            Err(OwnerTimerError::DuplicateOccurrence)
+        );
+    }
+
+    #[test]
+    fn a_new_owner_generation_reschedules_decay_into_a_fresh_lane_only() {
+        // The superseded owner's lane fires nothing after a handoff; the new owner rebuilds its
+        // lane from the durable recovery query (here: one corpse already past its deadline).
+        let gen1 = generation(1);
+        let gen2 = generation(2);
+        let scope = scope_for(1);
+        let mut old_lane = decay_lane(scope, gen1);
+        let mut owner_fence = fence(scope, gen1);
+        let start = SemanticTimeMicros::from_micros(0);
+        let stamp = issue_stamp(&mut owner_fence, gen1);
+        schedule_corpse_decay(&mut old_lane, &owner_fence, stamp, corpse(1), start)
+            .expect("schedule under gen1");
+        owner_fence
+            .apply_external_grant(gen2)
+            .expect("handoff to gen2");
+        let clock = VirtualOwnerClock::new(start);
+        assert!(
+            old_lane
+                .drain_due(&clock, &owner_fence, |_| true)
+                .is_empty()
+        );
+
+        let mut new_lane = decay_lane(scope, gen2);
+        let stamp = issue_stamp(&mut owner_fence, gen2);
+        let due = corpse_decay_due(clock.now(), 120_000, 61_000);
+        schedule_corpse_decay(&mut new_lane, &owner_fence, stamp, corpse(1), due)
+            .expect("reschedule under gen2");
+        let fired = new_lane.drain_due(&clock, &owner_fence, |_| true);
+        assert_eq!(fired.len(), 1);
+        assert_eq!(fired[0].occurrence.corpse_item_instance_id, corpse(1));
     }
 }

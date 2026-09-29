@@ -48,5 +48,9 @@ pub mod native_admission_source;
 #[path = "support/item_transfer_postgres_cases.rs"]
 mod item_transfer_postgres_cases;
 
+// D3-5 reuses D3-4's corpse MINT and loot-entry forgery; its own cases run here too.
+#[path = "support/corpse_transfer_postgres_cases.rs"]
+mod corpse_transfer_postgres_cases;
+
 #[path = "support/combat_pickup_postgres_cases.rs"]
 mod combat_pickup_postgres_cases;

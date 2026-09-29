@@ -18,6 +18,7 @@ oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-identity = { version = "=0.1.0", path = "../../crates/identity" }
 oteryn-input-actions = { version = "=0.1.0", path = "../../crates/input-actions" }
 oteryn-input-platform = { version = "=0.1.0", path = "../../crates/input-platform" }
+oteryn-placeholder-assets = { version = "=0.1.0", path = "../../crates/placeholder-assets" }
 oteryn-platform-client = { version = "=0.1.0", path = "../../crates/platform-client" }
 oteryn-platform-contracts = { version = "=0.1.0", path = "../../crates/platform-contracts" }
 oteryn-renderer = { version = "=0.1.0", path = "../../crates/renderer" }

@@ -5,7 +5,8 @@
 //! CharacterEquipment `container` slot, a direct entry of the equipped main
 //! backpack, and the D83 full-merge and top-up shapes.
 //!
-//! One live Ground item A moves in every shape. The optional receiver B is a
+//! One live item A (on Ground, or in a live corpse's container entry, D3-4)
+//! moves in every shape. The optional receiver B is a
 //! compatible stack already in the main backpack; it shares A's World and
 //! definition, so only its identity, position and two quantities are carried.
 //! Stack quantities are item state (before/after), never value lines (RL-03
@@ -94,6 +95,18 @@ pub struct OneItemReceiverV1 {
     pub quantity_after: u32,
 }
 
+/// D3-4: Container { parent = a live corpse ItemInstance, entry } as a
+/// TRANSFER source; carries the corpse's own live Ground as scope authority.
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemCorpseSourceV1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub corpse_item_instance_id: Vec<u8>,
+    #[prost(uint64, tag = "2")]
+    pub placement_ordinal: u64,
+    #[prost(message, optional, tag = "3")]
+    pub corpse_ground: Option<OneItemGroundV1>,
+}
+
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransferV1 {
     #[prost(message, optional, tag = "1")]
@@ -108,6 +121,23 @@ pub struct OneItemTransferV1 {
     pub cause: Option<OneItemTransferCauseV1>,
     #[prost(message, optional, tag = "6")]
     pub receiver: Option<OneItemReceiverV1>,
+    /// Exactly one of `source` (Ground) and `corpse_source` is present.
+    #[prost(message, optional, tag = "7")]
+    pub corpse_source: Option<Box<OneItemCorpseSourceV1>>,
+}
+
+/// The one live Ground location that is the scope authority of the source:
+/// the moved item's own Ground (`source`), or the parent corpse's Ground
+/// (`corpse_source`). Exactly one source must be present.
+fn source_ground(value: &OneItemTransferV1) -> Result<&OneItemGroundV1, AuditError> {
+    match (value.source.as_ref(), value.corpse_source.as_ref()) {
+        (Some(ground), None) => Ok(ground),
+        (None, Some(corpse)) => corpse
+            .corpse_ground
+            .as_ref()
+            .ok_or(AuditError::InvalidInput),
+        _ => Err(AuditError::InvalidInput),
+    }
 }
 
 /// Closed TRANSFER shapes (B3 §4.4).
@@ -166,7 +196,16 @@ fn check_state(value: &OneItemStateV1) -> Result<(), AuditError> {
 pub fn check_transfer(value: &OneItemTransferV1) -> Result<TransferShape, AuditError> {
     let before = value.before.as_ref().ok_or(AuditError::InvalidInput)?;
     let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
-    let ground = value.source.as_ref().ok_or(AuditError::InvalidInput)?;
+    let ground = source_ground(value)?;
+    if let Some(corpse) = value.corpse_source.as_ref() {
+        // A corpse entry is never the corpse itself, and its ordinal is non-zero.
+        check_uuid_v7(&corpse.corpse_item_instance_id)?;
+        if corpse.placement_ordinal == 0
+            || corpse.corpse_item_instance_id == before.item_instance_id
+        {
+            return Err(AuditError::InvalidInput);
+        }
+    }
     let destination = value.destination.as_ref().ok_or(AuditError::InvalidInput)?;
     let cause = value.cause.as_ref().ok_or(AuditError::InvalidInput)?;
     let command = cause.command_ref.as_ref().ok_or(AuditError::InvalidInput)?;
@@ -288,7 +327,7 @@ pub fn decode_transfer_envelope(
 ) -> Result<(EventEnvelopeV1, OneItemTransferV1), AuditError> {
     let value = mint::decode_common_envelope(wire)?;
     let transfer = decode_transfer_payload(&value.payload)?;
-    let ground = transfer.source.as_ref().ok_or(AuditError::InvalidInput)?;
+    let ground = source_ground(&transfer)?;
     let command = transfer
         .cause
         .as_ref()
@@ -338,7 +377,7 @@ pub fn encode_transfer_event(
         return Err(AuditError::InvalidInput);
     }
     check_transfer(&transfer)?;
-    let ground = transfer.source.as_ref().ok_or(AuditError::InvalidInput)?;
+    let ground = source_ground(&transfer)?;
     let (world_id, channel_id) = (ground.world_id.clone(), ground.channel_id.clone());
     let command = transfer
         .cause
@@ -468,6 +507,7 @@ mod tests {
                 native_room_placement_context: uuid(6),
                 runtime_scope_ownership_generation: 1,
             }),
+            corpse_source: None,
             destination: Some(OneItemInventoryV1 {
                 character_id: uuid(41),
                 expected_session_generation: 1,
@@ -629,6 +669,55 @@ mod tests {
         assert!(check_transfer(&transfer(TransferShape::TopUp)).is_ok());
     }
 
+    /// D3-4: a corpse container entry as the source, with the corpse's own
+    /// Ground as scope authority. Exactly one source form is admitted.
+    fn corpse_sourced(shape: TransferShape) -> OneItemTransferV1 {
+        let mut value = transfer(shape);
+        let ground = value.source.take();
+        value.corpse_source = Some(Box::new(OneItemCorpseSourceV1 {
+            corpse_item_instance_id: uuid(60),
+            placement_ordinal: 4,
+            corpse_ground: ground,
+        }));
+        value
+    }
+
+    #[test]
+    fn corpse_source_round_trips_and_exactly_one_source_form_is_admitted() {
+        for shape in SHAPES {
+            let value = corpse_sourced(shape);
+            assert_eq!(check_transfer(&value), Ok(shape));
+            let wire = encode_transfer_event(identity(), value.clone()).unwrap();
+            let (envelope, decoded) = decode_transfer_envelope(&wire).unwrap();
+            assert_eq!(decoded, value);
+            // The envelope scope is the corpse Ground's World and Channel.
+            assert_eq!(envelope.channel_id.as_deref(), Some(uuid(2).as_slice()));
+        }
+        let bad: [fn(&mut OneItemTransferV1); 5] = [
+            // Both source forms at once.
+            |t| t.source = t.corpse_source.as_ref().unwrap().corpse_ground.clone(),
+            // Neither source form.
+            |t| t.corpse_source = None,
+            // A corpse source without the corpse's Ground.
+            |t| t.corpse_source.as_mut().unwrap().corpse_ground = None,
+            // The moved item is its own parent.
+            |t| t.corpse_source.as_mut().unwrap().corpse_item_instance_id = uuid(9),
+            // Ordinal zero.
+            |t| t.corpse_source.as_mut().unwrap().placement_ordinal = 0,
+        ];
+        for (index, mutate) in bad.into_iter().enumerate() {
+            let mut value = corpse_sourced(TransferShape::NewEntry);
+            mutate(&mut value);
+            assert!(check_transfer(&value).is_err(), "case {index}");
+            assert!(
+                encode_transfer_event(identity(), value).is_err(),
+                "case {index}"
+            );
+        }
+        // A Ground-sourced TRANSFER is byte-identical to before (field 7 absent).
+        assert!(transfer(TransferShape::NewEntry).corpse_source.is_none());
+    }
+
     #[test]
     fn envelope_scope_and_command_must_equal_the_payload() {
         let wire = encode_transfer_event(identity(), transfer(TransferShape::NewEntry)).unwrap();
@@ -685,6 +774,7 @@ mod tests {
                     native_room_placement_context: technical_bytes,
                     runtime_scope_ownership_generation: u64::MAX,
                 }),
+                corpse_source: None,
                 destination: Some(OneItemInventoryV1 {
                     character_id: uuid(0xee),
                     expected_session_generation: u64::MAX,

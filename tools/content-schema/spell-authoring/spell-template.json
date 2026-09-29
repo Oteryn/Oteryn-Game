@@ -43,10 +43,12 @@
       "check_floor": "<bool>",
       "parameter": "<none|player_name|text>",
       "aim_at_target": "<bool>",
-      "cast_at_position": "<bool>"
+      "cast_at_position": "<bool>",
+      "allowed_targets": "<any|self_only|self_or_own_summons|not_self>"
     },
     "pz_locks_caster": "<bool>",
     "needs_weapon": "<bool>",
+    "needs_shield": "<bool>",
     "base_power": "<integer>",
     "rune": {
       "item": "<ItemRef>",

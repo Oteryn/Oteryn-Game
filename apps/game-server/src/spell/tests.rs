@@ -66,6 +66,8 @@ fn caster(vocation: Vocation, level: u32, magic_level: u32, mana: u32) -> Caster
         attack_value: 7,
         attack_factor: 1.0,
         shielding_skill: 10,
+        melee_weapon: false,
+        shield_defense: None,
     }
 }
 
@@ -331,6 +333,7 @@ fn every_starter_formula_is_valid_over_the_level_grid() {
                         attack_value: 7,
                         attack_factor: 1.0,
                         shielding_skill: 10,
+                        shield_defense: None,
                     };
                     formula.bounds(&inputs).expect("valid bounds");
                 }
@@ -513,7 +516,7 @@ fn a_positional_spell_is_not_admitted() {
 }
 
 #[test]
-fn a_chain_spell_is_not_admitted() {
+fn a_chain_spell_is_admitted_and_needs_the_world_facts() {
     let (spell, dependencies) = STARTER[0];
     let spell: Value = serde_json::from_str(spell).expect("spell");
     let mut dependencies: Value = serde_json::from_str(dependencies).expect("dependencies");
@@ -525,8 +528,21 @@ fn a_chain_spell_is_not_admitted() {
             "backtracking": false,
         });
     }
-    let error = spell_from_bundle(&spell, &dependencies).expect_err("chain admitted");
-    assert!(error.to_string().contains("chain"), "{error}");
+    let chained = spell_from_bundle(&spell, &dependencies).expect("chain admitted");
+    let chain = chained.chain.as_ref().expect("chain");
+    assert_eq!((chain.max_targets, chain.initial_range_tiles), (4, 4));
+    // Cast without the world facts, a chain would silently hit one creature.
+    assert_eq!(
+        resolve_cast(
+            &chained,
+            &caster(Vocation::Druid, 8, 0, 20),
+            &Cooldowns::default(),
+            at(0),
+            false,
+            &mut lowest
+        ),
+        Err(CastRejection::ChainWorldRequired)
+    );
 }
 
 #[test]

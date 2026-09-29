@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
 CREATURE_FAMILY_COUNTS = {
-    "Creature": 1450, "Presentation": 2538, "Behavior": 2538, "Loot": 1025, "Ability": 5826, "Effect": 4432, "Formula": 4746,
+    "Creature": 1463, "Presentation": 2557, "Behavior": 2557, "Loot": 1026, "Ability": 5841, "Effect": 4447, "Formula": 4761,
 }
 CREATURE_FAMILY_NODES = {
     "Creature": "content/creatures/definitions/",
@@ -23,12 +23,12 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
-NPC_COUNT = 1088
-NPC_BINDING_COUNT = 2330
+NPC_COUNT = 1094
+NPC_BINDING_COUNT = 2344
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 58
-DIALOGUE_COUNT = 701
-SERVICE_FAMILY_COUNTS = {"Service.Trade": 322, "Service.Travel": 55}
+DIALOGUE_COUNT = 707
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 322, "Service.Travel": 56}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
 
 class ValidationError(RuntimeError):
@@ -169,9 +169,12 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
     require(len(legacy_bindings) == CREATURE_FAMILY_COUNTS["Creature"], "CREATURE_BINDING_COUNT")
     canary_creatures = load(ROOT / "imports/canary/bindings/creatures.json")["bindings"]
     wiki_creatures = load(ROOT / "imports/tibiawiki/bindings/creatures.json")["bindings"]
+    crystal_creatures = load(ROOT / "imports/crystalserver/bindings/creatures.json")["bindings"]
     require(all(row["source_key"] == "oteryn:source.canary" for row in canary_creatures)
             and all(row["source_key"] == "oteryn:source.tibiawiki" for row in wiki_creatures)
-            and canonical_sorted(canary_creatures + wiki_creatures) == canonical_sorted(legacy_bindings), "IMPORT_CREATURE_BINDINGS")
+            and all(row["source_key"] == "oteryn:source.crystalserver" for row in crystal_creatures)
+            and canonical_sorted(canary_creatures + wiki_creatures + crystal_creatures) == canonical_sorted(legacy_bindings),
+            "IMPORT_CREATURE_BINDINGS")
     require(load(ROOT / "imports/canary/index.json")["population_state"] == "POPULATED", "IMPORT_CANARY_MARKER_STATE")
     return sum(CREATURE_FAMILY_COUNTS.values()), len(migrated_profiles), len(migrated_bindings)
 

@@ -5,7 +5,9 @@
 //! assignment that `serve` consumes before readiness; one runtime per
 //! ownership generation is enforced by that composition, not by this module.
 
-use super::{ChannelId, GameSessionId, NodeId, ScopeOwnershipGeneration, WorldId};
+use super::{
+    ChannelId, CharacterId, CommandRef, GameSessionId, NodeId, ScopeOwnershipGeneration, WorldId,
+};
 use std::mem::size_of;
 use std::sync::Arc;
 
@@ -44,8 +46,20 @@ pub(crate) enum CarrierError {
     InvalidCommitBinding,
     CommitBindingTooLarge,
     CommitAllocationFailed,
-    OccurrenceConflict,
     PlanConflict,
+    /// D4/D141: an attributed commit's `(sequence, sub_ordinal)` is at or below its attacker's
+    /// recorded high-water mark for the same `GameSessionId`. It was already resolved once
+    /// (whether or not its own receipt is still retained), so it is refused, never re-applied.
+    StaleAttackerSequence,
+    /// D4/D141: 16 receipts are retained, none is evictable and a new distinct occurrence
+    /// arrived (fail-closed, GAME-ABILITY-01 section 12). HP and every receipt stay untouched.
+    DamageReceiptCapacityExceeded,
+    /// D4/D141: `sub_ordinal` is at or past `ABILITY01_EFFECT_PLAN_ENTRIES_MAX`.
+    SubOrdinalOutOfRange,
+    /// D4/D141: an attributed command's `character_lease_generation` is lower than its
+    /// attacker's recorded one, or equal with a differing `GameSessionId`. Its session was
+    /// superseded, so it is refused and never applied even when its own receipt was evicted.
+    SupersededAttackerSession,
     InjectedCommitFailure,
     CommittedLethalUnavailable,
     CorpseReceiptMismatch,
@@ -374,11 +388,284 @@ pub(crate) struct OwnerDamageCommand<'a> {
     pub(crate) damage: i64,
 }
 
+/// `COMBAT01-DAMAGE-RECEIPTS-PER-CREATURE-GENERATION` (`docs/contracts/RESOURCE_LIMITS_REGISTRY.json`;
+/// D140, `docs/architecture/reviews/OTERYN_GAME_D4_MULTI_HIT_DAMAGE_RECEIPT_DECISION_2026-09-29.md`
+/// section 4.1): at most this many committed damage receipts are retained at once per live
+/// creature actor generation. Retention, not admission: an evictable oldest receipt is evicted to
+/// admit a new distinct occurrence (D141); only 16 simultaneously non-evictable receipts refuse
+/// one with [`CarrierError::DamageReceiptCapacityExceeded`].
+pub(crate) const COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX: usize = 16;
+
+/// Mirror of the already-registered `ABILITY01-EFFECT-PLAN-ENTRIES` hard maximum
+/// (`ability/mod.rs` `MAX_EFFECT_PLAN_ENTRIES`, no new row): the number of distinct
+/// `sub_ordinal` values one command can produce. Foundation must not import Ability, so the
+/// value is mirrored here and pinned to it by a test in `channel_owner_ability_commit_tests.rs`.
+pub(crate) const ABILITY01_EFFECT_PLAN_ENTRIES_MAX: u16 = 2;
+
+/// `(CharacterId, character_lease_generation, GameSessionId, CommandId sequence, sub_ordinal)`:
+/// the carrier-derived replay identity of one attributed damage occurrence (D141 point 3).
+type DamageOrigin = (CharacterId, u64, GameSessionId, u64, u16);
+
+/// `(character_lease_generation, GameSessionId, sequence, sub_ordinal)`: one attacker's
+/// high-water mark (D141 point 4). The lease generation is the per-character monotonic
+/// generation of the durable `CharacterLease` (`CurrentCharacterGameplayFence::
+/// character_lease_generation`), which is what proves at this mutation boundary which session is
+/// current: a lower generation is a superseded session.
+type HighWater = (u64, GameSessionId, u64, u16);
+
+/// D141: the command identity of one attributed damage occurrence. Built only from a real
+/// [`CommandRef`] (never a caller-supplied opaque id) plus the attacking `CharacterId` and the
+/// effect's own index within its Effect Plan.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct AttackerCommand {
+    character: CharacterId,
+    lease_generation: u64,
+    session: GameSessionId,
+    sequence: u64,
+    sub_ordinal: u16,
+}
+
+impl AttackerCommand {
+    /// `lease_generation` is the attacker's current `character_lease_generation` (non-zero).
+    pub(crate) const fn new(
+        character: CharacterId,
+        lease_generation: u64,
+        command: CommandRef,
+        sub_ordinal: u16,
+    ) -> Self {
+        Self {
+            character,
+            lease_generation,
+            session: command.game_session_id(),
+            sequence: command.command_id().get(),
+            sub_ordinal,
+        }
+    }
+
+    const fn origin(self) -> DamageOrigin {
+        (
+            self.character,
+            self.lease_generation,
+            self.session,
+            self.sequence,
+            self.sub_ordinal,
+        )
+    }
+
+    const fn high_water(self) -> HighWater {
+        (
+            self.lease_generation,
+            self.session,
+            self.sequence,
+            self.sub_ordinal,
+        )
+    }
+}
+
+/// One retained damage receipt. `origin` and `ordinal` are immutable once set.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct OwnerCommitRecord {
     binding: Box<[u8]>,
     damage: i64,
     result: OwnerDamageResult,
+    /// D142: this creature generation's owner damage-application ordinal of this receipt.
+    ordinal: u64,
+    /// D141: `Some` for an attributed commit (its replay identity), `None` for an unsequenced
+    /// one, which is never evictable.
+    origin: Option<DamageOrigin>,
+}
+
+/// D140/D142: the bounded, ephemeral, per-creature-generation receipt list and the owner
+/// damage-application ordinal counter. Fresh on every admission, dropped with the slot.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+struct DamageReceipts {
+    entries: Vec<OwnerCommitRecord>,
+    next_ordinal: u64,
+}
+
+impl DamageReceipts {
+    /// D144: the one retained receipt whose commit drove health to zero, if any.
+    fn lethal(&self) -> Option<&OwnerCommitRecord> {
+        self.entries.iter().find(|record| {
+            record.result.applied
+                && record.result.health_before > 0
+                && record.result.health_after == 0
+        })
+    }
+
+    /// D141 point 4: the oldest evictable receipt. A receipt is evictable iff it is sequenced,
+    /// its attacker is currently tracked with a high-water mark, and either its origin lease
+    /// generation was superseded (fenced, and refused by [`DamageContributors::admission`], so
+    /// it can never be re-applied) or the current session's mark covers its
+    /// `(sequence, sub_ordinal)`. An unsequenced receipt is never evictable.
+    fn oldest_evictable(&self, contributors: &DamageContributors) -> Option<usize> {
+        self.entries.iter().position(|record| {
+            let Some((character, lease, session, sequence, sub_ordinal)) = record.origin else {
+                return false;
+            };
+            let Some((mark_lease, mark_session, mark_sequence, mark_sub)) =
+                contributors.high_water(character)
+            else {
+                return false;
+            };
+            mark_lease > lease
+                || (mark_lease == lease
+                    && mark_session == session
+                    && (mark_sequence, mark_sub) >= (sequence, sub_ordinal))
+        })
+    }
+}
+
+/// `COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE` (`docs/contracts/RESOURCE_LIMITS_REGISTRY.json`;
+/// D132, `docs/architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md`
+/// §4.3): at most this many distinct `CharacterId` contributors are tracked per live creature
+/// actor. Past this bound, a creature's own damage/HP math stays completely unaffected -- only a
+/// *new* (17th+) distinct attacker's damage stops being added to the map; every already-tracked
+/// contributor keeps accumulating normally (fail-open for combat, fail-closed only for
+/// attribution).
+pub(crate) const COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX: usize = 16;
+
+/// D132: one tracked attacker's running damage total against a live creature actor, and the
+/// ordinal (this creature's own damage-application sequence) at which that total was last
+/// reached. A contributor's total only ever increases, so "last reached" already is "first
+/// reached this exact value" -- no separate history is needed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct DamageContributor {
+    character: CharacterId,
+    total: u64,
+    last_update_ordinal: u64,
+    /// D141: this attacker's `(session, sequence, sub_ordinal)` high-water mark. A new current
+    /// session replaces it outright; within one session it only ever rises.
+    high_water: Option<HighWater>,
+}
+
+/// D132/D3-3: bounded, ephemeral, per-creature-generation damage-contributor accumulation.
+/// Lives only inside its owning `Slot::CreatureOccupied` -- a fresh, empty map on every creature
+/// admission (`admit_inner`), dropped with the slot on `remove` (administrative removal or
+/// respawn). Never grows past `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX` and never
+/// initialized from, or retained across, a prior generation: a scope move drops whatever
+/// in-progress accumulation was pending, exactly the accepted D52 loss ("Przepadają, bez
+/// duplikatów" -- nothing duplicated, nothing silently completed by a later generation).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+struct DamageContributors {
+    entries: Vec<DamageContributor>,
+}
+
+impl DamageContributors {
+    /// Attribute one already-applied, positive damage amount to `character`. A *new* distinct
+    /// contributor past `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX` is silently not tracked:
+    /// the caller's own HP mutation already committed independently of this call and is never
+    /// affected by it. An already-tracked contributor keeps accumulating regardless of map size.
+    ///
+    /// `ordinal` is the owner damage-application ordinal (D142) the carrier assigned to this
+    /// commit at the same mutation boundary; this accumulator keeps no counter of its own.
+    /// `high_water`, when supplied, replaces the attacker's mark (D141).
+    fn record(
+        &mut self,
+        character: CharacterId,
+        damage: u64,
+        ordinal: u64,
+        high_water: Option<HighWater>,
+    ) {
+        if let Some(existing) = self
+            .entries
+            .iter_mut()
+            .find(|contributor| contributor.character == character)
+        {
+            existing.total = existing.total.saturating_add(damage);
+            existing.last_update_ordinal = ordinal;
+            if high_water.is_some() {
+                existing.high_water = high_water;
+            }
+            return;
+        }
+        if self.entries.len() >= COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX {
+            return;
+        }
+        self.entries.push(DamageContributor {
+            character,
+            total: damage,
+            last_update_ordinal: ordinal,
+            high_water,
+        });
+    }
+
+    /// D141: `character`'s current high-water mark, if it is tracked and has one.
+    fn high_water(&self, character: CharacterId) -> Option<HighWater> {
+        self.entries
+            .iter()
+            .find(|contributor| contributor.character == character)
+            .and_then(|contributor| contributor.high_water)
+    }
+
+    /// D141 admission of a new attributed occurrence against its attacker's mark, ordered by
+    /// the per-character `character_lease_generation` (which proves which session is current):
+    /// a lower generation, or an equal one with a differing `GameSessionId`, is a superseded
+    /// session (`SupersededAttackerSession`); an equal generation and session at or below the
+    /// mark's `(sequence, sub_ordinal)` is `StaleAttackerSequence`; a higher generation is a
+    /// genuinely newer session (FND-04B sections 16 and 21) and replaces the mark.
+    fn admission(&self, attacker: AttackerCommand) -> Result<(), CarrierError> {
+        let Some((lease, session, sequence, sub_ordinal)) = self.high_water(attacker.character)
+        else {
+            return Ok(());
+        };
+        match attacker.lease_generation.cmp(&lease) {
+            std::cmp::Ordering::Less => Err(CarrierError::SupersededAttackerSession),
+            std::cmp::Ordering::Greater => Ok(()),
+            std::cmp::Ordering::Equal if attacker.session != session => {
+                Err(CarrierError::SupersededAttackerSession)
+            }
+            std::cmp::Ordering::Equal
+                if (attacker.sequence, attacker.sub_ordinal) <= (sequence, sub_ordinal) =>
+            {
+                Err(CarrierError::StaleAttackerSequence)
+            }
+            std::cmp::Ordering::Equal => Ok(()),
+        }
+    }
+
+    /// D132's deterministic two-rule tie-break: the highest running total wins; among equal top
+    /// totals, the contributor whose total *first reached* that value (the smaller
+    /// `last_update_ordinal`) wins; a remaining same-ordinal tie resolves to the
+    /// lexicographically lowest `CharacterId` byte sequence (`CharacterId`'s derived `Ord` is
+    /// exactly that byte order, `crates/protocol-oteryn/src/lib.rs`'s
+    /// `foundation_uuid_v7_id!`). A pure function of already-recorded state, independent of
+    /// insertion or iteration order.
+    fn top_damage_character(&self) -> Option<CharacterId> {
+        self.entries
+            .iter()
+            .copied()
+            .reduce(|best, candidate| {
+                if is_more_preferred_contributor(&candidate, &best) {
+                    candidate
+                } else {
+                    best
+                }
+            })
+            .map(|contributor| contributor.character)
+    }
+}
+
+/// `true` when `candidate` outranks `current_best` under D132's tie-break order (see
+/// [`DamageContributors::top_damage_character`]).
+fn is_more_preferred_contributor(
+    candidate: &DamageContributor,
+    current_best: &DamageContributor,
+) -> bool {
+    match candidate.total.cmp(&current_best.total) {
+        std::cmp::Ordering::Greater => true,
+        std::cmp::Ordering::Less => false,
+        std::cmp::Ordering::Equal => {
+            match candidate
+                .last_update_ordinal
+                .cmp(&current_best.last_update_ordinal)
+            {
+                std::cmp::Ordering::Less => true,
+                std::cmp::Ordering::Greater => false,
+                std::cmp::Ordering::Equal => candidate.character < current_best.character,
+            }
+        }
+    }
 }
 
 /// Stable identity of the one committed lethal occurrence. Construction stays
@@ -501,7 +788,36 @@ impl CurrentOwnerExactActorCommit<'_> {
         command: OwnerDamageCommand<'_>,
     ) -> Result<OwnerDamageResult, CarrierError> {
         self.carrier
-            .commit_creature_damage_inner(self.continuity, actor.0, command, false)
+            .commit_creature_damage_inner(self.continuity, actor.0, command, None, false)
+    }
+
+    /// D132/D3-3 + D141: the same owner-authoritative damage commit, additionally attributing the
+    /// applied HP loss to `attacker`'s running per-creature damage total
+    /// (`COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE`, capped at
+    /// [`COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX`]). The replay identity of an attributed
+    /// commit is derived by the carrier from `attacker` alone: `command.occurrence` is not read,
+    /// so a caller can never present one command's identity under another's bytes. An idempotent
+    /// replay never double-attributes: it never reaches the mutation boundary a second time.
+    /// GAME-ABILITY's own effect-commit bridge (`ability::commit::commit_exact_owner_damage`)
+    /// has no live gameplay caller yet; this is the seam a later composition stage wires the
+    /// attacking `CharacterId` and its `CommandRef` through.
+    #[allow(
+        dead_code,
+        reason = "no production caller yet; a later Ability wiring stage uses this"
+    )]
+    pub(crate) fn commit_damage_for_attacker(
+        &mut self,
+        actor: ExactActorRef,
+        attacker: AttackerCommand,
+        command: OwnerDamageCommand<'_>,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        self.carrier.commit_creature_damage_inner(
+            self.continuity,
+            actor.0,
+            command,
+            Some(attacker),
+            false,
+        )
     }
 }
 
@@ -562,6 +878,26 @@ impl CurrentOwnerCombatDeath<'_> {
     ) -> Result<([u8; 16], bool), CarrierError> {
         self.carrier
             .reward_occurrence_inner(self.continuity, actor.0, character)
+    }
+
+    /// D132/D3-3: the deterministic top-damage `CharacterId` for `actor`'s still-live slot in
+    /// this generation, read from the owner's own bounded, in-memory `DamageContributors`
+    /// accumulation. `Ok(None)` when the creature died (or is still alive) with no tracked
+    /// contributor ever recorded against it (a damage-free death, or every hit came from an
+    /// untracked 17th-plus attacker). This reads only live slot state, never
+    /// `corpse_projections`: like the rest of D132's accumulation, the answer does not outlive
+    /// this generation (D52). D3-2 is the composition point that reads this at the same moment
+    /// it extracts `(death, corpse)`, before the corpse's own MINT.
+    #[allow(
+        dead_code,
+        reason = "no production caller yet; D3-2 wires this into settle_creature_death_rewards"
+    )]
+    pub(crate) fn top_damage_character(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Option<CharacterId>, CarrierError> {
+        self.carrier
+            .top_damage_character_inner(self.continuity, actor.0)
     }
 }
 
@@ -652,7 +988,15 @@ enum Slot {
         position: Option<VersionedPosition>,
         target_identity: Arc<[u8]>,
         health: i64,
-        committed: Option<OwnerCommitRecord>,
+        /// D140: the bounded receipt list and owner damage-application ordinal (D142). Boxed for
+        /// the same footprint reason as `damage_contributors`.
+        committed: Box<DamageReceipts>,
+        /// D132/D3-3: this generation's running per-attacker damage accumulation. Fresh and
+        /// empty on every admission; dropped with the slot on `remove`. Boxed for the same
+        /// reason `target_identity` is `Arc<[u8]>` rather than inline bytes: this variant's own
+        /// extra state must not grow every `Slot` (including every non-creature player slot) by
+        /// more than a pointer's worth of the already-measured fixed-slot footprint.
+        damage_contributors: Box<DamageContributors>,
     },
     Exhausted {
         generation: u64,
@@ -1671,7 +2015,8 @@ impl ChannelActorCarrier {
                 position: None,
                 target_identity,
                 health,
-                committed: None,
+                committed: Box::default(),
+                damage_contributors: Box::default(),
             }
         } else {
             Slot::Occupied {
@@ -1763,16 +2108,24 @@ impl ChannelActorCarrier {
         Ok(actor)
     }
 
-    /// One fixed-size receipt is retained in the creature's own slot. On
-    /// identical replay the recorded transition is returned without mutation.
-    /// All validation, checked arithmetic and bounded allocation precede the
-    /// only slot replacement. Administrative removal drops the receipt with
-    /// the slot and emits no death or corpse event.
+    /// D140-D142: up to [`COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX`] receipts are
+    /// retained in the creature's own slot. An identical replay of a retained occurrence returns
+    /// the recorded transition without mutation. A new distinct occurrence against a live
+    /// creature either applies (evicting the oldest evictable receipt when the list is full) or
+    /// is refused as stale / over capacity. All validation, checked arithmetic and fallible
+    /// allocation precede the first mutation. Administrative removal drops the receipts with the
+    /// slot and emits no death or corpse event.
+    ///
+    /// An attributed commit (`attacker` is `Some`) is identified solely by the carrier-derived
+    /// `(CharacterId, GameSessionId, sequence, sub_ordinal)`; `command.occurrence` is not read.
+    /// An unattributed commit keeps the caller's opaque `occurrence` identity and is never
+    /// evictable.
     fn commit_creature_damage_inner(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
         command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
         fail_before_write: bool,
     ) -> Result<OwnerDamageResult, CarrierError> {
         let OwnerDamageCommand {
@@ -1781,16 +2134,28 @@ impl ChannelActorCarrier {
             binding,
             damage,
         } = command;
+        if attacker
+            .is_some_and(|attacker| attacker.sub_ordinal >= ABILITY01_EFFECT_PLAN_ENTRIES_MAX)
+        {
+            return Err(CarrierError::SubOrdinalOutOfRange);
+        }
         let index = self.validate_ref(continuity, actor_ref)?;
-        if occurrence.is_empty() || binding.is_empty() {
+        if binding.is_empty()
+            || attacker.is_some_and(|attacker| attacker.lease_generation == 0)
+            || (attacker.is_none() && (occurrence.is_empty() || occurrence.contains(&0)))
+        {
+            // An unsequenced occurrence containing the NUL delimiter would make its identity
+            // ambiguous against `binding.split(0)`, so it is rejected here.
             return Err(CarrierError::InvalidCommitBinding);
         }
-        if occurrence.len() > MAX_OWNER_COMMIT_BINDING_BYTES
-            || binding.len() > MAX_OWNER_COMMIT_BINDING_BYTES
+        if binding.len() > MAX_OWNER_COMMIT_BINDING_BYTES
+            || (attacker.is_none() && occurrence.len() > MAX_OWNER_COMMIT_BINDING_BYTES)
         {
             return Err(CarrierError::CommitBindingTooLarge);
         }
-        if !binding.starts_with(occurrence) || binding.get(occurrence.len()) != Some(&0) {
+        if attacker.is_none()
+            && (!binding.starts_with(occurrence) || binding.get(occurrence.len()) != Some(&0))
+        {
             return Err(CarrierError::InvalidCommitBinding);
         }
         if damage <= 0 {
@@ -1801,6 +2166,7 @@ impl ChannelActorCarrier {
             target_identity,
             health,
             committed,
+            damage_contributors,
             ..
         } = &self.slots[index]
         else {
@@ -1812,10 +2178,15 @@ impl ChannelActorCarrier {
         if target_identity.as_ref() != target {
             return Err(CarrierError::CreatureTargetMismatch);
         }
-        if let Some(prior) = committed {
-            if prior.binding.split(|byte| *byte == 0).next() != Some(occurrence) {
-                return Err(CarrierError::OccurrenceConflict);
-            }
+        let prior = committed
+            .entries
+            .iter()
+            .find(|record| match (attacker, record.origin) {
+                (Some(attacker), Some(origin)) => attacker.origin() == origin,
+                (None, None) => record.binding.split(|byte| *byte == 0).next() == Some(occurrence),
+                _ => false,
+            });
+        if let Some(prior) = prior {
             if prior.binding.as_ref() != binding || prior.damage != damage {
                 return Err(CarrierError::PlanConflict);
             }
@@ -1827,6 +2198,24 @@ impl ChannelActorCarrier {
         if *health == 0 {
             return Err(CarrierError::CreatureNotActionable);
         }
+        if let Some(attacker) = attacker {
+            damage_contributors.admission(attacker)?;
+        }
+        let read_len = committed.entries.len();
+        let evict = if read_len >= COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX {
+            Some(
+                committed
+                    .oldest_evictable(damage_contributors)
+                    .ok_or(CarrierError::DamageReceiptCapacityExceeded)?,
+            )
+        } else {
+            None
+        };
+        // D142: the owner damage-application ordinal, assigned to distinct occurrences only.
+        let ordinal = committed.next_ordinal;
+        let next_ordinal = ordinal
+            .checked_add(1)
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
         let next = health
             .checked_sub(damage)
             .ok_or(CarrierError::DamageOverflow)?
@@ -1841,6 +2230,8 @@ impl ChannelActorCarrier {
             binding,
             damage,
             result,
+            ordinal,
+            origin: attacker.map(AttackerCommand::origin),
         };
         if fail_before_write {
             return Err(CarrierError::InjectedCommitFailure);
@@ -1853,33 +2244,84 @@ impl ChannelActorCarrier {
         }
         let Slot::CreatureOccupied {
             generation,
-            actor,
-            position,
             target_identity,
             health,
             committed,
-        } = &self.slots[index]
+            damage_contributors,
+            ..
+        } = &mut self.slots[index]
         else {
             return Err(CarrierError::StaleActorGeneration);
         };
         if *generation != actor_ref.actor_local_generation.0
             || target_identity.as_ref() != target
             || *health != result.health_before
-            || committed.is_some()
+            || committed.next_ordinal != ordinal
+            || committed.entries.len() != read_len
         {
             return Err(CarrierError::StaleActorGeneration);
         }
-        let (generation, actor, position, target_identity) =
-            (*generation, *actor, *position, Arc::clone(target_identity));
-        self.slots[index] = Slot::CreatureOccupied {
-            generation,
-            actor,
-            position,
-            target_identity,
-            health: next,
-            committed: Some(receipt),
-        };
+        // Every fallible allocation happens before the first mutation below.
+        if evict.is_none() {
+            committed
+                .entries
+                .try_reserve(1)
+                .map_err(|_| CarrierError::CommitAllocationFailed)?;
+        }
+        if attacker.is_some()
+            && damage_contributors.entries.len() < COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX
+        {
+            damage_contributors
+                .entries
+                .try_reserve(1)
+                .map_err(|_| CarrierError::CommitAllocationFailed)?;
+        }
+        if let Some(evicted) = evict {
+            committed.entries.remove(evicted);
+        }
+        committed.entries.push(receipt);
+        committed.next_ordinal = next_ordinal;
+        *health = next;
+        // D132/D3-3: attribute this applied hit to its attacker only now, at the sole mutation
+        // boundary, after every replay/staleness check above -- an idempotent replay of a
+        // retained occurrence returns earlier and never reaches here, so it can never
+        // double-attribute. D141 sets the attacker's high-water mark from the same commit.
+        if let Some(attacker) = attacker {
+            // Codex P1: credit the HP actually removed, not the requested/planned damage -- an
+            // overkill hit (e.g. 100 damage on 1 remaining HP) must only ever credit the 1 HP
+            // that could actually be removed (`next <= health` always, since `damage > 0`).
+            let removed = result.health_before.saturating_sub(result.health_after);
+            damage_contributors.record(
+                attacker.character,
+                u64::try_from(removed).unwrap_or(u64::MAX),
+                ordinal,
+                Some(attacker.high_water()),
+            );
+        }
         Ok(result)
+    }
+
+    /// D132/D3-3: read-only, non-mutating lookup of `actor`'s current
+    /// `DamageContributors::top_damage_character()` in this generation's still-live slot. See
+    /// [`CurrentOwnerCombatDeath::top_damage_character`].
+    fn top_damage_character_inner(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+    ) -> Result<Option<CharacterId>, CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        let Slot::CreatureOccupied {
+            generation,
+            damage_contributors,
+            ..
+        } = &self.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if *generation != actor_ref.actor_local_generation.0 {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        Ok(damage_contributors.top_damage_character())
     }
 
     fn committed_lethal_receipt_inner(
@@ -1909,7 +2351,7 @@ impl ChannelActorCarrier {
             generation,
             position,
             health,
-            committed: Some(committed),
+            committed,
             ..
         } = &self.slots[index]
         else {
@@ -1918,13 +2360,10 @@ impl ChannelActorCarrier {
         if *generation != actor_ref.actor_local_generation.0 {
             return Err(CarrierError::StaleActorGeneration);
         }
-        if *health != 0
-            || !committed.result.applied
-            || committed.result.health_before <= 0
-            || committed.result.health_after != 0
-        {
+        // D144: the unique retained receipt whose commit drove health to zero.
+        let Some(committed) = committed.lethal().filter(|_| *health == 0) else {
             return Err(CarrierError::CommittedLethalUnavailable);
-        }
+        };
         let position = position.ok_or(CarrierError::PositionUnavailable)?;
         Ok(CommittedLethalReceipt {
             projection: RuntimeCorpseProjection {
@@ -1951,19 +2390,20 @@ impl ChannelActorCarrier {
             generation,
             position: Some(position),
             health,
-            committed: Some(committed),
+            committed,
             ..
         } = &self.slots[index]
         else {
             return Err(CarrierError::StaleActorGeneration);
         };
-        if *generation != actor_ref.actor_local_generation.0 {
+        if *generation != actor_ref.actor_local_generation.0 || committed.entries.is_empty() {
             return Err(CarrierError::StaleActorGeneration);
         }
+        // D144: the unique retained receipt whose commit drove health to zero.
+        let Some(committed) = committed.lethal() else {
+            return Err(CarrierError::CorpseReceiptMismatch);
+        };
         if *health != 0
-            || !committed.result.applied
-            || committed.result.health_before <= 0
-            || committed.result.health_after != 0
             || committed.binding.as_ref() != projection.occurrence.commit_binding.as_ref()
             || committed.damage != projection.occurrence.damage
             || committed.result.health_before != projection.occurrence.health_before
@@ -2843,6 +3283,9 @@ pub(crate) struct CombatDeathFixture {
     owner: NamespaceContinuityGuard,
     carrier: ChannelActorCarrier,
     actor: ExactActorRef,
+    /// D4: `strike_by` derives one fixture command per distinct occurrence text, so the same
+    /// text replays as the same `(session, sequence)` command (test-only bookkeeping).
+    strike_commands: Vec<(String, u64)>,
 }
 
 #[cfg(test)]
@@ -2882,6 +3325,7 @@ impl CombatDeathFixture {
             owner,
             carrier,
             actor: ExactActorRef(actor),
+            strike_commands: Vec::new(),
         })
     }
 
@@ -2924,6 +3368,63 @@ impl CombatDeathFixture {
         Ok((projection.occurrence().death_key(), projection.position()))
     }
 
+    /// D132/D3-3 + D4: the same owner-committed damage occurrence as [`Self::strike`],
+    /// additionally attributed to `attacker`'s running per-creature damage total. The fixture
+    /// stands in for the future transport: it maps each distinct `occurrence` text to one
+    /// monotonic `CommandId` of one fixed fixture `GameSessionId`, so the same text replays as
+    /// the same command and a new text is a new, higher-sequence command.
+    pub(crate) fn strike_by(
+        &mut self,
+        occurrence: &str,
+        damage: i64,
+        attacker: CharacterId,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let sequence = match self
+            .strike_commands
+            .iter()
+            .find(|(text, _)| text == occurrence)
+        {
+            Some((_, sequence)) => *sequence,
+            None => {
+                let sequence = u64::try_from(self.strike_commands.len())
+                    .map_err(|_| CarrierError::CapacityArithmeticOverflow)?
+                    + 1;
+                self.strike_commands.push((occurrence.to_owned(), sequence));
+                sequence
+            }
+        };
+        let mut session = [0_u8; 16];
+        session[6] = 0x70;
+        session[8] = 0x80;
+        session[15] = 1;
+        let command = CommandRef::new(
+            GameSessionId::decode(&session).map_err(|_| CarrierError::InvalidActorIdentity)?,
+            super::CommandId::new(sequence).map_err(|_| CarrierError::InvalidActorIdentity)?,
+        );
+        let mut binding = occurrence.as_bytes().to_vec();
+        binding.extend_from_slice(b"\0fixture:vsl-combat.strike.v1");
+        self.carrier
+            .current_owner_exact_commit(&self.owner)
+            .commit_damage_for_attacker(
+                self.actor,
+                AttackerCommand::new(attacker, 1, command, 0),
+                OwnerDamageCommand {
+                    target: Self::TARGET.as_bytes(),
+                    occurrence: occurrence.as_bytes(),
+                    binding: &binding,
+                    damage,
+                },
+            )
+    }
+
+    /// D132/D3-3: the current deterministic top-damage `CharacterId` tracked for this fixture's
+    /// creature, [`CurrentOwnerCombatDeath::top_damage_character`].
+    pub(crate) fn top_damage_character(&mut self) -> Result<Option<CharacterId>, CarrierError> {
+        self.carrier
+            .current_owner_combat_death(&self.owner)
+            .top_damage_character(self.actor)
+    }
+
     /// Administrative despawn: the creature leaves without a semantic death.
     pub(crate) fn despawn(&mut self) -> Result<(), CarrierError> {
         self.carrier.remove(&self.owner, self.actor.0).map(|_| ())
@@ -2964,6 +3465,11 @@ mod channel_owner_ability_commit_tests;
 #[allow(clippy::expect_used)]
 #[path = "channel_owner_combat_death_tests.rs"]
 mod channel_owner_combat_death_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "damage_contributors_tests.rs"]
+mod damage_contributors_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -3357,7 +3863,14 @@ mod tests {
         assert_eq!(runtime.content_pin(), &ChannelContentPin::test(world));
         assert_eq!(
             size_of::<Slot>(),
-            192,
+            // D132/D3-3: +8 bytes (one pointer) for CreatureOccupied's boxed
+            // `damage_contributors`, the same footprint-preserving pattern already used for
+            // `target_identity: Arc<[u8]>` above; every non-creature slot pays this one pointer
+            // too, since it is `Slot`'s largest-variant size, not per-variant.
+            // D4/D140: `committed` widens from the inline `Option<OwnerCommitRecord>` to a boxed
+            // `DamageReceipts` (up to 16 receipts + the owner ordinal live on the heap), which
+            // shrinks the largest variant by 32 bytes: 200 -> 168.
+            168,
             "session binding must stay inside the already measured fixed-slot footprint"
         );
     }

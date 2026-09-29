@@ -268,7 +268,7 @@ def wiki_loot(value):
 
 
 def compare(relative, canary, _batch_dir, cache):
-    name, source, _ = cb.load_monster(canary / cb.MONSTER_DIR / (relative + '.lua'), [])
+    name, source, _ = cb.load_monster(cb.CONVERTER.monster_root / cb.CONVERTER.monster_dir / (relative + '.lua'), [])
     slug = cb.slug(name)
     # Compare the plain Canary conversion, never a bundle that already carries adopted wiki values.
     cb.CONVERTER.wiki, cb.CONVERTER.pending_definitions = {}, set()
