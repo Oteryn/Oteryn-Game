@@ -72,6 +72,8 @@ corpse's container instead of onto Ground (D3 §4.1):
   (0013), so a death with no tracked contributor (damage-free, or every hit from an untracked 17th
   attacker) names the death's single reward principal (`COMBAT01-REWARD-PRINCIPALS`) as the window
   winner instead of dropping the corpse. Flagged for the control plane; no migration touched.
+- **Paths beyond the brief.** `combat.rs` re-exports and one DUR-03 contract sentence (D3-2, not
+  D3-6, registers the MINT widening) were also touched. Deviations 1-3 accepted by the coordinator.
 
 ## D4 dependency note
 
@@ -88,9 +90,12 @@ loot on Ground; replay is idempotent; a D52 generation change before the corpse 
 the remainder; at the corpse cap the death settles with no corpse and no loot; damage-free death
 names the reward principal; empty plan still materializes a corpse.
 
+Local at 847d94d: `cargo test --lib` 1086 passed / 0 failed; PG test targets `--no-run` build clean;
+`validate_governance.py` passed; `git diff --check` clean; fmt and clippy `-D warnings` clean.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: proto/audit/durability/composition implemented; local validation pending
+last_progress: proto/audit/durability/composition implemented; local validation complete
 next_action: "push claude/d3-2-corpse-loot; #162 opens the PR and routes independent review (DUR-03/proto change)"
 ```
