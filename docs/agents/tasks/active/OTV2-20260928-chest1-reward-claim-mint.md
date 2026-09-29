@@ -4,20 +4,20 @@
 task_id: OTV2-20260928-chest1-reward-claim-mint
 title: CHEST-1 DUR-03 reward-claim MINT into a main-backpack entry with a once RewardClaim
 mode: IMPLEMENT
-status: validating
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
-pr: 1190
+pr: null
 allocation: "#162 comment 5879744231 (owner consent in session; D100 routing 5879348805)"
-base_sha: 34ebcef9
+base_sha: 69d85f33
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: CHEST-1 implementation worker (claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk)"
 created_at: 2026-09-28
-updated_at: 2026-09-28
+updated_at: 2026-09-29
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/migrations/0012_reward_claim_backpack_mint.sql
@@ -182,6 +182,6 @@ production.
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #1190 open; implementation and local validation complete
-next_action: freeze the head, post the review packet to #162, then Merge Queue
+last_progress: PR #1190 merged via Merge Queue as 69d85f33 (frozen head 5c36eaad, Codex clean)
+next_action: follow-up PR with the worker-review repairs (P2), then archive this record
 ```
