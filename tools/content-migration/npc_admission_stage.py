@@ -236,6 +236,9 @@ def stage(report: dict, registered: set[str], pilot_only: bool, dialogue_index: 
     if 'br_facts_sha256' in report:  # D12: prices both wikis agree on also come from the TibiaWiki BR facts
         source['br_facts_sha256'] = report['br_facts_sha256']
         source['br_revision'] = f'tibiawiki-br-npc-{report["br_facts_sha256"][:16]}'
+    if 'tibiopedia_facts_sha256' in report:  # D13: prices two of three wikis agree on also come from Tibiopedia
+        source['tibiopedia_facts_sha256'] = report['tibiopedia_facts_sha256']
+        source['tibiopedia_revision'] = f'tibiopedia-npc-{report["tibiopedia_facts_sha256"][:16]}'
     counts = {'npcs': len(candidates), 'records': len(records), 'profiles': len(profiles),
              'trade_services': sum(1 for d in services if 'offers' in d),
              'travel_services': sum(1 for d in services if 'routes' in d),

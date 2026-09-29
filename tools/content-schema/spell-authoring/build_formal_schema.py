@@ -116,6 +116,8 @@ d['spell'] = obj({
                  oneOf=[{'required': ['mana'], **forbid('mana_percent')},
                         {'required': ['mana_percent'], **forbid('mana')}]),
     'cooldown_ms': use('ms'),
+    'harmony_role': {**enum('builder', 'spender'), 'description': 'S26: the monk Harmony role (Canary monkSpellType): '
+                     'a builder adds Harmony, a spender consumes it; not castable until a Harmony owner exists (fails closed).'},
     'groups': array(use('cooldownGroup'), 1, maxItems=2,
                     description='S9: primary group first, then an optional secondary group; group keys differ.'),
     'targeting': obj({

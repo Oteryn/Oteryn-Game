@@ -13,6 +13,7 @@ Game truth and nothing writes `content/`.
 | `source_diff.py` | Canary vs Crystal fact-level diff (owner decision D2: equal sources, no automatic winner). |
 | `wiki_fandom.py` | TibiaWiki (Fandom) snapshot fetch and position/travel/trade comparison (stdlib only, ≤2 requests/s, neutral User-Agent). |
 | `wiki_br.py` | TibiaWiki BR NPC pages: `fetch` captures the raw wikitext at exact revisions (stdlib only, ≤2 requests/s, neutral User-Agent; run by `.github/workflows/npc-tibiawiki-br-capture.yml`, artifact only), `facts` reduces it to the committed facts in `imports/tibiawiki/npc-br/`. |
+| `tibiopedia.py` | Tibiopedia NPC pages: `fetch` reads the NPC list from the sitemap and keeps only trade facts (trade flag, item, each row's price) in the committed `imports/tibiawiki/npc-tibiopedia/` file (D13); `self-test` checks the parser offline. |
 | `tibiawiki_br_crosscheck.py` | Cross-checks every admitted NPC's position, trade and dialogue against the BR facts (`samples/tibiawiki-br-crosscheck-v1.json`). |
 | `population_census.py` | Readiness census over converted bundles. |
 | `promotion_candidates.py` | Merges Canary+Crystal with the wiki as tie-breaker into native-keyed promotion candidates (D4–D6). |
@@ -37,8 +38,8 @@ python wiki_fandom.py fetch --cache out/fandom
 python wiki_fandom.py compare --snapshot out/fandom/fandom-npc-snapshot.json --bundles out/canary/bundles --out samples/fandom-compare-canary-47dfd51f.json
 python wiki_fandom.py compare --snapshot out/fandom/fandom-npc-snapshot.json --bundles out/crystal/bundles --out samples/fandom-compare-crystal-ff7ede59.json
 (cd ../../.. && cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$OLDPWD/out/native-map.json")
-python promotion_candidates.py --canary out/canary/bundles --crystal out/crystal/bundles --snapshot out/fandom/fandom-npc-snapshot.json --item-map out/native-map.json --br-facts ../../../imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json --out samples/promotion-candidates-v1.json
-python validate_promotion.py samples/promotion-candidates-v1.json --snapshot out/fandom/fandom-npc-snapshot.json --br-facts ../../../imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json
+python promotion_candidates.py --canary out/canary/bundles --crystal out/crystal/bundles --snapshot out/fandom/fandom-npc-snapshot.json --item-map out/native-map.json --br-facts ../../../imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json --tibiopedia-facts ../../../imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json --out samples/promotion-candidates-v1.json
+python validate_promotion.py samples/promotion-candidates-v1.json --snapshot out/fandom/fandom-npc-snapshot.json --br-facts ../../../imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json --tibiopedia-facts ../../../imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json --item-map out/native-map.json --canary out/canary/bundles --crystal out/crystal/bundles
 ```
 
 The Fandom snapshot (article fields only, not committed) takes about four minutes to fetch; the compare

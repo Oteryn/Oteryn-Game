@@ -97,6 +97,38 @@
       "date": "2026-06-02",
       "source": "https://www.tibia.com/news/?subtopic=newsarchive&id=8833",
       "fact": "Vocation Adjustments release state: the crippling spells Sap Strength and Expose Weakness are turned into passive stances (Aura of Sapped Strength, Aura of Exposed Weakness) unlocked at level 175"
+    },
+    {
+      "spell": "practise fire wave",
+      "field": "removed",
+      "value": "instant",
+      "date": "2026-09-28",
+      "source": "https://www.tibia.com/library/?subtopic=spells",
+      "fact": "S25 (owner, 2026-09-28): the spell is absent from the official spell library (TibiaData /v4/spells, 193 entries) and Fandom marks it deprecated (Dawnport); the removal patch is not known. "
+    },
+    {
+      "spell": "practise healing",
+      "field": "removed",
+      "value": "instant",
+      "date": "2026-09-28",
+      "source": "https://www.tibia.com/library/?subtopic=spells",
+      "fact": "S25 (owner, 2026-09-28): the spell is absent from the official spell library (TibiaData /v4/spells, 193 entries) and Fandom marks it deprecated (Dawnport); the removal patch is not known. "
+    },
+    {
+      "spell": "lightest missile rune",
+      "field": "removed",
+      "value": "instant",
+      "date": "2026-09-28",
+      "source": "https://www.tibia.com/library/?subtopic=spells",
+      "fact": "S25 (owner, 2026-09-28): the conjuring spell is absent from the official spell library (TibiaData /v4/spells, 193 entries) and Fandom marks it deprecated (Dawnport); the removal patch is not known. The rune item stays."
+    },
+    {
+      "spell": "light stone shower rune",
+      "field": "removed",
+      "value": "instant",
+      "date": "2026-09-28",
+      "source": "https://www.tibia.com/library/?subtopic=spells",
+      "fact": "S25 (owner, 2026-09-28): the conjuring spell is absent from the official spell library (TibiaData /v4/spells, 193 entries) and Fandom marks it deprecated (Dawnport); the removal patch is not known. The rune item stays."
     }
   ]
 }

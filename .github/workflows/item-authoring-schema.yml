@@ -69,6 +69,9 @@ jobs:
       - name: Donor census fixture tests
         run: python test_donor_census.py
 
+      - name: Client appearance census fixture tests
+        run: python test_client_appearance_census.py
+
       - name: WorldObject and Terrain authoring tests
         working-directory: tools/content-schema/world-object-authoring
         run: python test_world_objects.py

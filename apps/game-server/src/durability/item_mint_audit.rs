@@ -1,13 +1,15 @@
 //! Registered DUR-03 native one-item MINT durable-audit encoding: event type 2
 //! (`oteryn.events.v1.OneItemTransactionV1`, operation `mint`) carried in the
-//! normative ANL-01 `EventEnvelope`.
+//! normative ANL-01 `EventEnvelope`. The TRANSFER variant (oneof tag 3) is
+//! owned by [`super::item_transfer_audit`]; the MINT gates below reject it.
 //!
 //! Every bound is a registered hard maximum from
-//! `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` (decision D50/D51). Bounds are
-//! checked before encode allocation and oversize input is rejected, never
-//! truncated. TRANSFER (oneof tag 3), value lines, transforms, container
-//! expansion, item free text and a player `CommandRef` have no field here: a
-//! payload carrying them rejects as an unknown field in the canonical round trip.
+//! `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` (decision D50/D51, amended
+//! for the B3 merge shapes). Bounds are checked before encode allocation and
+//! oversize input is rejected, never truncated. Value lines, transforms,
+//! container expansion, item free text and a MINT `CommandRef` have no field
+//! here: a payload carrying them rejects as an unknown field in the canonical
+//! round trip.
 
 use prost::Message;
 use sha2::{Digest, Sha256};
@@ -22,19 +24,22 @@ pub const AUDIT_RETENTION_P90D_MS: i64 = 7_776_000_000;
 pub const LOOT_MINT_TYPED_CAUSE: &str = "loot_mint";
 pub const ITEM_LIFECYCLE_LIVE: u32 = 1;
 
-const ENVELOPE_REVISION: u32 = 1;
-const DURABLE_AUDIT: i32 = 2;
-const RESTRICTED_PLAYER_LINKED: i32 = 3;
+pub(super) const ENVELOPE_REVISION: u32 = 1;
+pub(super) const DURABLE_AUDIT: i32 = 2;
+pub(super) const RESTRICTED_PLAYER_LINKED: i32 = 3;
 const SECURITY_SENSITIVE: i32 = 4;
 
-// Registered hard maxima (RESOURCE_LIMITS_REGISTRY.json, D50/D51).
-pub const RL01_TOUCHED_ITEM_INSTANCES_MAX: u64 = 1;
+// Registered hard maxima (RESOURCE_LIMITS_REGISTRY.json, D50/D51; RL-01 and
+// RL-06 amended by B3 §4.5 for the two-item merge and top-up shapes, while
+// MINT and the one-item TRANSFER shapes stay at 1 item, 1 participant and at
+// most 3 work units).
+pub const RL01_TOUCHED_ITEM_INSTANCES_MAX: u64 = 2;
 pub const RL02_LOCATION_CUSTODY_LINES_MAX: u64 = 2;
 pub const RL03_VALUE_LINES_MAX: u64 = 0;
 pub const RL04_TRANSFORM_LINES_MAX: u64 = 0;
 pub const RL05_CONTAINER_EXPANSION_MAX: u64 = 0;
-pub const RL06_PARTICIPANTS_MAX: u64 = 1;
-pub const RL06_EFFECT_WORK_UNITS_MAX: u64 = 3;
+pub const RL06_PARTICIPANTS_MAX: u64 = 2;
+pub const RL06_EFFECT_WORK_UNITS_MAX: u64 = 6;
 pub const RL07_EVENTS_MAX: u64 = 1;
 pub const RL07_ENVELOPE_BYTES_MAX: usize = 9_216;
 pub const RL07_PAYLOAD_BYTES_MAX: usize = 7_936;
@@ -148,18 +153,24 @@ pub struct OneItemMintV1 {
     pub before_semantically_absent: bool,
 }
 
-/// Only the admitted `mint` variant (tag 2) exists; TRANSFER (tag 3) stays closed.
+/// `mint` (tag 2), the B3 `transfer` (tag 3, [`super::item_transfer_audit`])
+/// and the CHEST-1 `reward_claim_mint` (tag 4,
+/// [`super::reward_claim_mint_audit`]).
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum OneItemOperationV1 {
     #[prost(message, tag = "2")]
     Mint(OneItemMintV1),
+    #[prost(message, tag = "3")]
+    Transfer(super::item_transfer_audit::OneItemTransferV1),
+    #[prost(message, tag = "4")]
+    RewardClaimMint(super::reward_claim_mint_audit::OneItemRewardClaimMintV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2")]
+    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4")]
     pub operation: Option<OneItemOperationV1>,
 }
 
@@ -317,7 +328,9 @@ pub fn check_uuid_v7(value: &[u8]) -> Result<(), AuditError> {
     Ok(())
 }
 
-fn check_definition(value: Option<&OneItemTypedDefinitionRevisionV1>) -> Result<(), AuditError> {
+pub(super) fn check_definition(
+    value: Option<&OneItemTypedDefinitionRevisionV1>,
+) -> Result<(), AuditError> {
     let value = value.ok_or(AuditError::InvalidInput)?;
     check_technical_text(&value.family)?;
     check_content_key(&value.production_key)?;
@@ -456,6 +469,24 @@ pub fn decode_payload(wire: &[u8]) -> Result<OneItemMintV1, AuditError> {
 /// canonical round trip, registered event binding, identity and digest widths,
 /// one-event membership and the nested payload gate.
 pub fn decode_envelope(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemMintV1), AuditError> {
+    let value = decode_common_envelope(wire)?;
+    let mint = decode_payload(&value.payload)?;
+    let ground = mint.destination.as_ref().ok_or(AuditError::InvalidInput)?;
+    if value.world_id.as_deref() != Some(ground.world_id.as_slice())
+        || value.channel_id.as_deref() != Some(ground.channel_id.as_slice())
+        || value.game_session_id.is_some()
+        || value.command_id.is_some()
+        || value.causation.is_some()
+    {
+        return Err(AuditError::InvalidInput);
+    }
+    Ok((value, mint))
+}
+
+/// Operation-independent RL-07 envelope gate shared by MINT and TRANSFER:
+/// size before decode, canonical round trip, registered event binding,
+/// identity and digest widths and one-event membership.
+pub(super) fn decode_common_envelope(wire: &[u8]) -> Result<EventEnvelopeV1, AuditError> {
     if wire.len() > RL07_ENVELOPE_BYTES_MAX {
         return Err(AuditError::CapacityExceeded);
     }
@@ -489,17 +520,7 @@ pub fn decode_envelope(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemMintV1), 
     {
         return Err(AuditError::InvalidInput);
     }
-    let mint = decode_payload(&value.payload)?;
-    let ground = mint.destination.as_ref().ok_or(AuditError::InvalidInput)?;
-    if value.world_id.as_deref() != Some(ground.world_id.as_slice())
-        || value.channel_id.as_deref() != Some(ground.channel_id.as_slice())
-        || value.game_session_id.is_some()
-        || value.command_id.is_some()
-        || value.causation.is_some()
-    {
-        return Err(AuditError::InvalidInput);
-    }
-    Ok((value, mint))
+    Ok(value)
 }
 
 /// Envelope identity fixed before the first commit attempt.
@@ -563,7 +584,7 @@ pub fn encode_mint_event(
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
     use super::*;
     use serde_json::Value;
@@ -712,7 +733,12 @@ mod tests {
                 before_semantically_absent: true,
             })),
         };
-        let payload = encode_bounded(&payload, RL07_PAYLOAD_BYTES_MAX).unwrap();
+        worst_case_envelope(encode_bounded(&payload, RL07_PAYLOAD_BYTES_MAX).unwrap())
+    }
+
+    /// Wraps `payload` in the widest EventEnvelope (every optional field
+    /// present at its bound); returns (payload bytes, envelope bytes).
+    pub(in crate::durability) fn worst_case_envelope(payload: Vec<u8>) -> (usize, usize) {
         let text = "s".repeat(ANL_ENVELOPE_STRING_MAX);
         let id = uuid(0xef);
         let envelope = EventEnvelopeV1 {

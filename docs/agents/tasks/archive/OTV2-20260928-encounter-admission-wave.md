@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-encounter-admission-wave
 title: Encounter admission slice 4 (58 encounters and their creatures into WorldProject/v2)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1158
 jira: KAN-16
 base_sha: 64720c2086ec1838c7dcd0fe4faae496557096d4
-head_sha: null
-final_head_sha: null
+head_sha: 65cad7d65e3ae3cd6692383e7ad74cc18b390785
+final_head_sha: 65cad7d65e3ae3cd6692383e7ad74cc18b390785
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-28
@@ -77,3 +77,7 @@ under closed admission (E4):
 - `cargo fmt --check`, `cargo clippy --all-targets -D warnings` and `cargo test --locked -p oteryn-game-server` pass.
 - `validate_governance.py` passes.
 - Exact-head review before the Merge Queue, because `content/world` changes.
+
+## Completion
+
+Merged through the Merge Queue as `39d5681e` (#1158) from head `65cad7d6`. Owner released.

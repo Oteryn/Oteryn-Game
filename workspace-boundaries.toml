@@ -30,7 +30,7 @@ oteryn-security-auth-tests = ["oteryn-client-runtime","oteryn-diagnostics","oter
 oteryn-pre-native-client-tests = ["oteryn-client","oteryn-platform-contracts"]
 oteryn-architecture-check = []
 oteryn-synthetic-asset-compiler = ["oteryn-synthetic-assets"]
-oteryn-synthetic-client-harness = ["oteryn-client-domain","oteryn-client-simulation","oteryn-foundation","oteryn-input-actions","oteryn-renderer","oteryn-synthetic-assets"]
+oteryn-synthetic-client-harness = ["oteryn-client-domain","oteryn-client-simulation","oteryn-dev-client","oteryn-foundation","oteryn-input-actions","oteryn-protocol-oteryn","oteryn-renderer","oteryn-synthetic-assets"]
 oteryn-dev-client = ["oteryn-protocol-oteryn"]
 
 [dev_edges]
