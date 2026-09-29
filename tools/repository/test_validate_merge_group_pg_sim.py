@@ -18,7 +18,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "935b9b482692305e7f88dc04c05198de0d9211e6"
+APPROVED = "c7e605afe115cd66f838ab5c05e2ce88c53f9ed2"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -98,6 +98,11 @@ def main() -> int:
         "      - name: Classify trusted merge-group lanes",
         "path.startswith('docs/architecture/') and path.endswith('.md')",
         "result = {'rust': 'false', 'windows': 'false', 'surface': 'architecture-docs'}",
+        "cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > \"$RUNNER_TEMP/queue-metadata.json\"",
+        "if result['surface'] == 'full' and isinstance(records, list) and records:",
+        "candidate_modes_verified=module.candidate_modes_safe(head),",
+        "if routed.get('rust') is False and routed.get('windows') is False:",
+        "                  result = {'rust': 'true', 'windows': 'true', 'surface': 'full'}",
     ):
         assert fragment in candidate, f"Merge Queue trusted docs classifier missing: {fragment}"
 

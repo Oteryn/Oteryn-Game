@@ -1,0 +1,63 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys, gameplay promotion, or Crystal/Canary match",
+  "family": "Creature",
+  "field_counts": {
+    "exp": 1861,
+    "hp": 1750,
+    "immunities": 2051,
+    "mitigation": 835,
+    "name": 2148,
+    "pushable": 2112,
+    "pushobjects": 2110,
+    "speed": 834
+  },
+  "files": [
+    {
+      "path": "creatures-00000-00499.json",
+      "records": 500,
+      "sha256": "3b51421af93e4d0f322147f6c5bdfb54a87061266f0bb7dddcc113fb714e7f23"
+    },
+    {
+      "path": "creatures-00500-00999.json",
+      "records": 500,
+      "sha256": "43ab3eea195785519453c84a6f262e558cb6780c20d16d5e1450afc88db1d6b1"
+    },
+    {
+      "path": "creatures-01000-01499.json",
+      "records": 500,
+      "sha256": "c71df69d8ab7f248fd6a5afa1b59cb766f4447c59866be03bdea3fa4da0bd247"
+    },
+    {
+      "path": "creatures-01500-01999.json",
+      "records": 500,
+      "sha256": "0210bed186de346575b45db4505a29bdd2105a2a79aca6c6a80b0a16b24e1a59"
+    },
+    {
+      "path": "creatures-02000-02148.json",
+      "records": 149,
+      "sha256": "a4193ae47a74d5b941ca638eecb777ef4f0a8f17b9f711596b5aebc2deb007db"
+    }
+  ],
+  "identity_namespace": "mediawiki/page_id",
+  "inputs": {
+    "fields": {
+      "archive_sha256": "ec0db29ba93e537a3a4253473d76f4482a98d7eee362cae59a797a084a6e683e",
+      "member": "bulk-crosswalk.json"
+    },
+    "g3": {
+      "archive_sha256": "a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7",
+      "member": "source-family-classified-universe.json"
+    },
+    "g4": {
+      "archive_sha256": "5d8e886e31a0f64a035a61dc5c3f8ce031a8af3b06926117750deebc841394ca",
+      "member": "non-item-source-capture.json"
+    }
+  },
+  "record_count": 2149,
+  "schema": "OTERYN_TIBIAWIKI_CREATURE_SOURCE_MANIFEST/v1",
+  "source": "TIBIAWIKI_STRUCTURED",
+  "source_namespace": "mediawiki/tibiawiki.com.br",
+  "source_revision_drift_page_ids": [
+    "63947"
+  ]
+}
