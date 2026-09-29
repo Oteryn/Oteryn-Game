@@ -4,25 +4,25 @@
 task_id: OTV2-20260929-cw2-encounter-vocabulary-impl
 title: Implement the accepted section 12 encounter vocabulary extensions CW2-1..4
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw2-encounter-vocabulary-impl
 pr: 1202
 base_sha: fb204ea3
-head_sha: null
-final_head_sha: null
+head_sha: 46030f0f15468ae27db0bcdcd4ca4822d2785421
+final_head_sha: 46030f0f15468ae27db0bcdcd4ca4822d2785421
 final_head_frozen_at: null
 owner: "Oteryn: content world import"
 created_at: 2026-09-29T06:00:00Z
-updated_at: 2026-09-29T07:00:00Z
+updated_at: 2026-09-29T09:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md (section 12, and the header status line under the #162 allocation amendment)
   - tools/content-schema/encounter-authoring/{encounter.schema.json,build_schema.py,validate_encounter.py,verify_encounter_schema.py,README.md}
   - tools/content-schema/encounter-authoring/samples/{alptramun,gorzindel,melting_frozen_horror,the_sandking}/** (not touched, see below)
-  - docs/agents/tasks/active/OTV2-20260929-cw2-encounter-vocabulary-impl.md
+  - docs/agents/tasks/archive/OTV2-20260929-cw2-encounter-vocabulary-impl.md
 public_contracts: []
 depends_on:
   - "owner decisions on #162, batch 2: comments 5884513528 (Q3 section 12 accepted, Q4 Alptramun, Q5 Gorzindel) and 5884527699 (Q6 Sandking, Q8 Melting Frozen Horror)"
@@ -95,5 +95,14 @@ drift from the generator. That allocation needs:
 
 ## Context checkpoint
 
-last_progress: PR #1202; header line set to ACCEPTED and the carry-over recorded (allocation amendment); awaiting freeze
+last_progress: merged as PR #1202; record archived
 jira: pending (no mapped Story resolved in this worker session)
+
+## Terminal integration
+
+- **Final head:** `46030f0f15468ae27db0bcdcd4ca4822d2785421`.
+- **Integration:** merged into main as PR #1202, merge commit
+  `39de69cb4c8e569e5305857b1fb2b047ec77d702` (2026-09-29T06:37:33Z).
+- **Closeout:** the record was archived by `OTV2-20260929-closeout-batch-4` (issue #162, allocation comment 5886481110).
+- **Owned paths:** released.
+- **Carry-over (deferred, separate allocation):** §12.5 step 2, the transcription of the Alptramun, Gorzindel, Melting Frozen Horror and The Sandking samples, is not done. It stays visible under "Carry-over" above and needs `canary_encounters.py`, a Canary checkout at `47dfd51f`, the monster census outputs, `creature_admission_stage.py` and the Rust typed Encounter profile (§12.5 step 3).

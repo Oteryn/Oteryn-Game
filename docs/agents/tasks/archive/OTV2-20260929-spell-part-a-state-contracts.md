@@ -4,15 +4,15 @@
 task_id: OTV2-20260929-spell-part-a-state-contracts
 title: "Part A state contracts: monk Harmony/Serene (SPELL-D8) and Wheel of Destiny state"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/spell-part-a-state-contracts
 issue: 162
 pr: 1205
 base_sha: 0bd0fd75480fc70bb4629958b22b66a0e1e253f4
-head_sha: null
-final_head_sha: null
+head_sha: 30a109d10f9c441af54490484b1e26da74557abf
+final_head_sha: 30a109d10f9c441af54490484b1e26da74557abf
 final_head_frozen_at: null
 owner: claude-code-session-01LphUANMfC2q2WKdfEb39eC
 created_at: 2026-09-29
@@ -21,7 +21,7 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md
   - docs/architecture/OTERYN_WHEEL_OF_DESTINY_STATE_CONTRACT_CANDIDATE_V1.md
-  - docs/agents/tasks/active/OTV2-20260929-spell-part-a-state-contracts.md
+  - docs/agents/tasks/archive/OTV2-20260929-spell-part-a-state-contracts.md
 public_contracts:
   - docs/architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md
   - docs/architecture/OTERYN_WHEEL_OF_DESTINY_STATE_CONTRACT_CANDIDATE_V1.md
@@ -101,11 +101,24 @@ Codex review of `41636585`: two P1s, both ACCEPTED and repaired (return to autho
 ## Context checkpoint
 
 ```yaml
-last_progress: Codex P1s 4130296767 and 4130296771 repaired; PR #1205 open
-status: validating
+last_progress: merged as PR #1205; record archived
+status: completed
 branch: claude/spell-part-a-state-contracts
 pr: 1205
 owner_action_required: "confirm the non-durable Serene default (SPELL-D8 Q1)"
 blocker: null
-next_action: exact-head review and Merge Queue integration; then the Part A runtime resumes
+next_action: the Part A runtime resumes; binding carry-over is listed under Terminal integration
 ```
+
+## Terminal integration
+
+- **Final head:** `30a109d10f9c441af54490484b1e26da74557abf`.
+- **Integration:** merged into main as PR #1205, merge commit
+  `48b53e0f88bd3e79edb0e0ae52748ce1dbb52777` (2026-09-29T08:23:31Z).
+- **Closeout:** the record was archived by `OTV2-20260929-closeout-batch-4` (issue #162, allocation comment 5886481110).
+- **Owned paths:** released.
+- **Binding carry-over:**
+  - W-1 monotonic decrease: the Wheel allocation is kept on level loss and unused points saturate at 0. The W-1 child must carry it.
+  - Serene: owner confirmation of the non-durable default (SPELL-D8 Q1) is still pending.
+  - DEATH-1: the DEATH owner must accept the `Harmony := 0` reset at death (§4.3 item).
+  - PREM-1/PREM-2: Wheel eligibility (Premium, promotion, level above 50) depends on them.
