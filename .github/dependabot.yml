@@ -13,6 +13,11 @@ updates:
       - ci
     commit-message:
       prefix: "ci(deps)"
+    groups:
+      # init and analyze must move together; one PR instead of two.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
 
   - package-ecosystem: cargo
     directory: /
