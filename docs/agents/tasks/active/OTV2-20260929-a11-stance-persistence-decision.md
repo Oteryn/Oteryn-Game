@@ -4,12 +4,12 @@
 task_id: OTV2-20260929-a11-stance-persistence-decision
 title: "A11 STANCE-0 Character stance persistence decision (D140)"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1225
 base_sha: d4d5e2c4072c7bdd3f3ef9ecb5c742cd2ae428c3
 head_sha: null
 final_head_sha: null
@@ -67,11 +67,11 @@ Not applicable to this docs-only task. STANCE-0 changes persistence and needs in
 ## Context checkpoint
 
 ```yaml
-last_progress: authored
-status: implementing
+last_progress: authored; PR #1225 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1225
 owner_action_required: null
 blocker: null
-next_action: open the PR, freeze the head, exact-head review and Merge Queue integration
+next_action: exact-head review and Merge Queue integration of #1225
 ```
