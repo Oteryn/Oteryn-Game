@@ -1,0 +1,323 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Rat",
+      "page_id": 1116,
+      "revision_id": 1192053,
+      "content_sha256": "c19430b4848e21e4d5a21d3369d2fc25cffc93a07b5f420d652c4978716cafa0"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Loot Statistics:Rat",
+      "page_id": 40711,
+      "revision_id": 1206491,
+      "content_sha256": "9c2675b2e684233b404b29d305bd6ab42a2b76b44381bd794cd284fdc05665de"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 86,
+      "source_field": "attacks[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/0",
+      "resolution": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR and COMBAT_PARAM_BLOCKSHIELD on a monster melee, so its damage is reduced by the target armor and shield defense (mitigated_by). Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 36,
+      "source_field": "corpse",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/corpse_item",
+      "resolution": "Corpse and its decay chain are local capability projections from appearances.dat + items.xml; items.cpp: blockSolid=unpass, blockProjectile=unsight, blockPathFind=avoid, pickupable=take, movable=!unmove. Weight absent in items.xml is the engine default 0. Duration seconds -> ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 82,
+      "source_field": "loot[2]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/0",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3607 \"cheese\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 39.41% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 81,
+      "source_field": "loot[1]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/1",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 100.0% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 21,
+      "source_field": "Bestiary",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/bestiary",
+      "resolution": "difficulty is derived from Stars (0 harmless .. 5 challenging) and occurrence from Occurrence (0 common .. 3 very rare)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 49,
+      "source_field": "flags.pass_through",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/pass_through",
+      "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 49,
+      "source_field": "flags.canWalk/canTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/can_walk",
+      "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 4,
+      "source_field": "description",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/inspection/description",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 33,
+      "source_field": "health",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/initial_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 34,
+      "source_field": "maxHealth",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/max_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 5,
+      "source_field": "experience",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/experience",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 37,
+      "source_field": "speed",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/speed",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 6,
+      "source_field": "outfit",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance/asset_binding",
+      "resolution": "Declared source appearance binding, not an admitted asset."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 69,
+      "source_field": "light",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/light/level",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 49,
+      "source_field": "flags",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/flags",
+      "resolution": "Absent flags take monsters.hpp MonsterInfo defaults."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 40,
+      "source_field": "changeTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/change_target",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 45,
+      "source_field": "strategiesTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/strategy_weights",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 74,
+      "source_field": "voices",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/voices",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 95,
+      "source_field": "elements",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/resistances",
+      "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 108,
+      "source_field": "immunities",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/immunities",
+      "resolution": "Invisible condition immunity also sets sense_invisible."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 91,
+      "source_field": "defenses.armor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/armor",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 90,
+      "source_field": "defenses.defense",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/defense",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 92,
+      "source_field": "defenses.mitigation",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "Canary value 0.07 superseded by the reference-date wiki value 0.12 (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 38,
+      "source_field": "manaCost",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/summoning/mana_cost",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 20,
+      "source_field": "raceId",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "Foreign identifier; provenance only."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 35,
+      "source_field": "race",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/creature/death_residue",
+      "resolution": "Race \"blood\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_line": 16,
+      "source_field": "events=RationalRequestRatDeath",
+      "kind": "script",
+      "status": "approved_omission",
+      "resolution": "data-otservbr-global/scripts/quests/the_rookie_guard/mission03_rational_request.lua increments the Rookie Guard mission 3 rat counter. Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction and are omitted from the monster bundle."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Rat",
+      "source_line": 9,
+      "source_field": "Infobox Creature.mitigation",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "Wiki mitigation \"0.12\" (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
+      "destination": "/monster/creature/stats/mitigation_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Rat",
+      "source_line": 8,
+      "source_field": "Loot2.gold coin",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "26179 drops / 28990 kills in the version 9.63 block of Loot Statistics:Rat (28990 kills): 90.303553%, 95% Wilson interval 89.9576-90.6389%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/1/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Rat",
+      "source_line": 9,
+      "source_field": "Loot2.cheese",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "10333 drops / 28990 kills in the version 9.63 block of Loot Statistics:Rat (28990 kills): 35.643325%, 95% Wilson interval 35.0939-36.1965%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/0/probability_percent"
+    }
+  ]
+}

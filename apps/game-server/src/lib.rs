@@ -5,10 +5,87 @@
 
 extern crate self as oteryn_game_server;
 
+#[allow(dead_code)]
+#[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
+mod ability;
+// AI-3 (#162; GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.4/§5): compiles the
+// bootstrap AI module into the server for the first time (previously only `tests/ai_bootstrap.rs`
+// built it standalone).
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "ai:: has no production caller yet; a later wiring task consumes it from ai_think"
+)]
+mod ai;
+// AI-3's composition root over `ai::`'s public API: builds one creature's per-think decision and,
+// for chase/wander, acts through the real Movement owner. A sibling of `ai`, not a child of it,
+// so `tests/ai_bootstrap.rs`'s standalone path-include of `ai/mod.rs` never pulls in
+// `foundation`/`content`/`movement` (see `ai_think.rs`'s module doc). No production caller wires
+// the composed per-creature think into `ChannelRuntimeV1`'s live owner cycle yet -- same pattern
+// as AI-1's `owner_timer` and AI-2's spawn/respawn code: complete, tested and uncalled, ready for
+// that wiring.
+#[allow(
+    dead_code,
+    reason = "ai_think has no production caller yet; AI-4/a later wiring task composes it into ChannelRuntimeV1's owner cycle"
+)]
+mod ai_think;
+#[allow(
+    dead_code,
+    reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
+)]
+mod combat;
+// A top-level module, not a submodule of `combat`: `combat.rs` is also recompiled standalone by
+// `foundation/mod.rs`'s `#[cfg(test)] #[path = "../combat.rs"] mod exact_actor_test_combat;` and
+// by several PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not
+// Content, so a `crate::content` dependency inside `combat.rs`'s own module tree would force
+// every one of those to also carry a local `content` module. `combat_pickup` needs
+// `crate::content` (B3-2: definition facts bound to the current Content generation) and reaches
+// `combat::death_reward::DurabilitySession` through `combat`'s own `pub(crate)` re-export
+// instead.
+#[allow(
+    dead_code,
+    reason = "B3-2 has no production caller yet; a later admission stage wires one"
+)]
+#[path = "combat/pickup.rs"]
+mod combat_pickup;
+
+pub mod character_bootstrap_intent;
+pub mod character_recovery_fence;
 pub mod content;
 pub mod domain;
 pub mod durability;
 pub mod foundation;
+mod gameplay_transport;
+#[allow(
+    dead_code,
+    reason = "unactivated local Movement proof awaits the separate production composition lease"
+)]
+mod movement;
+pub mod node;
+#[allow(
+    dead_code,
+    reason = "player spell core (P3a) awaits the cast protocol and runtime state contracts (P3b)"
+)]
+mod spell;
+
+pub use gameplay_transport::{
+    FreshEvidenceSource, GameplayListenerConfig, GameplaySeamOwners, GameplayServeError,
+    serve_gameplay,
+};
+
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "GAME-INTERACTION identity; the §7 revert driver is its first library consumer"
+)]
+mod interaction;
+#[allow(
+    dead_code,
+    reason = "§7 timed-revert driver awaits its live Channel/Instance scope owner"
+)]
+mod world_object_revert;
+#[allow(dead_code)]
+pub(crate) mod world_runtime;
 
 #[cfg(test)]
 #[path = "foundation/recovery_tests.rs"]
@@ -575,3 +652,4 @@ mod v2_reconciled_prepared_budget_regression_tests {
 }
 
 pub mod admission_evidence;
+pub mod native_admission_source;

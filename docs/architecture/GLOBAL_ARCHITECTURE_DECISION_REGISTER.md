@@ -1,22 +1,22 @@
 # Oteryn v2 Global Architecture Decision Register
 
-- Status: **Active coordination register**
+- Status: **Historical coordination snapshot; accepted ADRs/contracts remain authoritative**
 - Date: 2026-08-22
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
-- Current execution status: `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`
+- Historical execution snapshot: `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`
 - Live implementation allocation: `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md`
 - Detailed gameplay/product horizon: `docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`
 - Stable foundation backlog: `docs/architecture/FOUNDATION_DECISION_BACKLOG.md`
 
 ## 1. Purpose and precedence
 
-This register preserves stable architecture gate IDs, current decision state and the boundary between accepted architecture and implementation/proof work.
+This register preserves the architecture gate IDs and decision/proof boundary recorded on 2026-08-22. Its implementation-status and handoff sections are historical; resolve current lifecycle state from live GitHub and the active task checkpoint.
 
 ```text
 DecisionStatus != DeliveryStatus != ImplementationStatus
 ```
 
-Accepted ADRs/contracts/owner baselines are semantic authority. `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` is current execution-status authority. Live implementation allocation + exact worker task/branch/PR/CI state own implementation execution truth. Historical proposal/candidate/backlog/checkpoint prose remains history when superseded by later accepted or current-status sources.
+Accepted ADRs/contracts/owner baselines are semantic authority. Live Issue, task, branch, PR and check state own implementation execution truth. `FOUNDATION_PROGRAMME_CURRENT_STATUS.md`, this register's implementation tables and other dated checkpoint prose are historical unless a protected change explicitly refreshes them.
 
 ## 2. Accepted platform/foundation direction
 
@@ -76,9 +76,9 @@ parity: PARITY_PENDING_EVIDENCE
 
 No architecture acceptance, implementation activity or fixture silently promotes parity.
 
-## 5. Implementation execution state
+## 5. Historical implementation execution snapshot
 
-Implementation coordinator execution has started and passed the first serial gates:
+At the 2026-08-22 snapshot, implementation coordinator execution had started and passed the first serial gates. The block below is not a current dispatch source:
 
 ```text
 BOOTSTRAP: COMPLETED
@@ -119,13 +119,13 @@ Registration prevents omission; it does not authorize implementation.
 9. Entitlement architecture acceptance does not authorize entitlement runtime activation, payments or production rollout.
 10. Accepted FND-04 makes historical `2s/5s/15s` reconnect/liveness/grace timing values non-canonical/deferred; exact four-second defensive PvE re-entry protection remains accepted.
 
-## 8. Released and active implementation handoff
+## 8. Historical implementation handoff snapshot
 
-The formally evaluated implementation coordinator programme is both released and active.
+This records the 2026-08-22 handoff only. Resolve the current control plane from live Issue #162 and its active checkpoint; do not dispatch from this section.
 
 ```text
 EXECUTOR_PROGRAMME: RELEASED_AND_ACTIVE
-DEFAULT_ENTRYPOINT: Oteryn: implementation coordinator
+HISTORICAL_DEFAULT_ENTRYPOINT: Oteryn: implementation coordinator
 DIRECT_WORKERS: ALLOCATION_GATED
 IMPLEMENTATION_WORKERS_STARTED: YES
 IMPLEMENTATION_AUTHORITY_OUTSIDE_LIVE_COORDINATOR_ALLOCATION: NONE

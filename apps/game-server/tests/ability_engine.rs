@@ -1,3 +1,64 @@
+// This historical standalone fixture includes Ability's source directly.
+// Its narrow test-only owner shim keeps the typed bridge compiling here;
+// Foundation's focused unit tests exercise the actual carrier and HP slot.
+#[allow(dead_code)]
+mod foundation {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct ExactActorRef(pub(crate) u64);
+    pub(crate) struct CurrentOwnerExactActorLookup<'a>(pub(crate) &'a ExactActorRef);
+    impl CurrentOwnerExactActorLookup<'_> {
+        pub(crate) fn contains(&self, actor: ExactActorRef) -> bool {
+            *self.0 == actor
+        }
+    }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct OwnerDamageResult {
+        pub(crate) applied: bool,
+        pub(crate) health_before: i64,
+        pub(crate) health_after: i64,
+    }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct CharacterId;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct CommandRef;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct AttackerCommand;
+    impl AttackerCommand {
+        pub(crate) const fn new(_: CharacterId, _: u64, _: CommandRef, _: u16) -> Self {
+            Self
+        }
+    }
+    pub(crate) struct OwnerDamageCommand<'a> {
+        pub(crate) target: &'a [u8],
+        pub(crate) occurrence: &'a [u8],
+        pub(crate) binding: &'a [u8],
+        pub(crate) damage: i64,
+    }
+    #[derive(Debug, PartialEq, Eq)]
+    pub(crate) enum CarrierError {
+        Invalid,
+    }
+    pub(crate) struct CurrentOwnerExactActorCommit<'a>(pub(crate) &'a mut Option<Vec<u8>>);
+    impl CurrentOwnerExactActorCommit<'_> {
+        pub(crate) fn commit_damage_for_attacker(
+            &mut self,
+            _actor: ExactActorRef,
+            _attacker: AttackerCommand,
+            command: OwnerDamageCommand<'_>,
+        ) -> Result<OwnerDamageResult, CarrierError> {
+            if self.0.is_some() {
+                return Err(CarrierError::Invalid);
+            }
+            *self.0 = Some(command.binding.to_vec());
+            Ok(OwnerDamageResult {
+                applied: true,
+                health_before: 20,
+                health_after: 20 - command.damage,
+            })
+        }
+    }
+}
+
 #[path = "../src/ability/mod.rs"]
 mod ability;
 

@@ -1,0 +1,3311 @@
+//! Exact adapters for owner-approved CW2-B1 native Item bindings.
+//!
+//! This adapter accepts only the protected B1 catalogue bytes. The source observations remain
+//! import provenance and explicit losses; the native Item values are Oteryn-authored and use the
+//! existing project Item record and Reference lowering path.
+
+use super::{
+    CandidateDisposition, CandidateValue, DefinitionIdentityDocument, ImportBatch, ImportCandidate,
+    ImportCandidateFamily, ImportCandidateOperation, ItemStackDocument, NamedCandidateField,
+    NativeItemBindingDisposition, NativeItemBindingDocument, ProjectReferenceRecord,
+    ProjectionDocument, ReferenceCells, ReferenceItemCharges, ReferenceItemContainer,
+    ReferenceItemField, ReferenceItemPresentation, ReferenceItemProtection, ReferenceItemSemantics,
+    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReimportDecision,
+    ReimportFieldState, world_project_sha256,
+};
+use serde::Deserialize;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt::{self, Display, Formatter},
+};
+
+pub const PROTECTED_CW2_B1_EVIDENCE_BYTES: usize = 16_877_870;
+pub const PROTECTED_CW2_B1_EVIDENCE_BLOB: &str = "2f0121f3ea6586477b4535840b9a1f1bc28c677c";
+pub const PROTECTED_CW2_B1_EVIDENCE_SHA256: &str =
+    "7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7";
+pub const PROTECTED_CW2_B1_PRODUCT_SHA256: &str =
+    "d773076b576599b6ced7eb53e262cdc6363515d842da3e8518b610e2106db0fc";
+pub const PROTECTED_CW2_B1_MAPPER_BLOB: &str = "904d62e1277ceae76434f75bca104686a7303ff2";
+pub const PROTECTED_CW2_B1_MAPPER_SHA256: &str =
+    "320ce69f516de2a6e3cec669493ec59a6f3103f405e624478cf2a76acd3d01b6";
+pub const PROTECTED_CW2_B1_NODE_SHA256: &str =
+    "b7c5c457cdccf047b251313e27cf283442a7346ddc556eaece8c2fdc30d655c3";
+pub const PROTECTED_CW2_B1_FIELD_PROFILE_SHA256: &str =
+    "11da415530a0c8678cdb3d05c3205f21f3cc708f13a7342674538f97b911472e";
+
+pub const CW2_B1_SOURCE_REPOSITORY: &str = "zimbadev/crystalserver";
+pub const CW2_B1_SOURCE_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
+pub const CW2_B1_SOURCE_PATH: &str = "data/items/items.xml";
+pub const CW2_B1_SOURCE_BLOB: &str = "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f";
+pub const CW2_B1_SOURCE_SHA256: &str =
+    "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb";
+pub const CW2_B1_SOURCE_BYTES: i64 = 3_819_874;
+pub const CW2_B1_SOURCE_ITEM_ID: u64 = 2_876;
+
+pub const CW2_B1_VASE_KEY: &str = "oteryn:item.decor.vase";
+pub const CW2_B1_VASE_REVISION: &str = "definition-r1";
+pub const CW2_B1_NATIVE_ITEM_BATCH_REVISION: &str = "definition-r1";
+pub const CW2_B1_NATIVE_ITEM_BATCH_COUNT: usize = 64;
+pub const CW2_B1_FULL_ITEM_FAMILY_COUNT: usize = 38_157;
+pub const CW2_B1_OPAQUE_ITEM_COUNT: usize =
+    CW2_B1_FULL_ITEM_FAMILY_COUNT - CW2_B1_NATIVE_ITEM_BATCH_COUNT;
+pub const CW2_B1_FULL_ITEM_REVISION: &str = "definition-r1";
+pub const CW2_B1_OPAQUE_ITEM_NAMESPACE: &str = "oteryn:item.registry";
+pub const CW2_B1_FULL_ITEM_REGISTRY_PROFILE: &str = "OTERYN_CONTENT_ITEM_FAMILY_SCALE_REGISTRY/v1";
+pub const CW2_B1_VASE_B3_ROW: &str = "definition:monster:0108:loot:0006";
+pub const CW2_B1_VASE_B3_ROW_SHA256: &str =
+    "f5d87a09806776c70a799abb5b9eb657ed66b93346d943053ba3fad6500b2712";
+
+const CATALOG_SCHEMA: &str = "OTERYN_CW2_ITEM_IDENTITY_CATALOG_SOURCE_BATCH/v1";
+const MAPPER_PROFILE: &str = "OTERYN_CW2_ITEM_IDENTITY_CATALOG_MAPPER/v1";
+const SOURCE_CANDIDATE_ID: &str = "crystal:item:2876";
+
+/// Complete B1 candidate-field routing for schema readiness. These rows describe a typed
+/// destination or an explicit v1 loss; they never promote donor values to Reference truth.
+pub const CW2_B1_ITEM_FIELD_DISPOSITIONS: [(&str, &str); 90] = [
+    ("allow_distance_read", "readable_writeable.distance_read"),
+    ("ammo_type", "weapon.ammunition"),
+    ("armor", "protection.armor"),
+    ("attack", "weapon.attack"),
+    ("augment_binding", "EXPLICIT_UNSUPPORTED_AUGMENT_V1"),
+    ("capacity", "container.capacity"),
+    ("charge_count", "charges.count"),
+    ("decay_target_source_id", "temporal.decay_target_ordinal"),
+    ("deequip_target_source_id", "use_transform.deequip"),
+    ("defense", "weapon.defense"),
+    ("destroy_target_source_id", "use_transform.destroy"),
+    ("duration", "temporal.duration_ms+consumption_mode"),
+    ("elemental_bond", "skill_modifiers.modifiers"),
+    ("equip_target_source_id", "use_transform.equip"),
+    ("extra_defense", "weapon.extra_defense"),
+    ("female_transform_target_source_id", "use_transform.female"),
+    ("fluid_source", "fluid.fluid_type"),
+    ("hit_chance", "weapon.hit_chance"),
+    ("invisibility", "skill_modifiers.modifiers"),
+    ("item_type", "classification.item_class"),
+    ("male_transform_target_source_id", "use_transform.male"),
+    ("mana_shield", "skill_modifiers.modifiers"),
+    ("mantra", "skill_modifiers.modifiers"),
+    ("max_hit_chance", "weapon.max_hit_chance"),
+    ("max_text_length", "readable_writeable.max_text_length"),
+    (
+        "melee_attack_effect",
+        "EXPLICIT_UNSUPPORTED_PRESENTATION_BINDING_V1",
+    ),
+    ("modifier.absorbpercentdeath", "protection.resistances"),
+    ("modifier.absorbpercentdrown", "protection.resistances"),
+    ("modifier.absorbpercentearth", "protection.resistances"),
+    ("modifier.absorbpercentenergy", "protection.resistances"),
+    ("modifier.absorbpercentfire", "protection.resistances"),
+    ("modifier.absorbpercentholy", "protection.resistances"),
+    ("modifier.absorbpercentice", "protection.resistances"),
+    ("modifier.absorbpercentlifedrain", "protection.resistances"),
+    ("modifier.absorbpercentmanadrain", "protection.resistances"),
+    ("modifier.absorbpercentphysical", "protection.resistances"),
+    ("modifier.absorbpercentpoison", "protection.resistances"),
+    ("modifier.cleavepercent", "skill_modifiers.modifiers"),
+    ("modifier.criticalhitchance", "skill_modifiers.modifiers"),
+    ("modifier.criticalhitdamage", "skill_modifiers.modifiers"),
+    (
+        "modifier.deathmagiclevelpoints",
+        "skill_modifiers.modifiers",
+    ),
+    (
+        "modifier.earthmagiclevelpoints",
+        "skill_modifiers.modifiers",
+    ),
+    ("modifier.elementdeath", "weapon.elemental"),
+    ("modifier.elementearth", "weapon.elemental"),
+    ("modifier.elementenergy", "weapon.elemental"),
+    ("modifier.elementfire", "weapon.elemental"),
+    ("modifier.elementice", "weapon.elemental"),
+    (
+        "modifier.energymagiclevelpoints",
+        "skill_modifiers.modifiers",
+    ),
+    ("modifier.fieldabsorbpercentfire", "protection.resistances"),
+    ("modifier.firemagiclevelpoints", "skill_modifiers.modifiers"),
+    (
+        "modifier.healingmagiclevelpoints",
+        "skill_modifiers.modifiers",
+    ),
+    ("modifier.healthgain", "skill_modifiers.modifiers"),
+    ("modifier.healthticks", "skill_modifiers.modifiers"),
+    ("modifier.holymagiclevelpoints", "skill_modifiers.modifiers"),
+    ("modifier.icemagiclevelpoints", "skill_modifiers.modifiers"),
+    ("modifier.lifeleechamount", "skill_modifiers.modifiers"),
+    ("modifier.lifeleechchance", "skill_modifiers.modifiers"),
+    ("modifier.magiclevelpoints", "skill_modifiers.modifiers"),
+    (
+        "modifier.magicshieldcapacityflat",
+        "skill_modifiers.modifiers",
+    ),
+    (
+        "modifier.magicshieldcapacitypercent",
+        "skill_modifiers.modifiers",
+    ),
+    ("modifier.managain", "skill_modifiers.modifiers"),
+    ("modifier.manaleechamount", "skill_modifiers.modifiers"),
+    ("modifier.manaleechchance", "skill_modifiers.modifiers"),
+    ("modifier.manaticks", "skill_modifiers.modifiers"),
+    ("modifier.perfectshotdamage", "skill_modifiers.modifiers"),
+    ("modifier.perfectshotrange", "skill_modifiers.modifiers"),
+    ("modifier.reflectdamage", "skill_modifiers.modifiers"),
+    ("modifier.skillaxe", "skill_modifiers.modifiers"),
+    ("modifier.skillclub", "skill_modifiers.modifiers"),
+    ("modifier.skilldist", "skill_modifiers.modifiers"),
+    ("modifier.skillfist", "skill_modifiers.modifiers"),
+    ("modifier.skillshield", "skill_modifiers.modifiers"),
+    ("modifier.skillsword", "skill_modifiers.modifiers"),
+    ("modifier.speed", "skill_modifiers.modifiers"),
+    ("movable", "physical.movable"),
+    ("pickup_eligibility", "physical.pickupable"),
+    ("range", "weapon.range_cells"),
+    ("readable", "readable_writeable.readable"),
+    ("rotate_target_source_id", "use_transform.rotate"),
+    (
+        "slot_and_allowed_family_tier",
+        "imbuement.allowed_family_tiers",
+    ),
+    ("slot_claim", "equipment.patterns"),
+    ("stop_duration", "temporal.stop_duration"),
+    ("suppress_drown", "skill_modifiers.modifiers"),
+    ("suppress_drunk", "skill_modifiers.modifiers"),
+    ("use_target_source_id", "use_transform.use"),
+    ("weapon_type", "weapon.weapon_type"),
+    ("weight", "physical.weight"),
+    ("wrap_target_source_id", "use_transform.wrap"),
+    (
+        "write_once_target_source_id",
+        "readable_writeable.write_once_target_ordinal",
+    ),
+    ("writeable", "readable_writeable.writeable"),
+];
+
+#[derive(Debug, Clone, Copy)]
+struct NativeItemSpec {
+    source_item_id: u64,
+    source_label: &'static str,
+    item_class: &'static str,
+    native_key: &'static str,
+    stack_capable: bool,
+    node_sha256: &'static str,
+    field_profile_sha256: &'static str,
+}
+
+const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
+    NativeItemSpec {
+        source_item_id: 3035,
+        source_label: "platinum coin",
+        item_class: "currency_stackable",
+        native_key: "oteryn:item.currency.platinum_coin",
+        stack_capable: true,
+        node_sha256: "2a2400eb87de8067677d3d00b82e973135b12fe3e29348040dbc1724d3da12d8",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 3043,
+        source_label: "crystal coin",
+        item_class: "currency_stackable",
+        native_key: "oteryn:item.currency.crystal_coin",
+        stack_capable: true,
+        node_sha256: "a5538fe905de344f0df8e9994859ab7d2cdc0cdc40df51b3f584a95fe42501c1",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 3492,
+        source_label: "worm",
+        item_class: "currency_stackable",
+        native_key: "oteryn:item.material.worm",
+        stack_capable: true,
+        node_sha256: "85c932f8c74f5147c4d834ccb0811a0c959035749a8ef1b706c8de6347419ba9",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 675,
+        source_label: "small enchanted sapphire",
+        item_class: "currency_stackable",
+        native_key: "oteryn:item.material.gem.small_enchanted_sapphire",
+        stack_capable: true,
+        node_sha256: "2fa3ffba601d8a3dad55a6cd545d403ff295d5a5c693d2b722c95f5387507765",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 676,
+        source_label: "small enchanted ruby",
+        item_class: "currency_stackable",
+        native_key: "oteryn:item.material.gem.small_enchanted_ruby",
+        stack_capable: true,
+        node_sha256: "36112a05b9c2be382ba24e97234e888bb54c4cf0a6ac1a414bc0885aa45a89d5",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 677,
+        source_label: "small enchanted emerald",
+        item_class: "currency_stackable",
+        native_key: "oteryn:item.material.gem.small_enchanted_emerald",
+        stack_capable: true,
+        node_sha256: "34428b6f050f90adb424e4bd6898317f0f58c449ea971184bb42b59dfb335ea8",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 678,
+        source_label: "small enchanted amethyst",
+        item_class: "currency_stackable",
+        native_key: "oteryn:item.material.gem.small_enchanted_amethyst",
+        stack_capable: true,
+        node_sha256: "342a7ebfd1e74252c3e1f5132cce2909dd85c5a5ff057beec41fb7a56841a97c",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 3447,
+        source_label: "arrow",
+        item_class: "currency_stackable",
+        native_key: "oteryn:item.ammunition.arrow",
+        stack_capable: true,
+        node_sha256: "f2b3c59423df63a433fda13ca945ee7510f1664b03c9f4d45de75136b72030bd",
+        field_profile_sha256: "f58edc73b19db6864b4d88c89ead00d0dc3b842368746a3e0bf310d9686cb299",
+    },
+    NativeItemSpec {
+        source_item_id: 3267,
+        source_label: "dagger",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.blade.dagger",
+        stack_capable: false,
+        node_sha256: "755ce623d930a572152886a8393df358995b608d6e51c9cb75ef5e9a93702710",
+        field_profile_sha256: "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
+    },
+    NativeItemSpec {
+        source_item_id: 3280,
+        source_label: "fire sword",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.sword.fire",
+        stack_capable: false,
+        node_sha256: "9a0c6c7b8b82d0c1ddb02d70da8a63db9aa25f5bf1063a157b3a491ce72e55fa",
+        field_profile_sha256: "00c9f780f6e879239cf4c0639d3f9cd768a5b3255a857e78a1e9a688ab22abf9",
+    },
+    NativeItemSpec {
+        source_item_id: 3295,
+        source_label: "bright sword",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.sword.bright",
+        stack_capable: false,
+        node_sha256: "8e7bfd90afcc484cdd01f54ea36440308b428bd258ba0eb166143c663068f5a3",
+        field_profile_sha256: "73f000129a1cc9400b4947bb8fb4e74f9ab5d1b98654122b99b013e11680a5a4",
+    },
+    NativeItemSpec {
+        source_item_id: 3268,
+        source_label: "hand axe",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.axe.hand",
+        stack_capable: false,
+        node_sha256: "242953c6602a914269736e904dd1822b9537a4cd32f62fafa94eccf930705b94",
+        field_profile_sha256: "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
+    },
+    NativeItemSpec {
+        source_item_id: 3320,
+        source_label: "fire axe",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.axe.fire",
+        stack_capable: false,
+        node_sha256: "6312557dbf49bac7366925126cb6b331655456df9aa41ce8dee4043707969fb8",
+        field_profile_sha256: "00c9f780f6e879239cf4c0639d3f9cd768a5b3255a857e78a1e9a688ab22abf9",
+    },
+    NativeItemSpec {
+        source_item_id: 3318,
+        source_label: "knight axe",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.axe.knight",
+        stack_capable: false,
+        node_sha256: "5579e21fef40b215aeb5438d6bef0d950cb8098e4015afd852f0be647f710b07",
+        field_profile_sha256: "9ddbf315c0145fa263a931c85d03d708245953795a41731c0d82b191e874b593",
+    },
+    NativeItemSpec {
+        source_item_id: 3286,
+        source_label: "mace",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.club.mace",
+        stack_capable: false,
+        node_sha256: "3819ae74118f58055cf925ff0a5616ae4e971c1fccfff96093a18c4ed0514eb8",
+        field_profile_sha256: "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
+    },
+    NativeItemSpec {
+        source_item_id: 3324,
+        source_label: "skull staff",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.club.skull_staff",
+        stack_capable: false,
+        node_sha256: "14e4fa7532a9afbc2b8ef04a7176c5f740cd14c4ed4143baa4cc2140a0120b5c",
+        field_profile_sha256: "73f000129a1cc9400b4947bb8fb4e74f9ab5d1b98654122b99b013e11680a5a4",
+    },
+    NativeItemSpec {
+        source_item_id: 3305,
+        source_label: "battle hammer",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.club.battle_hammer",
+        stack_capable: false,
+        node_sha256: "d587b5b105cdc67bcfe9d40e92f8423893e68ca5aad52089bf3d78f5921fe65f",
+        field_profile_sha256: "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
+    },
+    NativeItemSpec {
+        source_item_id: 3349,
+        source_label: "crossbow",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.ranged.crossbow",
+        stack_capable: false,
+        node_sha256: "f2415dbc73fdb717f07636e0806686bf7ce7f3aba82de720b917742993a8f760",
+        field_profile_sha256: "225f761f198c6bdfd74a6cf483861e276dec4e4d3bd8feebdf017160318250cf",
+    },
+    NativeItemSpec {
+        source_item_id: 3350,
+        source_label: "bow",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.ranged.bow",
+        stack_capable: false,
+        node_sha256: "04cf9514fa182b56f2240f557444b46b9ec71028283174caec102f333b18e076",
+        field_profile_sha256: "3f213c9d451c38cdd984ae9e3f3790cafd835a7ab7e3aad0fa7b9d1f3e99ba12",
+    },
+    NativeItemSpec {
+        source_item_id: 3066,
+        source_label: "snakebite rod",
+        item_class: "weapon",
+        native_key: "oteryn:item.weapon.wand.snakebite_rod",
+        stack_capable: false,
+        node_sha256: "9345fbf7ad0a54f912e097136375a957e9291365355836eb2952bf8d600078e1",
+        field_profile_sha256: "f4fc7ac67bb34b3b6c222cb738286258efb6113cf49da3d412ff1ab211617452",
+    },
+    NativeItemSpec {
+        source_item_id: 3351,
+        source_label: "steel helmet",
+        item_class: "equipment",
+        native_key: "oteryn:item.equipment.steel_helmet",
+        stack_capable: false,
+        node_sha256: "b7ac518e8a97c0efb4e52ec4c1daf77dd38944da841ae50eddadb45119825dda",
+        field_profile_sha256: "83c2e166d10682deea3f6eda02904f6a9ced4da21b0486545360aa76d0e48823",
+    },
+    NativeItemSpec {
+        source_item_id: 3357,
+        source_label: "plate armor",
+        item_class: "equipment",
+        native_key: "oteryn:item.armor.plate_armor",
+        stack_capable: false,
+        node_sha256: "006dd5aac4ea304f1cfbede93b9b757e9697b6d89bafc533fab5fe5d397a6793",
+        field_profile_sha256: "83c2e166d10682deea3f6eda02904f6a9ced4da21b0486545360aa76d0e48823",
+    },
+    NativeItemSpec {
+        source_item_id: 3557,
+        source_label: "plate legs",
+        item_class: "equipment",
+        native_key: "oteryn:item.equipment.plate_legs",
+        stack_capable: false,
+        node_sha256: "63249035017fa13d9ac598bc41babf466e0bc45b9c185f173f36131099423ee1",
+        field_profile_sha256: "83c2e166d10682deea3f6eda02904f6a9ced4da21b0486545360aa76d0e48823",
+    },
+    NativeItemSpec {
+        source_item_id: 3409,
+        source_label: "steel shield",
+        item_class: "equipment",
+        native_key: "oteryn:item.equipment.steel_shield",
+        stack_capable: false,
+        node_sha256: "6dd9ed793bc00b52b980402ad0ae7c76fe37a761592c4325128714914c368082",
+        field_profile_sha256: "1151295383ab15474f226cac81b4d6f5242094e371fcb06b6a3402fc0006b04d",
+    },
+    NativeItemSpec {
+        source_item_id: 3412,
+        source_label: "wooden shield",
+        item_class: "equipment",
+        native_key: "oteryn:item.equipment.wooden_shield",
+        stack_capable: false,
+        node_sha256: "a7fcf4b6cbd73783256bd0d58767af814668ac4138d36b6e083d9b8b971fd371",
+        field_profile_sha256: "127dca5e2e2ecb8b26898d5f19e4957156ed8268423288c429e690ae69bc312d",
+    },
+    NativeItemSpec {
+        source_item_id: 3055,
+        source_label: "platinum amulet",
+        item_class: "equipment",
+        native_key: "oteryn:item.equipment.platinum_amulet",
+        stack_capable: false,
+        node_sha256: "8e22605db18521528f2aff0e289ebfd7350a7b5ac676e0b09f9ccc8fb8a4e6a4",
+        field_profile_sha256: "ff3a4d3b8cdb492ccba844425f2a28a9e9cc361417170d9986af4be07e691834",
+    },
+    NativeItemSpec {
+        source_item_id: 812,
+        source_label: "terra legs",
+        item_class: "equipment",
+        native_key: "oteryn:item.equipment.terra_legs",
+        stack_capable: false,
+        node_sha256: "9f3f20696e67671ed262557fd3dce4d6c82b5d5a5f9d72561174fb247b2f3b21",
+        field_profile_sha256: "8c7df30bd6dee7644067aee2b2090162c428dbd84fb03ab59eef9ddc135566ed",
+    },
+    NativeItemSpec {
+        source_item_id: 824,
+        source_label: "glacier robe",
+        item_class: "equipment",
+        native_key: "oteryn:item.equipment.glacier_robe",
+        stack_capable: false,
+        node_sha256: "4a1d051d07a643a181e3ddf411d2b8488daf6c7f65b909eb1f0e3c739c84e4ae",
+        field_profile_sha256: "e856903cf287582b2a100f4e9bbc75be584b243ffd45e42e342718339c882286",
+    },
+    NativeItemSpec {
+        source_item_id: 827,
+        source_label: "magma monocle",
+        item_class: "equipment",
+        native_key: "oteryn:item.equipment.magma_monocle",
+        stack_capable: false,
+        node_sha256: "c9a4ddc01bf25a279e3c533c5d31f96617eb9a8003531bf4ad0816fcc88065e5",
+        field_profile_sha256: "13c9be2c1b84f9b7199d50c4f43b8597c1cc9a35fd58a8182ff5cab02b6bded3",
+    },
+    NativeItemSpec {
+        source_item_id: 3391,
+        source_label: "crusader helmet",
+        item_class: "equipment",
+        native_key: "oteryn:item.equipment.crusader_helmet",
+        stack_capable: false,
+        node_sha256: "c5d4953ee231b39adf03d2340c4cd9a2c37fd1b930c5ed80e983c1a87944654c",
+        field_profile_sha256: "f59e1b9f71ca5347cca5d5aa9c18ca05c1e31d6ecc8c2197e1a596a212613a72",
+    },
+    NativeItemSpec {
+        source_item_id: 3370,
+        source_label: "knight armor",
+        item_class: "equipment",
+        native_key: "oteryn:item.equipment.knight_armor",
+        stack_capable: false,
+        node_sha256: "a087ba076bcbc6b3f967d339b9d00ddcf99d352214bb78f1d7daec8e9cfff0da",
+        field_profile_sha256: "f59e1b9f71ca5347cca5d5aa9c18ca05c1e31d6ecc8c2197e1a596a212613a72",
+    },
+    NativeItemSpec {
+        source_item_id: 3385,
+        source_label: "crown helmet",
+        item_class: "equipment",
+        native_key: "oteryn:item.equipment.crown_helmet",
+        stack_capable: false,
+        node_sha256: "3f773e34581386ee337a89049a586d49a5135c8c835572d4465abe85820e1c4f",
+        field_profile_sha256: "f59e1b9f71ca5347cca5d5aa9c18ca05c1e31d6ecc8c2197e1a596a212613a72",
+    },
+    NativeItemSpec {
+        source_item_id: 2871,
+        source_label: "golden backpack",
+        item_class: "container",
+        native_key: "oteryn:item.container.golden_backpack",
+        stack_capable: false,
+        node_sha256: "d8fe87b4bd22a5244ba83289b406ca2a6930d2482c963d9e6cc6bc6778534d2f",
+        field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+    },
+    NativeItemSpec {
+        source_item_id: 5926,
+        source_label: "pirate backpack",
+        item_class: "container",
+        native_key: "oteryn:item.container.pirate_backpack",
+        stack_capable: false,
+        node_sha256: "508b2a6740ce10e609c6452676c011931366fd278659b89208642f61e026011d",
+        field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+    },
+    NativeItemSpec {
+        source_item_id: 5927,
+        source_label: "pirate bag",
+        item_class: "container",
+        native_key: "oteryn:item.container.pirate_bag",
+        stack_capable: false,
+        node_sha256: "133ea978d3ea2b922a77f4f6255a2c058570e550c45e9219a8cd540740250dc4",
+        field_profile_sha256: "93cd457c45acf4b2a6d5dc4044e42c2094715f09db1e484629d011fe5aca5172",
+    },
+    NativeItemSpec {
+        source_item_id: 7343,
+        source_label: "fur bag",
+        item_class: "container",
+        native_key: "oteryn:item.container.fur_bag",
+        stack_capable: false,
+        node_sha256: "da1c5482ade8e41fe0efbe3a884de0e6ff792863efc0ae06f87f8be55ab15306",
+        field_profile_sha256: "93cd457c45acf4b2a6d5dc4044e42c2094715f09db1e484629d011fe5aca5172",
+    },
+    NativeItemSpec {
+        source_item_id: 9604,
+        source_label: "moon backpack",
+        item_class: "container",
+        native_key: "oteryn:item.container.moon_backpack",
+        stack_capable: false,
+        node_sha256: "8dffabf589c66a3cf8cda4cac92e5b23c3ed91cc1d50ec4dd646c5f2df8d8afc",
+        field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+    },
+    NativeItemSpec {
+        source_item_id: 14248,
+        source_label: "deepling backpack",
+        item_class: "container",
+        native_key: "oteryn:item.container.deepling_backpack",
+        stack_capable: false,
+        node_sha256: "7a496de66726bf3e6e469372cfed2506bf08a7c8ac4d0958e6d95343a737f968",
+        field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+    },
+    NativeItemSpec {
+        source_item_id: 24393,
+        source_label: "pillow backpack",
+        item_class: "container",
+        native_key: "oteryn:item.container.pillow_backpack",
+        stack_capable: false,
+        node_sha256: "733323428cf4d2461b64136380355b719cee9e46d14acf960b82fedb20587754",
+        field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+    },
+    NativeItemSpec {
+        source_item_id: 28571,
+        source_label: "book backpack",
+        item_class: "container",
+        native_key: "oteryn:item.container.book_backpack",
+        stack_capable: false,
+        node_sha256: "235d4b3daaac7b30759bb8108c49fbcd163a1c2d134fe036e68f16c17b0a63cf",
+        field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+    },
+    NativeItemSpec {
+        source_item_id: 237,
+        source_label: "strong mana potion",
+        item_class: "consumable_charges",
+        native_key: "oteryn:item.consumable.potion.strong_mana",
+        stack_capable: true,
+        node_sha256: "8107df439e0b1965dc6a7ba8b8590581fa4e87c30d6b1a9dd40a0048b17f1853",
+        field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+    },
+    NativeItemSpec {
+        source_item_id: 239,
+        source_label: "great health potion",
+        item_class: "consumable_charges",
+        native_key: "oteryn:item.consumable.potion.great_health",
+        stack_capable: true,
+        node_sha256: "1676d400a1f7e4a37efa63f06e8bf1ad012ef4732b74fa816f78b4211824b7f8",
+        field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+    },
+    NativeItemSpec {
+        source_item_id: 266,
+        source_label: "health potion",
+        item_class: "consumable_charges",
+        native_key: "oteryn:item.consumable.potion.health",
+        stack_capable: true,
+        node_sha256: "29d71d0e7dbd3f57adabafdef63b6224e0d0eb97aca0820a2ca5c1fc9b8036ed",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 268,
+        source_label: "mana potion",
+        item_class: "consumable_charges",
+        native_key: "oteryn:item.consumable.potion.mana",
+        stack_capable: true,
+        node_sha256: "4f3104c0a2a4cfc7ee1eb50f21cc39bae73a31c697d160a82d3c8e8905cc5b2c",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 3048,
+        source_label: "might ring",
+        item_class: "consumable_charges",
+        native_key: "oteryn:item.charged.might_ring",
+        stack_capable: false,
+        node_sha256: "a52e35b19f031bc94f44c71c402eb29a97928b91c649efb655e7c68aa8c759a0",
+        field_profile_sha256: "ab35b1698f5a53bb4b4f29991e7e23aaa7cc0af72540f070e17b87b053b68782",
+    },
+    NativeItemSpec {
+        source_item_id: 3081,
+        source_label: "stone skin amulet",
+        item_class: "consumable_charges",
+        native_key: "oteryn:item.charged.stone_skin_amulet",
+        stack_capable: false,
+        node_sha256: "5c6c64e234b76e1b79e5e2d1d2228cbe5ab13bd854482cb455a12f5a6743ef7b",
+        field_profile_sha256: "02b64132c553e683d58fa5910a5ae55fc96b91e203fe30cf20aeaa2fbd87da37",
+    },
+    NativeItemSpec {
+        source_item_id: 3155,
+        source_label: "sudden death rune",
+        item_class: "consumable_charges",
+        native_key: "oteryn:item.consumable.sudden_death_rune",
+        stack_capable: true,
+        node_sha256: "574e1ee5c03676abdcbdc3a5120db3d85ba693279a05a59ffd62b0341a0e223f",
+        field_profile_sha256: "1d153b0d9524f79947e3d3a5adb4719798354e011c5d2ec977b4abf561479dbc",
+    },
+    NativeItemSpec {
+        source_item_id: 9302,
+        source_label: "sacred tree amulet",
+        item_class: "consumable_charges",
+        native_key: "oteryn:item.charged.sacred_tree_amulet",
+        stack_capable: false,
+        node_sha256: "7e0f1cf96e72d0b1cacb220d195b00c86f29da2acfa4a2107712d20ef463037b",
+        field_profile_sha256: "ed3d4a2dd94bf1ff705516c36454de2f39091d9392078521915bde405bc0ce9a",
+    },
+    NativeItemSpec {
+        source_item_id: 2389,
+        source_label: "small blue pillow",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.decor.pillow.small_blue",
+        stack_capable: false,
+        node_sha256: "9326478595c91bdc0cd132c264f3072cd182885f000f35f5d42db0b5ef6cc233",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 2848,
+        source_label: "purple tome",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.decor.tome.purple",
+        stack_capable: false,
+        node_sha256: "f7a5a3f46ed282e8c3b13d61712a0484f4b6f6b82ad8de01f63a5b863b6b474a",
+        field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+    },
+    NativeItemSpec {
+        source_item_id: 2850,
+        source_label: "blue tome",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.decor.tome.blue",
+        stack_capable: false,
+        node_sha256: "9557feb1f960911e48aa89b3c066d4ba0525bf9e23fa219be7eef98b14b16335",
+        field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+    },
+    NativeItemSpec {
+        source_item_id: 2852,
+        source_label: "red tome",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.decor.tome.red",
+        stack_capable: false,
+        node_sha256: "e22b2abbef6842cd5de6bb8597e0fa9f3cd9ce5d0e4896783a6c47b6b8c22b31",
+        field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+    },
+    NativeItemSpec {
+        source_item_id: 2876,
+        source_label: "vase",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.decor.vase",
+        stack_capable: false,
+        node_sha256: "b7c5c457cdccf047b251313e27cf283442a7346ddc556eaece8c2fdc30d655c3",
+        field_profile_sha256: "11da415530a0c8678cdb3d05c3205f21f3cc708f13a7342674538f97b911472e",
+    },
+    NativeItemSpec {
+        source_item_id: 2885,
+        source_label: "brown flask",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.decor.flask.brown",
+        stack_capable: false,
+        node_sha256: "876efad2b78488af6aa09fd7dde055a460a0b2f9316b632e3ccc9b361ad05bd3",
+        field_profile_sha256: "11da415530a0c8678cdb3d05c3205f21f3cc708f13a7342674538f97b911472e",
+    },
+    NativeItemSpec {
+        source_item_id: 2917,
+        source_label: "candlestick",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.decor.candlestick",
+        stack_capable: false,
+        node_sha256: "34410387d5be6973f665aa2f038c32311763e4a7ba02e25018e6191ad96a21e6",
+        field_profile_sha256: "5974cb399f5abd02cee50220bb2d5ab4cbb97af42ac30c6b4605ddf9e70b5ed0",
+    },
+    NativeItemSpec {
+        source_item_id: 2933,
+        source_label: "small oil lamp",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.decor.oil_lamp.small",
+        stack_capable: false,
+        node_sha256: "2d168d5565f0c7fe94a9d10f6f31c55d2203af837c443ea5cfdad3378a9e0926",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 2953,
+        source_label: "panpipes",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.decor.panpipes",
+        stack_capable: false,
+        node_sha256: "638ecc4852144c304f962dfb44b4dfc319485bd69e7293439013f0b4f1f2e5d7",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 2993,
+        source_label: "teddy bear",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.decor.teddy_bear",
+        stack_capable: false,
+        node_sha256: "339845df118885389556307c190d38f504edebd8baebb14b0714aed59a5fa88b",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 2995,
+        source_label: "piggy bank",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.decor.piggy_bank",
+        stack_capable: false,
+        node_sha256: "5414b44e1d5e986d5c883e38dcad0dfd7378d99e490fd66bff55265801b20b95",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 953,
+        source_label: "nail",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.physical.nail",
+        stack_capable: false,
+        node_sha256: "bc7dc34b75c7b262d6ba0368f803393cc9ca417a7a9c2dd7c941e1929b4c6e12",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 940,
+        source_label: "natural soil",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.physical.soil.natural",
+        stack_capable: false,
+        node_sha256: "7d030e8ccc016d95cda9eabe533e57032531c5abd9458f978de3a688c45ebd56",
+        field_profile_sha256: "7aaf75e89a491139e016bfa720eefffec0b7c659655db25d1cd13a9e97237d88",
+    },
+    NativeItemSpec {
+        source_item_id: 941,
+        source_label: "glimmering soil",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.physical.soil.glimmering",
+        stack_capable: false,
+        node_sha256: "a0429e1e89785d0207f50eaf2043fec97171c9fd939c6f6056f5867cee945882",
+        field_profile_sha256: "7aaf75e89a491139e016bfa720eefffec0b7c659655db25d1cd13a9e97237d88",
+    },
+    NativeItemSpec {
+        source_item_id: 942,
+        source_label: "flawless ice crystal",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.physical.crystal.ice.flawless",
+        stack_capable: false,
+        node_sha256: "7fc23279085c279d190bdbb0d50b106d53b6d8003c28bb22c906d7a89431f5ab",
+        field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    },
+    NativeItemSpec {
+        source_item_id: 901,
+        source_label: "marlin",
+        item_class: "physical_decor",
+        native_key: "oteryn:item.physical.marlin",
+        stack_capable: false,
+        node_sha256: "251b4ee4dc7c3b36ec6514f4a5829fc8c90254bd33b03b669c74ca5ca87eff01",
+        field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+    },
+];
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ProtectedCw2B1ImportError {
+    InputLimitExceeded { actual: usize, limit: usize },
+    EvidenceMismatch(&'static str),
+}
+
+impl Display for ProtectedCw2B1ImportError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InputLimitExceeded { actual, limit } => {
+                write!(
+                    formatter,
+                    "CW2-B1 evidence bytes exceed limit: {actual} > {limit}"
+                )
+            }
+            Self::EvidenceMismatch(field) => {
+                write!(formatter, "protected CW2-B1 evidence mismatch: {field}")
+            }
+        }
+    }
+}
+
+impl std::error::Error for ProtectedCw2B1ImportError {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtectedCw2B1VaseImport {
+    pub record: ProjectReferenceRecord,
+    pub batch: ImportBatch,
+}
+
+/// Produce the one approved native Item record and its bound import provenance.
+///
+/// The exact protected catalogue digest is checked before any catalogue decoding. No broad
+/// catalogue family is imported, and none of the source pickup, weight, name, primary-type or B3
+/// observations select native gameplay semantics.
+pub fn protected_cw2_b1_vase_import(
+    evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1VaseImport, ProtectedCw2B1ImportError> {
+    validate_protected_evidence(evidence_bytes)?;
+
+    let identity = DefinitionIdentityDocument {
+        family: "Item".to_owned(),
+        key: CW2_B1_VASE_KEY.to_owned(),
+        revision: CW2_B1_VASE_REVISION.to_owned(),
+    };
+    let record = ProjectReferenceRecord::Item {
+        identity: identity.clone(),
+        client_projection: ProjectionDocument::ClientSafe,
+        materializable: true,
+        stack_class: ItemStackDocument::NonStackable,
+        semantics: Default::default(),
+    };
+
+    let normalized_fields = vec![
+        field(
+            "binding.native-item",
+            CandidateValue::NativeItemBinding(NativeItemBindingDocument {
+                identity,
+                disposition: NativeItemBindingDisposition::LocalNonProduction,
+            }),
+        ),
+        text_field("evidence.catalog-blob", PROTECTED_CW2_B1_EVIDENCE_BLOB),
+        text_field(
+            "evidence.catalog-product-sha256",
+            PROTECTED_CW2_B1_PRODUCT_SHA256,
+        ),
+        text_field("evidence.catalog-sha256", PROTECTED_CW2_B1_EVIDENCE_SHA256),
+        text_field(
+            "evidence.field-profile-sha256",
+            PROTECTED_CW2_B1_FIELD_PROFILE_SHA256,
+        ),
+        text_field("evidence.mapper-blob", PROTECTED_CW2_B1_MAPPER_BLOB),
+        text_field("evidence.mapper-sha256", PROTECTED_CW2_B1_MAPPER_SHA256),
+        text_field("evidence.node-sha256", PROTECTED_CW2_B1_NODE_SHA256),
+        text_field("loss.b3-loot-semantics", "NOT_PROMOTED"),
+        text_field("loss.redistribution-grant", "NONE"),
+        text_field("loss.weight-native-field", "UNREPRESENTED"),
+        text_field("loss.weight-unit", "UNKNOWN"),
+        text_field("source.b3-loot-row-digest", CW2_B1_VASE_B3_ROW_SHA256),
+        text_field("source.b3-loot-row-identity", CW2_B1_VASE_B3_ROW),
+        field(
+            "source.item-id",
+            CandidateValue::SourceId(CW2_B1_SOURCE_ITEM_ID),
+        ),
+        text_field("source.items-xml-blob", CW2_B1_SOURCE_BLOB),
+        field(
+            "source.items-xml-byte-length",
+            CandidateValue::Integer(CW2_B1_SOURCE_BYTES),
+        ),
+        text_field("source.items-xml-path", CW2_B1_SOURCE_PATH),
+        text_field("source.items-xml-sha256", CW2_B1_SOURCE_SHA256),
+        text_field("source.license-locator", "LICENSE"),
+        text_field("source.license-observation", "GNU GPL v2"),
+        field("source.pickup-eligibility", CandidateValue::Integer(1)),
+        text_field("source.primary-type-disposition", "PROVENANCE_ONLY"),
+        field("source.weight-raw", CandidateValue::Integer(940)),
+    ];
+
+    let reimport_states = [
+        ("source.pickup-eligibility", CandidateValue::Integer(1)),
+        ("source.weight-raw", CandidateValue::Integer(940)),
+    ]
+    .into_iter()
+    .map(|(field_path, value)| ReimportFieldState {
+        stable_identity: CW2_B1_VASE_KEY.to_owned(),
+        field_path: field_path.to_owned(),
+        baseline: Some(value.clone()),
+        upstream: Some(value.clone()),
+        local: Some(value),
+        decision: ReimportDecision::Unchanged,
+    })
+    .collect();
+
+    Ok(ProtectedCw2B1VaseImport {
+        record,
+        batch: ImportBatch {
+            batch_id: "cw2-b1-vase-native-item".to_owned(),
+            source_repository: CW2_B1_SOURCE_REPOSITORY.to_owned(),
+            source_revision: CW2_B1_SOURCE_REVISION.to_owned(),
+            source_artifact_sha256: PROTECTED_CW2_B1_EVIDENCE_SHA256.to_owned(),
+            access_disposition: "PENDING".to_owned(),
+            source_generation_profile: CATALOG_SCHEMA.to_owned(),
+            importer: "repository-protected-cw2-b1-evidence".to_owned(),
+            mapper: MAPPER_PROFILE.to_owned(),
+            mapper_revision: PROTECTED_CW2_B1_MAPPER_BLOB.to_owned(),
+            mapper_sha256: PROTECTED_CW2_B1_MAPPER_SHA256.to_owned(),
+            candidates: vec![ImportCandidate {
+                source_candidate_id: SOURCE_CANDIDATE_ID.to_owned(),
+                source_label: "vase".to_owned(),
+                source_numeric_id: Some(CW2_B1_SOURCE_ITEM_ID),
+                candidate_family: ImportCandidateFamily::Item,
+                candidate_operation: ImportCandidateOperation::BindNativeItem,
+                candidate_target: format!("{CW2_B1_VASE_KEY}@{CW2_B1_VASE_REVISION}"),
+                candidate_formula: "NOT_APPLICABLE".to_owned(),
+                evidence_class: "OTS_HYPOTHESIS_ONLY".to_owned(),
+                closure_disposition: CandidateDisposition::LocalNonProduction,
+                disposition_reason: "OWNER_APPROVED_LOCAL_NON_PRODUCTION_BINDING".to_owned(),
+                normalized_fields,
+            }],
+            reimport_states,
+        },
+    })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtectedCw2B1NativeItemBatchImport {
+    pub records: Vec<ProjectReferenceRecord>,
+    pub batch: ImportBatch,
+}
+
+/// Produce the first bounded multi-class native Item binding batch.
+///
+/// Stable keys and minimal stack shapes are Oteryn-authored decisions. Source labels, numeric IDs,
+/// candidate field profiles, B3 occurrence evidence and all unsupported semantics remain
+/// provenance-only. They never generate or modify a native identity or gameplay value.
+pub fn protected_cw2_b1_native_item_batch_import(
+    evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1NativeItemBatchImport, ProtectedCw2B1ImportError> {
+    validate_protected_evidence(evidence_bytes)?;
+
+    let mut source_ids = BTreeSet::new();
+    let mut native_keys = BTreeSet::new();
+    let mut records = Vec::with_capacity(CW2_B1_NATIVE_ITEM_BATCH_COUNT);
+    let mut candidates = Vec::with_capacity(CW2_B1_NATIVE_ITEM_BATCH_COUNT);
+    let mut reimport_states = Vec::with_capacity(CW2_B1_NATIVE_ITEM_BATCH_COUNT);
+
+    let mut specs = NATIVE_ITEM_BATCH;
+    specs.sort_by_key(|spec| spec.native_key);
+    for spec in specs {
+        if !source_ids.insert(spec.source_item_id) || !native_keys.insert(spec.native_key) {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "native item batch uniqueness",
+            ));
+        }
+
+        let identity = DefinitionIdentityDocument {
+            family: "Item".to_owned(),
+            key: spec.native_key.to_owned(),
+            revision: CW2_B1_NATIVE_ITEM_BATCH_REVISION.to_owned(),
+        };
+        records.push(ProjectReferenceRecord::Item {
+            identity: identity.clone(),
+            client_projection: ProjectionDocument::ClientSafe,
+            materializable: true,
+            stack_class: if spec.stack_capable {
+                ItemStackDocument::StackCapable
+            } else {
+                ItemStackDocument::NonStackable
+            },
+            semantics: Default::default(),
+        });
+
+        let source_candidate_id = format!("crystal:item:{}", spec.source_item_id);
+        let normalized_fields = vec![
+            field(
+                "binding.native-item",
+                CandidateValue::NativeItemBinding(NativeItemBindingDocument {
+                    identity,
+                    disposition: NativeItemBindingDisposition::LocalNonProduction,
+                }),
+            ),
+            text_field("evidence.catalog-blob", PROTECTED_CW2_B1_EVIDENCE_BLOB),
+            text_field(
+                "evidence.catalog-product-sha256",
+                PROTECTED_CW2_B1_PRODUCT_SHA256,
+            ),
+            text_field("evidence.catalog-sha256", PROTECTED_CW2_B1_EVIDENCE_SHA256),
+            text_field("evidence.field-profile-sha256", spec.field_profile_sha256),
+            text_field("evidence.mapper-blob", PROTECTED_CW2_B1_MAPPER_BLOB),
+            text_field("evidence.mapper-sha256", PROTECTED_CW2_B1_MAPPER_SHA256),
+            text_field("evidence.node-sha256", spec.node_sha256),
+            text_field("loss.b3-loot-semantics", "NOT_PROMOTED"),
+            text_field(
+                "loss.reference-item-definition",
+                reference_item_definition_gap(spec.item_class),
+            ),
+            text_field("loss.redistribution-grant", "NONE"),
+            text_field("loss.source-values-as-gameplay-truth", "REJECTED"),
+            field(
+                "source.item-id",
+                CandidateValue::SourceId(spec.source_item_id),
+            ),
+            text_field("source.item-identity", &source_candidate_id),
+            text_field("source.item-label", spec.source_label),
+            text_field("source.item-label-disposition", "PROVENANCE_ONLY"),
+            text_field("source.items-xml-blob", CW2_B1_SOURCE_BLOB),
+            field(
+                "source.items-xml-byte-length",
+                CandidateValue::Integer(CW2_B1_SOURCE_BYTES),
+            ),
+            text_field("source.items-xml-path", CW2_B1_SOURCE_PATH),
+            text_field("source.items-xml-sha256", CW2_B1_SOURCE_SHA256),
+            text_field("source.license-locator", "LICENSE"),
+            text_field("source.license-observation", "GNU GPL v2"),
+            text_field(
+                "source.native-key-authorship",
+                "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED",
+            ),
+            text_field("source.representative-class", spec.item_class),
+        ];
+        candidates.push(ImportCandidate {
+            source_candidate_id,
+            source_label: spec.source_label.to_owned(),
+            source_numeric_id: Some(spec.source_item_id),
+            candidate_family: ImportCandidateFamily::Item,
+            candidate_operation: ImportCandidateOperation::BindNativeItem,
+            candidate_target: format!("{}@{}", spec.native_key, CW2_B1_NATIVE_ITEM_BATCH_REVISION),
+            candidate_formula: "NOT_APPLICABLE".to_owned(),
+            evidence_class: "OTS_HYPOTHESIS_ONLY".to_owned(),
+            closure_disposition: CandidateDisposition::LocalNonProduction,
+            disposition_reason: "OWNER_APPROVED_CW2_NATIVE_ITEM_BATCH".to_owned(),
+            normalized_fields,
+        });
+        let source_id_value = CandidateValue::SourceId(spec.source_item_id);
+        reimport_states.push(ReimportFieldState {
+            stable_identity: spec.native_key.to_owned(),
+            field_path: "source.item-id".to_owned(),
+            baseline: Some(source_id_value.clone()),
+            upstream: Some(source_id_value.clone()),
+            local: Some(source_id_value),
+            decision: ReimportDecision::Unchanged,
+        });
+    }
+
+    candidates.sort_by(|left, right| left.source_candidate_id.cmp(&right.source_candidate_id));
+    for candidate in &mut candidates {
+        candidate
+            .normalized_fields
+            .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+    }
+    reimport_states.sort_by(|left, right| {
+        left.stable_identity
+            .cmp(&right.stable_identity)
+            .then_with(|| left.field_path.cmp(&right.field_path))
+    });
+
+    Ok(ProtectedCw2B1NativeItemBatchImport {
+        records,
+        batch: ImportBatch {
+            batch_id: "cw2-b1-native-item-batch-64".to_owned(),
+            source_repository: CW2_B1_SOURCE_REPOSITORY.to_owned(),
+            source_revision: CW2_B1_SOURCE_REVISION.to_owned(),
+            source_artifact_sha256: PROTECTED_CW2_B1_EVIDENCE_SHA256.to_owned(),
+            access_disposition: "PENDING".to_owned(),
+            source_generation_profile: CATALOG_SCHEMA.to_owned(),
+            importer: "repository-protected-cw2-b1-evidence".to_owned(),
+            mapper: MAPPER_PROFILE.to_owned(),
+            mapper_revision: PROTECTED_CW2_B1_MAPPER_BLOB.to_owned(),
+            mapper_sha256: PROTECTED_CW2_B1_MAPPER_SHA256.to_owned(),
+            candidates,
+            reimport_states,
+        },
+    })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtectedCw2B1FullItemFamilyImport {
+    pub records: Vec<ProjectReferenceRecord>,
+    pub batch: ImportBatch,
+    pub allocation_digest_sha256: String,
+}
+
+#[derive(Debug, Clone)]
+struct FullItemAllocation {
+    source_item_id: u64,
+    source_node_digest: String,
+    field_profile_id: String,
+    native_key: String,
+    source_label: String,
+    materializable: bool,
+    stack_class: ItemStackDocument,
+    authorship: &'static str,
+}
+
+fn opaque_item_key(sequence: usize) -> String {
+    format!("{CW2_B1_OPAQUE_ITEM_NAMESPACE}.i{sequence:08}")
+}
+
+/// Admit the complete protected B1 Item identity family into one Oteryn-owned registry epoch.
+///
+/// The exact protected B1 catalogue remains the immutable source denominator. Existing protected
+/// semantic keys from the 64-item predecessor are preserved byte-for-byte. Every other source
+/// identity receives an opaque Oteryn registry key whose allocation is frozen by this exact source
+/// generation. OTS fields remain provenance only; identity-only records carry no materialization,
+/// physical or stack semantics.
+pub fn protected_cw2_b1_full_item_family_import(
+    evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1FullItemFamilyImport, ProtectedCw2B1ImportError> {
+    validate_protected_evidence(evidence_bytes)?;
+
+    let evidence: serde_json::Value = serde_json::from_slice(evidence_bytes)
+        .map_err(|_| ProtectedCw2B1ImportError::EvidenceMismatch("evidence JSON decoding"))?;
+    let rows = evidence
+        .pointer("/semantic_catalog/identity_records")
+        .and_then(serde_json::Value::as_array)
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "identity record array",
+        ))?;
+    if rows.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "full item family count",
+        ));
+    }
+
+    let semantic_specs = NATIVE_ITEM_BATCH
+        .iter()
+        .copied()
+        .map(|spec| (spec.source_item_id, spec))
+        .collect::<BTreeMap<_, _>>();
+    if semantic_specs.len() != CW2_B1_NATIVE_ITEM_BATCH_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "protected semantic binding count",
+        ));
+    }
+
+    let mut allocations = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    let mut source_ids = BTreeSet::new();
+    let mut native_keys = BTreeSet::new();
+    let mut previous_source_id = None;
+    let mut opaque_sequence = 0_usize;
+    let mut preserved_semantic_bindings = 0_usize;
+    let mut allocation_digest_input = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT * 48);
+
+    for row in rows {
+        let source_item_id = row
+            .get("source_item_id")
+            .and_then(serde_json::Value::as_u64)
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "source item identity",
+            ))?;
+        if previous_source_id.is_some_and(|previous| previous >= source_item_id)
+            || !source_ids.insert(source_item_id)
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "source item identity ordering",
+            ));
+        }
+        previous_source_id = Some(source_item_id);
+
+        let source_node_digest = row
+            .get("source_node_digest")
+            .and_then(serde_json::Value::as_str)
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "source node digest",
+            ))?
+            .to_owned();
+        let field_profile_id = row
+            .get("field_profile_id")
+            .and_then(serde_json::Value::as_str)
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "field profile id",
+            ))?
+            .to_owned();
+
+        let (native_key, source_label, materializable, stack_class, authorship) =
+            if let Some(spec) = semantic_specs.get(&source_item_id) {
+                if source_node_digest != spec.node_sha256
+                    || field_profile_id != spec.field_profile_sha256
+                {
+                    return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                        "protected semantic binding provenance",
+                    ));
+                }
+                preserved_semantic_bindings += 1;
+                (
+                    spec.native_key.to_owned(),
+                    spec.source_label.to_owned(),
+                    true,
+                    if spec.stack_capable {
+                        ItemStackDocument::StackCapable
+                    } else {
+                        ItemStackDocument::NonStackable
+                    },
+                    "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED",
+                )
+            } else {
+                opaque_sequence += 1;
+                (
+                    opaque_item_key(opaque_sequence),
+                    format!("crystal:item:{source_item_id}"),
+                    false,
+                    ItemStackDocument::Unknown,
+                    "OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_1",
+                )
+            };
+
+        if !native_keys.insert(native_key.clone()) {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "full item native key uniqueness",
+            ));
+        }
+        allocation_digest_input.extend_from_slice(source_item_id.to_string().as_bytes());
+        allocation_digest_input.push(0);
+        allocation_digest_input.extend_from_slice(native_key.as_bytes());
+        allocation_digest_input.push(b'\n');
+
+        allocations.push(FullItemAllocation {
+            source_item_id,
+            source_node_digest,
+            field_profile_id,
+            native_key,
+            source_label,
+            materializable,
+            stack_class,
+            authorship,
+        });
+    }
+
+    if opaque_sequence != CW2_B1_OPAQUE_ITEM_COUNT
+        || preserved_semantic_bindings != CW2_B1_NATIVE_ITEM_BATCH_COUNT
+        || source_ids.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT
+        || native_keys.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "full item registry closure",
+        ));
+    }
+
+    let allocation_digest_sha256 = world_project_sha256(&allocation_digest_input);
+    allocations.sort_by(|left, right| left.native_key.cmp(&right.native_key));
+
+    let mut records = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    let mut candidates = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    let mut reimport_states = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    for allocation in allocations {
+        let identity = DefinitionIdentityDocument {
+            family: "Item".to_owned(),
+            key: allocation.native_key.clone(),
+            revision: CW2_B1_FULL_ITEM_REVISION.to_owned(),
+        };
+        records.push(ProjectReferenceRecord::Item {
+            identity: identity.clone(),
+            client_projection: ProjectionDocument::ClientSafe,
+            materializable: allocation.materializable,
+            stack_class: allocation.stack_class,
+            semantics: Default::default(),
+        });
+
+        let source_candidate_id = format!("crystal:item:{}", allocation.source_item_id);
+        let source_id_value = CandidateValue::SourceId(allocation.source_item_id);
+        candidates.push(ImportCandidate {
+            source_candidate_id,
+            source_label: allocation.source_label,
+            source_numeric_id: Some(allocation.source_item_id),
+            candidate_family: ImportCandidateFamily::Item,
+            candidate_operation: ImportCandidateOperation::BindNativeItem,
+            candidate_target: format!("{}@{}", identity.key, identity.revision),
+            candidate_formula: "NOT_APPLICABLE".to_owned(),
+            evidence_class: "OTS_HYPOTHESIS_ONLY".to_owned(),
+            closure_disposition: CandidateDisposition::LocalNonProduction,
+            disposition_reason: if allocation.materializable {
+                "PROTECTED_EXISTING_SEMANTIC_BINDING".to_owned()
+            } else {
+                "FAMILY_SCALE_IDENTITY_ONLY_GAMEPLAY_SEMANTICS_UNRESOLVED".to_owned()
+            },
+            normalized_fields: vec![
+                field(
+                    "binding.native-item",
+                    CandidateValue::NativeItemBinding(NativeItemBindingDocument {
+                        identity: identity.clone(),
+                        disposition: NativeItemBindingDisposition::LocalNonProduction,
+                    }),
+                ),
+                text_field(
+                    "evidence.field-profile-sha256",
+                    &allocation.field_profile_id,
+                ),
+                text_field("evidence.node-sha256", &allocation.source_node_digest),
+                text_field("source.native-key-authorship", allocation.authorship),
+                text_field("loss.source-values-as-gameplay-truth", "REJECTED"),
+            ],
+        });
+        reimport_states.push(ReimportFieldState {
+            stable_identity: identity.key.clone(),
+            field_path: "source.item-id".to_owned(),
+            baseline: Some(source_id_value.clone()),
+            upstream: Some(source_id_value.clone()),
+            local: Some(source_id_value),
+            decision: ReimportDecision::Unchanged,
+        });
+    }
+
+    candidates.sort_by(|left, right| left.source_candidate_id.cmp(&right.source_candidate_id));
+    for candidate in &mut candidates {
+        candidate
+            .normalized_fields
+            .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+    }
+    reimport_states.sort_by(|left, right| {
+        left.stable_identity
+            .cmp(&right.stable_identity)
+            .then_with(|| left.field_path.cmp(&right.field_path))
+    });
+
+    Ok(ProtectedCw2B1FullItemFamilyImport {
+        records,
+        allocation_digest_sha256,
+        batch: ImportBatch {
+            batch_id: "cw2-b1-full-item-family-registry-r1".to_owned(),
+            source_repository: CW2_B1_SOURCE_REPOSITORY.to_owned(),
+            source_revision: CW2_B1_SOURCE_REVISION.to_owned(),
+            source_artifact_sha256: PROTECTED_CW2_B1_EVIDENCE_SHA256.to_owned(),
+            access_disposition: "PENDING".to_owned(),
+            source_generation_profile: CATALOG_SCHEMA.to_owned(),
+            importer: CW2_B1_FULL_ITEM_REGISTRY_PROFILE.to_owned(),
+            mapper: MAPPER_PROFILE.to_owned(),
+            mapper_revision: PROTECTED_CW2_B1_MAPPER_BLOB.to_owned(),
+            mapper_sha256: PROTECTED_CW2_B1_MAPPER_SHA256.to_owned(),
+            candidates,
+            reimport_states,
+        },
+    })
+}
+
+// ---------------------------------------------------------------------------------------------
+// Donor identity epoch 2 (decision `A8-DONOR-ITEM-IDENTITY-EPOCH-V1`, owner decisions D96/D97).
+//
+// Everything below is additive. The frozen epoch-1 function above, its constants, its evidence
+// pin and its allocation digest are not read for any purpose other than the epoch-2 closure
+// checks. Epoch 2 is a separate function with its own constants.
+// ---------------------------------------------------------------------------------------------
+
+pub const CW2_B1_DONOR_EPOCH2_SOURCE_REVISION: &str = "00ce02a57ca5a12e48f32a3476e37471167e4c3f";
+pub const CW2_B1_DONOR_EPOCH2_ITEMS_XML_SHA256: &str =
+    "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece";
+pub const CW2_B1_DONOR_EPOCH2_CENSUS_BYTES: usize = 66_770;
+pub const CW2_B1_DONOR_EPOCH2_CENSUS_SHA256: &str =
+    "60808a671734c9ef9e6488438bbf61326c3d5b9c9b8ac71e6db246e6361c14ab";
+pub const CW2_B1_DONOR_EPOCH2_CENSUS_ID_COUNT: usize = 412;
+pub const CW2_B1_DONOR_EPOCH2_CROSSWALK_BYTES: usize = 361_185;
+pub const CW2_B1_DONOR_EPOCH2_CROSSWALK_SHA256: &str =
+    "82530255b2f03e14012fd06caac00cd89cf5c4438fce3dfd3291e377201c2831";
+pub const CW2_B1_DONOR_EPOCH2_MINTED_COUNT: usize = 404;
+/// Epoch 2 continues after the highest sequence of every earlier epoch (38,093).
+pub const CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE: usize = CW2_B1_OPAQUE_ITEM_COUNT + 1;
+pub const CW2_B1_DONOR_EPOCH2_LAST_SEQUENCE: usize =
+    CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE + CW2_B1_DONOR_EPOCH2_MINTED_COUNT - 1;
+pub const CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256: &str =
+    "c9bd33992d40c0ac36405b3a0b429485905add8f54460cccec9e1e7790569d3c";
+pub const CW2_B1_DONOR_EPOCH2_REVISION: &str = "definition-r1";
+
+const DONOR_EPOCH2_AUTHORSHIP: &str = "OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_2";
+const DONOR_EPOCH2_BATCH_ID: &str = "cw2-b1-donor-identity-epoch-2-r1";
+const DONOR_EPOCH2_IMPORTER: &str = "OTERYN_CONTENT_ITEM_DONOR_IDENTITY_EPOCH/v2";
+const DONOR_EPOCH2_CENSUS_SCHEMA: &str = "OTERYN_ITEM_DONOR_CENSUS/v1";
+const DONOR_EPOCH2_CROSSWALK_SCHEMA: &str = "OTERYN_ITEM_DONOR_ALIAS_CROSSWALK/v1";
+const DONOR_EPOCH2_GATE_RULE: &str = "A8-ALIAS-GATE-V1";
+const DONOR_EPOCH2_ITEMS_XML_PATH: &str = "data/items/items.xml";
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtectedCw2B1DonorIdentityEpoch2Import {
+    /// One non-materializable Item pointer per `NO_MATCH` donor id.
+    pub records: Vec<ProjectReferenceRecord>,
+    pub batch: ImportBatch,
+    pub allocation_digest_sha256: String,
+    /// `(donor source id, existing epoch-1 key)` for `EXACT` / `ACCEPTED_ALIAS` ids. These mint
+    /// nothing; the binding targets the existing key.
+    pub alias_bindings: Vec<(u64, String)>,
+    /// Donor ids in `PROBABLE_MATCH`, `AMBIGUOUS` or `CONFLICT`: no key and no binding.
+    pub unbound_source_item_ids: Vec<u64>,
+}
+
+fn epoch2_mismatch<T>(field: &'static str) -> Result<T, ProtectedCw2B1ImportError> {
+    Err(ProtectedCw2B1ImportError::EvidenceMismatch(field))
+}
+
+fn epoch2_str<'a>(
+    value: &'a serde_json::Value,
+    pointer: &str,
+    field: &'static str,
+) -> Result<&'a str, ProtectedCw2B1ImportError> {
+    value
+        .pointer(pointer)
+        .and_then(serde_json::Value::as_str)
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(field))
+}
+
+fn epoch2_json(
+    bytes: &[u8],
+    expected_bytes: usize,
+    expected_sha256: &str,
+    field: &'static str,
+) -> Result<serde_json::Value, ProtectedCw2B1ImportError> {
+    if bytes.len() != expected_bytes || world_project_sha256(bytes) != expected_sha256 {
+        return epoch2_mismatch(field);
+    }
+    serde_json::from_slice(bytes).map_err(|_| ProtectedCw2B1ImportError::EvidenceMismatch(field))
+}
+
+/// Admit donor identity epoch 2: the donor-only Item ids of the Crystal `summer-update` census
+/// that pass the alias gate as `NO_MATCH`.
+///
+/// Inputs are the protected B1 catalogue (the epoch-1 denominator), the donor census bytes and
+/// the alias-gate crosswalk bytes; the last two are pinned by digest. Every census id has exactly
+/// one crosswalk row. Only `NO_MATCH` rows mint. They are numbered in ascending donor source id
+/// from `CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE`, so the key of an id is its rank among the minted
+/// ids after the highest epoch-1 sequence; the source id only orders the allocation. `EXACT` and
+/// `ACCEPTED_ALIAS` rows bind to an existing key and mint nothing; `PROBABLE_MATCH`, `AMBIGUOUS`
+/// and `CONFLICT` rows mint and bind nothing.
+pub fn protected_cw2_b1_donor_identity_epoch_2_import(
+    b1_evidence_bytes: &[u8],
+    census_bytes: &[u8],
+    crosswalk_bytes: &[u8],
+) -> Result<ProtectedCw2B1DonorIdentityEpoch2Import, ProtectedCw2B1ImportError> {
+    admit_donor_identity_epoch_2(
+        b1_evidence_bytes,
+        census_bytes,
+        crosswalk_bytes,
+        &DONOR_EPOCH2_FROZEN_PINS,
+    )
+}
+
+/// The digest-bound inputs of one epoch-2 admission. The public function always passes the
+/// frozen constants; the seam exists so the state handling can be exercised on other inputs.
+struct DonorEpoch2Pins {
+    census_bytes: usize,
+    census_sha256: &'static str,
+    census_id_count: usize,
+    crosswalk_bytes: usize,
+    crosswalk_sha256: &'static str,
+    minted_count: usize,
+    allocation_digest_sha256: &'static str,
+}
+
+const DONOR_EPOCH2_FROZEN_PINS: DonorEpoch2Pins = DonorEpoch2Pins {
+    census_bytes: CW2_B1_DONOR_EPOCH2_CENSUS_BYTES,
+    census_sha256: CW2_B1_DONOR_EPOCH2_CENSUS_SHA256,
+    census_id_count: CW2_B1_DONOR_EPOCH2_CENSUS_ID_COUNT,
+    crosswalk_bytes: CW2_B1_DONOR_EPOCH2_CROSSWALK_BYTES,
+    crosswalk_sha256: CW2_B1_DONOR_EPOCH2_CROSSWALK_SHA256,
+    minted_count: CW2_B1_DONOR_EPOCH2_MINTED_COUNT,
+    allocation_digest_sha256: CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256,
+};
+
+fn admit_donor_identity_epoch_2(
+    b1_evidence_bytes: &[u8],
+    census_bytes: &[u8],
+    crosswalk_bytes: &[u8],
+    pins: &DonorEpoch2Pins,
+) -> Result<ProtectedCw2B1DonorIdentityEpoch2Import, ProtectedCw2B1ImportError> {
+    let census = epoch2_json(
+        census_bytes,
+        pins.census_bytes,
+        pins.census_sha256,
+        "donor census bytes",
+    )?;
+    let crosswalk = epoch2_json(
+        crosswalk_bytes,
+        pins.crosswalk_bytes,
+        pins.crosswalk_sha256,
+        "donor alias crosswalk bytes",
+    )?;
+
+    // The frozen denominator: its source ids and every key any earlier epoch has bound.
+    let epoch1 = protected_cw2_b1_full_item_family_import(b1_evidence_bytes)?;
+    let mut epoch1_source_ids = BTreeSet::new();
+    for candidate in &epoch1.batch.candidates {
+        let Some(source_item_id) = candidate.source_numeric_id else {
+            return epoch2_mismatch("epoch 1 source item identity");
+        };
+        epoch1_source_ids.insert(source_item_id);
+    }
+    let mut earlier_keys = BTreeSet::new();
+    for record in &epoch1.records {
+        if let ProjectReferenceRecord::Item { identity, .. } = record {
+            earlier_keys.insert(identity.key.clone());
+        }
+    }
+    // R7-P04 re-keyed the gold coin; its retired number stays retired and its new key is bound.
+    let mut bound_keys = earlier_keys.clone();
+    bound_keys.remove(R7_P04_GOLD_COIN_OLD_KEY);
+    bound_keys.insert(R7_P04_GOLD_COIN_KEY.to_owned());
+    if earlier_keys.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT
+        || !earlier_keys.contains(&opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT))
+        || earlier_keys.contains(&opaque_item_key(CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE))
+    {
+        return epoch2_mismatch("epoch 1 highest sequence");
+    }
+
+    // Frozen census input.
+    if epoch2_str(&census, "/schema", "donor census schema")? != DONOR_EPOCH2_CENSUS_SCHEMA
+        || epoch2_str(&census, "/donor/commit", "donor commit")?
+            != CW2_B1_DONOR_EPOCH2_SOURCE_REVISION
+        || census
+            .pointer("/donor/artifact_digests")
+            .and_then(|digests| digests.get(DONOR_EPOCH2_ITEMS_XML_PATH))
+            .and_then(|artifact| artifact.get("sha256"))
+            .and_then(serde_json::Value::as_str)
+            != Some(CW2_B1_DONOR_EPOCH2_ITEMS_XML_SHA256)
+        || epoch2_str(&census, "/base/revision", "donor census base revision")?
+            != CW2_B1_SOURCE_REVISION
+    {
+        return epoch2_mismatch("donor census pins");
+    }
+    let census_items = census
+        .pointer("/items")
+        .and_then(serde_json::Value::as_object)
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "donor census items",
+        ))?;
+    let mut census_ids = Vec::with_capacity(census_items.len());
+    for key in census_items.keys() {
+        let Ok(source_item_id) = key.parse::<u64>() else {
+            return epoch2_mismatch("donor census source item identity");
+        };
+        if key != &source_item_id.to_string() {
+            return epoch2_mismatch("donor census source item identity");
+        }
+        census_ids.push(source_item_id);
+    }
+    census_ids.sort_unstable();
+    if census_ids.len() != pins.census_id_count
+        || census
+            .pointer("/totals/new_ids")
+            .and_then(serde_json::Value::as_u64)
+            != Some(pins.census_id_count as u64)
+    {
+        return epoch2_mismatch("donor census id count");
+    }
+    if census_ids
+        .iter()
+        .any(|source_item_id| epoch1_source_ids.contains(source_item_id))
+    {
+        return epoch2_mismatch("donor source id shared with epoch 1");
+    }
+
+    // Alias-gate evidence: exactly the census ids, each once, in ascending order.
+    if epoch2_str(&crosswalk, "/schema", "alias crosswalk schema")? != DONOR_EPOCH2_CROSSWALK_SCHEMA
+        || epoch2_str(&crosswalk, "/gate/rule", "alias gate rule")? != DONOR_EPOCH2_GATE_RULE
+        || epoch2_str(
+            &crosswalk,
+            "/census/sha256",
+            "alias crosswalk census binding",
+        )? != pins.census_sha256
+        || epoch2_str(&crosswalk, "/donor/commit", "alias crosswalk donor commit")?
+            != CW2_B1_DONOR_EPOCH2_SOURCE_REVISION
+        || epoch2_str(
+            &crosswalk,
+            "/epoch_2/allocation_digest_sha256",
+            "alias crosswalk allocation digest",
+        )? != pins.allocation_digest_sha256
+    {
+        return epoch2_mismatch("alias crosswalk pins");
+    }
+    let rows = crosswalk
+        .pointer("/rows")
+        .and_then(serde_json::Value::as_array)
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "alias crosswalk rows",
+        ))?;
+    if rows.len() != census_ids.len() {
+        return epoch2_mismatch("alias crosswalk row count");
+    }
+
+    let mut minting = Vec::new();
+    let mut alias_bindings = Vec::new();
+    let mut unbound_source_item_ids = Vec::new();
+    for (row, census_id) in rows.iter().zip(&census_ids) {
+        if row
+            .get("source_item_id")
+            .and_then(serde_json::Value::as_u64)
+            != Some(*census_id)
+        {
+            return epoch2_mismatch("alias crosswalk row identity");
+        }
+        match epoch2_str(row, "/state", "alias crosswalk state")? {
+            "NO_MATCH" => minting.push(*census_id),
+            "EXACT" | "ACCEPTED_ALIAS" => {
+                let target = epoch2_str(row, "/alias_target_key", "alias target key")?;
+                if !bound_keys.contains(target) {
+                    return epoch2_mismatch("alias target is not a bound epoch 1 key");
+                }
+                alias_bindings.push((*census_id, target.to_owned()));
+            }
+            "PROBABLE_MATCH" | "AMBIGUOUS" | "CONFLICT" => {
+                if row.get("alias_target_key").is_some() {
+                    return epoch2_mismatch("unbound state carries a target");
+                }
+                unbound_source_item_ids.push(*census_id);
+            }
+            _ => return epoch2_mismatch("alias crosswalk state"),
+        }
+    }
+
+    // Allocation: ascending donor source id, numbered after the highest earlier sequence.
+    let mut allocations = Vec::with_capacity(minting.len());
+    let mut epoch2_keys = BTreeSet::new();
+    let mut allocation_digest_input = Vec::with_capacity(minting.len() * 48);
+    for (rank, source_item_id) in minting.iter().enumerate() {
+        let key = opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT + rank + 1);
+        if earlier_keys.contains(&key)
+            || bound_keys.contains(&key)
+            || !epoch2_keys.insert(key.clone())
+        {
+            return epoch2_mismatch("donor epoch 2 key collision");
+        }
+        allocation_digest_input.extend_from_slice(source_item_id.to_string().as_bytes());
+        allocation_digest_input.push(0);
+        allocation_digest_input.extend_from_slice(key.as_bytes());
+        allocation_digest_input.push(b'\n');
+        allocations.push((*source_item_id, key));
+    }
+    if allocations.len() != pins.minted_count
+        || opaque_item_key(CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE + pins.minted_count - 1)
+            != allocations
+                .last()
+                .map(|(_, key)| key.clone())
+                .unwrap_or_default()
+    {
+        return epoch2_mismatch("donor epoch 2 closure");
+    }
+    let allocation_digest_sha256 = world_project_sha256(&allocation_digest_input);
+    if allocation_digest_sha256 != pins.allocation_digest_sha256 {
+        return epoch2_mismatch("donor epoch 2 allocation digest");
+    }
+
+    let mut records = Vec::with_capacity(allocations.len());
+    let mut candidates = Vec::with_capacity(allocations.len());
+    let mut reimport_states = Vec::with_capacity(allocations.len());
+    for (source_item_id, key) in &allocations {
+        let identity = DefinitionIdentityDocument {
+            family: "Item".to_owned(),
+            key: key.clone(),
+            revision: CW2_B1_DONOR_EPOCH2_REVISION.to_owned(),
+        };
+        records.push(ProjectReferenceRecord::Item {
+            identity: identity.clone(),
+            client_projection: ProjectionDocument::ClientSafe,
+            materializable: false,
+            stack_class: ItemStackDocument::Unknown,
+            semantics: Default::default(),
+        });
+        let source_id_value = CandidateValue::SourceId(*source_item_id);
+        candidates.push(ImportCandidate {
+            source_candidate_id: format!("crystal:item:{source_item_id}"),
+            source_label: format!("crystal:item:{source_item_id}"),
+            source_numeric_id: Some(*source_item_id),
+            candidate_family: ImportCandidateFamily::Item,
+            candidate_operation: ImportCandidateOperation::BindNativeItem,
+            candidate_target: format!("{}@{}", identity.key, identity.revision),
+            candidate_formula: "NOT_APPLICABLE".to_owned(),
+            evidence_class: "OTS_HYPOTHESIS_ONLY".to_owned(),
+            closure_disposition: CandidateDisposition::LocalNonProduction,
+            disposition_reason:
+                "DONOR_IDENTITY_EPOCH_2_IDENTITY_ONLY_GAMEPLAY_SEMANTICS_UNRESOLVED".to_owned(),
+            normalized_fields: vec![
+                field(
+                    "binding.native-item",
+                    CandidateValue::NativeItemBinding(NativeItemBindingDocument {
+                        identity: identity.clone(),
+                        disposition: NativeItemBindingDisposition::LocalNonProduction,
+                    }),
+                ),
+                text_field("evidence.alias-crosswalk-sha256", pins.crosswalk_sha256),
+                text_field("evidence.alias-crosswalk-state", "NO_MATCH"),
+                text_field("evidence.donor-census-sha256", pins.census_sha256),
+                text_field("source.native-key-authorship", DONOR_EPOCH2_AUTHORSHIP),
+                text_field("loss.source-values-as-gameplay-truth", "REJECTED"),
+            ],
+        });
+        reimport_states.push(ReimportFieldState {
+            stable_identity: identity.key.clone(),
+            field_path: "source.item-id".to_owned(),
+            baseline: Some(source_id_value.clone()),
+            upstream: Some(source_id_value.clone()),
+            local: Some(source_id_value),
+            decision: ReimportDecision::Unchanged,
+        });
+    }
+    // Ascending source id is also ascending key; keep the canonical orderings explicit.
+    candidates.sort_by(|left, right| left.source_candidate_id.cmp(&right.source_candidate_id));
+    for candidate in &mut candidates {
+        candidate
+            .normalized_fields
+            .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+    }
+    reimport_states.sort_by(|left, right| {
+        left.stable_identity
+            .cmp(&right.stable_identity)
+            .then_with(|| left.field_path.cmp(&right.field_path))
+    });
+    records.sort_by(|left, right| item_record_key(left).cmp(item_record_key(right)));
+
+    Ok(ProtectedCw2B1DonorIdentityEpoch2Import {
+        records,
+        allocation_digest_sha256,
+        alias_bindings,
+        unbound_source_item_ids,
+        batch: ImportBatch {
+            batch_id: DONOR_EPOCH2_BATCH_ID.to_owned(),
+            source_repository: CW2_B1_SOURCE_REPOSITORY.to_owned(),
+            source_revision: CW2_B1_DONOR_EPOCH2_SOURCE_REVISION.to_owned(),
+            source_artifact_sha256: CW2_B1_DONOR_EPOCH2_ITEMS_XML_SHA256.to_owned(),
+            access_disposition: "PENDING".to_owned(),
+            source_generation_profile: DONOR_EPOCH2_CENSUS_SCHEMA.to_owned(),
+            importer: DONOR_EPOCH2_IMPORTER.to_owned(),
+            mapper: DONOR_EPOCH2_GATE_RULE.to_owned(),
+            mapper_revision: CW2_B1_DONOR_EPOCH2_SOURCE_REVISION.to_owned(),
+            mapper_sha256: pins.crosswalk_sha256.to_owned(),
+            candidates,
+            reimport_states,
+        },
+    })
+}
+
+fn item_record_key(record: &ProjectReferenceRecord) -> &str {
+    match record {
+        ProjectReferenceRecord::Item { identity, .. } => identity.key.as_str(),
+        _ => "",
+    }
+}
+
+pub const R7_P04_GOLD_COIN_EVIDENCE_PACKET: &[u8] =
+    include_bytes!("../../../../docs/agents/evidence/OTV2-20260927-r7-p04-gold-coin.json");
+pub const R7_P04_GOLD_COIN_EVIDENCE_BYTES: usize = 4_982;
+pub const R7_P04_GOLD_COIN_EVIDENCE_SHA256: &str =
+    "53223cb967b6428c134729252930e4f351e0c25afb09bb36b7e4025c0631768e";
+pub const R7_P04_GOLD_COIN_SOURCE_ITEM_ID: u64 = 3_031;
+pub const R7_P04_GOLD_COIN_OPAQUE_SEQUENCE: usize = 2_921;
+pub const R7_P04_GOLD_COIN_OLD_KEY: &str = "oteryn:item.registry.i00002921";
+pub const R7_P04_GOLD_COIN_KEY: &str = "oteryn:item.currency.gold_coin";
+pub const R7_P04_UNRELATED_REGISTRY_KEY: &str = "oteryn:item.registry.i00003031";
+pub const R7_P04_UNRELATED_SOURCE_ITEM_ID: u64 = 3_147;
+
+/// Pinned #1018 v1 lowering *candidate* (`tools/content-schema/item-authoring/
+/// lower_promotion_packet.py`, `samples/promotion-crystal-ff7ede5.json`), copied
+/// byte-for-byte into this Content/World-owned evidence file so this importer never
+/// depends on the live, independently-evolving authoring tool tree. Distinct schema/
+/// profile/status/next_action literals from `ITEM_SEMANTIC_PROMOTION_*` above keep the
+/// two packets from ever being mistaken for one another.
+///
+/// Re-pinned three times (tasks OTV2-20260928-cw2-item-promotion-repin and
+/// OTV2-20260928-item-promotion-repin-v2) as
+/// `samples/promotion-crystal-ff7ede5.json` grew: first from 13,292/10,674 to
+/// 14,174/11,556 fields/items, then to 14,643/12,021, then again to
+/// 14,927/12,301 as of this pin, via the wiki-family-fallback and
+/// item-classification work landed in #1040/#1052/#1063/#1068 and subsequent
+/// content rounds (see `expected_item_semantic_promotion_lowering_v1_counts`
+/// for the exact per-field-path deltas each re-pin carried).
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET: &[u8] = include_bytes!(
+    "../../../../docs/agents/evidence/OTV2-20260928-item-promotion-lowering-v1.json"
+);
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_BYTES: usize = 3_947_571;
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_SHA256: &str =
+    "69d5c1ff24b979658fc24a310d6715c131cfca6abe759ff1fa29479da0ecffe2";
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT: usize = 14_927;
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT: usize = 12_301;
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SCHEMA: &str =
+    "OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING/v1";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PROFILE: &str =
+    "OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING_COMPILER/v1";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_STATUS: &str =
+    "CANDIDATE_ITEM_SEMANTIC_PROMOTION_LOWERING_PACKET";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_NEXT_ACTION: &str =
+    "REVIEW_AND_WIRE_INTO_CW2_B1_IMPORT_RUST_DECODER_IF_ACCEPTED";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_TARGET_DATE: &str = "2026-09-27";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_PATH: &str =
+    "tools/content-schema/item-authoring/lower_promotion_packet.py";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_SHA256: &str =
+    "72ffeaaf7841e8527c3a5661fdb0dd1e96837cd9c88b49bf2e129b095668c9fc";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SOURCE_PROFILE: &str =
+    "crystal_ff7ede5_item_definition_v1";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_BUNDLE_DIGEST: &str =
+    "2f0ae3016b09b05edae8d2336a3622c366fed189190bb7902c66e6f1283f541d";
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionCompiler {
+    path: String,
+    sha256: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionCounts {
+    per_field: BTreeMap<String, usize>,
+    promoted_fields: usize,
+    promoted_items: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionRow {
+    field_path: String,
+    native_key: String,
+    source_item_id: u64,
+    source_value: serde_json::Value,
+    typed_value: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtectedCw2B1PromotedItemFamilyImport {
+    pub family: ProtectedCw2B1FullItemFamilyImport,
+    pub promoted_fields: usize,
+    pub promoted_items: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum ItemSemanticPromotionValue {
+    Text(String),
+    SignedPoints(ReferenceSignedPoints),
+    Cells(ReferenceCells),
+    RationalPercent(ReferenceRationalPercent),
+    Count(u32),
+    Capacity(u16),
+}
+
+fn exact_json_object<'a>(
+    value: &'a serde_json::Value,
+    fields: &[&str],
+) -> Result<&'a serde_json::Map<String, serde_json::Value>, ProtectedCw2B1ImportError> {
+    let object = value
+        .as_object()
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion typed value object",
+        ))?;
+    if object.len() != fields.len() || fields.iter().any(|field| !object.contains_key(*field)) {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion typed value shape",
+        ));
+    }
+    Ok(object)
+}
+
+fn json_i64(
+    object: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+) -> Result<i64, ProtectedCw2B1ImportError> {
+    object.get(key).and_then(serde_json::Value::as_i64).ok_or(
+        ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion signed integer"),
+    )
+}
+
+fn json_u64(
+    object: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+) -> Result<u64, ProtectedCw2B1ImportError> {
+    object.get(key).and_then(serde_json::Value::as_u64).ok_or(
+        ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion unsigned integer"),
+    )
+}
+
+fn json_str<'a>(
+    object: &'a serde_json::Map<String, serde_json::Value>,
+    key: &str,
+) -> Result<&'a str, ProtectedCw2B1ImportError> {
+    object.get(key).and_then(serde_json::Value::as_str).ok_or(
+        ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion string"),
+    )
+}
+
+fn decode_item_semantic_promotion_value(
+    row: &ItemSemanticPromotionRow,
+) -> Result<ItemSemanticPromotionValue, ProtectedCw2B1ImportError> {
+    match row.field_path.as_str() {
+        "presentation.name" => {
+            let object = exact_json_object(&row.typed_value, &["kind", "value"])?;
+            if json_str(object, "kind")? != "TEXT" {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion text kind",
+                ));
+            }
+            let typed = json_str(object, "value")?;
+            let source =
+                row.source_value
+                    .as_str()
+                    .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                        "semantic promotion text source value",
+                    ))?;
+            if typed != source || typed.is_empty() || typed.len() > 2048 {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion text value",
+                ));
+            }
+            Ok(ItemSemanticPromotionValue::Text(typed.to_owned()))
+        }
+        "weapon.attack" | "weapon.defense" | "weapon.extra_defense" | "protection.armor" => {
+            let object = exact_json_object(&row.typed_value, &["kind", "value"])?;
+            if json_str(object, "kind")? != "SIGNED_POINTS" {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion signed points kind",
+                ));
+            }
+            let typed = json_i64(object, "value")?;
+            if row.source_value.as_i64() != Some(typed) {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion signed points source mismatch",
+                ));
+            }
+            let value = i32::try_from(typed).map_err(|_| {
+                ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion signed points bounds",
+                )
+            })?;
+            Ok(ItemSemanticPromotionValue::SignedPoints(
+                ReferenceSignedPoints(value),
+            ))
+        }
+        "weapon.range_cells" => {
+            let object = exact_json_object(&row.typed_value, &["kind", "value"])?;
+            if json_str(object, "kind")? != "CELLS" {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion cells kind",
+                ));
+            }
+            let typed = json_u64(object, "value")?;
+            if row.source_value.as_u64() != Some(typed) {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion cells source mismatch",
+                ));
+            }
+            let value = u16::try_from(typed).map_err(|_| {
+                ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion cells bounds")
+            })?;
+            Ok(ItemSemanticPromotionValue::Cells(ReferenceCells(value)))
+        }
+        "weapon.hit_chance" => {
+            let object = exact_json_object(
+                &row.typed_value,
+                &["denominator", "kind", "numerator", "source_unit"],
+            )?;
+            if json_str(object, "kind")? != "RATIONAL_PERCENT"
+                || json_str(object, "source_unit")? != "PERCENT_POINTS"
+            {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion rational percent kind",
+                ));
+            }
+            let source =
+                row.source_value
+                    .as_i64()
+                    .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                        "semantic promotion percent source value",
+                    ))?;
+            let numerator = json_i64(object, "numerator")?;
+            let denominator = json_u64(object, "denominator")?;
+            if denominator == 0
+                || i128::from(numerator) * 100_i128 != i128::from(source) * i128::from(denominator)
+            {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion percent source mismatch",
+                ));
+            }
+            let value = ReferenceRationalPercent::new(numerator, denominator).map_err(|_| {
+                ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion rational percent value",
+                )
+            })?;
+            Ok(ItemSemanticPromotionValue::RationalPercent(value))
+        }
+        "charges.count" => {
+            let object = exact_json_object(&row.typed_value, &["kind", "value"])?;
+            if json_str(object, "kind")? != "COUNT_U32" {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion count kind",
+                ));
+            }
+            let typed = json_u64(object, "value")?;
+            if row.source_value.as_u64() != Some(typed) {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion count source mismatch",
+                ));
+            }
+            let value = u32::try_from(typed).map_err(|_| {
+                ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion count bounds")
+            })?;
+            Ok(ItemSemanticPromotionValue::Count(value))
+        }
+        "container.capacity" => {
+            let object = exact_json_object(&row.typed_value, &["kind", "value"])?;
+            if json_str(object, "kind")? != "CAPACITY_U16" {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion capacity kind",
+                ));
+            }
+            let typed = json_u64(object, "value")?;
+            if row.source_value.as_u64() != Some(typed) {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion capacity source mismatch",
+                ));
+            }
+            let value = u16::try_from(typed).map_err(|_| {
+                ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion capacity bounds")
+            })?;
+            Ok(ItemSemanticPromotionValue::Capacity(value))
+        }
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion field path",
+        )),
+    }
+}
+
+fn promote_unknown<T>(
+    field: &mut ReferenceItemField<T>,
+    value: T,
+) -> Result<(), ProtectedCw2B1ImportError> {
+    if !matches!(field, ReferenceItemField::Unknown) {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion overwrites existing atom",
+        ));
+    }
+    *field = ReferenceItemField::Known(value);
+    Ok(())
+}
+
+fn promoted_presentation(
+    semantics: &mut ReferenceItemSemantics,
+) -> Result<&mut ReferenceItemPresentation, ProtectedCw2B1ImportError> {
+    if matches!(&semantics.presentation, ReferenceItemField::Unknown) {
+        semantics.presentation = ReferenceItemField::Known(ReferenceItemPresentation {
+            name: ReferenceItemField::Unknown,
+            description: ReferenceItemField::Unknown,
+        });
+    }
+    match &mut semantics.presentation {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion presentation group conflict",
+        )),
+    }
+}
+
+fn promoted_weapon(
+    semantics: &mut ReferenceItemSemantics,
+) -> Result<&mut ReferenceItemWeapon, ProtectedCw2B1ImportError> {
+    if matches!(&semantics.weapon, ReferenceItemField::Unknown) {
+        semantics.weapon = ReferenceItemField::Known(ReferenceItemWeapon {
+            weapon_type: ReferenceItemField::Unknown,
+            attack: ReferenceItemField::Unknown,
+            defense: ReferenceItemField::Unknown,
+            extra_defense: ReferenceItemField::Unknown,
+            range: ReferenceItemField::Unknown,
+            hit_chance: ReferenceItemField::Unknown,
+            max_hit_chance: ReferenceItemField::Unknown,
+            ammunition: ReferenceItemField::Unknown,
+            elemental: ReferenceItemField::Unknown,
+        });
+    }
+    match &mut semantics.weapon {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion weapon group conflict",
+        )),
+    }
+}
+
+fn promoted_protection(
+    semantics: &mut ReferenceItemSemantics,
+) -> Result<&mut ReferenceItemProtection, ProtectedCw2B1ImportError> {
+    if matches!(&semantics.protection, ReferenceItemField::Unknown) {
+        semantics.protection = ReferenceItemField::Known(ReferenceItemProtection {
+            armor: ReferenceItemField::Unknown,
+            resistances: ReferenceItemField::Unknown,
+        });
+    }
+    match &mut semantics.protection {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion protection group conflict",
+        )),
+    }
+}
+
+fn promoted_charges(
+    semantics: &mut ReferenceItemSemantics,
+) -> Result<&mut ReferenceItemCharges, ProtectedCw2B1ImportError> {
+    if matches!(&semantics.charges, ReferenceItemField::Unknown) {
+        semantics.charges = ReferenceItemField::Known(ReferenceItemCharges {
+            count: ReferenceItemField::Unknown,
+        });
+    }
+    match &mut semantics.charges {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion charges group conflict",
+        )),
+    }
+}
+
+fn promoted_container(
+    semantics: &mut ReferenceItemSemantics,
+) -> Result<&mut ReferenceItemContainer, ProtectedCw2B1ImportError> {
+    if matches!(&semantics.container, ReferenceItemField::Unknown) {
+        semantics.container = ReferenceItemField::Known(ReferenceItemContainer {
+            capacity: ReferenceItemField::Unknown,
+        });
+    }
+    match &mut semantics.container {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion container group conflict",
+        )),
+    }
+}
+
+fn apply_item_semantic_promotion(
+    semantics: &mut ReferenceItemSemantics,
+    field_path: &str,
+    value: ItemSemanticPromotionValue,
+) -> Result<(), ProtectedCw2B1ImportError> {
+    match (field_path, value) {
+        ("presentation.name", ItemSemanticPromotionValue::Text(value)) => {
+            promote_unknown(&mut promoted_presentation(semantics)?.name, value)
+        }
+        ("weapon.attack", ItemSemanticPromotionValue::SignedPoints(value)) => {
+            promote_unknown(&mut promoted_weapon(semantics)?.attack, value)
+        }
+        ("weapon.defense", ItemSemanticPromotionValue::SignedPoints(value)) => {
+            promote_unknown(&mut promoted_weapon(semantics)?.defense, value)
+        }
+        ("weapon.extra_defense", ItemSemanticPromotionValue::SignedPoints(value)) => {
+            promote_unknown(&mut promoted_weapon(semantics)?.extra_defense, value)
+        }
+        ("weapon.range_cells", ItemSemanticPromotionValue::Cells(value)) => {
+            promote_unknown(&mut promoted_weapon(semantics)?.range, value)
+        }
+        ("weapon.hit_chance", ItemSemanticPromotionValue::RationalPercent(value)) => {
+            promote_unknown(&mut promoted_weapon(semantics)?.hit_chance, value)
+        }
+        ("protection.armor", ItemSemanticPromotionValue::SignedPoints(value)) => {
+            promote_unknown(&mut promoted_protection(semantics)?.armor, value)
+        }
+        ("charges.count", ItemSemanticPromotionValue::Count(value)) => {
+            promote_unknown(&mut promoted_charges(semantics)?.count, value)
+        }
+        ("container.capacity", ItemSemanticPromotionValue::Capacity(value)) => {
+            promote_unknown(&mut promoted_container(semantics)?.capacity, value)
+        }
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion typed destination",
+        )),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1ArtifactDigest {
+    digest_mode: String,
+    sha256: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1Lineage {
+    eligible_field_count: usize,
+    source_artifact_digests: BTreeMap<String, ItemSemanticPromotionLoweringV1ArtifactDigest>,
+    source_engine: String,
+    source_population_bundle_digest: String,
+    source_profile: String,
+    source_repository: String,
+    source_revision: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1Invariants {
+    identity_reminted: bool,
+    mutable_wiki_revision_metadata_retained: bool,
+    name_only_identity_resolution: bool,
+    only_derived_eligible_fields_promoted: bool,
+    sibling_fields_default_unknown_or_existing_state: bool,
+    whole_item_promotion: bool,
+    wired_into_rust_importer: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1Packet {
+    compiler: ItemSemanticPromotionCompiler,
+    counts: ItemSemanticPromotionCounts,
+    invariants: ItemSemanticPromotionLoweringV1Invariants,
+    next_action: String,
+    profile: String,
+    promotions: Vec<ItemSemanticPromotionRow>,
+    protected_lineage: ItemSemanticPromotionLoweringV1Lineage,
+    schema: String,
+    status: String,
+    target_date: String,
+}
+
+/// The 3 pinned source-file digests the #1018 lowering compiler bound this exact
+/// candidate to, keyed by repository-relative path to `(digest_mode, sha256)`. The
+/// `items.xml` entry is byte-identical to `CW2_B1_SOURCE_SHA256` above: the same
+/// pinned Crystal `items.xml` revision underlies both the existing wired packet and
+/// this lowering candidate.
+fn expected_item_semantic_promotion_lowering_v1_artifact_digests()
+-> BTreeMap<String, (&'static str, &'static str)> {
+    [
+        (
+            "data/items/appearances.dat",
+            (
+                "raw_bytes",
+                "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+            ),
+        ),
+        (
+            "data/items/items.xml",
+            ("text_lf_normalized", CW2_B1_SOURCE_SHA256),
+        ),
+        (
+            "data/scripts/lib/task_board_delivery_items.lua",
+            (
+                "text_lf_normalized",
+                "7b30362470893f6e3ce6bdc0237ac5d3f13d6e5288ce10591a93fde2013b688d",
+            ),
+        ),
+    ]
+    .into_iter()
+    .map(|(path, digest)| (path.to_owned(), digest))
+    .collect()
+}
+
+fn expected_item_semantic_promotion_lowering_v1_counts() -> BTreeMap<String, usize> {
+    [
+        ("charges.count", 126_usize),
+        ("container.capacity", 453),
+        ("presentation.name", 12_301),
+        ("protection.armor", 432),
+        ("weapon.attack", 621),
+        ("weapon.defense", 636),
+        ("weapon.extra_defense", 160),
+        ("weapon.hit_chance", 56),
+        ("weapon.range_cells", 142),
+    ]
+    .into_iter()
+    .map(|(field, count)| (field.to_owned(), count))
+    .collect()
+}
+
+/// Pin the embedded lowering candidate's exact whole-file bytes before any JSON
+/// decoding, mirroring `validate_r7_p04_gold_coin_evidence`'s byte-length-plus-digest
+/// style for a compiled-in evidence file.
+fn validate_item_semantic_promotion_lowering_v1_bytes() -> Result<(), ProtectedCw2B1ImportError> {
+    if ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET.len()
+        != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_BYTES
+        || world_project_sha256(ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET)
+            != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_SHA256
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 packet bytes",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_item_semantic_promotion_lowering_v1_packet(
+    packet: &ItemSemanticPromotionLoweringV1Packet,
+) -> Result<(), ProtectedCw2B1ImportError> {
+    if packet.schema != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SCHEMA
+        || packet.profile != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PROFILE
+        || packet.status != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_STATUS
+        || packet.target_date != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_TARGET_DATE
+        || packet.next_action != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_NEXT_ACTION
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 packet identity",
+        ));
+    }
+    if packet.compiler.path != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_PATH
+        || packet.compiler.sha256 != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_SHA256
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 compiler binding",
+        ));
+    }
+
+    let lineage = &packet.protected_lineage;
+    let expected_digests = expected_item_semantic_promotion_lowering_v1_artifact_digests();
+    let digests_match = lineage.source_artifact_digests.len() == expected_digests.len()
+        && lineage
+            .source_artifact_digests
+            .iter()
+            .all(|(path, digest)| {
+                expected_digests.get(path).is_some_and(|(mode, sha256)| {
+                    digest.digest_mode == *mode && digest.sha256 == *sha256
+                })
+            });
+    if lineage.eligible_field_count != 9
+        || lineage.source_engine != "crystal"
+        || lineage.source_profile != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SOURCE_PROFILE
+        || lineage.source_repository != CW2_B1_SOURCE_REPOSITORY
+        || lineage.source_revision != CW2_B1_SOURCE_REVISION
+        || lineage.source_population_bundle_digest
+            != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_BUNDLE_DIGEST
+        || !digests_match
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 lineage binding",
+        ));
+    }
+
+    if packet.counts.promoted_fields != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        || packet.counts.promoted_items != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        || packet.counts.per_field != expected_item_semantic_promotion_lowering_v1_counts()
+        || packet.promotions.len() != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 count partition",
+        ));
+    }
+
+    let invariants = &packet.invariants;
+    if invariants.identity_reminted
+        || invariants.mutable_wiki_revision_metadata_retained
+        || invariants.name_only_identity_resolution
+        || !invariants.only_derived_eligible_fields_promoted
+        || !invariants.sibling_fields_default_unknown_or_existing_state
+        || invariants.whole_item_promotion
+        || invariants.wired_into_rust_importer
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 invariant binding",
+        ));
+    }
+    Ok(())
+}
+
+/// Apply the pinned #1018 v1 lowering candidate (population-scale Crystal Item
+/// authored values, re-encoded for the same 9 typed field paths
+/// `decode_item_semantic_promotion_value` already accepts) to the full protected Item
+/// family. This is the single Item semantic-promotion pass over the protected
+/// full-family import's own Default (`Unknown`) semantics (#1048; it replaced the
+/// retired 69-field/23-item `protected_cw2_b1_promoted_item_family_import` pass).
+///
+/// The lowering candidate's own population census already resolves source item
+/// `3031` to its current, post-R7-P04 native key
+/// (`R7_P04_GOLD_COIN_KEY`/`oteryn:item.currency.gold_coin`), so this function applies
+/// that same pinned identity rename to its fresh full-family import before matching
+/// rows. `protected_r7_p04_gold_coin_item_family_import` delegates directly to this
+/// function (after independently validating its own `gold_coin_evidence_bytes`
+/// parameter) rather than reapplying the rename itself, since it is applied here.
+pub fn protected_cw2_b1_item_semantic_promotion_lowering_v1_import(
+    evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
+    validate_item_semantic_promotion_lowering_v1_bytes()?;
+    let packet: ItemSemanticPromotionLoweringV1Packet =
+        serde_json::from_slice(ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET).map_err(|_| {
+            ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 packet JSON decoding",
+            )
+        })?;
+    validate_item_semantic_promotion_lowering_v1_packet(&packet)?;
+    validate_r7_p04_gold_coin_evidence(R7_P04_GOLD_COIN_EVIDENCE_PACKET)?;
+
+    let mut family = protected_cw2_b1_full_item_family_import(evidence_bytes)?;
+    apply_r7_p04_gold_coin_identity_rename(&mut family)?;
+
+    let mut source_to_native = BTreeMap::<u64, String>::new();
+    for candidate in &family.batch.candidates {
+        let source_item_id =
+            candidate
+                .source_numeric_id
+                .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "item semantic promotion lowering v1 source identity binding",
+                ))?;
+        let mut bindings = candidate.normalized_fields.iter().filter_map(|field| {
+            if field.field_path == "binding.native-item"
+                && let CandidateValue::NativeItemBinding(binding) = &field.value
+            {
+                return Some(binding);
+            }
+            None
+        });
+        let binding = bindings
+            .next()
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 native identity binding",
+            ))?;
+        if bindings.next().is_some()
+            || binding.identity.family != "Item"
+            || binding.identity.revision != CW2_B1_FULL_ITEM_REVISION
+            || candidate.candidate_target
+                != format!("{}@{}", binding.identity.key, binding.identity.revision)
+            || source_to_native
+                .insert(source_item_id, binding.identity.key.clone())
+                .is_some()
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 native identity closure",
+            ));
+        }
+    }
+    if source_to_native.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 source identity count",
+        ));
+    }
+
+    let mut record_index = BTreeMap::<String, usize>::new();
+    for (index, record) in family.records.iter().enumerate() {
+        let ProjectReferenceRecord::Item { identity, .. } = record else {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 non-Item record",
+            ));
+        };
+        if record_index.insert(identity.key.clone(), index).is_some() {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 record identity duplicate",
+            ));
+        }
+    }
+    if record_index.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 record identity count",
+        ));
+    }
+
+    let mut seen_atoms = BTreeSet::<(String, String)>::new();
+    let mut seen_items = BTreeSet::<String>::new();
+    let mut per_field = BTreeMap::<String, usize>::new();
+    let mut previous: Option<(&str, &str, u64)> = None;
+
+    for row in &packet.promotions {
+        if let Some((native_key, field_path, source_item_id)) = previous
+            && (native_key, field_path, source_item_id)
+                >= (
+                    row.native_key.as_str(),
+                    row.field_path.as_str(),
+                    row.source_item_id,
+                )
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 row ordering",
+            ));
+        }
+        previous = Some((&row.native_key, &row.field_path, row.source_item_id));
+
+        if source_to_native
+            .get(&row.source_item_id)
+            .map(String::as_str)
+            != Some(row.native_key.as_str())
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 exact identity mismatch",
+            ));
+        }
+        if !seen_atoms.insert((row.native_key.clone(), row.field_path.clone())) {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 duplicate atom",
+            ));
+        }
+        seen_items.insert(row.native_key.clone());
+        *per_field.entry(row.field_path.clone()).or_default() += 1;
+
+        let value = decode_item_semantic_promotion_value(row)?;
+        let index = *record_index.get(&row.native_key).ok_or(
+            ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 record missing",
+            ),
+        )?;
+        let ProjectReferenceRecord::Item { semantics, .. } = &mut family.records[index] else {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 record type drift",
+            ));
+        };
+        apply_item_semantic_promotion(semantics, &row.field_path, value)?;
+    }
+
+    if seen_atoms.len() != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        || seen_items.len() != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        || per_field != expected_item_semantic_promotion_lowering_v1_counts()
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 applied partition",
+        ));
+    }
+
+    Ok(ProtectedCw2B1PromotedItemFamilyImport {
+        family,
+        promoted_fields: seen_atoms.len(),
+        promoted_items: seen_items.len(),
+    })
+}
+
+fn validate_r7_p04_gold_coin_evidence(
+    evidence_bytes: &[u8],
+) -> Result<(), ProtectedCw2B1ImportError> {
+    if evidence_bytes.len() > R7_P04_GOLD_COIN_EVIDENCE_BYTES {
+        return Err(ProtectedCw2B1ImportError::InputLimitExceeded {
+            actual: evidence_bytes.len(),
+            limit: R7_P04_GOLD_COIN_EVIDENCE_BYTES,
+        });
+    }
+    if evidence_bytes.len() != R7_P04_GOLD_COIN_EVIDENCE_BYTES
+        || world_project_sha256(evidence_bytes) != R7_P04_GOLD_COIN_EVIDENCE_SHA256
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin evidence bytes",
+        ));
+    }
+
+    let packet: serde_json::Value = serde_json::from_slice(evidence_bytes).map_err(|_| {
+        ProtectedCw2B1ImportError::EvidenceMismatch("R7 P04 Gold Coin evidence JSON")
+    })?;
+    let source =
+        packet
+            .get("source_identity")
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin source identity",
+            ))?;
+    let fields =
+        packet
+            .get("field_dispositions")
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin field dispositions",
+            ))?;
+    let invariants =
+        packet
+            .get("invariants")
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin invariants",
+            ))?;
+
+    if packet["schema"] != "OTERYN_R7_P04_GOLD_COIN_PROMOTION/v1"
+        || packet["status"] != "REFERENCE_CONTENT_ONLY"
+        || packet["authority"]["native_identity"] != "OTERYN_EDITORIAL_SELECTION"
+        || packet["authority"]["runtime_qualified"] != false
+        || packet["authority"]["global_parity"] != "UNKNOWN"
+        || source["source_item_id"] != R7_P04_GOLD_COIN_SOURCE_ITEM_ID
+        || source["protected_catalog_index"] != 2_948
+        || source["opaque_sequence"] != R7_P04_GOLD_COIN_OPAQUE_SEQUENCE
+        || source["current_native_key"] != R7_P04_GOLD_COIN_OLD_KEY
+        || source["target_native_key"] != R7_P04_GOLD_COIN_KEY
+        || source["target_revision"] != CW2_B1_FULL_ITEM_REVISION
+        || source["source_node_sha256"]
+            != "9528fadc4f8fdf66e7937d15e3843b3f39b35ae47ae8a737d93ca76efe652124"
+        || source["field_profile_sha256"]
+            != "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0"
+        || source["numeric_coordinate_is_native_identity"] != false
+        || fields["materializable"] != "ADMITTED_TRUE_REFERENCE_CARRIER_ONLY"
+        || fields["stack_class"] != "ADMITTED_STACK_CAPABLE"
+        || fields["typed_stackable"] != "UNKNOWN_NOT_EMITTED"
+        || fields["max_stack"] != "UNKNOWN_NOT_EMITTED"
+        || fields["weight"] != "CONFLICT_RETAINED_NOT_EMITTED"
+        || fields["runtime_activation"] != "NOT_AUTHORIZED"
+        || fields["mint_transfer"] != "NOT_IMPLEMENTED"
+        || fields["global_parity"] != "UNKNOWN"
+        || invariants["full_item_family_count"] != CW2_B1_FULL_ITEM_FAMILY_COUNT
+        || invariants["replace_exactly_one_opaque_identity"] != true
+        || invariants["preserve_unrelated_registry_key_i00003031"] != true
+        || invariants["all_typed_semantics_remain_unknown"] != true
+        || invariants["source_id_never_used_as_native_key"] != true
+        || invariants["no_tibiawiki_binding_from_server_item_id"] != true
+        || invariants["no_runtime_or_durability_claim"] != true
+        || packet["source_evidence"]["canary"]["revision"]
+            != "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+        || packet["source_evidence"]["canary"]["item_node_sha256"]
+            != "a13fff4efd0edccee26f5b37c8f7b131aa85acbe5ac34779f0e475c5cc16ac9e"
+        || packet["source_evidence"]["crystalserver"]["revision"]
+            != "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+        || packet["source_evidence"]["crystalserver"]["item_node_sha256"]
+            != "5684fce5eea620260f5d0dbc2ed9645fc61bd164d88e3ab2fea7425bda4c3ed0"
+        || packet["source_evidence"]["tibiawiki_br"]["revision_id"] != 429_156
+        || packet["source_evidence"]["tibia_fandom"]["revision_id"] != 1_175_624
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin evidence contract",
+        ));
+    }
+    Ok(())
+}
+
+/// Apply the R7 P04 editorial identity decision to one protected full-family source slot.
+///
+/// Source item `3031` remains provenance only. The resulting Reference carrier is
+/// materializable and stack-capable, while every typed semantic field remains unknown. In
+/// particular, this function does not admit a stack maximum, weight, value, exchange rate,
+/// runtime activation, transaction behavior or Global parity.
+///
+/// Shared by `protected_cw2_b1_item_semantic_promotion_lowering_v1_import` (the #1018
+/// lowering candidate's own population census already reflects this rename) and by
+/// `protected_r7_p04_gold_coin_item_family_import`'s historical direct callers; the
+/// latter now delegates straight to the lowering import instead of calling this
+/// function a second time, since a second rename on an already-renamed family would
+/// fail the "target identity already exists" / "opaque record" checks below.
+fn apply_r7_p04_gold_coin_identity_rename(
+    family: &mut ProtectedCw2B1FullItemFamilyImport,
+) -> Result<(), ProtectedCw2B1ImportError> {
+    if family.records.iter().any(|record| {
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_KEY)
+    }) {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin target identity already exists",
+        ));
+    }
+
+    let mut matching_records = family.records.iter_mut().filter(|record| {
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_OLD_KEY)
+    });
+    let record = matching_records
+        .next()
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin opaque record",
+        ))?;
+    if matching_records.next().is_some() {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin opaque record uniqueness",
+        ));
+    }
+    let ProjectReferenceRecord::Item {
+        identity,
+        materializable,
+        stack_class,
+        semantics,
+        ..
+    } = record
+    else {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin record family",
+        ));
+    };
+    if identity.family != "Item"
+        || identity.revision != CW2_B1_FULL_ITEM_REVISION
+        || *materializable
+        || *stack_class != ItemStackDocument::Unknown
+        || !semantics.is_all_unknown()
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin opaque record baseline",
+        ));
+    }
+    identity.key = R7_P04_GOLD_COIN_KEY.to_owned();
+    *materializable = true;
+    *stack_class = ItemStackDocument::StackCapable;
+
+    let mut matching_candidates =
+        family.batch.candidates.iter_mut().filter(|candidate| {
+            candidate.source_numeric_id == Some(R7_P04_GOLD_COIN_SOURCE_ITEM_ID)
+        });
+    let candidate =
+        matching_candidates
+            .next()
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin source candidate",
+            ))?;
+    if matching_candidates.next().is_some() {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin source candidate uniqueness",
+        ));
+    }
+    let mut bindings = candidate.normalized_fields.iter_mut().filter_map(|field| {
+        if field.field_path == "binding.native-item"
+            && let CandidateValue::NativeItemBinding(binding) = &mut field.value
+        {
+            return Some(binding);
+        }
+        None
+    });
+    let binding = bindings
+        .next()
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin native binding",
+        ))?;
+    if bindings.next().is_some()
+        || binding.identity.family != "Item"
+        || binding.identity.key != R7_P04_GOLD_COIN_OLD_KEY
+        || binding.identity.revision != CW2_B1_FULL_ITEM_REVISION
+        || candidate.candidate_target
+            != format!("{R7_P04_GOLD_COIN_OLD_KEY}@{CW2_B1_FULL_ITEM_REVISION}")
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin native binding baseline",
+        ));
+    }
+    binding.identity.key = R7_P04_GOLD_COIN_KEY.to_owned();
+    candidate.candidate_target = format!("{R7_P04_GOLD_COIN_KEY}@{CW2_B1_FULL_ITEM_REVISION}");
+    candidate.disposition_reason =
+        "R7_P04_REFERENCE_CONTENT_PROMOTION_RUNTIME_UNQUALIFIED".to_owned();
+    let authorship = candidate
+        .normalized_fields
+        .iter_mut()
+        .find(|field| field.field_path == "source.native-key-authorship")
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin authorship field",
+        ))?;
+    if authorship.value
+        != CandidateValue::Text("OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_1".to_owned())
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin authorship baseline",
+        ));
+    }
+    authorship.value = CandidateValue::Text(
+        "OTERYN_EDITORIAL_SELECTION_R7_P04_SOURCE_ID_PROVENANCE_ONLY".to_owned(),
+    );
+
+    let mut matching_reimports = family
+        .batch
+        .reimport_states
+        .iter_mut()
+        .filter(|state| state.stable_identity == R7_P04_GOLD_COIN_OLD_KEY);
+    let reimport = matching_reimports
+        .next()
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin reimport identity",
+        ))?;
+    if matching_reimports.next().is_some()
+        || reimport.field_path != "source.item-id"
+        || reimport.baseline != Some(CandidateValue::SourceId(R7_P04_GOLD_COIN_SOURCE_ITEM_ID))
+        || reimport.upstream != Some(CandidateValue::SourceId(R7_P04_GOLD_COIN_SOURCE_ITEM_ID))
+        || reimport.local != Some(CandidateValue::SourceId(R7_P04_GOLD_COIN_SOURCE_ITEM_ID))
+        || reimport.decision != ReimportDecision::Unchanged
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin reimport baseline",
+        ));
+    }
+    reimport.stable_identity = R7_P04_GOLD_COIN_KEY.to_owned();
+
+    let unrelated = family
+        .batch
+        .candidates
+        .iter()
+        .find(|candidate| candidate.source_numeric_id == Some(R7_P04_UNRELATED_SOURCE_ITEM_ID))
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 unrelated registry source",
+        ))?;
+    let unrelated_binding = unrelated
+        .normalized_fields
+        .iter()
+        .find_map(|field| match &field.value {
+            CandidateValue::NativeItemBinding(binding) => Some(binding),
+            _ => None,
+        })
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 unrelated registry binding",
+        ))?;
+    if unrelated_binding.identity.key != R7_P04_UNRELATED_REGISTRY_KEY {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 unrelated registry identity drift",
+        ));
+    }
+
+    let mut allocations = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    for candidate in &family.batch.candidates {
+        let source_item_id =
+            candidate
+                .source_numeric_id
+                .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "R7 P04 allocation source identity",
+                ))?;
+        let binding = candidate
+            .normalized_fields
+            .iter()
+            .find_map(|field| match &field.value {
+                CandidateValue::NativeItemBinding(binding) => Some(binding),
+                _ => None,
+            })
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 allocation native identity",
+            ))?;
+        allocations.push((source_item_id, binding.identity.key.as_str()));
+    }
+    allocations.sort_unstable_by_key(|(source_item_id, _)| *source_item_id);
+    let mut digest_input = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT * 48);
+    for (source_item_id, native_key) in allocations {
+        digest_input.extend_from_slice(source_item_id.to_string().as_bytes());
+        digest_input.push(0);
+        digest_input.extend_from_slice(native_key.as_bytes());
+        digest_input.push(b'\n');
+    }
+    family.allocation_digest_sha256 = world_project_sha256(&digest_input);
+
+    family.records.sort_by(|left, right| {
+        let ProjectReferenceRecord::Item {
+            identity: left_identity,
+            ..
+        } = left
+        else {
+            unreachable!("protected full Item family contains only Item records")
+        };
+        let ProjectReferenceRecord::Item {
+            identity: right_identity,
+            ..
+        } = right
+        else {
+            unreachable!("protected full Item family contains only Item records")
+        };
+        left_identity.key.cmp(&right_identity.key)
+    });
+    family.batch.reimport_states.sort_by(|left, right| {
+        left.stable_identity
+            .cmp(&right.stable_identity)
+            .then_with(|| left.field_path.cmp(&right.field_path))
+    });
+
+    Ok(())
+}
+
+/// Validate the caller-supplied Gold Coin evidence bytes, then delegate to the single
+/// Item semantic-promotion pass (`protected_cw2_b1_item_semantic_promotion_lowering_v1_import`),
+/// which already applies `apply_r7_p04_gold_coin_identity_rename` internally using its
+/// own pinned `R7_P04_GOLD_COIN_EVIDENCE_PACKET`. This function does not call the
+/// rename a second time: doing so on an already-renamed family would fail the
+/// "target identity already exists" check.
+pub fn protected_r7_p04_gold_coin_item_family_import(
+    b1_evidence_bytes: &[u8],
+    gold_coin_evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
+    validate_r7_p04_gold_coin_evidence(gold_coin_evidence_bytes)?;
+    protected_cw2_b1_item_semantic_promotion_lowering_v1_import(b1_evidence_bytes)
+}
+
+fn validate_protected_evidence(evidence_bytes: &[u8]) -> Result<(), ProtectedCw2B1ImportError> {
+    if evidence_bytes.len() > PROTECTED_CW2_B1_EVIDENCE_BYTES {
+        return Err(ProtectedCw2B1ImportError::InputLimitExceeded {
+            actual: evidence_bytes.len(),
+            limit: PROTECTED_CW2_B1_EVIDENCE_BYTES,
+        });
+    }
+    if evidence_bytes.len() != PROTECTED_CW2_B1_EVIDENCE_BYTES {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "evidence byte length",
+        ));
+    }
+    if world_project_sha256(evidence_bytes) != PROTECTED_CW2_B1_EVIDENCE_SHA256 {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "evidence byte digest",
+        ));
+    }
+    Ok(())
+}
+
+fn reference_item_definition_gap(item_class: &str) -> &'static str {
+    match item_class {
+        "currency_stackable" => {
+            "STACK_MAX;TYPED_WEIGHT_UNIT;VALUE_OR_CURRENCY_SEMANTICS;PRESENTATION"
+        }
+        "weapon" => {
+            "WEAPON_USE;FORMULA;PROTECTION;MODIFIERS;IMBUEMENT;TYPED_WEIGHT_UNIT;PRESENTATION"
+        }
+        "equipment" => {
+            "EQUIP_PATTERN;SLOT_SEMANTICS;REQUIREMENTS;PROTECTION;MODIFIERS;RESISTANCE;IMBUEMENT;TYPED_WEIGHT_UNIT;PRESENTATION"
+        }
+        "container" => {
+            "CONTAINER_CAPACITY;CONTAINMENT_POLICY;NESTING_BOUNDS;TYPED_WEIGHT_UNIT;PRESENTATION"
+        }
+        "consumable_charges" => {
+            "CHARGES;USE_SEMANTICS;DECAY_OR_TIMING;MODIFIERS;TYPED_WEIGHT_UNIT;PRESENTATION"
+        }
+        "physical_decor" => {
+            "PRESENTATION;TYPED_WEIGHT_UNIT;LIGHT_READABLE_FLUID_TEMPORAL_OR_INTERACTION_FIELDS"
+        }
+        _ => "UNKNOWN_UNSUPPORTED_ITEM_CLASS",
+    }
+}
+
+fn text_field(path: &str, value: &str) -> NamedCandidateField {
+    field(path, CandidateValue::Text(value.to_owned()))
+}
+
+fn field(path: &str, value: CandidateValue) -> NamedCandidateField {
+    NamedCandidateField {
+        field_path: path.to_owned(),
+        value,
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
+mod donor_identity_epoch_2_tests {
+    use super::*;
+    use serde_json::Value;
+
+    const B1_EVIDENCE: &[u8] = include_bytes!(
+        "../../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
+    );
+    const DONOR_CENSUS: &[u8] = include_bytes!(
+        "../../../../tools/content-schema/item-authoring/samples/donor-census-crystal-summer-update-00ce02a5.json"
+    );
+    const ALIAS_CROSSWALK: &[u8] = include_bytes!(
+        "../../../../docs/agents/evidence/OTV2-20260928-item-donor-identity-b1b-alias-crosswalk.json"
+    );
+    const CRYSTAL_BINDINGS: &[u8] =
+        include_bytes!("../../../../imports/crystalserver/bindings/items.json");
+    const FROZEN_FULL_FAMILY_ALLOCATION_DIGEST: &str =
+        "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
+
+    /// Donor ids held by the alias gate: 35500 and 54610 are `PROBABLE_MATCH` (a unique
+    /// counterpart differing only in sprite), the other six are `AMBIGUOUS` (several).
+    const HELD_DONOR_IDS: [u64; 8] = [35500, 53380, 54609, 54610, 54613, 54614, 54615, 54616];
+
+    fn epoch2() -> ProtectedCw2B1DonorIdentityEpoch2Import {
+        protected_cw2_b1_donor_identity_epoch_2_import(B1_EVIDENCE, DONOR_CENSUS, ALIAS_CROSSWALK)
+            .expect("donor identity epoch 2")
+    }
+
+    fn record_key(record: &ProjectReferenceRecord) -> &str {
+        item_record_key(record)
+    }
+
+    fn binding_key(candidate: &ImportCandidate) -> &str {
+        candidate
+            .candidate_target
+            .split('@')
+            .next()
+            .expect("candidate target key")
+    }
+
+    /// `(source id, key)` pairs of the epoch-2 batch, ascending by source id.
+    fn minted(imported: &ProtectedCw2B1DonorIdentityEpoch2Import) -> Vec<(u64, String)> {
+        let mut minted = imported
+            .batch
+            .candidates
+            .iter()
+            .map(|candidate| {
+                (
+                    candidate.source_numeric_id.expect("source id"),
+                    binding_key(candidate).to_owned(),
+                )
+            })
+            .collect::<Vec<_>>();
+        minted.sort();
+        minted
+    }
+
+    fn bindings_file() -> Vec<Value> {
+        let file: Value = serde_json::from_slice(CRYSTAL_BINDINGS).expect("bindings JSON");
+        file["bindings"].as_array().expect("bindings array").clone()
+    }
+
+    #[test]
+    fn epoch_2_mints_exactly_the_pinned_range_in_ascending_source_id_order() {
+        let imported = epoch2();
+        assert_eq!(imported.records.len(), CW2_B1_DONOR_EPOCH2_MINTED_COUNT);
+        assert_eq!(imported.records.len(), 404);
+        assert_eq!(CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE, 38_094);
+        assert_eq!(CW2_B1_DONOR_EPOCH2_LAST_SEQUENCE, 38_497);
+        assert_eq!(
+            imported.allocation_digest_sha256,
+            CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256
+        );
+
+        let minted = minted(&imported);
+        assert_eq!(minted.len(), 404);
+        for (rank, (_, key)) in minted.iter().enumerate() {
+            assert_eq!(
+                key,
+                &format!("oteryn:item.registry.i{:08}", 38_094 + rank),
+                "rank {rank}"
+            );
+        }
+        assert!(minted.windows(2).all(|pair| pair[0].0 < pair[1].0));
+        assert_eq!(minted[0].1, "oteryn:item.registry.i00038094");
+        assert_eq!(minted[403].1, "oteryn:item.registry.i00038497");
+
+        let mut record_keys = imported.records.iter().map(record_key).collect::<Vec<_>>();
+        let batch_keys = minted
+            .iter()
+            .map(|(_, key)| key.as_str())
+            .collect::<Vec<_>>();
+        record_keys.sort_unstable();
+        assert_eq!(record_keys, batch_keys);
+
+        // Identity-only pointers, as for epoch-1 opaque keys; no other change of state.
+        assert!(imported.records.iter().all(|record| matches!(
+            record,
+            ProjectReferenceRecord::Item {
+                materializable: false,
+                stack_class: ItemStackDocument::Unknown,
+                ..
+            }
+        )));
+        assert!(imported.alias_bindings.is_empty());
+        // Eight same-name donors match an existing Item on article/plural and the full
+        // attribute set and differ at most in sprite: held, with neither a key nor an alias.
+        assert_eq!(
+            imported.unbound_source_item_ids,
+            HELD_DONOR_IDS.to_vec(),
+            "sprite-only differences are held, never minted"
+        );
+        let minted_ids = minted.iter().map(|(id, _)| *id).collect::<BTreeSet<_>>();
+        assert!(HELD_DONOR_IDS.iter().all(|id| !minted_ids.contains(id)));
+        assert_eq!(minted.len() + HELD_DONOR_IDS.len(), 412);
+        assert!(imported.batch.candidates.iter().all(|candidate| {
+            candidate.normalized_fields.iter().any(|field| {
+                field.field_path == "source.native-key-authorship"
+                    && field.value
+                        == CandidateValue::Text(
+                            "OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_2".to_owned(),
+                        )
+            })
+        }));
+    }
+
+    #[test]
+    fn epoch_2_is_deterministic_and_leaves_the_frozen_epoch_1_import_untouched() {
+        let first = epoch2();
+        let second = epoch2();
+        assert_eq!(first, second);
+
+        let frozen =
+            protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("frozen full item family");
+        assert_eq!(
+            frozen.allocation_digest_sha256,
+            FROZEN_FULL_FAMILY_ALLOCATION_DIGEST
+        );
+        assert_eq!(frozen.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+        assert_eq!(CW2_B1_OPAQUE_ITEM_COUNT, 38_093);
+        assert_eq!(
+            frozen.allocation_digest_sha256,
+            protected_cw2_b1_full_item_family_import(B1_EVIDENCE)
+                .expect("frozen full item family")
+                .allocation_digest_sha256
+        );
+
+        // No key and no source id is shared with epoch 1, and retired 2,921 stays retired.
+        let frozen_keys = frozen
+            .records
+            .iter()
+            .map(record_key)
+            .collect::<BTreeSet<_>>();
+        let frozen_source_ids = frozen
+            .batch
+            .candidates
+            .iter()
+            .filter_map(|candidate| candidate.source_numeric_id)
+            .collect::<BTreeSet<_>>();
+        let minted = minted(&first);
+        assert!(
+            minted
+                .iter()
+                .all(|(source_id, key)| !frozen_keys.contains(key.as_str())
+                    && !frozen_source_ids.contains(source_id))
+        );
+        assert!(
+            !minted
+                .iter()
+                .any(|(_, key)| key == R7_P04_GOLD_COIN_OLD_KEY)
+        );
+        assert!(!minted.iter().any(|(_, key)| key == R7_P04_GOLD_COIN_KEY));
+        assert_eq!(
+            minted
+                .iter()
+                .map(|(_, key)| key.as_str())
+                .collect::<BTreeSet<_>>()
+                .len(),
+            minted.len()
+        );
+    }
+
+    #[test]
+    fn committed_bindings_carry_epoch_1_unchanged_and_exactly_the_epoch_2_allocation() {
+        let imported = epoch2();
+        let frozen =
+            protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("frozen full item family");
+        let bindings = bindings_file();
+        assert_eq!(
+            bindings.len(),
+            CW2_B1_FULL_ITEM_FAMILY_COUNT + CW2_B1_DONOR_EPOCH2_MINTED_COUNT
+        );
+
+        // Epoch 1: the 38,157 base-revision rows are the frozen allocation, with only the
+        // R7-P04 gold coin at its promoted key.
+        let mut expected_epoch1 = frozen
+            .batch
+            .candidates
+            .iter()
+            .map(|candidate| {
+                let key = binding_key(candidate);
+                let key = if key == R7_P04_GOLD_COIN_OLD_KEY {
+                    R7_P04_GOLD_COIN_KEY
+                } else {
+                    key
+                };
+                (
+                    candidate.source_numeric_id.expect("source id").to_string(),
+                    key.to_owned(),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let epoch1_rows = bindings
+            .iter()
+            .filter(|row| row["source_revision"] == CW2_B1_SOURCE_REVISION)
+            .collect::<Vec<_>>();
+        assert_eq!(epoch1_rows.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+        for row in &epoch1_rows {
+            assert_eq!(row["disposition"], "EXACT");
+            assert_eq!(row["identity_namespace"], "ots/item_server_id");
+            assert_eq!(row["source_key"], "oteryn:source.crystalserver");
+            let external_id = row["external_id"].as_str().expect("external id");
+            let key = expected_epoch1
+                .remove(external_id)
+                .expect("epoch-1 source id in the frozen allocation");
+            assert_eq!(row["target"]["key"], key.as_str());
+        }
+        assert!(expected_epoch1.is_empty());
+
+        // Epoch 2: one EXACT row per minted id at the donor commit, in ascending source id
+        // order after every epoch-1 row, at exactly the keys the function mints.
+        let epoch2_rows = &bindings[CW2_B1_FULL_ITEM_FAMILY_COUNT..];
+        assert!(
+            bindings[..CW2_B1_FULL_ITEM_FAMILY_COUNT]
+                .iter()
+                .all(|row| row["source_revision"] == CW2_B1_SOURCE_REVISION)
+        );
+        assert_eq!(epoch2_rows.len(), CW2_B1_DONOR_EPOCH2_MINTED_COUNT);
+        let minted = minted(&imported);
+        for (row, (source_id, key)) in epoch2_rows.iter().zip(&minted) {
+            assert_eq!(row["disposition"], "EXACT");
+            assert_eq!(row["identity_namespace"], "ots/item_server_id");
+            assert_eq!(row["source_key"], "oteryn:source.crystalserver");
+            assert_eq!(row["source_revision"], CW2_B1_DONOR_EPOCH2_SOURCE_REVISION);
+            assert_eq!(row["external_id"], source_id.to_string().as_str());
+            assert_eq!(row["target"]["family"], "Item");
+            assert_eq!(row["target"]["key"], key.as_str());
+            assert_eq!(row["target"]["revision"], CW2_B1_DONOR_EPOCH2_REVISION);
+        }
+
+        // No collision anywhere in the file: every key and every (revision, id) is unique.
+        let keys = bindings
+            .iter()
+            .map(|row| row["target"]["key"].as_str().expect("key"))
+            .collect::<BTreeSet<_>>();
+        assert_eq!(keys.len(), bindings.len());
+        assert!(!keys.contains(R7_P04_GOLD_COIN_OLD_KEY));
+    }
+
+    #[test]
+    fn epoch_2_inputs_are_pinned_by_exact_bytes() {
+        let mut census = DONOR_CENSUS.to_vec();
+        census.push(b' ');
+        assert!(matches!(
+            protected_cw2_b1_donor_identity_epoch_2_import(B1_EVIDENCE, &census, ALIAS_CROSSWALK),
+            Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "donor census bytes"
+            ))
+        ));
+        let mut crosswalk = ALIAS_CROSSWALK.to_vec();
+        crosswalk.push(b' ');
+        assert!(matches!(
+            protected_cw2_b1_donor_identity_epoch_2_import(B1_EVIDENCE, DONOR_CENSUS, &crosswalk),
+            Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "donor alias crosswalk bytes"
+            ))
+        ));
+        assert!(
+            protected_cw2_b1_donor_identity_epoch_2_import(
+                &B1_EVIDENCE[..B1_EVIDENCE.len() - 1],
+                DONOR_CENSUS,
+                ALIAS_CROSSWALK
+            )
+            .is_err()
+        );
+    }
+
+    /// Re-pin a modified crosswalk so its state handling can be exercised: the modified bytes
+    /// and the resulting allocation are bound by digest exactly as the frozen ones are.
+    fn admit_modified(
+        edit: impl FnOnce(&mut Vec<Value>),
+        minted_count: usize,
+        allocation: &[(u64, String)],
+    ) -> Result<ProtectedCw2B1DonorIdentityEpoch2Import, ProtectedCw2B1ImportError> {
+        let mut crosswalk: Value = serde_json::from_slice(ALIAS_CROSSWALK).expect("crosswalk");
+        edit(crosswalk["rows"].as_array_mut().expect("rows"));
+        let mut digest_input = Vec::new();
+        for (source_id, key) in allocation {
+            digest_input.extend_from_slice(source_id.to_string().as_bytes());
+            digest_input.push(0);
+            digest_input.extend_from_slice(key.as_bytes());
+            digest_input.push(b'\n');
+        }
+        let digest = world_project_sha256(&digest_input);
+        crosswalk["epoch_2"]["allocation_digest_sha256"] = Value::String(digest.clone());
+        let bytes = serde_json::to_vec(&crosswalk).expect("crosswalk bytes");
+        let pins = DonorEpoch2Pins {
+            census_bytes: CW2_B1_DONOR_EPOCH2_CENSUS_BYTES,
+            census_sha256: CW2_B1_DONOR_EPOCH2_CENSUS_SHA256,
+            census_id_count: CW2_B1_DONOR_EPOCH2_CENSUS_ID_COUNT,
+            crosswalk_bytes: bytes.len(),
+            crosswalk_sha256: Box::leak(world_project_sha256(&bytes).into_boxed_str()),
+            minted_count,
+            allocation_digest_sha256: Box::leak(digest.into_boxed_str()),
+        };
+        admit_donor_identity_epoch_2(B1_EVIDENCE, DONOR_CENSUS, &bytes, &pins)
+    }
+
+    fn set_state(row: &mut Value, state: &str, target: Option<&str>) {
+        row["state"] = Value::String(state.to_owned());
+        if let Some(target) = target {
+            row["alias_target_key"] = Value::String(target.to_owned());
+        }
+    }
+
+    #[test]
+    fn only_no_match_rows_mint_and_aliases_bind_to_existing_keys() {
+        let baseline = minted(&epoch2());
+        // Minted ids 1 (alias), 2 (ambiguous) and 3 (conflict) mint nothing; every later rank
+        // shifts down, so the key is the rank among the minted ids and not the census position.
+        let expected = std::iter::once(baseline[0].clone())
+            .chain(baseline[4..].iter().enumerate().map(|(offset, (id, _))| {
+                (*id, opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT + 2 + offset))
+            }))
+            .collect::<Vec<_>>();
+        let (alias_id, ambiguous_id, conflict_id) = (baseline[1].0, baseline[2].0, baseline[3].0);
+        let imported = admit_modified(
+            |rows| {
+                for row in rows.iter_mut() {
+                    match row["source_item_id"].as_u64() {
+                        Some(id) if id == alias_id => set_state(
+                            row,
+                            "ACCEPTED_ALIAS",
+                            Some("oteryn:item.registry.i00000001"),
+                        ),
+                        Some(id) if id == ambiguous_id => set_state(row, "AMBIGUOUS", None),
+                        Some(id) if id == conflict_id => set_state(row, "CONFLICT", None),
+                        _ => {}
+                    }
+                }
+            },
+            expected.len(),
+            &expected,
+        )
+        .expect("modified crosswalk");
+        assert_eq!(minted(&imported), expected);
+        assert_eq!(
+            imported.alias_bindings,
+            vec![(alias_id, "oteryn:item.registry.i00000001".to_owned())]
+        );
+        let mut unbound = HELD_DONOR_IDS.to_vec();
+        unbound.extend([ambiguous_id, conflict_id]);
+        unbound.sort_unstable();
+        assert_eq!(imported.unbound_source_item_ids, unbound);
+        assert_eq!(imported.records.len(), expected.len());
+        assert_eq!(
+            imported.records.last().map(record_key),
+            Some("oteryn:item.registry.i00038494")
+        );
+
+        // The gold coin's retired key is not an alias target; its promoted key is.
+        for (target, admitted) in [
+            (R7_P04_GOLD_COIN_OLD_KEY, false),
+            (R7_P04_GOLD_COIN_KEY, true),
+            ("oteryn:item.registry.i00038094", false),
+            ("oteryn:item.registry.i99999999", false),
+        ] {
+            let result = admit_modified(
+                |rows| set_state(&mut rows[0], "ACCEPTED_ALIAS", Some(target)),
+                baseline.len() - 1,
+                &baseline[1..]
+                    .iter()
+                    .enumerate()
+                    .map(|(offset, (id, _))| {
+                        (*id, opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT + 1 + offset))
+                    })
+                    .collect::<Vec<_>>(),
+            );
+            assert_eq!(result.is_ok(), admitted, "{target}");
+        }
+    }
+
+    #[test]
+    fn a_state_that_carries_a_target_or_is_unknown_fails_closed() {
+        let baseline = minted(&epoch2());
+        let shifted = baseline[1..]
+            .iter()
+            .enumerate()
+            .map(|(offset, (id, _))| (*id, opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT + 1 + offset)))
+            .collect::<Vec<_>>();
+        assert!(matches!(
+            admit_modified(
+                |rows| set_state(
+                    &mut rows[0],
+                    "AMBIGUOUS",
+                    Some("oteryn:item.registry.i00000001")
+                ),
+                shifted.len(),
+                &shifted
+            ),
+            Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "unbound state carries a target"
+            ))
+        ));
+        assert!(matches!(
+            admit_modified(
+                |rows| set_state(&mut rows[0], "MINT_ME", None),
+                shifted.len(),
+                &shifted
+            ),
+            Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "alias crosswalk state"
+            ))
+        ));
+        // A missing row, or rows out of census order, are not the frozen census ids.
+        assert!(
+            admit_modified(
+                |rows| {
+                    rows.pop();
+                },
+                baseline.len(),
+                &baseline
+            )
+            .is_err()
+        );
+        assert!(admit_modified(|rows| rows.swap(0, 1), baseline.len(), &baseline).is_err());
+    }
+}

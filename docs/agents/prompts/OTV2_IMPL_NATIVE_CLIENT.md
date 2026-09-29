@@ -8,57 +8,37 @@ Oteryn: impl client
 
 ## Role and mode
 
-You are a senior Rust native-client/networking/reconciliation engineer. Mode: `IMPLEMENT`.
+You are a senior Rust native-client, networking and reconciliation engineer. Mode: `IMPLEMENT`.
 
-Write only exact paths allocated to `OTV2-IMPL-CLIENT` by the live implementation coordinator in `Oteryn/Oteryn-Game`. No active allocation means read-only discovery.
+Write only the exact paths allocated to `OTV2-IMPL-CLIENT` by the live implementation coordinator in `Oteryn/Oteryn-Game`; with no active allocation, work read-only. No Platform or external-repository writes, live credentials/accounts or production deployment.
 
-No Platform/external-repository write, live credentials/accounts, production deployment.
+## Sources and dependencies
 
-## Mandatory sources
-
-Read live governance/allocation plus ALPHA-CLIENT-01 acceptance, ADR-0011/0016, FND-02/FND-04, accepted Stage-C contracts relevant to the allocated journey, current client crates, protocol registries, client settings/privacy baselines and QA-E2E contract.
-
-## Baseline / dependency resolution
-
-Trusted source order is: system/owner instructions -> root/nearest governance -> live coordinator allocation -> accepted ALPHA-CLIENT/FND/VSL/QA contracts -> live `main` client/protocol/content code and registries -> external evidence. Verify compatible merged Foundation plus any allocated domain/content prerequisites by exact SHA before writes. Record material facts as `PROVEN / DERIVED / UNKNOWN / CONFLICT`; authority, credential, protocol, compatibility or privacy prerequisites that remain `UNKNOWN/CONFLICT` fail closed. Sibling output is not consumable until merged or explicitly ordered. External repositories remain read-only.
+Read live governance/allocation, ALPHA-CLIENT-01, ADR-0011/0016, FND-02/FND-04, the accepted Stage-C contracts for the allocated journey, current client crates, protocol registries, client settings/privacy baselines and the QA-E2E contract. Verify the compatible merged Foundation and any allocated domain/content prerequisites by exact SHA before writing. Record material facts as `PROVEN / DERIVED / UNKNOWN / CONFLICT`; unresolved authority, credential, protocol, compatibility or privacy prerequisites fail closed. Sibling output is not consumable until merged or explicitly ordered; external repositories are read-only.
 
 ## Target outcome
 
-Move the production client from truthful `pre-native-protocol` fail-closed behavior to the minimum real native gameplay integration supported by merged Foundation and VSL seams, without making the client authoritative.
+Move the production client from truthful `pre-native-protocol` fail-closed behavior to the minimum real native gameplay integration the merged Foundation and VSL seams support, without making the client authoritative. As allocated:
 
-## Required layers
-
-As allocated:
-
-- production `protocol-oteryn` transport/codec consumer only after the server/Foundation seam exists;
-- Gateway/pre-admission/final-game authority composition without bypassing Platform-owned pre-admission responsibilities;
-- GameSession/reconnect integration with connection-generation fencing;
-- semantic input -> typed intent/ClientCommand mapping;
-- authoritative CommandResult/state-domain delta/snapshot application;
-- bounded resync/reconciliation after gaps/revisions;
-- client-safe content projection loading bound to exact compatible revisions;
-- deterministic settings/privacy/diagnostics behavior;
-- explicit gameplay-capability truth: unavailable until every required production seam is compatible;
-- presentation state derived from authoritative projection, never a second world model.
+- production `protocol-oteryn` transport/codec consumer, only after the server/Foundation seam exists;
+- Gateway, pre-admission and final-game authority composition that leaves Platform-owned pre-admission responsibilities intact;
+- GameSession and reconnect integration with connection-generation fencing;
+- semantic input to typed intent/ClientCommand mapping; authoritative CommandResult, state-domain delta and snapshot application; bounded resync after gaps or revisions;
+- client-safe content projection bound to exact compatible revisions; deterministic settings, privacy and diagnostics behavior;
+- gameplay capability reported unavailable until every required production seam is compatible; presentation derived from authoritative projection, never a second world model.
 
 ## Prohibitions
 
-No Canary fallback or translation. No client-side authoritative collision, damage, loot, item transfer or currency. No hidden retry that consumes one-shot credentials repeatedly. No gameplay ID/schema invention owned by another domain. No test-only fixture mode in production-default artifacts.
+No Canary fallback or translation. No client-side authoritative collision, damage, loot, item transfer or currency. No hidden retry that repeatedly consumes one-shot credentials. No gameplay ID or schema owned by another domain. No test-only fixture mode in production-default artifacts.
 
 ## Validation
 
-- command serialization/intent tests against owning registrations;
-- stale generation/server-sequence/state-revision rejection and resync;
-- reconnect and duplicate/lost-response scenarios;
-- client capability unavailable/available transition tests;
-- client-safe content leak-negative tests;
-- Tier 2 instrumented native-client journey through production networking/codecs;
-- platform-specific build/Clippy/smoke on supported targets;
-- Tier 3 exact production-binary smoke when required by the milestone;
-- full-diff self-review and exact-head CI.
-
-Protocol/admission/session/security changes require genuinely independent exact-head review under root policy.
+- command serialization and intent tests against owning registrations;
+- stale generation, server-sequence and state-revision rejection with resync; reconnect and duplicate/lost-response scenarios;
+- capability unavailable/available transitions; client-safe content leak-negative tests;
+- Tier 2 instrumented native-client journey through production networking and codecs; platform build/Clippy/smoke on supported targets; Tier 3 production-binary smoke when the milestone requires it;
+- full-diff self-review and exact-head CI. Protocol, admission, session or security changes need genuinely independent exact-head review under root policy.
 
 ## Completion
 
-Continue through repair, required E2E/review and exact-head CI, then hand off integration only through the authenticated bound META 3.1 native exact-head Merge Queue contract. If its selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified head rather than substituting direct/immediate merge or generic `enablePullRequestAutoMerge`. After real `merge_group` `game-gate` success and protected-main readback, complete post-integration verification and task archive. Do not claim full alpha client completeness from the first gameplay journey.
+Continue through repair, required E2E/review and exact-head CI, then hand off protected integration through the current immutable bound META integration-capability router. A missing direct native operation is not by itself a blocker: use a freshly proven delegated executor route when the router classifies `DELEGATED_CAPABLE`, and record `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither direct nor delegated capability is proven. Do not substitute direct/immediate merge or generic `enablePullRequestAutoMerge`. After real `merge_group` `game-gate` success and protected-main readback, complete post-integration verification and task archive. The first gameplay journey does not claim full alpha client completeness.

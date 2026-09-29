@@ -92,13 +92,13 @@ This HIGH-risk control-plane candidate cannot authorize or integrate itself. It 
 3. a genuinely independent exact-head HIGH-risk/deep review reports P0/P1/P2=0, with zero unresolved review threads and zero outstanding requested-changes reviews;
 4. the human owner explicitly authorizes the exact reviewed candidate head for protected integration;
 5. fresh target-bound preflight verifies repository, PR, `base=main`, exact head, authorization and eligibility;
-6. only META 3.1 native REST `PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge-async` is used with exact `sha` and `merge_action="merge_queue"`;
+6. protected integration resolves the current immutable bound META capability router and uses freshly proven `DIRECT_CAPABLE` or `DELEGATED_CAPABLE`, following the selected route-specific exact-head fencing/reconciliation contract;
 7. the returned UUID is bound to an executor-owned receipt sequence and a strictly later live PR readback for the same repo/PR/base/head;
 8. the real `merge_group` aggregate `game-gate` succeeds;
 9. protected `main` is read back and proves this exact amendment is present;
 10. Work freshly verifies SAME #351/#356 custody and explicitly activates this amendment for that lineage.
 
-If the native exact-head Merge Queue primitive is unavailable, preserve the candidate and return `BLOCKED_CAPABILITY_UNAVAILABLE`. Direct/immediate merge, generic auto-merge, GraphQL enqueue, bypass, force/rebase/reset and no-op/retrigger commits are forbidden substitutes.
+If neither direct nor delegated integration capability is freshly proven, preserve the candidate and return `BLOCKED_CAPABILITY_UNAVAILABLE`. Direct/immediate merge, generic auto-merge, GraphQL enqueue, bypass, force/rebase/reset and no-op/retrigger commits are forbidden substitutes.
 
 ## Lifecycle
 
@@ -107,7 +107,7 @@ allocation-only NOT_ACTIVE_CONDITIONAL
 -> exact-head self-review + CI
 -> independent HIGH-risk exact-head review
 -> exact-candidate owner authorization
--> META 3.1 native merge-async Merge Queue
+-> bound META capability router: DIRECT_CAPABLE | DELEGATED_CAPABLE
 -> real merge_group game-gate SUCCESS
 -> protected-main readback
 -> explicit Work activation for SAME #351/#356

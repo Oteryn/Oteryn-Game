@@ -1,0 +1,2410 @@
+{
+  "empty_containers": [
+    {
+      "position": {
+        "x": 31937,
+        "y": 32771,
+        "z": 13
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14035,
+          "source_lines": [
+            2948
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14035,
+          "source_lines": [
+            3410
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 31938,
+        "y": 32837,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14024,
+          "source_lines": [
+            2889
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14024,
+          "source_lines": [
+            3351
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 31981,
+        "y": 32893,
+        "z": 0
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9283,
+          "source_lines": [
+            3201
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 31987,
+        "y": 31223,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3500,
+          "source_lines": [
+            348
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32024,
+        "y": 32602,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14009,
+          "source_lines": [
+            2827
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14009,
+          "source_lines": [
+            3289
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32030,
+        "y": 31688,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9214,
+          "source_lines": [
+            3171
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32032,
+        "y": 32276,
+        "z": 5
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 50080,
+          "source_lines": [
+            3524
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32033,
+        "y": 32278,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 50082,
+          "source_lines": [
+            3529
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32046,
+        "y": 32894,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14003,
+          "source_lines": [
+            2803
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14003,
+          "source_lines": [
+            3265
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32053,
+        "y": 31939,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9288,
+          "source_lines": [
+            3206
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32054,
+        "y": 31882,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14025,
+          "source_lines": [
+            2896
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14025,
+          "source_lines": [
+            3358
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32059,
+        "y": 31882,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14027,
+          "source_lines": [
+            2906
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14027,
+          "source_lines": [
+            3368
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32059,
+        "y": 32265,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 50093,
+          "source_lines": [
+            3534
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32067,
+        "y": 32264,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 50094,
+          "source_lines": [
+            3539
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32068,
+        "y": 31882,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14028,
+          "source_lines": [
+            2911
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14028,
+          "source_lines": [
+            3373
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32073,
+        "y": 31882,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14026,
+          "source_lines": [
+            2901
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14026,
+          "source_lines": [
+            3363
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32078,
+        "y": 31976,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61900,
+          "source_lines": [
+            3559
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32079,
+        "y": 31976,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61901,
+          "source_lines": [
+            3564
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32081,
+        "y": 32007,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61913,
+          "source_lines": [
+            3609
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32083,
+        "y": 32012,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61911,
+          "source_lines": [
+            3599
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32084,
+        "y": 31062,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 50053,
+          "source_lines": [
+            3504
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32087,
+        "y": 32012,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61912,
+          "source_lines": [
+            3604
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32089,
+        "y": 32007,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61914,
+          "source_lines": [
+            3614
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32091,
+        "y": 31976,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61902,
+          "source_lines": [
+            3569
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32092,
+        "y": 31976,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61903,
+          "source_lines": [
+            3574
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32097,
+        "y": 32187,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 64129,
+          "source_lines": [
+            3639
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32099,
+        "y": 32198,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14042,
+          "source_lines": [
+            2980
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14042,
+          "source_lines": [
+            3438
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32105,
+        "y": 31978,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61910,
+          "source_lines": [
+            3594
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32108,
+        "y": 32007,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61918,
+          "source_lines": [
+            3634
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32110,
+        "y": 31976,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61907,
+          "source_lines": [
+            3579
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32111,
+        "y": 31977,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61909,
+          "source_lines": [
+            3589
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32112,
+        "y": 31976,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61908,
+          "source_lines": [
+            3584
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32113,
+        "y": 31370,
+        "z": 14
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1038,
+          "source_lines": [
+            223
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32114,
+        "y": 32008,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61915,
+          "source_lines": [
+            3619
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32117,
+        "y": 32008,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61916,
+          "source_lines": [
+            3624
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32119,
+        "y": 32011,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 61917,
+          "source_lines": [
+            3629
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32171,
+        "y": 32974,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14018,
+          "source_lines": [
+            2863
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14018,
+          "source_lines": [
+            3325
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32172,
+        "y": 31602,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9230,
+          "source_lines": [
+            3181
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32208,
+        "y": 31849,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14008,
+          "source_lines": [
+            2823
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14008,
+          "source_lines": [
+            3285
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32216,
+        "y": 31168,
+        "z": 11
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 50054,
+          "source_lines": [
+            3509
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32242,
+        "y": 31390,
+        "z": 5
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14015,
+          "source_lines": [
+            2851
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14015,
+          "source_lines": [
+            3313
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32259,
+        "y": 31949,
+        "z": 14
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14034,
+          "source_lines": [
+            2943
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14034,
+          "source_lines": [
+            3405
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32314,
+        "y": 32245,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1304,
+          "source_lines": [
+            253
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32316,
+        "y": 32245,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1308,
+          "source_lines": [
+            273
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32318,
+        "y": 32245,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1301,
+          "source_lines": [
+            238
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32320,
+        "y": 32245,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1307,
+          "source_lines": [
+            268
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32322,
+        "y": 32245,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1305,
+          "source_lines": [
+            258
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32324,
+        "y": 32245,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1306,
+          "source_lines": [
+            263
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32326,
+        "y": 32245,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1303,
+          "source_lines": [
+            248
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32328,
+        "y": 32245,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1302,
+          "source_lines": [
+            243
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32330,
+        "y": 32245,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1300,
+          "source_lines": [
+            233
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32332,
+        "y": 32245,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1309,
+          "source_lines": [
+            278
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32356,
+        "y": 32196,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 65207,
+          "source_lines": [
+            3649
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32455,
+        "y": 31968,
+        "z": 14
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9226,
+          "source_lines": [
+            3176
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32549,
+        "y": 31437,
+        "z": 14
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 64134,
+          "source_lines": [
+            3644
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32567,
+        "y": 32024,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3120,
+          "source_lines": [
+            318
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32569,
+        "y": 32024,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3116,
+          "source_lines": [
+            313
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32576,
+        "y": 31572,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9253,
+          "source_lines": [
+            3186
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32577,
+        "y": 31896,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14013,
+          "source_lines": [
+            2843
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14013,
+          "source_lines": [
+            3305
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32598,
+        "y": 31934,
+        "z": 15
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14029,
+          "source_lines": [
+            2918
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14029,
+          "source_lines": [
+            3380
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32620,
+        "y": 32198,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14091,
+          "source_lines": [
+            2985
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14091,
+          "source_lines": [
+            3476
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32621,
+        "y": 31404,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14040,
+          "source_lines": [
+            2972
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14040,
+          "source_lines": [
+            3430
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32636,
+        "y": 31985,
+        "z": 14
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3501,
+          "source_lines": [
+            353
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32647,
+        "y": 32091,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14012,
+          "source_lines": [
+            2839
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14012,
+          "source_lines": [
+            3301
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32661,
+        "y": 32192,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3020,
+          "source_lines": [
+            283
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32674,
+        "y": 31610,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9281,
+          "source_lines": [
+            3196
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32701,
+        "y": 31082,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14039,
+          "source_lines": [
+            2967
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14039,
+          "source_lines": [
+            3425
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32701,
+        "y": 31458,
+        "z": 5
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14011,
+          "source_lines": [
+            2835
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14011,
+          "source_lines": [
+            3297
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32704,
+        "y": 31605,
+        "z": 14
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14032,
+          "source_lines": [
+            2933
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14032,
+          "source_lines": [
+            3395
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32710,
+        "y": 32393,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1002,
+          "source_lines": [
+            203
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32712,
+        "y": 32393,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1003,
+          "source_lines": [
+            208
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32714,
+        "y": 32393,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1004,
+          "source_lines": [
+            213
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32716,
+        "y": 32393,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1005,
+          "source_lines": [
+            218
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32753,
+        "y": 31456,
+        "z": 1
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9254,
+          "source_lines": [
+            3191
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32757,
+        "y": 31953,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 50058,
+          "source_lines": [
+            3514
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32757,
+        "y": 31957,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 50059,
+          "source_lines": [
+            3519
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32765,
+        "y": 31019,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14002,
+          "source_lines": [
+            2799
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14002,
+          "source_lines": [
+            3261
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32776,
+        "y": 31204,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3088,
+          "source_lines": [
+            298
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32776,
+        "y": 31206,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3090,
+          "source_lines": [
+            308
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32776,
+        "y": 31208,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3089,
+          "source_lines": [
+            303
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32776,
+        "y": 31210,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 48886,
+          "source_lines": [
+            3494
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32783,
+        "y": 32224,
+        "z": 14
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9312,
+          "source_lines": [
+            3246
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32795,
+        "y": 31185,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14038,
+          "source_lines": [
+            2963
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14038,
+          "source_lines": [
+            3421
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32796,
+        "y": 31226,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14037,
+          "source_lines": [
+            2959
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14037,
+          "source_lines": [
+            3417
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32804,
+        "y": 31586,
+        "z": 0
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9298,
+          "source_lines": [
+            3211
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32808,
+        "y": 31580,
+        "z": 3
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14004,
+          "source_lines": [
+            2807
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14004,
+          "source_lines": [
+            3269
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32809,
+        "y": 32546,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14001,
+          "source_lines": [
+            2795
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14001,
+          "source_lines": [
+            3257
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32815,
+        "y": 32502,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3502,
+          "source_lines": [
+            358
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32822,
+        "y": 31744,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3147,
+          "source_lines": [
+            323
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32869,
+        "y": 31264,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3084,
+          "source_lines": [
+            288
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32873,
+        "y": 32900,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14017,
+          "source_lines": [
+            2859
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14017,
+          "source_lines": [
+            3321
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32939,
+        "y": 31459,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 14047,
+          "source_lines": [
+            3459
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32940,
+        "y": 31246,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3085,
+          "source_lines": [
+            293
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32943,
+        "y": 31471,
+        "z": 5
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 14045,
+          "source_lines": [
+            3451
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32945,
+        "y": 31446,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 14048,
+          "source_lines": [
+            3463
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32953,
+        "y": 31440,
+        "z": 3
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 14051,
+          "source_lines": [
+            3467
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32953,
+        "y": 31473,
+        "z": 4
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 14052,
+          "source_lines": [
+            3471
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32960,
+        "y": 31456,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 14046,
+          "source_lines": [
+            3455
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32960,
+        "y": 31461,
+        "z": 3
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14019,
+          "source_lines": [
+            2867
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14019,
+          "source_lines": [
+            3329
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32961,
+        "y": 31471,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 14043,
+          "source_lines": [
+            3443
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32964,
+        "y": 31471,
+        "z": 2
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 14044,
+          "source_lines": [
+            3447
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 32967,
+        "y": 31719,
+        "z": 2
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14031,
+          "source_lines": [
+            2928
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14031,
+          "source_lines": [
+            3390
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33016,
+        "y": 31872,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3148,
+          "source_lines": [
+            328
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33016,
+        "y": 32614,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14006,
+          "source_lines": [
+            2815
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14006,
+          "source_lines": [
+            3277
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33024,
+        "y": 31884,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3149,
+          "source_lines": [
+            333
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33028,
+        "y": 31900,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3150,
+          "source_lines": [
+            338
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33054,
+        "y": 32393,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14007,
+          "source_lines": [
+            2819
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14007,
+          "source_lines": [
+            3281
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33064,
+        "y": 32529,
+        "z": 5
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 55731,
+          "source_lines": [
+            3549
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33064,
+        "y": 32531,
+        "z": 5
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 50029,
+          "source_lines": [
+            3499
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33143,
+        "y": 31800,
+        "z": 11
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 4009,
+          "source_lines": [
+            363
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33152,
+        "y": 31640,
+        "z": 11
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14033,
+          "source_lines": [
+            2938
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14033,
+          "source_lines": [
+            3400
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33195,
+        "y": 31765,
+        "z": 1
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14041,
+          "source_lines": [
+            2976
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14041,
+          "source_lines": [
+            3434
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33224,
+        "y": 31647,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14010,
+          "source_lines": [
+            2831
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14010,
+          "source_lines": [
+            3293
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33260,
+        "y": 32228,
+        "z": 10
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14005,
+          "source_lines": [
+            2811
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14005,
+          "source_lines": [
+            3273
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33308,
+        "y": 32279,
+        "z": 12
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14030,
+          "source_lines": [
+            2923
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14030,
+          "source_lines": [
+            3385
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33318,
+        "y": 31410,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 3164,
+          "source_lines": [
+            343
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33340,
+        "y": 31411,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14020,
+          "source_lines": [
+            2871
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14020,
+          "source_lines": [
+            3333
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33343,
+        "y": 31610,
+        "z": 1
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9206,
+          "source_lines": [
+            3166
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33409,
+        "y": 32278,
+        "z": 14
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9309,
+          "source_lines": [
+            3241
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33414,
+        "y": 31235,
+        "z": 11
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9304,
+          "source_lines": [
+            3231
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33449,
+        "y": 32796,
+        "z": 11
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 54380,
+          "source_lines": [
+            3544
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33502,
+        "y": 32545,
+        "z": 7
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9307,
+          "source_lines": [
+            3236
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33519,
+        "y": 31308,
+        "z": 8
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 57743,
+          "source_lines": [
+            3554
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33579,
+        "y": 31297,
+        "z": 11
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9302,
+          "source_lines": [
+            3221
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33604,
+        "y": 31369,
+        "z": 15
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 1105,
+          "source_lines": [
+            228
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33613,
+        "y": 31811,
+        "z": 9
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14016,
+          "source_lines": [
+            2855
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14016,
+          "source_lines": [
+            3317
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33616,
+        "y": 31015,
+        "z": 13
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14021,
+          "source_lines": [
+            2876
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14021,
+          "source_lines": [
+            3338
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33617,
+        "y": 31015,
+        "z": 13
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14022,
+          "source_lines": [
+            2880
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14022,
+          "source_lines": [
+            3342
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33618,
+        "y": 31015,
+        "z": 13
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14023,
+          "source_lines": [
+            2884
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14023,
+          "source_lines": [
+            3346
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33632,
+        "y": 31259,
+        "z": 11
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9303,
+          "source_lines": [
+            3226
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33676,
+        "y": 31753,
+        "z": 6
+      },
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 14014,
+          "source_lines": [
+            2847
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 14014,
+          "source_lines": [
+            3309
+          ]
+        }
+      ]
+    },
+    {
+      "position": {
+        "x": 33707,
+        "y": 32096,
+        "z": 15
+      },
+      "sources": [
+        {
+          "source": "crystalserver",
+          "uid": 9299,
+          "source_lines": [
+            3216
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -14,10 +14,18 @@ release-role = "synthetic-only"
 [dependencies]
 oteryn-client-domain = { version = "=0.1.0", path = "../../crates/client-domain" }
 oteryn-client-simulation = { version = "=0.1.0", path = "../../crates/client-simulation" }
+oteryn-dev-client = { version = "=0.1.0", path = "../dev-client" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-input-actions = { version = "=0.1.0", path = "../../crates/input-actions" }
+oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
 oteryn-renderer = { version = "=0.1.0", path = "../../crates/renderer" }
 oteryn-synthetic-assets = { version = "=0.1.0", path = "../../crates/synthetic-assets" }
+rustls.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+rcgen.workspace = true
+tokio-rustls.workspace = true
 
 [lints]
 workspace = true

@@ -1,0 +1,1360 @@
+{
+  "schema": "OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE/v1",
+  "status": "TREE_COVERAGE_CLOSED_UNASSIGNED_ZERO",
+  "date": "2026-09-25",
+  "repository": "Oteryn/Oteryn-Game",
+  "admission_main": "2389c6671000b8b0efe341540a62e303e307ad15",
+  "task": "OTV2-20260925-full-game-content-ruleset-tree-v1",
+  "jira": "KAN-16",
+  "sources": {
+    "protected_wiki_coverage": "docs/agents/evidence/OTV2-20260923-tibiawiki-worldproject-v2-coverage.json",
+    "protected_storage_audit": "docs/agents/evidence/OTV2-20260923-full-content-storage-structure-audit.md",
+    "item_master_schema_candidate": "PR #903 / 19bbad63076999b48c312c07a4d9c3d360095b70",
+    "tibiawiki_home": "https://www.tibiawiki.com.br/",
+    "tibiawiki_wheel": "https://www.tibiawiki.com.br/wiki/Wheel_of_Destiny",
+    "tibiawiki_forge": "https://www.tibiawiki.com.br/wiki/Exaltation_Forge"
+  },
+  "principles": {
+    "one_semantic_owner": "Every fact has one authoritative semantic owner. Directory placement cannot create authority.",
+    "definition_rules_state_split": "Static definition, gameplay rule and current mutable state are distinct.",
+    "reverse_relations": "Reverse discovery lists such as dropped-by or NPC price lists do not duplicate forward authoritative relationships.",
+    "source_ids": "Wiki/XML/client/server numeric IDs remain import/provenance coordinates and never become canonical gameplay identity.",
+    "raw_wiki": "Long-form Wiki prose/artwork is not bulk-copied. Structured facts are normalized into typed Oteryn-owned schema.",
+    "current_v2_compat": "Current content/world WorldProject/v2 remains readable until a separately qualified migration supersedes its physical authoring layout.",
+    "platform_boundary": "Store/commercial catalogue, prices, purchases and entitlement grants remain Platform-owned."
+  },
+  "target_tree_nodes": [
+    {
+      "path": "content/project.json",
+      "kind": "control",
+      "owner": "Content/World",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Canonical authoring project root/commit point after migration."
+    },
+    {
+      "path": "content/manifest.json",
+      "kind": "control",
+      "owner": "Content/World",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Inventory and digests for managed authoring documents."
+    },
+    {
+      "path": "content/content.lock.json",
+      "kind": "control",
+      "owner": "Content/World",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Exact content dependency/source lock."
+    },
+    {
+      "path": "content/items/definitions/",
+      "kind": "static_content",
+      "owner": "Item",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Human-readable Item definitions; Item Master Schema v1 detail."
+    },
+    {
+      "path": "content/items/taxonomy/",
+      "kind": "editor_content",
+      "owner": "Item authoring",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Item categories/tags/family profiles; never gameplay identity."
+    },
+    {
+      "path": "content/items/relations/",
+      "kind": "relationship_content",
+      "owner": "Item/Interaction/Ability/Document",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Explicit Item relations not owned by another forward relation."
+    },
+    {
+      "path": "content/loot/",
+      "kind": "static_content",
+      "owner": "Loot",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Reusable loot tables referenced by Creature/Encounter."
+    },
+    {
+      "path": "content/creatures/definitions/",
+      "kind": "static_content",
+      "owner": "Creature",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Creature definitions."
+    },
+    {
+      "path": "content/creatures/bestiary/",
+      "kind": "static_content",
+      "owner": "Creature/Bestiary authoring",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static Bestiary thresholds/difficulty/charm-point facts."
+    },
+    {
+      "path": "content/creatures/bosstiary/",
+      "kind": "static_content",
+      "owner": "Creature/Bosstiary authoring",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static Bosstiary category/threshold/point facts."
+    },
+    {
+      "path": "content/creatures/familiars/",
+      "kind": "static_content",
+      "owner": "Creature/Ability authoring",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Familiar profile over Creature identity; no duplicate creature identity."
+    },
+    {
+      "path": "content/npcs/definitions/",
+      "kind": "static_content",
+      "owner": "NPC",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "NPC identity/presentation/behavior references."
+    },
+    {
+      "path": "content/dialogues/",
+      "kind": "static_content",
+      "owner": "Dialogue",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Reusable dialogue definitions."
+    },
+    {
+      "path": "content/services/trade/",
+      "kind": "static_content",
+      "owner": "Service",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "NPC buy/sell offers referencing Items and currency."
+    },
+    {
+      "path": "content/services/travel/",
+      "kind": "static_content",
+      "owner": "Service/Interaction",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Travel service definitions."
+    },
+    {
+      "path": "content/services/bank/",
+      "kind": "static_content",
+      "owner": "Service/Economy",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Bank service definitions; balances remain durable state."
+    },
+    {
+      "path": "content/services/blessings/",
+      "kind": "static_content",
+      "owner": "Service/Ruleset",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Blessing purchase/service surface."
+    },
+    {
+      "path": "content/services/tasks/",
+      "kind": "static_content",
+      "owner": "Service/Quest",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Task-giver/service definitions."
+    },
+    {
+      "path": "content/services/crafting/",
+      "kind": "static_content",
+      "owner": "Service",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Deterministic crafting/upgrade recipes and service inputs/outputs."
+    },
+    {
+      "path": "content/abilities/definitions/",
+      "kind": "static_content",
+      "owner": "Ability",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Spell/ability identities and authoring metadata."
+    },
+    {
+      "path": "content/abilities/effects/",
+      "kind": "static_content",
+      "owner": "Effect",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Typed gameplay effects."
+    },
+    {
+      "path": "content/abilities/formulas/",
+      "kind": "static_content",
+      "owner": "Formula",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Formula definitions consumed by Ability/Effect."
+    },
+    {
+      "path": "content/quests/definitions/",
+      "kind": "static_content",
+      "owner": "Quest",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Quest identities/static requirements/repeatability."
+    },
+    {
+      "path": "content/quests/missions/",
+      "kind": "static_content",
+      "owner": "Quest",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Mission/node authoring."
+    },
+    {
+      "path": "content/quests/objectives/",
+      "kind": "static_content",
+      "owner": "Quest/Interaction",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Objective definitions and typed conditions."
+    },
+    {
+      "path": "content/quests/rewards/",
+      "kind": "relationship_content",
+      "owner": "Quest/Reward owners",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Reward references to Item/Achievement/etc."
+    },
+    {
+      "path": "content/achievements/",
+      "kind": "static_content",
+      "owner": "Achievement",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Achievement static definitions."
+    },
+    {
+      "path": "content/charms/",
+      "kind": "static_content",
+      "owner": "Charm",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Charm static definitions and effect references."
+    },
+    {
+      "path": "content/cosmetics/outfits/",
+      "kind": "static_content",
+      "owner": "Outfit",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Outfit/addon definitions and acquisition interactions."
+    },
+    {
+      "path": "content/cosmetics/mounts/",
+      "kind": "static_content",
+      "owner": "Mount",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Mount definitions/presentation/speed/taming/acquisition."
+    },
+    {
+      "path": "content/documents/",
+      "kind": "static_content",
+      "owner": "Document",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Reusable project-owned/licensed readable documents."
+    },
+    {
+      "path": "content/interactions/",
+      "kind": "static_content",
+      "owner": "Interaction",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Typed interaction definitions."
+    },
+    {
+      "path": "content/behaviors/",
+      "kind": "static_content",
+      "owner": "Behavior",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Reusable bounded behavior definitions."
+    },
+    {
+      "path": "content/encounters/bosses/",
+      "kind": "static_content",
+      "owner": "Encounter",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Boss encounter definitions."
+    },
+    {
+      "path": "content/encounters/raids/",
+      "kind": "static_content",
+      "owner": "Encounter",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Raid/invasion definitions."
+    },
+    {
+      "path": "content/encounters/world-changes/",
+      "kind": "static_content",
+      "owner": "Encounter",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "World Change definitions."
+    },
+    {
+      "path": "content/encounters/mini-world-changes/",
+      "kind": "static_content",
+      "owner": "Encounter",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Mini World Change definitions."
+    },
+    {
+      "path": "content/encounters/world-quests/",
+      "kind": "static_content",
+      "owner": "Quest/Encounter",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "World Quest static composition."
+    },
+    {
+      "path": "content/encounters/arenas/",
+      "kind": "static_content",
+      "owner": "Encounter",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Arena encounter definitions; PvP rules remain ruleset."
+    },
+    {
+      "path": "content/encounters/tibiadrome/",
+      "kind": "static_content",
+      "owner": "Encounter",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Tibiadrome encounter/catalog content; scoring/rules separate."
+    },
+    {
+      "path": "content/world/worlds/",
+      "kind": "static_content",
+      "owner": "World",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "World definitions and coordinate-frame metadata."
+    },
+    {
+      "path": "content/world/areas/cities/",
+      "kind": "static_content",
+      "owner": "Area",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "City Area definitions."
+    },
+    {
+      "path": "content/world/areas/islands/",
+      "kind": "static_content",
+      "owner": "Area",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Island Area definitions."
+    },
+    {
+      "path": "content/world/areas/regions/",
+      "kind": "static_content",
+      "owner": "Area",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Region/subregion definitions."
+    },
+    {
+      "path": "content/world/areas/hunting-places/",
+      "kind": "static_content",
+      "owner": "Area",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Hunting-place taxonomy/Area definitions."
+    },
+    {
+      "path": "content/world/areas/streets/",
+      "kind": "static_content",
+      "owner": "Area",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Street/location authoring where useful."
+    },
+    {
+      "path": "content/world/terrain/",
+      "kind": "static_content",
+      "owner": "Terrain",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Terrain definitions."
+    },
+    {
+      "path": "content/world/objects/",
+      "kind": "static_content",
+      "owner": "WorldObject/LocalObject",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Doors, ladders, boats, carpets, furniture, decorations and reusable world objects."
+    },
+    {
+      "path": "content/world/transitions/",
+      "kind": "static_content",
+      "owner": "Transition/Interaction",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static transition definitions."
+    },
+    {
+      "path": "content/world/placements/",
+      "kind": "placement_content",
+      "owner": "WorldPlacement",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Authored world occurrences; final physical sharding chosen only after measurement."
+    },
+    {
+      "path": "content/houses/",
+      "kind": "static_content",
+      "owner": "House/Area",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static house identity/area/size/rent source facts; ownership/ACL not here."
+    },
+    {
+      "path": "content/presentations/definitions/",
+      "kind": "presentation",
+      "owner": "Presentation",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Client-safe presentation identities."
+    },
+    {
+      "path": "content/presentations/bindings/",
+      "kind": "presentation",
+      "owner": "Presentation/Asset",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Definition/Presentation and Presentation/Asset binding layer."
+    },
+    {
+      "path": "content/assets/catalog/",
+      "kind": "asset_catalog",
+      "owner": "Asset",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Immutable asset identity/digest/licensing catalogue."
+    },
+    {
+      "path": "rulesets/character/vocations/",
+      "kind": "ruleset",
+      "owner": "Character rules",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Vocation definitions and static requirements."
+    },
+    {
+      "path": "rulesets/character/skills/",
+      "kind": "ruleset",
+      "owner": "Character rules",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Skill/magic-level rules."
+    },
+    {
+      "path": "rulesets/character/experience/",
+      "kind": "ruleset",
+      "owner": "Character progression",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Level/experience progression rules."
+    },
+    {
+      "path": "rulesets/character/stamina/",
+      "kind": "ruleset",
+      "owner": "Character progression",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static stamina/rested rules; current pool/state durable."
+    },
+    {
+      "path": "rulesets/character/soul/",
+      "kind": "ruleset",
+      "owner": "Character progression",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Soul rules; current value durable."
+    },
+    {
+      "path": "rulesets/character/death/",
+      "kind": "ruleset",
+      "owner": "Character/Death",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Death penalties and loss rules."
+    },
+    {
+      "path": "rulesets/character/blessings/",
+      "kind": "ruleset",
+      "owner": "Character/Death",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Blessing definitions/effects; current ownership durable."
+    },
+    {
+      "path": "rulesets/combat/damage/",
+      "kind": "ruleset",
+      "owner": "Combat/SIM",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Damage types and combat rule vocabulary."
+    },
+    {
+      "path": "rulesets/combat/conditions/",
+      "kind": "ruleset",
+      "owner": "Combat/Ability",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Condition semantics."
+    },
+    {
+      "path": "rulesets/combat/cooldowns/",
+      "kind": "ruleset",
+      "owner": "Ability/Combat",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Cooldown groups and timing rules."
+    },
+    {
+      "path": "rulesets/party/shared-experience/",
+      "kind": "ruleset",
+      "owner": "Party",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Party/shared-EXP rules."
+    },
+    {
+      "path": "rulesets/pvp/skulls/",
+      "kind": "ruleset",
+      "owner": "PvP",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Skull/frag policy."
+    },
+    {
+      "path": "rulesets/pvp/wars/",
+      "kind": "ruleset",
+      "owner": "PvP/Guild",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Guild-war rules."
+    },
+    {
+      "path": "rulesets/pvp/arena/",
+      "kind": "ruleset",
+      "owner": "PvP/Encounter",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Arena PvP rules separate from arena content."
+    },
+    {
+      "path": "rulesets/social/marriage/",
+      "kind": "ruleset",
+      "owner": "Character/Social",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Marriage gameplay rules; current relationship state durable."
+    },
+    {
+      "path": "rulesets/entitlements/premium-gates/",
+      "kind": "ruleset",
+      "owner": "Game entitlement consumption",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Game-side premium eligibility gates; commercial grant owner is Platform."
+    },
+    {
+      "path": "rulesets/items/imbuements/",
+      "kind": "ruleset",
+      "owner": "Item/Progression",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Imbuement families, tiers, effects, allowed items, materials, costs, duration."
+    },
+    {
+      "path": "rulesets/items/exaltation-forge/",
+      "kind": "ruleset",
+      "owner": "Item/Economy",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Forge classes, tier rules, fusion/transfer costs/chances; current tier on ItemInstance."
+    },
+    {
+      "path": "rulesets/items/enchanting/",
+      "kind": "ruleset",
+      "owner": "Item/Interaction",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Enchanting rules."
+    },
+    {
+      "path": "rulesets/items/doomforging/",
+      "kind": "ruleset",
+      "owner": "Item/Progression",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Doomforging system rules."
+    },
+    {
+      "path": "rulesets/items/charging-system/",
+      "kind": "ruleset",
+      "owner": "Item/Ability",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Charging system rules."
+    },
+    {
+      "path": "rulesets/items/crystal-shield/",
+      "kind": "ruleset",
+      "owner": "Item/Combat",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Crystal Shield system rules."
+    },
+    {
+      "path": "rulesets/items/umbral-creation/",
+      "kind": "ruleset",
+      "owner": "Item/Service",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Umbral creation/crafting rules."
+    },
+    {
+      "path": "rulesets/progression/bestiary/",
+      "kind": "ruleset",
+      "owner": "Character progression",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Bestiary unlock/progression rules; creature thresholds live with content profile."
+    },
+    {
+      "path": "rulesets/progression/bosstiary/",
+      "kind": "ruleset",
+      "owner": "Character progression",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Bosstiary progression/reward rules."
+    },
+    {
+      "path": "rulesets/progression/charms/",
+      "kind": "ruleset",
+      "owner": "Character progression",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Charm unlock/assignment/proc application rules."
+    },
+    {
+      "path": "rulesets/progression/prey/",
+      "kind": "ruleset",
+      "owner": "Character progression/Economy",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Slots, roll/bonus/reroll rules and costs; current rolls durable."
+    },
+    {
+      "path": "rulesets/progression/wheel-of-destiny/",
+      "kind": "ruleset",
+      "owner": "Character progression",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Wheel graph/perks/promotion-point rules; current allocation durable."
+    },
+    {
+      "path": "rulesets/progression/gem-atelier/",
+      "kind": "ruleset",
+      "owner": "Character progression/Item",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Gem tiers/mods/reveal/bind/slot rules; current revealed gems/selections durable."
+    },
+    {
+      "path": "rulesets/progression/weapon-proficiency/",
+      "kind": "ruleset",
+      "owner": "Character progression/Item",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "XP/unlock/perk/rank rules; Item definitions retain static proficiency capability."
+    },
+    {
+      "path": "rulesets/progression/loyalty/",
+      "kind": "ruleset",
+      "owner": "Character/Account progression",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Game-side loyalty effects; account/commercial earning source may be Platform."
+    },
+    {
+      "path": "rulesets/encounters/tibiadrome/",
+      "kind": "ruleset",
+      "owner": "Encounter/Progression",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Tibiadrome selection/scoring/reward rules."
+    },
+    {
+      "path": "rulesets/encounters/hazard-system/",
+      "kind": "ruleset",
+      "owner": "Encounter/Character",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Hazard progression/encounter rules."
+    },
+    {
+      "path": "rulesets/encounters/soulpit/",
+      "kind": "ruleset",
+      "owner": "Encounter",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Soulpit gameplay rules."
+    },
+    {
+      "path": "rulesets/encounters/holy-shrines/",
+      "kind": "ruleset",
+      "owner": "Encounter/Interaction",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Holy Shrine gameplay rules."
+    },
+    {
+      "path": "rulesets/encounters/taints/bakragore/",
+      "kind": "ruleset",
+      "owner": "Encounter/Character",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Bakragore taint rules."
+    },
+    {
+      "path": "rulesets/encounters/taints/goshnar/",
+      "kind": "ruleset",
+      "owner": "Encounter/Character",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Goshnar taint rules."
+    },
+    {
+      "path": "rulesets/economy/currencies/",
+      "kind": "ruleset",
+      "owner": "Economy",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Gameplay currencies and typed value rules."
+    },
+    {
+      "path": "rulesets/economy/npc-trade/",
+      "kind": "ruleset",
+      "owner": "Economy/Service",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "NPC trade legality/settlement policy; offers are content."
+    },
+    {
+      "path": "rulesets/economy/crafting-upgrades/",
+      "kind": "ruleset",
+      "owner": "Economy/Service",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Crafting/upgrade settlement/cost policy."
+    },
+    {
+      "path": "rulesets/economy/market/",
+      "kind": "ruleset",
+      "owner": "Market/Economy",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "In-game market rules; orders/history are service state, not static content."
+    },
+    {
+      "path": "imports/official/",
+      "kind": "import_provenance",
+      "owner": "Import tooling",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Official/public source evidence snapshots/manifests as legally permitted."
+    },
+    {
+      "path": "imports/tibiawiki/",
+      "kind": "import_provenance",
+      "owner": "Import tooling",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "TibiaWiki source mappings/census/reimport metadata; no source IDs become gameplay identity."
+    },
+    {
+      "path": "imports/legacy/",
+      "kind": "import_provenance",
+      "owner": "Migration tooling",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Pinned legacy Otheryn migration evidence."
+    },
+    {
+      "path": "imports/crystalserver/",
+      "kind": "import_provenance",
+      "owner": "Migration tooling",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "CrystalServer hypothesis/migration evidence only."
+    },
+    {
+      "path": "imports/canary/",
+      "kind": "import_provenance",
+      "owner": "Migration tooling",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Canary hypothesis/test-discovery evidence only."
+    }
+  ],
+  "protected_domain_groups": [
+    "items",
+    "documents",
+    "geography",
+    "creatures",
+    "bosses",
+    "familiars",
+    "npc",
+    "quests",
+    "abilities",
+    "achievements",
+    "charms",
+    "cosmetics",
+    "events",
+    "houses",
+    "player_systems",
+    "economy",
+    "presentation",
+    "provenance",
+    "wiki"
+  ],
+  "domain_assignments": {
+    "items": [
+      "content/items/definitions/",
+      "content/items/relations/",
+      "rulesets/items/"
+    ],
+    "documents": [
+      "content/documents/",
+      "content/items/relations/"
+    ],
+    "geography": [
+      "content/world/areas/",
+      "content/world/placements/"
+    ],
+    "creatures": [
+      "content/creatures/definitions/",
+      "content/loot/",
+      "content/world/placements/"
+    ],
+    "bosses": [
+      "content/creatures/definitions/",
+      "content/encounters/bosses/",
+      "content/creatures/bosstiary/"
+    ],
+    "familiars": [
+      "content/creatures/familiars/",
+      "content/abilities/definitions/"
+    ],
+    "npc": [
+      "content/npcs/definitions/",
+      "content/dialogues/",
+      "content/services/",
+      "content/world/placements/"
+    ],
+    "quests": [
+      "content/quests/",
+      "content/interactions/",
+      "content/encounters/"
+    ],
+    "abilities": [
+      "content/abilities/"
+    ],
+    "achievements": [
+      "content/achievements/",
+      "rulesets/progression/"
+    ],
+    "charms": [
+      "content/charms/",
+      "rulesets/progression/charms/"
+    ],
+    "cosmetics": [
+      "content/cosmetics/",
+      "rulesets/entitlements/premium-gates/"
+    ],
+    "events": [
+      "content/encounters/",
+      "rulesets/encounters/"
+    ],
+    "houses": [
+      "content/houses/",
+      "content/world/placements/"
+    ],
+    "player_systems": [
+      "rulesets/character/",
+      "rulesets/progression/",
+      "rulesets/pvp/",
+      "rulesets/social/"
+    ],
+    "economy": [
+      "rulesets/economy/",
+      "content/services/"
+    ],
+    "presentation": [
+      "content/presentations/",
+      "content/assets/catalog/"
+    ],
+    "provenance": [
+      "imports/"
+    ],
+    "wiki": [
+      "imports/tibiawiki/"
+    ]
+  },
+  "selected_system_surfaces": [
+    "Store",
+    "Market",
+    "Outfitter",
+    "Raids/Invasions",
+    "Marriage",
+    "PvP Arena",
+    "Skull System",
+    "Guild War System",
+    "Loyalty System",
+    "Imbuements",
+    "Exaltation Forge",
+    "Prey",
+    "Wheel of Destiny",
+    "Gem Atelier",
+    "Bestiary",
+    "Bosstiary",
+    "Charms",
+    "Weapon Proficiency",
+    "Stamina",
+    "Soul",
+    "Blessings",
+    "World Changes",
+    "Mini World Changes",
+    "World Quests",
+    "Tibiadrome",
+    "Hazard System",
+    "Soulpit",
+    "Doomforging",
+    "Charging System",
+    "Crystal Shield",
+    "Enchanting",
+    "Holy Shrines",
+    "Bakragore's Taints",
+    "Goshnar's Taints",
+    "Umbral Creation",
+    "Hunting Tasks",
+    "Daily Tasks",
+    "Premium gating",
+    "Tibia Client"
+  ],
+  "system_assignments": [
+    {
+      "surface": "Store",
+      "disposition": "PLATFORM_COMMERCIAL",
+      "static_path": null,
+      "ruleset_path": null,
+      "state_owner": "Platform account/commercial state",
+      "repository": "Oteryn/Oteryn-Platform",
+      "notes": "Catalog/products/offers/prices/availability/purchases/receipts/entitlement grants are commercial, not Game WorldProject."
+    },
+    {
+      "surface": "Market",
+      "disposition": "GAME_RULESET_AND_SERVICE_STATE",
+      "static_path": null,
+      "ruleset_path": "rulesets/economy/market/",
+      "state_owner": "Market/Economy durable service state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Market rules are Game; orders/history/personal prices are mutable service state."
+    },
+    {
+      "surface": "Outfitter",
+      "disposition": "CONTENT_PLUS_ENTITLEMENT",
+      "static_path": "content/cosmetics/",
+      "ruleset_path": "rulesets/entitlements/premium-gates/",
+      "state_owner": "Character/Account selected/unlocked cosmetics",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static outfits/addons/mounts are content; unlocks/current selection are durable."
+    },
+    {
+      "surface": "Raids/Invasions",
+      "disposition": "CONTENT_PLUS_RUNTIME",
+      "static_path": "content/encounters/raids/",
+      "ruleset_path": "rulesets/encounters/",
+      "state_owner": "Channel/World encounter phase",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static raid definitions vs current activity/wave/timer."
+    },
+    {
+      "surface": "Marriage",
+      "disposition": "RULESET_PLUS_DURABLE",
+      "static_path": null,
+      "ruleset_path": "rulesets/social/marriage/",
+      "state_owner": "Character/social durable state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Rules separate from current relationship state."
+    },
+    {
+      "surface": "PvP Arena",
+      "disposition": "CONTENT_PLUS_RULESET",
+      "static_path": "content/encounters/arenas/",
+      "ruleset_path": "rulesets/pvp/arena/",
+      "state_owner": "Channel/Encounter runtime",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Arena layout/encounter vs PvP policy."
+    },
+    {
+      "surface": "Skull System",
+      "disposition": "RULESET_PLUS_DURABLE",
+      "static_path": null,
+      "ruleset_path": "rulesets/pvp/skulls/",
+      "state_owner": "Character PvP durable state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Skull/frag rules; current counters/state durable."
+    },
+    {
+      "surface": "Guild War System",
+      "disposition": "RULESET_PLUS_DURABLE",
+      "static_path": null,
+      "ruleset_path": "rulesets/pvp/wars/",
+      "state_owner": "Guild/War durable state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "War policy vs current wars/contracts/state."
+    },
+    {
+      "surface": "Loyalty System",
+      "disposition": "RULESET_PLUS_ACCOUNT_STATE",
+      "static_path": null,
+      "ruleset_path": "rulesets/progression/loyalty/",
+      "state_owner": "Account durable/commercial-linked state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Game-side effects here; earning/account authority may cross Platform boundary."
+    },
+    {
+      "surface": "Imbuements",
+      "disposition": "ITEM_CONTENT_RULESET_INSTANCE_STATE",
+      "static_path": "content/items/definitions/",
+      "ruleset_path": "rulesets/items/imbuements/",
+      "state_owner": "ItemInstance active imbues + remaining duration",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Item has slots; imbuement definitions/rules separate; active imbues are mutable."
+    },
+    {
+      "surface": "Exaltation Forge",
+      "disposition": "ITEM_CONTENT_RULESET_INSTANCE_STATE",
+      "static_path": "content/items/definitions/",
+      "ruleset_path": "rulesets/items/exaltation-forge/",
+      "state_owner": "ItemInstance current tier + transaction state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Item classification/max tier static; current tier mutable."
+    },
+    {
+      "surface": "Prey",
+      "disposition": "RULESET_PLUS_DURABLE",
+      "static_path": null,
+      "ruleset_path": "rulesets/progression/prey/",
+      "state_owner": "Character prey slots/current rolls/rerolls",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static roll/bonus/cost rules vs current choices."
+    },
+    {
+      "surface": "Wheel of Destiny",
+      "disposition": "RULESET_PLUS_DURABLE",
+      "static_path": null,
+      "ruleset_path": "rulesets/progression/wheel-of-destiny/",
+      "state_owner": "Character wheel allocations/progress",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static graph/perks vs selected nodes."
+    },
+    {
+      "surface": "Gem Atelier",
+      "disposition": "ITEM_CONTENT_RULESET_DURABLE",
+      "static_path": "content/items/definitions/",
+      "ruleset_path": "rulesets/progression/gem-atelier/",
+      "state_owner": "Character bound/revealed gems and slot selections",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Physical unrevealed gems are Items; reveal/mod/slot rules are progression."
+    },
+    {
+      "surface": "Bestiary",
+      "disposition": "CONTENT_PLUS_RULESET_DURABLE",
+      "static_path": "content/creatures/bestiary/",
+      "ruleset_path": "rulesets/progression/bestiary/",
+      "state_owner": "Character kill counters/unlocks",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Creature static bestiary facts separate from player progress."
+    },
+    {
+      "surface": "Bosstiary",
+      "disposition": "CONTENT_PLUS_RULESET_DURABLE",
+      "static_path": "content/creatures/bosstiary/",
+      "ruleset_path": "rulesets/progression/bosstiary/",
+      "state_owner": "Character boss kill/progress/reward eligibility",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static thresholds separate from progress."
+    },
+    {
+      "surface": "Charms",
+      "disposition": "CONTENT_PLUS_RULESET_DURABLE",
+      "static_path": "content/charms/",
+      "ruleset_path": "rulesets/progression/charms/",
+      "state_owner": "Character charm points/unlocks/assignments",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Charm definitions separate from player assignment."
+    },
+    {
+      "surface": "Weapon Proficiency",
+      "disposition": "ITEM_CONTENT_RULESET_DURABLE",
+      "static_path": "content/items/definitions/",
+      "ruleset_path": "rulesets/progression/weapon-proficiency/",
+      "state_owner": "Character proficiency XP/unlocks/perks/ranks",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Item capability/static perks vs player progress."
+    },
+    {
+      "surface": "Stamina",
+      "disposition": "RULESET_PLUS_DURABLE",
+      "static_path": null,
+      "ruleset_path": "rulesets/character/stamina/",
+      "state_owner": "Character stamina/rested state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Rule constants separate from current pool/time."
+    },
+    {
+      "surface": "Soul",
+      "disposition": "RULESET_PLUS_DURABLE",
+      "static_path": null,
+      "ruleset_path": "rulesets/character/soul/",
+      "state_owner": "Character soul value",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static rules separate from current value."
+    },
+    {
+      "surface": "Blessings",
+      "disposition": "CONTENT_RULESET_DURABLE",
+      "static_path": "content/services/blessings/",
+      "ruleset_path": "rulesets/character/blessings/",
+      "state_owner": "Character active blessing ownership",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Acquisition service, effects rules and ownership are distinct."
+    },
+    {
+      "surface": "World Changes",
+      "disposition": "CONTENT_PLUS_RUNTIME",
+      "static_path": "content/encounters/world-changes/",
+      "ruleset_path": "rulesets/encounters/",
+      "state_owner": "World/Channel current phase/state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static world-change graph separate from active global state."
+    },
+    {
+      "surface": "Mini World Changes",
+      "disposition": "CONTENT_PLUS_RUNTIME",
+      "static_path": "content/encounters/mini-world-changes/",
+      "ruleset_path": "rulesets/encounters/",
+      "state_owner": "World/Channel current phase/state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static definition separate from runtime."
+    },
+    {
+      "surface": "World Quests",
+      "disposition": "CONTENT_PLUS_RUNTIME",
+      "static_path": "content/encounters/world-quests/",
+      "ruleset_path": "rulesets/encounters/",
+      "state_owner": "World/Quest/Reward runtime state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Quest/Encounter composition separate from current completion/claim."
+    },
+    {
+      "surface": "Tibiadrome",
+      "disposition": "CONTENT_RULESET_DURABLE",
+      "static_path": "content/encounters/tibiadrome/",
+      "ruleset_path": "rulesets/encounters/tibiadrome/",
+      "state_owner": "Character/Encounter run + reward state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Encounter content vs selection/scoring/rules."
+    },
+    {
+      "surface": "Hazard System",
+      "disposition": "RULESET_PLUS_DURABLE",
+      "static_path": null,
+      "ruleset_path": "rulesets/encounters/hazard-system/",
+      "state_owner": "Character/Encounter hazard progression state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "System rules separate from current level/state."
+    },
+    {
+      "surface": "Soulpit",
+      "disposition": "CONTENT_PLUS_RULESET_RUNTIME",
+      "static_path": "content/encounters/",
+      "ruleset_path": "rulesets/encounters/soulpit/",
+      "state_owner": "Encounter runtime state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Encounter definitions plus Soulpit rules."
+    },
+    {
+      "surface": "Doomforging",
+      "disposition": "ITEM_RULESET_INSTANCE_STATE",
+      "static_path": "content/items/definitions/",
+      "ruleset_path": "rulesets/items/doomforging/",
+      "state_owner": "ItemInstance/progression state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static eligibility/definitions plus mutable resulting state."
+    },
+    {
+      "surface": "Charging System",
+      "disposition": "ITEM_RULESET_INSTANCE_STATE",
+      "static_path": "content/items/definitions/",
+      "ruleset_path": "rulesets/items/charging-system/",
+      "state_owner": "ItemInstance charge state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Rules separate from current charges."
+    },
+    {
+      "surface": "Crystal Shield",
+      "disposition": "ITEM_RULESET_RUNTIME",
+      "static_path": "content/items/definitions/",
+      "ruleset_path": "rulesets/items/crystal-shield/",
+      "state_owner": "Character/Item runtime effect state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Typed item/effect definitions and rules."
+    },
+    {
+      "surface": "Enchanting",
+      "disposition": "ITEM_RULESET_INSTANCE_STATE",
+      "static_path": "content/items/definitions/",
+      "ruleset_path": "rulesets/items/enchanting/",
+      "state_owner": "ItemInstance current enchantment",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static lifecycle capability vs mutable enchanted form."
+    },
+    {
+      "surface": "Holy Shrines",
+      "disposition": "CONTENT_PLUS_RULESET_RUNTIME",
+      "static_path": "content/world/objects/",
+      "ruleset_path": "rulesets/encounters/holy-shrines/",
+      "state_owner": "World/Character interaction state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Shrine object/interaction content plus rules."
+    },
+    {
+      "surface": "Bakragore's Taints",
+      "disposition": "CONTENT_RULESET_DURABLE",
+      "static_path": "content/encounters/bosses/",
+      "ruleset_path": "rulesets/encounters/taints/bakragore/",
+      "state_owner": "Character/Encounter taint state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Encounter content + taint rules/current state."
+    },
+    {
+      "surface": "Goshnar's Taints",
+      "disposition": "CONTENT_RULESET_DURABLE",
+      "static_path": "content/encounters/bosses/",
+      "ruleset_path": "rulesets/encounters/taints/goshnar/",
+      "state_owner": "Character/Encounter taint state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Encounter content + taint rules/current state."
+    },
+    {
+      "surface": "Umbral Creation",
+      "disposition": "CONTENT_PLUS_RULESET",
+      "static_path": "content/services/crafting/",
+      "ruleset_path": "rulesets/items/umbral-creation/",
+      "state_owner": "Transaction/item state",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Recipes/content plus crafting rules."
+    },
+    {
+      "surface": "Hunting Tasks",
+      "disposition": "CONTENT_RULESET_DURABLE",
+      "static_path": "content/services/tasks/",
+      "ruleset_path": "rulesets/progression/",
+      "state_owner": "Character task progress/rewards",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Task-giver/static requirements vs current progress."
+    },
+    {
+      "surface": "Daily Tasks",
+      "disposition": "CONTENT_RULESET_DURABLE",
+      "static_path": "content/quests/definitions/",
+      "ruleset_path": "rulesets/progression/",
+      "state_owner": "Character task cooldown/progress",
+      "repository": "Oteryn/Oteryn-Game",
+      "notes": "Static repeatable quest/task content vs durable progress."
+    },
+    {
+      "surface": "Premium gating",
+      "disposition": "CROSS_REPO_ENTITLEMENT",
+      "static_path": null,
+      "ruleset_path": "rulesets/entitlements/premium-gates/",
+      "state_owner": "Platform Account entitlement + Game-consumed grant",
+      "repository": "Oteryn/Oteryn-Platform + Oteryn/Oteryn-Game",
+      "notes": "Platform owns purchase/grant; Game owns semantic gate consumption."
+    },
+    {
+      "surface": "Tibia Client",
+      "disposition": "EXTERNAL_PRODUCT_SURFACE",
+      "static_path": null,
+      "ruleset_path": null,
+      "state_owner": "Client application/runtime state",
+      "repository": "Oteryn Client",
+      "notes": "Wiki client-help surface is not Game content."
+    }
+  ],
+  "durable_state_ownership": [
+    {
+      "scope": "ItemInstance",
+      "fields": [
+        "stack quantity",
+        "remaining charges",
+        "durability",
+        "active imbues",
+        "remaining imbue duration",
+        "current Forge tier",
+        "current enchantment",
+        "container contents/custody",
+        "player-written document body/writer/timestamp"
+      ],
+      "owner": "Item/Durability/Persistence"
+    },
+    {
+      "scope": "Character",
+      "fields": [
+        "quest progress",
+        "achievement unlocks",
+        "Bestiary/Bosstiary progress",
+        "Charm points/unlocks/assignments",
+        "Prey rolls/slots",
+        "Wheel allocations",
+        "Gem Atelier revealed/bound gems",
+        "Weapon Proficiency XP/unlocks",
+        "stamina",
+        "soul",
+        "blessings",
+        "current outfit/mount selection"
+      ],
+      "owner": "Character/Progression/Persistence"
+    },
+    {
+      "scope": "Account",
+      "fields": [
+        "commercial entitlements",
+        "premium grant",
+        "Store purchases/receipts",
+        "account-wide cosmetic entitlements where product-owned"
+      ],
+      "owner": "Platform Account/Commercial plus Game-consumed entitlement projection"
+    },
+    {
+      "scope": "World/Channel",
+      "fields": [
+        "world-change phase",
+        "raid/encounter activity",
+        "event timers/waves",
+        "runtime NPC conversation/schedules",
+        "house live topology where applicable"
+      ],
+      "owner": "World/Channel runtime + owning durable service"
+    },
+    {
+      "scope": "House",
+      "fields": [
+        "owner",
+        "rent payment state",
+        "ACL/access lists",
+        "house inventory/custody"
+      ],
+      "owner": "House service/Persistence"
+    },
+    {
+      "scope": "Market",
+      "fields": [
+        "orders",
+        "history",
+        "personal prices",
+        "settlement state"
+      ],
+      "owner": "Market/Economy service"
+    }
+  ],
+  "commercial_logical_surface": {
+    "owner_repository": "Oteryn/Oteryn-Platform",
+    "physical_path_status": "DEFER_TO_PLATFORM_CONTRACT",
+    "logical_tree": [
+      "commercial/store/categories/",
+      "commercial/store/products/",
+      "commercial/store/offers/",
+      "commercial/store/prices/",
+      "commercial/store/availability/",
+      "commercial/premium/",
+      "commercial/entitlements/",
+      "commercial/purchases/",
+      "commercial/receipts/"
+    ],
+    "game_boundary": "Game consumes typed entitlement/commercial grants through accepted cross-repository contracts; Game content never owns payment truth."
+  },
+  "excluded_wiki_surfaces": [
+    {
+      "surface": "community/editorial/news/tutorial prose",
+      "disposition": "EXTERNAL_NOT_GAME_CONTENT"
+    },
+    {
+      "surface": "server-list metadata",
+      "disposition": "SOURCE_NAVIGATION_ONLY"
+    },
+    {
+      "surface": "calculators",
+      "disposition": "TOOL_NOT_GAME_CONTENT"
+    },
+    {
+      "surface": "Narzędzie do nasycania / wiki Imbuement Tool UI",
+      "disposition": "TOOL_NOT_GAME_CONTENT; underlying Imbuement system is mapped"
+    },
+    {
+      "surface": "provider/vendor wiki utility surfaces",
+      "disposition": "EXTERNAL_NOT_GAME_CONTENT"
+    }
+  ],
+  "migration_sequence": [
+    "1. protect this tree/ownership contract",
+    "2. land Item Master Schema detail contract (#903 or successor)",
+    "3. implement compatibility reader/writer and human-readable target directories without deleting current WorldProject/v2",
+    "4. mechanically migrate Items/Mounts first with byte/semantic round-trip proof",
+    "5. populate Creatures/Loot/NPC/Abilities/Quests/Systems into target families",
+    "6. run measured full-world placement sharding decision before bulk map migration",
+    "7. migrate placements/world content with deterministic equivalence and bounded resource proof",
+    "8. retire old monolithic physical locators only after all consumers use the successor and protected-main readback proves no loss"
+  ],
+  "summary": {
+    "protected_domain_groups": 19,
+    "assigned_domain_groups": 19,
+    "selected_system_surfaces": 39,
+    "assigned_system_surfaces": 39,
+    "target_tree_nodes": 100,
+    "durable_state_scopes": 6,
+    "unassigned_domains": 0,
+    "unassigned_systems": 0
+  }
+}

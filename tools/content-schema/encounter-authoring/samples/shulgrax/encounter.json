@@ -1,0 +1,167 @@
+{
+  "identity": {
+    "key": "canary:encounter/shulgrax",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Ferumbras Ascension: Shulgrax",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "shulgrax",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/shulgrax",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33486, 32796, 13).",
+      "location": {
+        "x": 33486,
+        "y": 32796,
+        "floor": 13
+      }
+    },
+    {
+      "key": "godbreaker",
+      "kind": "point",
+      "description": "Godbreaker destination; Canary (33459, 32820, 14).",
+      "location": {
+        "x": 33459,
+        "y": 32820,
+        "floor": 14
+      }
+    },
+    {
+      "key": "ascendant_exit",
+      "kind": "point",
+      "description": "Default teleporter destination; Canary (33319, 32318, 13).",
+      "location": {
+        "x": 33319,
+        "y": 32318,
+        "floor": 13
+      }
+    },
+    {
+      "key": "shulgrax_arena",
+      "kind": "area",
+      "description": "Every tile from Canary (33478, 32781, 13) to (33491, 32793, 13).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33478,
+              33491
+            ],
+            "y": [
+              32781,
+              32793
+            ],
+            "floor": 13
+          }
+        ]
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "shulgrax_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "shulgrax"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "shulgrax_defeated",
+          "credited": "damage_contributors"
+        },
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "godbreaker",
+          "effect": "canary.appearance:effect/thunder",
+          "revert_after_ms": 60000,
+          "revert_destination": "ascendant_exit"
+        }
+      ]
+    },
+    {
+      "key": "shulgrax_summons_souls",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "shulgrax",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/shulgrax_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "summon_count",
+          "role": "shulgrax",
+          "op": "<",
+          "value": 8
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/sin_devourer",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 4,
+          "at": {
+            "random_in": "shulgrax_arena"
+          },
+          "owner": "subject",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damned_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 4,
+          "at": {
+            "random_in": "shulgrax_arena"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "shulgrax_defeated"
+  ]
+}

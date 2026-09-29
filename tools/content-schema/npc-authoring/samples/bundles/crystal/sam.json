@@ -1,0 +1,1004 @@
+{
+ "definition": {
+  "description": {
+   "length": 3,
+   "links": [],
+   "placeholders": [],
+   "sha256": "4ecde249d747d51d869ae689c44cc1e6191b581b8315edac97990fdc4dce40d7"
+  },
+  "display_name": "Sam",
+  "movement": {
+   "floor_change": false,
+   "walk_interval_ms": 2000,
+   "walk_radius": 2
+  },
+  "name": "Sam",
+  "presentation": {
+   "light": null,
+   "outfit": {
+    "addons": 0,
+    "body": 113,
+    "feet": 95,
+    "head": 38,
+    "legs": 67,
+    "look_type": 131,
+    "mount": null
+   },
+   "speech_bubble": null
+  },
+  "profession": null,
+  "respawn": null,
+  "vitals": {
+   "health": 100,
+   "max_health": 100
+  }
+ },
+ "dialogue": {
+  "dialog_option_calls": 1,
+  "keywords": [
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "job"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 64,
+     "links": [],
+     "placeholders": [],
+     "sha256": "8287c9a53b2c6d7d2a368ef2e0f015df374b30ee346994c573977ba3c083efec"
+    }
+   }
+  ],
+  "messages": {
+   "farewell": {
+    "length": 38,
+    "links": [],
+    "placeholders": [
+     "|PLAYERNAME|"
+    ],
+    "sha256": "78182241af004c4ee3f14e986103f3992986482b11619145cc9ba6643f3b6ece"
+   },
+   "greet": {
+    "length": 78,
+    "links": [
+     "trade"
+    ],
+    "placeholders": [
+     "|PLAYERNAME|"
+    ],
+    "sha256": "0ee47b4356577f74b61a7662221b4bee31878cbff5899e403a5bc78dd3a50a84"
+   },
+   "walkaway": {
+    "length": 24,
+    "links": [],
+    "placeholders": [],
+    "sha256": "9e6c5d2666802eb3b904c506e30e28facf3297dd069b4ffed1e804f3756e3e18"
+   }
+  },
+  "scripted_handlers": [
+   "CALLBACK_MESSAGE_DEFAULT"
+  ]
+ },
+ "evidence": "OTS_HYPOTHESIS_ONLY",
+ "key": "crystal:npc/sam",
+ "placements": [
+  {
+   "direction": "NORTH",
+   "engine_spawns": true,
+   "placement_file": "data-global/world/world-npc.xml",
+   "position": {
+    "x": 32361,
+    "y": 32198,
+    "z": 7
+   },
+   "spawn_interval_s": 60,
+   "spawn_radius": 1
+  }
+ ],
+ "schema": "OTERYN_NPC_AUTHORING_CANDIDATE/v1",
+ "services": {
+  "blessings": [],
+  "kick": [],
+  "promotion": [],
+  "spells": [],
+  "trade": {
+   "currency": "GOLD",
+   "engine_trade_events": [
+    "onBuyItem",
+    "onCheckItem",
+    "onSellItem"
+   ],
+   "offers": [
+    {
+     "buy_price": 10,
+     "client_id": 3552,
+     "count": null,
+     "item_name": "leather boots",
+     "sell_price": 2,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 10,
+     "client_id": 3559,
+     "count": null,
+     "item_name": "leather legs",
+     "sell_price": 9,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 10000,
+     "client_id": 3279,
+     "count": null,
+     "item_name": "war hammer",
+     "sell_price": 470,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 10000000,
+     "client_id": 35285,
+     "count": 14400,
+     "item_name": "lasting exercise sword",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 10000000,
+     "client_id": 35286,
+     "count": 14400,
+     "item_name": "lasting exercise axe",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 10000000,
+     "client_id": 35287,
+     "count": 14400,
+     "item_name": "lasting exercise club",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 10000000,
+     "client_id": 35288,
+     "count": 14400,
+     "item_name": "lasting exercise bow",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 10000000,
+     "client_id": 44067,
+     "count": 14400,
+     "item_name": "lasting exercise shield",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 10000000,
+     "client_id": 50295,
+     "count": null,
+     "item_name": "lasting exercise wraps",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": 14400
+    },
+    {
+     "buy_price": 110,
+     "client_id": 3375,
+     "count": null,
+     "item_name": "soldier helmet",
+     "sell_price": 16,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 12,
+     "client_id": 3355,
+     "count": null,
+     "item_name": "leather helmet",
+     "sell_price": 4,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 12,
+     "client_id": 3561,
+     "count": null,
+     "item_name": "jacket",
+     "sell_price": 1,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 120,
+     "client_id": 3354,
+     "count": null,
+     "item_name": "brass helmet",
+     "sell_price": 30,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 1200,
+     "client_id": 3357,
+     "count": null,
+     "item_name": "plate armor",
+     "sell_price": 400,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 125,
+     "client_id": 3410,
+     "count": null,
+     "item_name": "plate shield",
+     "sell_price": 45,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 1250000,
+     "client_id": 35279,
+     "count": 1800,
+     "item_name": "durable exercise sword",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 1250000,
+     "client_id": 35280,
+     "count": 1800,
+     "item_name": "durable exercise axe",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 1250000,
+     "client_id": 35281,
+     "count": 1800,
+     "item_name": "durable exercise club",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 1250000,
+     "client_id": 35282,
+     "count": 1800,
+     "item_name": "durable exercise bow",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 1250000,
+     "client_id": 44066,
+     "count": 1800,
+     "item_name": "durable exercise shield",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 1250000,
+     "client_id": 50294,
+     "count": null,
+     "item_name": "durable exercise wraps",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": 1800
+    },
+    {
+     "buy_price": 15,
+     "client_id": 3272,
+     "count": null,
+     "item_name": "rapier",
+     "sell_price": 5,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 15,
+     "client_id": 3412,
+     "count": null,
+     "item_name": "wooden shield",
+     "sell_price": 5,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 16,
+     "client_id": 3379,
+     "count": null,
+     "item_name": "doublet",
+     "sell_price": 3,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 160,
+     "client_id": 3285,
+     "count": null,
+     "item_name": "longsword",
+     "sell_price": 51,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 195,
+     "client_id": 3372,
+     "count": null,
+     "item_name": "brass legs",
+     "sell_price": 49,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 20,
+     "client_id": 3274,
+     "count": null,
+     "item_name": "axe",
+     "sell_price": 7,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 200,
+     "client_id": 3358,
+     "count": null,
+     "item_name": "chain armor",
+     "sell_price": 70,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 235,
+     "client_id": 3266,
+     "count": null,
+     "item_name": "battle axe",
+     "sell_price": 80,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 240,
+     "client_id": 3409,
+     "count": null,
+     "item_name": "steel shield",
+     "sell_price": 80,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 25,
+     "client_id": 3298,
+     "count": null,
+     "item_name": "throwing knife",
+     "sell_price": 2,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 26,
+     "client_id": 3294,
+     "count": null,
+     "item_name": "short sword",
+     "sell_price": 10,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 260,
+     "client_id": 3304,
+     "count": null,
+     "item_name": "crowbar",
+     "sell_price": 50,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 260,
+     "client_id": 3377,
+     "count": null,
+     "item_name": "scale armor",
+     "sell_price": 75,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 260,
+     "client_id": 3431,
+     "count": null,
+     "item_name": "viking shield",
+     "sell_price": 85,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 265,
+     "client_id": 3367,
+     "count": null,
+     "item_name": "viking helmet",
+     "sell_price": 66,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 270,
+     "client_id": 50181,
+     "count": null,
+     "item_name": "pair of monk fists",
+     "sell_price": 90,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 347222,
+     "client_id": 28552,
+     "count": 500,
+     "item_name": "exercise sword",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 347222,
+     "client_id": 28553,
+     "count": 500,
+     "item_name": "exercise axe",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 347222,
+     "client_id": 28554,
+     "count": 500,
+     "item_name": "exercise club",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 347222,
+     "client_id": 28555,
+     "count": 500,
+     "item_name": "exercise bow",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 347222,
+     "client_id": 44065,
+     "count": 500,
+     "item_name": "exercise shield",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 347222,
+     "client_id": 50293,
+     "count": null,
+     "item_name": "exercise wraps",
+     "sell_price": null,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": 500
+    },
+    {
+     "buy_price": 35,
+     "client_id": 3273,
+     "count": null,
+     "item_name": "sabre",
+     "sell_price": 12,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 35,
+     "client_id": 3361,
+     "count": null,
+     "item_name": "leather armor",
+     "sell_price": 12,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 350,
+     "client_id": 3305,
+     "count": null,
+     "item_name": "battle hammer",
+     "sell_price": 120,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 390,
+     "client_id": 3353,
+     "count": null,
+     "item_name": "iron helmet",
+     "sell_price": 150,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 405,
+     "client_id": 50182,
+     "count": null,
+     "item_name": "nunchaku",
+     "sell_price": 135,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 430,
+     "client_id": 3282,
+     "count": null,
+     "item_name": "morning star",
+     "sell_price": 100,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 450,
+     "client_id": 3359,
+     "count": null,
+     "item_name": "brass armor",
+     "sell_price": 150,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 473,
+     "client_id": 3283,
+     "count": null,
+     "item_name": "carlin sword",
+     "sell_price": 118,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 5,
+     "client_id": 3267,
+     "count": null,
+     "item_name": "dagger",
+     "sell_price": 2,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 5,
+     "client_id": 3270,
+     "count": null,
+     "item_name": "club",
+     "sell_price": 1,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 50,
+     "client_id": 3362,
+     "count": null,
+     "item_name": "studded legs",
+     "sell_price": 15,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 50,
+     "client_id": 3426,
+     "count": null,
+     "item_name": "studded shield",
+     "sell_price": 16,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 500,
+     "client_id": 3425,
+     "count": null,
+     "item_name": "dwarven shield",
+     "sell_price": 100,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 52,
+     "client_id": 3352,
+     "count": null,
+     "item_name": "chain helmet",
+     "sell_price": 17,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 540,
+     "client_id": 50183,
+     "count": null,
+     "item_name": "sai",
+     "sell_price": 180,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 580,
+     "client_id": 3351,
+     "count": null,
+     "item_name": "steel helmet",
+     "sell_price": 293,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 63,
+     "client_id": 3376,
+     "count": null,
+     "item_name": "studded helmet",
+     "sell_price": 20,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 65,
+     "client_id": 3411,
+     "count": null,
+     "item_name": "brass shield",
+     "sell_price": 25,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 7,
+     "client_id": 3293,
+     "count": null,
+     "item_name": "sickle",
+     "sell_price": 3,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 75,
+     "client_id": 3338,
+     "count": null,
+     "item_name": "bone sword",
+     "sell_price": 20,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 8,
+     "client_id": 3268,
+     "count": null,
+     "item_name": "hand axe",
+     "sell_price": 4,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 8,
+     "client_id": 3562,
+     "count": null,
+     "item_name": "coat",
+     "sell_price": 1,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 80,
+     "client_id": 3558,
+     "count": null,
+     "item_name": "chain legs",
+     "sell_price": 25,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 8000,
+     "client_id": 3271,
+     "count": null,
+     "item_name": "spike sword",
+     "sell_price": 240,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 85,
+     "client_id": 3264,
+     "count": null,
+     "item_name": "sword",
+     "sell_price": 25,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 90,
+     "client_id": 3286,
+     "count": null,
+     "item_name": "mace",
+     "sell_price": 30,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 90,
+     "client_id": 3378,
+     "count": null,
+     "item_name": "studded armor",
+     "sell_price": 25,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": 950,
+     "client_id": 3265,
+     "count": null,
+     "item_name": "two handed sword",
+     "sell_price": 450,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3269,
+     "count": null,
+     "item_name": "halberd",
+     "sell_price": 400,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3275,
+     "count": null,
+     "item_name": "double axe",
+     "sell_price": 260,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3276,
+     "count": null,
+     "item_name": "hatchet",
+     "sell_price": 25,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3280,
+     "count": null,
+     "item_name": "fire sword",
+     "sell_price": 1000,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3300,
+     "count": null,
+     "item_name": "katana",
+     "sell_price": 35,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3316,
+     "count": null,
+     "item_name": "orcish axe",
+     "sell_price": 350,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3336,
+     "count": null,
+     "item_name": "studded club",
+     "sell_price": 10,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3337,
+     "count": null,
+     "item_name": "bone club",
+     "sell_price": 5,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3366,
+     "count": null,
+     "item_name": "magic plate armor",
+     "sell_price": 6400,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3374,
+     "count": null,
+     "item_name": "legion helmet",
+     "sell_price": 22,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3413,
+     "count": null,
+     "item_name": "battle shield",
+     "sell_price": 95,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3430,
+     "count": null,
+     "item_name": "copper shield",
+     "sell_price": 50,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3462,
+     "count": null,
+     "item_name": "small axe",
+     "sell_price": 5,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 3557,
+     "count": null,
+     "item_name": "plate legs",
+     "sell_price": 115,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    }
+   ]
+  },
+  "travel": []
+ },
+ "source": {
+  "path": "data-global/npc/sam.lua",
+  "repository": "zimbadev/crystalserver",
+  "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+  "sha256": "ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b"
+ },
+ "status": "PARTIAL",
+ "unresolved": [
+  {
+   "detail": "CALLBACK_MESSAGE_DEFAULT",
+   "path": "dialogue.scripted_handlers",
+   "reason": "LUA_CALLBACK"
+  },
+  {
+   "detail": "addDialogOptions x1",
+   "path": "dialogue.dialog_options",
+   "reason": "UNMAPPED_ENGINE_CALL"
+  }
+ ],
+ "voices": {
+  "chance_percent": 50,
+  "interval_ms": 15000,
+  "lines": [
+   {
+    "text": {
+     "length": 71,
+     "links": [],
+     "placeholders": [],
+     "sha256": "2aee29a3d93e3c5c7db7c13759200787f0fbe86f1ebce572c3eddcb5cbeb3e49"
+    },
+    "yell": false
+   }
+  ]
+ }
+}

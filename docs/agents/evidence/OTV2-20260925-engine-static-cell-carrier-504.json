@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "task_id": "OTV2-20260925-engine-static-cell-carrier-504",
+  "classification": "PROVEN",
+  "source": "ENGINEERING_ONLY_SYNTHETIC",
+  "target_reference_claim_cases": [],
+  "target_collision_status": "UNKNOWN",
+  "profile": "ENGINE_STATIC_CELL_CARRIER/v1",
+  "candidate_not_registry_limit": true,
+  "codec": {
+    "magic_bytes": 8,
+    "world_uuid_bytes": 16,
+    "generation_digest_bytes": 32,
+    "binding_atoms": 5,
+    "max_binding_atom_bytes_each": 512,
+    "length_prefix_bytes_each": 2,
+    "content_lock_provenance_hex_bytes": 64,
+    "cell_count_bytes": 1,
+    "cell_record_bytes": 13,
+    "max_cells": 4,
+    "max_encoded_bytes": 2743,
+    "formula": "8 + 16 + 32 + 5 * (2 + 512) + 64 + 1 + 4 * 13 = 2743",
+    "client_legality_bytes": 0,
+    "max_encoded_bytes_measured_by_test": 2743
+  },
+  "lookup": {
+    "candidate_key_lookups_per_decision": 1,
+    "collection_scan": false,
+    "index_entries_max": 4
+  },
+  "validation": "LOCAL_FOCUSED_21_PASS_STRICT_CLIPPY_PASS_FORMAT_PASS_EXACT_HEAD_CI_PENDING",
+  "reference_data_admission": "BLOCKED_ON_EXACT_FIELD_483",
+  "reference_static_collision_case_bindings": [],
+  "reference_static_collision_admission": "FAIL_CLOSED_WITH_EXACT_FIELD_BINDING_CHECK",
+  "authority": "UNACTIVATED_ENGINEERING_ONLY",
+  "generation_zero_digest": "REJECTED"
+}

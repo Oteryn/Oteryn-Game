@@ -2,6 +2,8 @@
 
 Status: AUTHOR_CANDIDATE / NOT_REGISTERED / NOT_ACTIVE. Prepared 2026-09-11.
 
+2026-09-29: the registered `OTV2_SOL_NATIVE_UI_*` prompts were retired to `docs/agents/prompts/retired/` unused; native client work runs through ADR-0020 lanes. The paths below are historical.
+
 Companion: `docs/architecture/OTERYN_NATIVE_CLIENT_UI_IMPLEMENTATION_PROGRAMME_V1.md` (sections 1-10 and 17-18), called PROGRAMME below. These two files are one planning packet. This document contains full reusable prompt candidates and their future invocation contract, not an active alias registry, worker launch, lease grant or replacement scheduler.
 
 Current source baseline: `Oteryn/Oteryn-Game@5ec6ca6369e98a6f66f679cfc7fc1248fb5992fb`; bound META `Oteryn/Oteryn@3b39e0be05aef008f1bd442821daefa898a201dd`. These are planning provenance only. Every invocation must resolve current protected main, its policy pin, prompt lifecycle and allocations again.
@@ -374,7 +376,7 @@ This packet has author analysis only until a real independent reviewer records a
 
 This section is an integration handoff design for the existing authorized control plane, not permission for a prompt author or UI worker to integrate. The owner request for this packet expressly ends at PR publication, without self-merge.
 
-At integration time re-read the actual bound META policy, live ruleset, unique control-plane profile and candidate eligibility. At the observed META pin, the selected native route is REST `PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge-async` with the qualified exact `sha` and `merge_action="merge_queue"`. Do not substitute direct merge, generic auto-merge, GraphQL fallback or a guessed endpoint. A tool must explicitly support the route; unavailable capability is a blocker, not a reason to bypass it.
+At integration time re-read the actual bound META policy, live ruleset, unique control-plane profile and candidate eligibility. Resolve the current bound integration-capability router rather than pinning a provider-local primitive: use freshly proven `DIRECT_CAPABLE` when available, otherwise a freshly proven `DELEGATED_CAPABLE` executor route, and report `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither route is proven. Follow the selected bound route-specific fencing and receipt/reconciliation contract. Do not substitute direct merge, generic auto-merge, GraphQL fallback or a guessed endpoint.
 
 The authorized integrator must:
 

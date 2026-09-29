@@ -1,0 +1,146 @@
+{
+  "identity": {
+    "key": "canary:encounter/razzagorn",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Ferumbras Ascension: Razzagorn",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "razzagorn",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/razzagorn",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33413, 32467, 14).",
+      "location": {
+        "x": 33413,
+        "y": 32467,
+        "floor": 14
+      }
+    },
+    {
+      "key": "godbreaker",
+      "kind": "point",
+      "description": "Godbreaker destination; Canary (33357, 32440, 13).",
+      "location": {
+        "x": 33357,
+        "y": 32440,
+        "floor": 13
+      }
+    },
+    {
+      "key": "ascendant_exit",
+      "kind": "point",
+      "description": "Default teleporter destination; Canary (33319, 32318, 13).",
+      "location": {
+        "x": 33319,
+        "y": 32318,
+        "floor": 13
+      }
+    },
+    {
+      "key": "razzagorn_arena",
+      "kind": "area",
+      "description": "Every tile from Canary (33416, 32460, 14) to (33431, 32474, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33416,
+              33431
+            ],
+            "y": [
+              32460,
+              32474
+            ],
+            "floor": 14
+          }
+        ]
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "razzagorn_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "razzagorn"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "razzagorn_defeated",
+          "credited": "damage_contributors"
+        },
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "godbreaker",
+          "effect": "canary.appearance:effect/thunder",
+          "revert_after_ms": 60000,
+          "revert_destination": "ascendant_exit"
+        }
+      ]
+    },
+    {
+      "key": "razzagorn_summons_demons",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "razzagorn",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/razzagorn_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/demon",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 4,
+          "at": {
+            "random_in": "razzagorn_arena"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "razzagorn_defeated"
+  ]
+}

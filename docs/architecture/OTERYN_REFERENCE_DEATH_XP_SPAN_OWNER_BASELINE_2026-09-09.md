@@ -8,6 +8,9 @@
 - Protected source base: `main@e1750ede386c0ee1001894ab9d91129de5d03fce`
 - Scope: Oteryn Reference death progression-loss semantics only
 - Runtime/client/server/protocol/DDL/migration/Platform/Atlas/production authority: **NONE**
+- Amended (difference 1 only) by `reviews/OTERYN_GAME_REFERENCE_FIRST_PLAYER_DEATH_DECISION_2026-09-28.md`
+  (owner decision D58): the XP-loss basis follows Global. Difference 2 (no skill or magic-level loss)
+  is unchanged.
 
 ## 1. Owner decisions
 

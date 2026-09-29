@@ -12,6 +12,71 @@ from unittest import mock
 import spike
 
 
+def make_d3_fixture():
+    deferred = {
+        "canonical_target_spatial_address": "DEFERRED_REQUIRES_PHASE_B",
+        "target_ordered_placement_sequence": "DEFERRED_REQUIRES_PHASE_B",
+        "target_collision_walkability": "DEFERRED_REQUIRES_PHASE_B",
+    }
+    placement = {
+        "appearance_source_id": 2031,
+        "source_role": "ground",
+        "source_presentation_order": {"plane": 0, "order": 1},
+        "identity_disposition": "UNRESOLVED_SOURCE_IDENTITY",
+        "typed_definition_ref": None,
+        "placement_key": None,
+        "target_sensitive_fields": dict(deferred),
+    }
+    first = dict(placement, source_occurrence_ref="presentation:aaa")
+    second = dict(
+        placement,
+        source_occurrence_ref="presentation:bbb",
+        appearance_source_id=3687,
+        source_role="tile_item",
+        source_presentation_order={"plane": 0, "order": 2},
+    )
+    third = dict(placement, source_occurrence_ref="presentation:ccc")
+    return {
+        "schema_version": 1,
+        "world_id": "d3-test-world",
+        "critical_features": ["chunk-index-v1", "projection-v1"],
+        "provenance": {
+            "measurement_profile": spike.D3_REAL_BATCH_PROFILE,
+            "classification": spike.D3_SOURCE_CLASSIFICATION,
+            "source_generation_profile_id": spike.D3_FRESH_SOURCE_PROFILE,
+            "source_generation_profile_revision": 2,
+            "selection": {
+                "windows": [
+                    {"name": "newhaven", "retained_shard": "source-shard-a"}
+                ]
+            },
+        },
+        "definitions": {
+            "source-appearance:2031": {
+                "definition_kind": "SOURCE_APPEARANCE_REFERENCE",
+                "appearance_source_id": 2031,
+                "identity_disposition": "SOURCE_ID_ONLY_NOT_CANONICAL",
+                "production_authority": "NONE",
+            },
+            "source-appearance:3687": {
+                "definition_kind": "SOURCE_APPEARANCE_REFERENCE",
+                "appearance_source_id": 3687,
+                "identity_disposition": "SOURCE_ID_ONLY_NOT_CANONICAL",
+                "production_authority": "NONE",
+            },
+        },
+        "server_only": {
+            "typed_batch_schema": "OTERYN_REFERENCE_CONTENT_SOURCE_BATCH/v1",
+            "production_authority": "NONE",
+            "reference_parity_claim": "NONE",
+        },
+        "cells": [
+            {"x": 16, "y": 16, "z": -7, "source_placements": [second, first]},
+            {"x": 25, "y": 25, "z": -7, "source_placements": [third]},
+        ],
+    }
+
+
 class ContentFormatSpikeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
@@ -186,6 +251,167 @@ class ContentFormatSpikeTests(unittest.TestCase):
         self.assertIn("sqlite-project", text)
         self.assertIn("indexed-zlib-bundle", text)
         self.assertIn("Owner decision required", text)
+
+
+    def test_d3_two_carriers_share_logical_index_and_round_trip(self) -> None:
+        fixture = make_d3_fixture()
+        baseline = self.root / "d3-none"
+        compressed = self.root / "d3-zlib"
+        for target, compression in ((baseline, "none"), (compressed, "zlib")):
+            spike.write_d3_carrier(
+                target, fixture, 8, compression=compression, projection="server"
+            )
+        none_manifest = spike.read_d3_manifest(
+            baseline, expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE
+        )
+        zlib_manifest = spike.read_d3_manifest(
+            compressed, expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE
+        )
+        self.assertEqual(
+            none_manifest["logical_identity_sha256"],
+            zlib_manifest["logical_identity_sha256"],
+        )
+        self.assertEqual(
+            spike.d3_index_signature(none_manifest),
+            spike.d3_index_signature(zlib_manifest),
+        )
+        self.assertEqual(
+            spike.canonical_json(
+                spike.reconstruct_d3_fixture(
+                    baseline, expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE
+                )
+            ),
+            spike.canonical_json(spike.d3_normalize_fixture(fixture)),
+        )
+        cell = spike.read_d3_cell(
+            compressed,
+            (16, 16, -7),
+            expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE,
+        )
+        self.assertEqual(len(cell["source_placements"]), 2)
+        placement = spike.read_d3_placement(
+            compressed,
+            "presentation:aaa",
+            expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE,
+        )
+        self.assertEqual(placement["appearance_source_id"], 2031)
+        definition = spike.read_d3_definition(
+            compressed,
+            "source-appearance:2031",
+            expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE,
+        )
+        self.assertEqual(
+            definition["identity_disposition"], "SOURCE_ID_ONLY_NOT_CANONICAL"
+        )
+
+    def test_d3_client_projection_and_negative_boundaries_fail_closed(self) -> None:
+        fixture = make_d3_fixture()
+        server = self.root / "d3-server"
+        client = self.root / "d3-client"
+        spike.write_d3_carrier(
+            server, fixture, 8, compression="zlib", projection="server"
+        )
+        spike.write_d3_carrier(
+            client,
+            spike.d3_client_fixture(fixture),
+            8,
+            compression="zlib",
+            projection="client",
+        )
+        manifest = spike.read_d3_manifest(
+            client, expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE
+        )
+        self.assertNotIn("server_only", manifest)
+        self.assertEqual(
+            spike.canonical_json(
+                spike.reconstruct_d3_fixture(
+                    client, expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE
+                )
+            ),
+            spike.canonical_json(spike.d3_client_fixture(fixture)),
+        )
+        target_key = (2, 2, -7)
+        for mode in ("corrupt", "truncate"):
+            self.assertTrue(
+                spike._d3_corruption_rejected(
+                    server,
+                    target_key,
+                    self.root,
+                    expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE,
+                    mode=mode,
+                )
+            )
+        for mutation in ("profile", "version", "critical", "placement-index", "raw-size"):
+            self.assertTrue(
+                spike._d3_manifest_negative(
+                    server,
+                    self.root,
+                    expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE,
+                    mutation=mutation,
+                )
+            )
+        leaky = make_d3_fixture()
+        leaky["provenance"]["server_secret"] = "must-not-reach-client"
+        with self.assertRaises(spike.SpikeError):
+            spike.d3_client_fixture(leaky)
+
+
+    def test_d3_identity_is_enumeration_and_rechunk_independent(self) -> None:
+        fixture = make_d3_fixture()
+        reversed_fixture = copy.deepcopy(fixture)
+        reversed_fixture["cells"].reverse()
+        for cell in reversed_fixture["cells"]:
+            cell["source_placements"].reverse()
+        self.assertEqual(
+            spike.d3_logical_identity(fixture),
+            spike.d3_logical_identity(reversed_fixture),
+        )
+        shard_variant = copy.deepcopy(fixture)
+        shard_variant["provenance"]["selection"]["windows"][0][
+            "retained_shard"
+        ] = "source-shard-b"
+        self.assertEqual(
+            spike.d3_logical_identity(fixture),
+            spike.d3_logical_identity(shard_variant),
+        )
+
+        a = self.root / "d3-c8"
+        b = self.root / "d3-c16"
+        spike.write_d3_carrier(
+            a, fixture, 8, compression="none", projection="server"
+        )
+        spike.write_d3_carrier(
+            b, fixture, 16, compression="none", projection="server"
+        )
+        ma = spike.read_d3_manifest(
+            a, expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE
+        )
+        mb = spike.read_d3_manifest(
+            b, expected_source_profile=spike.D3_FRESH_SOURCE_PROFILE
+        )
+        self.assertEqual(
+            ma["logical_identity_sha256"], mb["logical_identity_sha256"]
+        )
+
+    def test_d3_one_record_update_changes_manifest_and_one_chunk(self) -> None:
+        fixture = make_d3_fixture()
+        before = self.root / "d3-before"
+        after = self.root / "d3-after"
+        spike.write_d3_carrier(
+            before, fixture, 8, compression="none", projection="server"
+        )
+        spike.write_d3_carrier(
+            after,
+            spike._d3_mutated_fixture(fixture),
+            8,
+            compression="none",
+            projection="server",
+        )
+        names, patch_bytes = spike._d3_changed_artifact_metrics(before, after)
+        self.assertEqual(len(names), 2)
+        self.assertIn("manifest.json", names)
+        self.assertEqual(sum(name.startswith("chunks/") for name in names), 1)
+        self.assertGreater(patch_bytes, 0)
 
 
 if __name__ == "__main__":

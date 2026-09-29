@@ -1,0 +1,2545 @@
+{
+  "base": {
+    "engine": "crystal",
+    "repository": "zimbadev/crystalserver",
+    "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+  },
+  "blockers_by_item_count": [
+    {
+      "blocker": "family_profile_unresolved",
+      "items": 13
+    }
+  ],
+  "by_profile": {
+    "decoration": 127,
+    "document": 24,
+    "equipment_armor": 5,
+    "food": 1,
+    "light_source": 2,
+    "material_valuable": 78,
+    "plant": 2,
+    "weapon_distance": 4,
+    "weapon_magic": 4,
+    "weapon_melee": 14
+  },
+  "donor": {
+    "artifact_digests": {
+      "data/items/appearances.dat": {
+        "digest_mode": "raw_bytes",
+        "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
+      },
+      "data/items/items.xml": {
+        "digest_mode": "text_lf_normalized",
+        "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+      }
+    },
+    "branch": "summer-update",
+    "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "repository": "zimbadev/crystalserver"
+  },
+  "family_profile_basis": {
+    "engine_attribute": 257,
+    "engine_wrap_target": 4
+  },
+  "family_profile_rule": {},
+  "items": {
+    "34338": {
+      "name": "refiner of magic",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "35500": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "magic portal",
+      "outcome": "resolved"
+    },
+    "40527": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "rotten feather",
+      "outcome": "resolved"
+    },
+    "40528": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "ritual tooth",
+      "outcome": "resolved"
+    },
+    "40529": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "gold-brocaded cloth",
+      "outcome": "resolved"
+    },
+    "43670": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cauldron (witchcraft)",
+      "outcome": "resolved"
+    },
+    "43674": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "table (without candles)",
+      "outcome": "resolved"
+    },
+    "43675": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "table with candles",
+      "outcome": "resolved"
+    },
+    "43676": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "table with burning candles",
+      "outcome": "resolved"
+    },
+    "43677": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "chest full of witchcraft",
+      "outcome": "resolved"
+    },
+    "43681": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft chair",
+      "outcome": "resolved"
+    },
+    "43687": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft cabinet",
+      "outcome": "resolved"
+    },
+    "43689": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft portal",
+      "outcome": "resolved"
+    },
+    "43693": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft fireplace",
+      "outcome": "resolved"
+    },
+    "43697": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft cupboard",
+      "outcome": "resolved"
+    },
+    "43701": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft summoning circle",
+      "outcome": "resolved"
+    },
+    "43703": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft bookstand",
+      "outcome": "resolved"
+    },
+    "43707": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft cage",
+      "outcome": "resolved"
+    },
+    "43709": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft scroll",
+      "outcome": "resolved"
+    },
+    "43711": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft forest herbs",
+      "outcome": "resolved"
+    },
+    "43713": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft sweet herbs",
+      "outcome": "resolved"
+    },
+    "43715": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "witchcraft bed",
+      "outcome": "resolved"
+    },
+    "43739": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "moon compass",
+      "outcome": "resolved"
+    },
+    "43847": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "rotten vermin ichor",
+      "outcome": "resolved"
+    },
+    "43848": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "worm sponge",
+      "outcome": "resolved"
+    },
+    "43856": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "bloated maggot",
+      "outcome": "resolved"
+    },
+    "43857": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "blooded worm",
+      "outcome": "resolved"
+    },
+    "43858": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "basalt crumbs",
+      "outcome": "resolved"
+    },
+    "43859": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "basalt core",
+      "outcome": "resolved"
+    },
+    "43888": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "closed pocket sundial",
+      "outcome": "resolved"
+    },
+    "43903": {
+      "name": "blue lava",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "43961": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "darklight figurine",
+      "outcome": "resolved"
+    },
+    "43962": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "putrefactive figurine",
+      "outcome": "resolved"
+    },
+    "43963": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "figurine of Bakragore",
+      "outcome": "resolved"
+    },
+    "43964": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "Ichgahal's fungal infestation",
+      "outcome": "resolved"
+    },
+    "43965": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "Murcion's mycelium",
+      "outcome": "resolved"
+    },
+    "43966": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "Chagorz igneous obsidian",
+      "outcome": "resolved"
+    },
+    "43967": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "Vemiath's infused basalt",
+      "outcome": "resolved"
+    },
+    "43968": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "Bakragore's amalgamation",
+      "outcome": "resolved"
+    },
+    "44030": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "mask of the defiler",
+      "outcome": "resolved"
+    },
+    "44073": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave bench",
+      "outcome": "resolved"
+    },
+    "44077": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave chair",
+      "outcome": "resolved"
+    },
+    "44078": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave chest",
+      "outcome": "resolved"
+    },
+    "44082": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave table",
+      "outcome": "resolved"
+    },
+    "44083": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave cabinet",
+      "outcome": "resolved"
+    },
+    "44087": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave floor lamp",
+      "outcome": "resolved"
+    },
+    "44089": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave wall lamp",
+      "outcome": "resolved"
+    },
+    "44091": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "gathered cave floor earth",
+      "outcome": "resolved"
+    },
+    "44092": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave floor earth",
+      "outcome": "resolved"
+    },
+    "44093": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "skelaptor",
+      "outcome": "resolved"
+    },
+    "44098": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave bed",
+      "outcome": "resolved"
+    },
+    "44110": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave wall panel (1)",
+      "outcome": "resolved"
+    },
+    "44114": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave weapon display",
+      "outcome": "resolved"
+    },
+    "44116": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave firewood",
+      "outcome": "resolved"
+    },
+    "44118": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave remains",
+      "outcome": "resolved"
+    },
+    "44120": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave bones",
+      "outcome": "resolved"
+    },
+    "44122": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave mural",
+      "outcome": "resolved"
+    },
+    "44124": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "low cave mural",
+      "outcome": "resolved"
+    },
+    "44126": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave panel",
+      "outcome": "resolved"
+    },
+    "44128": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "low cave panel",
+      "outcome": "resolved"
+    },
+    "44130": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave fence",
+      "outcome": "resolved"
+    },
+    "44132": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "low cave fence",
+      "outcome": "resolved"
+    },
+    "44134": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave rampart",
+      "outcome": "resolved"
+    },
+    "44136": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "low cave rampart",
+      "outcome": "resolved"
+    },
+    "44138": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave wall border",
+      "outcome": "resolved"
+    },
+    "44140": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave panel border",
+      "outcome": "resolved"
+    },
+    "44142": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave fence border",
+      "outcome": "resolved"
+    },
+    "44144": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave rampart border",
+      "outcome": "resolved"
+    },
+    "44146": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cave fireplace",
+      "outcome": "resolved"
+    },
+    "44438": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "broken Mitmah necklace",
+      "outcome": "resolved"
+    },
+    "44439": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "crystal of the Mitmah",
+      "outcome": "resolved"
+    },
+    "44440": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "yapunac dagger",
+      "outcome": "resolved"
+    },
+    "44449": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "crystal chair",
+      "outcome": "resolved"
+    },
+    "44453": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "crystal chest",
+      "outcome": "resolved"
+    },
+    "44457": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "crystal table (store)",
+      "outcome": "resolved"
+    },
+    "44458": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "crystal cabinet",
+      "outcome": "resolved"
+    },
+    "44460": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "crystal floor lamp",
+      "outcome": "resolved"
+    },
+    "44515": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "crystal wall lamp",
+      "outcome": "resolved"
+    },
+    "44517": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "gnome baby",
+      "outcome": "resolved"
+    },
+    "44545": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "crystal bed",
+      "outcome": "resolved"
+    },
+    "44727": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "broken Mitmah chestplate",
+      "outcome": "resolved"
+    },
+    "44728": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "splintered Mitmah gem",
+      "outcome": "resolved"
+    },
+    "44729": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "Atab's Mitmah helmet",
+      "outcome": "resolved"
+    },
+    "44736": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "bulltaur horn",
+      "outcome": "resolved"
+    },
+    "44737": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "bulltaur hoof",
+      "outcome": "resolved"
+    },
+    "44738": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "bulltaur armor scrap",
+      "outcome": "resolved"
+    },
+    "44739": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "encrypted notes",
+      "outcome": "resolved"
+    },
+    "44740": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "strange substance",
+      "outcome": "resolved"
+    },
+    "44741": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "staff piece",
+      "outcome": "resolved"
+    },
+    "44742": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "idol of the forge",
+      "outcome": "resolved"
+    },
+    "45318": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "gravestone chair",
+      "outcome": "resolved"
+    },
+    "45322": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "spooky chest",
+      "outcome": "resolved"
+    },
+    "45326": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "skull cabinet",
+      "outcome": "resolved"
+    },
+    "45328": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "gravestone table",
+      "outcome": "resolved"
+    },
+    "45331": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "reaper clock",
+      "outcome": "resolved"
+    },
+    "45333": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "tomb bed",
+      "outcome": "resolved"
+    },
+    "45345": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "morbid floor lamp",
+      "outcome": "resolved"
+    },
+    "45349": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "black heart",
+      "outcome": "resolved"
+    },
+    "45352": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "reaper painting",
+      "outcome": "resolved"
+    },
+    "45353": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "spooky mirror",
+      "outcome": "resolved"
+    },
+    "45355": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "vulture",
+      "outcome": "resolved"
+    },
+    "45493": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "blossom chair",
+      "outcome": "resolved"
+    },
+    "45497": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "blossom chest",
+      "outcome": "resolved"
+    },
+    "45501": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "lilypad table",
+      "outcome": "resolved"
+    },
+    "45503": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "blossom cabinet",
+      "outcome": "resolved"
+    },
+    "45505": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "blossom bed",
+      "outcome": "resolved"
+    },
+    "45517": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "pink blossom lamp",
+      "outcome": "resolved"
+    },
+    "45521": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "purple blossom lamp",
+      "outcome": "resolved"
+    },
+    "45523": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "red heart",
+      "outcome": "resolved"
+    },
+    "45526": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "unicorn painting",
+      "outcome": "resolved"
+    },
+    "45527": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "flowering log",
+      "outcome": "resolved"
+    },
+    "48253": {
+      "family_profile": "food",
+      "family_profile_basis": null,
+      "name": "beijinho",
+      "outcome": "resolved"
+    },
+    "48574": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "candy chest",
+      "outcome": "resolved"
+    },
+    "48575": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "candy chest",
+      "outcome": "resolved"
+    },
+    "48576": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "beehive",
+      "outcome": "resolved"
+    },
+    "48577": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "beehive",
+      "outcome": "resolved"
+    },
+    "49199": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "wicker bed",
+      "outcome": "resolved"
+    },
+    "49211": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "overgrown floor lamp",
+      "outcome": "resolved"
+    },
+    "49215": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "water floor in a bucket",
+      "outcome": "resolved"
+    },
+    "49216": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "water floor",
+      "outcome": "resolved"
+    },
+    "49217": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "wall growth",
+      "outcome": "resolved"
+    },
+    "49218": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "kapok tree",
+      "outcome": "resolved"
+    },
+    "49219": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cormayan beech",
+      "outcome": "resolved"
+    },
+    "49220": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "sycamore tree",
+      "outcome": "resolved"
+    },
+    "49221": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "vanduran tuft palm",
+      "outcome": "resolved"
+    },
+    "49222": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "chill nettle shrub",
+      "outcome": "resolved"
+    },
+    "49223": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "umbrella fern",
+      "outcome": "resolved"
+    },
+    "49224": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "spotted jungle orchid",
+      "outcome": "resolved"
+    },
+    "49225": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "blue witches' cauldron flower",
+      "outcome": "resolved"
+    },
+    "49226": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "sloth",
+      "outcome": "resolved"
+    },
+    "49230": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "ember chair",
+      "outcome": "resolved"
+    },
+    "49234": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "ember bench",
+      "outcome": "resolved"
+    },
+    "49238": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "ember chest",
+      "outcome": "resolved"
+    },
+    "49242": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "ember table",
+      "outcome": "resolved"
+    },
+    "49244": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "ember cabinet",
+      "outcome": "resolved"
+    },
+    "49246": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "ember bed",
+      "outcome": "resolved"
+    },
+    "49258": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "small volcano",
+      "outcome": "resolved"
+    },
+    "49260": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "ember veins",
+      "outcome": "resolved"
+    },
+    "49262": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "ember floor crack",
+      "outcome": "resolved"
+    },
+    "49264": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "small fire elemental",
+      "outcome": "resolved"
+    },
+    "49268": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "ember fissure",
+      "outcome": "resolved"
+    },
+    "50065": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "Rotrender scalp",
+      "outcome": "resolved"
+    },
+    "50066": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "Rotrender claw",
+      "outcome": "resolved"
+    },
+    "50172": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "sickbay table",
+      "outcome": "resolved"
+    },
+    "50177": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "sickbay cabinet",
+      "outcome": "resolved"
+    },
+    "50205": {
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50206": {
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50207": {
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50208": {
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50209": {
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50210": {
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50211": {
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50212": {
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50213": {
+      "family_profile": "decoration",
+      "family_profile_basis": "engine_wrap_target",
+      "name": "sickbed",
+      "outcome": "resolved"
+    },
+    "50214": {
+      "family_profile": "decoration",
+      "family_profile_basis": "engine_wrap_target",
+      "name": "sickbed",
+      "outcome": "resolved"
+    },
+    "50215": {
+      "family_profile": "decoration",
+      "family_profile_basis": "engine_wrap_target",
+      "name": "sickbed",
+      "outcome": "resolved"
+    },
+    "50216": {
+      "family_profile": "decoration",
+      "family_profile_basis": "engine_wrap_target",
+      "name": "sickbed",
+      "outcome": "resolved"
+    },
+    "50217": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "creatures in jars",
+      "outcome": "resolved"
+    },
+    "50219": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "small creatures in jars",
+      "outcome": "resolved"
+    },
+    "50221": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "brain in a jar (store)",
+      "outcome": "resolved"
+    },
+    "50223": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "leech terrarium",
+      "outcome": "resolved"
+    },
+    "50236": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "several skulls",
+      "outcome": "resolved"
+    },
+    "50238": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "paramedic demon",
+      "outcome": "resolved"
+    },
+    "51424": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "cookbook",
+      "outcome": "resolved"
+    },
+    "51428": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "pressed flower",
+      "outcome": "resolved"
+    },
+    "51429": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "axe of Sir Leonard",
+      "outcome": "resolved"
+    },
+    "51430": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "helmet of Sir Leonard",
+      "outcome": "resolved"
+    },
+    "51636": {
+      "name": "richly ornamented floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53207": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "moonsilver epee",
+      "outcome": "resolved"
+    },
+    "53208": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "stellar moonsilver epee",
+      "outcome": "resolved"
+    },
+    "53209": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "moonsilver claymore",
+      "outcome": "resolved"
+    },
+    "53210": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "stellar moonsilver claymore",
+      "outcome": "resolved"
+    },
+    "53211": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "moonsilver axe",
+      "outcome": "resolved"
+    },
+    "53212": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "stellar moonsilver axe",
+      "outcome": "resolved"
+    },
+    "53213": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "moonsilver chopper",
+      "outcome": "resolved"
+    },
+    "53214": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "stellar moonsilver chopper",
+      "outcome": "resolved"
+    },
+    "53215": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "moonsilver crusher",
+      "outcome": "resolved"
+    },
+    "53216": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "stellar moonsilver crusher",
+      "outcome": "resolved"
+    },
+    "53217": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "moonsilver mace",
+      "outcome": "resolved"
+    },
+    "53218": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "stellar moonsilver mace",
+      "outcome": "resolved"
+    },
+    "53219": {
+      "family_profile": "weapon_magic",
+      "family_profile_basis": null,
+      "name": "moonsilver channeler",
+      "outcome": "resolved"
+    },
+    "53220": {
+      "family_profile": "weapon_magic",
+      "family_profile_basis": null,
+      "name": "stellar moonsilver channeler",
+      "outcome": "resolved"
+    },
+    "53221": {
+      "family_profile": "weapon_magic",
+      "family_profile_basis": null,
+      "name": "moonsilver specre",
+      "outcome": "resolved"
+    },
+    "53222": {
+      "family_profile": "weapon_magic",
+      "family_profile_basis": null,
+      "name": "stellar moonsilver specre",
+      "outcome": "resolved"
+    },
+    "53223": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "moonsilver katar",
+      "outcome": "resolved"
+    },
+    "53224": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "name": "stellar moonsilver katar",
+      "outcome": "resolved"
+    },
+    "53225": {
+      "family_profile": "weapon_distance",
+      "family_profile_basis": null,
+      "name": "moonsilver bow",
+      "outcome": "resolved"
+    },
+    "53226": {
+      "family_profile": "weapon_distance",
+      "family_profile_basis": null,
+      "name": "stellar moonsilver bow",
+      "outcome": "resolved"
+    },
+    "53227": {
+      "family_profile": "weapon_distance",
+      "family_profile_basis": null,
+      "name": "moonsilver crossbow",
+      "outcome": "resolved"
+    },
+    "53228": {
+      "family_profile": "weapon_distance",
+      "family_profile_basis": null,
+      "name": "stellar moonsilver crossbow",
+      "outcome": "resolved"
+    },
+    "53229": {
+      "family_profile": "equipment_armor",
+      "family_profile_basis": null,
+      "name": "moonsilver battle visor",
+      "outcome": "resolved"
+    },
+    "53230": {
+      "family_profile": "equipment_armor",
+      "family_profile_basis": null,
+      "name": "moonsilver trail hood",
+      "outcome": "resolved"
+    },
+    "53231": {
+      "family_profile": "equipment_armor",
+      "family_profile_basis": null,
+      "name": "moonsilver nimbus hat",
+      "outcome": "resolved"
+    },
+    "53232": {
+      "family_profile": "equipment_armor",
+      "family_profile_basis": null,
+      "name": "moonsilver spirit mask",
+      "outcome": "resolved"
+    },
+    "53233": {
+      "family_profile": "equipment_armor",
+      "family_profile_basis": null,
+      "name": "moonsilver strike helm",
+      "outcome": "resolved"
+    },
+    "53380": {
+      "name": "closed door",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53430": {
+      "name": "stone stairs",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53431": {
+      "name": "stone stairs",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53514": {
+      "name": "crystal apparatus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53532": {
+      "family_profile": "plant",
+      "family_profile_basis": null,
+      "name": "bluish whisper reed",
+      "outcome": "resolved"
+    },
+    "53542": {
+      "family_profile": "plant",
+      "family_profile_basis": null,
+      "name": "bluish tide veil",
+      "outcome": "resolved"
+    },
+    "53573": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cyclops steel bed",
+      "outcome": "resolved"
+    },
+    "53609": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "cyclops baby",
+      "outcome": "resolved"
+    },
+    "53615": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "framework room divider",
+      "outcome": "resolved"
+    },
+    "53617": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "dark framework room divider",
+      "outcome": "resolved"
+    },
+    "53619": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "ancient stone room divider",
+      "outcome": "resolved"
+    },
+    "53621": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "sandstone room divider",
+      "outcome": "resolved"
+    },
+    "53623": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "stone room divider",
+      "outcome": "resolved"
+    },
+    "53625": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "white stone room divider",
+      "outcome": "resolved"
+    },
+    "53627": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "gothic stone room divider",
+      "outcome": "resolved"
+    },
+    "53629": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "name": "bamboo room divider",
+      "outcome": "resolved"
+    },
+    "53678": {
+      "name": "energy cannon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "primarytype_world_object"
+    },
+    "53679": {
+      "name": "energy cannon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "primarytype_world_object"
+    },
+    "53680": {
+      "name": "energy cannon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "primarytype_world_object"
+    },
+    "53681": {
+      "name": "energy cannon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "primarytype_world_object"
+    },
+    "53692": {
+      "blocker": "family_profile_unresolved",
+      "name": "sample of bluish tide veil",
+      "outcome": "unresolved"
+    },
+    "53693": {
+      "blocker": "family_profile_unresolved",
+      "name": "sample of bluish whisper reed",
+      "outcome": "unresolved"
+    },
+    "53695": {
+      "blocker": "family_profile_unresolved",
+      "name": "lunar ascension orb",
+      "outcome": "unresolved"
+    },
+    "53696": {
+      "blocker": "family_profile_unresolved",
+      "name": "empty crystal flask",
+      "outcome": "unresolved"
+    },
+    "53751": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic bash scroll",
+      "outcome": "resolved"
+    },
+    "53752": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic blockade scroll",
+      "outcome": "resolved"
+    },
+    "53753": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic chop scroll",
+      "outcome": "resolved"
+    },
+    "53754": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic cloud fabric scroll",
+      "outcome": "resolved"
+    },
+    "53755": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic demon presence scroll",
+      "outcome": "resolved"
+    },
+    "53756": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic dragon hide scroll",
+      "outcome": "resolved"
+    },
+    "53757": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic electrify scroll",
+      "outcome": "resolved"
+    },
+    "53758": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic epiphany scroll",
+      "outcome": "resolved"
+    },
+    "53759": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic featherweight scroll",
+      "outcome": "resolved"
+    },
+    "53760": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic frost scroll",
+      "outcome": "resolved"
+    },
+    "53761": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic lich shroud scroll",
+      "outcome": "resolved"
+    },
+    "53762": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic precision scroll",
+      "outcome": "resolved"
+    },
+    "53763": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic punch scroll",
+      "outcome": "resolved"
+    },
+    "53764": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic quara scale scroll",
+      "outcome": "resolved"
+    },
+    "53765": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic reap scroll",
+      "outcome": "resolved"
+    },
+    "53766": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic scorch scroll",
+      "outcome": "resolved"
+    },
+    "53767": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic slash scroll",
+      "outcome": "resolved"
+    },
+    "53768": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic snake skin scroll",
+      "outcome": "resolved"
+    },
+    "53769": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic strike scroll",
+      "outcome": "resolved"
+    },
+    "53770": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic swiftness scroll",
+      "outcome": "resolved"
+    },
+    "53771": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic vampirism scroll",
+      "outcome": "resolved"
+    },
+    "53772": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic venom scroll",
+      "outcome": "resolved"
+    },
+    "53773": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic vibrancy scroll",
+      "outcome": "resolved"
+    },
+    "53774": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "name": "basic void scroll",
+      "outcome": "resolved"
+    },
+    "53778": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "catnip",
+      "outcome": "resolved"
+    },
+    "53782": {
+      "name": "tide marker",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53783": {
+      "blocker": "family_profile_unresolved",
+      "name": "shell gauge",
+      "outcome": "unresolved"
+    },
+    "53823": {
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53824": {
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53825": {
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53826": {
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53827": {
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53828": {
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53829": {
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53830": {
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53831": {
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53841": {
+      "name": "sealed passage",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53873": {
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53874": {
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53875": {
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53876": {
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53877": {
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53878": {
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53879": {
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53880": {
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53881": {
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53882": {
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53883": {
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53884": {
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53897": {
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "54128": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "ice shard",
+      "outcome": "resolved"
+    },
+    "54133": {
+      "name": "echo warden portal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54235": {
+      "name": "moonsilver drift",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54236": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "noxious catnip",
+      "outcome": "resolved"
+    },
+    "54261": {
+      "name": "rocks with moon paintings",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54262": {
+      "blocker": "family_profile_unresolved",
+      "name": "key",
+      "outcome": "unresolved"
+    },
+    "54267": {
+      "blocker": "family_profile_unresolved",
+      "name": "moonsilver crystals",
+      "outcome": "unresolved"
+    },
+    "54268": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "figurine of Mimar Haffar",
+      "outcome": "resolved"
+    },
+    "54269": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "figurine of Maior Domus",
+      "outcome": "resolved"
+    },
+    "54270": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "figurine of Phosphorus",
+      "outcome": "resolved"
+    },
+    "54335": {
+      "name": "slain iceplume strider",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54336": {
+      "name": "slain iceplume strider",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54337": {
+      "name": "slain iceplume strider",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54339": {
+      "name": "slain moonstone excavator",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54340": {
+      "name": "slain moonstone excavator",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54341": {
+      "name": "slain moonstone excavator",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54342": {
+      "name": "slain moonstone excavator",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54343": {
+      "name": "dead mimar haffar",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54344": {
+      "name": "dead mimar haffar",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54345": {
+      "name": "dead mimar haffar",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54346": {
+      "name": "dead mimar haffar",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54352": {
+      "name": "dead phosphorus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54353": {
+      "name": "dead phosphorus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54354": {
+      "name": "dead phosphorus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54355": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "tatty robe",
+      "outcome": "resolved"
+    },
+    "54356": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "broken arrow",
+      "outcome": "resolved"
+    },
+    "54357": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "book of faith",
+      "outcome": "resolved"
+    },
+    "54358": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "ceremonial bowl",
+      "outcome": "resolved"
+    },
+    "54359": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "golden belt",
+      "outcome": "resolved"
+    },
+    "54360": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "loose prayer beads",
+      "outcome": "resolved"
+    },
+    "54361": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "cloud familiar",
+      "outcome": "resolved"
+    },
+    "54362": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "gilded bell",
+      "outcome": "resolved"
+    },
+    "54363": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "moonspawn tentacle",
+      "outcome": "resolved"
+    },
+    "54364": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "moonspawn headpiece",
+      "outcome": "resolved"
+    },
+    "54369": {
+      "name": "slain moonsilver guardian",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54370": {
+      "name": "slain moonsilver guardian",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54371": {
+      "name": "slain moonsilver guardian",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54372": {
+      "name": "slain moonsilver guardian",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54373": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54374": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54375": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54376": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54386": {
+      "name": "dead jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54387": {
+      "name": "dead jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54388": {
+      "name": "dead jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54389": {
+      "name": "dead jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54390": {
+      "name": "knight pedestal",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54391": {
+      "name": "paladin pedestal",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54392": {
+      "name": "sorcerer pedestal",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54393": {
+      "name": "druid pedestal",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54394": {
+      "name": "monk pedestal",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54396": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54397": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54398": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54399": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54404": {
+      "name": "dead radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54405": {
+      "name": "dead radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54406": {
+      "name": "dead radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54407": {
+      "name": "dead radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54408": {
+      "name": "dead devoted radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54409": {
+      "name": "dead devoted radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54410": {
+      "name": "dead devoted radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54411": {
+      "name": "dead devoted radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54412": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54413": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54414": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54415": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54416": {
+      "name": "dead devoted radiant acolyte",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54417": {
+      "name": "dead devoted radiant acolyte",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54418": {
+      "name": "dead devoted radiant acolyte",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54419": {
+      "name": "dead devoted radiant acolyte",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54433": {
+      "name": "dead maior domus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54434": {
+      "name": "dead maior domus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54435": {
+      "name": "dead maior domus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54436": {
+      "name": "dead moonspawn blightspitter",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54437": {
+      "name": "dead moonspawn blightspitter",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54438": {
+      "name": "dead moonspawn blightspitter",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54439": {
+      "name": "dead moonspawn blightspitter",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54440": {
+      "name": "dead moonspawn oozecrown",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54441": {
+      "name": "dead moonspawn oozecrown",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54442": {
+      "name": "dead moonspawn oozecrown",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54443": {
+      "name": "dead moonspawn oozecrown",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54475": {
+      "name": "petrified fanatic",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54480": {
+      "blocker": "family_profile_unresolved",
+      "name": "auric moon sigil",
+      "outcome": "unresolved"
+    },
+    "54515": {
+      "name": "crystal plinth",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54564": {
+      "blocker": "family_profile_unresolved",
+      "name": "crystal flask with blue lava",
+      "outcome": "unresolved"
+    },
+    "54566": {
+      "blocker": "family_profile_unresolved",
+      "name": "crystal flask with blessed blue lava",
+      "outcome": "unresolved"
+    },
+    "54568": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54569": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54570": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54571": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54587": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "winged jaracal soul core",
+      "outcome": "resolved"
+    },
+    "54588": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "iceplume strider soul core",
+      "outcome": "resolved"
+    },
+    "54589": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "silverfrost sentinel soul core",
+      "outcome": "resolved"
+    },
+    "54590": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "true feverbloom asura soul core",
+      "outcome": "resolved"
+    },
+    "54591": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "radiant warden soul core",
+      "outcome": "resolved"
+    },
+    "54592": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "devoted radiant warden soul core",
+      "outcome": "resolved"
+    },
+    "54593": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "radiant paragon soul core",
+      "outcome": "resolved"
+    },
+    "54594": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "devoted radiant paragon soul core",
+      "outcome": "resolved"
+    },
+    "54595": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "radiant acolyte soul core",
+      "outcome": "resolved"
+    },
+    "54596": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "devoted radiant acolyte soul core",
+      "outcome": "resolved"
+    },
+    "54597": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "radiant templar soul core",
+      "outcome": "resolved"
+    },
+    "54598": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "devoted radiant templar soul core",
+      "outcome": "resolved"
+    },
+    "54599": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "radiant inquisitor soul core",
+      "outcome": "resolved"
+    },
+    "54600": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "devoted radiant inquisitor soul core",
+      "outcome": "resolved"
+    },
+    "54601": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "radiant zealot soul core",
+      "outcome": "resolved"
+    },
+    "54602": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "devoted radiant zealot soul core",
+      "outcome": "resolved"
+    },
+    "54603": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "moonspawn blightspitter soul core",
+      "outcome": "resolved"
+    },
+    "54604": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "moonspawn oozecrown soul core",
+      "outcome": "resolved"
+    },
+    "54609": {
+      "family_profile": "light_source",
+      "family_profile_basis": null,
+      "name": "torch",
+      "outcome": "resolved"
+    },
+    "54610": {
+      "family_profile": "light_source",
+      "family_profile_basis": null,
+      "name": "lit torch",
+      "outcome": "resolved"
+    },
+    "54611": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "frozen peacock feather",
+      "outcome": "resolved"
+    },
+    "54613": {
+      "name": "closed door",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54614": {
+      "name": "closed door",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54615": {
+      "name": "open door",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54616": {
+      "name": "open door",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54630": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "jaracal soul core",
+      "outcome": "resolved"
+    },
+    "54631": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "moonstone excavator soul core",
+      "outcome": "resolved"
+    },
+    "54632": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "moonstone overseer soul core",
+      "outcome": "resolved"
+    },
+    "54636": {
+      "name": "shimmering field",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54638": {
+      "blocker": "family_profile_unresolved",
+      "name": "skewered fish",
+      "outcome": "unresolved"
+    },
+    "54639": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "name": "pyrophyte seed pod",
+      "outcome": "resolved"
+    },
+    "54640": {
+      "blocker": "family_profile_unresolved",
+      "name": "scraps of a radiant attire",
+      "outcome": "unresolved"
+    },
+    "54647": {
+      "name": "dead winged jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54648": {
+      "name": "dead winged jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54649": {
+      "name": "dead winged jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54650": {
+      "name": "dead winged jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54651": {
+      "blocker": "family_profile_unresolved",
+      "name": "cloud in a bottle",
+      "outcome": "unresolved"
+    },
+    "54667": {
+      "name": "dead true feverbloom asura",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54668": {
+      "name": "dead true feverbloom asura",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54669": {
+      "name": "dead true feverbloom asura",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54670": {
+      "name": "dead the moonsnow magnolia",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54671": {
+      "name": "dead the moonsnow magnolia",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54672": {
+      "name": "dead the moonsnow magnolia",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54673": {
+      "name": "dead the moonsnow magnolia",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54674": {
+      "name": "dead moonstone miner",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54675": {
+      "name": "dead moonstone miner",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54676": {
+      "name": "dead moonstone miner",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54677": {
+      "name": "dead moonstone miner",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54678": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54679": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54680": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54681": {
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    }
+  },
+  "outcome": {
+    "resolved": 261,
+    "routed": 138,
+    "unresolved": 13
+  },
+  "owner_leftover_table_resolved": 0,
+  "principle": "The donor is a source of facts only (items.xml, appearances.dat); Oteryn decides classification with its own rules, never upstream's.",
+  "routed_non_item": [
+    {
+      "items": 80,
+      "owner_reason": "WorldObject:corpse"
+    },
+    {
+      "items": 24,
+      "owner_reason": "WorldObject:immovable_unclassified"
+    },
+    {
+      "items": 16,
+      "owner_reason": "Terrain:ground_or_border"
+    },
+    {
+      "items": 14,
+      "owner_reason": "Terrain:primarytype_world_object"
+    },
+    {
+      "items": 4,
+      "owner_reason": "WorldObject:primarytype_world_object"
+    }
+  ],
+  "schema": "OTERYN_ITEM_DONOR_CENSUS/v1",
+  "scope": "Family-profile classification only, for donor-only ids (present in the donor items.xml, absent from the pinned base items.xml). No Oteryn identity is minted or consulted; delivery-task eligibility, field mapping and Presentation binding are out of scope (need identity, B1b). The wiki-evidence fallback and the owner leftover-family table are both keyed by Oteryn registry key and can never match a donor-only id; 'wiki_evidence_fallback_resolved' below is always 0 by construction, not by omission -- see the module docstring.",
+  "totals": {
+    "base_items_xml_ids": 38157,
+    "donor_items_xml_ids": 38568,
+    "new_ids": 412,
+    "new_ids_in_15_30_appearance_range": 244,
+    "new_ids_older_than_15_25": 168
+  },
+  "wiki_evidence_fallback_resolved": 0
+}

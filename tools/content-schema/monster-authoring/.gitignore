@@ -1,0 +1,4 @@
+# Local reports written by verify_formal_schema.py / verify_source_coverage.py
+formal-schema-validation-report.json
+formal-source-coverage.json
+__pycache__/

@@ -1,7 +1,21 @@
 use crate::durability::{DurabilityError, db};
-use sqlx::{PgPool, Row};
+use sqlx::postgres::PgConnection;
+use sqlx::{Executor, PgPool, Postgres, Row};
 
 pub(crate) static GAME_MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
+
+const MIGRATION_LEDGER_INSPECTION_SQL: &str = "WITH expected(version, checksum_len) AS (\
+     SELECT * FROM unnest($1::BIGINT[], $2::BIGINT[])\
+ ) \
+ SELECT m.version, octet_length(m.checksum)::BIGINT AS checksum_len, \
+        CASE WHEN e.checksum_len IS NOT NULL \
+                   AND octet_length(m.checksum)::BIGINT = e.checksum_len \
+             THEN m.checksum ELSE NULL END AS bounded_checksum, \
+        m.success \
+ FROM _sqlx_migrations AS m \
+ LEFT JOIN expected AS e ON e.version = m.version \
+ ORDER BY m.version ASC \
+ LIMIT $3";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SchemaCompatibility {
@@ -21,8 +35,8 @@ impl MigrationExecutor {
         })
     }
 
-    /// This is the only runtime path in this module allowed to execute DDL.
-    /// Normal game-server startup must use `inspect` through `connect_runtime`.
+    /// This is the only migration path in this module allowed to execute DDL.
+    /// Runtime compatibility inspection remains read-only; the URL connector below is test-only.
     pub async fn apply_embedded_ledger(&self) -> Result<(), DurabilityError> {
         GAME_MIGRATOR
             .run(&self.pool)
@@ -35,6 +49,7 @@ impl MigrationExecutor {
     }
 }
 
+#[cfg(test)]
 pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, DurabilityError> {
     let pool = db::connect(database_url, 4).await?;
     let compatibility = inspect(&pool).await?;
@@ -45,11 +60,40 @@ pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, Durabi
 }
 
 async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> {
-    let rows = match sqlx::query(
-        "SELECT version, checksum, success FROM _sqlx_migrations ORDER BY version ASC",
-    )
-    .fetch_all(pool)
-    .await
+    inspect_executor(pool).await
+}
+
+pub(crate) async fn inspect_connection(
+    connection: &mut PgConnection,
+) -> Result<SchemaCompatibility, DurabilityError> {
+    inspect_executor(connection).await
+}
+
+async fn inspect_executor<'e, E>(executor: E) -> Result<SchemaCompatibility, DurabilityError>
+where
+    E: Executor<'e, Database = Postgres>,
+{
+    let expected: Vec<_> = GAME_MIGRATOR.iter().collect();
+    let expected_versions: Vec<i64> = expected.iter().map(|migration| migration.version).collect();
+    let expected_checksum_lengths: Vec<i64> = expected
+        .iter()
+        .map(|migration| i64::try_from(migration.checksum.len()))
+        .collect::<Result<_, _>>()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let row_limit = i64::try_from(expected.len())
+        .ok()
+        .and_then(|count| count.checked_add(1))
+        .ok_or(DurabilityError::InvalidStoredState)?;
+
+    // The row transfer is bounded by embedded migration count N + one overflow
+    // sentinel. A checksum is transferred only when its server-side byte length
+    // exactly matches the embedded checksum for the same version.
+    let rows = match sqlx::query(MIGRATION_LEDGER_INSPECTION_SQL)
+        .bind(&expected_versions)
+        .bind(&expected_checksum_lengths)
+        .bind(row_limit)
+        .fetch_all(executor)
+        .await
     {
         Ok(rows) => rows,
         Err(error) if is_missing_table(&error) => {
@@ -58,18 +102,22 @@ async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> 
         Err(error) => return Err(DurabilityError::from(error)),
     };
 
-    let expected: Vec<_> = GAME_MIGRATOR.iter().collect();
     if rows.len() != expected.len() {
         return Ok(SchemaCompatibility::Incompatible);
     }
 
-    for (row, migration) in rows.iter().zip(expected) {
+    for (row, (migration, expected_checksum_len)) in rows
+        .iter()
+        .zip(expected.iter().zip(expected_checksum_lengths.iter()))
+    {
         let version: i64 = row.try_get("version")?;
-        let checksum: Vec<u8> = row.try_get("checksum")?;
+        let checksum_len: i64 = row.try_get("checksum_len")?;
+        let checksum: Option<Vec<u8>> = row.try_get("bounded_checksum")?;
         let success: bool = row.try_get("success")?;
         if !success
             || version != migration.version
-            || checksum.as_slice() != migration.checksum.as_ref()
+            || checksum_len != *expected_checksum_len
+            || checksum.as_deref() != Some(migration.checksum.as_ref())
         {
             return Ok(SchemaCompatibility::Incompatible);
         }
@@ -94,6 +142,15 @@ mod contract_tests {
         MIGRATION
             .split_once("CREATE TABLE game_durability_transport_ref_reservations")
             .map(|(session, _rest)| session)
+    }
+
+    #[test]
+    fn migration_ledger_inspection_is_bounded_before_checksum_materialization() {
+        let sql = super::MIGRATION_LEDGER_INSPECTION_SQL;
+        assert!(sql.contains("unnest($1::BIGINT[], $2::BIGINT[])"));
+        assert!(sql.contains("octet_length(m.checksum)::BIGINT = e.checksum_len"));
+        assert!(sql.contains("THEN m.checksum ELSE NULL END AS bounded_checksum"));
+        assert!(sql.contains("LIMIT $3"));
     }
 
     #[test]
@@ -492,6 +549,20 @@ mod terminal_replacement_postgres_red_tests {
         ChannelId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
     }
 
+    // This module is also compiled in the migrate binary's separate test crate.
+    fn fixture_account_for_character(character: u64) -> String {
+        if character == 11 {
+            ACCOUNT.into()
+        } else {
+            format!(
+                "{:08x}-{:04x}-4000-8000-{:012x}",
+                character >> 32,
+                (character >> 16) & 0xffff,
+                character & 0xffff
+            )
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn record(
         game_session_raw: u64,
@@ -508,7 +579,7 @@ mod terminal_replacement_postgres_red_tests {
             game_session(game_session_raw)?,
             ReconnectAttemptRef::new(attempt_raw)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
-            ACCOUNT,
+            &fixture_account_for_character(character_raw),
             character(character_raw)?,
             world_id,
             RuntimeScopeRefV1::channel(world_id, channel(13)?),
@@ -709,6 +780,11 @@ mod terminal_replacement_postgres_red_tests {
         .bind(now + 120)
         .execute(&mut connection)
         .await?;
+        // Independent complete history for this positive owning fixture.
+        sqlx::query("INSERT INTO game_durability_session_use_ledgers VALUES (encode($1,'hex')::uuid,1,TRUE,1,1)")
+            .bind(uuid_v7(11).as_slice()).execute(&mut connection).await?;
+        sqlx::query("INSERT INTO game_durability_session_use_memberships VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3)")
+            .bind(uuid_v7(session_raw).as_slice()).bind(uuid_v7(11).as_slice()).bind([1_u8;16].as_slice()).execute(&mut connection).await?;
         connection.close().await?;
         Ok(())
     }
@@ -971,6 +1047,55 @@ mod terminal_replacement_postgres_red_tests {
             );
 
             drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn replaced_collision_replay_retains_terminal_and_idempotency_priority() -> TestResult {
+        run_postgres_test(async {
+            let (database, url) = migrated_database("replaced_collision_history").await?;
+            let now = unix_now().map_err(|_| "clock")?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
+            let reserved = record(50, 51, 1, 0xa2, 3, 7, 10, now).map_err(|_| "reservation")?;
+            assert_eq!(
+                journal
+                    .prepare(&ReconnectDurabilityFlowV1::begin(reserved).1)
+                    .await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+            let original = record(20, 11, 1, 0xa2, 3, 7, 10, now).map_err(|_| "original")?;
+            let original_request = ReconnectDurabilityFlowV1::begin(original.clone()).1;
+            assert_eq!(
+                journal.prepare(&original_request).await?,
+                ReconnectPrepareDispositionV1::RejectedTransportRefCollision
+            );
+            let successor = record(30, 11, 2, 0xa3, 3, 7, 10, now).map_err(|_| "successor")?;
+            let successor_request =
+                v2_request(successor, 20, 10).map_err(|_| "replacement authority")?;
+            assert_eq!(
+                journal.prepare_v2(&successor_request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+            assert_eq!(
+                journal.prepare(&original_request).await?,
+                ReconnectPrepareDispositionV1::ExistingTerminal
+            );
+            let typed_original = ReconnectDurabilityFlowV2::begin(original, None).1;
+            assert_eq!(
+                journal.prepare_v2(&typed_original).await?,
+                ReconnectPrepareDispositionV2::ExistingTerminal {
+                    disposition: ReconnectDurableTerminalDispositionV1::TransportRefCollision,
+                }
+            );
+            let changed = record(20, 11, 1, 0xa4, 3, 7, 10, now).map_err(|_| "changed replay")?;
+            assert_eq!(
+                journal
+                    .prepare(&ReconnectDurabilityFlowV1::begin(changed).1)
+                    .await?,
+                ReconnectPrepareDispositionV1::IdempotencyConflict
+            );
             database.cleanup().await?;
             Ok(())
         })

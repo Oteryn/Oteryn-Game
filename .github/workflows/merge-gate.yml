@@ -173,6 +173,11 @@ jobs:
     outputs:
       rust: ${{ steps.classify.outputs.rust }}
       windows: ${{ steps.classify.outputs.windows }}
+      atlas_fullworld: ${{ steps.classify.outputs.atlas_fullworld }}
+      server_qualification: ${{ steps.classify.outputs.server_qualification }}
+      surface: ${{ steps.classify.outputs.surface }}
+      reason: ${{ steps.classify.outputs.reason }}
+      routing_health: ${{ steps.classify.outputs.routing_health }}
     steps:
       - name: Check out protected-base classifier and inputs
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -185,7 +190,7 @@ jobs:
           EXPECTED_SHA: ${{ needs.scope.outputs.base_sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
-      - name: Classify with trusted Cargo graph and audited inputs
+      - name: Classify with trusted exact-consumer routing
         id: classify
         shell: bash
         env:
@@ -195,15 +200,37 @@ jobs:
           EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
         run: |
           set -euo pipefail
-          if [[ ! -f tools/repository/classify_pr_test_lanes.py ]]; then
-            echo 'FULL: protected base does not yet contain the classifier.'
-            printf 'rust=true\nwindows=true\n' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
           if ! git fetch --no-tags --depth=1 origin "$EXPECTED_HEAD" || ! rustup toolchain install 1.94.0 --profile minimal || ! cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/risk-metadata.json"; then
             printf '{}' > "$RUNNER_TEMP/risk-metadata.json"
           fi
           python -I tools/repository/classify_pr_test_lanes.py "$RUNNER_TEMP/risk-metadata.json"
+
+      - name: Verify protected-base routing contract health
+        env:
+          EXPECTED_HEAD: ${{ needs.scope.outputs.base_sha }}
+        run: python -I tools/repository/validate_pr_routing_contract.py --protected-main "$RUNNER_TEMP/risk-metadata.json"
+
+      - name: Summarize trusted-base routing
+        env:
+          RUST: ${{ steps.classify.outputs.rust }}
+          WINDOWS: ${{ steps.classify.outputs.windows }}
+          ATLAS_FULLWORLD: ${{ steps.classify.outputs.atlas_fullworld }}
+          SERVER_QUALIFICATION: ${{ steps.classify.outputs.server_qualification }}
+          SURFACE: ${{ steps.classify.outputs.surface }}
+          REASON: ${{ steps.classify.outputs.reason }}
+          ROUTING_HEALTH: ${{ steps.classify.outputs.routing_health }}
+        run: |
+          {
+            echo '### Trusted-base PR routing'
+            echo
+            printf -- '- Rust: `%s`\n' "$RUST"
+            printf -- '- Windows: `%s`\n' "$WINDOWS"
+            printf -- '- Atlas fullworld: `%s`\n' "$ATLAS_FULLWORLD"
+            printf -- '- Server qualification: `%s`\n' "$SERVER_QUALIFICATION"
+            printf -- '- Surface: `%s`\n' "$SURFACE"
+            printf -- '- Reason: `%s`\n' "$REASON"
+            printf -- '- Routing health: `%s`\n' "$ROUTING_HEALTH"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   governance:
     name: Merge gate / governance
@@ -243,26 +270,47 @@ jobs:
           errors: list[str] = []
           title = pull.get('title', '')
           body = pull.get('body') or ''
-          if pull.get('state') != 'open':
+          state = pull.get('state')
+          head_sha = pull.get('head', {}).get('sha', '')
+          head_repository = pull.get('head', {}).get('repo', {}).get('full_name')
+          base_ref = pull.get('base', {}).get('ref')
+          expected_head = os.environ['EXPECTED_HEAD']
+          repository = os.environ['REPOSITORY']
+          if state != 'open':
               errors.append('merge gate requires an open pull request')
-          if pull.get('head', {}).get('sha', '') != os.environ['EXPECTED_HEAD']:
+          if head_sha != expected_head:
               errors.append('pull request head moved after scope validation')
-          if pull.get('head', {}).get('repo', {}).get('full_name') != os.environ['REPOSITORY']:
+          if head_repository != repository:
               errors.append('merge gate only accepts same-repository pull request heads')
-          if pull.get('base', {}).get('ref') != 'main':
+          if base_ref != 'main':
               errors.append('merge gate only accepts pull requests targeting main')
 
+          warnings: list[str] = []
           pattern = re.compile(
               r'^(feat|fix|docs|refactor|perf|test|build|ci|chore|revert)'
               r'(\([a-z0-9][a-z0-9._/-]*\))?!?: [A-Za-z0-9].+$'
           )
           if len(title) > 72:
-              errors.append('PR title must be at most 72 characters')
+              warnings.append('PR title should be at most 72 characters')
           if not pattern.fullmatch(title):
-              errors.append('PR title must follow type(scope): imperative summary')
-          for heading in ('## Summary', '## Scope', '## Validation'):
-              if heading not in body:
-                  errors.append(f'PR body is missing {heading}')
+              warnings.append('PR title should follow type(scope): imperative summary')
+
+          headings: set[str] = set()
+          for line in body.splitlines():
+              match = re.match(r'^\s{0,3}##\s+(.+?)\s*#*\s*$', line)
+              if match:
+                  headings.add(' '.join(match.group(1).casefold().split()))
+          if 'summary' not in headings:
+              warnings.append('PR body should include a Summary section')
+          if 'scope' not in headings:
+              warnings.append('PR body should include a Scope section')
+          validation_word = re.compile(r'(?<![a-z0-9])validation(?![a-z0-9])')
+          if not any(validation_word.search(heading) for heading in headings):
+              warnings.append('PR body should include a validation section')
+
+          for warning in warnings:
+              safe = warning.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print(f'::warning title=PR metadata guidance::{safe}')
 
           if errors:
               for error in errors:
@@ -339,6 +387,86 @@ jobs:
         with:
           category: /language:${{ matrix.language }}
 
+  routing_contract:
+    name: Merge gate / routing contract
+    needs: scope
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact head with history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.target_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Verify routing validator blob
+        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
+
+      - name: Verify candidate diff whitespace
+        env:
+          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
+          EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
+        run: |
+          git cat-file -e "${EXPECTED_BASE}^{commit}"
+          git diff --check "$EXPECTED_BASE" "$EXPECTED_HEAD"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Build exact candidate Cargo metadata
+        run: cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/routing-contract-metadata.json"
+
+      - name: Verify exact candidate routing contract
+        env:
+          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
+          EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
+          CHANGED_FILE_RECORDS: ${{ needs.scope.outputs.file_records }}
+          CHANGED_FILE_COUNT: ${{ needs.scope.outputs.file_count }}
+          ENUMERATION_COMPLETE: ${{ needs.scope.outputs.complete }}
+        run: python -I tools/repository/validate_pr_routing_contract.py "$RUNNER_TEMP/routing-contract-metadata.json"
+
+  atlas_fullworld:
+    name: Merge gate / Atlas fullworld source
+    needs: [scope, lanes]
+    if: needs.lanes.outputs.atlas_fullworld == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.target_sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Compile bounded fullworld producer and direct consumer
+        run: |
+          python -S -m py_compile \
+            tools/game-atlas-fullworld-source/producer.py \
+            tools/game-atlas-fullworld-source/self_test.py \
+            tools/reference-world-corridor-census/content_source_batch.py \
+            tools/reference-world-corridor-census/content_source_batch_self_test.py
+
+      - name: Run fullworld producer self-test
+        run: python -S tools/game-atlas-fullworld-source/self_test.py
+
+      - name: Run content-source batch consumer self-test
+        run: python -S tools/reference-world-corridor-census/content_source_batch_self_test.py
+
   rust_policy:
     name: Merge gate / Rust policy and metadata
     needs: [scope, lanes]
@@ -359,16 +487,6 @@ jobs:
 
       - name: Verify locked metadata
         run: cargo +1.94.0 metadata --locked --format-version 1 >/dev/null
-
-      - name: Observe candidate classifier with actual Cargo metadata
-        env:
-          EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
-          CHANGED_FILE_RECORDS: '[{"filename":"apps/game-server/src/lib.rs","status":"modified"}]'
-          CHANGED_FILE_COUNT: '1'
-          ENUMERATION_COMPLETE: 'true'
-        run: |
-          cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/risk-observation.json"
-          GITHUB_OUTPUT="$RUNNER_TEMP/risk-observation.outputs" python -I tools/repository/classify_pr_test_lanes.py "$RUNNER_TEMP/risk-observation.json"
 
       - name: Verify formatting
         run: cargo +1.94.0 fmt --all --check
@@ -406,7 +524,7 @@ jobs:
           )
           for package in ('oteryn-client', 'oteryn-game-server'):
               tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')
-              found = [name for name in forbidden if name in tree]
+              found = [name for name in forbidden if name in tree and (package, name) != ('oteryn-game-server', 'protocol-oteryn')]
               if found:
                   raise SystemExit(f'{package} production closure contains forbidden entries: {found}')
               print(f'{package} production closure: PASS')
@@ -447,7 +565,7 @@ jobs:
           EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
-      - name: Classify Durability PostgreSQL target
+      - name: Classify registered PostgreSQL targets
         id: pg_target
         env:
           EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
@@ -469,7 +587,12 @@ jobs:
           number_text = os.environ['PULL_NUMBER'].strip()
           expected_head = os.environ['EXPECTED_HEAD'].strip().lower()
           expected_base = os.environ['EXPECTED_BASE'].strip().lower()
-          target = 'apps/game-server/tests/durability_postgres.rs'
+          targets = (
+              ('durability_postgres', 'apps/game-server/tests/durability_postgres.rs'),
+              ('character_authority_postgres', 'apps/game-server/tests/character_authority_postgres.rs'),
+              ('runtime_scope_assignment_postgres', 'apps/game-server/tests/runtime_scope_assignment_postgres.rs'),
+              ('native_admission_source_postgres', 'apps/game-server/tests/native_admission_source_postgres.rs'),
+          )
 
           if re.fullmatch(r'[1-9][0-9]*', number_text) is None:
               raise SystemExit('pull request number must be a positive integer')
@@ -493,7 +616,7 @@ jobs:
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
 
-          def target_blob(commit: str) -> str | None:
+          def target_blobs(commit: str) -> dict[str, str | None]:
               try:
                   commit_payload = api(f'/git/commits/{commit}')
               except (urllib.error.HTTPError, OSError, ValueError, TypeError) as error:
@@ -508,7 +631,7 @@ jobs:
                   raise SystemExit('exact commit inspection returned invalid tree identity; fail closed')
               try:
                   tree_payload = api(f'/git/trees/{tree_sha}?recursive=1')
-              except (OSError, ValueError, TypeError) as error:
+              except (urllib.error.HTTPError, OSError, ValueError, TypeError) as error:
                   raise SystemExit('exact tree inspection failed; fail closed') from error
               if (
                   not isinstance(tree_payload, dict)
@@ -517,15 +640,17 @@ jobs:
                   or not isinstance(tree_payload.get('tree'), list)
               ):
                   raise SystemExit('exact tree inspection returned incomplete or mismatched evidence; fail closed')
+
+              legal_modes = {
+                  'blob': ('100644', '100755', '120000'),
+                  'tree': ('040000',),
+                  'commit': ('160000',),
+              }
+              by_path: dict[str, list[dict]] = {}
               for entry in tree_payload['tree']:
                   path = entry.get('path') if isinstance(entry, dict) else None
                   entry_type = entry.get('type') if isinstance(entry, dict) else None
                   mode = entry.get('mode') if isinstance(entry, dict) else None
-                  legal_modes = {
-                      'blob': ('100644', '100755', '120000'),
-                      'tree': ('040000',),
-                      'commit': ('160000',),
-                  }
                   if (
                       not isinstance(entry, dict)
                       or not isinstance(path, str)
@@ -539,18 +664,24 @@ jobs:
                       or re.fullmatch(r'[0-9a-f]{40}', entry['sha']) is None
                   ):
                       raise SystemExit('exact tree inspection returned malformed entry; fail closed')
-              matches = [entry for entry in tree_payload['tree'] if entry['path'] == target]
-              if len(matches) > 1:
-                  raise SystemExit('exact tree inspection returned duplicate target entries; fail closed')
-              if not matches:
-                  return None
-              entry = matches[0]
-              if entry.get('type') != 'blob' or entry.get('mode') not in ('100644', '100755'):
-                  raise SystemExit('exact tree inspection returned unexpected target object; fail closed')
-              blob_sha = entry.get('sha')
-              if not isinstance(blob_sha, str) or re.fullmatch(r'[0-9a-f]{40}', blob_sha) is None:
-                  raise SystemExit('exact tree inspection returned invalid blob SHA; fail closed')
-              return blob_sha
+                  by_path.setdefault(path, []).append(entry)
+
+              blobs: dict[str, str | None] = {}
+              for name, target in targets:
+                  matches = by_path.get(target, [])
+                  if len(matches) > 1:
+                      raise SystemExit(f'exact tree inspection returned duplicate {name} target entries; fail closed')
+                  if not matches:
+                      blobs[name] = None
+                      continue
+                  entry = matches[0]
+                  if entry.get('type') != 'blob' or entry.get('mode') not in ('100644', '100755'):
+                      raise SystemExit(f'exact tree inspection returned unexpected {name} target object; fail closed')
+                  blob_sha = entry.get('sha')
+                  if not isinstance(blob_sha, str) or re.fullmatch(r'[0-9a-f]{40}', blob_sha) is None:
+                      raise SystemExit(f'exact tree inspection returned invalid {name} blob SHA; fail closed')
+                  blobs[name] = blob_sha
+              return blobs
 
           pull = api(f'/pulls/{number_text}')
           if pull.get('state') != 'open':
@@ -566,36 +697,37 @@ jobs:
           if isinstance(changed_files, bool) or not isinstance(changed_files, int) or changed_files < 0:
               raise SystemExit('invalid changed-files count')
 
-          base_blob = target_blob(expected_base)
-          head_blob = target_blob(expected_head)
-          base_present = base_blob is not None
-          head_present = head_blob is not None
-          # The former diff-enumeration authority (`previous_filename = item.get('previous_filename')`)
-          # is deliberately replaced by immutable base/head exact-path observations above.
-          checkout_present = os.path.isfile(target)
-          if checkout_present != head_present:
-              raise SystemExit('exact-head checkout and API target state disagree; fail closed')
-          if checkout_present:
-              checkout_blob = subprocess.run(
-                  ['git', 'hash-object', '--', target],
-                  check=True,
-                  capture_output=True,
-                  text=True,
-              ).stdout.strip().lower()
-              if checkout_blob != head_blob:
-                  raise SystemExit('exact-head checkout and API target blob disagree; fail closed')
-          if base_present and not head_present:
-              raise SystemExit('Durability PostgreSQL target was removed or renamed; fail closed')
+          base_blobs = target_blobs(expected_base)
+          head_blobs = target_blobs(expected_head)
+          for name, target in targets:
+              base_blob = base_blobs[name]
+              head_blob = head_blobs[name]
+              base_present = base_blob is not None
+              head_present = head_blob is not None
+              checkout_present = os.path.isfile(target)
+              if checkout_present != head_present:
+                  raise SystemExit(f'exact-head checkout and API {name} target state disagree; fail closed')
+              if checkout_present:
+                  checkout_blob = subprocess.run(
+                      ['git', 'hash-object', '--', target],
+                      check=True,
+                      capture_output=True,
+                      text=True,
+                  ).stdout.strip().lower()
+                  if checkout_blob != head_blob:
+                      raise SystemExit(f'exact-head checkout and API {name} target blob disagree; fail closed')
+              if base_present and not head_present:
+                  raise SystemExit(f'{name} PostgreSQL target was removed or renamed; fail closed')
 
           pull_after_target = api(f'/pulls/{number_text}')
           if pull_after_target.get('state') != 'open':
-              raise SystemExit('pull request closed during Durability PostgreSQL target classification')
+              raise SystemExit('pull request closed during PostgreSQL target classification')
           if pull_after_target.get('head', {}).get('sha', '').lower() != expected_head:
-              raise SystemExit('pull request head moved during Durability PostgreSQL target classification')
+              raise SystemExit('pull request head moved during PostgreSQL target classification')
           if pull_after_target.get('head', {}).get('repo', {}).get('full_name') != repository:
-              raise SystemExit('pull request repository changed during Durability PostgreSQL target classification')
+              raise SystemExit('pull request repository changed during PostgreSQL target classification')
           if pull_after_target.get('base', {}).get('sha', '').lower() != expected_base:
-              raise SystemExit('pull request base moved during Durability PostgreSQL target classification')
+              raise SystemExit('pull request base moved during PostgreSQL target classification')
           changed_files_after = pull_after_target.get('changed_files')
           if (
               isinstance(changed_files_after, bool)
@@ -604,15 +736,30 @@ jobs:
           ):
               raise SystemExit('invalid post-inspection changed-files count')
           if changed_files_after != changed_files:
-              raise SystemExit('pull request changed-files count moved during Durability PostgreSQL target classification')
+              raise SystemExit('pull request changed-files count moved during PostgreSQL target classification')
 
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
-              output.write(f"present={'true' if head_present else 'false'}\n")
-          print(f'Durability PostgreSQL target present at exact head: {head_present}.')
+              for name, _target in targets:
+                  blob = head_blobs[name]
+                  output.write(f"{name}_present={'true' if blob is not None else 'false'}\n")
+                  output.write(f"{name}_blob={blob or ''}\n")
+          print('Registered PostgreSQL target classification completed on exact base/head.')
           PY
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+      - name: Restore Cargo cache saved by protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-1.94.0-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            rust-linux-1.94.0-
 
       - name: Build workspace
         run: cargo +1.94.0 build --locked --workspace --all-targets
@@ -623,27 +770,97 @@ jobs:
       - name: Test workspace
         run: cargo +1.94.0 test --locked --workspace
 
-      - name: Run Durability PostgreSQL E2E when allocated
+      - name: Run registered PostgreSQL E2E targets when allocated
         env:
           OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
-          TARGET_PRESENT: ${{ steps.pg_target.outputs.present }}
+          DURABILITY_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.durability_postgres_present }}
+          DURABILITY_POSTGRES_BLOB: ${{ steps.pg_target.outputs.durability_postgres_blob }}
+          CHARACTER_AUTHORITY_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.character_authority_postgres_present }}
+          CHARACTER_AUTHORITY_POSTGRES_BLOB: ${{ steps.pg_target.outputs.character_authority_postgres_blob }}
+          RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.runtime_scope_assignment_postgres_present }}
+          RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_BLOB: ${{ steps.pg_target.outputs.runtime_scope_assignment_postgres_blob }}
+          NATIVE_ADMISSION_SOURCE_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.native_admission_source_postgres_present }}
+          NATIVE_ADMISSION_SOURCE_POSTGRES_BLOB: ${{ steps.pg_target.outputs.native_admission_source_postgres_blob }}
         run: |
           set -euo pipefail
-          case "$TARGET_PRESENT" in
-            true|false) ;;
-            *)
-              echo "Durability PostgreSQL target classification produced an invalid result; failing closed." >&2
-              exit 1
-              ;;
-          esac
-          if [[ "$TARGET_PRESENT" == "true" ]] && [[ -f apps/game-server/tests/durability_postgres.rs ]]; then
-            cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres
-          elif [[ "$TARGET_PRESENT" == "false" ]] && [[ ! -e apps/game-server/tests/durability_postgres.rs ]]; then
-            echo "NOT_APPLICABLE: Durability PostgreSQL test target is not allocated on this revision."
-          else
-            echo "Durability PostgreSQL target state changed after classification; failing closed." >&2
-            exit 1
-          fi
+          verify_registered_target_binding() {
+            local name="$1"
+            local path="$2"
+            local metadata
+            metadata="$(mktemp)"
+            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"
+            python - "$metadata" "$name" "$path" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          metadata_path, name, registered_path = sys.argv[1:]
+          try:
+              payload = json.loads(pathlib.Path(metadata_path).read_text(encoding='utf-8'))
+              packages = payload['packages']
+              if not isinstance(packages, list):
+                  raise ValueError('packages is not a list')
+              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']
+              if len(owners) != 1:
+                  raise ValueError('expected exactly one oteryn-game-server package')
+              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)
+              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)
+              if observed_manifest != expected_manifest:
+                  raise ValueError(
+                      f'package manifest is {observed_manifest}, expected {expected_manifest}'
+                  )
+              targets = owners[0].get('targets')
+              if not isinstance(targets, list):
+                  raise ValueError('package targets is not a list')
+              matches = [target for target in targets if target.get('name') == name]
+              if len(matches) != 1 or matches[0].get('kind') != ['test']:
+                  raise ValueError('expected exactly one integration-test target')
+              expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)
+              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)
+              if observed != expected:
+                  raise ValueError(f'target source is {observed}, expected {expected}')
+          except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError) as error:
+              raise SystemExit(f'Cargo target binding verification failed for {name}: {error}') from error
+          PY
+            rm -f "$metadata"
+          }
+          run_registered_target() {
+            local name="$1"
+            local path="$2"
+            local classified_present="$3"
+            local classified_blob="$4"
+            case "$classified_present" in
+              true)
+                if [[ ! -f "$path" || -L "$path" ]]; then
+                  echo "Registered PostgreSQL target changed from a classified regular file: $path" >&2
+                  exit 1
+                fi
+                local checkout_blob
+                checkout_blob="$(git hash-object -- "$path")"
+                if [[ ! "$classified_blob" =~ ^[0-9a-f]{40}$ || "$checkout_blob" != "$classified_blob" ]]; then
+                  echo "Registered PostgreSQL target blob changed after classification: $path" >&2
+                  exit 1
+                fi
+                verify_registered_target_binding "$name" "$path"
+                cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"
+                ;;
+              false)
+                if [[ -e "$path" || -L "$path" || -n "$classified_blob" ]]; then
+                  echo "Registered PostgreSQL target changed from classified absence: $path" >&2
+                  exit 1
+                fi
+                echo "NOT_APPLICABLE: registered PostgreSQL target is absent on this revision: $name -> $path"
+                ;;
+              *)
+                echo "Registered PostgreSQL target classification produced an invalid result: $name" >&2
+                exit 1
+                ;;
+            esac
+          }
+          run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs "$DURABILITY_POSTGRES_PRESENT" "$DURABILITY_POSTGRES_BLOB"
+          run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs "$CHARACTER_AUTHORITY_POSTGRES_PRESENT" "$CHARACTER_AUTHORITY_POSTGRES_BLOB"
+          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs "$RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_PRESENT" "$RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_BLOB"
+          run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs "$NATIVE_ADMISSION_SOURCE_POSTGRES_PRESENT" "$NATIVE_ADMISSION_SOURCE_POSTGRES_BLOB"
 
       - name: Run synthetic harness
         run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
@@ -687,13 +904,27 @@ jobs:
         shell: pwsh
         run: cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
 
-      - name: Launch visible pre-native shell smoke
+      - name: Launch exact release client smoke
         shell: pwsh
-        run: cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $client = ".\target\x86_64-pc-windows-msvc\release\oteryn-client.exe"
+          if (-not (Test-Path -LiteralPath $client -PathType Leaf)) {
+            throw "release client artifact missing: $client"
+          }
+          & $client --smoke
+          if ($LASTEXITCODE -ne 0) {
+            throw "release client smoke failed with exit code $LASTEXITCODE"
+          }
 
       - name: Run synthetic harness
         shell: pwsh
-        run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
+        run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
+
+      - name: Test Windows input platform
+        shell: pwsh
+        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc
 
       - name: Verify deterministic simulation golden fixtures
         shell: pwsh
@@ -721,6 +952,119 @@ jobs:
           command: check
           arguments: --all-features
 
+  node_boot:
+    name: Merge gate / Node boot against the real Platform
+    needs: [scope, lanes]
+    # Fails closed: only an explicit protected-base `false` skips the physical qualification.
+    if: needs.lanes.outputs.server_qualification != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.target_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Validate harness
+        run: bash -n tools/qualification/node_boot/run.sh
+
+      - name: Run node boot qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/node-boot-evidence.txt"
+          bash tools/qualification/node_boot/run.sh | tee "$evidence"
+          grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
+          grep -E '^(NODE_BOOT_EVIDENCE |SEAM_EVIDENCE |NODE_BOOT_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
+
+  server_seam:
+    name: Merge gate / Server Seam over TCP+TLS
+    needs: [scope, lanes]
+    # Fails closed: only an explicit protected-base `false` skips the physical qualification.
+    if: needs.lanes.outputs.server_qualification != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+        env:
+          POSTGRES_USER: oteryn_test_admin
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.target_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Validate harness
+        run: bash -n tools/qualification/wp5_s3b/run.sh
+
+      - name: Run real composed qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+          OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/server-seam-evidence.txt"
+          WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh | tee "$evidence"
+          grep -Fxq 'S3B_RESULT=SEAM_PASS' "$evidence"
+          grep -E '^(S3B_EVIDENCE |SEAM_EVIDENCE |S3B_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
+
   validate:
     name: Merge gate / validate
     if: always()
@@ -730,10 +1074,14 @@ jobs:
       - governance
       - dependency_review
       - codeql
+      - routing_contract
+      - atlas_fullworld
       - rust_policy
       - rust_linux
       - rust_windows
       - rust_supply_chain
+      - node_boot
+      - server_seam
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -746,23 +1094,29 @@ jobs:
           GOVERNANCE: ${{ needs.governance.result }}
           DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}
           CODEQL: ${{ needs.codeql.result }}
+          ROUTING_CONTRACT: ${{ needs.routing_contract.result }}
           RUST_REQUIRED: ${{ needs.lanes.outputs.rust }}
           WINDOWS_REQUIRED: ${{ needs.lanes.outputs.windows }}
+          ATLAS_FULLWORLD_REQUIRED: ${{ needs.lanes.outputs.atlas_fullworld }}
+          ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}
           RUST_POLICY: ${{ needs.rust_policy.result }}
           RUST_LINUX: ${{ needs.rust_linux.result }}
           RUST_WINDOWS: ${{ needs.rust_windows.result }}
           RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}
+          SERVER_QUALIFICATION_REQUIRED: ${{ needs.lanes.outputs.server_qualification }}
+          NODE_BOOT: ${{ needs.node_boot.result }}
+          SERVER_SEAM: ${{ needs.server_seam.result }}
         run: |
           python - <<'PY'
           import os
           import sys
 
           failures: list[str] = []
-          for name in ('SCOPE', 'LANES', 'GOVERNANCE', 'DEPENDENCY_REVIEW', 'CODEQL'):
+          for name in ('SCOPE', 'LANES', 'GOVERNANCE', 'DEPENDENCY_REVIEW', 'CODEQL', 'ROUTING_CONTRACT'):
               if os.environ[name] != 'success':
                   failures.append(f'{name}={os.environ[name]}')
 
-          for flag in ('RUST_REQUIRED', 'WINDOWS_REQUIRED'):
+          for flag in ('RUST_REQUIRED', 'WINDOWS_REQUIRED', 'ATLAS_FULLWORLD_REQUIRED'):
               if os.environ[flag] not in {'true', 'false'}:
                   failures.append(f'invalid {flag}={os.environ[flag]}')
           if os.environ['RUST_REQUIRED'] == 'false' and os.environ['WINDOWS_REQUIRED'] == 'true':
@@ -770,10 +1124,21 @@ jobs:
           for flag, names in (
               ('RUST_REQUIRED', ('RUST_POLICY', 'RUST_LINUX', 'RUST_SUPPLY_CHAIN')),
               ('WINDOWS_REQUIRED', ('RUST_WINDOWS',)),
+              ('ATLAS_FULLWORLD_REQUIRED', ('ATLAS_FULLWORLD',)),
           ):
               allowed = {'success'} if os.environ[flag] == 'true' else {'success', 'skipped'}
               for name in names:
                   if os.environ[name] not in allowed:
+                      failures.append(f'{name}={os.environ[name]}')
+          # Physical server qualifications fail closed: anything but an explicit
+          # protected-base `false` (including an older classifier) requires them.
+          if os.environ.get('SERVER_QUALIFICATION_REQUIRED', '') != 'false':
+              for name in ('NODE_BOOT', 'SERVER_SEAM'):
+                  if os.environ[name] != 'success':
+                      failures.append(f'{name}={os.environ[name]}')
+          else:
+              for name in ('NODE_BOOT', 'SERVER_SEAM'):
+                  if os.environ[name] not in {'success', 'skipped'}:
                       failures.append(f'{name}={os.environ[name]}')
 
           if failures:

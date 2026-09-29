@@ -1,0 +1,75 @@
+{
+  "admission_main_sha": "e1ccfd40c08c39e968d7010589e3e31cbb5e3d71",
+  "allocation": "#162 comment 5873329796 (Allocation: Combat D1)",
+  "api_added": [
+    "foundation::CreatureDeathOccurrenceKey (pub(crate), no constructor, typed getters)",
+    "foundation::CreatureDeathOccurrenceRef::death_key (pub(crate))",
+    "durability::item_mint::ItemMintCause::from_creature_death (pub(crate))",
+    "foundation::CombatDeathFixture (cfg(test))"
+  ],
+  "decision": "docs/architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md §§4.1-4.3 (D52)",
+  "d_admission": false,
+  "runtime_activation": false,
+  "fixture_profile": "VSL_COMBAT_FIXTURE_PROFILE/v1: one loot entry, draw_ordinal 0, quantity 1, creature health 20",
+  "not_proven": [
+    "runtime activation",
+    "XP",
+    "real loot tables",
+    "Character progression-readiness proof",
+    "VSL §19 rows",
+    "canonical PostgreSQL 17.6 lane"
+  ],
+  "postgresql": {
+    "server_version_num": "170011",
+    "canonical_lane": "170006 (not run locally)"
+  },
+  "postgres_tests": {
+    "item_mint_postgres": {
+      "passed": 478,
+      "failed": 0,
+      "d1_cases": [
+        "d1_one_creature_death_mints_exactly_one_item",
+        "d1_replayed_or_refrozen_death_resolves_to_the_same_item",
+        "d1_stale_generation_death_is_refused_after_the_scope_moves",
+        "d1_administrative_despawn_produces_no_death_and_no_mint",
+        "d1_two_creature_deaths_have_distinct_keys_and_items"
+      ]
+    },
+    "durability_postgres": {
+      "passed": 554,
+      "failed": 0
+    },
+    "character_authority_postgres": {
+      "passed": 483,
+      "failed": 8,
+      "item_mint_cases_passed": 12,
+      "failures": "pre-existing hard assertion server_version_num == 170006 (local 17.11)",
+      "failed_cases": [
+        "authenticated_intent_qualification_matrix",
+        "bootstrap_is_atomic_and_audit_is_published_held_and_expired",
+        "character_progression_postgres_cases::distinct_occurrences_with_one_predecessor_cannot_both_commit",
+        "character_progression_postgres_cases::exact_replay_reconcile_and_restart_readback_are_durable",
+        "character_progression_postgres_cases::rollback_concurrency_and_ended_node_preserve_single_revision",
+        "character_progression_postgres_cases::stale_fences_context_and_missing_state_fail_closed",
+        "fresh_store_admission_refuses_any_prior_character_row",
+        "fresh_store_rerun_is_idempotent_and_interpretation_waits_for_it"
+      ]
+    }
+  },
+  "unit_tests": [
+    "committed_lethal_death_key_is_the_exact_owner_actor_ref_and_replay_stable",
+    "only_a_committed_projected_lethal_occurrence_yields_a_death_key",
+    "two_fixture_creature_deaths_have_distinct_death_keys"
+  ],
+  "validation": {
+    "fmt": "pass",
+    "clippy_workspace_all_targets_deny_warnings": "pass",
+    "workspace_tests": {
+      "passed": 4520,
+      "failed": 0,
+      "test_binaries": 78
+    },
+    "validate_governance": "pass",
+    "validate_inherited_prompt_policy": "not completed locally: unauthenticated api.github.com META fetch returns HTTP 403 in this session (environment); CI runs it with a token"
+  }
+}

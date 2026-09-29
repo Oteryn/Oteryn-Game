@@ -115,7 +115,7 @@ Do not close the lifecycle from enqueue/submission or an unverified merge result
 After that protected-main readback:
 
 - record the integration commit/resulting state;
-- archive task and release owned paths/leases;
+- archive task (or confirm the archive move that rode in the merged candidate, per `tasks/archive/README.md`) and release owned paths/leases;
 - close/update linked Issue/programme barriers;
 - mark superseded PRs intentionally terminal;
 - preserve evidence and one next programme action, if any;

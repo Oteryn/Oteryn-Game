@@ -305,7 +305,7 @@ After protected-main readback, #162 must fresh-read:
 1. protected `main` and this exact allocation;
 2. open PRs, branches and active task records;
 3. current ownership of `foundation/mod.rs` and all future owned paths;
-4. current mutating-writer count under the Terra/Sol scheduler;
+4. current mutating-writer count under the retained Work + Sol scheduler;
 5. Issue #530/#540 state and any newer accepted architecture;
 6. the current status of the durable scope-assignment producer/consumer and whether the planned
    pre-production-only bootstrap can remain isolated from that authority;
@@ -321,9 +321,11 @@ chat history.
 
 ## Integration / closeout
 
-The implementation candidate must remain frozen after material qualification. Integration is only via
-the bound META 3.1 native exact-head Merge Queue contract, followed by real `merge_group` aggregate
-`game-gate` success and protected-main readback.
+The implementation candidate must remain frozen after material qualification. Protected integration
+resolves the current immutable bound META integration-capability router: use freshly proven
+`DIRECT_CAPABLE` or `DELEGATED_CAPABLE`, and report `BLOCKED_CAPABILITY_UNAVAILABLE` only when
+neither route is proven. Follow the selected bound route-specific fencing/reconciliation contract,
+then require real `merge_group` aggregate `game-gate` success and protected-main readback.
 
 Direct merge, generic auto-merge, bypass, force/rebase, no-op/retrigger commits and protection
 weakening are forbidden.

@@ -1,0 +1,1086 @@
+{
+ "schema": "OTERYN_TIBIACOM_CAPTURE_FACTS/v1",
+ "captured_at": "2026-09-28T15:43:17Z",
+ "facts": [
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.heading",
+   "value": "4.1 Basic Controls"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.1",
+   "value": "Addon 1: Many outfits can be upgraded by activating one or two so-called addons. Check this box to select the first addon. This field will be greyed out and cannot be checked if your character has not earned the first addon for a selected outfit or if the outfit does not have any addons."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.2",
+   "value": "Addon 2: Many outfits can be upgraded by activating one or two so-called addons. Check this box to select the second addon. This field will be greyed out and cannot be checked if your character has not earned the second addon for a selected outfit or if the outfit does not have any addons."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.3",
+   "value": "Mount: Select here whether your character should use a mount or not. This field will be greyed out and cannot be checked if your character does not own any mount."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.4",
+   "value": "Random Mount: If you own more than one mount and cannot decide which one to use, you should check this option. Whenever your character is now using \"mount\", one of your mounts is selected randomly."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.5",
+   "value": "Using the Keyboard You can also control your character's movement by using the cursor keys or the number keys on the num pad. Simply use them in the customary fashion to move up, down, left or right. Moving diagonally is also possible by using the keyboard. Simply press 7, 9, 1 or 3 on the num pad t"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.6",
+   "value": "Loot Click: Simply right-click on a body to open the context menu and select \"Open in new window\". A window will open up in which you can now check any possessions the dead creature or character has. If you find something that catches your eye, you can right-click on it and select \"Loot\"."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.7",
+   "value": "Quick Loot Nearby Corpses: Simply right-click on a body to open the context menu and select \"Loot corpse\". If 'Quick Loot Nearby Corpses' is enabled in your Options, your character will loot up to 30 monster corpses per field, including the field you're standing on and the adjacent fields. This way "
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.8",
+   "value": "Sort Containers First: Activate this feature to list all containers at the top of your inventory, making them easier to access."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.9",
+   "value": "Sort Nested Containers: Enable this to sort the contents of all nested containers as well. Note, however, that there is a limit to how many nested containers can be sorted."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.10",
+   "value": "Use Manual Sort Mode: Normally, when a new item is placed in a container or an existing item is moved within a container, it will appear in the first slot. However, if this option is enabled, you can place an item in any specific slot you choose, giving you precise control over your inventory. Addit"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.11",
+   "value": "Use main container as fallback: Check this box to loot into your main container if you can neither loot into the container for the particular loot category nor the container for \"Unassigned Loot\"."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.12",
+   "value": "Skipped Loot: If you have selected the filter for skipped loot, you can select via the items section of the Cyclopedia which items you want to \"Skip when Quick Looting\" when using the loot function \"Loot All\". Simply tick the box at the lower right-hand corner of the entry of the item which you do n"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.13",
+   "value": "Accepted Loot: Select this function if you like to loot only specific items when using the loot function \"Loot All\". To determine which items should be looted, open the items section of the Cyclopedia. Tick the box \"Loot when Quick Looting\" at the lower right-hand corner of the entry of the item you"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.14",
+   "value": "Ctrl+E"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.15",
+   "value": "Tab"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.16",
+   "value": "Ctrl+O"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.17",
+   "value": "Ctrl+T"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.18",
+   "value": "Shift+Tab"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.19",
+   "value": "Ctrl+D"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.20",
+   "value": "Ctrl+C"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.21",
+   "value": "Ctrl+A"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.22",
+   "value": "Ctrl+M"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.23",
+   "value": "Ctrl+Z"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.24",
+   "value": "Ctrl+I"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.25",
+   "value": "Ctrl+K"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.26",
+   "value": "Ctrl+Y"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.27",
+   "value": "Ctrl+U"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.28",
+   "value": "Alt+Home/End"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.29",
+   "value": "Alt+CursorKeys"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.30",
+   "value": "Alt+PageUp/Down"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.31",
+   "value": "Ctrl+H"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.32",
+   "value": "Ctrl+G"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.33",
+   "value": "Alt+W"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.34",
+   "value": "Ctrl+L"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.35",
+   "value": "Ctrl+J"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.36",
+   "value": "Ctrl+R"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.37",
+   "value": "Esc"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.38",
+   "value": "Ctrl+N"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.39",
+   "value": "Alt+F8"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.heading",
+   "value": "5.1 Characters"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.1",
+   "value": "Hit Points and Mana Both his maximum hit points and maximum mana increase whenever a character advances in level. Note, however, that while the net increase of hit points and mana is initially the same for all characters this will change once they have reached level 8. After level 8, the amount by w"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.2",
+   "value": "Shielding Shielding is the ability to successfully block enemy attacks with a shield. Of course, characters need to hold shields in their hands in order to use this skill. Note that it is not possible to block more than 2 opponents at a time."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.3",
+   "value": "Cool Title: Characters receive an official title which depends on their vocation. Thus, paladins will be promoted to \"royal paladins\", while sorcerers will be appointed \"master sorcerers\" etc."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.4",
+   "value": "Improved Regeneration: The regeneration speed of a character's hit points and mana will increase. More precisely, druids and sorcerers will regenerate mana at an increased rate, while knights take less time to heal their wounds. Promoted paladins and monks, on the other hand, have both their mana an"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.5",
+   "value": "More Soul Points: Promoted characters have 200 soul points instead of 100. Also the regeneration speed of soul points is increased. A promoted character will regain 1 soul point every 15 seconds."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.6",
+   "value": "Reduced Loss when Dying: Your character will lose fewer experience points and skills when dying."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.7",
+   "value": "Special Spell: Each vocation will be able to learn one extra spell."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.8",
+   "value": "Stances: Promoted characters can use stances, which are special modes that change their behavior in combat. While a stance is active, it provides continuous bonuses or modifies how spells and attacks work, allowing players to adapt their playstyle to different situations."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.9",
+   "value": "Level: They must have reached at least level 20."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.10",
+   "value": "Payment: They must pay a one-time fee of 20,000 gold pieces."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.11",
+   "value": "Premium account: Only Premium players can promote their characters."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.12",
+   "value": "Dedication Perks: They have small effects and gradually increase existing characteristics, e.g. your hit points or your mana. Every promotion point invested into a Dedication Perk raises the bonus in question a bit till you have assigned the maximum number of points possible for this slice."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.13",
+   "value": "Conviction Perks: They have medium to large effects. They augment existing spells, grant vocation-specific passive abilities or generally useful bonuses, e.g. elemental resistance. You unlock a Conviction Perk once you have filled the respective slice to the max. Most Conviction Perks can be found m"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.14",
+   "value": "Revelation Perks: They have powerful effects. They grant new spells or strong passive effects with considerable impact. There are four Revelation Perks and each of them is assigned to one of the four domains of the wheel. You unlock a Revelation Perk once you have spent enough promotion points in th"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.15",
+   "value": "Reveal gems: The gems you find are rough jewels, which must be revealed to unlock their inherent powers. They come in three sizes: Lesser, Regular and Greater. Additionally, each gem is linked to one of the five vocations: Guardian gems for knights, Marksman gems for paladins, Spiritualist gems for "
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.16",
+   "value": "Domains: The wheel of destiny consists of four domains. When a gem is revealed, it not only gains mods but also a colour representing its domain, for instance, red for the top right domain. If you reveal a gem with great stats but for the wrong domain, you can change it. This is done by selecting th"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.17",
+   "value": "Placing gems: Gems are placed in vessels by selecting \"Place in Vessel.\" To replace a gem, use \"Remove from Vessel.\" The activation of a gem's mods depends on how many \"Vessel Resonance\" perks you have completed in the Wheel of Destiny. Each domain has three such perks. Completing one perk activates"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.18",
+   "value": "Lock/Unlock gems: Gems can be locked or unlocked by clicking on the small lock icon located at the top left corner of the gem. When a gem is locked, you can't change its domain or dismantle it. This is handy for keeping important gems safe."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.19",
+   "value": "Dismantle gems: If you have a gem that you don't need anymore, you can dismantle it into its fragments. These fragments can be used to upgrade the mods on your gems in the Fragment Workshop. To do this, click on the 'Dismantle' button. Keep in mind that you can't dismantle a gem if it's locked, if i"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.20",
+   "value": "Obtaining fragments: Fragments come in two types: lesser and greater. To obtain fragments, you can either smash unrevealed gems with a crusher, or you can dismantle revealed gems in the Gem Atelier. The number of fragments received depends on the quality and state (revealed or unrevealed) of the gem"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.21",
+   "value": "1-2 lesser fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.22",
+   "value": "1-3 lesser fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.23",
+   "value": "2-4 lesser fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.24",
+   "value": "2-5 lesser fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.25",
+   "value": "1-2 greater fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.26",
+   "value": "1-3 greater fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.27",
+   "value": "Upgrading Mods: Click on a mod to view its unlocked and unlockable grades and their effects. If you have the required amount of gold and fragments, click on \"Enhance\" to unlock the next mod grade. Basic mods require lesser fragments, while supreme mods need greater fragments. Enhancing mods to a hig"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.28",
+   "value": "Limitations: When you enhance a mod in the Fragment Workshop, the grade applies to the same mod wherever it appears on your gems, provided the preceding mods on the gem have at least the same grade. If the previous mods have a lower grade, the mod in question is limited to that lower grade. This spe"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.29",
+   "value": "Weapons: A chance to deal additional damage."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.30",
+   "value": "Armor: A chance to fully mitigate the damage from an attack."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.31",
+   "value": "Helmets: A chance to reduce all cooldowns during combat."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.32",
+   "value": "Legs: A chance to transform into your vocation's avatar for 7 seconds when using a weapon, offensive rune, or offensive spell. While in avatar form, you gain damage reduction, and all attacks become critical hits with extra critical damage."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.33",
+   "value": "Boots: Increase the chance to activate the effects of other tiered items you are wearing."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.34",
+   "value": "5"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.35",
+   "value": "15"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.36",
+   "value": "10"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.37",
+   "value": "10"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.38",
+   "value": "5"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.39",
+   "value": "30"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.heading",
+   "value": "5.3 Combat"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.1",
+   "value": "Critical hits: When equipped with an item charged with this effect, characters have a certain chance to strike a hit which causes a certain amount of additional damage."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.2",
+   "value": "Life leech: When equipped with an item charged with this effect, characters have a certain chance to get back a certain amount of hit points which equals a certain percentage of the damage they have caused."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.3",
+   "value": "Mana leech: When equipped with an item charged with this effect, characters have a certain chance to get back a certain amount of mana which equals a certain percentage of the damage they have caused."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.4",
+   "value": "Cooperate with Other Players It is a mistake to believe that 2 characters are twice as strong as one - in fact, 2 characters that are well attuned to each other are much, much stronger than solitary fighters! In a team, characters can fully exploit their individual strengths while relying on others "
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.5",
+   "value": "Avoid Getting Cornered Characters that are surrounded by enemies often have a hard time to escape. Remember even weak creatures can hand out hefty damage if there are too many of them. Keep in mind that no matter how high your character's shielding skill, you will not be able to block more than 2 op"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.6",
+   "value": "Open up the Prey dialog and select the tab \"Prey Creatures\"."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.7",
+   "value": "In the Prey slot you will see 9 creatures from which you can select your Prey creature. If you do not like any of the displayed creatures, you can roll for a new list. You get one free list reroll every 20 hours."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.8",
+   "value": "For the price of 5 Prey Wildcards, you can even choose your prey freely from all creatures that are available as Prey."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.9",
+   "value": "Task Difficulty: Players can change the task difficulty at any time, but the change only takes effect when selecting your next task. Your current task remains unchanged. Tasks are grouped into four levels of difficulty:"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.10",
+   "value": "Beginner: includes only easy creatures"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.11",
+   "value": "Adept: includes a mix of easy and medium creatures"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.12",
+   "value": "Expert: includes medium and hard creatures"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.13",
+   "value": "Master: includes hard and challenging creatures"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.14",
+   "value": "Preferred List: Use the Preferred List to customise which types of tasks can appear when you roll for new ones. This allows you to avoid creatures you dislike or focus on those you prefer to hunt."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.15",
+   "value": "Reroll Tasks: You can reroll your current task selection using Reroll Tokens."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.16",
+   "value": "Reroll Tokens: One token can be claimed for free each day. Each character can hold up to 10 tokens at a time. Reroll Tokens are consumed when you choose to reroll the available task options."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.17",
+   "value": "Silver and Gold Tasks: Occasionally, Silver or Gold Bounty tasks may appear. These special tasks are rarer but offer greater rewards than standard tasks."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.18",
+   "value": "Bounty Talisman: A Bounty Talisman can be purchased from any jeweller in Tibia for 5,000 gold. By completing Bounty Tasks, you earn Bounty Points which can be used to upgrade the bonuses of your Bounty Talisman: damage against creatures, life leech, more loot and the chance for extra Bestiary progre"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.19",
+   "value": "Hunting Task Points: You receive 25 Hunting Task Points for completing a Kill Task and 75 for a Delivery Task. If you complete at least 4 Weekly Tasks, your Hunting Task Points will be doubled. Complete at least 8 tasks to triple your points, 12 tasks to multiply them by 5 and 16 tasks to receive a "
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.20",
+   "value": "Soulseals: You receive 1 Soulseal for each completed task. Soulseals can be used in the Soulpit. Click the obelisk there, then your character to open a menu where you can select a creature you want to challenge on your own."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.21",
+   "value": "Characters cannot attack other players in the first 10 seconds after login, unless they are attacked and have to defend themselves."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.22",
+   "value": "When you attack a character (with the exception of characters with a black skull), you only deal 50% of the damage you would deal in PvE fights."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.23",
+   "value": "3 to 5 unmarked characters in 24 hours,"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.24",
+   "value": "5 to 9 unmarked characters in 7 days or"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.25",
+   "value": "10 to 19 unmarked characters in 30 days."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.26",
+   "value": "6 or more unmarked characters in 24 hours,"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.27",
+   "value": "10 or more unmarked characters in 7 days or"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.28",
+   "value": "20 or more unmarked characters in 30 days."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.29",
+   "value": "Orange Skulls Similar to a yellow skull, this skull is not visible to all players on the screen. You will only see it if your character was killed unjustified by another character. All characters that have killed your character unjustified are marked with an orange skull visible to you and themselve"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.30",
+   "value": "Only characters that are of similar levels can share experience when hunting together. To be more precise, the lowest character in a party may not have less than two-thirds of the levels of the highest character. This means a level 40 can share experience with a level 60 but not with a level 20; or "
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.31",
+   "value": "The distance of all party members to the leader must be smaller or equal to 30 fields, this works also if you are one floor up or down."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.32",
+   "value": "1 combatant: 4 monsters"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.33",
+   "value": "2 combatants: 8 monsters"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.34",
+   "value": "3 combatants: 11 monsters"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.35",
+   "value": "4 combatants: 14 monsters"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.36",
+   "value": "5 combatants: 17 monsters"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.37",
+   "value": "Murmillion: Tanky melee"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.38",
+   "value": "Scissorion: High single target damage melee"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.39",
+   "value": "Hoodinion: Ranged with AoE spells and high damage spikes"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.heading",
+   "value": "5.2 The World of Tibia"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.1",
+   "value": "Darashia The city of Darashia is the capital of Caliph Kazzan's desert kingdom. Erected in the middle of a huge stretch of barren wasteland, Darashia is a jewel of the desert that owes its existence to an abundance of fresh water springs. Its citizens are friendly and hospitable, and its many artisa"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.2",
+   "value": "Kazordoon Situated in a huge extinct volcano, the city of Kazordoon is the pride of the dwarven race, a miracle of science and of craftsmanship. Many generations of dwarven artisans and engineers have contributed to the creation of its beautiful halls and passageways, and countless mine workers have"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.3",
+   "value": "Svargrond Situated on Hrodmir, the largest isle of the Ice Islands, Svargrond is for sure the coldest city in whole Tibia. There are people of 2 different backgrounds living in this chilly settlement. There are the barbarians, natives who have been in this area for a very long time, and there are se"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.4",
+   "value": "Depot Chest: The first box is your depot chest. Characters can store their items in their depot chest. Depot chests are safe places to store items because every character has a personal chest nobody else can open. To make it easier to keep track of your stored items, every depot chest contains 17 de"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.5",
+   "value": "Stash: The second box is your stash. Here, players can store most items which are tradeable via the Market. There are no limitations; characters can store as many items as they like in their stash. However, items that have been purchased in the Store, have already been (partly) used (e.g. rings that"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.6",
+   "value": "Inbox: If you have received any parcels or letters lately, they will arrive here. Also, if you have lost a house, all items that can be carried will be transferred to your inbox. Further, all items you have bought via the Market will arrive in your inbox."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.7",
+   "value": "Market: Clicking on the last box, will open the Tibia Market. Via the Market you can comfortably trade items with other players."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.8",
+   "value": "Post Offices Post offices are branches of the Royal Tibian Mail service which are usually found close to depots. Post office clerks sell parcels or letters that can be delivered to any depot in Tibia by the Royal Tibian Mail. Would you like to write to a friend or to send some items to another city?"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.9",
+   "value": "Magic Shops Another favourite with Tibian adventurers, magic shops provide adepts of magic with everything they need to carry out their trade. From magical equipment such as spellbooks or all kinds of runes including blank runes to potions, you can get it all at your local magic shop. A word on poti"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.10",
+   "value": "Deposit Money To put money in your bank account, take it with you and bring it to the bank. There, tell the bank assistant how much money you would like to deposit, e.g. deposit 200 gold. You can also ask your local bank clerk to deposit all. On this command, all the money you are carrying with you "
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.11",
+   "value": "Withdraw Money To get money from your bank account, you have to ask the bank assistant to withdraw it, e.g. withdraw 50 gold. Provided you have enough money, the bank assistant will gladly hand the money to you. It is not possible to overdraw your account."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.12",
+   "value": "Transfer Money You can also use the Tibian bank to transfer money to another character. E.g., if you would like to transfer 100 gold to the character \"Tibiaplayer\", ask the bank assistant to transfer 100 gold to Tibiaplayer. Note: It is not possible to transfer money to, on or from Newhaven, Rookgaa"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.13",
+   "value": "Change Money Banks offer an important service to Tibian adventurers: they change gold into platinum and platinum into crystal. Platinum and crystal coins represent gradations of gold coins, the standard Tibia monetary unit, with 1 platinum coin representing 100 gold coins and 1 crystal coin represen"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.14",
+   "value": "Portals of Citizenship All characters except for those who are on Newhaven or Rookgaard must be citizens of one of Tibia's cities. They can select their future home city when leaving Newhaven/the Island of Destiny, and Captain Dreadnought/Captain Kurt will teleport them to the selected city after th"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.15",
+   "value": "Houses Finally, just like in real life the majority of buildings in cities are private houses that are rented by players. Characters can only enter private houses if they have been invited or if they are actually the owners. For details please see the manual section on houses."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.16",
+   "value": "Blueberry Bushes: The popular Tibia blueberries grow on these bushes. To pick berries simply right-click on the bush and select \"Use\"."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.17",
+   "value": "Grass: While grass is not as well suited for travelling as roads are, your character will be able to move reasonably fast on it."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.18",
+   "value": "Jungle Grass: Highly grown jungle grass is impassable. However, adventurers can remove it using machetes."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.19",
+   "value": "Loose Stone Piles: You should watch out for loose stone piles, since they are usually reliable indicators that there is a hidden entrance to a dungeon. You can open the entrance by using a shovel on the stone pile."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.20",
+   "value": "Roads: Roads are built for travelling, and on no ground will your character move faster than on a road."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.21",
+   "value": "Sand: Not surprisingly, sand is quite common in desert areas. It is fairly good to travel on."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.22",
+   "value": "Snow: While your characters are quite immune against its cold, snow will slow them down considerably."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.23",
+   "value": "Swamp: The eastern regions of Tibia are full of treacherous swamps. Swamps cannot be entered, so you will have to find a way around them."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.24",
+   "value": "Trees: A common sight in Tibia. It is not possible to cut down trees."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.25",
+   "value": "Water: Even though there is a special underwater area it is not possible to move on water fields, so to cross rivers or other bodies of water you will have to find a bridge or perhaps a ferry. Be careful when handling items close to water, because any items thrown into it are lost forever. It is pos"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.26",
+   "value": "Wheat: Wheat is cultivated in many areas on Tibia. Once it is ripe it can be harvested by using a scythe. A bunch of wheat can be used to bake the delicious Tibia bread."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.heading",
+   "value": "4.3 Trading"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.1",
+   "value": "Every character on a Premium account is able to create a maximum of 100 offers at a time. Each offer is limited to a maximum of 64,000 items."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.2",
+   "value": "Whenever you place an offer, you have to pay a fee. The fee amounts to 2% of the price of the offer you want to place, but at least 20 gold and no more than 1,000,000 gold. The fee will be directly charged from your bank account."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.3",
+   "value": "999,999,999,999 is the maximum price you can set for an offer."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.4",
+   "value": "Offers are always valid for 30 days. If nobody has reacted on your offer until then, your offered item(s) will be transferred back to your inbox, and your money will be transferred back to your bank account."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.5",
+   "value": "The Market includes an automatic system to help you detect and avoid unfair offers. The development of prices is monitored individually on each server, and average prices are calculated on a daily basis. To warn you that an offer may possibly be unfair, all sell offers that are 25 % or more higher t"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.6",
+   "value": "Offers: This is the default setting. Whenever you open the Market dialog and select an item, you will see the list of sell and buy offers for the selected item."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.7",
+   "value": "Details: If you click on this button, details of the selected item are displayed in the upper part, among others the weight, a possible description or if available the vocation and the level by which the item can be used. In the lower part, you find interesting statistics of the item of the last 30 "
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.8",
+   "value": "My Offers: In this section, you can find information about your offer history and your current offers. Under \"My Offers\", three buttons are available:"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.9",
+   "value": "Current Offers: Here you find a list of all offers you have currently placed in the Market. If you decide that you do no longer want to buy or sell an item you have offered, click on your offer and then on the corresponding \"Cancel\" button. If you cancel a sell offer, the item(s) will be transferred"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.10",
+   "value": "Offer History: Here you can check your last 600 (sell and buy together) sell and buy offers. You can see when the offer ended, how it was ended and for which price you have sold or bought an item."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.11",
+   "value": "Market: Use this button to leave the \"My Offers\" view and return to the \"Offers\" view."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.12",
+   "value": "Close: Use this button to leave the Market."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.13",
+   "value": "How to place sell offers If you want to sell an item, search the item you want to sell. Go to \"Create Offer\" in the lower right-hand part of the Market dialog. Click on the button \"Sell\". First add the \"Piece Price\" you want to charge for your offered item(s). Next select the amount you want to sell"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.14",
+   "value": "How to place buy offers You cannot find the item you are looking for or the prices for your desired item are simply too high for your current budget? Simply place a buy offer for the item that you want for a price that you can afford. To make a request for an item you want to buy, search the item yo"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.15",
+   "value": "How to buy an item offered in the Market Search the item you want to buy. Items that you cannot afford because you do not have the demanded amount of money in your bank account are greyed out in the \"Sell Offers\" list. If you find the desired item and agree with the demanded price, click on the item"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.16",
+   "value": "How to sell an item requested in the Market Search the item you want to sell. Note that you must have the item in your depot chest. Requested items that you do not have in your depot are greyed out in the \"Buy Offers\" list. If you see an offer where somebody wants to buy your item and agree with the"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-1-entering-and-selecting-account-data",
+   "key": "starting.2-1-entering-and-selecting-account-data.heading",
+   "value": "2.1 Entering and Selecting Account Data"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-1-entering-and-selecting-account-data",
+   "key": "starting.2-1-entering-and-selecting-account-data.1",
+   "value": "Entering Your Email Address First you need to enter a valid email address to which you want your new account to be assigned. You can only register one account to one email address at a time, so make sure the address is not assigned to an account already. Note: The email address is the key to your ac"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.heading",
+   "value": "2.2 Creating a Character"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.1",
+   "value": "Regular World: This is the default world category, where all game features work exactly as described in this manual and changes are only released after extensive testing. We recommend players should generally choose to play on regular game worlds, especially if they are new to the game or if they pr"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.2",
+   "value": "Experimental World: This category is highly special, as such experimental worlds are occasionally used by CipSoft as proving grounds for new features or for other testing purposes. They differ from regular worlds in several important aspects. For instance, players can only create a character on an e"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.3",
+   "value": "Optional PvP: Worlds that are marked as optional PvP (i.e. \"optional Player versus Player\") are worlds on which players can only attack others if they agree to it. So if you prefer to play peacefully, you should consider choosing a world such as Secura or Harmonia."
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.4",
+   "value": "Open PvP: On game worlds marked as open PvP it is allowed to attack and even kill other characters, although excessive killing of other characters will lead to skull marks accompanied by tough sanctions to make sure the situation does not get out of hand. A word on the game world Premia: This world "
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.5",
+   "value": "Retro Open PvP: On game worlds marked as retro open PvP it is allowed to attack and even kill other characters, although excessive killing of other characters will lead to skull marks accompanied by tough sanctions to make sure the situation does not get out of hand. For more information, please hav"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.6",
+   "value": "Hardcore PvP: On worlds marked as hardcore PvP combat between players is actually encouraged. Here, characters can only walk through each other in protection zones unless they are standing on special fields. If you prefer the thrill of attacking other characters, you should choose one of these world"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.7",
+   "value": "Hardcore Retro PvP: On game worlds marked as hardcore retro PvP attacking and killing other characters is tolerated and encouraged. If you prefer the thrill of attacking other characters, you should choose one of these worlds. For details on hardcore retro PvP game worlds, please check the correspon"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.8",
+   "value": "Play Tutorial (only when creating the account via the Tibia website) Check this box if you want to play the tutorial. Players who already have a character on the main continent may skip the tutorial by leaving this box unchecked. These characters will start with level 2 in Newhaven, ready to select "
+  },
+  {
+   "section": "starting",
+   "anchor": "2-4-getting-started",
+   "key": "starting.2-4-getting-started.heading",
+   "value": "2.4 Getting Started"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-4-getting-started",
+   "key": "starting.2-4-getting-started.1",
+   "value": "Login and Character List Before you can start playing, you must enter your email address and password. If your account is connected to an authenticator, you will also be asked to enter a valid token. If the data you have entered is correct, a list will appear in which you will see the names of all y"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-4-getting-started",
+   "key": "starting.2-4-getting-started.2",
+   "value": "Upper menu bar: Among links to Tibia players streaming their sessions on YouTube or Twitch, you also find the number of the players that are currently online there."
+  },
+  {
+   "section": "starting",
+   "anchor": "2-4-getting-started",
+   "key": "starting.2-4-getting-started.3",
+   "value": "Options Click on this little wheel to enter the \"Options\" menu. Most of the buttons displayed here will open further submenus where you can change a number of game options to customise the client to your taste. If you open the Options menu for the first time, only the most important settings are dis"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-4-getting-started",
+   "key": "starting.2-4-getting-started.4",
+   "value": "Event Schedule Here you can find information about all events that are currently active in Tibia or which will take place in the future. By clicking on it, a calendar will open up in which you can check all events for the next 12 months."
+  }
+ ]
+}

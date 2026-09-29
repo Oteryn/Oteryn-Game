@@ -23,3 +23,15 @@ is diagnostic only; any actual or ambiguous clipping need terminates as
 evidence hashes direct concatenation of exact producer records while raw bytes
 remain ephemeral. Output classifications remain
 `MIGRATION_EVIDENCE / OTS_HYPOTHESIS_ONLY`.
+
+
+## Scope evolution
+
+This directory also contains protected successor census/crosswalk utilities that
+grew out of the original corridor work. Their existing paths are intentionally
+preserved to avoid cosmetic churn and workflow/import breakage.
+
+New tooling for the repository-wide Tibia content census programme belongs under
+`tools/content-census/`, organized by content family as each real lane is
+implemented. Do not add further unrelated family scripts to this flat directory
+unless they are required to maintain an existing protected workflow.

@@ -1139,6 +1139,41 @@ pub fn validate_claim_preserving_session_v1(
     validate_session_claims(account_id, current, expected_claims)
 }
 
+/// Claim ownership check for a lifecycle decision that changes no claim
+/// (control loss). The session must be exactly the expected one and both
+/// current rows must still name it as presence owner and lease holder at the
+/// current lease generation. Unlike [`validate_claim_preserving_session_v1`],
+/// an independent owner re-observation that leaves ownership unchanged (a
+/// Platform security refresh by a later, refused admission attempt for the
+/// same account) is not a change of ownership and does not strand the
+/// session without a loss decision.
+pub fn validate_claim_ownership_v1(
+    account_id: &str,
+    expected: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    expected_claims: &[AdmissionAuthorityPublicationChangeV1],
+    current_claims: &[Option<AdmissionAuthorityPublicationChangeV1>],
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    use AdmissionAuthorityPublicationErrorV1::Stale;
+    if current != expected || expected_claims.len() != 2 {
+        return Err(Stale);
+    }
+    let current_claims = current_claims
+        .iter()
+        .cloned()
+        .collect::<Option<Vec<_>>>()
+        .ok_or(Stale)?;
+    if current_claims.len() != 2
+        || current_claims
+            .iter()
+            .zip(expected_claims)
+            .any(|(current, expected)| current.key != expected.key)
+    {
+        return Err(Stale);
+    }
+    validate_session_claims(account_id, current, &current_claims)
+}
+
 fn validate_lifecycle_effects(
     operation: &AdmissionClaimLifecycleOperationV1,
     evidence: &AdmissionClaimTransitionEvidenceV1,

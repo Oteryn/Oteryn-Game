@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "content/creatures/familiars/",
+  "kind": "static_content",
+  "owner": "Creature/Ability authoring",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "READY_UNPOPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Familiar profile over Creature identity; no duplicate creature identity."
+}

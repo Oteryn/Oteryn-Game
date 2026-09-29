@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "rulesets/entitlements/premium-gates/",
+  "kind": "ruleset",
+  "owner": "Game entitlement consumption",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "READY_UNPOPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Game-side premium eligibility gates; commercial grant owner is Platform."
+}

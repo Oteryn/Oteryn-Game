@@ -1,0 +1,382 @@
+{
+  "encounter": "canary:encounter/goshnars_hatred",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "GoshnarsHatredBuff": [
+      "canary:creature/goshnar_s_hatred"
+    ],
+    "mType.onSpawn": [
+      "canary:creature/goshnar_s_hatred"
+    ],
+    "mType.onDisappear": [
+      "canary:creature/goshnar_s_hatred"
+    ],
+    "BurningChangeForm": [
+      "canary:creature/ashes_of_burning_hatred",
+      "canary:creature/spark_of_burning_hatred",
+      "canary:creature/flame_of_burning_hatred",
+      "canary:creature/blaze_of_burning_hatred"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/goshnars_hatred.lua",
+      "blob_sha1": "f493b8e4eda1ec7d7484fbc74ae81b767fc4c46a"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/burning_hatred/ashes_of_burning_hatred.lua",
+      "blob_sha1": "995cad06686c3a5115a884f272a895d1a2333918"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/burning_hatred/spark_of_burning_hatred.lua",
+      "blob_sha1": "c3c9d73749f95caa7bc2e360b86d9a532ce6bc1c"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/burning_hatred/flame_of_burning_hatred.lua",
+      "blob_sha1": "20f253efa7960ecdc25afdf8d3ee4f8d05afde9c"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/burning_hatred/blaze_of_burning_hatred.lua",
+      "blob_sha1": "77b619b70eaf259e124c00e5f7e3951684a74088"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/lib/quests/soul_war.lua",
+      "blob_sha1": "f551347bd4fb09d47ca1ec5a868812a5147fac48"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Goshnar's Hatred is the goshnars_hatred participant; its file registers GoshnarsHatredBuff.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        148
+      ],
+      "status": "mapped",
+      "resolution": "Goshnar's Hatred is the goshnars_hatred participant; its file registers mType.onSpawn.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        137
+      ],
+      "status": "mapped",
+      "resolution": "Goshnar's Hatred is the goshnars_hatred participant; its file registers mType.onDisappear.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        31
+      ],
+      "status": "mapped",
+      "resolution": "Ashes of Burning Hatred is the burning_hatred participant; its file registers BurningChangeForm.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        31
+      ],
+      "status": "mapped",
+      "resolution": "Spark of Burning Hatred is the burning_hatred participant; its file registers BurningChangeForm.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        31
+      ],
+      "status": "mapped",
+      "resolution": "Flame of Burning Hatred is the burning_hatred participant; its file registers BurningChangeForm.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        31
+      ],
+      "status": "mapped",
+      "resolution": "Blaze of Burning Hatred is the burning_hatred participant; its file registers BurningChangeForm.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        346,
+        347,
+        348,
+        349,
+        350,
+        351,
+        352,
+        353,
+        367,
+        368,
+        369,
+        370,
+        371
+      ],
+      "status": "mapped",
+      "resolution": "The lever creates Goshnar's Hatred and the Ashes of Burning Hatred and sets the burning time to 180.",
+      "destination": "/encounter/rules/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        578,
+        580,
+        581,
+        582,
+        583,
+        585,
+        586,
+        587,
+        588,
+        589,
+        590,
+        592,
+        594
+      ],
+      "status": "mapped",
+      "resolution": "Each think (1 s) of the fire lowers the shared burning time by one; at 0 it is set back to 180. One campfire burns in the room, so the time falls by one a second: each form burns 45 s, and the Blaze one more second for the reset. One timer per form, each started by the previous one.",
+      "destination": "/encounter/rules/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        595,
+        596,
+        597,
+        598,
+        599,
+        610,
+        611,
+        612,
+        614,
+        615,
+        617
+      ],
+      "status": "mapped",
+      "resolution": "At the burning times 180, 135, 90 and 45 the fire takes its next form with full health (setType(name, true)): Ashes of Burning Hatred becomes Spark of Burning Hatred.",
+      "destination": "/encounter/rules/1"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        595,
+        596,
+        597,
+        598,
+        599,
+        610,
+        611,
+        612,
+        614,
+        615,
+        617
+      ],
+      "status": "mapped",
+      "resolution": "At the burning times 180, 135, 90 and 45 the fire takes its next form with full health (setType(name, true)): Spark of Burning Hatred becomes Flame of Burning Hatred.",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        595,
+        596,
+        597,
+        598,
+        599,
+        610,
+        611,
+        612,
+        614,
+        615,
+        617
+      ],
+      "status": "mapped",
+      "resolution": "At the burning times 180, 135, 90 and 45 the fire takes its next form with full health (setType(name, true)): Flame of Burning Hatred becomes Blaze of Burning Hatred.",
+      "destination": "/encounter/rules/3"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        595,
+        596,
+        597,
+        598,
+        599,
+        601,
+        602,
+        603,
+        604,
+        605,
+        606,
+        607,
+        608,
+        609,
+        610,
+        611,
+        612,
+        614,
+        615,
+        617
+      ],
+      "status": "mapped",
+      "resolution": "At the burning times 180, 135, 90 and 45 the fire takes its next form with full health (setType(name, true)): Blaze of Burning Hatred becomes Ashes of Burning Hatred. A new Ashes makes Goshnar's Hatred 10% stronger. The first Ashes, set by the lever, does not: it is already Ashes. The reset at 0 takes one more think, so a full cycle is 181 s.",
+      "destination": "/encounter/rules/4"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        555,
+        557,
+        558,
+        559,
+        560,
+        562,
+        563,
+        564,
+        565,
+        567,
+        568,
+        569,
+        570,
+        571,
+        572,
+        573,
+        575,
+        576
+      ],
+      "status": "mapped",
+      "resolution": "A Sorrow (the remains of a hateful soul) used on the fire is used up and adds 10 s to the burning time: the next form comes 10 s later (only the running form timer changes). The player's line \"The flame of hatred is doused!\" is said by the player, which the vocabulary does not voice; it is cosmetic.",
+      "destination": "/encounter/rules/5"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        5
+      ],
+      "status": "mapped",
+      "resolution": "goshnarsHatredSorrowId = 33793.",
+      "destination": "/encounter/rules/5/trigger/item"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        619,
+        621,
+        622,
+        623,
+        624,
+        625,
+        626,
+        627,
+        628,
+        629,
+        630,
+        631,
+        632,
+        633,
+        634,
+        635,
+        636,
+        637,
+        638,
+        639,
+        640,
+        641,
+        642,
+        644,
+        645,
+        646,
+        648
+      ],
+      "status": "mapped",
+      "resolution": "GoshnarsHatredBuff: every hit by a player adds the hatred multiplier to the defense of Goshnar's Hatred; its hits on players deal (1 + multiplier / 100) times their primary damage (the outgoing_damage_percent raised with each new Ashes).",
+      "destination": "/encounter/rules/6"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1304,
+        1305,
+        1306,
+        1308,
+        1309,
+        1310,
+        1311,
+        1313,
+        1314,
+        1315
+      ],
+      "status": "mapped",
+      "resolution": "The hatred multiplier is kept per boss name; it starts at 0 and rises by 10 with each new Ashes.",
+      "destination": "/encounter/state/counters/0"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        148,
+        149,
+        150
+      ],
+      "status": "mapped",
+      "resolution": "onSpawn resets the hatred multiplier.",
+      "destination": "/encounter/rules/7"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146
+      ],
+      "status": "mapped",
+      "resolution": "onDisappear of Goshnar's Hatred removes every Burning Hatred form. The boss also disappears when the encounter resets, which ends every rule anyway.",
+      "destination": "/encounter/rules/8"
+    }
+  ],
+  "outcome_evidence": []
+}

@@ -57,11 +57,15 @@ A diagnostic-only allocation remains diagnostic-only. If the allocation authoriz
 
 ## Publication safety
 
-Publish canonical material work only through the normal authorized high-level Git publication path for the current worker/session.
+Use the ordinary Game lifecycle:
 
-If normal publication is unavailable or rejected, stop with `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and return custody to the control plane.
+`AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ`
 
-Do not synthesize replacement commits, trees, blobs or refs through low-level Git object APIs as a fallback for an unavailable normal publication path. Do not force, reset, rebase or manufacture replacement history. Coordinator-owned recovery, when separately authorized, is outside this worker's authority.
+Default ordinary authoring is repository-native high-level API mutation on the exact exclusively allocated task branch before freeze. Local Git is optional and may be used only when its guarded publication route was proven before mutation.
+
+During AUTHORING, one writer owns the branch. Fresh-read the live head before each write and stop on unexpected movement. After the final authoring write, require the returned SHA to equal the live branch head, verify the complete bounded delta and owned paths, and freeze that exact remote SHA. Candidate-specific validation/review starts only after freeze.
+
+If a repair is needed after freeze, first return to AUTHORING on the same allocated branch; only then may high-level API writes produce a successor head. Freeze the new SHA and rerun candidate-specific evidence. Missing Git credentials or push capability is not a reason to request Remote Desktop. Do not use ad-hoc low-level Git Data reconstruction, ancestry-only `force=false` ref movement, writes while a head remains frozen, force/reset/rebase, or Remote Desktop as publication fallbacks. If ordinary publication is unavailable, hand publication control back to the active control plane; it may select only a bound-META API-native **new candidate** route, including a connector-compatible mode only when the current META contract permits it, and that new head requires fresh candidate-specific evidence.
 
 ## Acceptance / validation
 

@@ -1,0 +1,24 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/deep_terror",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/1949",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/22761",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/tentacle_of_the_deep_terror",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

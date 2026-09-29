@@ -1,0 +1,318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:item-dependencies:candidate:4",
+  "title": "Oteryn Item authoring exact dependency catalog candidate v4",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "definitions": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/ItemRef"
+          },
+          {
+            "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/AbilityRef"
+          },
+          {
+            "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/EffectRef"
+          },
+          {
+            "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/InteractionRef"
+          },
+          {
+            "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/DocumentRef"
+          },
+          {
+            "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/ProficiencyRef"
+          },
+          {
+            "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/PresentationRef"
+          }
+        ]
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/assetBinding"
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "presentations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/presentationAsset"
+      },
+      "minItems": 0
+    },
+    "proficiency_crosswalks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/proficiencySourceCrosswalk"
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "definitions",
+    "assets",
+    "presentations",
+    "proficiency_crosswalks"
+  ],
+  "$defs": {
+    "appearanceSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_profile": {
+          "enum": [
+            "canary_47dfd51_item_definition_v1",
+            "crystal_ff7ede5_item_definition_v1"
+          ]
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "source_profile",
+        "repository",
+        "revision",
+        "path",
+        "digest_sha256"
+      ]
+    },
+    "appearanceGeometry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pattern_width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pattern_height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pattern_depth": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "layers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "phase_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "is_opaque": {
+          "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/bool"
+        },
+        "bounding_square": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "pattern_width",
+        "pattern_height",
+        "pattern_depth",
+        "layers",
+        "phase_count",
+        "is_opaque"
+      ]
+    },
+    "appearanceFrameGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "object_initial"
+        },
+        "source_group_id": {
+          "const": 2
+        },
+        "geometry": {
+          "$ref": "#/$defs/appearanceGeometry"
+        },
+        "sprite_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "kind",
+        "source_group_id",
+        "geometry",
+        "sprite_ids"
+      ]
+    },
+    "presentationAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/PresentationRef"
+        },
+        "source": {
+          "$ref": "#/$defs/appearanceSource"
+        },
+        "appearance_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "frame_groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/appearanceFrameGroup"
+          },
+          "minItems": 1
+        },
+        "sprite_atlas": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/key"
+            },
+            "revision": {
+              "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/revision"
+            },
+            "sha256": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "key",
+            "revision",
+            "sha256"
+          ],
+          "description": "Exact raster atlas artifact. Omit until the matching client asset pack is admitted."
+        }
+      },
+      "required": [
+        "identity",
+        "source",
+        "appearance_id",
+        "frame_groups"
+      ]
+    },
+    "proficiencySourceCrosswalk": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "source_profile": {
+              "const": "canary_47dfd51_item_definition_v1"
+            },
+            "repository": {
+              "const": "opentibiabr/canary"
+            },
+            "revision": {
+              "const": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+            },
+            "path": {
+              "const": "data/items/proficiencies.json"
+            },
+            "digest_sha256": {
+              "const": "1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22"
+            },
+            "external_id": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "source_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "target": {
+              "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/ProficiencyRef"
+            }
+          },
+          "required": [
+            "source_profile",
+            "repository",
+            "revision",
+            "path",
+            "digest_sha256",
+            "external_id",
+            "source_version",
+            "target"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "source_profile": {
+              "const": "crystal_ff7ede5_item_definition_v1"
+            },
+            "repository": {
+              "const": "zimbadev/crystalserver"
+            },
+            "revision": {
+              "const": "ff7ede593c69d4c658b382c97443e8155926924a"
+            },
+            "path": {
+              "const": "data/json/proficiencies.json"
+            },
+            "digest_sha256": {
+              "const": "1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22"
+            },
+            "external_id": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "source_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "target": {
+              "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/ProficiencyRef"
+            }
+          },
+          "required": [
+            "source_profile",
+            "repository",
+            "revision",
+            "path",
+            "digest_sha256",
+            "external_id",
+            "source_version",
+            "target"
+          ]
+        }
+      ],
+      "description": "Pinned Canary or Crystal source-ID to admitted canonical Proficiency mapping; numeric IDs never become ContentKeys."
+    }
+  }
+}

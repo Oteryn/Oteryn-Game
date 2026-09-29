@@ -161,10 +161,170 @@ fn apply_fixture_effect(
     Ok(())
 }
 
+/// Byte-exact bounded encoding of every semantic plan field. The carrier
+/// retains this entire value, rather than a digest with collision risk. Every
+/// atom is validated at plan construction and cannot contain zero bytes.
+#[allow(dead_code)]
+fn encode_owner_damage_plan(plan: &EffectPlan) -> Result<Vec<u8>, AbilityError> {
+    let mut encoded = Vec::new();
+    encoded
+        .try_reserve_exact(super::MAX_EFFECT_PLAN_BYTES)
+        .map_err(|_| AbilityError::RetainedByteOverflow)?;
+    fn append(out: &mut Vec<u8>, bytes: &[u8]) -> Result<(), AbilityError> {
+        if out
+            .len()
+            .checked_add(bytes.len())
+            .is_none_or(|size| size > super::MAX_EFFECT_PLAN_BYTES)
+        {
+            return Err(AbilityError::EffectPlanTooLarge);
+        }
+        out.extend_from_slice(bytes);
+        Ok(())
+    }
+    fn atom(out: &mut Vec<u8>, value: &str) -> Result<(), AbilityError> {
+        append(out, value.as_bytes())?;
+        append(out, &[0])
+    }
+    atom(&mut encoded, plan.occurrence().id().as_str())?;
+    let revisions = plan.occurrence().revisions();
+    for revision in [
+        revisions.ruleset(),
+        revisions.content(),
+        revisions.world_policy(),
+        revisions.formula(),
+        revisions.simulation(),
+    ] {
+        atom(&mut encoded, revision)?;
+    }
+    let intent = plan.intent();
+    append(
+        &mut encoded,
+        &[match intent.proposal_source() {
+            super::ProposalSource::Client => 1,
+            super::ProposalSource::Ai => 2,
+            super::ProposalSource::Script => 3,
+        }],
+    )?;
+    atom(&mut encoded, intent.actor())?;
+    append(
+        &mut encoded,
+        &(intent.candidate_count() as u64).to_be_bytes(),
+    )?;
+    append(
+        &mut encoded,
+        &(intent.resolved_targets().len() as u64).to_be_bytes(),
+    )?;
+    for target in intent.resolved_targets() {
+        atom(&mut encoded, target.as_str())?;
+    }
+    append(&mut encoded, &(plan.effects().len() as u64).to_be_bytes())?;
+    for effect in plan.effects() {
+        append(
+            &mut encoded,
+            &[match effect {
+                Effect::Damage { .. } => 1,
+                Effect::Heal { .. } => 2,
+            }],
+        )?;
+        atom(&mut encoded, effect.target().as_str())?;
+        append(&mut encoded, &effect.magnitude().to_be_bytes())?;
+    }
+    append(
+        &mut encoded,
+        &(plan.calculation_stages().len() as u64).to_be_bytes(),
+    )?;
+    for stage in plan.calculation_stages() {
+        atom(&mut encoded, stage.as_str())?;
+    }
+    atom(&mut encoded, plan.commit_group().owner_scope())?;
+    atom(&mut encoded, plan.commit_group().group_id())?;
+    append(
+        &mut encoded,
+        &[match plan.commit_group().mode() {
+            super::CommitGroupMode::Atomic => 1,
+            super::CommitGroupMode::OrderedSequential => 2,
+        }],
+    )?;
+    Ok(encoded)
+}
+
+/// A real typed Ability→Foundation bridge, compiled into the game-server
+/// library but never composed into live gameplay. The fixture BTreeMap engine
+/// above is intentionally not on this path.
+///
+/// D4 (D141): the owner's replay identity for this commit is derived by the carrier from
+/// `(attacker, lease_generation, command.game_session_id(), command.command_id(), sub_ordinal)`,
+/// where `lease_generation` is the attacker's current `character_lease_generation`
+/// (`CharacterLease::generation()`), which orders sessions, and
+/// `sub_ordinal` is the committed effect's own index in the plan. The plan's opaque
+/// `AbilityOccurrenceId` is never passed as identity. `command` must be the actual
+/// FND-02 [`CommandRef`] of the attacker's command; composing it into live gameplay is later work.
+#[allow(dead_code)]
+pub(crate) fn commit_exact_owner_damage(
+    owner: &mut crate::foundation::CurrentOwnerExactActorCommit<'_>,
+    resolved: &super::exact_actor_resolution::ResolvedExactActor,
+    plan: &EffectPlan,
+    attacker: crate::foundation::CharacterId,
+    lease_generation: u64,
+    command: crate::foundation::CommandRef,
+) -> Result<crate::foundation::OwnerDamageResult, OwnerCommitError> {
+    use super::exact_actor_resolution::ExactActorSource;
+    if plan.occurrence() != resolved.occurrence()
+        || plan.intent().candidate_count() != 1
+        || plan.intent().resolved_targets().len() != 1
+        || plan.effects().len() != 1
+        || plan.commit_group().mode() != super::CommitGroupMode::Atomic
+        || !matches!(
+            (resolved.source(), plan.intent().proposal_source()),
+            (ExactActorSource::Client, super::ProposalSource::Client)
+                | (ExactActorSource::Ai, super::ProposalSource::Ai)
+        )
+    {
+        return Err(OwnerCommitError::InvalidPlan);
+    }
+    let Effect::Damage { target, magnitude } = &plan.effects()[0] else {
+        return Err(OwnerCommitError::InvalidPlan);
+    };
+    if target != &plan.intent().resolved_targets()[0] || *magnitude <= 0 {
+        return Err(OwnerCommitError::InvalidPlan);
+    }
+    let sub_ordinal = plan
+        .sub_occurrence(0)
+        .and_then(|sub| u16::try_from(sub.ordinal()).ok())
+        .ok_or(OwnerCommitError::InvalidPlan)?;
+    let binding = encode_owner_damage_plan(plan).map_err(OwnerCommitError::Plan)?;
+    owner
+        .commit_damage_for_attacker(
+            resolved.target(),
+            crate::foundation::AttackerCommand::new(
+                attacker,
+                lease_generation,
+                command,
+                sub_ordinal,
+            ),
+            crate::foundation::OwnerDamageCommand {
+                target: target.as_str().as_bytes(),
+                // Not read for an attributed commit: the carrier derives the identity.
+                occurrence: &[],
+                binding: &binding,
+                damage: *magnitude,
+            },
+        )
+        .map_err(OwnerCommitError::Owner)
+}
+
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)]
+pub(crate) enum OwnerCommitError {
+    InvalidPlan,
+    Plan(AbilityError),
+    Owner(crate::foundation::CarrierError),
+}
+
 #[cfg(test)]
 mod tests {
+    use super::super::TargetId;
     use super::*;
-    use crate::ability::TargetId;
 
     #[test]
     fn invalid_effects_fail_before_fixture_mutation() -> Result<(), AbilityError> {

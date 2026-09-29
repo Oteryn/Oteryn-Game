@@ -1,0 +1,2382 @@
+{
+ "schema": "OTERYN_TIBIACOM_CAPTURE_FACTS/v2",
+ "captured_at": "2026-09-28T16:02:07Z",
+ "facts": [
+  {
+   "section": "introduction",
+   "anchor": "1-2-why-play-tibia",
+   "key": "introduction.1-2-why-play-tibia.heading",
+   "value": "1.2 Why Play Tibia?"
+  },
+  {
+   "section": "introduction",
+   "anchor": "1-2-why-play-tibia",
+   "key": "introduction.1-2-why-play-tibia.1",
+   "value": "Fast and Easy Access! Getting Tibia is easy! All you need is a computer, a connection to the internet and an email address! With a size of no more than 30 MB for Windows and 30 MB for Linux or Mac users, downloading the client program you need to connect to the game servers of Tibia takes a matter o"
+  },
+  {
+   "section": "introduction",
+   "anchor": "1-2-why-play-tibia",
+   "key": "introduction.1-2-why-play-tibia.2",
+   "value": "Character Customisation Make your heroes true individuals! Characters can be customised in many different ways: choose one of 5 exciting character vocations, each with its individual strengths and weaknesses. Select one of several different skins to individualise your characters' looks. Make your ch"
+  },
+  {
+   "section": "introduction",
+   "anchor": "1-2-why-play-tibia",
+   "key": "introduction.1-2-why-play-tibia.3",
+   "value": "Massive International Community No MMORPG can do without a good community. With more than 500,000 active players, Tibia is one of the largest games of its kind! No matter when you are online, you will always find yourself amidst hundreds of characters that are played by real people such as yourself,"
+  },
+  {
+   "section": "introduction",
+   "anchor": "1-4-what-do-you-need-to-play-tibia",
+   "key": "introduction.1-4-what-do-you-need-to-play-tibia.heading",
+   "value": "1.4 What Do You Need to Play Tibia?"
+  },
+  {
+   "section": "introduction",
+   "anchor": "1-4-what-do-you-need-to-play-tibia",
+   "key": "introduction.1-4-what-do-you-need-to-play-tibia.1",
+   "value": "Operating System: Windows 10 Version 1809 (64 bit) or newer systems"
+  },
+  {
+   "section": "introduction",
+   "anchor": "1-4-what-do-you-need-to-play-tibia",
+   "key": "introduction.1-4-what-do-you-need-to-play-tibia.2",
+   "value": "Visual C++ Redistributable for Visual Studio 2015-2022"
+  },
+  {
+   "section": "introduction",
+   "anchor": "1-4-what-do-you-need-to-play-tibia",
+   "key": "introduction.1-4-what-do-you-need-to-play-tibia.3",
+   "value": "Graphics: 128MB; if DirectX 11 or OpenGL 2.1 are not supported, only software renderer mode is available"
+  },
+  {
+   "section": "introduction",
+   "anchor": "1-4-what-do-you-need-to-play-tibia",
+   "key": "introduction.1-4-what-do-you-need-to-play-tibia.4",
+   "value": "Processor: 2.5 GHz Intel Core i3 or equivalent"
+  },
+  {
+   "section": "introduction",
+   "anchor": "1-4-what-do-you-need-to-play-tibia",
+   "key": "introduction.1-4-what-do-you-need-to-play-tibia.5",
+   "value": "350 MB free space on your hard disk"
+  },
+  {
+   "section": "introduction",
+   "anchor": "1-4-what-do-you-need-to-play-tibia",
+   "key": "introduction.1-4-what-do-you-need-to-play-tibia.6",
+   "value": "Internet connection (28.8k or better)"
+  },
+  {
+   "section": "introduction",
+   "anchor": "1-5-two-things-to-keep-in-mind-when-playing-tibia",
+   "key": "introduction.1-5-two-things-to-keep-in-mind-when-playing-tibia.heading",
+   "value": "1.5 Two Things to Keep in Mind When Playing Tibia"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-1-entering-and-selecting-account-data",
+   "key": "starting.2-1-entering-and-selecting-account-data.heading",
+   "value": "2.1 Entering and Selecting Account Data"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-1-entering-and-selecting-account-data",
+   "key": "starting.2-1-entering-and-selecting-account-data.1",
+   "value": "Entering Your Email Address First you need to enter a valid email address to which you want your new account to be assigned. You can only register one account to one email address at a time, so make sure the address is not assigned to an account already. Note: The email address is the key to your ac"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.heading",
+   "value": "2.2 Creating a Character"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.1",
+   "value": "Regular World: This is the default world category, where all game features work exactly as described in this manual and changes are only released after extensive testing. We recommend players should generally choose to play on regular game worlds, especially if they are new to the game or if they pr"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.2",
+   "value": "Experimental World: This category is highly special, as such experimental worlds are occasionally used by CipSoft as proving grounds for new features or for other testing purposes. They differ from regular worlds in several important aspects. For instance, players can only create a character on an e"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.3",
+   "value": "Optional PvP: Worlds that are marked as optional PvP (i.e. \"optional Player versus Player\") are worlds on which players can only attack others if they agree to it. So if you prefer to play peacefully, you should consider choosing a world such as Secura or Harmonia."
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.4",
+   "value": "Open PvP: On game worlds marked as open PvP it is allowed to attack and even kill other characters, although excessive killing of other characters will lead to skull marks accompanied by tough sanctions to make sure the situation does not get out of hand. A word on the game world Premia: This world "
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.5",
+   "value": "Retro Open PvP: On game worlds marked as retro open PvP it is allowed to attack and even kill other characters, although excessive killing of other characters will lead to skull marks accompanied by tough sanctions to make sure the situation does not get out of hand. For more information, please hav"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.6",
+   "value": "Hardcore PvP: On worlds marked as hardcore PvP combat between players is actually encouraged. Here, characters can only walk through each other in protection zones unless they are standing on special fields. If you prefer the thrill of attacking other characters, you should choose one of these world"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.7",
+   "value": "Hardcore Retro PvP: On game worlds marked as hardcore retro PvP attacking and killing other characters is tolerated and encouraged. If you prefer the thrill of attacking other characters, you should choose one of these worlds. For details on hardcore retro PvP game worlds, please check the correspon"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-2-creating-a-character",
+   "key": "starting.2-2-creating-a-character.8",
+   "value": "Play Tutorial (only when creating the account via the Tibia website) Check this box if you want to play the tutorial. Players who already have a character on the main continent may skip the tutorial by leaving this box unchecked. These characters will start with level 2 in Newhaven, ready to select "
+  },
+  {
+   "section": "starting",
+   "anchor": "2-4-getting-started",
+   "key": "starting.2-4-getting-started.heading",
+   "value": "2.4 Getting Started"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-4-getting-started",
+   "key": "starting.2-4-getting-started.1",
+   "value": "Login and Character List Before you can start playing, you must enter your email address and password. If your account is connected to an authenticator, you will also be asked to enter a valid token. If the data you have entered is correct, a list will appear in which you will see the names of all y"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-4-getting-started",
+   "key": "starting.2-4-getting-started.2",
+   "value": "Upper menu bar: Among links to Tibia players streaming their sessions on YouTube or Twitch, you also find the number of the players that are currently online there."
+  },
+  {
+   "section": "starting",
+   "anchor": "2-4-getting-started",
+   "key": "starting.2-4-getting-started.3",
+   "value": "Options Click on this little wheel to enter the \"Options\" menu. Most of the buttons displayed here will open further submenus where you can change a number of game options to customise the client to your taste. If you open the Options menu for the first time, only the most important settings are dis"
+  },
+  {
+   "section": "starting",
+   "anchor": "2-4-getting-started",
+   "key": "starting.2-4-getting-started.4",
+   "value": "Event Schedule Here you can find information about all events that are currently active in Tibia or which will take place in the future. By clicking on it, a calendar will open up in which you can check all events for the next 12 months."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-interface",
+   "key": "interface.3-interface.heading",
+   "value": "3 Interface"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.heading",
+   "value": "3.2 Maps"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.1",
+   "value": "Compass Rose Clicking on the various points of the compass rose will move the minimap in the desired direction. Alternatively, you can use a key combination of Alt + cursor keys to scroll the minimap. Similar to the \"Centre\" button, a click on the centre of the compass rose will re-centre your minim"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.2",
+   "value": "Magnifying Glasses As might be expected, clicking on the magnifying glasses will modify the minimap's zoom factor. The icon at the top serves to zoom out of the map, while a click on the magnifying glass at the bottom will increase the zoom factor. As with all movements of the minimap there are shor"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.3",
+   "value": "Level Selector In addition to the immediate surroundings the minimap also shows the maps of floors that are situated above or below your character's current position, provided there are such floors. Use the slider to switch the map to upper or lower floors. The corresponding shortcuts are Alt+PageUp"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.4",
+   "value": "Display: Here you can select which marks you would like to see on the map, you can choose single marks or all marks. If you have already discovered an area, you can also show passages and NPCs of this area on the map."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.5",
+   "value": "Views: You can choose between two different display modes. The surface view provides an in-game graphic display of Tibia's surface and all floors above. The map view provides the classic minimap view. Floors that are situated below Tibia's surface will always be displayed in the Map View. Use the le"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.6",
+   "value": "Navigation: Similar to the minimap, you can here scroll through the map using the compass rose, the magnifying glasses as well as the level selector. Alternatively, you can also use your mouse to move the map and to scroll-in or scroll-out. To move your character, left-click on a spot on the minimap"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.7",
+   "value": "Discover Areas and Subareas: Many areas and subareas can be discovered. If you click on the map, the selected subarea will be highlighted and an additional box will open up in the left column. There you can see the area to which this subarea belongs as well as the percentage of that area you have al"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.8",
+   "value": "If you have fully discovered at least 30% of all subareas of an area, locations of NPCs within that respective area can be shown on the map."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.9",
+   "value": "At a minimum of 70%, passages to subareas on other map layers and teleports can be displayed as stair symbols on the map."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.10",
+   "value": "You might want to pay a visit to NPC Charos from time to time since characters who have completely discovered 10 areas can look forward to a new outfit. Discovering 15 and 20 areas unlocks the first and second addons respectively."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-2-maps",
+   "key": "interface.3-2-maps.11",
+   "value": "Improved Respawn Rate: Every day at server save, one area will be selected randomly, in which creatures spawn at a faster rate at this day. In addition, a second area can be selected by the players of a game world. All they have to do is donate gold for their desired area. If the required minimum am"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-4-inventory",
+   "key": "interface.3-4-inventory.heading",
+   "value": "3.4 Inventory"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-4-inventory",
+   "key": "interface.3-4-inventory.1",
+   "value": "Armor Slots: These 4 slots cover your character's feet, legs, torso and head. They are reserved for clothing and armor."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-4-inventory",
+   "key": "interface.3-4-inventory.2",
+   "value": "Weapon Slot: This slot is reserved for all kind of weapons such as a sword, an axe or a bow, but also a rod or a wand, or even a snowball. Note that certain weapons require a minimum level or a certain vocation."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-4-inventory",
+   "key": "interface.3-4-inventory.3",
+   "value": "Shield Slot: In this slot you can carry a shield, a spellbook provided you are a sorcerer or druid, or your quiver if you are a paladin. Note, however, that knights, druids, monks and sorcerers cannot carry something in this slot if they are using a 2-handed weapon. Paladins can still wear a 2-hande"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-4-inventory",
+   "key": "interface.3-4-inventory.4",
+   "value": "Amulet Slot: You can place a necklace or an amulet in this slot."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-4-inventory",
+   "key": "interface.3-4-inventory.5",
+   "value": "Ring Slot: This slot is reserved for rings."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-4-inventory",
+   "key": "interface.3-4-inventory.6",
+   "value": "Container Slot: You can place containers such as bags or backpacks in this slot. Moreover, you can open the function Manage Containers from the context menu for containers from here."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-4-inventory",
+   "key": "interface.3-4-inventory.7",
+   "value": "Extra Slot: This slot can be used to store items which you need to have close at hand. This is a great place to equip a torch for example."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-4-inventory",
+   "key": "interface.3-4-inventory.8",
+   "value": "If the ankh is displayed in yellow, your character is protected by at least one blessing. If your inventory is additionally displayed in yellow, your character is protected by the Adventurer's blessing. However, this blessing is only available on Open PvP game worlds. If your character dies in a PvP"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-4-inventory",
+   "key": "interface.3-4-inventory.9",
+   "value": "Soul Point Indicator The field in the bottom left hand corner shows your amount of soul points. Characters have a maximum of 100 soul points while promoted characters have a maximum amount of 200. Your amount of soul points is reduced whenever you cast a rune spell or certain other spells which are "
+  },
+  {
+   "section": "interface",
+   "anchor": "3-5-combat-controls",
+   "key": "interface.3-5-combat-controls.heading",
+   "value": "3.5 Combat Controls"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.heading",
+   "value": "3.6 Shortcuts"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.1",
+   "value": "Hunting Session Analyser: Here you find an overview of your last hunting session, including information such as duration, (Raw) XP gain, (Raw) XP/h, Loot, Killed Monsters etc."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.2",
+   "value": "Loot Analyser: Displays information on total amount and type of looted items within the last hour, as well as the gold value of looted items based on NPC price or average Market price on your world or individually set prices."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.3",
+   "value": "Supply Analyser: Displays information on total amount and type of supplied items within the last hour, as well as the gold value of supplied items based on NPC price or average Market price on your world."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.4",
+   "value": "Impact Analyser: Learn here how much damage or healing you have dealt."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.5",
+   "value": "Damage Input Analyser: Learn more about the damage you have received."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.6",
+   "value": "XP Analyser: Here you find information about the experience you have gained and how much you gain per hour. You can also choose whether you want your gained experience points to be displayed with our without any bonuses."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.7",
+   "value": "Drop Tracker: Use the Cyclopedia to track a certain item and check here how often it has dropped and from which monsters."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.8",
+   "value": "Party Hunt Analyser: Here you find an overview of your party's last hunting session, including information such as duration, loot, supplies etc. of up to 50 single party members as well as of the complete party. Note that the values of all members that exceed the limit for individual display are sum"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.9",
+   "value": "Boss Cooldowns: Check here to see how much longer you need to wait until you can fight a certain boss in Tibia again. You can sort bosses by name or cooldown."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.10",
+   "value": "Items: The items section provides you with information concerning every item which can be traded in the Market. Similar to the Market interface, items are sorted in different categories. Check here to find out in which city you can find NPCs buying or selling a certain item. Furthermore, you can inf"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.11",
+   "value": "Bestiary: With the exception of special boss and raid monsters, you can unlock information about all creatures in Tibia here. Creatures are sorted in different creature classes such as demons, mammals or plants. Initially, only the silhouette of a creature is displayed. To unlock an entry, you will "
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.12",
+   "value": "Charms: In this section you will find information about bonus effects called Charms. Charms can be unlocked using Charm Points. To assign a Charm to a creature, you must first complete that creature's entry in the Bestiary. A Charms can only be used on one creature at a time, and a creature can have"
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.13",
+   "value": "Map: The Cyclopedia Map offers different views on Tibia's map. You do not only find details about the single areas and subareas here, but also great tasks for all explorers, who can even earn a new outfit this way. Moreover, players can donate gold here to improve the respawn rate of a certain area "
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.14",
+   "value": "Houses: In this section you view all single houses that can be rented in Tibia. Moreover, you can also buy a house at an auction here, or sell a house to or buy a house from another player. For details, you can read up on houses in the corresponding section."
+  },
+  {
+   "section": "interface",
+   "anchor": "3-6-shortcuts",
+   "key": "interface.3-6-shortcuts.15",
+   "value": "Character: Here you find all kind of information concerning your character."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.heading",
+   "value": "4.1 Basic Controls"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.1",
+   "value": "Addon 1: Many outfits can be upgraded by activating one or two so-called addons. Check this box to select the first addon. This field will be greyed out and cannot be checked if your character has not earned the first addon for a selected outfit or if the outfit does not have any addons."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.2",
+   "value": "Addon 2: Many outfits can be upgraded by activating one or two so-called addons. Check this box to select the second addon. This field will be greyed out and cannot be checked if your character has not earned the second addon for a selected outfit or if the outfit does not have any addons."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.3",
+   "value": "Mount: Select here whether your character should use a mount or not. This field will be greyed out and cannot be checked if your character does not own any mount."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.4",
+   "value": "Random Mount: If you own more than one mount and cannot decide which one to use, you should check this option. Whenever your character is now using \"mount\", one of your mounts is selected randomly."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.5",
+   "value": "Using the Keyboard You can also control your character's movement by using the cursor keys or the number keys on the num pad. Simply use them in the customary fashion to move up, down, left or right. Moving diagonally is also possible by using the keyboard. Simply press 7, 9, 1 or 3 on the num pad t"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.6",
+   "value": "Loot Click: Simply right-click on a body to open the context menu and select \"Open in new window\". A window will open up in which you can now check any possessions the dead creature or character has. If you find something that catches your eye, you can right-click on it and select \"Loot\"."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.7",
+   "value": "Quick Loot Nearby Corpses: Simply right-click on a body to open the context menu and select \"Loot corpse\". If 'Quick Loot Nearby Corpses' is enabled in your Options, your character will loot up to 30 monster corpses per field, including the field you're standing on and the adjacent fields. This way "
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.8",
+   "value": "Sort Containers First: Activate this feature to list all containers at the top of your inventory, making them easier to access."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.9",
+   "value": "Sort Nested Containers: Enable this to sort the contents of all nested containers as well. Note, however, that there is a limit to how many nested containers can be sorted."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.10",
+   "value": "Use Manual Sort Mode: Normally, when a new item is placed in a container or an existing item is moved within a container, it will appear in the first slot. However, if this option is enabled, you can place an item in any specific slot you choose, giving you precise control over your inventory. Addit"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.11",
+   "value": "Use main container as fallback: Check this box to loot into your main container if you can neither loot into the container for the particular loot category nor the container for \"Unassigned Loot\"."
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.12",
+   "value": "Skipped Loot: If you have selected the filter for skipped loot, you can select via the items section of the Cyclopedia which items you want to \"Skip when Quick Looting\" when using the loot function \"Loot All\". Simply tick the box at the lower right-hand corner of the entry of the item which you do n"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.13",
+   "value": "Accepted Loot: Select this function if you like to loot only specific items when using the loot function \"Loot All\". To determine which items should be looted, open the items section of the Cyclopedia. Tick the box \"Loot when Quick Looting\" at the lower right-hand corner of the entry of the item you"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.14",
+   "value": "Ctrl+E"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.15",
+   "value": "Tab"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.16",
+   "value": "Ctrl+O"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.17",
+   "value": "Ctrl+T"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.18",
+   "value": "Shift+Tab"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.19",
+   "value": "Ctrl+D"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.20",
+   "value": "Ctrl+C"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.21",
+   "value": "Ctrl+A"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.22",
+   "value": "Ctrl+M"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.23",
+   "value": "Ctrl+Z"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.24",
+   "value": "Ctrl+I"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.25",
+   "value": "Ctrl+K"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.26",
+   "value": "Ctrl+Y"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.27",
+   "value": "Ctrl+U"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.28",
+   "value": "Alt+Home/End"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.29",
+   "value": "Alt+CursorKeys"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.30",
+   "value": "Alt+PageUp/Down"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.31",
+   "value": "Ctrl+H"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.32",
+   "value": "Ctrl+G"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.33",
+   "value": "Alt+W"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.34",
+   "value": "Ctrl+L"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.35",
+   "value": "Ctrl+J"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.36",
+   "value": "Ctrl+R"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.37",
+   "value": "Esc"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.38",
+   "value": "Ctrl+N"
+  },
+  {
+   "section": "controls",
+   "anchor": "4-1-basic-controls",
+   "key": "controls.4-1-basic-controls.39",
+   "value": "Alt+F8"
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.heading",
+   "value": "4.2 Player Communication"
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.1",
+   "value": "Local Chat Channel Whenever you enter text in this channel your message will be displayed in the game window right above your character's head. All nearby characters, i.e. those who are visible on the game window will be able to read what you are saying. It is possible to raise or lower your charact"
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.2",
+   "value": "Server Log Channel In the server log channel, you will receive all kind of server messages. Among others, you can see here how much damage you take, how much damage you deal out or how much damage your summons cause, provided you have not disabled status messages in the console. Also, the loot of al"
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.3",
+   "value": "Advertising Channel Like its name says, this is a public channel that is reserved for ingame advertising. If your character has a vocation and there is something Tibia-related you would like to advertise, this is the channel to use. You can buy and sell items in this channel, but you can also use it"
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.4",
+   "value": "Private Chat Channels If you are a Premium player, you can open a private chat channel. You can invite any player you like to this channel. Simply right-click on characters or on their names on the VIP list or some other channel and select \"Invite to private chat\". Alternatively, you can right-click"
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.5",
+   "value": "Party Channels In the party channel you can talk undisturbed with members of your party, e.g. to plan the tactics for your next fight. Whenever you enter a party, you are automatically invited to the party's channel. To join the channel, it must be selected from the channel menu. Whenever you leave "
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.6",
+   "value": "Guild Channels Finally, if you are a member of a guild, you will be able to enter a special channel that carries your guild's name. Although guild channels are private, the guild leader and vice leaders are able to invite also non-members to the guild channel. The guild leader and the vice leaders a"
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.7",
+   "value": "Select a type: Characters can be categorised by using this option. Select a graphical symbol in order to mark the selected name. The character will now be considered to belong to a special type of characters. If you sort characters by type, all characters marked with this symbol will be displayed to"
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.8",
+   "value": "Enter a short description: It is also possible to comment on characters. Any text entered here will be saved. Note that you will have to select \"Edit\" again in order to read a description."
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.9",
+   "value": "Notify on login: If you tick this box, you will receive an automatic message whenever the selected character logs into the game."
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.10",
+   "value": "Member of the following groups: If you like to add a character to one or more groups, simply tick all desired groups."
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.11",
+   "value": "Add New VIP: Select this option to add a new character to the VIP list. Note that characters can also be added to VIP lists by using the regular context menu. Simply right-click on a character and select \"Add to VIP list.\""
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.12",
+   "value": "Add New Group: In addition to the 3 predefined groups: Enemies, Friends and Trading Partners, players can create up to 5 groups which they can use to sort characters from their VIP list.\""
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.13",
+   "value": "Sort: This option will allow you to organise the VIP list so that you can find out what you need to know at a glance. Character names can be arranged in three different ways:"
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.14",
+   "value": "By Name: If this option is used, characters will be arranged in an alphabetical order."
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.15",
+   "value": "By Status: Selecting this option will cause the list to show characters according to their status: All characters on your VIP list who are currently online will be displayed on the top of the list, while all other characters on the list will be displayed in alphabetical order."
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.16",
+   "value": "By Type: To arrange characters according to their type select this option. Players can determine the type of a character on their VIP lists by editing the entry."
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.17",
+   "value": "Show Offline VIPs/Hide Offline VIPs: Use this option to show or hide characters that are currently online."
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.18",
+   "value": "Show Groups/Hide Groups: Use this option to show or hide groups. Note that only groups will be shown to which at least one character is assigned. Characters which are not assigned to a group, will be listed under \"No Group.\""
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.19",
+   "value": "Report Name: If somebody in your VIP list has an illegal name, you can report the player using this option."
+  },
+  {
+   "section": "controls_communication",
+   "anchor": "4-2-player-communication",
+   "key": "controls_communication.4-2-player-communication.20",
+   "value": "Copy Name: By using this option you can copy the name of the selected character in order to use it elsewhere. To paste the selected name right-click on the entry field of your choice and select \"Paste\". Alternatively you can use the hotkey Ctrl+V to paste the name."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.heading",
+   "value": "4.3 Trading"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.1",
+   "value": "Every character on a Premium account is able to create a maximum of 100 offers at a time. Each offer is limited to a maximum of 64,000 items."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.2",
+   "value": "Whenever you place an offer, you have to pay a fee. The fee amounts to 2% of the price of the offer you want to place, but at least 20 gold and no more than 1,000,000 gold. The fee will be directly charged from your bank account."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.3",
+   "value": "999,999,999,999 is the maximum price you can set for an offer."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.4",
+   "value": "Offers are always valid for 30 days. If nobody has reacted on your offer until then, your offered item(s) will be transferred back to your inbox, and your money will be transferred back to your bank account."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.5",
+   "value": "The Market includes an automatic system to help you detect and avoid unfair offers. The development of prices is monitored individually on each server, and average prices are calculated on a daily basis. To warn you that an offer may possibly be unfair, all sell offers that are 25 % or more higher t"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.6",
+   "value": "Offers: This is the default setting. Whenever you open the Market dialog and select an item, you will see the list of sell and buy offers for the selected item."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.7",
+   "value": "Details: If you click on this button, details of the selected item are displayed in the upper part, among others the weight, a possible description or if available the vocation and the level by which the item can be used. In the lower part, you find interesting statistics of the item of the last 30 "
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.8",
+   "value": "My Offers: In this section, you can find information about your offer history and your current offers. Under \"My Offers\", three buttons are available:"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.9",
+   "value": "Current Offers: Here you find a list of all offers you have currently placed in the Market. If you decide that you do no longer want to buy or sell an item you have offered, click on your offer and then on the corresponding \"Cancel\" button. If you cancel a sell offer, the item(s) will be transferred"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.10",
+   "value": "Offer History: Here you can check your last 600 (sell and buy together) sell and buy offers. You can see when the offer ended, how it was ended and for which price you have sold or bought an item."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.11",
+   "value": "Market: Use this button to leave the \"My Offers\" view and return to the \"Offers\" view."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.12",
+   "value": "Close: Use this button to leave the Market."
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.13",
+   "value": "How to place sell offers If you want to sell an item, search the item you want to sell. Go to \"Create Offer\" in the lower right-hand part of the Market dialog. Click on the button \"Sell\". First add the \"Piece Price\" you want to charge for your offered item(s). Next select the amount you want to sell"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.14",
+   "value": "How to place buy offers You cannot find the item you are looking for or the prices for your desired item are simply too high for your current budget? Simply place a buy offer for the item that you want for a price that you can afford. To make a request for an item you want to buy, search the item yo"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.15",
+   "value": "How to buy an item offered in the Market Search the item you want to buy. Items that you cannot afford because you do not have the demanded amount of money in your bank account are greyed out in the \"Sell Offers\" list. If you find the desired item and agree with the demanded price, click on the item"
+  },
+  {
+   "section": "controls_trading",
+   "anchor": "4-3-trading",
+   "key": "controls_trading.4-3-trading.16",
+   "value": "How to sell an item requested in the Market Search the item you want to sell. Note that you must have the item in your depot chest. Requested items that you do not have in your depot are greyed out in the \"Buy Offers\" list. If you see an offer where somebody wants to buy your item and agree with the"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.heading",
+   "value": "5.1 Characters"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.1",
+   "value": "Hit Points and Mana Both his maximum hit points and maximum mana increase whenever a character advances in level. Note, however, that while the net increase of hit points and mana is initially the same for all characters this will change once they have reached level 8. After level 8, the amount by w"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.2",
+   "value": "Shielding Shielding is the ability to successfully block enemy attacks with a shield. Of course, characters need to hold shields in their hands in order to use this skill. Note that it is not possible to block more than 2 opponents at a time."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.3",
+   "value": "Cool Title: Characters receive an official title which depends on their vocation. Thus, paladins will be promoted to \"royal paladins\", while sorcerers will be appointed \"master sorcerers\" etc."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.4",
+   "value": "Improved Regeneration: The regeneration speed of a character's hit points and mana will increase. More precisely, druids and sorcerers will regenerate mana at an increased rate, while knights take less time to heal their wounds. Promoted paladins and monks, on the other hand, have both their mana an"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.5",
+   "value": "More Soul Points: Promoted characters have 200 soul points instead of 100. Also the regeneration speed of soul points is increased. A promoted character will regain 1 soul point every 15 seconds."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.6",
+   "value": "Reduced Loss when Dying: Your character will lose fewer experience points and skills when dying."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.7",
+   "value": "Special Spell: Each vocation will be able to learn one extra spell."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.8",
+   "value": "Stances: Promoted characters can use stances, which are special modes that change their behavior in combat. While a stance is active, it provides continuous bonuses or modifies how spells and attacks work, allowing players to adapt their playstyle to different situations."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.9",
+   "value": "Level: They must have reached at least level 20."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.10",
+   "value": "Payment: They must pay a one-time fee of 20,000 gold pieces."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.11",
+   "value": "Premium account: Only Premium players can promote their characters."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.12",
+   "value": "Dedication Perks: They have small effects and gradually increase existing characteristics, e.g. your hit points or your mana. Every promotion point invested into a Dedication Perk raises the bonus in question a bit till you have assigned the maximum number of points possible for this slice."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.13",
+   "value": "Conviction Perks: They have medium to large effects. They augment existing spells, grant vocation-specific passive abilities or generally useful bonuses, e.g. elemental resistance. You unlock a Conviction Perk once you have filled the respective slice to the max. Most Conviction Perks can be found m"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.14",
+   "value": "Revelation Perks: They have powerful effects. They grant new spells or strong passive effects with considerable impact. There are four Revelation Perks and each of them is assigned to one of the four domains of the wheel. You unlock a Revelation Perk once you have spent enough promotion points in th"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.15",
+   "value": "Reveal gems: The gems you find are rough jewels, which must be revealed to unlock their inherent powers. They come in three sizes: Lesser, Regular and Greater. Additionally, each gem is linked to one of the five vocations: Guardian gems for knights, Marksman gems for paladins, Spiritualist gems for "
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.16",
+   "value": "Domains: The wheel of destiny consists of four domains. When a gem is revealed, it not only gains mods but also a colour representing its domain, for instance, red for the top right domain. If you reveal a gem with great stats but for the wrong domain, you can change it. This is done by selecting th"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.17",
+   "value": "Placing gems: Gems are placed in vessels by selecting \"Place in Vessel.\" To replace a gem, use \"Remove from Vessel.\" The activation of a gem's mods depends on how many \"Vessel Resonance\" perks you have completed in the Wheel of Destiny. Each domain has three such perks. Completing one perk activates"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.18",
+   "value": "Lock/Unlock gems: Gems can be locked or unlocked by clicking on the small lock icon located at the top left corner of the gem. When a gem is locked, you can't change its domain or dismantle it. This is handy for keeping important gems safe."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.19",
+   "value": "Dismantle gems: If you have a gem that you don't need anymore, you can dismantle it into its fragments. These fragments can be used to upgrade the mods on your gems in the Fragment Workshop. To do this, click on the 'Dismantle' button. Keep in mind that you can't dismantle a gem if it's locked, if i"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.20",
+   "value": "Obtaining fragments: Fragments come in two types: lesser and greater. To obtain fragments, you can either smash unrevealed gems with a crusher, or you can dismantle revealed gems in the Gem Atelier. The number of fragments received depends on the quality and state (revealed or unrevealed) of the gem"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.21",
+   "value": "1-2 lesser fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.22",
+   "value": "1-3 lesser fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.23",
+   "value": "2-4 lesser fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.24",
+   "value": "2-5 lesser fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.25",
+   "value": "1-2 greater fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.26",
+   "value": "1-3 greater fragments"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.27",
+   "value": "Upgrading Mods: Click on a mod to view its unlocked and unlockable grades and their effects. If you have the required amount of gold and fragments, click on \"Enhance\" to unlock the next mod grade. Basic mods require lesser fragments, while supreme mods need greater fragments. Enhancing mods to a hig"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.28",
+   "value": "Limitations: When you enhance a mod in the Fragment Workshop, the grade applies to the same mod wherever it appears on your gems, provided the preceding mods on the gem have at least the same grade. If the previous mods have a lower grade, the mod in question is limited to that lower grade. This spe"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.29",
+   "value": "Weapons: A chance to deal additional damage."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.30",
+   "value": "Armor: A chance to fully mitigate the damage from an attack."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.31",
+   "value": "Helmets: A chance to reduce all cooldowns during combat."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.32",
+   "value": "Legs: A chance to transform into your vocation's avatar for 7 seconds when using a weapon, offensive rune, or offensive spell. While in avatar form, you gain damage reduction, and all attacks become critical hits with extra critical damage."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.33",
+   "value": "Boots: Increase the chance to activate the effects of other tiered items you are wearing."
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.34",
+   "value": "5"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.35",
+   "value": "15"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.36",
+   "value": "10"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.37",
+   "value": "10"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.38",
+   "value": "5"
+  },
+  {
+   "section": "characters",
+   "anchor": "5-1-characters",
+   "key": "characters.5-1-characters.39",
+   "value": "30"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.heading",
+   "value": "5.2 The World of Tibia"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.1",
+   "value": "Darashia The city of Darashia is the capital of Caliph Kazzan's desert kingdom. Erected in the middle of a huge stretch of barren wasteland, Darashia is a jewel of the desert that owes its existence to an abundance of fresh water springs. Its citizens are friendly and hospitable, and its many artisa"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.2",
+   "value": "Kazordoon Situated in a huge extinct volcano, the city of Kazordoon is the pride of the dwarven race, a miracle of science and of craftsmanship. Many generations of dwarven artisans and engineers have contributed to the creation of its beautiful halls and passageways, and countless mine workers have"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.3",
+   "value": "Svargrond Situated on Hrodmir, the largest isle of the Ice Islands, Svargrond is for sure the coldest city in whole Tibia. There are people of 2 different backgrounds living in this chilly settlement. There are the barbarians, natives who have been in this area for a very long time, and there are se"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.4",
+   "value": "Depot Chest: The first box is your depot chest. Characters can store their items in their depot chest. Depot chests are safe places to store items because every character has a personal chest nobody else can open. To make it easier to keep track of your stored items, every depot chest contains 17 de"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.5",
+   "value": "Stash: The second box is your stash. Here, players can store most items which are tradeable via the Market. There are no limitations; characters can store as many items as they like in their stash. However, items that have been purchased in the Store, have already been (partly) used (e.g. rings that"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.6",
+   "value": "Inbox: If you have received any parcels or letters lately, they will arrive here. Also, if you have lost a house, all items that can be carried will be transferred to your inbox. Further, all items you have bought via the Market will arrive in your inbox."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.7",
+   "value": "Market: Clicking on the last box, will open the Tibia Market. Via the Market you can comfortably trade items with other players."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.8",
+   "value": "Post Offices Post offices are branches of the Royal Tibian Mail service which are usually found close to depots. Post office clerks sell parcels or letters that can be delivered to any depot in Tibia by the Royal Tibian Mail. Would you like to write to a friend or to send some items to another city?"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.9",
+   "value": "Magic Shops Another favourite with Tibian adventurers, magic shops provide adepts of magic with everything they need to carry out their trade. From magical equipment such as spellbooks or all kinds of runes including blank runes to potions, you can get it all at your local magic shop. A word on poti"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.10",
+   "value": "Deposit Money To put money in your bank account, take it with you and bring it to the bank. There, tell the bank assistant how much money you would like to deposit, e.g. deposit 200 gold. You can also ask your local bank clerk to deposit all. On this command, all the money you are carrying with you "
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.11",
+   "value": "Withdraw Money To get money from your bank account, you have to ask the bank assistant to withdraw it, e.g. withdraw 50 gold. Provided you have enough money, the bank assistant will gladly hand the money to you. It is not possible to overdraw your account."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.12",
+   "value": "Transfer Money You can also use the Tibian bank to transfer money to another character. E.g., if you would like to transfer 100 gold to the character \"Tibiaplayer\", ask the bank assistant to transfer 100 gold to Tibiaplayer. Note: It is not possible to transfer money to, on or from Newhaven, Rookgaa"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.13",
+   "value": "Change Money Banks offer an important service to Tibian adventurers: they change gold into platinum and platinum into crystal. Platinum and crystal coins represent gradations of gold coins, the standard Tibia monetary unit, with 1 platinum coin representing 100 gold coins and 1 crystal coin represen"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.14",
+   "value": "Portals of Citizenship All characters except for those who are on Newhaven or Rookgaard must be citizens of one of Tibia's cities. They can select their future home city when leaving Newhaven/the Island of Destiny, and Captain Dreadnought/Captain Kurt will teleport them to the selected city after th"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.15",
+   "value": "Houses Finally, just like in real life the majority of buildings in cities are private houses that are rented by players. Characters can only enter private houses if they have been invited or if they are actually the owners. For details please see the manual section on houses."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.16",
+   "value": "Blueberry Bushes: The popular Tibia blueberries grow on these bushes. To pick berries simply right-click on the bush and select \"Use\"."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.17",
+   "value": "Grass: While grass is not as well suited for travelling as roads are, your character will be able to move reasonably fast on it."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.18",
+   "value": "Jungle Grass: Highly grown jungle grass is impassable. However, adventurers can remove it using machetes."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.19",
+   "value": "Loose Stone Piles: You should watch out for loose stone piles, since they are usually reliable indicators that there is a hidden entrance to a dungeon. You can open the entrance by using a shovel on the stone pile."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.20",
+   "value": "Roads: Roads are built for travelling, and on no ground will your character move faster than on a road."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.21",
+   "value": "Sand: Not surprisingly, sand is quite common in desert areas. It is fairly good to travel on."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.22",
+   "value": "Snow: While your characters are quite immune against its cold, snow will slow them down considerably."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.23",
+   "value": "Swamp: The eastern regions of Tibia are full of treacherous swamps. Swamps cannot be entered, so you will have to find a way around them."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.24",
+   "value": "Trees: A common sight in Tibia. It is not possible to cut down trees."
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.25",
+   "value": "Water: Even though there is a special underwater area it is not possible to move on water fields, so to cross rivers or other bodies of water you will have to find a bridge or perhaps a ferry. Be careful when handling items close to water, because any items thrown into it are lost forever. It is pos"
+  },
+  {
+   "section": "world",
+   "anchor": "5-2-the-world-of-tibia",
+   "key": "world.5-2-the-world-of-tibia.26",
+   "value": "Wheat: Wheat is cultivated in many areas on Tibia. Once it is ripe it can be harvested by using a scythe. A bunch of wheat can be used to bake the delicious Tibia bread."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.heading",
+   "value": "5.3 Combat"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.1",
+   "value": "Critical hits: When equipped with an item charged with this effect, characters have a certain chance to strike a hit which causes a certain amount of additional damage."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.2",
+   "value": "Life leech: When equipped with an item charged with this effect, characters have a certain chance to get back a certain amount of hit points which equals a certain percentage of the damage they have caused."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.3",
+   "value": "Mana leech: When equipped with an item charged with this effect, characters have a certain chance to get back a certain amount of mana which equals a certain percentage of the damage they have caused."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.4",
+   "value": "Cooperate with Other Players It is a mistake to believe that 2 characters are twice as strong as one - in fact, 2 characters that are well attuned to each other are much, much stronger than solitary fighters! In a team, characters can fully exploit their individual strengths while relying on others "
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.5",
+   "value": "Avoid Getting Cornered Characters that are surrounded by enemies often have a hard time to escape. Remember even weak creatures can hand out hefty damage if there are too many of them. Keep in mind that no matter how high your character's shielding skill, you will not be able to block more than 2 op"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.6",
+   "value": "Open up the Prey dialog and select the tab \"Prey Creatures\"."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.7",
+   "value": "In the Prey slot you will see 9 creatures from which you can select your Prey creature. If you do not like any of the displayed creatures, you can roll for a new list. You get one free list reroll every 20 hours."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.8",
+   "value": "For the price of 5 Prey Wildcards, you can even choose your prey freely from all creatures that are available as Prey."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.9",
+   "value": "Task Difficulty: Players can change the task difficulty at any time, but the change only takes effect when selecting your next task. Your current task remains unchanged. Tasks are grouped into four levels of difficulty:"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.10",
+   "value": "Beginner: includes only easy creatures"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.11",
+   "value": "Adept: includes a mix of easy and medium creatures"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.12",
+   "value": "Expert: includes medium and hard creatures"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.13",
+   "value": "Master: includes hard and challenging creatures"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.14",
+   "value": "Preferred List: Use the Preferred List to customise which types of tasks can appear when you roll for new ones. This allows you to avoid creatures you dislike or focus on those you prefer to hunt."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.15",
+   "value": "Reroll Tasks: You can reroll your current task selection using Reroll Tokens."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.16",
+   "value": "Reroll Tokens: One token can be claimed for free each day. Each character can hold up to 10 tokens at a time. Reroll Tokens are consumed when you choose to reroll the available task options."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.17",
+   "value": "Silver and Gold Tasks: Occasionally, Silver or Gold Bounty tasks may appear. These special tasks are rarer but offer greater rewards than standard tasks."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.18",
+   "value": "Bounty Talisman: A Bounty Talisman can be purchased from any jeweller in Tibia for 5,000 gold. By completing Bounty Tasks, you earn Bounty Points which can be used to upgrade the bonuses of your Bounty Talisman: damage against creatures, life leech, more loot and the chance for extra Bestiary progre"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.19",
+   "value": "Hunting Task Points: You receive 25 Hunting Task Points for completing a Kill Task and 75 for a Delivery Task. If you complete at least 4 Weekly Tasks, your Hunting Task Points will be doubled. Complete at least 8 tasks to triple your points, 12 tasks to multiply them by 5 and 16 tasks to receive a "
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.20",
+   "value": "Soulseals: You receive 1 Soulseal for each completed task. Soulseals can be used in the Soulpit. Click the obelisk there, then your character to open a menu where you can select a creature you want to challenge on your own."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.21",
+   "value": "Characters cannot attack other players in the first 10 seconds after login, unless they are attacked and have to defend themselves."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.22",
+   "value": "When you attack a character (with the exception of characters with a black skull), you only deal 50% of the damage you would deal in PvE fights."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.23",
+   "value": "3 to 5 unmarked characters in 24 hours,"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.24",
+   "value": "5 to 9 unmarked characters in 7 days or"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.25",
+   "value": "10 to 19 unmarked characters in 30 days."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.26",
+   "value": "6 or more unmarked characters in 24 hours,"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.27",
+   "value": "10 or more unmarked characters in 7 days or"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.28",
+   "value": "20 or more unmarked characters in 30 days."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.29",
+   "value": "Orange Skulls Similar to a yellow skull, this skull is not visible to all players on the screen. You will only see it if your character was killed unjustified by another character. All characters that have killed your character unjustified are marked with an orange skull visible to you and themselve"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.30",
+   "value": "Only characters that are of similar levels can share experience when hunting together. To be more precise, the lowest character in a party may not have less than two-thirds of the levels of the highest character. This means a level 40 can share experience with a level 60 but not with a level 20; or "
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.31",
+   "value": "The distance of all party members to the leader must be smaller or equal to 30 fields, this works also if you are one floor up or down."
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.32",
+   "value": "1 combatant: 4 monsters"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.33",
+   "value": "2 combatants: 8 monsters"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.34",
+   "value": "3 combatants: 11 monsters"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.35",
+   "value": "4 combatants: 14 monsters"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.36",
+   "value": "5 combatants: 17 monsters"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.37",
+   "value": "Murmillion: Tanky melee"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.38",
+   "value": "Scissorion: High single target damage melee"
+  },
+  {
+   "section": "combat",
+   "anchor": "5-3-combat",
+   "key": "combat.5-3-combat.39",
+   "value": "Hoodinion: Ranged with AoE spells and high damage spikes"
+  },
+  {
+   "section": "magic",
+   "anchor": "5-4-magic",
+   "key": "magic.5-4-magic.heading",
+   "value": "5.4 Magic"
+  },
+  {
+   "section": "magic",
+   "anchor": "5-4-magic",
+   "key": "magic.5-4-magic.1",
+   "value": "Magic levels are important because they directly influence the power of spells. You will find the damage your character does with, say, a heavy magic missile increases with its magic level, so a spellcaster at level 25 will cause more damage with magic level 34 than with magic level 30, as he has mo"
+  },
+  {
+   "section": "magic",
+   "anchor": "5-4-magic",
+   "key": "magic.5-4-magic.2",
+   "value": "Furthermore, characters do not only need a minimum experience level, but also a minimum magic level in order to use runes, so this skill level is also important for paladins, monks and knights. For example, characters can only use the powerful \"Ultimate Healing\" runes once they have reached magic le"
+  },
+  {
+   "section": "magic",
+   "anchor": "5-4-magic",
+   "key": "magic.5-4-magic.3",
+   "value": "Aiming Runes Aiming runes is easy. Simply select your target in the battle list, shoot and your rune will find its target. Please keep in mind that it is not possible to shoot an attack rune on another character in the first 10 seconds after login unless you have been assaulted and need to defend yo"
+  },
+  {
+   "section": "magic",
+   "anchor": "5-4-magic",
+   "key": "magic.5-4-magic.4",
+   "value": "Spend your Mana Wisely Wise Tibians ensure that they have enough mana or runes to heal themselves should the worst come to the worst - a bit of caution could buy you that extra minute which makes the difference between life and death. If you are in trouble, remember that spells such as \"Invisibility"
+  },
+  {
+   "section": "quests",
+   "anchor": "5-5-quests",
+   "key": "quests.5-5-quests.heading",
+   "value": "5.5 Quests"
+  },
+  {
+   "section": "achievements",
+   "anchor": "5-6-achievements",
+   "key": "achievements.5-6-achievements.heading",
+   "value": "5.6 Achievements"
+  },
+  {
+   "section": "achievements",
+   "anchor": "5-6-achievements",
+   "key": "achievements.5-6-achievements.1",
+   "value": "Grade 1:"
+  },
+  {
+   "section": "achievements",
+   "anchor": "5-6-achievements",
+   "key": "achievements.5-6-achievements.2",
+   "value": "1-3 points"
+  },
+  {
+   "section": "achievements",
+   "anchor": "5-6-achievements",
+   "key": "achievements.5-6-achievements.3",
+   "value": "Grade 2:"
+  },
+  {
+   "section": "achievements",
+   "anchor": "5-6-achievements",
+   "key": "achievements.5-6-achievements.4",
+   "value": "4-6 points"
+  },
+  {
+   "section": "achievements",
+   "anchor": "5-6-achievements",
+   "key": "achievements.5-6-achievements.5",
+   "value": "Grade 3:"
+  },
+  {
+   "section": "achievements",
+   "anchor": "5-6-achievements",
+   "key": "achievements.5-6-achievements.6",
+   "value": "7-9 points"
+  },
+  {
+   "section": "achievements",
+   "anchor": "5-6-achievements",
+   "key": "achievements.5-6-achievements.7",
+   "value": "Grade 4:"
+  },
+  {
+   "section": "achievements",
+   "anchor": "5-6-achievements",
+   "key": "achievements.5-6-achievements.8",
+   "value": "10 points"
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.heading",
+   "value": "5.7 Houses"
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.1",
+   "value": "Protection Houses work as protection zones, so any character that is standing in the safety of a house is safe from any attacker. However, as with all other protection zones characters that are standing in houses do no regenerate hit points or mana. Moreover, only invited characters can enter a hous"
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.2",
+   "value": "Improved Recuperation In most houses you can put one or more beds in which characters of Premium players can sleep while being offline. Characters placed in a bed will restore one soul point for every 15 minutes they are sleeping. Furthermore, hit points and mana will also be restored as long as the"
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.3",
+   "value": "Prestige Let's not beat around the bush: a nice house will also increase your character's prestige with the community. After all, houses are in great demand, so if you have that nice 4-bed mansion with the cool garden, you can be sure many other players will envy you. What's more, you can safely dis"
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.4",
+   "value": "Bidding ingame: If you would like to bid for a house ingame, open the Cyclopedia and select the tab \"Houses\". On top, choose your favourite city and set the \"State\" to \"Auctioned\". Unless no houses are available at the moment, you will now see a list of the houses that are currently on offer. Select"
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.5",
+   "value": "Bidding using the website: If you would like to bid for a house via the website, log out of the game and go to the section Houses, choose your world and your favourite city and set the \"Status\" to \"auctioned\", then confirm by clicking on \"Submit\". Unless no houses are available at the moment, you wi"
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.6",
+   "value": "Selling a house ingame: The owner must select the house in the Cyclopedia and click on the button \"Transfer\" to open the house transfer dialog. There the owner can specify the date of the transfer, the name of the character to which the house will be transferred, and the amount of money this charact"
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.7",
+   "value": "Selling a house using the website: The owner must view the house, then click on the button \"Transfer\" to get to the house transfer page. Provided the owner is logged into the account, a form will be displayed in which the owner can specify the date of the transfer, the name of the character to which"
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.8",
+   "value": "Moving out ingame: If you have rented a house and you want to get rid of it quickly, you can move out anytime. Simply view the house in the Cyclopedia and click on the button \"Move Out\". A dialog will open up where the owner can select the move date. Note that the move date must be 1-30 days in the "
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.9",
+   "value": "Moving out using the website: If you have rented a house and you want to get rid of it quickly, you can move out anytime. Simply view the house in the Houses section and click on the button \"Move Out\", then specify the desired date on which you would like to leave and confirm with your password. The"
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.10",
+   "value": "Edit Guest List: \"Aleta Sio\" Using this spell owners and sub-owners on Premium accounts can edit a list of all characters that are invited to their house. Simply enter the name of any character you would like to invite, making sure only one name is entered per line. To un-invite characters simply er"
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.11",
+   "value": "Edit Sub-Owners: \"Aleta Som\" Similar to the list of invited characters, owners can appoint sub-owners by editing this list. Not only are sub-owners invited to houses, they are also entitled to invite or uninvite other characters to it themselves. Also, sub-owners can kick characters if they wish to "
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.12",
+   "value": "Kick Character: \"Alana Sio\" If this spell is pronounced along with the name of a character, this character will be kicked out of the house. Owners and sub-owners can use this spell, but characters can also kick themselves if they wish to."
+  },
+  {
+   "section": "houses",
+   "anchor": "5-7-houses",
+   "key": "houses.5-7-houses.13",
+   "value": "Edit Door Rights: \"Aleta Grav\" This spell allows owners to edit door rights of houses, i.e. they can determine which characters may open or close front or interior doors. This way they can create private spaces within buildings, which is particularly handy in big houses such as guildhalls. To edit d"
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.heading",
+   "value": "5.8 Guilds"
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.1",
+   "value": "Guild Board Guild members can read and post on a private guild board. The guild leader and the vices also have the option to close and delete threads, or to mark their own threads as sticky. Note that threads on guild boards will be closed if nobody has made a post in the last 30 days. Guild boards "
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.2",
+   "value": "Guild Activity Log In the guild activity log, each guild member can view important data of the last 30 days such as the date when a character has applied or joined a guild, when a character has been promoted or degraded, or who deposited to or withdrew money from the guild bank account."
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.3",
+   "value": "Access to Guildhalls Guildhalls are houses that are specifically designed to be used by guilds. Only a guild leader can rent one and invite guild members or other characters to the guildhall. This way, even free account players can get a home for their characters! Also guild leaders can make areas w"
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.4",
+   "value": "Found Guild This button is found on a world's guild list. Click on this button to found a new guild. You will be asked to enter the guild's name, the world it is on and the name of the future leader. Also, you must enter your password to confirm the process. Remember that you will not be able to fou"
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.5",
+   "value": "Apply to this Guild This button is available if you are logged into your account and the guild is open for new members. By clicking on this button, a new page will open up where you can select which character you would like to join the guild with and write an application. If you applied for a guild "
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.6",
+   "value": "View Applications This button is visible to all players who do not have any further characters that could apply to this guild, but have applied with at least one character in the last 30 days."
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.7",
+   "value": "Applications Here, guild leader and vice leaders can determine whether the guild is open or closed for new members. By clicking on \"Deny Applications\", no further character can send an application to this guild anymore until it is decided to \"Allow Applications\" again. Further, all incoming applicat"
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.8",
+   "value": "Edit Description This option is only available to guild leaders. Clicking on this function will open up an edit page in which the guild leader can enter a description of up to 500 characters, a link to a homepage and a guild logo. Again, offensive commentaries, links or guild logos may lead to a pun"
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.9",
+   "value": "Create/Delete/Manage Board This is another option that is only available to guild leaders. By pressing this button, guild leaders can create a private message board on which only guild members can read or post. Like all regular boards the guild board can be selected in the forum section of the websi"
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.10",
+   "value": "Edit Ranks Only guild leaders can edit guild ranks. They can determine the number of guild ranks (up to 20) and give them names. If a guild leader chooses to give identical names to two or more ranks, these ranks might all appear as if they were only one rank, particular if these ranks are back to b"
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.11",
+   "value": "Edit Members Several options are available here: Guild leaders can confer individual titles to characters by using the \"Set title to\" option. Guild leaders as well as vice leaders can exclude characters from their guild by selecting the \"Exclude from guild\" option. By selecting \"Set rank to\" it is p"
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.12",
+   "value": "A guild must have one leader and at least 4 vice leaders, and may not be in the course of formation or dissolution."
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.13",
+   "value": "A guild may not have declared war on, or be at war with more than 5 guilds."
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.14",
+   "value": "Opponent: Here, the guild leader can select from a drop-down menu the guild on which he wants to declare war."
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.15",
+   "value": "Duration: The guild leader needs to fill in how long the war should last. He can choose any duration between 7 and 180 days."
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.16",
+   "value": "Kills to Win: To win the war a certain number of kills are needed. This number can range between 10 and 1,000 kills."
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.17",
+   "value": "Fee for your Guild: This is the amount of money, your guild has to pay to the opposing guild in case your guild loses the war. This fee can range between 0 and 2,000,000,000 gold coins. Your guild must have this fee plus the additional war charge of 1,000 gold coins in its bank account once the war "
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.18",
+   "value": "Fee for Opposing Guild: This is the amount that the opposing guild needs to pay to your guild in case you win the war. This fee can range between 0 and 2,000,000,000 gold coins. The opposing guild must have this fee plus the additional war charge of 1,000 gold coins in its bank account once the war "
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.19",
+   "value": "Comment: Here the guild leader can leave a message for the other guild."
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.20",
+   "value": "you will always receive a protection zone block if you are the attacker. If you perform aggressive actions only against your own guild members, you can still enter a protection zone, however, such a situation is very unlikely."
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.21",
+   "value": "killing the same member of the opposing guild counts only up to 5 times in 24 hours to the kill score of a guild. Any further kills of this member do not count for the score."
+  },
+  {
+   "section": "guilds",
+   "anchor": "5-8-guilds",
+   "key": "guilds.5-8-guilds.22",
+   "value": "characters that are not involved in the war cannot heal you or strengthen you in a party in case you have suffered damage in the last 60 seconds of a member of the opposing guild."
+  },
+  {
+   "section": "store",
+   "anchor": "6-2-store-interface",
+   "key": "store.6-2-store-interface.heading",
+   "value": "6.2 Store Interface"
+  },
+  {
+   "section": "store",
+   "anchor": "6-2-store-interface",
+   "key": "store.6-2-store-interface.1",
+   "value": "On the next page you can select the starting price for your character's auction and choose at which day and time your auction should end. Note that your local time is displayed there. Moreover, you can select here some sales arguments which should be displayed for your character. Show up to 4 of you"
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.heading",
+   "value": "6.3 Available Products"
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.1",
+   "value": "Regular Blessings There are 7 regular blessings a character can own. Depending on how many blessings a character owns, the chance to lose any items upon death can be reduced up to 100%, a character's skill and experience loss can be reduced up to 56% (44.17% on Retro Hardcore PvP). Note, however, th"
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.2",
+   "value": "PvP Blessing The PvP blessing 'Twist of Fate' protects your regular blessings and the \"Amulet of Loss\" in a PvP fight. Also in a PvP fight, a character is protected by all owned regular blessings. Characters that die in a PvP fight but own the 'Twist of Fate' blessing will not lose any charges of th"
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.3",
+   "value": "Death Redemption Death Redemption comes in handy when your character has not been protected by all available regular blessings at the time of death. Death Redemption will restore all skill and experience points you would not have lost if you had been protected by all available regular blessings. Dea"
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.4",
+   "value": "Hireling Apprentice: If you purchase a Hireling Apprentice, it will greet you and your guests and sell you some basic items. At purchase, you will be able to select your hireling's gender and choose a name. Make sure that the name does not violate the Tibia Rules or you risk a punishment. In such ca"
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.5",
+   "value": "Banker: If you purchase the apprenticeship Banker, all of your hirelings purchased by the same character will allow you access to your Tibian bank or guild bank account with all known functionalities."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.6",
+   "value": "Trader: If you purchase the apprenticeship Trader, all of your hirelings purchased by the same character will sell and buy all those items which are also traded in Tibia's cities. Moreover, it offers the assortment of the Tibian post clerks."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.7",
+   "value": "Steward: If you purchase the apprenticeship Steward, all of your hirelings purchased by the same character will give you access to your stash."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.8",
+   "value": "Cook: If you purchase the apprenticeship Cook, all of your hirelings purchased by the same character will cook useful food in exchange for a fee."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.9",
+   "value": "Hireling Name Change: If you like to rename one of your hirelings, you can purchase a Hireling Name Change. Use it on the hireling you want to rename and enter the new name. Note that also your new name must not violate the Tibia Rules. In case your newly selected name is not available, the name cha"
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.10",
+   "value": "Hireling Sex Change: If you like to turn your hireling into the opposite sex, you need to purchase a Hireling Sex Change. Use it on the hireling that should change its gender."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.11",
+   "value": "A character can only be transferred once within 6 months with a regular Character World Transfer. An Express Character World Transfer allows you to transfer a character which has already been transferred within the last 6 months."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.12",
+   "value": "In former times, characters had to travel to the island of Travora to initiate a character world transfer. Unfortunately, the island has fallen victim to a seaquake. NPC Sharon and Captain Tiberius survived the catastrophe and were able to rescue themselves on a ship. Since the spot is still a magic"
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.13",
+   "value": "Ask NPC Sharon to teleport you to the transfer platform. If you log out on this platform and purchased a Character World Transfer, the transfer will be initiated during the next server save. Note that it can take up to 24 hours until your character has arrived on the new game world after the server "
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.14",
+   "value": "Prey Wildcard: Use Prey Wildcards to lock your active prey, to reroll the bonus of an active prey, to use the feature Automatic Bonus Reroll or to select a prey of your choice. Note, however, that you cannot make a purchase if you already own the maximum of 52 Prey Wildcards."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.15",
+   "value": "Gold Converter: Use it up to 500 times to change either a stack of 100 gold pieces into 1 platinum coin, or a stack of 100 platinum coins into 1 crystal coin."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.16",
+   "value": "Magic Gold Converter: Use it up to 500 times to automatically change either a stack of 100 gold pieces into 1 platinum coin, or a stack of 100 platinum coins into 1 crystal coin."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.17",
+   "value": "Permanent Prey Slot: Purchase it to have a further Prey slot permanently available for your character."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.18",
+   "value": "Permanent Weekly Task Expansion: If you buy it, the purchasing character will permanently receive 3 additional Kill Tasks and 3 additional Delivery Tasks in their Weekly Tasks."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.19",
+   "value": "Temple Teleport: Use it to get instantly teleported to your home temple."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.20",
+   "value": "Instant Reward Access: Use it at any place in Tibia to pick up your daily reward without the trouble to travel to a daily reward shrine."
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.21",
+   "value": "Charm Expansion: Characters on free accounts can activate up to two Charms, while Premium accounts can activate up to six. Purchasing the Charm Expansion lets you bypass these limits, allowing all unlocked Charms to be assigned simultaneously. Note: Only two Charms (one minor and one major) can be a"
+  },
+  {
+   "section": "products",
+   "anchor": "6-3-available-products",
+   "key": "products.6-3-available-products.22",
+   "value": "Gold Pouch: Use it to carry as many gold, platinum or crystal coins as your capacity allows. If you buy something from an NPC, the money will first be deducted from the container in your inventory before it is taken from your Gold Pouch."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-1-notes-on-account-data",
+   "key": "accounts.7-1-notes-on-account-data.heading",
+   "value": "7.1 Notes on Account Data"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-1-notes-on-account-data",
+   "key": "accounts.7-1-notes-on-account-data.1",
+   "value": "Password The password is a code players must enter when logging into Tibia. Passwords must be combinations of letters and figures which consist of a minimum of 8 digits. Players can easily change their password anytime by using the \"Change password\" option on the account page. Unlike changes of the "
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-1-notes-on-account-data",
+   "key": "accounts.7-1-notes-on-account-data.2",
+   "value": "Email Address This is the email address to which the Tibia account is assigned. The account email address is extremely important because it is the key to the account it is assigned to. You need to enter it whenever you want to log in the website or the game. Moreover, a player who has lost the passw"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-1-notes-on-account-data",
+   "key": "accounts.7-1-notes-on-account-data.3",
+   "value": "Account Confirmation and Recovery Key To use all features of a Tibia account, you must confirm your account. To do this, simply click on the link sent to your email address when you created your account. In case the email has not arrived or you have deleted it, you can request a new one via your acc"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.heading",
+   "value": "7.2 Account Management"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.1",
+   "value": "\"Logout\" - logs you out from your account on the website You must log in successfully before you can access your account page again. Note that characters will automatically log out from the website if they have been inactive for 45 minutes."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.2",
+   "value": "Delete Character This option can be used to delete characters. If you would like to remove one or more characters from your account, click on this button, and confirm your decision by entering the valid account password. Character deletions are not finalised until 60 days have passed, so you have 2 "
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.3",
+   "value": "Undelete Character If you have set a character on deletion, you have 60 days to rethink your decision. If you decide rather not to delete a character, you can click on the button \"Undelete Character\". Simply click on \"Submit\" and you can use your character just like before you deleted it. Note, howe"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.4",
+   "value": "Create Character New characters can be created by clicking on this button. For details please see the section on character creation. Note that each account can hold a maximum of 25 active characters. If you would like to create further characters, you must delete at least one existing character firs"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.5",
+   "value": "By Recovery TAN If you have entered a verified mobile phone number in your account registration and order a letter to receive a new recovery key, you will also receive a recovery TAN. You can use it to change your primary email address instantly. Note that this TAN can only be used once and only wit"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.6",
+   "value": "By 30 days waiting period If you do not have a recovery key or a verified mobile phone number, you can still change your primary or secondary email address using your password. However, for security reasons, the change will only take effect after 30 days. Also, you can only change one of your email "
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.7",
+   "value": "Swap Emails In this section you can swap your primary and secondary email by entering your password. Note that there is a 30-day waiting period before the change takes effect."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.8",
+   "value": "Add/Remove Secondary Email Here you can add or remove a secondary email. Once you have removed a secondary email address from your account, a 30-day waiting period will apply when you set a new one."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.9",
+   "value": "Terminate Account If you would like to delete your Tibia account, you need to click on this button. All of your characters are then scheduled for deletion at once. Note that it takes 2-3 months until the account is deleted for good. Until the deletion is final, you can still reverse the termination "
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.10",
+   "value": "Invite New Players Invite your friends to join you in Tibia! You can do so via a link, which you can also send to your friend's email address. You can use this link to invite as many friends as you like, but note that you cannot send more than 25 emails within 24 hours. If your friend does not recei"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.11",
+   "value": "Bring Back a Buddy If you miss that special friend of yore with whom you share so many fond memories, why don't you drop him a line and ask him to come back? Simply select the character that you like to use to invite your friend and enter your friend's character name. Once you have clicked on \"Invit"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.12",
+   "value": "Extra Service: Recovery Key In case you have lost your recovery key, you can order a new one here. Keep in mind that a recovery key is a very important security feature for your account. Whoever has the recovery key can instantly change the account's email address and with that gain access to the ac"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.13",
+   "value": "Use Game Codes Here you can redeem a game code which you have bought from one of our official resellers. To do so, enter the 20-digit code. Make sure to enter all letters and numbers correctly. Click on \"Next\" once you have entered all data. If you have entered a valid and correct game code, the cod"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.14",
+   "value": "Extra Services This section shows a record of all open Extra Services. (Express) Character World Transfer are possible open Extra Services. If you have already paid for an Extra Service or received a voucher for it but have not used it yet, you will find a corresponding entry in the section: Purchas"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.15",
+   "value": "Initiated: Shows the timestamp when the transaction was created."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.16",
+   "value": "Type: Indicates whether the transaction is an Export or Import."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.17",
+   "value": "Address: Displays the used wallet address. Click the button next to it to copy the address."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.18",
+   "value": "Coins: Shows the number of Tibia Coins involved."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.19",
+   "value": "Tokens: Displays the amount of Tibia Tokens involved."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.20",
+   "value": "State: Shows the transaction status, which can be:"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.21",
+   "value": "Pending: You need to confirm the transaction in your wallet for the Tibia Coins to be exported or imported. Note that this state may be delayed."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.22",
+   "value": "Verifying: The transaction has been confirmed and is currently being verified. Updates to this state may be delayed."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.23",
+   "value": "Completed: The Tibia Coins have been successfully exported or imported."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.24",
+   "value": "Expired: The time limit for confirming the transaction has expired; no Tibia Coins have been exported or imported, and no fees were charged by CipSoft!"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.25",
+   "value": "Actions: Depending on the transaction state, the following actions are available:"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.26",
+   "value": "Restart Export/Import: Asks you to confirm the transaction in your wallet again. Please note that a transaction can only be confirmed once; attempting to confirm it multiple times will result in failure and may incur gas fees."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.27",
+   "value": "Extra Services History In this section you see all Extra Services which you have ever ordered or set up. Also if you have already paid for an Extra Service or received a voucher for it but have not used it yet, you will find a corresponding entry in this list. At the end of each entry, you will find"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.28",
+   "value": "Vouchers History In this section you see all vouchers which you have ever received. At the end of each entry, you will find the link \"View\". Click it to get more information on this entry. If you have never received a voucher, this section is not displayed."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.29",
+   "value": "Request: If this button is displayed, your account is not connected to an authenticator. Click it to start the process of connecting your account to an authenticator."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.30",
+   "value": "Confirm/Cancel/Re-request Email: If these buttons are displayed, you have already started the process of connecting your account to an authenticator. Click on \"Confirm\" to continue this process, or on \"Cancel\" if you no longer want to connect your account to an authenticator. Click on \"Re-request Em"
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.31",
+   "value": "Link/Cancel: If these buttons are displayed, you have already started the process of connecting your account to an authenticator. Click on \"Link\" to continue this process, or on \"Cancel\" if you no longer want to connect your account to an authenticator."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.32",
+   "value": "Unlink: If this button is displayed, your account is connected to an authenticator. If you no longer want to use an authenticator app, you can \"Unlink\" it. Note, however, that an authenticator is an important security feature which helps prevent unauthorised access to your Tibia account."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.33",
+   "value": "Request: If this button is displayed, your account is not connected to an authenticator. Click it to start the process of connecting your account to an authenticator."
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.34",
+   "value": "Enter Email Code: If this button is displayed, you have already started the process of connecting your account to an authenticator. Click on \"Enter Email Code\" to enter the code you have received by email. In case our email did not reach you for some reason, click on \"Resend Email Code\" on the next "
+  },
+  {
+   "section": "accounts",
+   "anchor": "7-2-account-management",
+   "key": "accounts.7-2-account-management.35",
+   "value": "Deactivate: If this button is displayed, your account is connected to a two-factor email code authentication. If you no longer want to use an authenticator or prefer to use the more reliable authenticator app, you can \"Deactivate\" two-factor email code authentication. In case you have lost access to"
+  },
+  {
+   "section": "support",
+   "anchor": "8-1-getting-help",
+   "key": "support.8-1-getting-help.heading",
+   "value": "8.1 Getting Help"
+  },
+  {
+   "section": "support",
+   "anchor": "8-1-getting-help",
+   "key": "support.8-1-getting-help.1",
+   "value": "Lost Account Interface If you have problems to log into your account because you have lost your password or you have been hacked, use the Lost Account Interface. The Lost Account Interface is a self-help tool which can help you to get your account back. Simply specify your problem, enter the require"
+  },
+  {
+   "section": "support",
+   "anchor": "8-1-getting-help",
+   "key": "support.8-1-getting-help.2",
+   "value": "Contacting the Customer Support Team If you have tried all other sources of help without any positive result, you can contact the customer support team. To do so, please log into your account and open a support ticket. Please select the category in which your problem fits best: Select \"Technical Pro"
+  },
+  {
+   "section": "support",
+   "anchor": "8-2-rule-enforcement",
+   "key": "support.8-2-rule-enforcement.heading",
+   "value": "8.2 Rule Enforcement"
+  },
+  {
+   "section": "support",
+   "anchor": "8-2-rule-enforcement",
+   "key": "support.8-2-rule-enforcement.1",
+   "value": "Namelocks If a character has been reported for a name that violates the Tibia Rules, the player needs to acknowledge this namelock. To do so, the player must log into his account and click on the corresponding entry in the rule violation record. As soon as the player has acknowledged the namelock, t"
+  },
+  {
+   "section": "support",
+   "anchor": "8-2-rule-enforcement",
+   "key": "support.8-2-rule-enforcement.2",
+   "value": "Account Banishments If the rules are violated repeatedly or in a sufficiently serious manner, the corresponding account is banished, which means that it is temporarily excluded both from the game as well as the forum. Account banishments come in standard durations of 2 and 7 days. Please note that b"
+  },
+  {
+   "section": "support",
+   "anchor": "8-2-rule-enforcement",
+   "key": "support.8-2-rule-enforcement.3",
+   "value": "Account Deletions Account deletions are the most serious punishment in Tibia. They are only handed out if a player has violated the Tibia Rules repeatedly and/or in a very serious manner. Please note that unlike other entries in the rule violation record, entries that result in account deletions do "
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.heading",
+   "value": "9.1 How to Use the Forum"
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.1",
+   "value": "Thread/Post Subject If you would like to add a headline to your post, you can do so here. It is obligatory to fill in this field if you start a new thread, but you are not required to enter text here if you just reply to an existing post."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.2",
+   "value": "Message This is where you can enter the text of your post. Posts may consist of up to 4096 characters. If you would like to use one or more smileys in your post, you can do so by using the code that is detailed at the left hand side of the reply field."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.3",
+   "value": "Web Links: [url]www.cipsoft.com[/url] or [url=\"https://www.cipsoft.com/\"]CipSoft Website[/url] Links to internet sites can be made by using the replace code [url]. Keep in mind that if the option \"Automatically Parse URLs\" is enabled, this replace code will be placed automatically around internet ad"
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.4",
+   "value": "Tibia Links: [tibia=https://www.tibia.com/abouttibia/?subtopic=screenshots]Screenshots[/tibia] Links to www.tibia.com and its sub-sites can be enabled as clickable links on all public boards using the replace code [tibia]. Note that this will work only for sub-sites that actually exist. Make sure to"
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.5",
+   "value": "Thread Links: [thread=XXX]thread title[/thread] If you wish to link to a thread on the forum of tibia.com, you may alternatively use the replace code [thread=XXX]. Please insert the number of the thread for the XXX. This alternative offers you the possibility to finally also link to a forum thread o"
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.6",
+   "value": "Post Links: [post=XXX]post title[/post] You can also link to a specific post in a thread using the replace code [post=XXX] where XXX is the number of the corresponding post. The post number is displayed in the bottom right corner of the respective post."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.7",
+   "value": "News Links: [news=XXX]news title[/news] To link to a specific news, use the replace code [news=XXX] where XXX is the number of the corresponding news. To find out its number, search the news, news ticker or featured article you want to link in the news archive. Look at the link that is displayed in "
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.8",
+   "value": "Email Links: [email][email protected][/email] If you would like to create a link to an email address, you can do so by using this replace code. Note that this feature is disabled on all public boards."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.9",
+   "value": "Bold Text: [b]bold text[/b] Text can be highlighted by using this replace code."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.10",
+   "value": "Italic Text: [i]italic text[/i] This replace code will cause text to be displayed in italics."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.11",
+   "value": "Underlined Text: [u]underlined text[/u] Text marked by this replace code will be underlined."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.12",
+   "value": "Unordered Lists: [list] [*]item [*]item [/list] By using this replace code you can create lists. Every item of the list must be marked individually with an asterisk put in brackets [*]."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.13",
+   "value": "Ordered Lists: [list=1] [*]item [*]item [/list=1] This is a variation of the [list] replace code. When used it will generate an ordered list, i.e. individual items will be listed with numbers. It is also possible to have ordered lists with letters by replacing the number \"1\" with an \"a\", i.e. to use"
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.14",
+   "value": "Code Text: [code]text[/code] Text marked with this replace code will be displayed in a special font."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.15",
+   "value": "Character Information: [player]character name[/player] It is possible to create links to the information page of characters by using this replace code."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.16",
+   "value": "Guild Information: [guild]guild name[/guild] It is possible to create links to the information page of a guild by using this replace code."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-1-how-to-use-the-forum",
+   "key": "forum.9-1-how-to-use-the-forum.17",
+   "value": "Images: [img]image link[/img] This replace code may be used to show images in your post. Note that this feature is disabled on all public boards as well as on all guild boards."
+  },
+  {
+   "section": "forum",
+   "anchor": "9-2-the-boards",
+   "key": "forum.9-2-the-boards.heading",
+   "value": "9.2 The Boards"
+  }
+ ]
+}

@@ -36,8 +36,8 @@
       "crate": "wgpu",
       "version": "30.0.0",
       "default_features": false,
-      "features": ["std", "dx12"],
-      "reason": "retained Windows DX12 renderer"
+      "features": ["std", "dx12", "wgsl"],
+      "reason": "retained Windows DX12 renderer; wgsl compiles the ADR-0020 N2 tile and sprite shader"
     },
     {
       "crate": "winit",

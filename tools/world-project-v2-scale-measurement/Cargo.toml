@@ -1,0 +1,22 @@
+[package]
+name = "world-project-v2-scale-measurement"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Keep this probe outside the production workspace member set. It exercises the real project
+# implementation as a path dependency without changing the production workspace graph.
+[workspace]
+
+[dependencies]
+oteryn-game-server = { path = "../../apps/game-server" }
+serde = "=1.0.229"
+serde_json = "=1.0.151"
+
+# This probe is a separate workspace, so the root workspace's patches do not participate in
+# dependency resolution here. Keep the game-server's required Oteryn SQLx/Tokio extensions wired
+# to the same repository-vendored sources when Cargo builds through this standalone manifest.
+[patch.crates-io]
+sqlx-core = { path = "../../vendor/sqlx-core-0.9.0" }
+sqlx-postgres = { path = "../../vendor/sqlx-postgres-0.9.0" }
+tokio = { path = "../../vendor/tokio-1.53.1" }

@@ -1,0 +1,184 @@
+# Oteryn WorldProject/v2 creature admission v1
+
+- Date: 2026-09-27
+- Status: CANDIDATE / admission route for the Canary monster authoring bundles; implementation follows in the slices of §7
+- Task: `OTV2-20260927-creature-admission-design`
+- Programme: KAN-16 / #162
+- Companions: `OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md` (authoring format, §5 mapping), `OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md` (v2 source profile), `OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md` (content tree), `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` (encounters)
+
+## 1. Decision
+
+The owner chose to admit the monsters that are already fully resolved into the protected
+WorldProject/v2 project. WorldProject/v2 is extended first with the fields the authoring
+format carries, so that the monsters are admitted complete, not in part. The owner's wording
+was "druga droga", on 2026-09-27; the alternative of admitting only today's v2 fields was
+declined.
+
+WorldProject/v2 (`content/world/**`) is the only content the server reads. The content tree
+(`content/creatures/**`, `content/abilities/**`, `content/loot/`) is regenerated from it, as it
+already is for Items. The monster authoring bundles stay the working format and are never read by
+the server.
+
+The v2 rule stands: the **executable** subset is the Reference record graph linked by
+`link_reference_playable`. Everything else is **declarative, candidate-only** authoring profile
+data that no runtime path interprets until a later owned slice selects its semantics.
+
+## 2. Scope of the first admission (wave A)
+
+The 1,656 Canary `47dfd51f` monster files break down as follows:
+
+| Group | Count | Status |
+|---|---:|---|
+| Fully resolved monsters (`population_census.py`, one digest each in its bundle index) | 1,490 | resolved |
+| Covered by an Encounter manifest | 101 | their events live in an Encounter, and there is no Encounter runtime yet |
+| Referencing an Item missing from the Oteryn Item registry | 59 | 68 Canary item ids newer than the Crystal registry |
+| Referencing a creature or Ability that is not admitted | 14 | see below |
+| **Admitted in wave A** | **1,316** | |
+
+The staging tool (§6) computes these groups; its counts are the authority. Admission is closed over
+references: a monster is admitted only when every Creature, Ability, Effect and Formula it
+references is a record of an admitted monster. The tool repeats this check until nothing more is
+dropped. The 14 monsters dropped by the check are the following:
+
+- 10 summon or name a creature that is itself deferred, or not resolved by the census. Examples
+  are Devovorga, The Baron from Below and Wormling.
+- Grand Mother Foulscale is also dropped, because it summons `dragon hatchlings`, a name no Canary
+  monster type carries (the type is `Dragon Hatchling`). It waits for that source correction.
+- The knight, monk and paladin familiars reference their player summon spells, which are not admitted.
+
+The 59 monsters wait
+until the Item domain registers the 68 items. Duke Krule, first deferred for its `minCount` 0
+entries, is admitted since D32 maps them to count 1..max. The 101 monsters wait for an
+Encounter runtime slice, because admitting them without their encounter rules would change the
+fight: Kesar would not be immortal, and Urmahlullu's forms would not follow one another.
+
+## 3. Identities
+
+Keys are Oteryn production keys (`ProductionKey`), revision `definition-r1`. The provisional
+`canary:` keys of the bundles are provenance only.
+
+| Family | Key |
+|---|---|
+| Creature | `oteryn:creature.<slug>` |
+| Presentation | `oteryn:presentation.creature.<slug>` |
+| Behavior | `oteryn:behavior.creature.<slug>` |
+| Loot | `oteryn:loot.creature.<slug>` |
+| Ability (monster attack or defense) | `oteryn:ability.creature.<slug>.<attack-N or defense-N>` |
+| Ability (registered spell shared by several monsters) | `oteryn:ability.spell.<slug>` |
+| Effect / Formula | the Ability key with `ability` replaced by `effect` / `formula` and the bundle suffix kept |
+
+`<slug>` is the bundle slug: the Canary type name, lowercase, with non-alphanumerics folded to
+`_`. No admitted key carries a non-production marker (`test`, `fixture`, `synthetic`,
+`evidence`). A shared spell is admitted once; bundles that reference it must agree
+byte-for-byte on its Ability, Effect and Formula, otherwise the writer fails.
+
+**Item references.** A bundle Item reference `canary:item/<id>` resolves through the protected
+Item identity map (`export_reference_item_identity_map`, allocation digest `ee9219cc…`) from
+the Crystal source item id to the Oteryn Item key. Canary and Crystal share the client item id
+space: of the 2,655 referenced ids present in both, 17 differ only by name variant ("remains
+of" or "dead") or by a missing Canary `items.xml` entry. Protected Item rekeys apply on top of the allocation map. The first is R7 P04, which renames the
+gold coin to `oteryn:item.currency.gold_coin`. The writer fails when a mapped key is absent from
+`content/world`. Items stay identity records; no Item semantics are changed.
+
+**Provenance.** Admission adds a source `oteryn:source.canary`: revision
+`47dfd51f45280a59a1d3e50ba7edd573d7234446`, evidence `OtsHypothesisOnly`. Each creature gets a
+source identity binding with namespace `canary/monster-file` whose external id is the path of its
+Canary monster file below `data-otservbr-global/monster`, disposition `EXACT`. Wiki values adopted under D15 are recorded row by row in the import
+manifests. The line-level import manifests stay regenerable evidence outside the
+repository. The writer records their digests in the import batch.
+
+## 4. Executable Reference records
+
+Each admitted monster adds records the current linker accepts unchanged:
+
+- `Creature { client_projection: ClientSafe, presentation, behavior, loot? }`;
+- `Generic` Presentation (`ClientSafe`) and Generic Behavior (`ServerOnly`);
+- `Loot { algorithm: IndependentBernoulliPpm, entries }`: `probability_ppm = percent × 10,000`,
+  exact under D1, and `min_count`/`max_count` as authored;
+- `Ability { effects }` (`ServerOnly`);
+- `Effect { effect_family, formula }` for the damage and heal effects;
+- `Formula { identity }` (`ServerOnly`).
+
+The Reference profile knows only the `Damage` and `Heal` effect families. The other effect
+operations of wave A have no executable semantics yet, so they are not Reference records.
+They remain typed inline effects of their Ability's authoring profile (§5). The admitted wave A
+Abilities carry, each shared spell counted once:
+
+| Operation | Count |
+|---|---:|
+| condition | 1,313 |
+| appearance transform | 105 |
+| create item | 56 |
+| presentation only | 47 |
+| summon | 7 |
+| remove condition | 4 |
+| remove items | 1 |
+
+The Ability record lists its executable effects in authored order. The profile keeps the full
+authored order.
+
+## 5. Declarative authoring profiles
+
+`ProjectV2AuthoringProfileData` gains typed profiles that mirror the authoring format. They are
+validated structurally in Rust (ranges, sorted and unique sets, exact references), while the
+Python authoring validator stays the semantic source.
+
+| Profile | Carries |
+|---|---|
+| Creature (extended) | the existing fields, plus defense, critical chance, flags, summoning, system and spawn eligibility, name forms, inspection, corpse Item and death residue, bestiary class, taxonomy, stars and locations, reflection and healing-from-damage |
+| Behavior (new) | movement, targeting and target change; attack and defense schedules (Ability, `interval_ms`, `chance_percent`, magnitude, range); voices; summons |
+| Presentation (new) | appearance, palette, attachment and visual-effect asset binding tokens; light; audio (asset binding tokens stay unbound until an asset slice admits them) |
+| Ability (extended) | kind, range, target and direction needs, area geometry, chain, variants, path requirement, and inline non-executable effects |
+| Effect (new) | damage type, mitigation, affected side and presentation of damage and heal effects |
+| Formula (new) | kind (`range`, `speed_modifier`, `caster_magnitude`, `melee_attack_skill`) with its parameters |
+| Loot (new) | `skip_later_same_item_after_success`, true on 13 wave A entries, which the Reference Loot entry lacks |
+
+Surrounding whitespace is trimmed from voice lines and bestiary locations; four Canary voice lines
+and one location list carry it, and v2 source text rejects it.
+
+A profile never overrides a Reference record field. When both carry a value, the writer emits
+equal values or fails. Health admits `max_health` as `health`. A creature that spawns below its
+maximum health (the 15.30 Energy Cannons, 1 of 100) is deferred as `initial_health` until the
+profile has a field for it.
+
+## 6. Writer and regeneration
+
+`tools/content-migration/creature_admission_stage.py` reads the census bundles and checks each one
+against its digest in the bundle index. It also reads the protected Item identity map
+(`export_reference_item_identity_map`) and writes one canonical staged file. That file holds the
+Reference records, the authoring profiles and the source identity bindings, in the exact serde
+shapes of the game server. It also lists every deferred monster with its reason. The
+materializer (`materialize_content_world_project_v2`) pins the staged file by SHA-256, adds it
+to the project with the `oteryn:source.canary` import batch, and writes the canonical v2
+documents with their manifest and Content Lock. Creatures of game version 15.30 that only
+CrystalServer has (`crystal_batch.py`) are recorded in their own import batch
+`g4-creature-crystal-1530-r1`, whose source artifact is the same census index. A v2 source is unique
+per key and revision and names one import batch, and the NPC summer supplement already holds
+`oteryn:source.crystalserver` at the commit itself. The creature batch therefore has its own source
+revision `crystalserver-creature-1530:<commit>`, as the TibiaWiki batches of one source do, and the
+bindings to the Crystal files use it. The content tree is then regenerated from v2. Rust admission (`ProjectV2Draft` load, validation and
+`link_reference_playable`) is the acceptance check, together with focused tests over one pilot
+monster of each profile shape.
+
+## 7. Slices
+
+1. This decision.
+2. Rust: the §5 profiles, `canonicalize`, `validate_v2_authoring_profile` and focused positive
+   and negative tests. No content change.
+3. Writer and wave A in bulk (1,315), with regeneration of the content tree. The pilot (`--pilot`,
+   25 monsters) proved the route locally first: it covers a shared spell, inline condition effects,
+   a skipped loot entry, and the four creatures the pilot monsters summon. The full wave then found
+   two cases the pilot lacked: two addons sharing the attachment slot, and whitespace around texts.
+4. (Merged into slice 3.) D32 loot counts then admit Duke Krule as well: 1,316 monsters.
+5. Later: the 59 Item-blocked monsters after the Item domain registers the 68 items; the encounter monsters together with their encounters
+   (`OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1.md`, 2026-09-28); the 14 reference-blocked monsters as their references become admitted.
+
+Each slice runs the repository gates. A slice that changes `content/world/**` also gets one
+independent exact-head review before the Merge Queue (standing authorization in
+`OWNER_FUNDED_AI_POLICY.md`).
+
+## 8. Boundaries
+
+Admission does not add spawns, placements or any runtime behaviour. It does not bind client
+appearance assets or licensing, and it does not change Item semantics. It does not admit
+Encounters or Lua scripts. Everything declarative stays candidate-only under the v2 rule.

@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "imports/official/",
+  "kind": "import_provenance",
+  "owner": "Import tooling",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "POPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Official/public source evidence snapshots/manifests as legally permitted. client-assets/15.30/manifest.json remains a checksum-only 15.30 client asset manifest; owner-authorized redistributable client files may be staged under content/assets/files/ with provenance and rights recorded there. tibia-com/<YYYY-MM-DD>/ (legacy) and tibia-com/<YYYY-MM-DD-HHMMSSZ>/ hold owner-run tibia.com manual/spell-library capture snapshots (tools/official-capture/tibiacom_capture.py): a manifest.json (url, fetched_at, http_status, sha256 per page; never full page text) and a facts.json of short extracted facts. Each snapshot directory is immutable once committed; a new capture adds a new run directory rather than overwriting one."
+}

@@ -1,0 +1,26 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.generic",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Portable Item",
+  "family_profile": "material_valuable",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "material",
+    "primary": "generic",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true
+  }
+}

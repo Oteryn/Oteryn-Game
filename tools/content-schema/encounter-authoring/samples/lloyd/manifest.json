@@ -1,0 +1,818 @@
+{
+  "encounter": "canary:encounter/lloyd",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "ForgottenKnowledgeBossDeath": [
+      "canary:creature/lloyd"
+    ],
+    "LloydPrepareDeath": [
+      "canary:creature/lloyd"
+    ],
+    "EnergyPrismDeath": [
+      "canary:creature/cosmic_energy_prism_a",
+      "canary:creature/cosmic_energy_prism_b",
+      "canary:creature/cosmic_energy_prism_c",
+      "canary:creature/cosmic_energy_prism_d"
+    ],
+    "EnergyPrismHealthChange": [
+      "canary:creature/cosmic_energy_prism_a",
+      "canary:creature/cosmic_energy_prism_b",
+      "canary:creature/cosmic_energy_prism_c",
+      "canary:creature/cosmic_energy_prism_d"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/lloyd.lua",
+      "blob_sha1": "1f73944519a5dd15ec40ebbdabb00b63398d00ee"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua",
+      "blob_sha1": "00ced55f16d363011cad6cc00bc14ea07fbdd253"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_lloyd_preparedeath.lua",
+      "blob_sha1": "5804a21283cbcdd537589cb84c4fdefa1391de81"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/cosmic_energy_prism_a_invu.lua",
+      "blob_sha1": "846d6eab7abe9ec3fa442ccb0919da1f2c53a9bd"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/cosmic_energy_prism_a.lua",
+      "blob_sha1": "7dde9b1569141a1df9b3ce965d5d240e358790e6"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_energy_prism_death.lua",
+      "blob_sha1": "5b4213feaed81fd32c34b325be9aa2415d07243b"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_energy_prism.lua",
+      "blob_sha1": "c6611448f8313afb6179ed2a4421651be33bd8bb"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/cosmic_energy_prism_b_invu.lua",
+      "blob_sha1": "1bae34b1e3ea3e8192b14260e4eef40bd0437e01"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/cosmic_energy_prism_b.lua",
+      "blob_sha1": "cfd5dd674a37d571e0b2fdc67dd00e6618b9376c"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/cosmic_energy_prism_c_invu.lua",
+      "blob_sha1": "4fa75e5f2d666b201d152253787337420f3b4b8e"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/cosmic_energy_prism_c.lua",
+      "blob_sha1": "d5cd6eec5e19711e419aa39dd8344c84cba217f4"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/cosmic_energy_prism_d_invu.lua",
+      "blob_sha1": "f88dc8bc43a3efebd5c8bdef40402f5633b8f4fe"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/cosmic_energy_prism_d.lua",
+      "blob_sha1": "ec58b3ead68da917d481a6ef720fcc3d8d50881c"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Lloyd is the lloyd participant; its file registers ForgottenKnowledgeBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        16,
+        18,
+        19,
+        20,
+        21,
+        22,
+        5
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"Lloyd\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        35
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the reward domain sets Storage ForgottenKnowledge.LloydKilled to now + 72000 seconds.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "status": "mapped",
+      "resolution": "prismCount is 1 plus the prism tiles left empty: the prisms killed so far. The lever places the four invulnerable prisms.",
+      "destination": "/encounter/state/counters/0"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "Lloyd is the lloyd participant; its file registers LloydPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism A Invu is the cosmic_energy_prism_a_invu participant.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        6,
+        30,
+        31,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        57
+      ],
+      "status": "mapped",
+      "resolution": "onPrepareDeath with 0 prisms killed: the invulnerable prism A becomes the normal one, Lloyd is teleported between the prisms and healed by 300000 (more than his 64000 health) and says his line; the revert follows 10 s later.",
+      "destination": "/encounter/rules/1"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "status": "mapped",
+      "resolution": "revertLloyd: Lloyd (the creature on the centre tile) goes back to (32799, 32829, 14) and prism A becomes invulnerable again.",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism A is the cosmic_energy_prism_a participant; its file registers EnergyPrismDeath.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        13,
+        14,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the prism: the revert is cancelled and Lloyd goes back to (32799, 32829, 14); the empty tile counts as a killed prism.",
+      "destination": "/encounter/rules/3"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        19
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism A is the cosmic_energy_prism_a participant; its file registers EnergyPrismHealthChange.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        1,
+        2,
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        13
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange of the prism, read before the change: when not at full health it says \"*zap!*\" and heals 10000 (ten times its 1000 health).",
+      "destination": "/encounter/rules/4"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        1,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "The same handler for heals.",
+      "destination": "/encounter/rules/5"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        3
+      ],
+      "status": "mapped",
+      "resolution": "Only while the centre tile is empty. The creature there is Lloyd: his wiki page (2026-07-28) says a prism can only be killed after he teleports between them (D29, D25).",
+      "destination": "/encounter/rules/4/conditions/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        6
+      ],
+      "status": "approved_omission",
+      "resolution": "The energy hit effect is cosmetic."
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism B Invu is the cosmic_energy_prism_b_invu participant.",
+      "destination": "/encounter/participants/3/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        3,
+        6,
+        30,
+        31,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        57
+      ],
+      "status": "mapped",
+      "resolution": "onPrepareDeath with 1 prisms killed: the invulnerable prism B becomes the normal one, Lloyd is teleported between the prisms and healed by 300000 (more than his 64000 health) and says his line; the revert follows 10 s later.",
+      "destination": "/encounter/rules/6"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "status": "mapped",
+      "resolution": "revertLloyd: Lloyd (the creature on the centre tile) goes back to (32799, 32829, 14) and prism B becomes invulnerable again.",
+      "destination": "/encounter/rules/7"
+    },
+    {
+      "source_index": 8,
+      "source_lines": [
+        19
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism B is the cosmic_energy_prism_b participant; its file registers EnergyPrismDeath.",
+      "destination": "/encounter/participants/4/creatures"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        13,
+        14,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the prism: the revert is cancelled and Lloyd goes back to (32799, 32829, 14); the empty tile counts as a killed prism.",
+      "destination": "/encounter/rules/8"
+    },
+    {
+      "source_index": 8,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism B is the cosmic_energy_prism_b participant; its file registers EnergyPrismHealthChange.",
+      "destination": "/encounter/participants/4/creatures"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        1,
+        2,
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        13
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange of the prism, read before the change: when not at full health it says \"*zap!*\" and heals 10000 (ten times its 1000 health).",
+      "destination": "/encounter/rules/9"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        1,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "The same handler for heals.",
+      "destination": "/encounter/rules/10"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        3
+      ],
+      "status": "mapped",
+      "resolution": "Only while the centre tile is empty. The creature there is Lloyd: his wiki page (2026-07-28) says a prism can only be killed after he teleports between them (D29, D25).",
+      "destination": "/encounter/rules/9/conditions/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        6
+      ],
+      "status": "approved_omission",
+      "resolution": "The energy hit effect is cosmetic."
+    },
+    {
+      "source_index": 9,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism C Invu is the cosmic_energy_prism_c_invu participant.",
+      "destination": "/encounter/participants/5/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        4,
+        6,
+        30,
+        31,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        57
+      ],
+      "status": "mapped",
+      "resolution": "onPrepareDeath with 2 prisms killed: the invulnerable prism C becomes the normal one, Lloyd is teleported between the prisms and healed by 300000 (more than his 64000 health) and says his line; the revert follows 10 s later.",
+      "destination": "/encounter/rules/11"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "status": "mapped",
+      "resolution": "revertLloyd: Lloyd (the creature on the centre tile) goes back to (32799, 32829, 14) and prism C becomes invulnerable again.",
+      "destination": "/encounter/rules/12"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        48
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism C is the cosmic_energy_prism_c participant; its file registers EnergyPrismDeath.",
+      "destination": "/encounter/participants/6/creatures"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        13,
+        14,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the prism: the revert is cancelled and Lloyd goes back to (32799, 32829, 14); the empty tile counts as a killed prism.",
+      "destination": "/encounter/rules/13"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        47
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism C is the cosmic_energy_prism_c participant; its file registers EnergyPrismHealthChange.",
+      "destination": "/encounter/participants/6/creatures"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        1,
+        2,
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        13
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange of the prism, read before the change: when not at full health it says \"*zap!*\" and heals 10000 (ten times its 1000 health).",
+      "destination": "/encounter/rules/14"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        1,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "The same handler for heals.",
+      "destination": "/encounter/rules/15"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        3
+      ],
+      "status": "mapped",
+      "resolution": "Only while the centre tile is empty. The creature there is Lloyd: his wiki page (2026-07-28) says a prism can only be killed after he teleports between them (D29, D25).",
+      "destination": "/encounter/rules/14/conditions/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        6
+      ],
+      "status": "approved_omission",
+      "resolution": "The energy hit effect is cosmetic."
+    },
+    {
+      "source_index": 11,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism D Invu is the cosmic_energy_prism_d_invu participant.",
+      "destination": "/encounter/participants/7/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        5,
+        6,
+        30,
+        31,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        57
+      ],
+      "status": "mapped",
+      "resolution": "onPrepareDeath with 3 prisms killed: the invulnerable prism D becomes the normal one, Lloyd is teleported between the prisms and healed by 300000 (more than his 64000 health) and says his line; the revert follows 10 s later.",
+      "destination": "/encounter/rules/16"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "status": "mapped",
+      "resolution": "revertLloyd: Lloyd (the creature on the centre tile) goes back to (32799, 32829, 14) and prism D becomes invulnerable again.",
+      "destination": "/encounter/rules/17"
+    },
+    {
+      "source_index": 12,
+      "source_lines": [
+        19
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism D is the cosmic_energy_prism_d participant; its file registers EnergyPrismDeath.",
+      "destination": "/encounter/participants/8/creatures"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        13,
+        14,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the prism: the revert is cancelled and Lloyd goes back to (32799, 32829, 14); the empty tile counts as a killed prism.",
+      "destination": "/encounter/rules/18"
+    },
+    {
+      "source_index": 12,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "Cosmic Energy Prism D is the cosmic_energy_prism_d participant; its file registers EnergyPrismHealthChange.",
+      "destination": "/encounter/participants/8/creatures"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        1,
+        2,
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        13
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange of the prism, read before the change: when not at full health it says \"*zap!*\" and heals 10000 (ten times its 1000 health).",
+      "destination": "/encounter/rules/19"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        1,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "The same handler for heals.",
+      "destination": "/encounter/rules/20"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        3
+      ],
+      "status": "mapped",
+      "resolution": "Only while the centre tile is empty. The creature there is Lloyd: his wiki page (2026-07-28) says a prism can only be killed after he teleports between them (D29, D25).",
+      "destination": "/encounter/rules/19/conditions/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        6
+      ],
+      "status": "approved_omission",
+      "resolution": "The energy hit effect is cosmetic."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        14,
+        49
+      ],
+      "status": "approved_omission",
+      "resolution": "The teleport effects are cosmetic."
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        11
+      ],
+      "status": "approved_omission",
+      "resolution": "The teleport effect is cosmetic."
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "lloyd_defeated",
+      "credited": "damage_contributors",
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U11_02.ForgottenKnowledge.LloydKilled",
+        "cooldown_seconds": 72000
+      }
+    }
+  ]
+}

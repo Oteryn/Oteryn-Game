@@ -1,0 +1,91 @@
+{
+  "schema": "OTERYN_G4_NONITEM_BULK_CROSSWALK_EVIDENCE/v1",
+  "task_id": "OTV2-20260925-g4-nonitem-bulk-crosswalk",
+  "issue": 162,
+  "issue_comment": 5826871400,
+  "status": "REPAIRING",
+  "branch": "agent/otv2-g4-nonitem-bulk-crosswalk",
+  "base_commit": "1680eb5dc6145aa3e271ac8665f33a50ed837b76",
+  "pr": 875,
+  "allocation": {
+    "writer_count": 1,
+    "changed_path_count": 5,
+    "exact_paths": [
+      "tools/content-census/g4_nonitem_bulk_crosswalk.py",
+      "tools/content-census/g4_nonitem_bulk_crosswalk_self_test.py",
+      ".github/workflows/g4-nonitem-bulk-crosswalk.yml",
+      "docs/agents/tasks/active/OTV2-20260925-g4-nonitem-bulk-crosswalk.md",
+      "docs/agents/evidence/OTV2-20260925-g4-nonitem-bulk-crosswalk.json"
+    ],
+    "candidate_pr_or_integration_authority": false
+  },
+  "inputs": {
+    "g3": {
+      "artifact_id": 10801778929,
+      "run_id": 35986883931,
+      "head_sha": "20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a",
+      "archive_sha256": "a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7",
+      "classified_universe_sha256": "1562382c66ad471a46309eaa5ae2fe9e7b3b1e3c8c2d5fc047ee8faa65bd1666",
+      "classified_page_count": 15787
+    },
+    "g4": {
+      "artifact_id": 10831362943,
+      "run_id": 36053194532,
+      "head_sha": "b2e77ba01677b484fdfa6271c5745d2280c13df6",
+      "archive_sha256": "5d8e886e31a0f64a035a61dc5c3f8ce031a8af3b06926117750deebc841394ca",
+      "capture_sha256": "f47dbe5832e7b1accd652852303d638a4f19367bab3951f260cc39a0d93b7713",
+      "unique_non_item_pages": 8869
+    }
+  },
+  "families": {
+    "Creature": 2149,
+    "NPC": 1253,
+    "Achievement": 569,
+    "Quest": 272,
+    "Ability": 171,
+    "Outfit": 134,
+    "Mount": 252
+  },
+  "expected_total_rows": 4800,
+  "pinned_prior_revision_drift": {
+    "count": 2,
+    "page_ids": [
+      63947,
+      46925
+    ],
+    "handling": "fresh exact-page-id fetch; retain current revision tuple and family shape; never carry old field values forward"
+  },
+  "source_policy": {
+    "primary": "current TibiaWiki structured pages fetched by exact page ID",
+    "field_extraction": "allowlisted short scalar infobox values only",
+    "second_structured_source": "not included in this bounded batch; unresolved corroboration remains unknown",
+    "ots_donors": "not used as static-field authority"
+  },
+  "authority": {
+    "artifact_only": true,
+    "production_key_minting": false,
+    "typed_source_identity_binding_emitted": false,
+    "canonical_definition_population": false,
+    "semantic_field_promotion": false,
+    "presentation_asset_runtime_population": false
+  },
+  "validation": {
+    "local_py_compile": "PASS",
+    "local_self_test": "PASS: 6 tests, including missing/wrong-type synthetic current revid/timestamp/title API records",
+    "pinned_g3_g4_artifacts_and_4800_row_partition": "Prior run/artifact superseded; rerun on repaired exact head required.",
+    "hosted_workflow": "PENDING_REPAIR_CANDIDATE",
+    "artifact_id": null,
+    "output_sha256": null
+  },
+  "supersedes": {
+    "candidate_head": "d232f761e483bf3b9207776f9a33fa028cb6abd3",
+    "workflow_run_id": 36096675515,
+    "artifact_id": 10847703280,
+    "artifact_zip_sha256": "ec0db29ba93e537a3a4253473d76f4482a98d7eee362cae59a797a084a6e683e",
+    "reason": "Independent review found malformed current provenance could be parsed without validation; revalidation counter did not match CURRENT_REVISION_REVALIDATED row count."
+  },
+  "review_fixes": {
+    "P1": "Validate content-bearing current MediaWiki revid, UTC timestamp, bounded title, and response/page/revision/slot shapes before parsing; malformed provenance is explicit unresolved evidence. Workflow asserts exact provenance types and digest for every stable/revalidated row.",
+    "P2": "Count current_revision_revalidated_rows from CURRENT_REVISION_REVALIDATED row state; gate checks state/count agreement and the two known drift IDs."
+  }
+}

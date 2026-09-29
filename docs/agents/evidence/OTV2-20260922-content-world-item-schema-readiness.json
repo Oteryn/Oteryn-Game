@@ -1,0 +1,854 @@
+{
+  "status": "TYPED_CANDIDATE_MEASUREMENT_NOT_PRODUCTION_ACCEPTANCE",
+  "pinned_inputs": {
+    "b1_catalog_sha256": "7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7",
+    "item_family_registry_sha256": "dac74e78e3c7fc687f9cae7990d071c1ab5b247f40dec2baeea28c081b0114f6",
+    "source_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+  },
+  "retained_core_compatibility": {
+    "candidate_body_version": 2,
+    "legacy_v1_v2_v3_codec_mutation": "NONE",
+    "single_record_layout": "version2 + retained ReferenceItemDefinition core + typed group extension",
+    "server_core_max_bytes_after_shared_version": 5,
+    "client_core_bytes_after_shared_version": 2,
+    "server_fields": [
+      "physical_class",
+      "materializable",
+      "stack_class",
+      "legal_destinations"
+    ],
+    "client_fields": [
+      "physical_class",
+      "stack_class"
+    ],
+    "identity_only_guard": "Unknown legacy physical or stack requires both Unknown, materializable=false, destinations empty. It does not force verified typed fields to UNKNOWN; only a record with all typed groups UNKNOWN is identity-only.",
+    "materialization_guard": "materializable iff CharacterInventory destination; destination maximum 1",
+    "stack_cross_validation": "Known typed stackable must agree with retained NonStackable/StackCapable; retained Unknown permits truthful partial typed knowledge while remaining nonmaterializable"
+  },
+  "bounds": {
+    "name_bytes": 46,
+    "description_bytes": 200,
+    "capabilities": 24,
+    "equipment_patterns": 2,
+    "equipment_slots": 10,
+    "equipment_additional_slots": 9,
+    "equipment_exclusive_groups": 2,
+    "equipment_group_key_bytes": 512,
+    "equipment_vocations": 5,
+    "weapon_elements": 5,
+    "resistances": 12,
+    "resistance_kind_domain": 12,
+    "modifiers": 37,
+    "modifier_kind_domain": 37,
+    "imbuement_families": 20,
+    "imbuement_entries": 20,
+    "imbuement_slot_count": 3,
+    "trade_vocations": 5,
+    "item_count": 38157
+  },
+  "equipment_domain_status": "SOURCE-RESOLVED: 10 slots, 5 base vocations, up to 9 unique additional reservations per pattern. Complete 38,157-row normalized census derives v1 P=2; fixtures remain synthetic schema witnesses, not promoted Item facts.",
+  "equipment_source_preflight": {
+    "packet_id": "D6_M1_REFERENCE_ITEM_EQUIPMENT_SOURCE_PREFLIGHT/v1",
+    "reviewed_scratch_packet_sha256": "e3055a714e3469c4a52bc5c1828a0a62e862d5c6daca826af728cadfb7166a98",
+    "conclusions": {
+      "semantic_slots": 10,
+      "base_vocations": 5,
+      "max_unique_additional_slots": 9
+    }
+  },
+  "equipment_census": {
+    "rows": 38157,
+    "preserved_semantic_bindings": 64,
+    "opaque_identity_bindings": 38093,
+    "identity_generation_performed": false,
+    "native_disposition_distribution": {
+      "UNRESOLVED": 38157
+    },
+    "identity_row_witness_sha256": "242bfb7b1d4944ca4b770c7c56196c6272a89ec50bc4e36ea926561a7ec4df02",
+    "raw_count_distribution": {
+      "0": 37925,
+      "1": 231,
+      "2": 1
+    },
+    "normalized_unique_semantic_count_distribution": {
+      "0": 37925,
+      "1": 232
+    },
+    "source_value_frequency": {
+      "head": 1,
+      "right-hand": 8,
+      "two-handed": 224
+    },
+    "duplicate_observations": [
+      {
+        "source_item_id": 29419,
+        "source_node_digest": "2282c8b2b02c7b15903eb9cf95dace720811091db852115c3fbc70671ec15759",
+        "raw_claims": [
+          "two-handed",
+          "two-handed"
+        ],
+        "normalized_claims": [
+          "two-handed"
+        ]
+      }
+    ],
+    "normalized_max_per_identity": 1,
+    "selected_v1_P": 2
+  },
+  "presentation_atom_census": {
+    "status": "MEASURED_PINNED_XML",
+    "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+    "counts": {
+      "article": 14679,
+      "description": 3419,
+      "name": 17669,
+      "plural": 386,
+      "primarytype": 8919
+    },
+    "maxima": {
+      "name": {
+        "utf8_bytes": 46,
+        "value": "statue of a warrior monk depicting the rotworm",
+        "source_item_id": "49846"
+      },
+      "article": {
+        "utf8_bytes": 4,
+        "value": "some",
+        "source_item_id": "4994"
+      },
+      "primarytype": {
+        "utf8_bytes": 21,
+        "value": "amulets and necklaces",
+        "source_item_id": "814"
+      },
+      "description": {
+        "utf8_bytes": 200,
+        "value": "This sword once belonged to Eldoran Etzel who found it on his travels before settling down on the Isle of Ada. It is broken and of no use in battle anymore. It is said that Eldoran found it like that.",
+        "source_item_id": "52824"
+      },
+      "plural": {
+        "utf8_bytes": 28,
+        "value": "half-digested pieces of meat",
+        "source_item_id": "10283"
+      }
+    }
+  },
+  "vocation_scope_note": "The five-value domain covers base reference vocation families only. NoVocation, promotion/state predicates and unrestricted semantics remain distinct UNKNOWN/unaccepted dispositions; the synthetic worst shape is not a real-Item restriction claim.",
+  "equipment_shape_note": "Each pattern carries truth-state primary slot, additional reservations, mutually-exclusive semantic group keys, base-vocation set, level requirement and compatibility rule. Group keys use the existing bounded canonical ProductionKey grammar; they are not slot IDs and create no parallel registry. The admitted corpus has zero explicit group keys (UNKNOWN, not known absence), so G=max(0, minimum plural schema witness 2)=2. Synthetic max-size keys are codec witnesses only.",
+  "closed_vocabulary_derivation": "55 pinned modifier-family candidates = 1 explicit unsupported augment_binding + 12 typed protection entries + 5 typed Weapon elemental entries + 37 typed SkillModifier definitions. Every SkillModifier definition carries truth-state target domain, evaluation phase, priority and a closed typed parameter variant. Exact evaluation bindings/formulas remain UNKNOWN and no donor value is promoted.",
+  "numeric_type_policy": "Percent-bearing fields use exact signed numerator/nonzero u64 denominator rationals; points, cells and milliseconds are distinct wrapper types. No global percentage scale or gameplay formula is inferred.",
+  "typed_modifier_registry": {
+    "resistance_ids": {
+      "1": "modifier.absorbpercentdeath",
+      "2": "modifier.absorbpercentdrown",
+      "3": "modifier.absorbpercentearth",
+      "4": "modifier.absorbpercentenergy",
+      "5": "modifier.absorbpercentfire",
+      "6": "modifier.absorbpercentholy",
+      "7": "modifier.absorbpercentice",
+      "8": "modifier.absorbpercentlifedrain",
+      "9": "modifier.absorbpercentmanadrain",
+      "10": "modifier.absorbpercentphysical",
+      "11": "modifier.absorbpercentpoison",
+      "12": "modifier.fieldabsorbpercentfire"
+    },
+    "weapon_element_ids": {
+      "1": "modifier.elementdeath",
+      "2": "modifier.elementearth",
+      "3": "modifier.elementenergy",
+      "4": "modifier.elementfire",
+      "5": "modifier.elementice"
+    },
+    "skill_modifier_ids": {
+      "1": {
+        "stable_key": "elemental_bond",
+        "parameter_shape": "ELEMENT_KIND"
+      },
+      "2": {
+        "stable_key": "invisibility",
+        "parameter_shape": "BOOLEAN"
+      },
+      "3": {
+        "stable_key": "mana_shield",
+        "parameter_shape": "BOOLEAN"
+      },
+      "4": {
+        "stable_key": "mantra",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "5": {
+        "stable_key": "modifier.cleavepercent",
+        "parameter_shape": "EXACT_RATIONAL_PERCENT"
+      },
+      "6": {
+        "stable_key": "modifier.criticalhitchance",
+        "parameter_shape": "EXACT_RATIONAL_PERCENT"
+      },
+      "7": {
+        "stable_key": "modifier.criticalhitdamage",
+        "parameter_shape": "EXACT_RATIONAL_PERCENT"
+      },
+      "8": {
+        "stable_key": "modifier.deathmagiclevelpoints",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "9": {
+        "stable_key": "modifier.earthmagiclevelpoints",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "10": {
+        "stable_key": "modifier.energymagiclevelpoints",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "11": {
+        "stable_key": "modifier.firemagiclevelpoints",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "12": {
+        "stable_key": "modifier.healingmagiclevelpoints",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "13": {
+        "stable_key": "modifier.healthgain",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "14": {
+        "stable_key": "modifier.healthticks",
+        "parameter_shape": "MILLISECONDS"
+      },
+      "15": {
+        "stable_key": "modifier.holymagiclevelpoints",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "16": {
+        "stable_key": "modifier.icemagiclevelpoints",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "17": {
+        "stable_key": "modifier.lifeleechamount",
+        "parameter_shape": "EXACT_RATIONAL_PERCENT"
+      },
+      "18": {
+        "stable_key": "modifier.lifeleechchance",
+        "parameter_shape": "EXACT_RATIONAL_PERCENT"
+      },
+      "19": {
+        "stable_key": "modifier.magiclevelpoints",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "20": {
+        "stable_key": "modifier.magicshieldcapacityflat",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "21": {
+        "stable_key": "modifier.magicshieldcapacitypercent",
+        "parameter_shape": "EXACT_RATIONAL_PERCENT"
+      },
+      "22": {
+        "stable_key": "modifier.managain",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "23": {
+        "stable_key": "modifier.manaleechamount",
+        "parameter_shape": "EXACT_RATIONAL_PERCENT"
+      },
+      "24": {
+        "stable_key": "modifier.manaleechchance",
+        "parameter_shape": "EXACT_RATIONAL_PERCENT"
+      },
+      "25": {
+        "stable_key": "modifier.manaticks",
+        "parameter_shape": "MILLISECONDS"
+      },
+      "26": {
+        "stable_key": "modifier.perfectshotdamage",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "27": {
+        "stable_key": "modifier.perfectshotrange",
+        "parameter_shape": "CELLS"
+      },
+      "28": {
+        "stable_key": "modifier.reflectdamage",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "29": {
+        "stable_key": "modifier.skillaxe",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "30": {
+        "stable_key": "modifier.skillclub",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "31": {
+        "stable_key": "modifier.skilldist",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "32": {
+        "stable_key": "modifier.skillfist",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "33": {
+        "stable_key": "modifier.skillshield",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "34": {
+        "stable_key": "modifier.skillsword",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "35": {
+        "stable_key": "modifier.speed",
+        "parameter_shape": "SIGNED_POINTS"
+      },
+      "36": {
+        "stable_key": "suppress_drown",
+        "parameter_shape": "BOOLEAN"
+      },
+      "37": {
+        "stable_key": "suppress_drunk",
+        "parameter_shape": "BOOLEAN"
+      }
+    },
+    "definition_shape": "stable closed kind key + FieldState<TargetDomainId> + FieldState<EvaluationPhaseId> + FieldState<i16 priority> + FieldState<closed typed parameter>",
+    "execution_binding": "UNKNOWN_PENDING_RULESET; structural support does not promote donor arithmetic",
+    "target_domain_capacity_ids": {
+      "1": "modifier-target-slot-01",
+      "2": "modifier-target-slot-02",
+      "3": "modifier-target-slot-03",
+      "4": "modifier-target-slot-04",
+      "5": "modifier-target-slot-05",
+      "6": "modifier-target-slot-06",
+      "7": "modifier-target-slot-07",
+      "8": "modifier-target-slot-08",
+      "9": "modifier-target-slot-09",
+      "10": "modifier-target-slot-10",
+      "11": "modifier-target-slot-11",
+      "12": "modifier-target-slot-12",
+      "13": "modifier-target-slot-13",
+      "14": "modifier-target-slot-14",
+      "15": "modifier-target-slot-15",
+      "16": "modifier-target-slot-16",
+      "17": "modifier-target-slot-17",
+      "18": "modifier-target-slot-18",
+      "19": "modifier-target-slot-19",
+      "20": "modifier-target-slot-20",
+      "21": "modifier-target-slot-21",
+      "22": "modifier-target-slot-22",
+      "23": "modifier-target-slot-23",
+      "24": "modifier-target-slot-24",
+      "25": "modifier-target-slot-25",
+      "26": "modifier-target-slot-26",
+      "27": "modifier-target-slot-27",
+      "28": "modifier-target-slot-28",
+      "29": "modifier-target-slot-29",
+      "30": "modifier-target-slot-30",
+      "31": "modifier-target-slot-31",
+      "32": "modifier-target-slot-32",
+      "33": "modifier-target-slot-33",
+      "34": "modifier-target-slot-34",
+      "35": "modifier-target-slot-35",
+      "36": "modifier-target-slot-36",
+      "37": "modifier-target-slot-37"
+    },
+    "evaluation_phase_capacity_ids": {
+      "1": "modifier-phase-slot-01",
+      "2": "modifier-phase-slot-02",
+      "3": "modifier-phase-slot-03",
+      "4": "modifier-phase-slot-04",
+      "5": "modifier-phase-slot-05",
+      "6": "modifier-phase-slot-06",
+      "7": "modifier-phase-slot-07",
+      "8": "modifier-phase-slot-08",
+      "9": "modifier-phase-slot-09",
+      "10": "modifier-phase-slot-10",
+      "11": "modifier-phase-slot-11",
+      "12": "modifier-phase-slot-12",
+      "13": "modifier-phase-slot-13",
+      "14": "modifier-phase-slot-14",
+      "15": "modifier-phase-slot-15",
+      "16": "modifier-phase-slot-16",
+      "17": "modifier-phase-slot-17",
+      "18": "modifier-phase-slot-18",
+      "19": "modifier-phase-slot-19",
+      "20": "modifier-phase-slot-20",
+      "21": "modifier-phase-slot-21",
+      "22": "modifier-phase-slot-22",
+      "23": "modifier-phase-slot-23",
+      "24": "modifier-phase-slot-24",
+      "25": "modifier-phase-slot-25",
+      "26": "modifier-phase-slot-26",
+      "27": "modifier-phase-slot-27",
+      "28": "modifier-phase-slot-28",
+      "29": "modifier-phase-slot-29",
+      "30": "modifier-phase-slot-30",
+      "31": "modifier-phase-slot-31",
+      "32": "modifier-phase-slot-32",
+      "33": "modifier-phase-slot-33",
+      "34": "modifier-phase-slot-34",
+      "35": "modifier-phase-slot-35",
+      "36": "modifier-phase-slot-36",
+      "37": "modifier-phase-slot-37"
+    },
+    "capacity_id_note": "Profile-local closed capacity keys only; Reference target/phase bindings remain UNKNOWN until accepted by the owning ruleset.",
+    "explicit_unsupported_modifier_candidates": [
+      "augment_binding"
+    ],
+    "imbuement_family_ids": {
+      "1": "critical hit",
+      "2": "elemental damage",
+      "3": "elemental protection death",
+      "4": "elemental protection earth",
+      "5": "elemental protection energy",
+      "6": "elemental protection fire",
+      "7": "elemental protection holy",
+      "8": "elemental protection ice",
+      "9": "increase capacity",
+      "10": "increase speed",
+      "11": "life leech",
+      "12": "mana leech",
+      "13": "paralysis removal",
+      "14": "skillboost axe",
+      "15": "skillboost club",
+      "16": "skillboost distance",
+      "17": "skillboost fist",
+      "18": "skillboost magic level",
+      "19": "skillboost shielding",
+      "20": "skillboost sword"
+    }
+  },
+  "closed_codec_registries": {
+    "capability_ids": {
+      "1": "weapon",
+      "2": "armor",
+      "3": "helmet",
+      "4": "legs",
+      "5": "boots",
+      "6": "shield",
+      "7": "ammo",
+      "8": "rune",
+      "9": "container",
+      "10": "consumable",
+      "11": "currency",
+      "12": "material",
+      "13": "loot",
+      "14": "decoration",
+      "15": "key",
+      "16": "book_readable",
+      "17": "fluid",
+      "18": "usable",
+      "19": "transformable",
+      "20": "stackable",
+      "21": "charge_based",
+      "22": "imbueable",
+      "23": "presentation_only",
+      "24": "other"
+    },
+    "item_type_ids": {
+      "1": "bed",
+      "2": "carpet",
+      "3": "container",
+      "4": "depot",
+      "5": "door",
+      "6": "dummy",
+      "7": "key",
+      "8": "ladder",
+      "9": "magicfield",
+      "10": "mailbox",
+      "11": "rewardchest",
+      "12": "rune",
+      "13": "teleport",
+      "14": "trashholder"
+    },
+    "weapon_type_ids": {
+      "1": "ammunition",
+      "2": "axe",
+      "3": "club",
+      "4": "distance",
+      "5": "fist",
+      "6": "shield",
+      "7": "spellbook",
+      "8": "sword",
+      "9": "wand"
+    },
+    "ammo_type_ids": {
+      "1": "arrow",
+      "2": "bolt"
+    },
+    "fluid_type_ids": {
+      "1": "beer",
+      "2": "blood",
+      "3": "lemonade",
+      "4": "mud",
+      "5": "rum",
+      "6": "slime",
+      "7": "water",
+      "8": "wine"
+    },
+    "equipment_slot_ids": {
+      "1": "HEAD",
+      "2": "TORSO",
+      "3": "LEGS",
+      "4": "FEET",
+      "5": "WEAPON",
+      "6": "SHIELD",
+      "7": "AMULET",
+      "8": "RING",
+      "9": "CONTAINER",
+      "10": "EXTRA"
+    },
+    "base_vocation_ids": {
+      "1": "DRUID",
+      "2": "KNIGHT",
+      "3": "MONK",
+      "4": "PALADIN",
+      "5": "SORCERER"
+    }
+  },
+  "atom_limits": {
+    "presentation_name_utf8_bytes": 46,
+    "presentation_description_utf8_bytes": 200,
+    "presentation_aliases": "EXPLICIT_UNSUPPORTED_IN_V1_NO_SOURCE_VALUES",
+    "presentation_tags": "EXPLICIT_UNSUPPORTED_IN_V1_NO_SOURCE_VALUES",
+    "equipment_group_key_utf8_bytes": 512,
+    "carrier_production_key_utf8_bytes": 512,
+    "carrier_revision_and_manifest_atom_utf8_bytes": 512
+  },
+  "client_projection_allowlist": [
+    "presentation",
+    "classification",
+    "physical",
+    "stack",
+    "equipment",
+    "weapon",
+    "protection",
+    "skill_modifiers",
+    "charges",
+    "container",
+    "imbuement"
+  ],
+  "client_projection_denied": [
+    "temporal",
+    "use_transform",
+    "trade_restrictions",
+    "fluid",
+    "readable_writeable"
+  ],
+  "equipment_pattern_formula": {
+    "valid_formula_range": "1 <= P <= 255 due one-byte count encoding; 255 is incidental wire capacity, not a production cap",
+    "server_record_bytes": "2500 + 1055*(P-1)",
+    "client_record_bytes": "2378 + 1055*(P-1)",
+    "selected_v1_P": 2,
+    "selection_basis": "max(complete admitted corpus normalized maximum 1, minimum non-singleton schema witness 2)",
+    "overflow": "fail closed before allocation; preserve evidence; no truncate, UNKNOWN coercion or heuristic merge; versioned successor profile"
+  },
+  "explicit_unsupported_v1": [
+    "presentation.appearance_binding",
+    "presentation.aliases",
+    "presentation.tags",
+    "equipment.compatibility_rule",
+    "modifier.augment_binding",
+    "trade_restrictions.account_binding_policy",
+    "trade_restrictions.character_binding_policy"
+  ],
+  "temporal_modes": {
+    "1": "DURABLE_ABSOLUTE_DEADLINE_SEMANTICS",
+    "2": "AUTHORITATIVE_ACTIVE_TIME_BUDGET_SEMANTICS"
+  },
+  "temporal_scope": "Definition records encode time-consumption semantics and duration parameters only; mutable instance deadlines/budgets remain DUR/FND-owned.",
+  "durability_scope": "Mutable durability and mutable binding state are ItemInstance/DUR-owned and absent from the current B1 immutable Item candidate family; no second mutable-state system is introduced. Immutable definition account/character binding policies are explicit unsupported in v1.",
+  "b1_candidate_field_coverage": {
+    "input_catalog_sha256": "7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7",
+    "candidate_fields": 90,
+    "exactly_one_destination_each": "PASS",
+    "destinations": {
+      "allow_distance_read": "readable_writeable.distance_read",
+      "ammo_type": "weapon.ammunition",
+      "armor": "protection.armor",
+      "attack": "weapon.attack",
+      "augment_binding": "EXPLICIT_UNSUPPORTED_AUGMENT_V1",
+      "capacity": "container.capacity",
+      "charge_count": "charges.count",
+      "decay_target_source_id": "temporal.decay_target_ordinal",
+      "deequip_target_source_id": "use_transform.deequip",
+      "defense": "weapon.defense",
+      "destroy_target_source_id": "use_transform.destroy",
+      "duration": "temporal.duration_ms+consumption_mode",
+      "elemental_bond": "skill_modifiers.modifiers",
+      "equip_target_source_id": "use_transform.equip",
+      "extra_defense": "weapon.extra_defense",
+      "female_transform_target_source_id": "use_transform.female",
+      "fluid_source": "fluid.fluid_type",
+      "hit_chance": "weapon.hit_chance",
+      "invisibility": "skill_modifiers.modifiers",
+      "item_type": "classification.item_class",
+      "male_transform_target_source_id": "use_transform.male",
+      "mana_shield": "skill_modifiers.modifiers",
+      "mantra": "skill_modifiers.modifiers",
+      "max_hit_chance": "weapon.max_hit_chance",
+      "max_text_length": "readable_writeable.max_text_length",
+      "melee_attack_effect": "EXPLICIT_UNSUPPORTED_PRESENTATION_BINDING_V1",
+      "modifier.absorbpercentdeath": "protection.resistances",
+      "modifier.absorbpercentdrown": "protection.resistances",
+      "modifier.absorbpercentearth": "protection.resistances",
+      "modifier.absorbpercentenergy": "protection.resistances",
+      "modifier.absorbpercentfire": "protection.resistances",
+      "modifier.absorbpercentholy": "protection.resistances",
+      "modifier.absorbpercentice": "protection.resistances",
+      "modifier.absorbpercentlifedrain": "protection.resistances",
+      "modifier.absorbpercentmanadrain": "protection.resistances",
+      "modifier.absorbpercentphysical": "protection.resistances",
+      "modifier.absorbpercentpoison": "protection.resistances",
+      "modifier.cleavepercent": "skill_modifiers.modifiers",
+      "modifier.criticalhitchance": "skill_modifiers.modifiers",
+      "modifier.criticalhitdamage": "skill_modifiers.modifiers",
+      "modifier.deathmagiclevelpoints": "skill_modifiers.modifiers",
+      "modifier.earthmagiclevelpoints": "skill_modifiers.modifiers",
+      "modifier.elementdeath": "weapon.elemental",
+      "modifier.elementearth": "weapon.elemental",
+      "modifier.elementenergy": "weapon.elemental",
+      "modifier.elementfire": "weapon.elemental",
+      "modifier.elementice": "weapon.elemental",
+      "modifier.energymagiclevelpoints": "skill_modifiers.modifiers",
+      "modifier.fieldabsorbpercentfire": "protection.resistances",
+      "modifier.firemagiclevelpoints": "skill_modifiers.modifiers",
+      "modifier.healingmagiclevelpoints": "skill_modifiers.modifiers",
+      "modifier.healthgain": "skill_modifiers.modifiers",
+      "modifier.healthticks": "skill_modifiers.modifiers",
+      "modifier.holymagiclevelpoints": "skill_modifiers.modifiers",
+      "modifier.icemagiclevelpoints": "skill_modifiers.modifiers",
+      "modifier.lifeleechamount": "skill_modifiers.modifiers",
+      "modifier.lifeleechchance": "skill_modifiers.modifiers",
+      "modifier.magiclevelpoints": "skill_modifiers.modifiers",
+      "modifier.magicshieldcapacityflat": "skill_modifiers.modifiers",
+      "modifier.magicshieldcapacitypercent": "skill_modifiers.modifiers",
+      "modifier.managain": "skill_modifiers.modifiers",
+      "modifier.manaleechamount": "skill_modifiers.modifiers",
+      "modifier.manaleechchance": "skill_modifiers.modifiers",
+      "modifier.manaticks": "skill_modifiers.modifiers",
+      "modifier.perfectshotdamage": "skill_modifiers.modifiers",
+      "modifier.perfectshotrange": "skill_modifiers.modifiers",
+      "modifier.reflectdamage": "skill_modifiers.modifiers",
+      "modifier.skillaxe": "skill_modifiers.modifiers",
+      "modifier.skillclub": "skill_modifiers.modifiers",
+      "modifier.skilldist": "skill_modifiers.modifiers",
+      "modifier.skillfist": "skill_modifiers.modifiers",
+      "modifier.skillshield": "skill_modifiers.modifiers",
+      "modifier.skillsword": "skill_modifiers.modifiers",
+      "modifier.speed": "skill_modifiers.modifiers",
+      "movable": "physical.movable",
+      "pickup_eligibility": "physical.pickupable",
+      "range": "weapon.range_cells",
+      "readable": "readable_writeable.readable",
+      "rotate_target_source_id": "use_transform.rotate",
+      "slot_and_allowed_family_tier": "imbuement.allowed_family_tiers",
+      "slot_claim": "equipment.patterns",
+      "stop_duration": "temporal.stop_duration",
+      "suppress_drown": "skill_modifiers.modifiers",
+      "suppress_drunk": "skill_modifiers.modifiers",
+      "use_target_source_id": "use_transform.use",
+      "weapon_type": "weapon.weapon_type",
+      "weight": "physical.weight",
+      "wrap_target_source_id": "use_transform.wrap",
+      "write_once_target_source_id": "readable_writeable.write_once_target_ordinal",
+      "writeable": "readable_writeable.writeable"
+    }
+  },
+  "worst_shape": {
+    "server_record_bytes": 3555,
+    "client_record_bytes": 3433,
+    "server_sha256": "19c38b3cd18c7e2765aefb9ec2c7b0da9a31be66eaa30b84c63a7cf9ee132fc5",
+    "client_sha256": "0f9f25815a61fa292d6a74f89974f8b4bbefcca3d70a19ee023d730e88261e21",
+    "server_body_section_bytes": 135648135,
+    "client_body_section_bytes": 130992981,
+    "provable_max_server_artifact_bytes": 176445672,
+    "provable_max_client_artifact_bytes": 171790518,
+    "provable_max_generation_pair_bytes": 348236190
+  },
+  "carrier_resource_arithmetic": {
+    "fixed_envelope_bytes": 200,
+    "preserved_max_manifest_bytes": 7500,
+    "preserved_max_key_bytes": 512,
+    "preserved_max_atom_bytes": 512,
+    "provable_max_index_bytes": 40789837,
+    "observed_protected_index_bytes": 3358044,
+    "observed_server_manifest_bytes": 498,
+    "observed_client_manifest_bytes": 489,
+    "observed_shape_scenario_server_artifact_bytes": 139006877,
+    "observed_shape_scenario_client_artifact_bytes": 134351714,
+    "observed_shape_scenario_pair_bytes": 273358591,
+    "scenario_note": "Observed index/manifest arithmetic is retained separately and is not a production maximum."
+  },
+  "representative_typed_round_trips": {
+    "melee_weapon": {
+      "server_bytes": 2845,
+      "client_bytes": 2842,
+      "typed_round_trip": "PASS"
+    },
+    "distance_weapon": {
+      "server_bytes": 3193,
+      "client_bytes": 3190,
+      "typed_round_trip": "PASS"
+    },
+    "armor_equipment": {
+      "server_bytes": 3319,
+      "client_bytes": 3316,
+      "typed_round_trip": "PASS"
+    },
+    "container": {
+      "server_bytes": 339,
+      "client_bytes": 336,
+      "typed_round_trip": "PASS"
+    },
+    "charges_consumable": {
+      "server_bytes": 363,
+      "client_bytes": 338,
+      "typed_round_trip": "PASS"
+    },
+    "rune_use_item": {
+      "server_bytes": 391,
+      "client_bytes": 334,
+      "typed_round_trip": "PASS"
+    },
+    "material_loot": {
+      "server_bytes": 340,
+      "client_bytes": 337,
+      "typed_round_trip": "PASS"
+    },
+    "presentation_only": {
+      "server_bytes": 301,
+      "client_bytes": 298,
+      "typed_round_trip": "PASS"
+    },
+    "resistance_modifiers": {
+      "server_bytes": 1046,
+      "client_bytes": 1043,
+      "typed_round_trip": "PASS"
+    },
+    "imbuement_slots": {
+      "server_bytes": 2505,
+      "client_bytes": 2502,
+      "typed_round_trip": "PASS"
+    },
+    "transform_decay_target": {
+      "server_bytes": 391,
+      "client_bytes": 316,
+      "typed_round_trip": "PASS"
+    }
+  },
+  "retained_core_round_trips": {
+    "identity_only_guard": {
+      "server_bytes": 7,
+      "client_bytes": 5,
+      "round_trip": "PASS"
+    },
+    "partially_described_nonmaterializable": {
+      "server_bytes": 18,
+      "client_bytes": 16,
+      "round_trip": "PASS"
+    },
+    "preserved_64_materializable_shape": {
+      "server_bytes": 8,
+      "client_bytes": 5,
+      "round_trip": "PASS"
+    }
+  },
+  "fixture_truth_state_coverage": {
+    "field_states": [
+      "UNKNOWN",
+      "NOT_APPLICABLE",
+      "CONFLICT",
+      "KNOWN"
+    ],
+    "known_value_shapes": [
+      "KNOWN_FALSE",
+      "KNOWN_VALUE",
+      "KNOWN_ZERO"
+    ],
+    "fixture_authority": "SYNTHETIC_SCHEMA_WITNESSES_NOT_SOURCE_OR_GAMEPLAY_FACTS"
+  },
+  "boundary_checks": {
+    "equipment_vocations_max_plus_one": "PASS",
+    "equipment_patterns_max_plus_one": "PASS",
+    "equipment_patterns_semantic_duplicate": "PASS",
+    "equipment_additional_slots_max_plus_one": "PASS",
+    "equipment_exclusive_groups_max_plus_one": "PASS",
+    "equipment_known_empty_patterns": "PASS",
+    "equipment_group_key_exact_max": "PASS",
+    "equipment_group_key_duplicate": "PASS",
+    "equipment_group_key_order": "PASS",
+    "equipment_group_key_max_plus_one": "PASS",
+    "modifiers_encode_max_plus_one": "PASS",
+    "modifiers_duplicate": "PASS",
+    "imbuement_encode_max_plus_one": "PASS",
+    "resistance_encode_max_plus_one": "PASS",
+    "weapon_elements_encode_max_plus_one": "PASS",
+    "capabilities_fixed_shape_plus_one": "PASS",
+    "imbuement_exclusions_encode_max_plus_one": "PASS",
+    "transform_fixed_kind_plus_one": "PASS",
+    "name_bytes_encode_max_plus_one": "PASS",
+    "record_fixture_limit_plus_one": "PASS",
+    "invalid_known_zero_stack_max": "PASS",
+    "core_nonstackable_typed_true_encode": "PASS",
+    "core_stackcapable_typed_false_encode": "PASS",
+    "core_stackcapable_typed_false_decode": "PASS",
+    "core_nonstackable_typed_true_decode": "PASS",
+    "core_identity_only_mixed_unknown": "PASS",
+    "core_identity_only_materializable": "PASS",
+    "core_materializable_without_destination": "PASS",
+    "core_destination_without_materializable": "PASS",
+    "core_destination_max_plus_one_duplicate": "PASS",
+    "core_client_preserves_physical_stack_only": "PASS",
+    "enum_bool_encode_rejected": "PASS",
+    "modifier_zero_denominator": "PASS",
+    "rational_canonical_one_half": "PASS",
+    "rational_canonical_zero": "PASS",
+    "rational_noncanonical_two_fourths": "PASS",
+    "rational_noncanonical_zero_over_two": "PASS",
+    "rational_bool_numerator": "PASS",
+    "rational_bool_denominator": "PASS",
+    "rational_negative_denominator": "PASS",
+    "rational_numerator_out_of_domain": "PASS",
+    "rational_denominator_out_of_domain": "PASS",
+    "imbuement_slot_count_max_plus_one": "PASS",
+    "equipment_compatibility_explicit_unsupported": "PASS",
+    "account_binding_explicit_unsupported": "PASS",
+    "character_binding_explicit_unsupported": "PASS",
+    "core_unknown_physical_decode": "PASS",
+    "core_destination_count_max_plus_one_decode": "PASS",
+    "modifiers_decode_max_plus_one": "PASS",
+    "resistance_decode_max_plus_one": "PASS",
+    "imbuement_decode_max_plus_one": "PASS",
+    "capabilities_decode_fixed_shape_truncated": "PASS",
+    "equipment_patterns_decode_parameter_plus_one": "PASS",
+    "equipment_groups_decode_max_plus_one": "PASS",
+    "equipment_group_key_decode_max_plus_one": "PASS",
+    "equipment_group_key_duplicate_decode": "PASS",
+    "equipment_group_key_order_decode": "PASS",
+    "name_decode_bytes_max_plus_one": "PASS",
+    "classification_unknown_enum_decode": "PASS",
+    "modifier_unknown_enum_decode": "PASS",
+    "temporal_unknown_mode_decode": "PASS",
+    "imbuement_unknown_tier_decode": "PASS",
+    "rational_decode_noncanonical": "PASS",
+    "client_rejects_server_group_10": "PASS",
+    "client_rejects_server_group_13": "PASS",
+    "client_rejects_server_group_14": "PASS",
+    "client_rejects_server_group_15": "PASS",
+    "client_rejects_server_group_16": "PASS",
+    "client_projection_omits_server_groups": "PASS",
+    "server_record_exact_max": "PASS",
+    "client_record_exact_max": "PASS",
+    "server_body_aggregate_exact_max": "PASS",
+    "client_body_aggregate_exact_max": "PASS",
+    "server_body_aggregate_max_plus_one": "PASS",
+    "client_body_aggregate_max_plus_one": "PASS",
+    "server_artifact_exact_max": "PASS",
+    "client_artifact_exact_max": "PASS",
+    "generation_pair_exact_max": "PASS",
+    "server_artifact_max_plus_one": "PASS",
+    "client_artifact_max_plus_one": "PASS",
+    "generation_pair_max_plus_one": "PASS"
+  },
+  "deterministic_repeat": "PASS",
+  "remaining_blocker": "Production Rust implementation/review. Augment binding, presentation binding/aliases/tags and equipment compatibility grammar remain explicit unsupported in v1; every other B1 candidate field has one bounded typed destination."
+}

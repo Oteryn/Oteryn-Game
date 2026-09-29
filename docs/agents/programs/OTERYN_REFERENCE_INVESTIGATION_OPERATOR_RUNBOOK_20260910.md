@@ -30,7 +30,7 @@ effort: Medium
 role: single #162 control plane
 ```
 
-Do **not** launch `Oteryn: terra game coordinator` as a second mutating coordinator for the same #162 lifecycle. It remains recovery/read-only unless a protected control-plane transfer explicitly changes the active profile.
+`Oteryn: work coordinator` is the sole reusable mutating Game control plane. The former Terra coordinator is retired historical provenance and must not be launched for recovery or scheduling; use Work in read-only reconciliation mode when mutation is not authorized.
 
 The coordinator owns:
 

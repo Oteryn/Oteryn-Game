@@ -1,0 +1,731 @@
+{
+ "about": "Owner rule D25 (the reference-date Fandom TibiaWiki decides; otherwise Canary is kept) applied to the Canary/CrystalServer conflicts of the quest transcriptions. Differences are summarised in our own words; no wiki or journal text is copied. Basis: equivalent (same behaviour), implementation detail (storage naming), wording (spelling or grammar), wiki (the cited revision decides), wiki silent (Canary kept).",
+ "chests": {
+  "32576,32216,15": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "Same dead human container under each server's own item id.",
+   "wiki": null
+  }
+ },
+ "doors": {
+  "32173,31922,8": {
+   "decision": "canary",
+   "basis": "implementation detail",
+   "category": "implementation detail",
+   "difference": "Naming only: 'Room' vs 'KingZelosDoor' suffix; same boss-room gate.",
+   "wiki": null
+  },
+  "33886,31476,7": {
+   "decision": "canary",
+   "basis": "implementation detail",
+   "category": "implementation detail",
+   "difference": "Naming/namespace only difference; same overall Kilmaresh access gate.",
+   "wiki": null
+  },
+  "33884,31536,9": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Canary uses per-mask storage; crystalserver shares one favour counter for all masks.",
+   "wiki": {
+    "title": "Kilmaresh Quest/Spoiler",
+    "revid": 1199254
+   }
+  },
+  "33855,31496,9": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Canary uses per-mask storage; crystalserver shares one favour counter for all masks.",
+   "wiki": {
+    "title": "Kilmaresh Quest/Spoiler",
+    "revid": 1199254
+   }
+  },
+  "33911,31496,9": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Canary uses per-mask storage; crystalserver shares one favour counter for all masks.",
+   "wiki": {
+    "title": "Kilmaresh Quest/Spoiler",
+    "revid": 1199254
+   }
+  },
+  "33884,31510,9": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Canary uses per-mask storage; crystalserver shares one favour counter for all masks.",
+   "wiki": {
+    "title": "Kilmaresh Quest/Spoiler",
+    "revid": 1199254
+   }
+  },
+  "33855,31450,9": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Canary uses per-mask storage; crystalserver shares one favour counter for all masks.",
+   "wiki": {
+    "title": "Kilmaresh Quest/Spoiler",
+    "revid": 1199254
+   }
+  },
+  "33912,31466,9": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Canary uses per-mask storage; crystalserver shares one favour counter for all masks.",
+   "wiki": {
+    "title": "Kilmaresh Quest/Spoiler",
+    "revid": 1199254
+   }
+  },
+  "32429,32461,7": {
+   "decision": "canary",
+   "basis": "implementation detail",
+   "category": "implementation detail",
+   "difference": "Naming only: 'east_side' vs 'eastern_side'; same access gate.",
+   "wiki": null
+  },
+  "32430,32461,8": {
+   "decision": "canary",
+   "basis": "implementation detail",
+   "category": "implementation detail",
+   "difference": "Naming only: 'east_side' vs 'eastern_side'; same access gate.",
+   "wiki": null
+  }
+ },
+ "missions": {
+  "canary:quest/the_white_raven_monastery_quest#access_to_the_isle_of_kings": {
+   "decision": "canary",
+   "basis": "implementation detail",
+   "category": "journal",
+   "difference": "Same text; canary uses array, crystalserver a keyed map.",
+   "wiki": null
+  },
+  "canary:quest/threatened_dreams_quest#an_unlikely_couple": {
+   "decision": "canary",
+   "basis": "implementation detail",
+   "category": "storage",
+   "difference": "Only storage key name differs; no range or journal differences.",
+   "wiki": null
+  },
+  "canary:quest/grave_danger_quest#grave_danger_the_lich_knights": {
+   "decision": "canary",
+   "basis": "wording",
+   "category": "journal",
+   "difference": "Typo: CrystalServer misspells a word.",
+   "wiki": null
+  },
+  "canary:quest/hot_cuisine_quest#hot_cuisine": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "range",
+   "difference": "Crystalserver adds a 15th dish (Zaoan Sauce); canary is one dish short.",
+   "wiki": {
+    "title": "Hot Cuisine Quest/Spoiler",
+    "revid": 1160750
+   }
+  },
+  "canary:quest/blood_brothers_quest#mission_01_gaining_trust": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary leaves two journal stages blank; crystalserver fills in trust-building details.",
+   "wiki": {
+    "title": "Blood Brothers Quest/Spoiler",
+    "revid": 1132612
+   }
+  },
+  "canary:quest/blood_brothers_quest#mission_02_bad_eggs": {
+   "decision": "crystalserver",
+   "basis": "wording",
+   "category": "journal",
+   "difference": "CrystalServer fixes a misspelled creature name and some wording; Canary keeps the typo.",
+   "wiki": null
+  },
+  "canary:quest/blood_brothers_quest#mission_03_his_true_face": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary leaves a stage blank; crystalserver adds text about testing all suspects.",
+   "wiki": {
+    "title": "Blood Brothers Quest/Spoiler",
+    "revid": 1132612
+   }
+  },
+  "canary:quest/blood_brothers_quest#mission_04_the_dark_lands": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "range",
+   "difference": "Crystalserver adds a final completion stage and matching range value canary lacks.",
+   "wiki": {
+    "title": "Blood Brothers Quest/Spoiler",
+    "revid": 1132612
+   }
+  },
+  "canary:quest/the_rookie_guard_quest#mission_09_rock_n_troll": {
+   "decision": "canary",
+   "basis": "wording",
+   "category": "journal",
+   "difference": "Typo: CrystalServer misspells a word.",
+   "wiki": null
+  },
+  "canary:quest/the_thieves_guild_quest#mission_4_bridge_robbery": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "journal",
+   "difference": "Percybald's town differs: canary says Venore, crystalserver correctly says Carlin.",
+   "wiki": {
+    "title": "The Thieves Guild Quest/Spoiler",
+    "revid": 1086330
+   }
+  },
+  "canary:quest/threatened_dreams_quest#nightmare_intruders": {
+   "decision": "canary",
+   "basis": "implementation detail",
+   "category": "storage",
+   "difference": "Only storage key name differs; ranges and journal text otherwise match.",
+   "wiki": null
+  },
+  "canary:quest/killing_in_the_name_of_quest#paw_and_fur_behemoths": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary adds an extra final state (with a typo) crystalserver lacks.",
+   "wiki": {
+    "title": "Killing in the Name of... Quest/Spoiler",
+    "revid": 1206121
+   }
+  },
+  "canary:quest/killing_in_the_name_of_quest#paw_and_fur_destroyers": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary adds an extra final state (with a typo) crystalserver lacks.",
+   "wiki": {
+    "title": "Killing in the Name of... Quest/Spoiler",
+    "revid": 1206121
+   }
+  },
+  "canary:quest/killing_in_the_name_of_quest#paw_and_fur_drakens": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary adds an extra final state (with a typo) crystalserver lacks.",
+   "wiki": {
+    "title": "Killing in the Name of... Quest/Spoiler",
+    "revid": 1206121
+   }
+  },
+  "canary:quest/killing_in_the_name_of_quest#paw_and_fur_ghastly_dragons": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary adds an extra final state (with a typo) crystalserver lacks.",
+   "wiki": {
+    "title": "Killing in the Name of... Quest/Spoiler",
+    "revid": 1206121
+   }
+  },
+  "canary:quest/killing_in_the_name_of_quest#paw_and_fur_hellhounds": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary adds an extra final state (with a typo) crystalserver lacks.",
+   "wiki": {
+    "title": "Killing in the Name of... Quest/Spoiler",
+    "revid": 1206121
+   }
+  },
+  "canary:quest/killing_in_the_name_of_quest#paw_and_fur_hydras": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary adds an extra final state (with a typo) crystalserver lacks.",
+   "wiki": {
+    "title": "Killing in the Name of... Quest/Spoiler",
+    "revid": 1206121
+   }
+  },
+  "canary:quest/killing_in_the_name_of_quest#paw_and_fur_medusae": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary adds an extra final state (with a typo) crystalserver lacks.",
+   "wiki": {
+    "title": "Killing in the Name of... Quest/Spoiler",
+    "revid": 1206121
+   }
+  },
+  "canary:quest/killing_in_the_name_of_quest#paw_and_fur_sea_serpents": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary adds an extra final state (with a typo) crystalserver lacks.",
+   "wiki": {
+    "title": "Killing in the Name of... Quest/Spoiler",
+    "revid": 1206121
+   }
+  },
+  "canary:quest/killing_in_the_name_of_quest#paw_and_fur_serpent_spawns": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary adds an extra final state (with a typo) crystalserver lacks.",
+   "wiki": {
+    "title": "Killing in the Name of... Quest/Spoiler",
+    "revid": 1206121
+   }
+  },
+  "canary:quest/killing_in_the_name_of_quest#paw_and_fur_undead_dragons": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "journal",
+   "difference": "Canary adds an extra final state (with a typo) crystalserver lacks.",
+   "wiki": {
+    "title": "Killing in the Name of... Quest/Spoiler",
+    "revid": 1206121
+   }
+  },
+  "canary:quest/bigfoot_s_burden_quest#recruitment_gnomish_warfare": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "formatting",
+   "difference": "Formatting-only difference; content is equivalent.",
+   "wiki": null
+  },
+  "canary:quest/the_shattered_isles_quest#reputation_in_sabrehaven_cordial": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "range",
+   "difference": "Reputation-tier start/end storage values differ numerically; no journal text present.",
+   "wiki": {
+    "title": "The Shattered Isles Quest/Spoiler",
+    "revid": 1205805
+   }
+  },
+  "canary:quest/the_shattered_isles_quest#reputation_in_sabrehaven_friendly": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "range",
+   "difference": "Same journal text; start/end storage values are offset by two.",
+   "wiki": {
+    "title": "The Shattered Isles Quest/Spoiler",
+    "revid": 1205805
+   }
+  },
+  "canary:quest/the_shattered_isles_quest#reputation_in_sabrehaven_loyal": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "range",
+   "difference": "Same journal text; start/end storage values are offset by four.",
+   "wiki": {
+    "title": "The Shattered Isles Quest/Spoiler",
+    "revid": 1205805
+   }
+  },
+  "canary:quest/the_shattered_isles_quest#reputation_in_sabrehaven_suspicious": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "journal",
+   "difference": "Mission order and endValue differ; crystalserver's NPC order matches the wiki.",
+   "wiki": {
+    "title": "The Shattered Isles Quest/Spoiler",
+    "revid": 1205805
+   }
+  },
+  "canary:quest/dawnport_quest#the_dorm_key": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "journal",
+   "difference": "Crystalserver notes the worm-bait requirement from the quest's equipment list; canary omits it.",
+   "wiki": {
+    "title": "Dawnport Quest/Spoiler",
+    "revid": 1040650
+   }
+  },
+  "canary:quest/dawnport_quest#the_lost_amulet": {
+   "decision": "crystalserver",
+   "basis": "wording",
+   "category": "journal",
+   "difference": "Canary has a grammar mistake in the closing stage; CrystalServer is correct.",
+   "wiki": null
+  },
+  "canary:quest/grave_danger_quest#the_order_of_the_cobra": {
+   "decision": "canary",
+   "basis": "wording",
+   "category": "journal",
+   "difference": "Typo: CrystalServer misspells a word; storage name also differs.",
+   "wiki": null
+  },
+  "canary:quest/dawnport_quest#the_rare_herb": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "journal",
+   "difference": "Crystalserver's stages match the wiki's herb-harvest description; canary's text is generic.",
+   "wiki": {
+    "title": "Dawnport Quest/Spoiler",
+    "revid": 1040650
+   }
+  },
+  "canary:quest/dawnport_quest#the_stolen_log_book": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "journal",
+   "difference": "Crystalserver's final stage mentions troll caves/reward matching wiki; canary is generic.",
+   "wiki": {
+    "title": "Dawnport Quest/Spoiler",
+    "revid": 1040650
+   }
+  },
+  "canary:quest/cults_of_tibia_quest#the_strengthtening_of_the_minotaurs": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "formatting",
+   "difference": "Formatting-only difference; content is equivalent.",
+   "wiki": null
+  },
+  "canary:quest/the_way_of_the_monk_quest#the_three_fold_path": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "journal",
+   "difference": "Canary's outdated 4-shrine/Dawnport text is wrong; crystalserver matches the real 10-shrine pilgrimage.",
+   "wiki": {
+    "title": "The Way of the Monk Quest/Spoiler",
+    "revid": 1203780
+   }
+  },
+  "canary:quest/tibia_tales#to_outfox_a_fox": {
+   "decision": "canary",
+   "basis": "implementation detail",
+   "category": "storage",
+   "difference": "Only storage key name differs (added 'questline' suffix); no other change.",
+   "wiki": null
+  },
+  "canary:quest/threatened_dreams_quest#troubled_animals": {
+   "decision": "canary",
+   "basis": "wording",
+   "category": "journal",
+   "difference": "Typo: CrystalServer misspells a word; storage name also differs.",
+   "wiki": null
+  }
+ },
+ "interactions": {
+  "canary:interaction/barbarian_test/action_mead": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Canary caps mead at 20 sips per honeycomb (wiki-correct); crystal allows 21, off-by-one.",
+   "wiki": {
+    "title": "Barbarian Test Quest/Spoiler",
+    "revid": 1086713
+   }
+  },
+  "canary:interaction/children_of_the_revolution/actions_mission4_grease_oil": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Crystal's actionid check always evaluates false (operator-precedence bug); gate variable also changed.",
+   "wiki": null
+  },
+  "canary:interaction/dawnport/movements_legion_helmet": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "Player-storage check replaced with kv() scoped store for the same discovered-teleport flag.",
+   "wiki": null
+  },
+  "canary:interaction/ferumbras_ascension/movements_flower_puzzle": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Flower-tile position offsets in the puzzle table differ substantially between the two servers.",
+   "wiki": null
+  },
+  "canary:interaction/ferumbras_ascension/movements_vortex": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Boss spawns after 8 collected essences (wiki: 8 soul splinters) in canary; crystal uses 7.",
+   "wiki": {
+    "title": "Ferumbras' Ascension Quest/Spoiler",
+    "revid": 1204031
+   }
+  },
+  "canary:interaction/forgotten_knowledge/actions_frozen_horror": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Crystal adds a per-player retry cooldown check on top of canary's global-only cooldown.",
+   "wiki": null
+  },
+  "canary:interaction/forgotten_knowledge/actions_time_machine": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Crystal deletes the Time Machine teleport entirely; wiki confirms it is a required quest step.",
+   "wiki": {
+    "title": "Forgotten Knowledge Quest/Spoiler",
+    "revid": 1200256
+   }
+  },
+  "canary:interaction/forgotten_knowledge/creaturescripts_lloyd_preparedeath": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "Crystal adds nil-safety guards around tile/creature lookups before removing and respawning.",
+   "wiki": null
+  },
+  "canary:interaction/forgotten_knowledge/movements_entrance_teleport": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Crystal registers 13 extra action ids on the same entrance move event; canary keeps one.",
+   "wiki": null
+  },
+  "canary:interaction/heart_of_destruction/actions_final_lever": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Canary spawns a nonexistent monster name; wiki confirms 'Spark of Destruction' plus a 3-column check.",
+   "wiki": {
+    "title": "Heart of Destruction Quest/Spoiler",
+    "revid": 1176143
+   }
+  },
+  "canary:interaction/heart_of_destruction/movements_ice_crack": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Canary places a decorative mud stain at the hole tile; crystal conjures a real hole.",
+   "wiki": null
+  },
+  "canary:interaction/heart_of_destruction/movements_teleport_heart": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Crystal's aid-registration loop skips the boss-access teleports, leaving several action ids unregistered.",
+   "wiki": null
+  },
+  "canary:interaction/hidden_threats/action_corym_works_doors": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "Crystal hardcodes literal door action ids that equal the same storage constants canary references.",
+   "wiki": null
+  },
+  "canary:interaction/in_service_of_yalahar/actions_reward": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "Reward-chest trigger id renumbered and message wording tweaked; same reward item and flow.",
+   "wiki": null
+  },
+  "canary:interaction/koshei_the_deathless_quest/action_boss": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Crystal drops the AmuletStatus==2 check; wiki's 'glad you didn't use it' line implies it matters.",
+   "wiki": {
+    "title": "Koshei the Deathless Quest/Spoiler",
+    "revid": 1037072
+   }
+  },
+  "canary:interaction/lions_rock/actions_lions_rock_lions_rock_fountain": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "Crystal guards addAchievement with a hasAchievement check to avoid granting it twice.",
+   "wiki": null
+  },
+  "canary:interaction/others/actions_fire_bug": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Canary is missing the entire Blood Brothers Boreth/Twines encounter that crystal implements, matching the wiki.",
+   "wiki": {
+    "title": "Blood Brothers Quest/Spoiler",
+    "revid": 1132612
+   }
+  },
+  "canary:interaction/others/actions_holy_water": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Crystal drops the eclipse-cauldron item/questline validation, firing on ~147 unrelated actionid-2000 tiles.",
+   "wiki": null
+  },
+  "canary:interaction/rottin_wood_and_married_men/actions_corpse": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Wiki requires looting all 5 captured merchants; canary's corpse counter stops one short at 4.",
+   "wiki": {
+    "title": "Rottin Wood and the Married Men Quest/Spoiler",
+    "revid": 928967
+   }
+  },
+  "canary:interaction/rottin_wood_and_married_men/actions_trap": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Wiki requires 5 nets; canary stops at 4, crystal allows 5 but oversummons the merchants.",
+   "wiki": {
+    "title": "Rottin Wood and the Married Men Quest/Spoiler",
+    "revid": 928967
+   }
+  },
+  "canary:interaction/soul_war/moveevent_claustrophobic_inferno_raid": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Canary only spawns Brachiodemon; wiki also lists Infernal Demon and Infernal Phantom, which crystal adds.",
+   "wiki": {
+    "title": "Claustrophobic Inferno",
+    "revid": 1117102
+   }
+  },
+  "canary:interaction/the_ancient_tombs/action_morguthis_wall": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "Action var renamed and registered by aid instead of two hardcoded positions; same wall tile.",
+   "wiki": null
+  },
+  "canary:interaction/the_ancient_tombs/actions_active_teleport_switches": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Switch counter is per-player in canary, shared in crystal; wiki describes a coordinated team.",
+   "wiki": {
+    "title": "The Ancient Tombs Quest/Spoiler",
+    "revid": 1174796
+   }
+  },
+  "canary:interaction/the_ancient_tombs/movements_enter_diprath_teleport_switche_done": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Entry check reads the per-player counter in canary vs the shared global one in crystal.",
+   "wiki": {
+    "title": "The Ancient Tombs Quest/Spoiler",
+    "revid": 1174796
+   }
+  },
+  "canary:interaction/the_ancient_tombs/movements_enter_thalas_teleport_switches_done": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Same per-player vs global switch split as Dipthrah; wiki's Thalas puzzle needs a coordinated team.",
+   "wiki": {
+    "title": "The Ancient Tombs Quest/Spoiler",
+    "revid": 1174796
+   }
+  },
+  "canary:interaction/the_cursed_crystal/actions_medusa_oil": {
+   "decision": "crystalserver",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Canary never implements the Prepared Bucket recipe that Thornfire firefighting requires; crystal adds it.",
+   "wiki": {
+    "title": "Thornfire World Change/Spoiler",
+    "revid": 1020842
+   }
+  },
+  "canary:interaction/the_inquisition_quest/movements_reward_room_text": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "Sentinel storage value changed from 1 to 2 for the same one-time room text.",
+   "wiki": null
+  },
+  "canary:interaction/the_pits_of_inferno_quest/actions_walls": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "Lever-to-firewall matching refactored from position lookup to item-uid lookup; same 5 walls.",
+   "wiki": null
+  },
+  "canary:interaction/the_queen_of_the_banshees/action_1_first_seal_lever": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Canary checks lever item ids absent from items.xml for uid 30012; CrystalServer uses plain lever ids.",
+   "wiki": null
+  },
+  "canary:interaction/the_queen_of_the_banshees/movement_1_first_seal_close_mw_first_seal_close_mw": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Crystal relocates the hidden trigger tile far from the wiki spot, delays wall closing.",
+   "wiki": {
+    "title": "The Queen of the Banshees Quest/Spoiler",
+    "revid": 1057212
+   }
+  },
+  "canary:interaction/the_rookie_guard/mission06_run_like_wolf_poacher_corpse": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Crystal drops the Mission06 progress gate; pickup no longer needs that mission step.",
+   "wiki": null
+  },
+  "canary:interaction/the_rookie_guard/mission11_sweet_poison_special_flask": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "Two storage reads merged into one inline condition; same mission-state check.",
+   "wiki": null
+  },
+  "canary:interaction/the_secret_library_quest/high_and_dry_isles/movements_step_in": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Crystal adds a turtle-feeding (fish item) requirement not documented anywhere on the quest's wiki page.",
+   "wiki": null
+  },
+  "canary:interaction/the_thieves_guild_quest/actions_fish_napping_door": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Crystal adds a requirement to be carrying the fishnapped goldfish to slip through the door.",
+   "wiki": null
+  },
+  "canary:interaction/the_thieves_guild_quest/actions_fish_napping_key": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "Matching door/key action id renumbered consistently in both scripts; same trigger tile.",
+   "wiki": null
+  },
+  "canary:interaction/what_a_foolish_quest/action_contract": {
+   "decision": "canary",
+   "basis": "wiki silent",
+   "category": "behaviour",
+   "difference": "Canary requires Contract storage exactly 1; crystal's '<1' check allows reuse after progress.",
+   "wiki": null
+  },
+  "canary:interaction/wrath_of_the_emperor/actions_mission02_firstcontact_repair_teleport": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "CrystalServer 9f5a72c6 adds nil guards on the tile and item before the transform (its #952); the teleport repair behaves the same whenever the tile exists.",
+   "wiki": null
+  },
+  "canary:interaction/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre": {
+   "decision": "canary",
+   "basis": "wiki",
+   "category": "behaviour",
+   "difference": "Crystal drops the per-room position checks; wiki confirms visiting all 4 incarnation rooms is required.",
+   "wiki": {
+    "title": "Wrath of the Emperor Quest/Spoiler",
+    "revid": 1103771
+   }
+  }
+ }
+}

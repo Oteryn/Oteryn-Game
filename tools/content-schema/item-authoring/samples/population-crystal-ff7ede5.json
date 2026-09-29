@@ -1,0 +1,4658 @@
+{
+  "blockers_by_item_count": [
+    {
+      "blocker": "sprite_atlas_not_admitted",
+      "examples": [
+        "oteryn:item.registry.i00000023",
+        "oteryn:item.registry.i00000028",
+        "oteryn:item.registry.i00000031",
+        "oteryn:item.registry.i00000033",
+        "oteryn:item.registry.i00000034"
+      ],
+      "items": 12100
+    },
+    {
+      "blocker": "converter_missing:proficiency.proficiency_id",
+      "examples": [
+        "oteryn:item.registry.i00000770",
+        "oteryn:item.registry.i00001685",
+        "oteryn:item.registry.i00002884",
+        "oteryn:item.registry.i00002951",
+        "oteryn:item.weapon.wand.snakebite_rod"
+      ],
+      "items": 642
+    },
+    {
+      "blocker": "converter_missing:augments",
+      "examples": [
+        "oteryn:item.registry.i00036065",
+        "oteryn:item.registry.i00036066",
+        "oteryn:item.registry.i00036067",
+        "oteryn:item.registry.i00036068",
+        "oteryn:item.registry.i00036069"
+      ],
+      "items": 83
+    },
+    {
+      "blocker": "converter_missing:stopduration",
+      "examples": [
+        "oteryn:item.registry.i00002806",
+        "oteryn:item.registry.i00002809",
+        "oteryn:item.decor.candlestick",
+        "oteryn:item.registry.i00002814",
+        "oteryn:item.registry.i00002816"
+      ],
+      "items": 50
+    },
+    {
+      "blocker": "converter_missing:flags.container",
+      "examples": [
+        "oteryn:item.registry.i00004134",
+        "oteryn:item.registry.i00011107",
+        "oteryn:item.registry.i00012173",
+        "oteryn:item.registry.i00012265",
+        "oteryn:item.registry.i00012266"
+      ],
+      "items": 41
+    },
+    {
+      "blocker": "converter_missing:changedtoexpire.former_object_typeid",
+      "examples": [
+        "oteryn:item.registry.i00000816",
+        "oteryn:item.registry.i00002970",
+        "oteryn:item.registry.i00002971",
+        "oteryn:item.registry.i00002972",
+        "oteryn:item.registry.i00002973"
+      ],
+      "items": 39
+    },
+    {
+      "blocker": "converter_missing:flags.changedtoexpire",
+      "examples": [
+        "oteryn:item.registry.i00000816",
+        "oteryn:item.registry.i00002970",
+        "oteryn:item.registry.i00002971",
+        "oteryn:item.registry.i00002972",
+        "oteryn:item.registry.i00002973"
+      ],
+      "items": 39
+    },
+    {
+      "blocker": "converter_missing:runespellname",
+      "examples": [
+        "oteryn:item.registry.i00003032",
+        "oteryn:item.registry.i00003033",
+        "oteryn:item.registry.i00003036",
+        "oteryn:item.registry.i00003037",
+        "oteryn:item.consumable.sudden_death_rune"
+      ],
+      "items": 36
+    },
+    {
+      "blocker": "unresolved:flags.forceuse",
+      "examples": [
+        "oteryn:item.registry.i00000510",
+        "oteryn:item.registry.i00000523",
+        "oteryn:item.registry.i00007563",
+        "oteryn:item.registry.i00011626",
+        "oteryn:item.registry.i00011627"
+      ],
+      "items": 34
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:219",
+      "examples": [
+        "oteryn:item.registry.i00003147",
+        "oteryn:item.weapon.blade.dagger",
+        "oteryn:item.registry.i00003152",
+        "oteryn:item.registry.i00003153",
+        "oteryn:item.registry.i00003154"
+      ],
+      "items": 23
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:227",
+      "examples": [
+        "oteryn:item.registry.i00003151",
+        "oteryn:item.registry.i00003162",
+        "oteryn:item.weapon.club.mace",
+        "oteryn:item.weapon.club.battle_hammer",
+        "oteryn:item.registry.i00003187"
+      ],
+      "items": 23
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:223",
+      "examples": [
+        "oteryn:item.registry.i00003149",
+        "oteryn:item.registry.i00003150",
+        "oteryn:item.registry.i00003156",
+        "oteryn:item.registry.i00003180",
+        "oteryn:item.registry.i00003190"
+      ],
+      "items": 20
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:224",
+      "examples": [
+        "oteryn:item.weapon.axe.hand",
+        "oteryn:item.registry.i00003155",
+        "oteryn:item.registry.i00003157",
+        "oteryn:item.registry.i00003172",
+        "oteryn:item.registry.i00003193"
+      ],
+      "items": 16
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:226",
+      "examples": [
+        "oteryn:item.registry.i00003160",
+        "oteryn:item.registry.i00003206",
+        "oteryn:item.registry.i00003214",
+        "oteryn:item.registry.i00003317",
+        "oteryn:item.registry.i00007229"
+      ],
+      "items": 11
+    },
+    {
+      "blocker": "family_profile_unresolved",
+      "examples": [
+        "oteryn:item.registry.i00008938",
+        "oteryn:item.registry.i00018670",
+        "oteryn:item.registry.i00019369",
+        "oteryn:item.registry.i00019371",
+        "oteryn:item.registry.i00020437"
+      ],
+      "items": 10
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:225",
+      "examples": [
+        "oteryn:item.registry.i00003148",
+        "oteryn:item.registry.i00003179",
+        "oteryn:item.registry.i00007197",
+        "oteryn:item.registry.i00007201",
+        "oteryn:item.registry.i00007218"
+      ],
+      "items": 9
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:229",
+      "examples": [
+        "oteryn:item.registry.i00003168",
+        "oteryn:item.registry.i00010169",
+        "oteryn:item.registry.i00017115",
+        "oteryn:item.registry.i00037531",
+        "oteryn:item.registry.i00037536"
+      ],
+      "items": 9
+    },
+    {
+      "blocker": "converter_missing:writeable",
+      "examples": [
+        "oteryn:item.registry.i00000556",
+        "oteryn:item.registry.i00002721",
+        "oteryn:item.registry.i00002723",
+        "oteryn:item.registry.i00006221",
+        "oteryn:item.registry.i00007927"
+      ],
+      "items": 7
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:162",
+      "examples": [
+        "oteryn:item.registry.i00025212",
+        "oteryn:item.registry.i00025213",
+        "oteryn:item.registry.i00025214",
+        "oteryn:item.registry.i00025215",
+        "oteryn:item.registry.i00025216"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:163",
+      "examples": [
+        "oteryn:item.registry.i00025206",
+        "oteryn:item.registry.i00025207",
+        "oteryn:item.registry.i00025208",
+        "oteryn:item.registry.i00025209",
+        "oteryn:item.registry.i00025210"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:164",
+      "examples": [
+        "oteryn:item.registry.i00025200",
+        "oteryn:item.registry.i00025201",
+        "oteryn:item.registry.i00025202",
+        "oteryn:item.registry.i00025203",
+        "oteryn:item.registry.i00025204"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:165",
+      "examples": [
+        "oteryn:item.registry.i00025194",
+        "oteryn:item.registry.i00025195",
+        "oteryn:item.registry.i00025196",
+        "oteryn:item.registry.i00025197",
+        "oteryn:item.registry.i00025198"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:166",
+      "examples": [
+        "oteryn:item.registry.i00025188",
+        "oteryn:item.registry.i00025189",
+        "oteryn:item.registry.i00025190",
+        "oteryn:item.registry.i00025191",
+        "oteryn:item.registry.i00025192"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:177",
+      "examples": [
+        "oteryn:item.registry.i00025152",
+        "oteryn:item.registry.i00025153",
+        "oteryn:item.registry.i00025154",
+        "oteryn:item.registry.i00025155",
+        "oteryn:item.registry.i00025156"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:178",
+      "examples": [
+        "oteryn:item.registry.i00025146",
+        "oteryn:item.registry.i00025147",
+        "oteryn:item.registry.i00025148",
+        "oteryn:item.registry.i00025149",
+        "oteryn:item.registry.i00025150"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:179",
+      "examples": [
+        "oteryn:item.registry.i00025140",
+        "oteryn:item.registry.i00025141",
+        "oteryn:item.registry.i00025142",
+        "oteryn:item.registry.i00025143",
+        "oteryn:item.registry.i00025144"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:180",
+      "examples": [
+        "oteryn:item.registry.i00025134",
+        "oteryn:item.registry.i00025135",
+        "oteryn:item.registry.i00025136",
+        "oteryn:item.registry.i00025137",
+        "oteryn:item.registry.i00025138"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:181",
+      "examples": [
+        "oteryn:item.registry.i00025128",
+        "oteryn:item.registry.i00025129",
+        "oteryn:item.registry.i00025130",
+        "oteryn:item.registry.i00025131",
+        "oteryn:item.registry.i00025132"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:192",
+      "examples": [
+        "oteryn:item.registry.i00025182",
+        "oteryn:item.registry.i00025183",
+        "oteryn:item.registry.i00025184",
+        "oteryn:item.registry.i00025185",
+        "oteryn:item.registry.i00025186"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:193",
+      "examples": [
+        "oteryn:item.registry.i00025176",
+        "oteryn:item.registry.i00025177",
+        "oteryn:item.registry.i00025178",
+        "oteryn:item.registry.i00025179",
+        "oteryn:item.registry.i00025180"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:194",
+      "examples": [
+        "oteryn:item.registry.i00025170",
+        "oteryn:item.registry.i00025171",
+        "oteryn:item.registry.i00025172",
+        "oteryn:item.registry.i00025173",
+        "oteryn:item.registry.i00025174"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:195",
+      "examples": [
+        "oteryn:item.registry.i00025164",
+        "oteryn:item.registry.i00025165",
+        "oteryn:item.registry.i00025166",
+        "oteryn:item.registry.i00025167",
+        "oteryn:item.registry.i00025168"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:196",
+      "examples": [
+        "oteryn:item.registry.i00025158",
+        "oteryn:item.registry.i00025159",
+        "oteryn:item.registry.i00025160",
+        "oteryn:item.registry.i00025161",
+        "oteryn:item.registry.i00025162"
+      ],
+      "items": 6
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:294",
+      "examples": [
+        "oteryn:item.registry.i00025101",
+        "oteryn:item.registry.i00025102",
+        "oteryn:item.registry.i00025103",
+        "oteryn:item.registry.i00025104",
+        "oteryn:item.registry.i00025105"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:295",
+      "examples": [
+        "oteryn:item.registry.i00025096",
+        "oteryn:item.registry.i00025097",
+        "oteryn:item.registry.i00025098",
+        "oteryn:item.registry.i00025099",
+        "oteryn:item.registry.i00025100"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:296",
+      "examples": [
+        "oteryn:item.registry.i00025091",
+        "oteryn:item.registry.i00025092",
+        "oteryn:item.registry.i00025093",
+        "oteryn:item.registry.i00025094",
+        "oteryn:item.registry.i00025095"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:297",
+      "examples": [
+        "oteryn:item.registry.i00025116",
+        "oteryn:item.registry.i00025117",
+        "oteryn:item.registry.i00025118",
+        "oteryn:item.registry.i00025119",
+        "oteryn:item.registry.i00025120"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:298",
+      "examples": [
+        "oteryn:item.registry.i00025111",
+        "oteryn:item.registry.i00025112",
+        "oteryn:item.registry.i00025113",
+        "oteryn:item.registry.i00025114",
+        "oteryn:item.registry.i00025115"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:299",
+      "examples": [
+        "oteryn:item.registry.i00025106",
+        "oteryn:item.registry.i00025107",
+        "oteryn:item.registry.i00025108",
+        "oteryn:item.registry.i00025109",
+        "oteryn:item.registry.i00025110"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:300",
+      "examples": [
+        "oteryn:item.registry.i00025086",
+        "oteryn:item.registry.i00025087",
+        "oteryn:item.registry.i00025088",
+        "oteryn:item.registry.i00025089",
+        "oteryn:item.registry.i00025090"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:301",
+      "examples": [
+        "oteryn:item.registry.i00025081",
+        "oteryn:item.registry.i00025082",
+        "oteryn:item.registry.i00025083",
+        "oteryn:item.registry.i00025084",
+        "oteryn:item.registry.i00025085"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:302",
+      "examples": [
+        "oteryn:item.registry.i00025076",
+        "oteryn:item.registry.i00025077",
+        "oteryn:item.registry.i00025078",
+        "oteryn:item.registry.i00025079",
+        "oteryn:item.registry.i00025080"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:303",
+      "examples": [
+        "oteryn:item.registry.i00025071",
+        "oteryn:item.registry.i00025072",
+        "oteryn:item.registry.i00025073",
+        "oteryn:item.registry.i00025074",
+        "oteryn:item.registry.i00025075"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:304",
+      "examples": [
+        "oteryn:item.registry.i00025066",
+        "oteryn:item.registry.i00025067",
+        "oteryn:item.registry.i00025068",
+        "oteryn:item.registry.i00025069",
+        "oteryn:item.registry.i00025070"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:305",
+      "examples": [
+        "oteryn:item.registry.i00025061",
+        "oteryn:item.registry.i00025062",
+        "oteryn:item.registry.i00025063",
+        "oteryn:item.registry.i00025064",
+        "oteryn:item.registry.i00025065"
+      ],
+      "items": 5
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:228",
+      "examples": [
+        "oteryn:item.weapon.ranged.crossbow",
+        "oteryn:item.weapon.ranged.bow",
+        "oteryn:item.registry.i00037858"
+      ],
+      "items": 3
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:215",
+      "examples": [
+        "oteryn:item.registry.i00026597",
+        "oteryn:item.registry.i00026598"
+      ],
+      "items": 2
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:239",
+      "examples": [
+        "oteryn:item.registry.i00000770",
+        "oteryn:item.registry.i00007200"
+      ],
+      "items": 2
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:284",
+      "examples": [
+        "oteryn:item.registry.i00007203",
+        "oteryn:item.registry.i00007226"
+      ],
+      "items": 2
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:54",
+      "examples": [
+        "oteryn:item.registry.i00037107",
+        "oteryn:item.registry.i00037108"
+      ],
+      "items": 2
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:64",
+      "examples": [
+        "oteryn:item.registry.i00037335",
+        "oteryn:item.registry.i00037338"
+      ],
+      "items": 2
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:74",
+      "examples": [
+        "oteryn:item.registry.i00037336",
+        "oteryn:item.registry.i00037339"
+      ],
+      "items": 2
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:86",
+      "examples": [
+        "oteryn:item.registry.i00037337",
+        "oteryn:item.registry.i00037340"
+      ],
+      "items": 2
+    },
+    {
+      "blocker": "converter_missing:writeonceitemid",
+      "examples": [
+        "oteryn:item.registry.i00008555"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:10",
+      "examples": [
+        "oteryn:item.registry.i00036071"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:100",
+      "examples": [
+        "oteryn:item.registry.i00033225"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:101",
+      "examples": [
+        "oteryn:item.registry.i00019316"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:102",
+      "examples": [
+        "oteryn:item.registry.i00019310"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:103",
+      "examples": [
+        "oteryn:item.registry.i00019304"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:104",
+      "examples": [
+        "oteryn:item.registry.i00019319"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:105",
+      "examples": [
+        "oteryn:item.registry.i00019313"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:106",
+      "examples": [
+        "oteryn:item.registry.i00019307"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:107",
+      "examples": [
+        "oteryn:item.registry.i00037528"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:108",
+      "examples": [
+        "oteryn:item.registry.i00019322"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:109",
+      "examples": [
+        "oteryn:item.registry.i00019317"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:11",
+      "examples": [
+        "oteryn:item.registry.i00036075"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:110",
+      "examples": [
+        "oteryn:item.registry.i00019311"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:111",
+      "examples": [
+        "oteryn:item.registry.i00019305"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:112",
+      "examples": [
+        "oteryn:item.registry.i00019320"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:113",
+      "examples": [
+        "oteryn:item.registry.i00019314"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:114",
+      "examples": [
+        "oteryn:item.registry.i00019308"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:115",
+      "examples": [
+        "oteryn:item.registry.i00037529"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:117",
+      "examples": [
+        "oteryn:item.registry.i00019318"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:118",
+      "examples": [
+        "oteryn:item.registry.i00019312"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:119",
+      "examples": [
+        "oteryn:item.registry.i00019306"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:12",
+      "examples": [
+        "oteryn:item.registry.i00036073"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:120",
+      "examples": [
+        "oteryn:item.registry.i00019321"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:121",
+      "examples": [
+        "oteryn:item.registry.i00019315"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:122",
+      "examples": [
+        "oteryn:item.registry.i00019309"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:123",
+      "examples": [
+        "oteryn:item.registry.i00037530"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:124",
+      "examples": [
+        "oteryn:item.registry.i00019324"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:125",
+      "examples": [
+        "oteryn:item.registry.i00001685"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:126",
+      "examples": [
+        "oteryn:item.registry.i00002884"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:127",
+      "examples": [
+        "oteryn:item.registry.i00003158"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:128",
+      "examples": [
+        "oteryn:item.registry.i00003166"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:129",
+      "examples": [
+        "oteryn:item.registry.i00003176"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:13",
+      "examples": [
+        "oteryn:item.registry.i00036078"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:130",
+      "examples": [
+        "oteryn:item.registry.i00019323"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:131",
+      "examples": [
+        "oteryn:item.registry.i00003221"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:132",
+      "examples": [
+        "oteryn:item.registry.i00007181"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:133",
+      "examples": [
+        "oteryn:item.registry.i00007182"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:134",
+      "examples": [
+        "oteryn:item.registry.i00029514"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:135",
+      "examples": [
+        "oteryn:item.registry.i00029515"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:136",
+      "examples": [
+        "oteryn:item.registry.i00029517"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:137",
+      "examples": [
+        "oteryn:item.registry.i00037532"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:138",
+      "examples": [
+        "oteryn:item.registry.i00029512"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:139",
+      "examples": [
+        "oteryn:item.registry.i00032628"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:14",
+      "examples": [
+        "oteryn:item.registry.i00037522"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:140",
+      "examples": [
+        "oteryn:item.registry.i00032627"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:141",
+      "examples": [
+        "oteryn:item.registry.i00032547"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:142",
+      "examples": [
+        "oteryn:item.registry.i00037527"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:143",
+      "examples": [
+        "oteryn:item.registry.i00032542"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:144",
+      "examples": [
+        "oteryn:item.registry.i00027847"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:145",
+      "examples": [
+        "oteryn:item.registry.i00027845"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:146",
+      "examples": [
+        "oteryn:item.registry.i00027846"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:147",
+      "examples": [
+        "oteryn:item.registry.i00037526"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:148",
+      "examples": [
+        "oteryn:item.registry.i00027840"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:149",
+      "examples": [
+        "oteryn:item.registry.i00007183"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:15",
+      "examples": [
+        "oteryn:item.registry.i00036083"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:150",
+      "examples": [
+        "oteryn:item.registry.i00007193"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:151",
+      "examples": [
+        "oteryn:item.registry.i00029519"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:152",
+      "examples": [
+        "oteryn:item.registry.i00029518"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:153",
+      "examples": [
+        "oteryn:item.registry.i00032543"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:154",
+      "examples": [
+        "oteryn:item.registry.i00032544"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:155",
+      "examples": [
+        "oteryn:item.registry.i00027838"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:156",
+      "examples": [
+        "oteryn:item.registry.i00027839"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:157",
+      "examples": [
+        "oteryn:item.registry.i00020383"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:158",
+      "examples": [
+        "oteryn:item.registry.i00024897"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:159",
+      "examples": [
+        "oteryn:item.registry.i00024921"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:16",
+      "examples": [
+        "oteryn:item.registry.i00036086"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:161",
+      "examples": [
+        "oteryn:item.registry.i00003164"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:17",
+      "examples": [
+        "oteryn:item.registry.i00036070"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:18",
+      "examples": [
+        "oteryn:item.registry.i00036068"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:19",
+      "examples": [
+        "oteryn:item.registry.i00036066"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:20",
+      "examples": [
+        "oteryn:item.registry.i00036072"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:207",
+      "examples": [
+        "oteryn:item.registry.i00026596"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:208",
+      "examples": [
+        "oteryn:item.registry.i00026595"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:209",
+      "examples": [
+        "oteryn:item.registry.i00026593"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:21",
+      "examples": [
+        "oteryn:item.registry.i00036074"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:210",
+      "examples": [
+        "oteryn:item.registry.i00026591"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:211",
+      "examples": [
+        "oteryn:item.registry.i00026594"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:212",
+      "examples": [
+        "oteryn:item.registry.i00026592"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:213",
+      "examples": [
+        "oteryn:item.registry.i00037533"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:214",
+      "examples": [
+        "oteryn:item.registry.i00026600"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:216",
+      "examples": [
+        "oteryn:item.registry.i00026599"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:217",
+      "examples": [
+        "oteryn:item.registry.i00028544"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:218",
+      "examples": [
+        "oteryn:item.registry.i00003219"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:22",
+      "examples": [
+        "oteryn:item.registry.i00036076"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:220",
+      "examples": [
+        "oteryn:item.registry.i00027948"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:221",
+      "examples": [
+        "oteryn:item.registry.i00027947"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:222",
+      "examples": [
+        "oteryn:item.registry.i00024862"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:23",
+      "examples": [
+        "oteryn:item.registry.i00036079"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:231",
+      "examples": [
+        "oteryn:item.registry.i00003169"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:232",
+      "examples": [
+        "oteryn:item.registry.i00003175"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:233",
+      "examples": [
+        "oteryn:item.registry.i00003177"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:234",
+      "examples": [
+        "oteryn:item.registry.i00003185"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:235",
+      "examples": [
+        "oteryn:item.registry.i00003204"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:236",
+      "examples": [
+        "oteryn:item.registry.i00003212"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:237",
+      "examples": [
+        "oteryn:item.registry.i00028405"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:24",
+      "examples": [
+        "oteryn:item.registry.i00037523"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:240",
+      "examples": [
+        "oteryn:item.registry.i00007219"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:241",
+      "examples": [
+        "oteryn:item.registry.i00007231"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:242",
+      "examples": [
+        "oteryn:item.registry.i00009198"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:243",
+      "examples": [
+        "oteryn:item.registry.i00003182"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:244",
+      "examples": [
+        "oteryn:item.registry.i00009175"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:245",
+      "examples": [
+        "oteryn:item.registry.i00009187"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:246",
+      "examples": [
+        "oteryn:item.registry.i00009178"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:247",
+      "examples": [
+        "oteryn:item.registry.i00026665"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:248",
+      "examples": [
+        "oteryn:item.registry.i00003222"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:249",
+      "examples": [
+        "oteryn:item.registry.i00017100"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:25",
+      "examples": [
+        "oteryn:item.registry.i00036087"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:250",
+      "examples": [
+        "oteryn:item.registry.i00003091"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:251",
+      "examples": [
+        "oteryn:item.registry.i00035149"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:252",
+      "examples": [
+        "oteryn:item.registry.i00035150"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:253",
+      "examples": [
+        "oteryn:item.registry.i00035156"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:254",
+      "examples": [
+        "oteryn:item.registry.i00035148"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:255",
+      "examples": [
+        "oteryn:item.registry.i00035155"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:256",
+      "examples": [
+        "oteryn:item.registry.i00035152"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:257",
+      "examples": [
+        "oteryn:item.registry.i00037525"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:258",
+      "examples": [
+        "oteryn:item.registry.i00003217"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:259",
+      "examples": [
+        "oteryn:item.registry.i00009177"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:26",
+      "examples": [
+        "oteryn:item.registry.i00036084"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:260",
+      "examples": [
+        "oteryn:item.registry.i00009189"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:261",
+      "examples": [
+        "oteryn:item.registry.i00032809"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:262",
+      "examples": [
+        "oteryn:item.registry.i00032810"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:263",
+      "examples": [
+        "oteryn:item.registry.i00032802"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:264",
+      "examples": [
+        "oteryn:item.registry.i00032803"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:265",
+      "examples": [
+        "oteryn:item.registry.i00032806"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:266",
+      "examples": [
+        "oteryn:item.registry.i00007223"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:268",
+      "examples": [
+        "oteryn:item.registry.i00003213"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:269",
+      "examples": [
+        "oteryn:item.registry.i00020573"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:27",
+      "examples": [
+        "oteryn:item.registry.i00032483"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:270",
+      "examples": [
+        "oteryn:item.registry.i00020575"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:271",
+      "examples": [
+        "oteryn:item.weapon.wand.snakebite_rod"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:272",
+      "examples": [
+        "oteryn:item.registry.i00002959"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:273",
+      "examples": [
+        "oteryn:item.registry.i00002955"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:274",
+      "examples": [
+        "oteryn:item.registry.i00002960"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:275",
+      "examples": [
+        "oteryn:item.registry.i00003208"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:28",
+      "examples": [
+        "oteryn:item.registry.i00032485"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:283",
+      "examples": [
+        "oteryn:item.registry.i00015524"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:285",
+      "examples": [
+        "oteryn:item.registry.i00007217"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:286",
+      "examples": [
+        "oteryn:item.registry.i00002957"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:287",
+      "examples": [
+        "oteryn:item.registry.i00002954"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:288",
+      "examples": [
+        "oteryn:item.registry.i00007206"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:289",
+      "examples": [
+        "oteryn:item.registry.i00003161"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:29",
+      "examples": [
+        "oteryn:item.registry.i00032481"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:290",
+      "examples": [
+        "oteryn:item.registry.i00007903"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:291",
+      "examples": [
+        "oteryn:item.registry.i00007893"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:292",
+      "examples": [
+        "oteryn:item.registry.i00002958"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:293",
+      "examples": [
+        "oteryn:item.registry.i00002951"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:30",
+      "examples": [
+        "oteryn:item.registry.i00032482"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:307",
+      "examples": [
+        "oteryn:item.registry.i00007220"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:308",
+      "examples": [
+        "oteryn:item.registry.i00006361"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:309",
+      "examples": [
+        "oteryn:item.registry.i00007914"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:31",
+      "examples": [
+        "oteryn:item.registry.i00032486"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:310",
+      "examples": [
+        "oteryn:item.registry.i00003159"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:311",
+      "examples": [
+        "oteryn:item.registry.i00003174"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:312",
+      "examples": [
+        "oteryn:item.registry.i00002956"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:313",
+      "examples": [
+        "oteryn:item.registry.i00002952"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:315",
+      "examples": [
+        "oteryn:item.registry.i00036246"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:316",
+      "examples": [
+        "oteryn:item.registry.i00015537"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:317",
+      "examples": [
+        "oteryn:item.registry.i00007913"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:318",
+      "examples": [
+        "oteryn:item.registry.i00021397"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:319",
+      "examples": [
+        "oteryn:item.registry.i00007894"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:32",
+      "examples": [
+        "oteryn:item.registry.i00032484"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:320",
+      "examples": [
+        "oteryn:item.registry.i00012133"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:321",
+      "examples": [
+        "oteryn:item.registry.i00007902"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:322",
+      "examples": [
+        "oteryn:item.registry.i00015480"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:323",
+      "examples": [
+        "oteryn:item.registry.i00015481"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:324",
+      "examples": [
+        "oteryn:item.registry.i00015459"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:325",
+      "examples": [
+        "oteryn:item.registry.i00015478"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:326",
+      "examples": [
+        "oteryn:item.registry.i00007892"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:327",
+      "examples": [
+        "oteryn:item.registry.i00007904"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:328",
+      "examples": [
+        "oteryn:item.registry.i00007194"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:329",
+      "examples": [
+        "oteryn:item.registry.i00007267"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:33",
+      "examples": [
+        "oteryn:item.registry.i00037524"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:330",
+      "examples": [
+        "oteryn:item.registry.i00007241"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:331",
+      "examples": [
+        "oteryn:item.registry.i00009180"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:332",
+      "examples": [
+        "oteryn:item.registry.i00013421"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:333",
+      "examples": [
+        "oteryn:item.registry.i00007253"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:334",
+      "examples": [
+        "oteryn:item.registry.i00012211"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:335",
+      "examples": [
+        "oteryn:item.registry.i00018640"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:336",
+      "examples": [
+        "oteryn:item.registry.i00007840"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:337",
+      "examples": [
+        "oteryn:item.registry.i00013425"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:338",
+      "examples": [
+        "oteryn:item.registry.i00007837"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:339",
+      "examples": [
+        "oteryn:item.registry.i00003189"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:34",
+      "examples": [
+        "oteryn:item.registry.i00032487"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:340",
+      "examples": [
+        "oteryn:item.registry.i00007838"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:341",
+      "examples": [
+        "oteryn:item.registry.i00013435"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:342",
+      "examples": [
+        "oteryn:item.registry.i00007224"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:343",
+      "examples": [
+        "oteryn:item.registry.i00003183"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:344",
+      "examples": [
+        "oteryn:item.registry.i00003203"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:345",
+      "examples": [
+        "oteryn:item.registry.i00009186"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:346",
+      "examples": [
+        "oteryn:item.registry.i00009188"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:347",
+      "examples": [
+        "oteryn:item.registry.i00029402"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:348",
+      "examples": [
+        "oteryn:item.registry.i00013680"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:349",
+      "examples": [
+        "oteryn:item.registry.i00031586"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:35",
+      "examples": [
+        "oteryn:item.registry.i00032490"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:350",
+      "examples": [
+        "oteryn:item.registry.i00003205"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:351",
+      "examples": [
+        "oteryn:item.registry.i00012247"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:352",
+      "examples": [
+        "oteryn:item.registry.i00012238"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:353",
+      "examples": [
+        "oteryn:item.registry.i00003209"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:354",
+      "examples": [
+        "oteryn:item.registry.i00007268"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:355",
+      "examples": [
+        "oteryn:item.registry.i00006387"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:356",
+      "examples": [
+        "oteryn:item.registry.i00012239"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:357",
+      "examples": [
+        "oteryn:item.registry.i00012237"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:358",
+      "examples": [
+        "oteryn:item.registry.i00024922"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:359",
+      "examples": [
+        "oteryn:item.registry.i00007908"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:36",
+      "examples": [
+        "oteryn:item.registry.i00032489"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:360",
+      "examples": [
+        "oteryn:item.registry.i00003181"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:361",
+      "examples": [
+        "oteryn:item.registry.i00015526"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:362",
+      "examples": [
+        "oteryn:item.registry.i00007832"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:363",
+      "examples": [
+        "oteryn:item.registry.i00022065"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:364",
+      "examples": [
+        "oteryn:item.registry.i00028536"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:365",
+      "examples": [
+        "oteryn:item.registry.i00030555"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:366",
+      "examples": [
+        "oteryn:item.weapon.sword.bright"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:367",
+      "examples": [
+        "oteryn:item.registry.i00026793"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:368",
+      "examples": [
+        "oteryn:item.registry.i00028541"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:369",
+      "examples": [
+        "oteryn:item.registry.i00028540"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:37",
+      "examples": [
+        "oteryn:item.registry.i00036243"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:370",
+      "examples": [
+        "oteryn:item.registry.i00021959"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:371",
+      "examples": [
+        "oteryn:item.registry.i00037820"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:372",
+      "examples": [
+        "oteryn:item.registry.i00005645"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:373",
+      "examples": [
+        "oteryn:item.registry.i00013681"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:374",
+      "examples": [
+        "oteryn:item.registry.i00007199"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:375",
+      "examples": [
+        "oteryn:item.registry.i00007204"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:376",
+      "examples": [
+        "oteryn:item.registry.i00007230"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:377",
+      "examples": [
+        "oteryn:item.registry.i00007205"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:378",
+      "examples": [
+        "oteryn:item.registry.i00007833"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:379",
+      "examples": [
+        "oteryn:item.registry.i00007249"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:38",
+      "examples": [
+        "oteryn:item.registry.i00036244"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:380",
+      "examples": [
+        "oteryn:item.registry.i00007244"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:381",
+      "examples": [
+        "oteryn:item.registry.i00018634"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:382",
+      "examples": [
+        "oteryn:item.registry.i00007836"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:383",
+      "examples": [
+        "oteryn:item.registry.i00007207"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:384",
+      "examples": [
+        "oteryn:item.registry.i00007195"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:385",
+      "examples": [
+        "oteryn:item.registry.i00007221"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:386",
+      "examples": [
+        "oteryn:item.registry.i00015525"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:387",
+      "examples": [
+        "oteryn:item.registry.i00011260"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:388",
+      "examples": [
+        "oteryn:item.registry.i00007835"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:389",
+      "examples": [
+        "oteryn:item.registry.i00007912"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:39",
+      "examples": [
+        "oteryn:item.registry.i00036245"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:391",
+      "examples": [
+        "oteryn:item.registry.i00014201"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:392",
+      "examples": [
+        "oteryn:item.registry.i00022066"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:393",
+      "examples": [
+        "oteryn:item.registry.i00007834"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:397",
+      "examples": [
+        "oteryn:item.registry.i00037594"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:398",
+      "examples": [
+        "oteryn:item.registry.i00037595"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:399",
+      "examples": [
+        "oteryn:item.registry.i00037593"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:40",
+      "examples": [
+        "oteryn:item.registry.i00036239"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:400",
+      "examples": [
+        "oteryn:item.registry.i00010171"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:401",
+      "examples": [
+        "oteryn:item.registry.i00037537"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:402",
+      "examples": [
+        "oteryn:item.registry.i00037592"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:403",
+      "examples": [
+        "oteryn:item.registry.i00007841"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:404",
+      "examples": [
+        "oteryn:item.registry.i00007248"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:405",
+      "examples": [
+        "oteryn:item.registry.i00007839"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:406",
+      "examples": [
+        "oteryn:item.registry.i00015523"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:407",
+      "examples": [
+        "oteryn:item.registry.i00021958"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:408",
+      "examples": [
+        "oteryn:item.registry.i00007910"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:409",
+      "examples": [
+        "oteryn:item.registry.i00021961"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:41",
+      "examples": [
+        "oteryn:item.registry.i00036238"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:410",
+      "examples": [
+        "oteryn:item.registry.i00030554"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:411",
+      "examples": [
+        "oteryn:item.registry.i00020403"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:412",
+      "examples": [
+        "oteryn:item.registry.i00020405"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:413",
+      "examples": [
+        "oteryn:item.registry.i00020404"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:414",
+      "examples": [
+        "oteryn:item.registry.i00003195"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:415",
+      "examples": [
+        "oteryn:item.registry.i00007235"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:416",
+      "examples": [
+        "oteryn:item.registry.i00007270"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:417",
+      "examples": [
+        "oteryn:item.registry.i00007250"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:418",
+      "examples": [
+        "oteryn:item.registry.i00007906"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:419",
+      "examples": [
+        "oteryn:item.registry.i00007907"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:42",
+      "examples": [
+        "oteryn:item.registry.i00036237"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:420",
+      "examples": [
+        "oteryn:item.registry.i00020397"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:421",
+      "examples": [
+        "oteryn:item.registry.i00035736"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:422",
+      "examples": [
+        "oteryn:item.registry.i00013683"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:423",
+      "examples": [
+        "oteryn:item.registry.i00003196"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:424",
+      "examples": [
+        "oteryn:item.registry.i00003199"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:425",
+      "examples": [
+        "oteryn:item.registry.i00007225"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:426",
+      "examples": [
+        "oteryn:item.registry.i00027952"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:427",
+      "examples": [
+        "oteryn:item.registry.i00027951"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:428",
+      "examples": [
+        "oteryn:item.registry.i00027950"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:429",
+      "examples": [
+        "oteryn:item.registry.i00027949"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:43",
+      "examples": [
+        "oteryn:item.registry.i00037564"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:430",
+      "examples": [
+        "oteryn:item.registry.i00007246"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:431",
+      "examples": [
+        "oteryn:item.registry.i00011259"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:432",
+      "examples": [
+        "oteryn:item.registry.i00003186"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:433",
+      "examples": [
+        "oteryn:item.registry.i00007909"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:434",
+      "examples": [
+        "oteryn:item.registry.i00021963"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:435",
+      "examples": [
+        "oteryn:item.registry.i00020444"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:436",
+      "examples": [
+        "oteryn:item.registry.i00003215"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:437",
+      "examples": [
+        "oteryn:item.registry.i00007265"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:438",
+      "examples": [
+        "oteryn:item.registry.i00028538"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:439",
+      "examples": [
+        "oteryn:item.registry.i00007238"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:44",
+      "examples": [
+        "oteryn:item.registry.i00036240"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:440",
+      "examples": [
+        "oteryn:item.registry.i00007911"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:441",
+      "examples": [
+        "oteryn:item.registry.i00021964"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:442",
+      "examples": [
+        "oteryn:item.registry.i00021965"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:443",
+      "examples": [
+        "oteryn:item.registry.i00005938"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:444",
+      "examples": [
+        "oteryn:item.registry.i00037725"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:445",
+      "examples": [
+        "oteryn:item.registry.i00035741"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:446",
+      "examples": [
+        "oteryn:item.registry.i00026667"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:447",
+      "examples": [
+        "oteryn:item.registry.i00036080"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:448",
+      "examples": [
+        "oteryn:item.registry.i00032488"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:449",
+      "examples": [
+        "oteryn:item.registry.i00030588"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:45",
+      "examples": [
+        "oteryn:item.registry.i00036242"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:450",
+      "examples": [
+        "oteryn:item.registry.i00036081"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:451",
+      "examples": [
+        "oteryn:item.registry.i00019327"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:452",
+      "examples": [
+        "oteryn:item.registry.i00019326"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:453",
+      "examples": [
+        "oteryn:item.registry.i00019325"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:457",
+      "examples": [
+        "oteryn:item.registry.i00037883"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:458",
+      "examples": [
+        "oteryn:item.registry.i00037878"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:459",
+      "examples": [
+        "oteryn:item.registry.i00037879"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:46",
+      "examples": [
+        "oteryn:item.registry.i00036241"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:460",
+      "examples": [
+        "oteryn:item.registry.i00037880"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:461",
+      "examples": [
+        "oteryn:item.registry.i00037877"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:462",
+      "examples": [
+        "oteryn:item.registry.i00037881"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:463",
+      "examples": [
+        "oteryn:item.registry.i00037882"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:47",
+      "examples": [
+        "oteryn:item.registry.i00037111"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:48",
+      "examples": [
+        "oteryn:item.registry.i00037109"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:49",
+      "examples": [
+        "oteryn:item.registry.i00037113"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:50",
+      "examples": [
+        "oteryn:item.registry.i00037112"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:51",
+      "examples": [
+        "oteryn:item.registry.i00037110"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:52",
+      "examples": [
+        "oteryn:item.registry.i00037116"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:53",
+      "examples": [
+        "oteryn:item.registry.i00037574"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:55",
+      "examples": [
+        "oteryn:item.registry.i00037114"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:56",
+      "examples": [
+        "oteryn:item.registry.i00037115"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:57",
+      "examples": [
+        "oteryn:item.registry.i00037350"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:58",
+      "examples": [
+        "oteryn:item.registry.i00037344"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:59",
+      "examples": [
+        "oteryn:item.registry.i00037356"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:6",
+      "examples": [
+        "oteryn:item.registry.i00036065"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:60",
+      "examples": [
+        "oteryn:item.registry.i00037347"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:61",
+      "examples": [
+        "oteryn:item.registry.i00037341"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:62",
+      "examples": [
+        "oteryn:item.registry.i00037353"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:63",
+      "examples": [
+        "oteryn:item.registry.i00037575"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:65",
+      "examples": [
+        "oteryn:item.registry.i00037359"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:66",
+      "examples": [
+        "oteryn:item.registry.i00037362"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:67",
+      "examples": [
+        "oteryn:item.registry.i00037351"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:68",
+      "examples": [
+        "oteryn:item.registry.i00037345"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:69",
+      "examples": [
+        "oteryn:item.registry.i00037357"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:70",
+      "examples": [
+        "oteryn:item.registry.i00037348"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:71",
+      "examples": [
+        "oteryn:item.registry.i00037342"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:72",
+      "examples": [
+        "oteryn:item.registry.i00037354"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:73",
+      "examples": [
+        "oteryn:item.registry.i00037576"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:75",
+      "examples": [
+        "oteryn:item.registry.i00037363"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:76",
+      "examples": [
+        "oteryn:item.registry.i00037360"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:77",
+      "examples": [
+        "oteryn:item.registry.i00037352"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:78",
+      "examples": [
+        "oteryn:item.registry.i00037346"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:79",
+      "examples": [
+        "oteryn:item.registry.i00037358"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:8",
+      "examples": [
+        "oteryn:item.registry.i00036069"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:80",
+      "examples": [
+        "oteryn:item.registry.i00037349"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:81",
+      "examples": [
+        "oteryn:item.registry.i00037343"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:82",
+      "examples": [
+        "oteryn:item.registry.i00037355"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:83",
+      "examples": [
+        "oteryn:item.registry.i00037577"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:84",
+      "examples": [
+        "oteryn:item.registry.i00037361"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:85",
+      "examples": [
+        "oteryn:item.registry.i00037364"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:87",
+      "examples": [
+        "oteryn:item.registry.i00033209"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:88",
+      "examples": [
+        "oteryn:item.registry.i00033211"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:89",
+      "examples": [
+        "oteryn:item.registry.i00033207"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:9",
+      "examples": [
+        "oteryn:item.registry.i00036067"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:90",
+      "examples": [
+        "oteryn:item.registry.i00037534"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:91",
+      "examples": [
+        "oteryn:item.registry.i00033214"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:92",
+      "examples": [
+        "oteryn:item.registry.i00033224"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:93",
+      "examples": [
+        "oteryn:item.registry.i00033218"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:94",
+      "examples": [
+        "oteryn:item.registry.i00033210"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:95",
+      "examples": [
+        "oteryn:item.registry.i00033212"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:96",
+      "examples": [
+        "oteryn:item.registry.i00033208"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:97",
+      "examples": [
+        "oteryn:item.registry.i00037535"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:98",
+      "examples": [
+        "oteryn:item.registry.i00033215"
+      ],
+      "items": 1
+    },
+    {
+      "blocker": "proficiency_crosswalk_not_admitted:99",
+      "examples": [
+        "oteryn:item.registry.i00033219"
+      ],
+      "items": 1
+    }
+  ],
+  "bundle_digest": "1ec2c54070b50eace4dc946372fc280b5d6e1178d3cacb4cc6af4abdfeeb4b17",
+  "by_profile": {
+    "container": 283,
+    "container_equipment": 8,
+    "decoration": 3141,
+    "document": 463,
+    "equipment_armor": 468,
+    "equipment_offhand": 446,
+    "event_collectible": 198,
+    "fluid": 97,
+    "food": 199,
+    "key": 13,
+    "light_source": 179,
+    "material_valuable": 3160,
+    "plant": 918,
+    "progression_material": 10,
+    "quest_item": 1186,
+    "rune": 41,
+    "tool": 333,
+    "transformation_item": 28,
+    "trash": 217,
+    "unresolved": 25856,
+    "weapon_distance": 194,
+    "weapon_magic": 88,
+    "weapon_melee": 631
+  },
+  "delivery_task": {
+    "crystal_list": {
+      "entries": 436,
+      "in_items_xml_not_converted": 0,
+      "not_in_items_xml": [
+        43848
+      ],
+      "unique": 436
+    },
+    "decision": {
+      "eligible_false": 11866,
+      "eligible_true": 435,
+      "override": 0,
+      "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
+    },
+    "observation": {
+      "member": 435,
+      "not_member": 11866,
+      "source": "crystal_delivery_list"
+    }
+  },
+  "family_profile_basis": {
+    "engine_attribute": 10679,
+    "engine_wrap_target": 85,
+    "owner_name_rule": 133,
+    "wiki_evidence_fallback": 1404
+  },
+  "field_coverage": {
+    "absorbpercentall": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "absorbpercentallelements": {
+      "converter": "routed",
+      "disposition": "pinned_no_effect",
+      "items": 0
+    },
+    "absorbpercentdeath": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 60
+    },
+    "absorbpercentdrown": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 3
+    },
+    "absorbpercentearth": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 34
+    },
+    "absorbpercentelements": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "absorbpercentenergy": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 102
+    },
+    "absorbpercentfire": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 102
+    },
+    "absorbpercenthealing": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "absorbpercentholy": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 18
+    },
+    "absorbpercentice": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 104
+    },
+    "absorbpercentlifedrain": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 5
+    },
+    "absorbpercentmagic": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "absorbpercentmanadrain": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 6
+    },
+    "absorbpercentphysical": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 139
+    },
+    "absorbpercentpoison": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 75
+    },
+    "action": {
+      "converter": "missing",
+      "disposition": "unresolved_semantics",
+      "items": 86
+    },
+    "allowdistread": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 192
+    },
+    "allowpickupable": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 26
+    },
+    "ammotype": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 90
+    },
+    "appearance.description": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 3159
+    },
+    "appearance.frame_group": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 33567
+    },
+    "appearance.id": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 33567
+    },
+    "appearance.name": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 8133
+    },
+    "armor": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 432
+    },
+    "article": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 26048
+    },
+    "attack": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 632
+    },
+    "augments": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 83
+    },
+    "automap.color": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 11491
+    },
+    "bags.bossOnly": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 0
+    },
+    "bags.chance": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 0
+    },
+    "bags.class": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 0
+    },
+    "bags.itemid": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 0
+    },
+    "bags.maxAmount": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 0
+    },
+    "bags.minAmount": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 0
+    },
+    "bags.name": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 0
+    },
+    "bags.raceId": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 0
+    },
+    "bank.waypoints": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 2295
+    },
+    "bedpart": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 396
+    },
+    "bedpartof": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 390
+    },
+    "blocking": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 4
+    },
+    "blockprojectile": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 409
+    },
+    "breakchance": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 12
+    },
+    "chain": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1
+    },
+    "changedtoexpire.former_object_typeid": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 40
+    },
+    "charges": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 126
+    },
+    "cleavepercent": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 6
+    },
+    "clothes.slot": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1927
+    },
+    "containersize": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 2864
+    },
+    "criticalhitchance": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 14
+    },
+    "criticalhitdamage": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 19
+    },
+    "cyclopediaitem.cyclopedia_type": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 6048
+    },
+    "deathmagiclevelpoints": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 2
+    },
+    "decayto": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 3778
+    },
+    "default_action.action": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 605
+    },
+    "defense": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 640
+    },
+    "description": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 3943
+    },
+    "destroyto": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1
+    },
+    "duration": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 3800
+    },
+    "earthmagiclevelpoints": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 10
+    },
+    "editorsuffix": {
+      "converter": "routed",
+      "disposition": "approved_omission",
+      "items": 0
+    },
+    "effect": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 150
+    },
+    "elementalbond": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 32
+    },
+    "elementdeath": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 13
+    },
+    "elementearth": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 31
+    },
+    "elementenergy": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 27
+    },
+    "elementfire": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 44
+    },
+    "elementholy": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "elementice": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 30
+    },
+    "energymagiclevelpoints": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 10
+    },
+    "eventtype": {
+      "converter": "missing",
+      "disposition": "unresolved_semantics",
+      "items": 39
+    },
+    "extradef": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 160
+    },
+    "femalesleeper": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 0
+    },
+    "femaletransformto": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 258
+    },
+    "field": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 38
+    },
+    "fieldabsorbpercentearth": {
+      "converter": "routed",
+      "disposition": "pinned_no_effect",
+      "items": 0
+    },
+    "fieldabsorbpercentenergy": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "fieldabsorbpercentfire": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1
+    },
+    "fieldabsorbpercentpoison": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "firemagiclevelpoints": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 16
+    },
+    "flags.ammo": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 36
+    },
+    "flags.animate_always": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "flags.automap": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 11491
+    },
+    "flags.avoid": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 1640
+    },
+    "flags.bank": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 2295
+    },
+    "flags.bottom": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 8135
+    },
+    "flags.changedtoexpire": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 40
+    },
+    "flags.clip": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 4268
+    },
+    "flags.clockexpire": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 10
+    },
+    "flags.clothes": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1927
+    },
+    "flags.container": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 2967
+    },
+    "flags.corpse": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 3336
+    },
+    "flags.cumulative": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 2448
+    },
+    "flags.cyclopediaitem": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 6048
+    },
+    "flags.default_action": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 605
+    },
+    "flags.dont_hide": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 21
+    },
+    "flags.dual_wielding": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 18
+    },
+    "flags.expire": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 170
+    },
+    "flags.expirestop": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 136
+    },
+    "flags.forceuse": {
+      "converter": "missing",
+      "disposition": "unresolved_semantics",
+      "items": 942
+    },
+    "flags.fullbank": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 2033
+    },
+    "flags.hang": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 356
+    },
+    "flags.height": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 1820
+    },
+    "flags.hook": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 556
+    },
+    "flags.ignore_look": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 1130
+    },
+    "flags.imbueable": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "flags.lenshelp": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 810
+    },
+    "flags.light": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 2991
+    },
+    "flags.liquidcontainer": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 44
+    },
+    "flags.liquidpool": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 12
+    },
+    "flags.lying_object": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1666
+    },
+    "flags.market": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 4886
+    },
+    "flags.minimum_level": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "flags.multiuse": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 2498
+    },
+    "flags.no_movement_animation": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 2
+    },
+    "flags.npcsaledata": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 0
+    },
+    "flags.player_corpse": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 17
+    },
+    "flags.proficiency": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 643
+    },
+    "flags.reportable": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 95
+    },
+    "flags.restrict_to_vocation": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "flags.reverse_addons_east": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "flags.reverse_addons_north": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "flags.reverse_addons_south": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "flags.reverse_addons_west": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "flags.rotate": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 897
+    },
+    "flags.shift": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 447
+    },
+    "flags.show_off_socket": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 5
+    },
+    "flags.skillwheel_gem": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 15
+    },
+    "flags.take": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 6855
+    },
+    "flags.top": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 889
+    },
+    "flags.topeffect": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "flags.translucent": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 177
+    },
+    "flags.unmove": {
+      "converter": "missing",
+      "disposition": "unresolved_semantics",
+      "items": 22928
+    },
+    "flags.unpass": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 12273
+    },
+    "flags.unsight": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 4276
+    },
+    "flags.unwrap": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 2
+    },
+    "flags.upgradeclassification": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 989
+    },
+    "flags.usable": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 9431
+    },
+    "flags.weapon_type": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "flags.wearout": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 92
+    },
+    "flags.wrap": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1651
+    },
+    "flags.wrapkit": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1
+    },
+    "flags.write": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 12
+    },
+    "flags.write_once": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 83
+    },
+    "floorchange": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 446
+    },
+    "fluidsource": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 1552
+    },
+    "fromdamage": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 68
+    },
+    "fromid": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 0
+    },
+    "healingmagiclevelpoints": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 10
+    },
+    "healthgain": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 9
+    },
+    "healthticks": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 9
+    },
+    "height.elevation": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 1820
+    },
+    "hitchance": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 56
+    },
+    "holymagiclevelpoints": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 6
+    },
+    "hook.direction": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 556
+    },
+    "icemagiclevelpoints": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 5
+    },
+    "id": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 0
+    },
+    "imbueable.slot_count": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "imbuementslot": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 598
+    },
+    "invisible": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1
+    },
+    "lenshelp.id": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 810
+    },
+    "level": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 861
+    },
+    "leveldoor": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 44
+    },
+    "lifeleechamount": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 20
+    },
+    "lifeleechchance": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 9
+    },
+    "light.brightness": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 2991
+    },
+    "light.color": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 2991
+    },
+    "loottype": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 53
+    },
+    "magiclevelpoints": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 166
+    },
+    "magicpoints": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "magicpointspercent": {
+      "converter": "routed",
+      "disposition": "pinned_no_effect",
+      "items": 0
+    },
+    "magicshieldcapacityflat": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 4
+    },
+    "magicshieldcapacitypercent": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 4
+    },
+    "malesleeper": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 0
+    },
+    "maletransformto": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 329
+    },
+    "mana": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 68
+    },
+    "managain": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 9
+    },
+    "manaleechamount": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 17
+    },
+    "manaleechchance": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 7
+    },
+    "manashield": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1
+    },
+    "manaticks": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 9
+    },
+    "mantra": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 37
+    },
+    "market.category": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 4886
+    },
+    "market.minimum_level": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "market.restrict_to_profession": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "market.show_as_object_id": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 4886
+    },
+    "market.trade_as_object_id": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 4886
+    },
+    "maxhitchance": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 43
+    },
+    "maxhitpoints": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "maxhitpointspercent": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "maxmanapoints": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "maxmanapointspercent": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "maxtextlen": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 145
+    },
+    "meleeattackeffect": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 22
+    },
+    "movable": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 5
+    },
+    "name": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 38157
+    },
+    "npcsaledata.buy_price": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 2536
+    },
+    "npcsaledata.currency_object_type_id": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 105
+    },
+    "npcsaledata.currency_quest_flag_display_name": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 123
+    },
+    "npcsaledata.location": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 2536
+    },
+    "npcsaledata.name": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 2536
+    },
+    "npcsaledata.sale_price": {
+      "converter": "routed",
+      "disposition": "reverse_relation",
+      "items": 2536
+    },
+    "partnerdirection": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 396
+    },
+    "perfectshotdamage": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 4
+    },
+    "perfectshotrange": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 4
+    },
+    "physicalmagiclevelpoints": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "pickupable": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "plural": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 391
+    },
+    "premium": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "primarytype": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 17154
+    },
+    "proficiency.proficiency_id": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 643
+    },
+    "range": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 178
+    },
+    "readable": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 2
+    },
+    "reflectdamage": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 5
+    },
+    "reflectpercentall": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "replaceable": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 21
+    },
+    "rotateto": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 1045
+    },
+    "runespellname": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 36
+    },
+    "script": {
+      "converter": "missing",
+      "disposition": "unresolved_semantics",
+      "items": 0
+    },
+    "shift.x": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 447
+    },
+    "shift.y": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 447
+    },
+    "shoottype": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 114
+    },
+    "showattributes": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 131
+    },
+    "showcharges": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 60
+    },
+    "showcount": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 168
+    },
+    "showduration": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 100
+    },
+    "skillaxe": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 57
+    },
+    "skillclub": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 57
+    },
+    "skilldist": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 72
+    },
+    "skillfish": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "skillfist": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 76
+    },
+    "skillshield": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 14
+    },
+    "skillsword": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 59
+    },
+    "skillwheel_gem.gem_quality_id": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 15
+    },
+    "skillwheel_gem.vocation_id": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 15
+    },
+    "slot": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1306
+    },
+    "slottype": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 232
+    },
+    "speed": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 34
+    },
+    "stacksize": {
+      "converter": "missing",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "stopduration": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 52
+    },
+    "suppresscurse": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "suppressdazzle": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "suppressdrown": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1
+    },
+    "suppressdrunk": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1
+    },
+    "suppressenergy": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "suppressfire": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "suppressfreeze": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "suppressphysical": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "suppresspoison": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "todamage": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 68
+    },
+    "toid": {
+      "converter": "routed",
+      "disposition": "provenance_only",
+      "items": 0
+    },
+    "transformdeequipto": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 43
+    },
+    "transformequipto": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 48
+    },
+    "transformonuse": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 55
+    },
+    "type": {
+      "converter": "missing",
+      "disposition": "unresolved_semantics",
+      "items": 1626
+    },
+    "unproperly": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 441
+    },
+    "unwrapableto": {
+      "converter": "routed",
+      "disposition": "pinned_no_effect",
+      "items": 0
+    },
+    "upgradeclassification.upgrade_classification": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 989
+    },
+    "usedbyhouseguests": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 22
+    },
+    "vocation": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 688
+    },
+    "walkstack": {
+      "converter": "routed",
+      "disposition": "external_domain",
+      "items": 11
+    },
+    "wandtype": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 68
+    },
+    "weapontype": {
+      "converter": "missing",
+      "disposition": "unresolved_semantics",
+      "items": 819
+    },
+    "weight": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 7261
+    },
+    "wrapableto": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 1491
+    },
+    "wrapcontainer": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 0
+    },
+    "write.max_text_length": {
+      "converter": "routed",
+      "disposition": "pinned_no_effect",
+      "items": 12
+    },
+    "write_once.max_text_length_once": {
+      "converter": "routed",
+      "disposition": "pinned_no_effect",
+      "items": 83
+    },
+    "writeable": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 115
+    },
+    "writeonceitemid": {
+      "converter": "implemented",
+      "disposition": "mapped",
+      "items": 19
+    }
+  },
+  "identity_basis": {
+    "crystal_exact_binding": 37992,
+    "tibiawiki_exact_binding": 165
+  },
+  "outcome": {
+    "blocked": 902,
+    "fully_resolved": 11399,
+    "items": 38157,
+    "not_converted": 10,
+    "routed_non_item": 25846
+  },
+  "routed_non_item": [
+    {
+      "examples": [
+        "oteryn:item.registry.i00000026",
+        "oteryn:item.registry.i00000053",
+        "oteryn:item.registry.i00000067",
+        "oteryn:item.registry.i00000068",
+        "oteryn:item.registry.i00000069"
+      ],
+      "items": 8450,
+      "owner_reason": "WorldObject:immovable_unclassified"
+    },
+    {
+      "examples": [
+        "oteryn:item.registry.i00000025",
+        "oteryn:item.registry.i00000151",
+        "oteryn:item.registry.i00000152",
+        "oteryn:item.registry.i00000153",
+        "oteryn:item.registry.i00000159"
+      ],
+      "items": 5138,
+      "owner_reason": "Terrain:primarytype_world_object"
+    },
+    {
+      "examples": [
+        "oteryn:item.registry.i00000089",
+        "oteryn:item.registry.i00000288",
+        "oteryn:item.registry.i00000312",
+        "oteryn:item.registry.i00000343",
+        "oteryn:item.registry.i00000344"
+      ],
+      "items": 4351,
+      "owner_reason": "WorldObject:appearance_placeholder_slot"
+    },
+    {
+      "examples": [
+        "oteryn:item.registry.i00000021",
+        "oteryn:item.registry.i00000022",
+        "oteryn:item.registry.i00000024",
+        "oteryn:item.registry.i00000027",
+        "oteryn:item.registry.i00000029"
+      ],
+      "items": 3443,
+      "owner_reason": "Terrain:ground_or_border"
+    },
+    {
+      "examples": [
+        "oteryn:item.registry.i00000032",
+        "oteryn:item.registry.i00000186",
+        "oteryn:item.registry.i00000187",
+        "oteryn:item.registry.i00000188",
+        "oteryn:item.registry.i00000189"
+      ],
+      "items": 3344,
+      "owner_reason": "WorldObject:corpse"
+    },
+    {
+      "examples": [
+        "oteryn:item.registry.i00000035",
+        "oteryn:item.registry.i00000036",
+        "oteryn:item.registry.i00000172",
+        "oteryn:item.registry.i00000173",
+        "oteryn:item.registry.i00000174"
+      ],
+      "items": 981,
+      "owner_reason": "WorldObject:primarytype_world_object"
+    },
+    {
+      "examples": [
+        "oteryn:item.registry.i00004282",
+        "oteryn:item.registry.i00005617",
+        "oteryn:item.registry.i00005618",
+        "oteryn:item.registry.i00005706",
+        "oteryn:item.registry.i00006758"
+      ],
+      "items": 105,
+      "owner_reason": "WorldObject:no_client_appearance"
+    },
+    {
+      "examples": [
+        "oteryn:item.registry.i00000001",
+        "oteryn:item.registry.i00000002",
+        "oteryn:item.registry.i00000003",
+        "oteryn:item.registry.i00000004",
+        "oteryn:item.registry.i00000005"
+      ],
+      "items": 20,
+      "owner_reason": "Fluid:fluid_type_without_appearance"
+    },
+    {
+      "examples": [
+        "oteryn:item.registry.i00004143",
+        "oteryn:item.registry.i00004144",
+        "oteryn:item.registry.i00004148",
+        "oteryn:item.registry.i00004149",
+        "oteryn:item.registry.i00004154"
+      ],
+      "items": 14,
+      "owner_reason": "WorldObject:corpse_decoration"
+    }
+  ],
+  "scope": "Every item id in this engine's pinned data/items/items.xml (fromid/toid ranges expanded); not a placed map object or instance.",
+  "source": {
+    "artifact_digests": {
+      "data/items/appearances.dat": {
+        "digest_mode": "raw_bytes",
+        "sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1"
+      },
+      "data/items/items.xml": {
+        "digest_mode": "text_lf_normalized",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+      },
+      "data/scripts/lib/task_board_delivery_items.lua": {
+        "digest_mode": "text_lf_normalized",
+        "sha256": "7b30362470893f6e3ce6bdc0237ac5d3f13d6e5288ce10591a93fde2013b688d"
+      }
+    },
+    "engine": "crystal",
+    "profile": "crystal_ff7ede5_item_definition_v1",
+    "repository": "zimbadev/crystalserver",
+    "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+  },
+  "validator_errors_by_count": []
+}

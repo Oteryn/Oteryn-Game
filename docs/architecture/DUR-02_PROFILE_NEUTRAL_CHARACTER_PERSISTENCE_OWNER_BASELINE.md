@@ -116,6 +116,8 @@ A transaction may mutate several typed Character child relations while advancing
 
 FND-04-only authority transitions do not advance CharacterRevision merely because session/control state changes.
 
+A DUR-03 value transaction whose only Character effects are `CharacterInventory` item locations and DUR-03 cause records keyed by a Character (for example a pickup TRANSFER, or a reward MINT with its `RewardClaim`) is not a Character semantic transaction. It does not advance CharacterRevision and writes no Character root, progression or XP-receipt row. It is fenced like the XP writer and serializes on the `character_root` row lock. Source: `CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1` (`reviews/OTERYN_GAME_CHARACTER_REVISION_ITEM_TRANSACTION_COMPOSITION_DECISION_2026-09-27.md`, protected on `main@74bb3fd`).
+
 The exact physical scalar type for CharacterRevision remains implementation-owned subject to the accepted non-reuse/monotonic/fencing semantics.
 
 ## 6. Accepted rule 3 — account portfolio guard rows

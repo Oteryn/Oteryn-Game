@@ -1,0 +1,125 @@
+{
+ "definition": {
+  "description": {
+   "length": 4,
+   "links": [],
+   "placeholders": [],
+   "sha256": "8fbbe9a7dbe7cef85c832701b872f17df8fc04664872d6bc5ae005a08da1d54f"
+  },
+  "display_name": "Naji",
+  "movement": {
+   "floor_change": false,
+   "walk_interval_ms": 2000,
+   "walk_radius": 2
+  },
+  "name": "Naji",
+  "presentation": {
+   "light": null,
+   "outfit": {
+    "addons": 0,
+    "body": 113,
+    "feet": 113,
+    "head": 57,
+    "legs": 95,
+    "look_type": 129,
+    "mount": null
+   },
+   "speech_bubble": "BANKER"
+  },
+  "profession": "banker",
+  "respawn": null,
+  "vitals": {
+   "health": 100,
+   "max_health": 100
+  }
+ },
+ "dialogue": {
+  "dialog_option_calls": 0,
+  "keywords": [],
+  "messages": {
+   "farewell": {
+    "length": 9,
+    "links": [],
+    "placeholders": [],
+    "sha256": "4ceae5798352e441a536c92e10867dd2d02d6ef4c74e262f90627436e201e085"
+   },
+   "greet": {
+    "length": 63,
+    "links": [],
+    "placeholders": [
+     "|PLAYERNAME|"
+    ],
+    "sha256": "ea1d089533647e15094711771e996e8c3f6ce44c69de5c3ebfd3d46a1cbaf9dc"
+   },
+   "walkaway": {
+    "length": 9,
+    "links": [],
+    "placeholders": [],
+    "sha256": "4ceae5798352e441a536c92e10867dd2d02d6ef4c74e262f90627436e201e085"
+   }
+  },
+  "scripted_handlers": [
+   "CALLBACK_GREET",
+   "CALLBACK_MESSAGE_DEFAULT"
+  ]
+ },
+ "evidence": "OTS_HYPOTHESIS_ONLY",
+ "key": "canary:npc/naji",
+ "placements": [
+  {
+   "direction": "NORTH",
+   "engine_spawns": true,
+   "placement_file": "data-otservbr-global/world/otservbr-npc.xml",
+   "position": {
+    "x": 32342,
+    "y": 32229,
+    "z": 7
+   },
+   "spawn_interval_s": 60,
+   "spawn_radius": 1
+  }
+ ],
+ "schema": "OTERYN_NPC_AUTHORING_CANDIDATE/v1",
+ "services": {
+  "blessings": [],
+  "kick": [],
+  "promotion": [],
+  "spells": [],
+  "trade": null,
+  "travel": []
+ },
+ "source": {
+  "path": "data-otservbr-global/npc/naji.lua",
+  "repository": "opentibiabr/canary",
+  "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "sha256": "79c88509b79575ab7504a2383d21391c20c4f6d13d3ef0344cda3d4ca4f70bf2"
+ },
+ "status": "PARTIAL",
+ "unresolved": [
+  {
+   "detail": "CALLBACK_GREET",
+   "path": "dialogue.scripted_handlers",
+   "reason": "LUA_CALLBACK"
+  },
+  {
+   "detail": "CALLBACK_MESSAGE_DEFAULT",
+   "path": "dialogue.scripted_handlers",
+   "reason": "LUA_CALLBACK"
+  }
+ ],
+ "voices": {
+  "chance_percent": 50,
+  "interval_ms": 15000,
+  "lines": [
+   {
+    "text": {
+     "length": 58,
+     "links": [],
+     "placeholders": [],
+     "sha256": "3b3aa2c6de6545db4ac10ae99bfc63829ac15d4d3dfcf14fd2bd29e6020c888e"
+    },
+    "yell": false
+   }
+  ]
+ }
+}

@@ -134,14 +134,14 @@ Before it can grant material authority:
 3. obtain one genuinely independent exact-head HIGH-risk review with no unresolved actionable P0/P1/P2 finding and zero unresolved review threads/requested changes;
 4. confirm the current task retains explicit human-owner authorization to integrate this bounded control-plane change under active ADR 0005; do not recreate the superseded comment-ledger/fingerprint/attestation machinery;
 5. immediately before submission, re-read repository, PR, `base=main`, exact head, authorization and eligibility;
-6. integrate only through the bound META 3.1 native exact-head Merge Queue route: REST `merge-async` with the exact qualified `sha` and explicit `merge_action="merge_queue"`;
+6. resolve protected integration through the current immutable bound META capability router and use freshly proven `DIRECT_CAPABLE` or `DELEGATED_CAPABLE`, following the selected route-specific exact-head fencing/reconciliation contract;
 7. treat HTTP 202 as admission only and perform the required causal receipt/readback checks;
 8. require a real `merge_group` aggregate `game-gate` SUCCESS;
 9. re-read protected `main` and prove this exact amendment is present;
 10. fresh-read #356 current head/source/overlap and confirm the blocker remains necessary;
 11. post one explicit Work activation for this amendment to the SAME #351/#356 worker and only then allow material mutation.
 
-Direct merge, generic auto-merge, bypass, force/rebase/reset, default merge action, no-op/retrigger commits and protection weakening are forbidden substitutes. If the repository-native `merge-async` capability is unavailable to the active execution surface, preserve the qualified candidate and report `BLOCKED_CAPABILITY_UNAVAILABLE`; do not substitute another merge primitive.
+Direct merge, generic auto-merge, bypass, force/rebase/reset, default merge action, no-op/retrigger commits and protection weakening are forbidden substitutes. If neither direct nor delegated integration capability is freshly proven, preserve the qualified candidate and report `BLOCKED_CAPABILITY_UNAVAILABLE`; do not substitute another merge primitive.
 
 ## Resume contract
 

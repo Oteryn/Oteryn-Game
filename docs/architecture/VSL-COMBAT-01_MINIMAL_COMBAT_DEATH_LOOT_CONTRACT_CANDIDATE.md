@@ -2,12 +2,17 @@
 
 - Date: 2026-08-16
 - Gate: `VSL-COMBAT-01`
-- DecisionStatus: `CANDIDATE`
-- DeliveryStatus: `IN_REVIEW`
-- ImplementationStatus: `NOT_STARTED`
+- DecisionStatus: `ACCEPTED` (Stage-C owner acceptance; reaffirmed by live #506)
+- DeliveryStatus: `IMPLEMENTATION_ADMISSION_OPEN` (A-F dependencies not yet complete)
+- ImplementationStatus: `NOT_STARTED` (no playable Combat claim)
 - Scope: first real-boundary combat/death/loot/pickup vertical slice only
-- Runtime/client/server/protocol/content/DDL/Platform/production authority: **NONE**
+- Task authority: #162 allocation for this two-path admission only; no runtime, client, server, protocol, Content, DDL, Platform or production write authority
 - Merge authority: `ARCHITECTURE_COORDINATOR_ONLY`
+
+The original 2026-08-16 `CANDIDATE` / `IN_REVIEW` labels are historical metadata,
+now superseded by Stage-C owner acceptance recorded by #506. The acceptance and
+authority model below are binding. This status correction and delivery admission
+do not reopen that architecture or claim executable implementation.
 
 ## 1. Problem
 
@@ -127,7 +132,10 @@ Required properties:
 - one creature lifecycle generation produces at most one logical death occurrence;
 - replay/duplicate delivery of the lethal effect cannot create a second death;
 - a stale old-generation creature handle cannot kill/reward a recycled actor;
-- death identity survives retry/recovery enough to reconcile descendant loot/reward work;
+- death identity survives retry/recovery enough to reconcile descendant loot/reward work. Under
+  owner decision D52 (`CREATURE-DEATH-OCCURRENCE-IDENTITY-V1`), a descendant committed before the
+  death's ownership generation ends keeps its result; one not committed by then is dropped, never
+  retried or duplicated;
 - NodeId, pointer address, worker completion order and wall time are not death identity.
 
 If a creature is removed without a semantic death (administrative despawn, scope retirement, incompatible recovery policy), the implementation must not manufacture a death/loot source occurrence.
@@ -152,6 +160,22 @@ Death commit does **not** require loot or XP durability to complete synchronousl
 A corpse may exist as an immediate current-runtime world/container projection owned by the current FND-03 scope. That projection is not a second durable item/value store.
 
 Corpse semantic identity is derived from the death occurrence and exact corpse/content definition revision. A corpse runtime slot/pointer is not durable identity.
+
+**D3 corpse-container amendment.** For the single named shape `D3-CORPSE-CONTAINER-LOOT-WINDOW-
+DECAY-V1` admits (owner decisions D111-D113,
+`reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md` §4.1), a
+creature's own corpse is a durable Ground `ItemInstance`, minted under the unamended §39.1/§39.2
+MINT shape (DUR-03 §39.4) exactly like any other item — the *one* location that `ItemInstance`
+durably has. This is not a second durable location for anything else: creature loot mints
+directly into a DUR-03 `Container` entry whose parent is that same corpse `ItemInstance`, so each
+loot item likewise has exactly one authoritative location. "Not a second durable item/value
+store" above bars a corpse from being a competing second location for an item already durably
+located elsewhere, or from being treated as durable identity from a bare runtime slot/pointer; it
+does not bar the corpse `ItemInstance` itself from being the one MINTed location a loot item
+durably receives via `Container(parent=corpse)`. A corpse `ItemInstance` is never itself a legal
+TRANSFER source (DUR-03 §39.4): it can leave Ground only by full retirement (`DECAY_RETIRE`), so
+its identity and its single Ground location are stable for the whole recovery/decay/window
+surface below. Outside this named shape, §9.1's general runtime-projection posture is unchanged.
 
 ### 9.2 Loot plan
 
@@ -311,6 +335,14 @@ If player death is exercised, exact persistent Character death/protection conseq
 
 Exact corpse lifetime, owner-only loot windows, decay timing and cleanup policy are deliberately not frozen here unless required by the first fixture scenario.
 
+**D3 resolution (rat corpse only).** `D3-CORPSE-CONTAINER-LOOT-WINDOW-DECAY-V1` (owner decisions
+D111-D113) is that required first fixture scenario. It fixes, for the rat corpse
+(`oteryn:item.registry.i00005801`) only: a 10 s pickup window exclusive to the creature's
+top-damage dealer (§4.4 of that decision), a 60 s durable-absolute-deadline decay (§4.6), and
+`DECAY_RETIRE` as the decay effect on unlooted contents (§4.7, expressly under the "accepted
+DUR-03/domain policy" clause below). Corpse ownership/decay product rules for any other creature,
+and general cleanup policy beyond this named shape, remain open.
+
 Any exercised VSL value must be an explicit fixture policy with no Reference claim.
 
 Cleanup/recovery must never duplicate durable loot or retire live acknowledged item value without an accepted DUR-03/domain policy.
@@ -385,7 +417,8 @@ Tier 1 must cross Platform/Gateway/protocol/server/persistence boundaries applic
 - PvP/skull/blessing/death-loss behavior;
 - party/shared XP/multi-contributor loot attribution;
 - boss/raid/event reward semantics;
-- corpse ownership/decay product rules;
+- corpse ownership/decay product rules (resolved for the rat corpse only by D3, §17 above; open
+  for every other creature);
 - concrete combat/RNG libraries;
 - physical Rust types/module layout;
 - concrete protocol message IDs/fields;
@@ -405,7 +438,160 @@ Tier 1 must cross Platform/Gateway/protocol/server/persistence boundaries applic
 
 `RECOMMENDATION: ACCEPT` this minimum structural combat/death/loot/pickup architecture for the first vertical slice.
 
-Acceptance would authorize architecture only. Runtime/persistence/client/content implementation and Reference parity remain separately gated.
+This recommendation concerns architecture acceptance only; Stage-C owner acceptance is now recorded by #506. Runtime/persistence/client/content implementation and Reference parity remain separately gated.
 
 `MERGE_AUTHORITY: ARCHITECTURE_COORDINATOR_ONLY`
-`IMPLEMENTATION_AUTHORITY: NONE`
+`IMPLEMENTATION_AUTHORITY: NONE FROM THIS CONTRACT; LIVE #162 CHILD ALLOCATIONS ONLY`
+
+## 24. Generic native vertical admission (2026-09-27)
+
+This admission makes the accepted Stage-C contract executable as a bounded,
+generic Game delivery chain. It does not add a Rat feature or make this document
+runtime proof. The source of product and repository lifecycle truth remains the
+live owner contracts, exact allocations, PR/check/Merge Queue state and protected
+main. Stage-C authority in this contract is binding; an implementation child may
+consume it but may not weaken or replace it.
+
+### 24.1 Required chain and independent transactions
+
+```text
+admitted native player intent
+-> accepted GAME-ABILITY legal commit
+-> exactly one creature-death generation
+-> deterministic, definition/revision/source/occurrence/state-driven loot output
+-> separate one-item DUR-03 MINT to typed Ground + corpse association
+-> eligible pickup intent and GAME-ITEM legality
+-> separate one-item DUR-03 TRANSFER from Ground to native direct-root CharacterInventory
+-> authoritative native-client observation of result and inventory/location
+-> restart/retry readback proving the same single item and terminal state
+```
+
+Death is one post-commit descendant per creature local generation. Loot planning
+is deterministic over the bound definitions and semantic revisions. MINT creates
+one fresh ItemInstance in typed Ground custody with corpse association/provenance;
+pickup later transfers that same item identity/type/quantity to a legal
+CharacterInventory destination. The two operations have distinct transaction,
+candidate and atomic boundaries, consistent with DUR-03 §§39.1-39.2. A corpse is
+a runtime projection, never a second durable location. Unsupported shapes reject;
+this admission adds no event/field IDs, source/root grammar, security purpose,
+schema/API layout or production maximum.
+
+**D3 chain amendment.** For creature-death loot under `D3-CORPSE-CONTAINER-LOOT-WINDOW-DECAY-V1`
+(§9.1 above, DUR-03 §39.4), the chain from "deterministic... loot output" through "eligible
+pickup intent" is instead: MINT the corpse to typed Ground exactly as line 437 describes (its own
+cause, unamended) -> MINT each loot entry directly into a `Container` entry of that corpse (no
+Ground custody, no separate TRANSFER for placement) -> eligible pickup intent gated by the D112/
+D133 exclusivity window -> TRANSFER from that `Container` entry to native direct-root
+`CharacterInventory` (D80-D83). The corpse `ItemInstance` itself is never a TRANSFER source. This
+does not change the chain for any non-corpse MINT (reward chest, future non-creature loot), which
+keeps line 437-439's Ground-then-TRANSFER shape unamended.
+
+XP is a separate descendant through integrated R7 P03 Character APIs. Reuse the
+single accepted Character progression calculator and owning commit/reconciliation
+semantics. Combat must not add an XP formula/engine, write XP directly, or make
+XP and loot one distributed transaction. Failure or pending state in one
+descendant does not roll back or fabricate the other.
+
+Before D/E admission and before any generic Combat XP settlement, the
+Character-owned progression initialization/readiness prerequisite must be proven
+through its authorized owning route and bound to a fresh, separately allocated
+Character owner revision/policy binding. Without that proof, generic Combat XP
+settlement remains gated. R7 P03 applies awards to initialized progression; this
+admission designs no initializer and selects no values, SQL, or runtime path.
+
+### 24.2 Genericity, provenance and native entry scope
+
+The same generic code must pass two deterministic definition/revision fixtures.
+The existing Rat/cheese/Gold Coin may be admitted as fixtures, never as
+identity-specific engine branches. A second distinct deterministic fixture is
+required to prove genericity; it does not imply a second production roster or
+Reference acceptance. Logic dispatches on accepted typed definitions, revision
+bindings, authorized source/occurrence and current state, never names, fixture
+IDs, or fixture bytes.
+
+Canary `47dfd51f` and CrystalServer `ff7ede593` are owner-selected, pinned,
+read-only behavioral/ordering references only. They may guide later evidence
+comparisons and exact candidate presentation; they are not Oteryn numeric or
+product authority, implementation-copy permission, or proof of Reference parity.
+The exact product values remain subject to independent target evidence and
+explicit owner acceptance.
+
+Qualification reuses the protected native entry room and existing Movement /
+Server Seam environment: `apps/game-server/src/content/project/native_entry_room.json`,
+`native_entry.rs`, `content_native_entry_room.rs`,
+`tools/qualification/native_entry_room/run.sh` and its workflow, the boot
+activation pin, and integrated PR #961 Movement step. Preserve the accepted
+start/east step-and-return proof cells. Any room/source revision belongs to the
+Content/Seam owner and needs its own allocation. Do not create a second room or
+harness. The room is preproduction qualification, not deployment or production
+proof.
+
+### 24.3 Dependency map and whole-unit admission
+
+The following are serialized gates. Each child needs its own exact allocation,
+bounded paths, lease and current-head qualification. Character-owned progression
+initialization/readiness is a separate prerequisite with a fresh owning revision/
+policy allocation; it must precede D/E admission and any Combat XP settlement.
+Dependency-safe PRs are mechanics only: A stays open until F passes on protected
+state.
+
+| Child | Owner and required allocation / serialization | Exit evidence |
+|---|---|---|
+| A — this admission | Current #162 allocation; architecture author owns only this contract and its task packet. No runtime/schema/registry edits. | Accepted chain, dependency map, exact whole-unit DoD and owner-input boundaries are recorded. |
+| B — native owning bindings | GAME-ITEM, Content, ANL/schema/profile, and resource owners each hold their required exact allocation. Serialize shared event registries, item/profile schema, `RESOURCE_LIMITS_REGISTRY.json`, migration numbering and native identity/custody decisions. Preserve item-specific P90D. | Accepted native typed binding and legal CharacterInventory placement; registered schema/profile/security purpose/resource limits with measured max/max+1/overflow and retained/encoded evidence. Unknowns remain closed. |
+| C — DUR-03 physical MINT and TRANSFER | DUR-03 owner, separately leased from B/D and any shared durability writer. Serialize `durability/mod.rs`, physical DUR registries, audit/outbox schema and migration numbers. MINT and TRANSFER remain distinct operations. | Native audit/candidate binding, PostgreSQL transaction proof, exact receipts, audit/outbox contribution, ambiguous-commit recovery and separate MINT/TRANSFER restart/retry evidence under §§39.1-39.2. |
+| D — generic death/loot/reward orchestration | Combat owner after B/C bindings, R7 P03, resource acceptance and authorized Character progression-readiness proof under a fresh separate owner revision/policy allocation. Exclusive lease over `foundation/mod.rs` and `runtime_actor_carrier.rs`; serialize shared edits. Exclude PR #1004 and R7 P03 paths absent a new shared lease. | Generic definition/revision/source/occurrence/state-driven path; two deterministic fixtures; death/loot workflow and XP through R7 P03 with no second XP engine or cross-domain transaction. |
+| E — existing-room Seam/protocol/native-client composition | Server Seam, protocol and client composition owners each receive exact leases after the separate Character readiness gate. Serialize protocol schemas/IDs, server/client roots, and room/source changes with Content/Seam owner. Reuse existing room and #961 Movement integration. | Production protocol input/output and independent wire fixtures; retained start/east step-and-return; authoritative native-client observation of combat, item and inventory state. |
+| F — terminal qualification | One exact-candidate integration/qualification owner after B-E; no concurrent candidate writes. | Real native desktop + Game PostgreSQL; restart/retry/anti-dup; proof admitted native Character progression was initialized through its authorized Character-owned route and bound to the fresh owner revision/policy; exact-head review/CI/MQ, merge-group `game-gate` and protected-main readback. Only whole-unit success closes A or qualifies playable Combat. |
+
+### 24.4 Whole-unit terminal acceptance matrix
+
+| Area | Required terminal evidence |
+|---|---|
+| End-to-end semantics | One native player intent commits through GAME-ABILITY legality; one death generation selects deterministic legal loot; separate one-item MINT and TRANSFER reach direct-root CharacterInventory; native client observes authority; XP settles once through R7 P03 after Character-owned initialization/readiness is proven. |
+| Genericity and binding | Same code passes two deterministic fixtures with different definition/revision identity. Retain exact candidate bytes and semantic envelope; verify definition, content, ruleset, SIM, source occurrence and state bindings. No fixture-name branches or synthetic identity/bytes promoted as production. |
+| Concurrency and replay | Exactly one concurrent pickup wins; duplicate command/death/source replay creates no second death, mint, transfer, XP or location. Source occurrence is non-reusable. One authoritative location remains and no corpse ghost survives reconciliation. |
+| Ambiguity and recovery | Lost ACK, ambiguous commit, crash/restart before and after each MINT and TRANSFER, duplicate retry, committed-but-lost runtime completion and stale result reconcile the same operation and identity without fresh mint or partial custody. |
+| Authority fences | Reject independently stale session, Character lease, runtime/scope, actor-local generation and content/revision evidence before mutation; independently test the applicable negative cases and one-winner race. |
+| Resources and owner lane | Evidence for every accepted native resource/profile limit: max, max+1 and checked overflow before mutation/allocation; audit/outbox backpressure fails closed; bounded retry/reconciliation; no synchronous database wait in the owner lane. |
+| Protocol and client | Independent exact-byte fixtures plus malformed, gap, duplicate and resync cases; server and native client composition are exercised, not only a shared headless codec or direct mutation harness. |
+| Physical terminal proof | Real Game PostgreSQL and native desktop through existing room; restart/readback; admitted Character initialization via authorized owning route; existing start/east step-and-return retained. Preproduction only. |
+| Repository terminal proof | Exact frozen candidate, complete owned-path review, required independent review, exact-head CI, native Merge Queue aggregate `game-gate`, and protected-main readback. Dependency PRs alone never close this row or A. |
+
+No partial child, offline prototype, narrow green suite, schema/profile check,
+PR merge without complete F evidence, or isolated death/corpse proof may claim
+playable Combat.
+
+### 24.5 Accepted facts, technical proposals and product inputs
+
+**ACCEPTED** — Stage-C VSL-COMBAT-01 authority and death identity; GAME-ABILITY
+is the only damage/effect authority; current Channel/Instance runtime owns
+creature lifecycle and corpse projection; GAME-INTERACTION/GAME-ITEM provide
+pickup planning and legality; DUR-03 owns durable item identity, custody,
+conservation, idempotency and recovery; item MINT and TRANSFER are separate
+one-item transactions under §§39.1-39.2; GAME-CHAR/DUR-02 own persistent XP and
+R7 P03 is the integrated XP commit path; ANL-01 envelope/payload semantics and
+existing item P90D remain binding. Character-owned progression initialization/
+readiness through its authorized route, with a fresh separately allocated owner
+revision/policy binding, is required before D/E and Combat XP settlement. Existing
+room and Movement proof environment are reused. Canary/Crystal remain read-only.
+
+**TECHNICAL decisions future owners may propose** — native typed bindings and
+profiles, measured hard resource limits, implementation/module/API shapes,
+transaction internals, physical schema/codec/receipt/audit/outbox/recovery,
+protocol encoding, and composition details. Each requires exact owner authority,
+serialization/lease checks, accepted contracts, required evidence and independent
+review. This admission selects no SQL layout, protocol field/ID, event family or
+field IDs, InventoryRootId, root/source grammar, security purpose, or new
+Interaction/DUR/Character resource.
+
+**PRODUCT inputs still unknown** — entry-room damage/lethality and HP math; loot
+probability and quantity; XP amount/formula; client presentation assets; inventory
+capacity and stack legality; and spawn/cell arrangement that preserves the
+Movement proof. Do not invent values. Present exact candidate values with their
+provenance and measurement to the owning product decision-maker. Owner selection
+of Canary/Crystal as comparison references is not admission of their values.
+
+The original evidence history and explicit non-decisions remain intact. Current
+unknowns stay `UNKNOWN`; neither documentation nor fixtures assert Reference
+parity, production readiness or deployment.

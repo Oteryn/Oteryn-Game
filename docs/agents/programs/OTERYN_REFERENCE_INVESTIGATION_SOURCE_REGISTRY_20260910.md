@@ -5,7 +5,7 @@
 - Date: 2026-09-10
 - Purpose: shared evidence/source discipline for Reference investigation agents
 - Runtime/write authority granted: **NONE**
-- External target: Global Tibia behavior/data at the accepted post-2026-07-28 cut
+- External target: Global Tibia behavior/data at the accepted post-2026-07-28 cut Superseded 2026-09-27: the target is now 2026-09-27, see `OTERYN_TARGET_DATE_20260927_DECISION.md`.
 
 ## 1. Why this registry exists
 
@@ -82,6 +82,8 @@ Limits:
 
 Possible evidence outcomes: `PROVEN`, or input to `DERIVED`; current post-target material also requires target-continuity analysis.
 
+Access (2026-09-28): tibia.com blocks the cloud containers, GitHub runners and web fetch tools, so agents do not fetch it. For the manual, read `docs/reference/tibia-manual/` (Oteryn-written notes on all 19 sections, owner capture 2026-09-28). The full text is private, in Jira `KAN-33`. For library data such as spells, creatures, bosses, worlds, news and highscores, use the TibiaData API (`https://api.tibiadata.com/v4/...`, JSON, reachable from the containers; see `OTHER_STRUCTURED_TIBIA_DATA`). A dated snapshot of an official page can still be taken with `tools/official-capture/tibiacom_capture.py`, which the owner runs locally.
+
 ---
 
 ### `GLOBAL_BLACKBOX` — source role `CONTROLLED_GLOBAL_OBSERVATION`
@@ -121,6 +123,12 @@ Primary structured encyclopedia:
 - https://www.tibiawiki.com.br/
 
 This source is deliberately promoted to a **first-class bulk Reference data source** for programme #486.
+
+Access (2026-09-28): both wikis block page fetches from the containers (Cloudflare).
+
+- **TibiaWiki (Fandom):** read it through the MediaWiki API only (`https://tibia.fandom.com/api.php`), which answers the containers. Request the revision at the target date (`prop=revisions&rvprop=ids|timestamp|content&rvslots=main&rvstart=<target date>&rvdir=older`), batch up to 50 titles per request, and record page id and revision id. Never fetch `/wiki/` HTML pages.
+- **TibiaWiki BR:** the containers cannot reach it. Collect the pages a batch needs and fetch them in one run on a GitHub-hosted runner (as `wiki_br_capture.py` does). Do not retry from the session.
+- After one failed attempt, switch to the route above instead of retrying. Record a missing value as `UNKNOWN` with the unreachable source named.
 
 Use aggressively for high-volume static/semi-static content extraction:
 
@@ -193,6 +201,8 @@ Promotion discipline:
 
 Examples include other maintained Tibia encyclopedias/databases such as Tibiopedia when accessible.
 
+TibiaData (`https://api.tibiadata.com/v4/`) mirrors tibia.com library and live data as JSON: spells, creatures, boostable bosses, worlds, news and highscores. It is reachable from the containers. It shows the current state, so record the fetch date and treat a value as target-date evidence only when it is unchanged since the target date or re-read at it. It depends on tibia.com, so it is not independent corroboration of tibia.com.
+
 Use primarily as an **independent structured cross-check** against Tibia Wiki and for fields absent from one source.
 
 Do not treat mirrored/copied data as independent merely because it appears on a second hostname. Where provenance suggests one site copied another, record `SOURCE_DEPENDENCY_POSSIBLE` and avoid counting it as independent corroboration.
@@ -259,6 +269,8 @@ exact revision
 path/symbol/entity
 value/formula/behavior candidate
 ```
+
+Branches (owner, 2026-09-28): any branch of `opentibiabr/canary` and `zimbadev/crystalserver` may be used, not only `main`. Pin the exact commit SHA and record the branch name. Prefer `main` when it is equal, and use one revision per batch and repository. The game version is 15.30, so server-side sources re-pin to a 15.30-capable revision, which may be a branch. See `OTERYN_GAME_VERSION_1530_AND_OTS_BRANCHES_DECISION_20260928.md`.
 
 Cross-OTS rule:
 
@@ -335,6 +347,51 @@ classification: <status>
 
 A conflict in `loot_probability` must not contaminate an independently well-supported `hitpoints` field.
 
+## 6a. Full Content G4+ phase profile
+
+For canonical `Oteryn: full content population` (legacy compatibility invocation: `Oteryn: full content census`), G4+ uses a narrower phase policy than the generic Reference investigation flow. Protected census/crosswalk outputs are inputs to population; additional analysis-only work must directly unblock a named canonical population batch.
+
+During G4+:
+
+- use **TibiaWiki BR as the primary bulk working source** for current static/semi-static content;
+- use a second maintained structured Tibia encyclopedia/database as cross-check where available;
+- public official CipSoft/Tibia evidence may resolve an atomic conflict when it directly addresses the same claim;
+- **do not require authenticated Global Tibia/Cyclopedia observation** for ordinary G4 admission, crosswalk or canonical population;
+- **do not use Cyclopedia as the completeness denominator**, especially for Terrain, WorldObject, LocalObject, Transition, Presentation and map/environment content;
+- when structured sources remain unresolved, keep `UNKNOWN`/`CONFLICT` and continue legal path-disjoint work instead of escalating every static record to live Global browsing;
+- OTS/donors remain implementation/mechanics/hypothesis evidence and never override a newer current structured-wiki value for the same static field without stronger direct evidence.
+
+Authenticated Global/Cyclopedia inspection is intentionally deferred to a separate future terminal verifier after canonical population is mature. That verifier may compare player-visible facts and detect drift, but it is not a G4 blocker and requires separate explicit authority/session handling.
+
+For this Full Content phase, the working source order is:
+
+`TibiaWiki BR -> second structured cross-check -> public official evidence for exact conflicts -> preserve UNKNOWN/CONFLICT`.
+
+OTS/donors may assist throughout as hypotheses/implementation evidence. Live authenticated Global observation is deferred.
+
+## 6b. G4 external identity retention
+
+For Full Content G4+ crosswalks, external identifiers are evidence/provenance and must remain recoverable even when they are not canonical Oteryn identity.
+
+Apply `docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md`.
+
+Every persisted G4 source identity must be qualified by:
+
+- exact source key/provider;
+- exact source revision/snapshot;
+- identifier namespace/kind;
+- verbatim external ID.
+
+A naked numeric `id` is not portable evidence. The same number in TibiaWiki, Canary, Crystal or the client is not an identity match.
+
+Canonical Oteryn identity remains independent. Promote only exact/accepted source-to-target bindings; keep probable, ambiguous, conflict and no-match states in crosswalk evidence. Preserve source IDs even when a field value from that source is rejected.
+
+Rendering identity remains separate from gameplay definition identity: source server Item IDs may map to Item, while client appearance/sprite IDs normally map to Presentation/Asset evidence. Never mint an Item/Creature/WorldObject key from a client appearance ID.
+
+The minimum durable join key for later comparison is:
+
+`source key + source revision + identity namespace + external ID -> canonical Oteryn target`.
+
 ## 7. Bulk-data fast path
 
 For large static data families, use this efficient process:
@@ -354,6 +411,9 @@ field-level agreement/conflict table
         |
         +--> conflict / target-sensitive / behavior-sensitive
                 -> official CipSoft search and/or controlled Global observation
+                   (except Full Content G4+, where authenticated Global observation
+                    is deferred by section 6a and unresolved static fields remain
+                    UNKNOWN/CONFLICT)
 ```
 
 This avoids spending expensive black-box/primary-source research on thousands of mundane static fields while preserving honest evidence semantics.
