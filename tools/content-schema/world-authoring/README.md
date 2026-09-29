@@ -36,6 +36,12 @@ committed. Map, sprite and asset bytes never are.
 
 ## What is imported and what is not
 
+Keys are stable across source updates: when the family files are already committed, the
+converter reuses the existing key for the same source id (`crystalserver/house-id`,
+`crystalserver/town-id`) even if the source renames the house or town, and only mints a slug
+key for a new id (failing closed if it collides with any committed key). Teleport keys are
+position-based.
+
 - **City:** one record per OTBM town, holding the name and temple position. All 35 towns
   are kept as the source declares them, including `Dawnport Tutorial`, `Island of
   Destiny`, `Targuna` and `Home`. TibiaWiki (Cidades) enrichment comes later.

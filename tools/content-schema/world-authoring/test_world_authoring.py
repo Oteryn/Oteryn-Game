@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import re
 import shutil
 import struct
 import tempfile
@@ -34,8 +35,11 @@ def string(text: str) -> bytes:
     return struct.pack("<H", len(text)) + text.encode("latin-1")
 
 
-def fixture_map() -> bytes:
-    """One town, one house (id 0xFE forces escaping) with a door, two teleports."""
+def fixture_map(extra_houses=()) -> bytes:
+    """One town, one house (id 0xFE forces escaping) with a door, two teleports.
+
+    `extra_houses` adds one plain tile per additional house id.
+    """
     door = node(6, struct.pack("<H", 1234) + bytes([14, 3]))
     teleport = node(
         6,
@@ -59,6 +63,10 @@ def fixture_map() -> bytes:
         ),
         node(5, bytes([1, 3]), teleport, unset),
         node(5, bytes([2, 2]) + bytes([3]) + struct.pack("<I", 0)),
+        *(
+            node(14, bytes([10 + i, 1]) + struct.pack("<I", house_id))
+            for i, house_id in enumerate(extra_houses)
+        ),
     )
     towns = node(
         12,
@@ -84,6 +92,14 @@ HOUSE_XML = (
     b'entryy="1002" entryz="7" rent="1000" guildhall="true" townid="7" size="2" clientid="1" '
     b'beds="1" /></houses>'
 )
+
+
+def house_row(house_id: int, name: str) -> bytes:
+    return (
+        f'<house name="{name}" houseid="{house_id}" entryx="1001" entryy="1002" '
+        'entryz="7" rent="1000" guildhall="false" townid="7" size="1" clientid="1" '
+        'beds="1" />'
+    ).encode()
 
 
 class ReaderTest(unittest.TestCase):
@@ -128,8 +144,8 @@ class ConvertAndValidateTest(unittest.TestCase):
             "data-global/world/world.otbm": fixture_map(),
             "data-global/world/world-house.xml": HOUSE_XML,
         }
-        self.out = convert.build(blobs)
         self.root = Path(tempfile.mkdtemp())
+        self.out = convert.build(blobs, self.root)
         for path, data in self.out.items():
             (self.root / path).parent.mkdir(parents=True, exist_ok=True)
             (self.root / path).write_bytes(data)
@@ -179,7 +195,7 @@ class ConvertAndValidateTest(unittest.TestCase):
             "data-global/world/world.otbm": fixture_map(),
             "data-global/world/world-house.xml": HOUSE_XML,
         }
-        self.assertEqual(convert.build(blobs), self.out)
+        self.assertEqual(convert.build(blobs, self.root), self.out)
 
     def test_house_xml_must_match_map_house_tiles(self):
         blobs = {
@@ -187,7 +203,51 @@ class ConvertAndValidateTest(unittest.TestCase):
             "data-global/world/world-house.xml": HOUSE_XML.replace(b'"254"', b'"9"'),
         }
         with self.assertRaises(convert.ConvertError):
-            convert.build(blobs)
+            convert.build(blobs, self.root)
+
+    def rebuild(self, house_xml: bytes, extra_houses=()) -> dict[str, bytes]:
+        """Second build against the families already committed in the temp root."""
+        blobs = {
+            "data-global/world/world.otbm": fixture_map(extra_houses),
+            "data-global/world/world-house.xml": house_xml,
+        }
+        return convert.build(blobs, self.root)
+
+    @staticmethod
+    def house_records(out):
+        (path,) = [p for p in out if re.fullmatch(r"content/houses/houses-.*\.json", p)]
+        return {
+            r["declaration"]["identity"]["key"]: r
+            for r in json.loads(out[path])["records"]
+        }
+
+    def test_renamed_house_keeps_its_key(self):
+        renamed = HOUSE_XML.replace(b"Fixture Hall", b"Renamed Hall")
+        records = self.house_records(self.rebuild(renamed))
+        self.assertEqual(list(records), ["oteryn:house.fixture_hall"])
+        record = records["oteryn:house.fixture_hall"]
+        self.assertEqual(record["declaration"]["name"], "Renamed Hall")
+        self.assertEqual(
+            record["source_bindings"][0]["target"]["key"], "oteryn:house.fixture_hall"
+        )
+
+    def test_new_house_gets_a_new_slug_key(self):
+        renamed = HOUSE_XML.replace(b"Fixture Hall", b"Renamed Hall")
+        xml = renamed.replace(
+            b"</houses>", house_row(300, "Second Hall") + b"</houses>"
+        )
+        records = self.house_records(self.rebuild(xml, (300,)))
+        self.assertEqual(
+            sorted(records),
+            ["oteryn:house.fixture_hall", "oteryn:house.second_hall"],
+        )
+
+    def test_new_house_colliding_with_a_committed_key_fails_closed(self):
+        xml = HOUSE_XML.replace(
+            b"</houses>", house_row(300, "Fixture Hall") + b"</houses>"
+        )
+        with self.assertRaises(convert.ConvertError):
+            self.rebuild(xml, (300,))
 
     def test_rejects_unknown_city_reference(self):
         shard = self.shard("House")
