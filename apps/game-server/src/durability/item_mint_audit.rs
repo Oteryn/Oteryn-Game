@@ -160,9 +160,10 @@ pub struct OneItemMintV1 {
     pub corpse_container_entry: Option<super::item_transfer_audit::OneItemContainerEntryV1>,
 }
 
-/// `mint` (tag 2), the B3 `transfer` (tag 3, [`super::item_transfer_audit`])
-/// and the CHEST-1 `reward_claim_mint` (tag 4,
-/// [`super::reward_claim_mint_audit`]).
+/// `mint` (tag 2), the B3 `transfer` (tag 3, [`super::item_transfer_audit`]),
+/// the CHEST-1 `reward_claim_mint` (tag 4,
+/// [`super::reward_claim_mint_audit`]) and the D3-6 `decay_retire` (tag 5,
+/// [`super::item_decay_retire_audit`]).
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum OneItemOperationV1 {
     #[prost(message, tag = "2")]
@@ -171,13 +172,15 @@ pub enum OneItemOperationV1 {
     Transfer(super::item_transfer_audit::OneItemTransferV1),
     #[prost(message, tag = "4")]
     RewardClaimMint(super::reward_claim_mint_audit::OneItemRewardClaimMintV1),
+    #[prost(message, tag = "5")]
+    DecayRetire(super::item_decay_retire_audit::OneItemDecayRetireV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4")]
+    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5")]
     pub operation: Option<OneItemOperationV1>,
 }
 

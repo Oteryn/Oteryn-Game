@@ -1858,6 +1858,12 @@ mod item_transfer_postgres_cases;
 #[path = "support/corpse_transfer_postgres_cases.rs"]
 mod corpse_transfer_postgres_cases;
 
+// D3-6 corpse DECAY_RETIRE (N+1 one-item steps at materialized_at + 60 s,
+// resumable from durable state) shares its cases with the focused standalone
+// target through the same protected lane.
+#[path = "support/corpse_decay_postgres_cases.rs"]
+mod corpse_decay_postgres_cases;
+
 // CHEST-1 reward-claim MINT (a `once` RewardClaim into a new main backpack
 // entry) shares its cases with the focused standalone target through the same
 // protected lane.

@@ -13,6 +13,8 @@ pub mod content_activation;
 mod db;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
+pub mod item_decay_retire;
+pub mod item_decay_retire_audit;
 pub mod item_mint;
 pub mod item_mint_audit;
 pub mod item_transfer;
@@ -93,6 +95,33 @@ mod item_transfer_linkage {
         let _ = DurabilityRoot::reconcile_item_transfer;
         let _ = DurabilityRoot::read_character_backpack;
         let _ = DurabilityRoot::read_item_source_location;
+    }
+}
+
+#[cfg(test)]
+mod item_decay_retire_linkage {
+    use super::DurabilityRoot;
+    use super::item_decay_retire::{
+        CorpseDecayReport, CorpseDecaySchedule, DecayRetireCandidate, DecayRetireOutcome,
+    };
+
+    #[test]
+    fn item_decay_retire_api_is_linked() {
+        let _ = DecayRetireCandidate::step;
+        let _ = DecayRetireCandidate::transaction_id;
+        let _ = DecayRetireCandidate::event_id;
+        let _ = DecayRetireCandidate::occurred_at_unix_ms;
+        let _ = DecayRetireCandidate::deadline_unix_ms;
+        let _ = DecayRetireCandidate::envelope;
+        let _ = DecayRetireCandidate::work_units_used;
+        let _ = DecayRetireOutcome::into_committed;
+        let _ = std::mem::size_of::<CorpseDecayReport>();
+        let _ = std::mem::size_of::<CorpseDecaySchedule>();
+        let _ = DurabilityRoot::freeze_decay_retire;
+        let _ = DurabilityRoot::commit_decay_retire;
+        let _ = DurabilityRoot::reconcile_decay_retire;
+        let _ = DurabilityRoot::read_corpse_decay_schedule;
+        let _ = DurabilityRoot::retire_decayed_corpse;
     }
 }
 
