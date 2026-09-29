@@ -81,6 +81,17 @@ fenced durable Character writes. Their implementing children carry the qualifica
 - Runtime, migrations, proto and registry entries, content, the virtue slot (Part C), the party
   service, gems, scrolls and the Wheel UI.
 
+## Finding dispositions
+
+Codex review of `41636585`: two P1s, both ACCEPTED and repaired (return to authoring).
+- 4130296767 (Serene started false, so a solo monk's first cast was not Serene): the rule is evaluated
+  at actor initialization (admission, respawn, reconnect, recovery) before any command, then every
+  1000 ms. H-2 carries the engine tests.
+- 4130296771 (ruleset revision without load or derive rules): a non-current revision fails closed. The
+  stages derive as 0, the allocation is kept and not reinterpreted, and changes are rejected. The
+  ruleset owner must ship a migration, a declared-compatible mapping or a reset-with-refund, and an
+  engine test covers it.
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`
@@ -90,7 +101,7 @@ fenced durable Character writes. Their implementing children carry the qualifica
 ## Context checkpoint
 
 ```yaml
-last_progress: control-plane resolutions encoded; PR #1205 open
+last_progress: Codex P1s 4130296767 and 4130296771 repaired; PR #1205 open
 status: validating
 branch: claude/spell-part-a-state-contracts
 pr: 1205

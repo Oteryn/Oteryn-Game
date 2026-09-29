@@ -316,15 +316,22 @@ the previous actor's write was fenced out.
 **Serene (runtime-actor-local, non-durable).**
 - State: `serene` (flag) and `serene_forced_until` (optional `SemanticTimeMicros` from the owner clock).
   Both exist for monks only.
-- Evaluation: the Channel owner evaluates the §A.2 step 6 rule every 1000 ms, as Canary does on each
-  player think. While the owner time is before `serene_forced_until`, the evaluation leaves `serene`
-  true.
+- Evaluation: the Channel owner evaluates the §A.2 step 6 rule at every actor initialization (below)
+  and then every 1000 ms, as Canary does on each player think. While the owner time is before
+  `serene_forced_until`, the evaluation leaves `serene` true.
 - Focus Serenity: at its PRIMARY COMMIT, `serene` becomes true and `serene_forced_until` becomes now
   + 7000 ms.
-- A new runtime actor starts with `serene` false and no forced time. The first evaluation sets it.
-- A same-GameSession reconnect and FND-04B §21 recovery keep both exactly.
+- **Initialization evaluation (fix for #1205 finding 4130296767).** The owner evaluates the rule in the
+  same owner step that makes the actor playable, before it accepts any command from the actor. This
+  covers a fresh admission (new runtime actor), respawn after death, a same-GameSession reconnect and
+  FND-04B §21 recovery. A monk outside a party is therefore Serene for its first cast (§A.2 step 6).
+  Canary instead sends Serene off at login and sets it at the first think (up to 1000 ms later); V1
+  does not keep that gap.
+- A new runtime actor starts with no forced time.
+- A same-GameSession reconnect and FND-04B §21 recovery keep `serene_forced_until` exactly, and then
+  re-evaluate `serene` as above.
 - Death: at the lethal commit `serene` becomes false and the forced time is cleared, as Canary
-  removes a timed Serene at death. It is evaluated again after respawn.
+  removes a timed Serene at death. Respawn evaluates it again before any command.
 - **Declared difference.** Canary saves the remaining ticks of a forced Serene at logout (a timed
   condition). V1 does not persist Serene at all (the allocation), so at most 7000 ms of forced Serene
   is lost when a new runtime actor starts. This is the control-plane default (#1205); owner
@@ -363,8 +370,13 @@ table above). The DEATH owner must accept it; it does not block this contract.
 - **H-1:** the durable field, its migration, the fenced actor-end write and the load into a new actor.
   It needs the Character progression storage and a receipt design, as DEATH-0 does, and the high-risk
   authority/recovery qualification.
-- **H-2:** Harmony and Serene in the runtime actor, the 1000 ms evaluation, and the death reset
-  together with DEATH-1.
+- **H-2:** Harmony and Serene in the runtime actor, the initialization and 1000 ms evaluations, and
+  the death reset together with DEATH-1. Its engine tests must show that:
+  - a solo monk's first cast after a fresh admission, after respawn, after a same-GameSession reconnect
+    and after FND-04B §21 recovery uses Serene effects, with no periodic step having run;
+  - a forced Serene set before a reconnect holds until its time runs out;
+  - death clears `serene` and the forced time;
+  - no command is accepted from an actor before its initialization evaluation.
 - **H-3:** the `ActorVitalsV1` fields in §9 step 1.
 - The Part A runtime (§A.2) consumes H-1 and H-2.
 

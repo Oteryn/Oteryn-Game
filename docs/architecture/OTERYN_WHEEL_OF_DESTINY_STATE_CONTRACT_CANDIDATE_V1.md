@@ -77,12 +77,43 @@ read slot points directly.
 
 - The state is persisted as Character state under DUR-02. It is written only inside a Character event
   fenced by the session generation. The physical schema belongs to the implementing child.
-- A character without a row has all slots at 0.
-- A stored value above its slot's capacity is corrupt state and fails the load closed.
+- Storage is a typed Character relation (DUR-02 Character baseline rule 10, which names Wheel points),
+  not Canary's opaque blob.
+- A character without a row has all slots at 0 under the current ruleset revision.
+- A stored value above its slot's capacity under the stored revision is corrupt state and fails the
+  load closed.
 - Slot identities, capacities, domains, the adjacency and minimum-point rules, and the perk per domain,
   vocation and slot are versioned ruleset data (`rulesets/progression/wheel-of-destiny/`, ADR-0019), not
   engine constants. The ruleset child takes them from Canary `io_wheel.cpp` and `player_wheel.cpp` and
   checks them against the wikis.
+
+### 3.2.1 Ruleset revision compatibility (fix for #1205 finding 4130296771)
+
+DUR-02 Character baseline rules 10 and 19 require explicit revision compatibility, and forbid silently
+reinterpreting existing data under another ruleset.
+
+- **Current revision.** The world's active Wheel ruleset revision is current. An allocation whose
+  `ruleset_revision` equals it loads and derives normally.
+- **Non-current revision: fail closed.**
+  - The allocation is kept exactly as stored. It is never reinterpreted against the current slot table,
+    capacities or perk tables.
+  - Every `revelation_stage` and `augment_stage` of the character derives as 0.
+  - Allocation changes (§3.3) are rejected, and write nothing, until a migration has moved the
+    allocation to the current revision.
+  - The rest of the character loads normally.
+- **Migration obligation (the ruleset owner, W-R).** A new Wheel ruleset revision that changes slot
+  identities, capacities, domains, adjacency or perk tables must ship exactly one of these:
+  1. an explicit source→destination migration of stored allocations, validated against the
+     destination capacities and allocation rules and run as a DUR-02 rule 19 staged migration;
+  2. a declared-compatible mapping: a validated statement that the source and destination revisions
+     read the same allocation identically, so the stored revision can be re-stamped without changing any
+     slot;
+  3. a reset-with-refund rule: the allocation becomes all zero under the destination revision, and every
+     point is available to allocate again.
+
+  The revision's release names which one applies. A revision without one of them cannot become
+  current for a world that holds allocations under an older revision.
+- V1 has one revision, so no migration exists yet. The first one lands with the first ruleset change.
 
 ### 3.3 Change
 
@@ -167,7 +198,7 @@ Premium (PREM-1) and promotion (PREM-2).
 
 | Child | Scope | Depends on |
 |---|---|---|
-| W-R | Wheel ruleset data and its validator | content pipeline |
+| W-R | Wheel ruleset data, its validator, and the revision migration obligation (§3.2.1) | content pipeline |
 | W-1 | Durable allocation, fence, load, derivation, spell-core input | W-R; Character progression storage and migration numbering; high-risk authority/recovery qualification; PREM-1 and PREM-2 before any stage can be above 0 |
 | W-2 | Allocation change intent and validation | W-1; protocol lane (registry lease) |
 | W-3 | Client Wheel window | W-2; client owner |
@@ -181,6 +212,9 @@ Premium (PREM-1) and promotion (PREM-2).
   counts 0.
 - After a level loss below the allocated points, the stages are unchanged, unused points are 0, an
   increase is rejected and a decrease near a temple is accepted.
+- An allocation stored under a non-current ruleset revision derives every stage as 0. Its stored
+  slots are unchanged after the load, and a change is rejected, until a migration, a declared-compatible
+  mapping or a reset-with-refund applies. After that, it derives under the current revision.
 - A change is rejected, and writes nothing, when:
   - a slot is above its capacity;
   - the sum is above the available points;
