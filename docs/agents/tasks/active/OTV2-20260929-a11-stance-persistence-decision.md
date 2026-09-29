@@ -59,6 +59,16 @@ Not applicable to this docs-only task. STANCE-0 changes persistence and needs in
 
 - Migrations, runtime code and content.
 
+## Finding dispositions
+
+Codex review of `4242ea5`: two P1, both ACCEPTED in repair generation 1 of 1. No owner decision
+changed.
+
+- 4132744952 (stance row not guarded): the row gets a deferred consistency trigger on insert,
+  update and delete, and delete is rejected (§4.3).
+- 4132744961 (two revisions for a vocation change): one combined vocation-change receipt carries
+  the stance transition at one revision; the stance chain counts it (§4.3, §4.6).
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.

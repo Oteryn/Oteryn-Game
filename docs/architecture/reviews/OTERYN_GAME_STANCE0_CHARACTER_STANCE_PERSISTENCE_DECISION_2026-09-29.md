@@ -101,10 +101,15 @@ one XP receipt. Where does the slot live, and how does a change commit without w
     kind;
   - the receipt for the current revision matches the state;
   - level and experience chain across kinds (`before` = predecessor `after`);
-  - the stance chain holds within its kind: `stance_before` equals the previous stance receipt's
-    `stance_after`, and is NULL for the first;
+  - the stance chain holds across every receipt that carries a stance transition (a stance receipt,
+    or a later combined vocation-change receipt, §4.6): `stance_before` equals the previous such
+    receipt's `stance_after`, and is NULL for the first;
   - the `game_character_stance` row equals the latest stance receipt's `stance_after` and revision,
     and is absent when no stance receipt exists. An XP or death commit that changes the row fails.
+- **Triggers on the stance row:** `game_character_stance` has a deferred constraint trigger that
+  runs the consistency guard on every insert, update and delete, like the `0009` root, state and
+  receipt triggers. A delete is rejected outright. So a write that touches only the row, without a
+  revision and a receipt, fails at commit.
 - **Ordering with DEATH-0:** both migrations replace the same guard functions. The one that merges
   second carries every kind and its tests cover the mixed chain. The migration number is the next
   free number at allocation (0015 at this baseline).
@@ -137,10 +142,13 @@ one XP receipt. Where does the slot live, and how does a change commit without w
 
 ### 4.6 Vocation change pruning
 
-- A vocation-change transaction clears a stored stance that no longer fits, with its own stance
-  receipt (`stance_after` NULL) keyed by the vocation-change occurrence.
-- Dependency: no vocation store or vocation-change lane exists; that lane needs its own receipt kind
-  (composition §3.6) and decides whether it composes as two revisions or carries the stance change.
+- A vocation change is one Character semantic transaction and advances `CharacterRevision` exactly
+  once (composition decision). Its own receipt kind, defined by the vocation lane, carries the
+  stance transition (`stance_before`, `stance_after`) when the stored stance no longer fits; there is
+  no separate stance receipt in that transaction. The stance row follows that receipt, and the
+  stance chain in §4.3 counts it.
+- Dependency: no vocation store or vocation-change lane exists; that lane defines the combined
+  receipt (composition §3.6).
   The fit rule is UNKNOWN (Part C Q20). STANCE-0 and STANCE-1 do not implement pruning.
 
 ### 4.7 Rate and size bounds
@@ -201,7 +209,7 @@ required_fresh_allocation: true
 required_independent_review: "exact-head independent review (receipt chain, guards, fencing)"
 implementation_lanes: [STANCE-0, STANCE-1]
 required_revalidation:
-  - "STANCE-0: a stance receipt advances the revision with equal XP and level; an XP receipt still needs a strict increase; mixed chains XP -> stance -> death -> XP pass; a gap, duplicate revision, cross-kind mismatch, stance_before mismatch or a stance row that differs from the latest receipt fails the deferred guard; stance receipts are immutable and untruncatable; the row is never deleted"
+  - "STANCE-0: the stance row has a deferred consistency trigger on insert/update/delete and rejects delete; a row-only write fails at commit; a stance receipt advances the revision with equal XP and level; an XP receipt still needs a strict increase; mixed chains XP -> stance -> death -> XP pass; a gap, duplicate revision, cross-kind mismatch, stance_before mismatch or a stance row that differs from the latest receipt fails the deferred guard; stance receipts are immutable and untruncatable; the row is never deleted"
   - "STANCE-1: same occurrence and binding replays the first receipt; changed intent conflicts; a stale fence writes nothing; stance and XP commits serialize on character_root; logout writes nothing; a death commit leaves the row; admission loads the slot"
 remaining_unknowns:
   - CommandRef being UUIDv7
@@ -209,5 +217,6 @@ remaining_unknowns:
   - receipt growth per character; stance-cast latency
   - stored keys that no longer resolve
   - DEATH-0 versus STANCE-0 merge order and migration number
+  - the combined vocation-change receipt (vocation lane)
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates STANCE-0."
 ```
