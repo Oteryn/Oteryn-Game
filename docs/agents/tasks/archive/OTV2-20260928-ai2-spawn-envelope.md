@@ -4,17 +4,17 @@
 task_id: OTV2-20260928-ai2-spawn-envelope
 title: GAME-AI-01 §5 AI-2 -- creature envelope, spawn realization, respawn (D115/D116)
 mode: IMPLEMENT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/ai2-rat-behaviour
 issue: 162
-pr: null
+pr: 1193
 allocation: "GAME-AI-01 §5 AI-2 row (control-plane correction: #162 comment 5879863781's label was in error); D115/D116 in comment 5879404970"
 base_sha: 86116adfda4b4e7c1dc505c2e2af486db2370378
-head_sha: pending_push
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: b5ecb5fc8d8e8b89310ebca2913c4695abd36443
+final_head_sha: b5ecb5fc8d8e8b89310ebca2913c4695abd36443
+final_head_frozen_at: 2026-09-28
 owner: "Oteryn: impl ai (claude-code-session-01U1WRHgL9X8RbuiG1pwczrF)"
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -193,11 +193,16 @@ freeze, review and integration.
 ## Context checkpoint
 
 ```yaml
-last_progress: creature envelope, spawn realization and respawn implemented, tested and validated on claude/ai2-rat-behaviour; pushing now
-status: waiting
-pr: null
-head_sha: pending_push
-final_head_sha: null
+last_progress: PR #1193 merged via Merge Queue as b6bb50d; protected-main readback of owned code files matched b5ecb5f; record archived
+status: completed
+pr: 1193
+head_sha: b5ecb5fc8d8e8b89310ebca2913c4695abd36443
+final_head_sha: b5ecb5fc8d8e8b89310ebca2913c4695abd36443
 blocker: "content gap: D116 spawn placement in the real starting room needs the Content/Seam owner (§5)"
-next_action: "control plane: freeze the pushed SHA, route independent review, allocate the room revision"
+next_action: none for this task; follow-ups are routed on #162
 ```
+
+## Closeout
+
+- merge commit/result: `b6bb50d` on protected `main` (#1193); readback of owned code files byte-identical to `b5ecb5f`
+- ownership release: all leases released at merge
