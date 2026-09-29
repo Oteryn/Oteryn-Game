@@ -17,12 +17,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "90229d6d5a287d4598d2cb34da1046a2cc638f1b090f6db877e40bb01971ab9f",
+        "68e50e6fca0c08da7ed49b1ea2f68ce08ecc320e837bfe4c16750c2a84e9bc33",
     ),
     (
         "definitions/declarations.json",
-        14_749_417,
-        "76e76d5531c6337a41c805743b6289c8ab0ac46d1f15d1c4845c76e95f7e07cf",
+        14_875_562,
+        "ee06078f127ba0fc1bd2002e0fd67c59b5b22c6f6d972aaa70145c7c0e334141",
     ),
     (
         "definitions/reference.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1937,
-        "a03078dfa5868ae5adf4886e4eb86e4770f5e24493e34f06cef994c7458e6c85",
+        "5a717a64adfe78546a858e2131682a91a87b9ce965d7f283465fcfe7e219b531",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "44cdbbbd844ad895248005c87b28ceaf88fc11633486585feb07d8bfd5e6bbc7",
+        "279969b29ac27bf8879e2b9188a091594f9d6d1ad97eca3e4e7ffebd93fda25a",
     ),
     (
         "provenance/imports.json",
         30_006,
-        "9805797335b2f1823c4286fae0cd832b7dbc6243ce8f5b115d226d9019e53bff",
+        "67463b0da2413a2f79cb4640370439b633f512cd6402dacccd3c77479f7968eb",
     ),
     (
         "provenance/sources.json",
-        1_277_028,
-        "b10e28a94b7062bb7d1b8126a3abc26e9ce91fac79ff6c2caeafafa11cf8318e",
+        1_285_736,
+        "8565f02a2b8821f8d2b0fbbce8a2ac790b434a23629c163306f6f34cb624d950",
     ),
     (
         "worlds/world.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "7bc5b021efdca34369cbabd39f1cec8cfccf59d5eb0b9de4f937073fe1f66921";
+const TREE_SHA256: &str = "81d057f236866988351e92784b7476bf63a105af7ba8d90dce94d08a6fa7e81e";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -94,9 +94,9 @@ const CREATURE_PROFILES: usize = 19435;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1088;
 const NPC_RECORDS: usize = 2176;
-const NPC_DECLARATIONS: usize = 2151;
+const NPC_DECLARATIONS: usize = 2166;
 const NPC_DIALOGUES: usize = 701;
-const NPC_BINDINGS: usize = 2296;
+const NPC_BINDINGS: usize = 2330;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 58;
 
@@ -276,7 +276,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-wave-a-r5");
+    assert_eq!(project.project_revision(), "g4-npc-wave-a-r6");
     assert_eq!(project.imports().len(), 9);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -536,7 +536,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(v2.sources[8].evidence, ProjectV2EvidenceClass::Derived);
     let npc_import = &project.imports()[7];
-    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r5");
+    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r6");
     assert!(npc_import.candidates.is_empty());
     assert_eq!(v2.sources[6].key, v2.sources[3].key);
     assert_eq!(v2.sources[6].import_batch_id, npc_import.batch_id);
