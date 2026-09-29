@@ -14,9 +14,11 @@ import unittest
 from pathlib import Path
 
 import client_map_reader as client_map
+import convert_city_facts as cityfacts
 import convert_hunting_places as hunting
 import convert_map_regions as regions
 import convert_world_metadata as convert
+import fandom_city_snapshot as city_snapshot
 import fandom_hunting_snapshot as snapshot_tool
 import otbm_reader
 import validate_world_metadata as validate
@@ -167,6 +169,7 @@ class ConvertAndValidateTest(unittest.TestCase):
             (self.root / path).parent.mkdir(parents=True, exist_ok=True)
             (self.root / path).write_bytes(blob)
         add_regions(self.root)
+        add_cities(self.root)
 
     def tearDown(self):
         shutil.rmtree(self.root)
@@ -453,6 +456,7 @@ class HuntingPlaceEndToEndTest(unittest.TestCase):
         shutil.copy(convert.ITEM_BINDINGS, bindings)
         self.load(snapshot_tool.build_snapshot(PAGES, "2026-09-29"))
         add_regions(self.root)
+        add_cities(self.root)
 
     def tearDown(self):
         shutil.rmtree(self.root)
@@ -792,6 +796,49 @@ def add_regions(root: Path) -> None:
     write_files(root, regions.build(root))
 
 
+CITY_TEXT = """{{Infobox Geography
+| ruler        = [[King Test]] <!-- ignored -->
+| implemented  = 6.2
+| population   = {{PAGESINCATEGORY:Test Town NPCs|pages}}
+| near         = [[Hill]], [[Lake|the Lake]]
+| map          = [[File:Map_test.jpg]]
+}}
+Prose that must never be stored.
+"""
+CITY_NPCS = ["Ann Bee", "Carl D'Oh", "Zed", "Zed"]
+
+
+def city_snapshot_data(text: str = CITY_TEXT, npcs=CITY_NPCS) -> bytes:
+    pages = {"Test Town": wiki_page(21, "Test Town", text)}
+    return snapshot_tool.canonical(
+        city_snapshot.build_snapshot(
+            ["Test Town"], pages, {"Test Town": list(npcs)}, "2026-09-29"
+        )
+    )
+
+
+def add_cities(root: Path, data: bytes | None = None) -> None:
+    data = data or city_snapshot_data()
+    keys = ("ann_bee", "zed", "other")
+    shard = "content/npcs/definitions/npcs-00000-00002.json"
+    write_files(
+        root,
+        {
+            cityfacts.NPC_INDEX: validate.canonical({"shards": [shard]}).encode(),
+            shard: validate.canonical(
+                {
+                    "records": [
+                        {"declaration": {"identity": {"key": f"oteryn:npc.{k}"}}}
+                        for k in keys
+                    ]
+                }
+            ).encode(),
+            cityfacts.SNAPSHOT: data,
+        },
+    )
+    write_files(root, cityfacts.build(data, root))
+
+
 class ClientMapReaderTest(unittest.TestCase):
     def test_reads_areas_images_and_counts_the_rest(self):
         files = client_files()
@@ -862,6 +909,7 @@ class MapRegionEndToEndTest(unittest.TestCase):
         )
         write_files(self.root, {hunting.SNAPSHOT: data})
         write_files(self.root, hunting.build(data, self.root))
+        add_cities(self.root)
         self.load(client_files())
 
     def tearDown(self):
@@ -1135,6 +1183,216 @@ class MapRegionEndToEndTest(unittest.TestCase):
 
         self.rewrite(mutate)
         self.assertTrue(any("schema" in e for e in self.errors()))
+
+
+class CityFactsTest(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        blobs = {
+            "data-global/world/world.otbm": fixture_map(),
+            "data-global/world/world-house.xml": HOUSE_XML,
+        }
+        write_files(self.root, convert.build(blobs, self.root))
+        self.plain = (self.root / "content/world/areas/cities/index.json").read_bytes()
+        bindings = self.root / validate.ITEM_BINDINGS
+        bindings.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(convert.ITEM_BINDINGS, bindings)
+        data = snapshot_tool.canonical(
+            snapshot_tool.build_snapshot(PAGES, "2026-09-29")
+        )
+        write_files(self.root, {hunting.SNAPSHOT: data})
+        write_files(self.root, hunting.build(data, self.root))
+        add_regions(self.root)
+        add_cities(self.root)
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def shard_path(self):
+        return self.root / "content/world/areas/cities/cities-00000-00000.json"
+
+    def record(self):
+        return json.loads(self.shard_path().read_text())["records"][0]
+
+    def rewrite(self, mutate):
+        shard = json.loads(self.shard_path().read_text())
+        mutate(shard)
+        self.shard_path().write_text(validate.canonical(shard), encoding="utf-8")
+
+    def errors(self):
+        return validate.validate(self.root)
+
+    def test_snapshot_keeps_raw_facts_and_npc_names_never_prose(self):
+        data = city_snapshot_data()
+        self.assertNotIn(b"Prose", data)
+        self.assertNotIn(b"population", data)
+        row = json.loads(data)["pages"][0]
+        self.assertEqual(
+            row["facts"],
+            {
+                "implemented": "6.2",
+                "near": "[[Hill]], [[Lake|the Lake]]",
+                "npc_names": ["Ann Bee", "Carl D'Oh", "Zed"],
+                "ruler": "[[King Test]]",
+            },
+        )
+        self.assertEqual(row["sha256"], hashlib.sha256(CITY_TEXT.encode()).hexdigest())
+
+    def test_snapshot_lists_missing_ambiguous_and_non_city_pages_apart(self):
+        pages = {
+            "Test Town": wiki_page(21, "Test Town", CITY_TEXT),
+            "Cave": wiki_page(22, "Cave", "{{Infobox Hunt\n| city = X\n}}"),
+            "Targuna": wiki_page(23, "Targuna", CITY_TEXT),
+        }
+        names = ["Test Town", "Cave", "Targuna", "Home"]
+        snapshot = city_snapshot.build_snapshot(names, pages, {}, "2026-09-29")
+        self.assertEqual([row["title"] for row in snapshot["pages"]], ["Test Town"])
+        self.assertEqual(
+            {row["name"]: row["reason"] for row in snapshot["unmatched"]},
+            {
+                "Cave": city_snapshot.NO_INFOBOX,
+                "Home": city_snapshot.NO_PAGE,
+                "Targuna": city_snapshot.AMBIGUOUS["Targuna"],
+            },
+        )
+
+    def test_fixture_enriches_the_city_and_keeps_its_original_fields(self):
+        self.assertEqual(self.errors(), [])
+        record = self.record()
+        declaration = record["declaration"]
+        self.assertEqual(declaration["implemented"], "6.2")
+        self.assertEqual(
+            [ref["key"] for ref in declaration["npcs"]],
+            ["oteryn:npc.ann_bee", "oteryn:npc.zed"],
+        )
+        self.assertEqual(
+            declaration["source_facts"],
+            {
+                "implemented": "6.2",
+                "near": "Hill, the Lake",
+                "npc_names_unmatched": ["Carl D'Oh"],
+                "ruler": "King Test",
+            },
+        )
+        self.assertEqual(declaration["identity"]["key"], "oteryn:area.city.test_town")
+        crystal, wiki = record["source_bindings"]
+        self.assertEqual(crystal["identity_namespace"], "crystalserver/town-id")
+        self.assertEqual(
+            (wiki["identity_namespace"], wiki["external_id"], wiki["source_revision"]),
+            ("tibiawiki-fandom/page-id", "21", "210"),
+        )
+        summary = json.loads((self.root / cityfacts.SUMMARY).read_text())
+        self.assertEqual(
+            summary["records_with"],
+            {"implemented": 1, "npcs": 1, "source_facts": 1, "wiki_binding": 1},
+        )
+        self.assertEqual(summary["npc_names_linked"], 2)
+
+    def test_unparsable_version_stays_raw_only(self):
+        add_cities(
+            self.root,
+            city_snapshot_data(CITY_TEXT.replace("6.2", "13.40.54ea79")),
+        )
+        declaration = self.record()["declaration"]
+        self.assertNotIn("implemented", declaration)
+        self.assertEqual(declaration["source_facts"]["implemented"], "13.40.54ea79")
+        self.assertEqual(self.errors(), [])
+
+    def test_conversion_is_idempotent_and_survives_plain_regeneration(self):
+        data = (self.root / cityfacts.SNAPSHOT).read_bytes()
+        first = cityfacts.build(data, self.root)
+        write_files(self.root, first)
+        self.assertEqual(cityfacts.build(data, self.root), first)
+        blobs = {
+            "data-global/world/world.otbm": fixture_map(),
+            "data-global/world/world-house.xml": HOUSE_XML,
+        }
+        write_files(self.root, convert.build(blobs, self.root))
+        self.assertEqual(cityfacts.build(data, self.root), first)
+
+    def test_rejects_snapshots_that_do_not_fit_the_cities(self):
+        pages = {"Other City": wiki_page(24, "Other City", CITY_TEXT)}
+        foreign = city_snapshot.build_snapshot(["Other City"], pages, {}, "2026-09-29")
+        with self.assertRaises(convert.ConvertError):
+            cityfacts.build(snapshot_tool.canonical(foreign), self.root)
+        with self.assertRaises(convert.ConvertError):
+            cityfacts.build(
+                b'{"schema":"other","pages":[],"unmatched":[]}\n', self.root
+            )
+        twice = json.loads(city_snapshot_data())
+        twice["unmatched"] = [{"name": "Test Town", "reason": "x"}]
+        with self.assertRaises(convert.ConvertError):
+            cityfacts.build(snapshot_tool.canonical(twice), self.root)
+
+    def test_rejects_unknown_npc_key(self):
+        def mutate(shard):
+            shard["records"][0]["declaration"]["npcs"][0]["key"] = "oteryn:npc.nobody"
+
+        self.rewrite(mutate)
+        self.assertTrue(any("is not an NPC definition" in e for e in self.errors()))
+
+    def test_rejects_stale_revision(self):
+        def mutate(shard):
+            shard["records"][0]["source_bindings"][1]["source_revision"] = "999"
+
+        self.rewrite(mutate)
+        self.assertTrue(any("not in the pinned snapshot" in e for e in self.errors()))
+
+    def test_rejects_wiki_facts_without_a_binding(self):
+        def mutate(shard):
+            del shard["records"][0]["source_bindings"][1]
+
+        self.rewrite(mutate)
+        errors = self.errors()
+        self.assertTrue(any("wiki facts without a wiki binding" in e for e in errors))
+        self.assertTrue(any("exactly once" in e for e in errors))
+
+    def test_rejects_counts_and_npc_coverage_that_differ(self):
+        def mutate(shard):
+            declaration = shard["records"][0]["declaration"]
+            declaration["npcs"].pop()
+            declaration["implemented"] = "6.3"
+
+        self.rewrite(mutate)
+        errors = self.errors()
+        self.assertTrue(any("do not cover the snapshot" in e for e in errors))
+        self.assertTrue(any("implemented differs" in e for e in errors))
+
+    def test_rejects_non_canonical_bytes_and_edited_snapshot(self):
+        path = self.root / cityfacts.SNAPSHOT
+        path.write_text(path.read_text() + " ")
+        index = self.root / "content/world/areas/cities/index.json"
+        index.write_text(index.read_text() + " ")
+        errors = self.errors()
+        self.assertTrue(any("differs from the sha256 pinned" in e for e in errors))
+        self.assertTrue(any("not canonical" in e for e in errors))
+
+    def test_rejects_enrichment_pin_that_differs_from_the_capture(self):
+        index_path = self.root / "content/world/areas/cities/index.json"
+        index = json.loads(index_path.read_text())
+        index["enrichment"]["fetched_at"] = "2026-01-01"
+        index_path.write_text(validate.canonical(index), encoding="utf-8")
+        self.assertTrue(any("enrichment differs" in e for e in self.errors()))
+
+    def test_rejects_schema_violation_in_a_city(self):
+        def mutate(shard):
+            shard["records"][0]["declaration"]["source_facts"]["extra"] = "x"
+
+        self.rewrite(mutate)
+        self.assertTrue(any("schema" in e for e in self.errors()))
+
+    def test_plain_cities_fail_validation_until_enriched(self):
+        (self.root / "content/world/areas/cities/index.json").write_bytes(self.plain)
+        self.assertTrue(any("enrichment differs" in e for e in self.errors()))
+
+
+class CommittedCitiesTest(unittest.TestCase):
+    """The committed cities equal the conversion of the committed wiki snapshot."""
+
+    def test_committed_files_are_current(self):
+        data = (convert.ROOT / cityfacts.SNAPSHOT).read_bytes()
+        for path, blob in cityfacts.build(data).items():
+            self.assertEqual((convert.ROOT / path).read_bytes(), blob, path)
 
 
 class CommittedRegionsTest(unittest.TestCase):

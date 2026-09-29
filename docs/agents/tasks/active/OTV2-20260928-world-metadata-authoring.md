@@ -43,7 +43,7 @@ This is step 1 of the owner's world-map plan: metadata first, then the full map 
 (terrain, objects, placements) after a measured storage-format decision, then TibiaWiki
 enrichment. Five families move from `READY_UNPOPULATED` to `POPULATED`:
 
-- `Area.City`: 35 records;
+- `Area.City`: 35 records, 29 enriched from the English TibiaWiki (below);
 - `Area.HuntingPlace`: 445 records from the English TibiaWiki (Fandom), described below;
 - `Area.Region`: 465 records (28 regions, 437 subregions) from the official 15.30 client
   map file, described below;
@@ -89,6 +89,13 @@ The Thais temple lies in the `Thais City` mask only and the Ab'Dendriel temple i
 Not imported (counted in the capture summary): the meaning of area fields 6 and 7, markers,
 satellite and minimap images, and `staticmapdata-*.dat`.
 
+`Area.City` records gain `source_facts`, optional `implemented` and `npcs`, and a second
+binding (`tibiawiki-fandom/page-id`, revision id) from `imports/tibiawiki/cities/`, by the
+same pattern (`fandom_city_snapshot.py fetch`, offline `convert_city_facts.py --check`).
+29 city pages match by exact title with an `Infobox Geography`; 6 are listed apart with a
+reason (3 without a page, 2 hunting-place pages, `Targuna` ambiguous). NPC names come from
+`Category:<City> NPCs`; 969 link to NPC keys by exact slug name and 239 stay unmatched.
+
 ## Architecture and source of truth
 
 - **PROVEN:** `content/world/**` is still the legacy WorldProject package root. The seed
@@ -126,6 +133,8 @@ satellite and minimap images, and `staticmapdata-*.dat`.
 - [x] Regions: schema, reader, converter (`--check`, offline from the committed client
       files), validator (source and mask pins, hierarchy, city links, extent, counts) and
       fixture tests including negatives.
+- [x] Cities: snapshot tool, converter (`--check`), schema shapes, validator (snapshot pin,
+      bindings, NPC keys, counts) and fixture tests with negatives; the workflow runs them.
 - [x] The legacy package guards accept the successor shards: the materialized-tree
       validator, the seed workflow and the Rust inventory test.
 - [ ] Required checks pass on the frozen PR head.
