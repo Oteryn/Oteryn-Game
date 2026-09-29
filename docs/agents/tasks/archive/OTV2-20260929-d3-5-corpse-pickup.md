@@ -4,15 +4,15 @@
 task_id: OTV2-20260929-d3-5-corpse-pickup
 title: D3-5 Combat corpse-container pickup request wired to the D3-4 TRANSFER
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/d3-5-corpse-pickup
 issue: 162
 allocation: "#162 control plane child D3-5 of the merged D3 decision (worker 'Oteryn: sol combat lead')"
 base_sha: d4d5e2c4
-head_sha: null
-final_head_sha: null
+head_sha: f8554c270458cdc65962f03597daf7ed288b9974
+final_head_sha: f8554c270458cdc65962f03597daf7ed288b9974
 final_head_frozen_at: null
 owner: "Oteryn: sol combat lead (claude-code-session-01U1WRHgL9X8RbuiG1pwczrF)"
 created_at: 2026-09-29
@@ -64,7 +64,7 @@ external_repositories: []
   - `corpse_transfer_postgres`: 597 passed.
   - `character_authority_postgres`: 628 passed. The 10 failures there are the `PostgreSQL 17.6` version
     pin only (local server is 17.11).
-- [ ] Protected PostgreSQL lane green on the exact frozen head.
+- [x] Protected PostgreSQL lane green on the exact frozen head.
 
 ## Deviations and gaps
 
@@ -74,3 +74,8 @@ external_repositories: []
 - `combat_pickup_postgres` now also includes `corpse_transfer_postgres_cases` for its corpse MINT and loot
   forgery helpers, so those 5 D3-4 cases also run in this local-only target.
 - No production caller yet, like B3-2: GAME-INTERACTION dispatch is a later admission stage.
+
+## Closeout
+
+- merge commit/result: `7acab4d` on protected `main` (#1226); every file the PR changed is byte-identical to `f8554c2`
+- ownership release: all leases released at merge
