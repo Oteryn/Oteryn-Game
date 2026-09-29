@@ -49,6 +49,11 @@ def walk(actions, where):
 
 CREATURE_TRIGGERS = ('creature_died', 'lethal_damage', 'health_crossed', 'creature_spawned', 'ability_cast', 'damage_taken',
                      'heal_received', 'damage_accumulated', 'item_used', 'stepped_on')
+# CW2-1: `triggering` in `teleport.who` and the `in_anchor` subject also works in area triggers, which fire per creature.
+TRIGGERING_TRIGGERS = CREATURE_TRIGGERS + ('area_entered', 'area_left')
+# CW2-3: what `map_item` with `triggering` forbids: the item it removes is the one the `stepped_on` rule fired on.
+MAP_ITEM_TRIGGERING_FORBIDS = ('item', 'into', 'anchor', 'at', 'destination', 'revert_after_ms', 'revert_destination', 'effect',
+                               'interaction')
 
 
 def semantic(e, catalog):
@@ -128,6 +133,8 @@ def semantic(e, catalog):
             need('counter', trigger['counter'], counters, where + '/trigger')
         if kind == 'phase_entered':
             need('phase', trigger['phase'], e['phases'], where + '/trigger')
+        if kind == 'stepped_on' and 'corpse_of' in trigger:
+            need('role', trigger['corpse_of'], known_roles, where + '/trigger')
         if kind in ('area_entered', 'area_left'):
             need_area(trigger['anchor'], where + '/trigger')
             if (trigger['who'] == 'role') != ('role' in trigger):
@@ -148,7 +155,11 @@ def semantic(e, catalog):
                 if 'near' in condition:
                     need('role', condition['near']['role'], known_roles, at)
             elif ck == 'in_anchor':
-                subject(condition['subject'], at, trigger)
+                if 'triggering' in condition['subject']:
+                    if kind not in TRIGGERING_TRIGGERS:
+                        errors.append(f'{at}: in_anchor of triggering needs a trigger fired by one creature or an area trigger')
+                else:
+                    subject(condition['subject'], at, trigger)
                 need_area(condition['anchor'], at)
             elif ck in ('has_master', 'summon_count', 'has_condition'):
                 need('role', condition['role'], known_roles, at)
@@ -185,6 +196,8 @@ def semantic(e, catalog):
                 errors.append(f'{at}: remove takes exactly one of role, all_in and triggering')
             if ak == 'remove' and 'triggering' in action and kind not in CREATURE_TRIGGERS:
                 errors.append(f'{at}: remove triggering needs a trigger fired by one creature')
+            if ak == 'remove' and 'triggering' in action and trigger.get('who') == 'player':
+                errors.append(f'{at}: remove triggering never removes a player')
             if ak == 'remove' and 'keep_summons' in action and 'all_in' not in action:
                 errors.append(f'{at}: keep_summons applies only to remove all_in')
             if action.get('health') == 'remembered' and (ak != 'spawn' or 'role' not in action):
@@ -201,9 +214,20 @@ def semantic(e, catalog):
                 need('anchor', action['to'], anchors, at)
                 if 'players_in' in action['who']:
                     need_area(action['who']['players_in'], at)
+                elif 'triggering' in action['who']:
+                    if kind not in TRIGGERING_TRIGGERS:
+                        errors.append(f'{at}: teleport triggering needs a trigger fired by one creature or an area trigger')
                 else:
                     need('role', action['who']['role'], known_roles, at)
-            if ak == 'map_item':
+            if ak == 'map_item' and 'triggering' in action:
+                if action['operation'] != 'remove':
+                    errors.append(f'{at}: map_item triggering is valid only with operation remove')
+                if kind != 'stepped_on':
+                    errors.append(f'{at}: map_item triggering needs a stepped_on trigger')
+                extra = [field for field in MAP_ITEM_TRIGGERING_FORBIDS if field in action]
+                if extra:
+                    errors.append(f'{at}: map_item triggering forbids {extra}')
+            elif ak == 'map_item':
                 if ('anchor' in action) == ('at' in action):
                     errors.append(f'{at}: map_item takes exactly one of anchor and at')
                 if 'anchor' in action:
