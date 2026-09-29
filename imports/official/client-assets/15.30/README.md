@@ -7,8 +7,7 @@ target client version 15.30. It records, for every file in that folder: `name`,
 `total_bytes`. It contains **no image data and no other proprietary file content** —
 only cryptographic digests and plain file metadata.
 
-The proprietary asset files themselves (sprites, `.dat`/`.spr`/`.bin` client
-resources, etc.) are **not** and must **never** be committed to this repository.
+The manifest itself remains checksum-only. As of 2026-09-29, the project owner confirmed redistribution rights for the currently present local asset set and directed its 6,248 files to be committed under `content/assets/files/`. Those 6,248 files match their manifest SHA-256 entries. The manifest-only 122,882,530-byte `minimap-32-0996-0984-02-dce27ae4b4d345201c9cc7f9d4f7576fc9144583779e8716b29032d6c1731073.bmp.zip` is absent from the current local source and is not committed.
 
 ## How it is produced
 
