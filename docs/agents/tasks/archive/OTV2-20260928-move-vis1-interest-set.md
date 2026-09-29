@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-move-vis1-interest-set
 title: "VIS-1 pure interest-set logic (MOVE-RL-08/-09/-10, MOVE-VIEW-*)"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/move-vis1-interest-set
-pr: null
+pr: 1153
 base_sha: 7d1134f090ac249f964fede017efabba91e22b90
 head_sha: null
 final_head_sha: null
@@ -144,17 +144,17 @@ name only `movement::interest::` items; the wire consumer of `-08`/`-10` arrives
 - unresolved review threads: pending
 - related/superseded PRs: pending
 - protected auto-merge: pending
-- merge commit/result: pending
-- ownership release: pending
+- merge commit/result: squash merge of #1153 (e5d5b7fc)
+- ownership release: released
 
 ## Context checkpoint
 
 ```yaml
-last_progress: main merged, registry rows written, local validation complete; awaiting freeze
-status: implementing
+last_progress: merged in #1153 (squash e5d5b7fc: interest.rs, movement.rs, six RESOURCE_LIMITS_REGISTRY rows); the record was left in active/ and is archived by the daily leftover batch; ownership released
+status: completed
 branch: claude/move-vis1-interest-set
 head_sha: null
-pr: null
+pr: 1153
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -172,5 +172,9 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: lane coordinator opens the PR and freezes the pushed head
+next_action: none; record archived
 ```
+
+## Archive closeout
+
+- merged in #1153 (squash e5d5b7fc: interest.rs, movement.rs, six RESOURCE_LIMITS_REGISTRY rows); the record was left in active/ and is archived by the daily leftover batch; ownership released

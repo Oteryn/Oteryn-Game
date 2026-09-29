@@ -4,12 +4,12 @@
 task_id: OTV2-20260929-n2-renderer-primitives
 title: "ADR-0020 N2 - renderer primitives: tile and sprite batch and a production-owned placeholder asset member"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/n2-renderer-primitives
 issue: 162
-pr: null
+pr: 1234
 allocation: "#162 control plane child N2 of ADR-0020 (worker session claude-code-session-01PwTJFS62J35S88Srpqnrgx)"
 base_sha: 3e3ed1aeac84280b91b38053383e83f395aebe19
 head_sha: null
@@ -140,11 +140,15 @@ Run on the authoring tree (Linux, toolchain 1.94.0):
 ## Context checkpoint
 
 ```yaml
-last_progress: implemented and validated locally; PR pending
-status: implementing
+last_progress: completed; squash merged as #1234 (b90f85c); archived by the leftover-record housekeeping PR
+status: completed
 branch: claude/n2-renderer-primitives
-pr: null
+pr: 1234
 owner_action_required: null
 blocker: null
-next_action: open the PR, exact-head validation, independent review, Merge Queue; a Windows run of the release client to see the placeholder scene
+next_action: none; record archived
 ```
+
+## Archive closeout
+
+- completed; squash merged as #1234 (b90f85c); archived by the leftover-record housekeeping PR
