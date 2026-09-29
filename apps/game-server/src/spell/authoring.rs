@@ -284,7 +284,8 @@ fn party_buff(parameters: &Value, dependencies: &Value) -> Result<PartyBuffSpec,
     })
 }
 
-/// An areaMatrix (monster D12 cells) as offsets from its centre; it is not rotated.
+/// A `party_buff` areaMatrix (monster D12 cells) as offsets from its centre; it is not rotated. The
+/// centre is the caster's tile and must be hit (`C`).
 fn area_matrix(matrix: &Value) -> Result<BTreeSet<(i32, i32)>, AuthoringError> {
     let rows = matrix
         .as_array()
@@ -312,13 +313,13 @@ fn area_matrix(matrix: &Value) -> Result<BTreeSet<(i32, i32)>, AuthoringError> {
             match cell {
                 b'.' => {}
                 b'x' => cells.push(position),
-                b'c' | b'C' => {
+                // C.3 step 2: the caster is always affected, so the centre must be hit.
+                b'c' => return fail("a party_buff area centre must be hit (C, not c)"),
+                b'C' => {
                     if centre.replace(position).is_some() {
                         return fail("the area has more than one centre");
                     }
-                    if cell == b'C' {
-                        cells.push(position);
-                    }
+                    cells.push(position);
                 }
                 _ => return fail("unknown area cell"),
             }

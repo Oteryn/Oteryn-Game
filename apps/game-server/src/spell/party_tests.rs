@@ -407,9 +407,20 @@ fn the_reader_admits_only_the_accepted_party_buff_values() {
     assert!(reject(&parameter("same_floor", json!(false))).is_some());
     assert!(reject(&parameter("requires_party", json!(false))).is_some());
     assert!(reject(&parameter("min_affected", json!(0))).is_some());
-    assert!(reject(&parameter("area", json!(["xxx", "xcx", "xx"]))).is_some());
+    assert!(reject(&parameter("area", json!(["xxx", "xCx", "xx"]))).is_some());
     assert!(reject(&parameter("area", json!(["xCx", "xCx"]))).is_some());
     assert!(reject(&parameter("area", json!(["xxx"]))).is_some());
+    // The caster is always affected (C.3 step 2): a non-hit centre `c` is rejected.
+    let centre = reject(&parameter(
+        "area",
+        json!([
+            "..xxx..", ".xxxxx.", "xxxxxxx", "xxxcxxx", "xxxxxxx", ".xxxxx.", "..xxx.."
+        ]),
+    ));
+    assert!(
+        centre.is_some_and(|error| error.0.contains("centre must be hit")),
+        "a lowercase centre fails closed"
+    );
     assert!(
         reject(&parameter(
             "mana",
