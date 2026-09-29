@@ -10,6 +10,12 @@ use crate::foundation::{
 use std::future::Future;
 use tokio::io::{AsyncRead, AsyncWrite};
 
+use super::actor_spell::{
+    ActorVitals, COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT, DELTA_TYPE_ACTOR_VITALS_V1,
+    SNAPSHOT_TYPE_ACTOR_VITALS_V1, STATE_DOMAIN_ACTOR_VITALS, SpellCastDisposition,
+    SpellCastIntent, SpellCastOutcome, decode_spell_cast_intent, encode_actor_vitals,
+    encode_spell_cast_result,
+};
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_object::{
     COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
@@ -215,6 +221,28 @@ pub(crate) trait FreshAdmissionAuthority {
         _target: super::world_object::WorldObjectTarget,
     ) -> impl Future<Output = UseOutcome> {
         async { UseOutcome::rejected() }
+    }
+
+    /// The admitted actor's current `ACTOR_VITALS` revision and value for the initial snapshot,
+    /// or `None` while it has no Character cast facts (spell cast §4).
+    fn observe_vitals(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> impl Future<Output = Option<(u64, ActorVitals)>> {
+        async { None }
+    }
+
+    /// One `WORLD_ACTOR_SPELL_CAST_INTENT` of the admitted actor, applied by the Channel owner
+    /// (spell cast §9 step 2). `command_id` is the FND-02 CommandId the cast is bound to.
+    fn cast_spell(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _command_id: u64,
+        _intent: SpellCastIntent,
+    ) -> impl Future<Output = SpellCastOutcome> {
+        async { SpellCastOutcome::rejected() }
     }
 
     /// After `wait` without restored control, record authoritative unexpected control loss
@@ -558,6 +586,11 @@ where
     // connection gets the door's current overlay exactly as a fresh join does.
     let overlay = authority.observe_world_object_overlay().await;
     let overlay_payload;
+    // Spell cast §3/§4: the own actor's `ACTOR_VITALS`, when it has them, in the same snapshot.
+    let vitals = authority
+        .observe_vitals(actor, admitted.game_session_id)
+        .await;
+    let vitals_payload;
     if let Some(entry) = &overlay {
         let Ok(bytes) = encode_world_object_overlay_snapshot(std::slice::from_ref(entry)) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -568,6 +601,18 @@ where
             revision: entry.revision,
             snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
             payload: &overlay_payload,
+        });
+    }
+    if let Some((vitals_revision, value)) = &vitals {
+        let Ok(bytes) = encode_actor_vitals(value) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        vitals_payload = bytes;
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_ACTOR_VITALS,
+            revision: *vitals_revision,
+            snapshot_type: SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+            payload: &vitals_payload,
         });
     }
     let snapshot =
@@ -701,9 +746,12 @@ where
         // sequencing this loop already enforces above for every command: a CommandId can be
         // acted on at most once per connection generation, so a replay of the same CommandId
         // never makes a second transition.
+        // WORLD_ACTOR_SPELL_CAST_INTENT (command type 3) follows the same discipline: a replayed
+        // CommandId expires above, so a retry never casts or pays a second time (SPELL-D3).
         enum Dispatch {
             Step(StepOutcome),
             Use(UseOutcome),
+            Spell(SpellCastOutcome),
             Unregistered,
         }
         let dispatch = if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
@@ -715,6 +763,15 @@ where
             match decode_use_intent(command.payload) {
                 Ok(target) => Dispatch::Use(authority.use_object(actor, target).await),
                 Err(_) => Dispatch::Use(UseOutcome::rejected()),
+            }
+        } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT {
+            match decode_spell_cast_intent(command.payload) {
+                Ok(intent) => Dispatch::Spell(
+                    authority
+                        .cast_spell(actor, admitted.game_session_id, command.command_id, intent)
+                        .await,
+                ),
+                Err(_) => Dispatch::Spell(SpellCastOutcome::rejected()),
             }
         } else {
             Dispatch::Unregistered
@@ -744,6 +801,14 @@ where
                     CommandStatus::Accepted
                 },
                 encode_use_result(outcome.disposition),
+            ),
+            Dispatch::Spell(outcome) => (
+                if outcome.disposition == SpellCastDisposition::Rejected {
+                    CommandStatus::Rejected
+                } else {
+                    CommandStatus::Accepted
+                },
+                encode_spell_cast_result(outcome.disposition),
             ),
             Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
         };
@@ -823,6 +888,36 @@ where
                     // r4122508665: only record the new overlay revision once the delta that
                     // carries it has actually been transmitted.
                     admitted.continuity.overlay_revision = entry.revision;
+                }
+            }
+            Dispatch::Spell(outcome) => {
+                // ACTOR_VITALS (domain 3, delta type 1) carries the owner's own per-actor
+                // revision: a committed cast advances it by exactly one.
+                if let Some((to, value)) = outcome.vitals {
+                    let (Some(delta_sequence), Some(from)) =
+                        (sequence.checked_add(1), to.checked_sub(1))
+                    else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    let Ok(payload) = encode_actor_vitals(&value) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    let Ok(delta) = encode_state_delta(
+                        generation,
+                        delta_sequence,
+                        STATE_DOMAIN_ACTOR_VITALS,
+                        from,
+                        to,
+                        DELTA_TYPE_ACTOR_VITALS_V1,
+                        &payload,
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    if write_frame(stream, &delta).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
                 }
             }
             Dispatch::Unregistered => {}
@@ -1142,6 +1237,15 @@ mod tests {
             controller: None,
             continuity: SessionContinuity::FRESH,
         };
+        drive_session(authority, admitted, client_frames).await
+    }
+
+    /// Serve `admitted` over the given client frames.
+    async fn drive_session<A: FreshAdmissionAuthority>(
+        authority: &A,
+        admitted: AdmittedSession,
+        client_frames: &[Vec<u8>],
+    ) -> Result<(ConnectionEnd, Vec<Vec<u8>>), Box<dyn Error>> {
         let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 21);
         for frame in client_frames {
             client.write_all(&framed(frame)).await?;
@@ -1961,6 +2065,213 @@ mod tests {
             assert_eq!(frames, expected);
             // The unregistered type never reached `use_object`.
             assert_eq!(authority.uses.borrow().len(), 1);
+            Ok(())
+        })
+    }
+
+    /// Spell cast §9 step 2 over the real Channel owner: a positioned actor of a real
+    /// `ChannelRuntimeV1` whose Character cast facts are supplied, the V1 spell book and the
+    /// composed cast work item, served by the same `serve_admitted` loop as production.
+    struct SpellAuthority {
+        runtime: crate::foundation::ChannelRuntimeV1,
+        states: RefCell<super::super::actor_spell::ChannelSpellStates>,
+        book: crate::spell::SpellBook,
+        casts: Cell<usize>,
+    }
+
+    impl FreshAdmissionAuthority for SpellAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+
+        async fn observe_vitals(
+            &self,
+            actor: ExactActorRef,
+            game_session_id: GameSessionId,
+        ) -> Option<(u64, ActorVitals)> {
+            super::super::actor_spell::observe_vitals(
+                &self.runtime,
+                &self.states.borrow(),
+                actor,
+                game_session_id,
+            )
+        }
+
+        async fn cast_spell(
+            &self,
+            actor: ExactActorRef,
+            game_session_id: GameSessionId,
+            command_id: u64,
+            intent: SpellCastIntent,
+        ) -> SpellCastOutcome {
+            self.casts.set(self.casts.get() + 1);
+            super::super::actor_spell::cast_in_channel(
+                &self.runtime,
+                &mut self.states.borrow_mut(),
+                &self.book,
+                actor,
+                game_session_id,
+                command_id,
+                &intent,
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+        }
+    }
+
+    fn cast_command(id: u64, intent: &[u8]) -> Vec<u8> {
+        let mut payload = Vec::new();
+        scalar(&mut payload, 1, id);
+        scalar(
+            &mut payload,
+            2,
+            u64::from(COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT),
+        );
+        bytes(&mut payload, 4, intent);
+        envelope(7, ADMITTED_GENERATION, &payload)
+    }
+
+    #[test]
+    fn admitted_cast_pays_once_publishes_vitals_and_a_retry_expires() -> Result<(), Box<dyn Error>>
+    {
+        use super::super::actor_spell::{encode_spell_cast_intent, tests as spell};
+        run(async {
+            let (runtime, actor, session) = spell::runtime_with_player(0x70);
+            let mut states = super::super::actor_spell::ChannelSpellStates::default();
+            states
+                .initialize(&runtime, actor, session, spell::FACTS)
+                .ok_or("initialize")?;
+            let authority = SpellAuthority {
+                runtime,
+                states: RefCell::new(states),
+                book: crate::spell::cast::v1_spell_book()?,
+                casts: Cell::new(0),
+            };
+            let exura = encode_spell_cast_intent(&spell::exura());
+            let unknown = encode_spell_cast_intent(&SpellCastIntent {
+                spell: std::num::NonZeroU32::new(9).ok_or("index")?,
+                ..spell::exura()
+            });
+            let admitted = AdmittedSession {
+                game_session_id: session,
+                world_id: WorldId::decode(&uuid_v7(0x60))?,
+                channel_id: ChannelId::decode(&uuid_v7(0x61))?,
+                runtime_actor: Some(actor),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+            };
+            let (end, frames) = drive_session(
+                &authority,
+                admitted,
+                &[
+                    cast_command(1, &exura),
+                    cast_command(2, &exura),
+                    // Spell index 0 does not decode: REJECTED before the Channel owner.
+                    cast_command(3, &[0x08, 0x00, 0x10, 0x01]),
+                    cast_command(4, &unknown),
+                    // The retry of the cast that paid: never executed again.
+                    cast_command(1, &exura),
+                ],
+            )
+            .await?;
+            let full = ActorVitals {
+                health: 185,
+                max_health: 185,
+                mana: 90,
+                max_mana: 90,
+                soul: 100,
+                harmony: 0,
+                serene: false,
+            };
+            let paid = ActorVitals { mana: 70, ..full };
+            let result = |sequence, id, status, disposition| {
+                encode_command_result(
+                    ADMITTED_GENERATION,
+                    sequence,
+                    id,
+                    status,
+                    &encode_spell_cast_result(disposition),
+                )
+            };
+            let full_payload = encode_actor_vitals(&full).map_err(|_| "vitals")?;
+            let mut expected: Vec<Vec<u8>> = encode_single_chunk_snapshot(
+                ADMITTED_GENERATION,
+                1,
+                0,
+                &[
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        revision: 1,
+                        snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                        payload: &encode_world_spatial(&at(0)),
+                    },
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_ACTOR_VITALS,
+                        revision: 1,
+                        snapshot_type: SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                        payload: &full_payload,
+                    },
+                ],
+            )?
+            .into();
+            expected.extend([
+                result(1, 1, CommandStatus::Accepted, SpellCastDisposition::Cast)?,
+                encode_state_delta(
+                    ADMITTED_GENERATION,
+                    2,
+                    STATE_DOMAIN_ACTOR_VITALS,
+                    1,
+                    2,
+                    DELTA_TYPE_ACTOR_VITALS_V1,
+                    &encode_actor_vitals(&paid).map_err(|_| "vitals")?,
+                )?,
+                result(
+                    3,
+                    2,
+                    CommandStatus::Accepted,
+                    SpellCastDisposition::CoolingDown,
+                )?,
+                result(
+                    4,
+                    3,
+                    CommandStatus::Rejected,
+                    SpellCastDisposition::Rejected,
+                )?,
+                result(
+                    5,
+                    4,
+                    CommandStatus::Rejected,
+                    SpellCastDisposition::Rejected,
+                )?,
+                encode_command_protocol_error(
+                    FoundationProtocolError::CommandOutcomeExpired,
+                    ADMITTED_GENERATION,
+                    1,
+                    0,
+                )?,
+            ]);
+            assert_eq!(frames, expected);
+            assert!(matches!(
+                end,
+                ConnectionEnd::AdmittedThenClosed(
+                    _,
+                    FoundationProtocolError::CommandOutcomeExpired
+                )
+            ));
+            // The malformed intent and the retry never reached the Channel owner; mana was paid
+            // exactly once.
+            assert_eq!(authority.casts.get(), 3);
+            assert_eq!(
+                authority.observe_vitals(actor, session).await,
+                Some((2, paid))
+            );
             Ok(())
         })
     }

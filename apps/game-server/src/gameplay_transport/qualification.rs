@@ -672,7 +672,8 @@ fn client_command_at(generation: u64, id: u64, command_type: u64, payload: &[u8]
 /// The exact frames after `ServerAccepted` for the first-control scenario, from the committed
 /// room of `world`: start (0,0,0), east (1,0,0) walkable, north blocked, south absent. The join
 /// snapshot also carries the door's current (closed, revision 0) `WORLD_OBJECT_OVERLAY`
-/// (USE-WIRE-V1, #162 5868482467).
+/// (USE-WIRE-V1, #162 5868482467). No Character has cast facts yet (spell cast §4, SPELL-D4), so
+/// the snapshot carries no `ACTOR_VITALS` and a spell cast intent is `REJECTED` with no effect.
 fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
     let room = crate::content::qualify_native_entry_room(world)
         .map_err(|e| format!("native entry room: {e}"))?;
@@ -737,10 +738,20 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
         delta(4, 2, 0)?,
         result(5, 3, CommandStatus::Accepted, StepDisposition::Blocked)?,
         result(6, 4, CommandStatus::Accepted, StepDisposition::Blocked)?,
+        // A spell cast of an actor without Character cast facts: gated, REJECTED.
+        encode_command_result(
+            1,
+            7,
+            5,
+            CommandStatus::Rejected,
+            &crate::gameplay_transport::actor_spell::encode_spell_cast_result(
+                crate::gameplay_transport::actor_spell::SpellCastDisposition::Rejected,
+            ),
+        )?,
         // An unregistered command type: REJECTED with no type-owned payload.
-        encode_command_result(1, 7, 5, CommandStatus::Rejected, &[])?,
-        // Command 7 after 5: a gap naming the offending and the expected ID.
-        encode_command_protocol_error(FoundationProtocolError::CommandSequenceGap, 1, 7, 6)?,
+        encode_command_result(1, 8, 6, CommandStatus::Rejected, &[])?,
+        // Command 8 after 6: a gap naming the offending and the expected ID.
+        encode_command_protocol_error(FoundationProtocolError::CommandSequenceGap, 1, 8, 7)?,
     ]);
     Ok(frames)
 }
@@ -1119,6 +1130,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         )
         .map_err(|e| format!("native entry door runtime: {e:?}"))?,
     );
+    let spells = crate::spell::cast::v1_spell_book()?;
     // KAN-26: the Channel runtime is composed from this exact committed
     // assignment before readiness, as `serve` does.
     let runtime = tokio::sync::Mutex::new(
@@ -1224,6 +1236,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             runtime: &runtime,
             movement_cells: &movement_cells,
             door: &door,
+            spells: &spells,
         },
         &shutdown,
     );
@@ -1698,10 +1711,18 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     // (the pre-seeded S2 observations are older than five seconds). The
     // positioned actor receives its baseline snapshot, then the first-control
     // steps (#822): east moves, west returns, north (Blocked cell) and south
-    // (outside the room) are blocked, an unknown command type is rejected and
-    // a command-id gap closes the connection.
+    // (outside the room) are blocked, a spell cast is rejected while casting is
+    // gated, an unknown command type is rejected and a command-id gap closes the
+    // connection.
     let admitted_token = sign_grant(&grant.borrowed(), now_seconds()?);
     let mut raw = framed(&bootstrap(1, 1, &characters[0], &admitted_token));
+    let exura = crate::gameplay_transport::actor_spell::encode_spell_cast_intent(
+        &crate::gameplay_transport::actor_spell::SpellCastIntent {
+            spell: std::num::NonZeroU32::new(3).ok_or("spell index")?,
+            target: crate::gameplay_transport::actor_spell::SpellTarget::None,
+            aim_at_target: false,
+        },
+    );
     for (id, command_type, direction) in [
         (1, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection::East),
         (2, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection::West),
@@ -1715,9 +1736,16 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
             StepDirection::South,
         ),
-        (5, 0x7fff, StepDirection::East),
-        (7, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection::East),
+        (6, 0x7fff, StepDirection::East),
+        (8, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection::East),
     ] {
+        if id == 6 {
+            raw.extend_from_slice(&framed(&client_command(
+                5,
+                u64::from(crate::gameplay_transport::actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT),
+                &exura,
+            )));
+        }
         raw.extend_from_slice(&framed(&client_command(
             id,
             u64::from(command_type),
@@ -1738,7 +1766,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         return Err("admission did not commit exactly one GameSession".into());
     }
     evidence(
-        "admission=committed server_accepted=1 snapshot=baseline_0_0_0_rev1 step_east=moved_1_0_0_rev2 step_west=moved_0_0_0_rev3 step_north=blocked step_south=blocked unknown_command=rejected command_gap=closed_sequence_gap admissions=1",
+        "admission=committed server_accepted=1 snapshot=baseline_0_0_0_rev1 step_east=moved_1_0_0_rev2 step_west=moved_0_0_0_rev3 step_north=blocked step_south=blocked spell_cast=rejected_gated unknown_command=rejected command_gap=closed_sequence_gap admissions=1",
     );
 
     // The fresh GameSession is durably committed and its first TLS socket has

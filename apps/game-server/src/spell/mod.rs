@@ -5,12 +5,12 @@
 //! own and group cooldowns, and the damage/heal magnitude from the spell formula. The result is data
 //! for the Ability pipeline; applying it to actors is the owner commit's job.
 //!
-//! This module is not composed into the live server: it adds no protocol command, no persisted
-//! state and no runtime slot field (those need the P3b contracts). Spell definitions come from the
-//! candidate authoring bundles through [`authoring`]; the admitted route is the WorldProject/v2
-//! lowering of P3b.
+//! [`cast`] composes the core into the live cast command (P3b §9 step 2); it adds no persisted
+//! state. Spell definitions come from the candidate authoring bundles through [`authoring`]; the
+//! admitted route is the WorldProject/v2 lowering of P3b.
 
 pub(crate) mod authoring;
+pub(crate) mod cast;
 pub(crate) mod chain;
 #[cfg(test)]
 mod chain_tests;
@@ -297,6 +297,19 @@ impl SpellBook {
 
     pub(crate) fn rune(&self, item: u32) -> Option<&SpellDefinition> {
         self.by_rune.get(&item).map(|&index| &self.spells[index])
+    }
+
+    /// A book in the canonical SPELL-D1 order: `ProductionKey` ascending by UTF-8 bytes.
+    pub(crate) fn canonical(mut spells: Vec<SpellDefinition>) -> Result<Self, SpellBookError> {
+        spells.sort_by(|left, right| left.key.as_bytes().cmp(right.key.as_bytes()));
+        Self::new(spells)
+    }
+
+    /// The spell at a 1-based index of the book's order (SPELL-D1 for a [`Self::canonical`] book).
+    pub(crate) fn indexed(&self, index: std::num::NonZeroU32) -> Option<&SpellDefinition> {
+        usize::try_from(index.get() - 1)
+            .ok()
+            .and_then(|index| self.spells.get(index))
     }
 }
 

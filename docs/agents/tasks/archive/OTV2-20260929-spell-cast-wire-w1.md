@@ -4,18 +4,20 @@
 task_id: OTV2-20260929-spell-cast-wire-w1
 title: Spell cast wire and own-actor vitals - registries and codecs (§9 step 1, SPELL-D8 H-3)
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1254
+merge_pr: 1254
 allocation_comment: "#162 5894588548"
 base_branch: main
 branch: claude/spell-cast-wire-w1
 base_sha: 37a06b5cd45c33cab961652882b074b23a09dd1f
-head_sha: null
+head_sha: 6b10381a04ea44ed9e63d85e24b87dd1bf3ebeae
+merge_sha: c91055f66dd2c5724f17e226c7b7da2430a1a914
 owner: "Oteryn: content" (Claude Code)
 created_at: 2026-09-29T16:58:00Z
-updated_at: 2026-09-29T17:10:00Z
+updated_at: 2026-09-29T20:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto
@@ -77,3 +79,10 @@ client (§9 step 3), `.github/**` and any `docs/architecture/**` text.
 
 Required (§8.1: protocol and security, independent exact-byte fixtures). The control plane triggers it on the
 frozen head.
+
+## Terminal evidence
+
+- merged: PR #1254, head `6b10381a04ea44ed9e63d85e24b87dd1bf3ebeae`, squash merge
+  `c91055f66dd2c5724f17e226c7b7da2430a1a914` on protected `main`.
+- closeout: archived by the §9 step 2 composition task `OTV2-20260929-spell-cast-composition-w2a` (#162 allocation
+  5895497246), which consumes these codecs.
