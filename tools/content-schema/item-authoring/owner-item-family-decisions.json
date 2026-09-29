@@ -1,51 +1,6 @@
 {
   "decisions": {
-    "oteryn:item.registry.i00003909": {
-      "name": "red chair",
-      "profile": "decoration",
-      "reason": "name 'chair' + height flag (elevated sittable furniture sprite) -> household decoration",
-      "source": {
-        "facts": "no wiki page found",
-        "wiki_url": null
-      }
-    },
-    "oteryn:item.registry.i00003914": {
-      "name": "wooden horse",
-      "profile": "decoration",
-      "reason": "name 'wooden horse' + unpass/height flags (a large placed prop)",
-      "source": {
-        "facts": "no wiki page found",
-        "wiki_url": null
-      }
-    },
-    "oteryn:item.registry.i00004151": {
-      "name": "slain ghoul",
-      "profile": "trash",
-      "reason": "wiki 'Infobox Corpse': corpseof Ghoul, product None, skinable unknown -- an ordinary monster corpse",
-      "source": {
-        "facts": "corpseof: [[Ghoul]].; product: None; liquid: [[Blood]]; skinable: ?",
-        "wiki_url": "https://tibia.fandom.com/wiki/Slain_Ghoul"
-      }
-    },
-    "oteryn:item.registry.i00004152": {
-      "name": "slain ghoul",
-      "profile": "trash",
-      "reason": "wiki 'Infobox Corpse': corpseof Ghoul, product None, skinable unknown -- an ordinary monster corpse",
-      "source": {
-        "facts": "corpseof: [[Ghoul]].; product: None; liquid: [[Blood]]; skinable: ?",
-        "wiki_url": "https://tibia.fandom.com/wiki/Slain_Ghoul"
-      }
-    },
-    "oteryn:item.registry.i00009209": {
-      "name": "slain boogey",
-      "profile": "trash",
-      "reason": "name pattern 'slain X' matches the confirmed corpse family (see 'slain ghoul' -> Infobox Corpse on TibiaWiki)",
-      "source": {
-        "facts": "no wiki page found",
-        "wiki_url": null
-      }
-    },
-    "oteryn:item.registry.i00012185": {
+    "oteryn:item.tibia.i12656": {
       "name": "root vegetable dish",
       "profile": "tool",
       "reason": "primarytype 'Tools (Objects)', objectclass 'Utilities'; notes: 'A dish on which to serve food.' (empty serving dish, not the food itself)",
@@ -54,7 +9,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Root_Vegetable_Dish"
       }
     },
-    "oteryn:item.registry.i00014103": {
+    "oteryn:item.tibia.i14670": {
       "name": "cm token",
       "profile": "event_collectible",
       "reason": "primarytype 'Contest Prizes' + notes: 'handed out by Community Managers on special occasions'",
@@ -63,7 +18,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/CM_Token"
       }
     },
-    "oteryn:item.registry.i00014555": {
+    "oteryn:item.tibia.i15151": {
       "name": "toad stool",
       "profile": "decoration",
       "reason": "name 'stool' + height/rotate flags (elevated placeable furniture sprite) -> household decoration",
@@ -72,7 +27,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00014556": {
+    "oteryn:item.tibia.i15152": {
       "name": "toad stool",
       "profile": "decoration",
       "reason": "name 'stool' + height/rotate flags (elevated placeable furniture sprite) -> household decoration",
@@ -81,7 +36,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00014557": {
+    "oteryn:item.tibia.i15153": {
       "name": "toad stool",
       "profile": "decoration",
       "reason": "name 'stool' + height/rotate flags (elevated placeable furniture sprite) -> household decoration",
@@ -90,7 +45,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00014558": {
+    "oteryn:item.tibia.i15154": {
       "name": "toad stool",
       "profile": "decoration",
       "reason": "name 'stool' + height/rotate flags (elevated placeable furniture sprite) -> household decoration",
@@ -99,7 +54,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00014560": {
+    "oteryn:item.tibia.i15156": {
       "name": "large decorative mushroom",
       "profile": "decoration",
       "reason": "name explicitly 'decorative mushroom'",
@@ -108,7 +63,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00014561": {
+    "oteryn:item.tibia.i15157": {
       "name": "large decorative mushroom",
       "profile": "decoration",
       "reason": "name explicitly 'decorative mushroom'",
@@ -117,7 +72,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00022700": {
+    "oteryn:item.tibia.i23512": {
       "name": "spying eye",
       "profile": "tool",
       "reason": "objectclass 'Tools and other Equipment'; notes: 'When used, it tells you where a vortex is currently active' (Heart of Destruction Quest instrument)",
@@ -126,7 +81,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Spying_Eye"
       }
     },
-    "oteryn:item.registry.i00024881": {
+    "oteryn:item.tibia.i25719": {
       "name": "temporary gold converter",
       "profile": "tool",
       "reason": "name 'gold converter' + usable/multiuse/wearout flags (a limited-use currency-conversion device)",
@@ -135,7 +90,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00025268": {
+    "oteryn:item.tibia.i26124": {
       "name": "unknown corpse (skeleton)",
       "profile": "trash",
       "reason": "name explicitly states 'corpse' + lying_object client flag",
@@ -144,7 +99,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00027028": {
+    "oteryn:item.tibia.i27898": {
       "name": "black wooden chair",
       "profile": "decoration",
       "reason": "name 'chair' + height flag (elevated sittable furniture sprite) -> household decoration",
@@ -153,7 +108,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00027029": {
+    "oteryn:item.tibia.i27899": {
       "name": "black wooden chair",
       "profile": "decoration",
       "reason": "name 'chair' + height flag (elevated sittable furniture sprite) -> household decoration",
@@ -162,7 +117,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00027336": {
+    "oteryn:item.tibia.i28209": {
       "name": "stepladder",
       "profile": "tool",
       "reason": "name 'stepladder' (a ladder is a utility tool); no wiki page but height flag consistent with a climbable prop",
@@ -171,7 +126,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00027337": {
+    "oteryn:item.tibia.i28210": {
       "name": "stepladder",
       "profile": "tool",
       "reason": "name 'stepladder' (a ladder is a utility tool); no wiki page but height flag consistent with a climbable prop",
@@ -180,7 +135,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00029265": {
+    "oteryn:item.tibia.i30146": {
       "name": "elven parchment",
       "profile": "document",
       "reason": "name 'elven parchment' + usable flag (readable material), cyclopediaitem/lenshelp popup consistent with a lore document (no wiki page to confirm further)",
@@ -189,7 +144,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00030695": {
+    "oteryn:item.tibia.i31723": {
       "name": "sulphur blossom lamp",
       "profile": "light_source",
       "reason": "name 'lamp' + notes: 'Use this lamp in order to lit it' (has a lit/unlit pair on the wiki)",
@@ -198,7 +153,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Sulphur_Blossom_Lamp_%28Unlit%29"
       }
     },
-    "oteryn:item.registry.i00030696": {
+    "oteryn:item.tibia.i31724": {
       "name": "sulphur blossom lamp",
       "profile": "light_source",
       "reason": "name 'lamp' + notes: 'Use this lamp in order to lit it' (has a lit/unlit pair on the wiki)",
@@ -207,7 +162,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Sulphur_Blossom_Lamp_%28Unlit%29"
       }
     },
-    "oteryn:item.registry.i00032325": {
+    "oteryn:item.tibia.i33891": {
       "name": "some mortal essence",
       "profile": "quest_item",
       "reason": "notes: 'It's part of the Soul War Quest during the battle against Goshnar's C...'",
@@ -216,7 +171,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Some_Mortal_Essence"
       }
     },
-    "oteryn:item.registry.i00032376": {
+    "oteryn:item.tibia.i33950": {
       "name": "cleansed sanity",
       "profile": "quest_item",
       "reason": "flavortext: 'Can be used to douse Goshnar's madness.' + notes: 'Part of the Soul War Quest'",
@@ -225,7 +180,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Cleansed_Sanity"
       }
     },
-    "oteryn:item.registry.i00033162": {
+    "oteryn:item.tibia.i36601": {
       "name": "sacramental wine",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Kilmaresh Quest'",
@@ -234,7 +189,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Sacramental_Wine"
       }
     },
-    "oteryn:item.registry.i00033163": {
+    "oteryn:item.tibia.i36605": {
       "name": "gnomish lava fishing rod",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Too Hot to Handle Quest'",
@@ -243,7 +198,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Gnomish_Lava_Fishing_Rod"
       }
     },
-    "oteryn:item.registry.i00033168": {
+    "oteryn:item.tibia.i36617": {
       "name": "sticky elemental goo",
       "profile": "quest_item",
       "reason": "notes: 'Obtained during the Too Hot to Handle Quest'",
@@ -252,7 +207,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Sticky_Elemental_Goo"
       }
     },
-    "oteryn:item.registry.i00033345": {
+    "oteryn:item.tibia.i36811": {
       "name": "megasylvan sapling",
       "profile": "plant",
       "reason": "flavortext: 'A sapling from the megasylvan form of Yselda of Bounac. The prime \"Seed of Life\".'",
@@ -261,7 +216,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Megasylvan_Sapling"
       }
     },
-    "oteryn:item.registry.i00033346": {
+    "oteryn:item.tibia.i36812": {
       "name": "violet tulip",
       "profile": "plant",
       "reason": "flavortext: 'The favourite flower of Yselda of Bounac. Picked from the royal gardens...' -- a flower/tulip",
@@ -270,7 +225,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Violet_Tulip"
       }
     },
-    "oteryn:item.registry.i00033380": {
+    "oteryn:item.tibia.i36875": {
       "name": "golden hand mirror",
       "profile": "quest_item",
       "reason": "notes: 'Obtained during the Kilmaresh Quest'",
@@ -279,7 +234,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Golden_Hand_Mirror"
       }
     },
-    "oteryn:item.registry.i00033419": {
+    "oteryn:item.tibia.i36915": {
       "name": "sun mosaic",
       "profile": "decoration",
       "reason": "hang flag + notes: 'one of the three parts of the mosaic. The assembled mosaic looks like...' -- a wall-hangable decorative piece",
@@ -288,7 +243,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Sun_Mosaic_%28Left%29"
       }
     },
-    "oteryn:item.registry.i00033420": {
+    "oteryn:item.tibia.i36916": {
       "name": "sun mosaic",
       "profile": "decoration",
       "reason": "hang flag + notes: 'one of the three parts of the mosaic. The assembled mosaic looks like...' -- a wall-hangable decorative piece",
@@ -297,7 +252,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Sun_Mosaic_%28Left%29"
       }
     },
-    "oteryn:item.registry.i00033421": {
+    "oteryn:item.tibia.i36917": {
       "name": "sun mosaic",
       "profile": "decoration",
       "reason": "hang flag + notes: 'one of the three parts of the mosaic. The assembled mosaic looks like...' -- a wall-hangable decorative piece",
@@ -306,7 +261,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Sun_Mosaic_%28Left%29"
       }
     },
-    "oteryn:item.registry.i00033427": {
+    "oteryn:item.tibia.i36923": {
       "name": "ritual notes",
       "profile": "document",
       "reason": "flavortext is the notes' readable content ('written notes from the knight Galthen... ancient ritual as well as blessings') + notes: 'Obtained during the Adventures of Galthen Quest'",
@@ -315,7 +270,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Ritual_Notes"
       }
     },
-    "oteryn:item.registry.i00033465": {
+    "oteryn:item.tibia.i36981": {
       "name": "gnome shovel",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Too Hot to Handle Quest'",
@@ -324,7 +279,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Gnome_Shovel"
       }
     },
-    "oteryn:item.registry.i00033533": {
+    "oteryn:item.tibia.i37109": {
       "name": "sliver",
       "profile": "progression_material",
       "reason": "flavortext: 'This item can be used in the exaltation forge to create exalted cores.' + notes: '50 slivers are needed... at the Exaltation Forge'",
@@ -333,7 +288,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Sliver"
       }
     },
-    "oteryn:item.registry.i00033534": {
+    "oteryn:item.tibia.i37110": {
       "name": "exalted core",
       "profile": "progression_material",
       "reason": "notes: 'needed in order to transfer tiers to a 0-tier item... rise the success rate' -- Equipment Upgrade System material",
@@ -342,7 +297,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Exalted_Core"
       }
     },
-    "oteryn:item.registry.i00033730": {
+    "oteryn:item.tibia.i37332": {
       "name": "time-particle extractor",
       "profile": "event_collectible",
       "reason": "wiki page ('Time-Particle Extractor', itemid 37331 -- ours is 37332) notes: 'Item obtained and used during the 25th Anniversary's Scavenger Hunt'",
@@ -351,7 +306,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Time-Particle_Extractor"
       }
     },
-    "oteryn:item.registry.i00033733": {
+    "oteryn:item.tibia.i37335": {
       "name": "black skull",
       "profile": "quest_item",
       "reason": "wiki page 'Black Skull (Quest)' (itemid 37335, matches our id): secondarytype Quest Items, notes 'Obtained during the 25 Years of Tibia Quest'",
@@ -360,7 +315,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Black_Skull_%28Quest%29"
       }
     },
-    "oteryn:item.registry.i00033735": {
+    "oteryn:item.tibia.i37337": {
       "name": "white skull",
       "profile": "quest_item",
       "reason": "secondarytype 'Quest Items' + notes: 'Obtained during the 25 Years of Tibia Quest'",
@@ -369,7 +324,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/White_Skull_%28Item%29"
       }
     },
-    "oteryn:item.registry.i00033736": {
+    "oteryn:item.tibia.i37338": {
       "name": "red skull",
       "profile": "quest_item",
       "reason": "secondarytype 'Quest Items' + notes: 'Obtained during the 25 Years of Tibia Quest'",
@@ -378,7 +333,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Red_Skull_%28Item%29"
       }
     },
-    "oteryn:item.registry.i00033737": {
+    "oteryn:item.tibia.i37339": {
       "name": "yellow skull",
       "profile": "quest_item",
       "reason": "secondarytype 'Quest Items' + notes: 'Obtained during the 25 Years of Tibia Quest'",
@@ -387,7 +342,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Yellow_Skull_%28Item%29"
       }
     },
-    "oteryn:item.registry.i00033738": {
+    "oteryn:item.tibia.i37340": {
       "name": "orange skull",
       "profile": "quest_item",
       "reason": "secondarytype 'Quest Items' + notes: 'Obtained during the 25 Years of Tibia Quest'",
@@ -396,7 +351,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Orange_Skull_%28Item%29"
       }
     },
-    "oteryn:item.registry.i00033739": {
+    "oteryn:item.tibia.i37341": {
       "name": "green skull",
       "profile": "quest_item",
       "reason": "secondarytype 'Quest Items' + notes: 'Obtained during the 25 Years of Tibia Quest'",
@@ -405,7 +360,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Green_Skull_%28Item%29"
       }
     },
-    "oteryn:item.registry.i00033740": {
+    "oteryn:item.tibia.i37342": {
       "name": "bridal black skull",
       "profile": "decoration",
       "reason": "notes: usable every 30s to trigger a cosmetic Hearts Effect (wedding novelty from Bridal Wreath + Black Skull (Quest)) -- no other function",
@@ -414,7 +369,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Bridal_Black_Skull"
       }
     },
-    "oteryn:item.registry.i00033907": {
+    "oteryn:item.tibia.i37558": {
       "name": "dragon pinata",
       "profile": "decoration",
       "reason": "secondarytype 'Dolls and Bears', objectclass 'Household Items'; notes: obtained from a Pinata Kit, can be wrapped into a Furniture Kit",
@@ -423,7 +378,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Dragon_Pinata"
       }
     },
-    "oteryn:item.registry.i00033909": {
+    "oteryn:item.tibia.i37560": {
       "name": "dragon pinata",
       "profile": "decoration",
       "reason": "secondarytype 'Dolls and Bears', objectclass 'Household Items'; notes: obtained from a Pinata Kit, can be wrapped into a Furniture Kit",
@@ -432,7 +387,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Dragon_Pinata"
       }
     },
-    "oteryn:item.registry.i00033947": {
+    "oteryn:item.tibia.i37605": {
       "name": "decorative plume",
       "profile": "progression_material",
       "reason": "notes: 'Used to obtain the second addon of the Formal Dress Outfits. It isn't consumed on use.'",
@@ -441,7 +396,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Decorative_Plume"
       }
     },
-    "oteryn:item.registry.i00033967": {
+    "oteryn:item.tibia.i37708": {
       "name": "old health potion",
       "profile": "trash",
       "reason": "no 'usable' client flag (unlike a real potion) + flavortext describes a death scene ('could not save the poor woman...') -- a non-functional narrative prop",
@@ -450,7 +405,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Old_Health_Potion"
       }
     },
-    "oteryn:item.registry.i00034687": {
+    "oteryn:item.tibia.i38649": {
       "name": "silver hand",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest'",
@@ -459,7 +414,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Silver_Hand"
       }
     },
-    "oteryn:item.registry.i00034688": {
+    "oteryn:item.tibia.i38650": {
       "name": "golden hand",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest'",
@@ -468,7 +423,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Golden_Hand"
       }
     },
-    "oteryn:item.registry.i00034774": {
+    "oteryn:item.tibia.i38752": {
       "name": "crystal stool",
       "profile": "decoration",
       "reason": "name 'stool' + height flag (elevated sittable furniture sprite) -> household decoration",
@@ -477,7 +432,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00034775": {
+    "oteryn:item.tibia.i38753": {
       "name": "crystal stool",
       "profile": "decoration",
       "reason": "name 'stool' + height flag (elevated sittable furniture sprite) -> household decoration",
@@ -486,7 +441,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00034849": {
+    "oteryn:item.tibia.i38827": {
       "name": "mushroom lamp",
       "profile": "light_source",
       "reason": "name explicitly 'lamp'; no wiki page but usable flag consistent with a togglable light fixture",
@@ -495,7 +450,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00034850": {
+    "oteryn:item.tibia.i38828": {
       "name": "mushroom lamp",
       "profile": "light_source",
       "reason": "name explicitly 'lamp'; no wiki page but usable flag consistent with a togglable light fixture",
@@ -504,7 +459,7 @@
         "wiki_url": null
       }
     },
-    "oteryn:item.registry.i00034857": {
+    "oteryn:item.tibia.i38843": {
       "name": "silver and a golden hand",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest'",
@@ -513,7 +468,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Silver_and_a_Golden_Hand"
       }
     },
-    "oteryn:item.registry.i00034945": {
+    "oteryn:item.tibia.i38934": {
       "name": "handwritten message",
       "profile": "document",
       "reason": "flavortext is the full written note text ('...Take this as a warning...'); notes: 'It was written by Sir Valorcrest'",
@@ -522,7 +477,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Handwritten_Message"
       }
     },
-    "oteryn:item.registry.i00035128": {
+    "oteryn:item.tibia.i39132": {
       "name": "moon mint",
       "profile": "plant",
       "reason": "notes: 'can be harvested from a Moon Mint (Immobile)' -- a growing herb source",
@@ -531,7 +486,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Moon_Mint"
       }
     },
-    "oteryn:item.registry.i00035130": {
+    "oteryn:item.tibia.i39134": {
       "name": "moonshine pearl",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest'",
@@ -540,7 +495,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Moonshine_Pearl"
       }
     },
-    "oteryn:item.registry.i00035131": {
+    "oteryn:item.tibia.i39135": {
       "name": "shimmering pearl",
       "profile": "quest_item",
       "reason": "notes: 'can only be taken during a mission of the Within the Tides Quest, but it's not required for it'",
@@ -549,7 +504,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Shimmering_Pearl"
       }
     },
-    "oteryn:item.registry.i00035132": {
+    "oteryn:item.tibia.i39136": {
       "name": "celestial chart",
       "profile": "quest_item",
       "reason": "notes: 'Obtained during the Within the Tides Quest'",
@@ -558,7 +513,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Celestial_Chart"
       }
     },
-    "oteryn:item.registry.i00035133": {
+    "oteryn:item.tibia.i39137": {
       "name": "burning splint",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest', disappears after 3 minutes",
@@ -567,7 +522,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Burning_Splint"
       }
     },
-    "oteryn:item.registry.i00035136": {
+    "oteryn:item.tibia.i39141": {
       "name": "coral vow flower",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest'",
@@ -576,7 +531,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Coral_Vow_Flower"
       }
     },
-    "oteryn:item.registry.i00035137": {
+    "oteryn:item.tibia.i39144": {
       "name": "splint",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest'; 'You can gather a Splint every 5 minutes'",
@@ -585,7 +540,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Splint"
       }
     },
-    "oteryn:item.registry.i00035138": {
+    "oteryn:item.tibia.i39145": {
       "name": "blessed water",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest'",
@@ -594,7 +549,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Blessed_Water"
       }
     },
-    "oteryn:item.registry.i00035221": {
+    "oteryn:item.tibia.i39241": {
       "name": "glass lens",
       "profile": "quest_item",
       "reason": "notes: 'Obtained during the Within the Tides Quest'",
@@ -603,7 +558,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Glass_Lens"
       }
     },
-    "oteryn:item.registry.i00035222": {
+    "oteryn:item.tibia.i39242": {
       "name": "empty bucket",
       "profile": "quest_item",
       "reason": "wiki page title 'Empty Bucket (Timira)' (itemid 39242, matches our id) ties it to the Timira The Many-Headed fight in the Within the Tides Quest, same as sibling Bucket Full of Water/Sparkles",
@@ -612,7 +567,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Empty_Bucket_%28Timira%29"
       }
     },
-    "oteryn:item.registry.i00035223": {
+    "oteryn:item.tibia.i39243": {
       "name": "bucket full of water",
       "profile": "quest_item",
       "reason": "notes: 'obtained but isn't needed during the fight against Timira The Many-Headed' as part of the Within the Tides Quest",
@@ -621,7 +576,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Bucket_Full_of_Water"
       }
     },
-    "oteryn:item.registry.i00035224": {
+    "oteryn:item.tibia.i39244": {
       "name": "bucket full of sparkles",
       "profile": "quest_item",
       "reason": "notes: 'Part of the fight against Timira The Many-Headed during the Within the Tides Quest'",
@@ -630,7 +585,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Bucket_Full_of_Sparkles"
       }
     },
-    "oteryn:item.registry.i00035317": {
+    "oteryn:item.tibia.i39338": {
       "name": "flask of mango juice",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest'",
@@ -639,7 +594,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Flask_of_Mango_Juice"
       }
     },
-    "oteryn:item.registry.i00035318": {
+    "oteryn:item.tibia.i39339": {
       "name": "flask of mango honey juice",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest'",
@@ -648,7 +603,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Flask_of_Mango_Honey_Juice"
       }
     },
-    "oteryn:item.registry.i00035357": {
+    "oteryn:item.tibia.i39397": {
       "name": "coral powder",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest'",
@@ -657,7 +612,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Coral_Powder"
       }
     },
-    "oteryn:item.registry.i00035462": {
+    "oteryn:item.tibia.i39546": {
       "name": "primal bag",
       "profile": "transformation_item",
       "reason": "notes: 'A few seconds after its created the bag automatically transforms into one random piece of equipment' (Primal Ordeal Quest reward)",
@@ -666,7 +621,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Primal_Bag"
       }
     },
-    "oteryn:item.registry.i00035481": {
+    "oteryn:item.tibia.i39568": {
       "name": "naga nest",
       "profile": "quest_item",
       "reason": "notes: 'Received as a reward during the Within the Tides Quest'",
@@ -675,7 +630,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Naga_Nest"
       }
     },
-    "oteryn:item.registry.i00035482": {
+    "oteryn:item.tibia.i39569": {
       "name": "naga nest",
       "profile": "quest_item",
       "reason": "notes: 'Received as a reward during the Within the Tides Quest'",
@@ -684,7 +639,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Naga_Nest"
       }
     },
-    "oteryn:item.registry.i00035490": {
+    "oteryn:item.tibia.i39577": {
       "name": "bag with naga eggs",
       "profile": "quest_item",
       "reason": "notes: 'Temporarily obtained during the Within the Tides Quest'",
@@ -693,7 +648,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Bag_with_Naga_Eggs"
       }
     },
-    "oteryn:item.registry.i00035565": {
+    "oteryn:item.tibia.i39707": {
       "name": "pantibian amphora",
       "profile": "event_collectible",
       "reason": "secondarytype 'Contest Prizes'; notes: 'given to all characters who were invited to the Pantibian Festival and who did not get disqualified'",
@@ -702,7 +657,43 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Pantibian_Amphora"
       }
     },
-    "oteryn:item.registry.i00035942": {
+    "oteryn:item.tibia.i4054": {
+      "name": "red chair",
+      "profile": "decoration",
+      "reason": "name 'chair' + height flag (elevated sittable furniture sprite) -> household decoration",
+      "source": {
+        "facts": "no wiki page found",
+        "wiki_url": null
+      }
+    },
+    "oteryn:item.tibia.i4059": {
+      "name": "wooden horse",
+      "profile": "decoration",
+      "reason": "name 'wooden horse' + unpass/height flags (a large placed prop)",
+      "source": {
+        "facts": "no wiki page found",
+        "wiki_url": null
+      }
+    },
+    "oteryn:item.tibia.i4296": {
+      "name": "slain ghoul",
+      "profile": "trash",
+      "reason": "wiki 'Infobox Corpse': corpseof Ghoul, product None, skinable unknown -- an ordinary monster corpse",
+      "source": {
+        "facts": "corpseof: [[Ghoul]].; product: None; liquid: [[Blood]]; skinable: ?",
+        "wiki_url": "https://tibia.fandom.com/wiki/Slain_Ghoul"
+      }
+    },
+    "oteryn:item.tibia.i4297": {
+      "name": "slain ghoul",
+      "profile": "trash",
+      "reason": "wiki 'Infobox Corpse': corpseof Ghoul, product None, skinable unknown -- an ordinary monster corpse",
+      "source": {
+        "facts": "corpseof: [[Ghoul]].; product: None; liquid: [[Blood]]; skinable: ?",
+        "wiki_url": "https://tibia.fandom.com/wiki/Slain_Ghoul"
+      }
+    },
+    "oteryn:item.tibia.i43501": {
       "name": "the essence of murcion",
       "profile": "quest_item",
       "reason": "flavortext: 'the rotten essence of Murcion... consumed to imbue yourself with it'; notes: 'Can be used before the fight against Bakragore' (encounter-specific consumable)",
@@ -711,7 +702,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/The_Essence_of_Murcion"
       }
     },
-    "oteryn:item.registry.i00035943": {
+    "oteryn:item.tibia.i43502": {
       "name": "the essence of ichgahal",
       "profile": "quest_item",
       "reason": "flavortext: 'the rotten essence of Ichgahal... consumed to imbue yourself with it'; notes: 'Can be used before the fight against Bakragore' (encounter-specific consumable)",
@@ -720,7 +711,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/The_Essence_of_Ichgahal"
       }
     },
-    "oteryn:item.registry.i00035944": {
+    "oteryn:item.tibia.i43503": {
       "name": "the essence of vemiath",
       "profile": "quest_item",
       "reason": "flavortext: 'the rotten essence of Vemiath... consumed to imbue yourself with it'; notes: 'Can be used before the fight against Bakragore' (encounter-specific consumable)",
@@ -729,7 +720,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/The_Essence_of_Vemiath"
       }
     },
-    "oteryn:item.registry.i00035945": {
+    "oteryn:item.tibia.i43504": {
       "name": "the essence of chagorz",
       "profile": "quest_item",
       "reason": "flavortext: 'the rotten essence of Chagorz... consumed to imbue yourself with it'; notes: 'Can be used before the fight against Bakragore' (encounter-specific consumable)",
@@ -738,7 +729,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/The_Essence_of_Chagorz"
       }
     },
-    "oteryn:item.registry.i00036234": {
+    "oteryn:item.tibia.i46627": {
       "name": "crusher",
       "profile": "tool",
       "reason": "notes: 'used to crush unrevealed gems into fragments to be used in the Fragment Workshop'",
@@ -747,7 +738,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Crusher"
       }
     },
-    "oteryn:item.registry.i00037101": {
+    "oteryn:item.tibia.i49164": {
       "name": "soul prism",
       "profile": "transformation_item",
       "reason": "notes: 'Can be used on a Soul Core to transform it into the Soul Core of a random creature'",
@@ -756,7 +747,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Soul_Prism"
       }
     },
-    "oteryn:item.registry.i00037694": {
+    "oteryn:item.tibia.i51443": {
       "name": "etcher",
       "profile": "tool",
       "reason": "notes: 'Can be used on an imbued item to erase all applied imbuements.'",
@@ -765,7 +756,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Etcher"
       }
     },
-    "oteryn:item.registry.i00037755": {
+    "oteryn:item.tibia.i51526": {
       "name": "special bat coffin",
       "profile": "decoration",
       "reason": "name 'coffin' + marketable, no other function documented -- a themed household prop",
@@ -774,7 +765,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Special_Bat_Coffin"
       }
     },
-    "oteryn:item.registry.i00037756": {
+    "oteryn:item.tibia.i51527": {
       "name": "special bat coffin",
       "profile": "decoration",
       "reason": "name 'coffin' + marketable, no other function documented -- a themed household prop",
@@ -783,7 +774,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Special_Bat_Coffin"
       }
     },
-    "oteryn:item.registry.i00037821": {
+    "oteryn:item.tibia.i51702": {
       "name": "the tale of joran and yvette - part i",
       "profile": "document",
       "reason": "name 'The Tale of Joran and Yvette - Part I' (numbered narrative installment) + usable flag -- a readable story part",
@@ -792,7 +783,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/The_Tale_of_Joran_and_Yvette_-_Part_I"
       }
     },
-    "oteryn:item.registry.i00037822": {
+    "oteryn:item.tibia.i51703": {
       "name": "the tale of joran and yvette - part ii",
       "profile": "document",
       "reason": "name 'The Tale of Joran and Yvette - Part II' (numbered narrative installment) + usable flag -- a readable story part",
@@ -801,7 +792,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/The_Tale_of_Joran_and_Yvette_-_Part_II"
       }
     },
-    "oteryn:item.registry.i00037823": {
+    "oteryn:item.tibia.i51704": {
       "name": "the tale of joran and yvette - part iii",
       "profile": "document",
       "reason": "name 'The Tale of Joran and Yvette - Part III' (numbered narrative installment) + usable flag -- a readable story part",
@@ -810,7 +801,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/The_Tale_of_Joran_and_Yvette_-_Part_III"
       }
     },
-    "oteryn:item.registry.i00037824": {
+    "oteryn:item.tibia.i51706": {
       "name": "effigy of winged vengeance",
       "profile": "decoration",
       "reason": "flavortext: 'Hewn in stone, this winged avatar stands watch...' + wrap/rotate/unpass/light flags typical of a placeable house statue",
@@ -819,7 +810,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Effigy_of_Winged_Vengeance"
       }
     },
-    "oteryn:item.registry.i00037825": {
+    "oteryn:item.tibia.i51707": {
       "name": "effigy of winged vengeance",
       "profile": "decoration",
       "reason": "flavortext: 'Hewn in stone, this winged avatar stands watch...' + wrap/rotate/unpass/light flags typical of a placeable house statue",
@@ -828,7 +819,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Effigy_of_Winged_Vengeance"
       }
     },
-    "oteryn:item.registry.i00037826": {
+    "oteryn:item.tibia.i51708": {
       "name": "effigy of winged vengeance",
       "profile": "decoration",
       "reason": "flavortext: 'Hewn in stone, this winged avatar stands watch...' + wrap/rotate/unpass/light flags typical of a placeable house statue",
@@ -837,7 +828,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Effigy_of_Winged_Vengeance"
       }
     },
-    "oteryn:item.registry.i00037827": {
+    "oteryn:item.tibia.i51709": {
       "name": "effigy of winged vengeance",
       "profile": "decoration",
       "reason": "flavortext: 'Hewn in stone, this winged avatar stands watch...' + wrap/rotate/unpass/light flags typical of a placeable house statue",
@@ -846,7 +837,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Effigy_of_Winged_Vengeance"
       }
     },
-    "oteryn:item.registry.i00037828": {
+    "oteryn:item.tibia.i51710": {
       "name": "effigy of winged vengeance",
       "profile": "decoration",
       "reason": "flavortext: 'Hewn in stone, this winged avatar stands watch...' + wrap/rotate/unpass/light flags typical of a placeable house statue",
@@ -855,7 +846,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Effigy_of_Winged_Vengeance"
       }
     },
-    "oteryn:item.registry.i00037829": {
+    "oteryn:item.tibia.i51711": {
       "name": "effigy of winged vengeance",
       "profile": "decoration",
       "reason": "flavortext: 'Hewn in stone, this winged avatar stands watch...' + wrap/rotate/unpass/light flags typical of a placeable house statue",
@@ -864,7 +855,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Effigy_of_Winged_Vengeance"
       }
     },
-    "oteryn:item.registry.i00037830": {
+    "oteryn:item.tibia.i51712": {
       "name": "effigy of winged vengeance",
       "profile": "decoration",
       "reason": "flavortext: 'Hewn in stone, this winged avatar stands watch...' + wrap/rotate/unpass/light flags typical of a placeable house statue",
@@ -873,7 +864,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Effigy_of_Winged_Vengeance"
       }
     },
-    "oteryn:item.registry.i00037831": {
+    "oteryn:item.tibia.i51713": {
       "name": "effigy of winged vengeance",
       "profile": "decoration",
       "reason": "flavortext: 'Hewn in stone, this winged avatar stands watch...' + wrap/rotate/unpass/light flags typical of a placeable house statue",
@@ -882,7 +873,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Effigy_of_Winged_Vengeance"
       }
     },
-    "oteryn:item.registry.i00037866": {
+    "oteryn:item.tibia.i51976": {
       "name": "jade dragon head",
       "profile": "transformation_item",
       "reason": "notes: 'can be used to transform it into a Jade Dragon Head (Charged)' (Roost of the Graveborn Quest)",
@@ -891,7 +882,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Jade_Dragon_Head"
       }
     },
-    "oteryn:item.registry.i00037930": {
+    "oteryn:item.tibia.i52634": {
       "name": "oak wood",
       "profile": "material_valuable",
       "reason": "flavortext: 'Excellent oak wood in a wieldy sized block' + marketable=yes -- raw sellable crafting resource",
@@ -900,7 +891,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Oak_Wood"
       }
     },
-    "oteryn:item.registry.i00037931": {
+    "oteryn:item.tibia.i52635": {
       "name": "salvaged iron parts",
       "profile": "material_valuable",
       "reason": "flavortext: 'Salvaged iron parts in good quality that can be reused for repairs and maintenance.' + marketable/cumulative",
@@ -909,7 +900,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Salvaged_Iron_Parts"
       }
     },
-    "oteryn:item.registry.i00037933": {
+    "oteryn:item.tibia.i52637": {
       "name": "repair kit for boats",
       "profile": "tool",
       "reason": "flavortext: 'A practical repair kit for small boats, complete with tar and all the necessary tools.' + notes: used on a small boat for a chance at a reward",
@@ -918,7 +909,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Repair_Kit_For_Boats"
       }
     },
-    "oteryn:item.registry.i00037934": {
+    "oteryn:item.tibia.i52638": {
       "name": "marinated sturgeon",
       "profile": "food",
       "reason": "flavortext: 'prepared in a tasty marinade and a special and rare delicacy'; dropped by Raubritter Skirmisher",
@@ -927,7 +918,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Marinated_Sturgeon"
       }
     },
-    "oteryn:item.registry.i00037986": {
+    "oteryn:item.tibia.i52743": {
       "name": "salvaged silver parts",
       "profile": "material_valuable",
       "reason": "flavortext: 'Salvaged silver parts in good quality that can be reused for embellishments and ornaments.' + marketable/cumulative",
@@ -936,7 +927,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Salvaged_Silver_Parts"
       }
     },
-    "oteryn:item.registry.i00037987": {
+    "oteryn:item.tibia.i52744": {
       "name": "personal letter of michael the stalwart i",
       "profile": "document",
       "reason": "flavortext: 'A personal letter of a knight of the Order of the Stag 1/3.' + notes contain the letter's Server Message text",
@@ -945,7 +936,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Michael_the_Stalwart_I"
       }
     },
-    "oteryn:item.registry.i00037988": {
+    "oteryn:item.tibia.i52745": {
       "name": "bottle of raubritter lager",
       "profile": "fluid",
       "reason": "flavortext: 'A sealed bottle of \"Raubritter Lager\". Bottled by brewmaster Bhaan...' -- a bottled beverage, dropped by Raubritter Chastener",
@@ -954,7 +945,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Bottle_of_Raubritter_Lager"
       }
     },
-    "oteryn:item.registry.i00037996": {
+    "oteryn:item.tibia.i52758": {
       "name": "salvaged bronze parts",
       "profile": "material_valuable",
       "reason": "flavortext: 'Salvaged bronze parts in good quality that can be reused to for various refinements.' + marketable/cumulative",
@@ -963,7 +954,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Salvaged_Bronze_Parts"
       }
     },
-    "oteryn:item.registry.i00038000": {
+    "oteryn:item.tibia.i52785": {
       "name": "cool bottle of raubritter lager",
       "profile": "fluid",
       "reason": "flavortext: 'A sealed bottle of \"Raubritter Lager\". Cool and fresh...' -- bottled beverage (notes: exact use still undocumented on wiki)",
@@ -972,7 +963,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Cool_Bottle_of_Raubritter_Lager"
       }
     },
-    "oteryn:item.registry.i00038001": {
+    "oteryn:item.tibia.i52788": {
       "name": "meal from the beak of a night harpy",
       "profile": "food",
       "reason": "name 'meal' + flavortext: 'finely grinded from a night harpy beak' (ground food ingredient used to craft Bottle of Enhanced Raubritter Lager)",
@@ -981,7 +972,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Meal_From_the_Beak_of_a_Night_Harpy"
       }
     },
-    "oteryn:item.registry.i00038002": {
+    "oteryn:item.tibia.i52789": {
       "name": "bottle of enhanced raubritter lager",
       "profile": "fluid",
       "reason": "flavortext: 'A bottle of \"Raubritter Lager\"...' + notes: gives buff 'against Night Harpies' -- a bottled beverage",
@@ -990,7 +981,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Bottle_of_Enhanced_Raubritter_Lager"
       }
     },
-    "oteryn:item.registry.i00038015": {
+    "oteryn:item.tibia.i52816": {
       "name": "personal letter of clavius i",
       "profile": "document",
       "reason": "flavortext: 'A personal letter of a knight of the Order of the Stag 1/3.' + notes contain the letter's Server Message text",
@@ -999,7 +990,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Clavius_I"
       }
     },
-    "oteryn:item.registry.i00038016": {
+    "oteryn:item.tibia.i52817": {
       "name": "personal letter of clavius ii",
       "profile": "document",
       "reason": "flavortext: 'A personal letter of a knight of the Order of the Stag 2/3.' + notes contain the letter's Server Message text",
@@ -1008,7 +999,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Clavius_II"
       }
     },
-    "oteryn:item.registry.i00038017": {
+    "oteryn:item.tibia.i52818": {
       "name": "personal letter of clavius iii",
       "profile": "document",
       "reason": "flavortext: 'A personal letter of a knight of the Order of the Stag 3/3.' + notes contain the letter's Server Message text",
@@ -1017,7 +1008,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Clavius_III"
       }
     },
-    "oteryn:item.registry.i00038018": {
+    "oteryn:item.tibia.i52819": {
       "name": "personal letter of adlerauge i",
       "profile": "document",
       "reason": "flavortext: 'A personal letter of a knight of the Order of the Stag 1/3.' + notes contain the letter's Server Message text",
@@ -1026,7 +1017,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Adlerauge_I"
       }
     },
-    "oteryn:item.registry.i00038019": {
+    "oteryn:item.tibia.i52820": {
       "name": "personal letter of adlerauge ii",
       "profile": "document",
       "reason": "flavortext: 'A personal letter of a knight of the Order of the Stag 2/3.' + notes contain the letter's Server Message text",
@@ -1035,7 +1026,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Adlerauge_II"
       }
     },
-    "oteryn:item.registry.i00038020": {
+    "oteryn:item.tibia.i52821": {
       "name": "personal letter of adlerauge iii",
       "profile": "document",
       "reason": "flavortext: 'A personal letter of a knight of the Order of the Stag 3/3.' + notes contain the letter's Server Message text",
@@ -1044,7 +1035,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Adlerauge_III"
       }
     },
-    "oteryn:item.registry.i00038021": {
+    "oteryn:item.tibia.i52822": {
       "name": "personal letter of michael the stalwart ii",
       "profile": "document",
       "reason": "flavortext: 'A personal letter of a knight of the Order of the Stag 2/3.' + notes contain the letter's Server Message text",
@@ -1053,7 +1044,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Michael_the_Stalwart_II"
       }
     },
-    "oteryn:item.registry.i00038022": {
+    "oteryn:item.tibia.i52823": {
       "name": "personal letter of michael the stalwart iii",
       "profile": "document",
       "reason": "flavortext: 'A personal letter of a knight of the Order of the Stag 3/3.' + notes contain the letter's Server Message text",
@@ -1062,7 +1053,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Personal_Letter_of_Michael_the_Stalwart_III"
       }
     },
-    "oteryn:item.registry.i00038050": {
+    "oteryn:item.tibia.i52864": {
       "name": "test proficiency catalyst",
       "profile": "tool",
       "reason": "notes: 'could be bought from Testserver Assistants during the test servers just like the Test Voodoo Doll' -- a test-server utility item",
@@ -1071,7 +1062,7 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Test_Proficiency_Catalyst"
       }
     },
-    "oteryn:item.registry.i00038058": {
+    "oteryn:item.tibia.i52873": {
       "name": "inert dragon head",
       "profile": "transformation_item",
       "reason": "notes: 'This item is charging its power to become a Jade Dragon Head (Charged) again' (Roost of the Graveborn Quest)",
@@ -1080,13 +1071,22 @@
         "wiki_url": "https://tibia.fandom.com/wiki/Inert_Dragon_Head"
       }
     },
-    "oteryn:item.registry.i00038059": {
+    "oteryn:item.tibia.i52874": {
       "name": "jade dragon head",
       "profile": "transformation_item",
       "reason": "notes: 'can be used to transform it into a Jade Dragon Head (Charged)' (Roost of the Graveborn Quest)",
       "source": {
         "facts": "itemid 51976; flavortext: \"A talisman, imbued with ancient magic.\"; notes: \"Part of [[The Roost of the Graveborn Quest]]. After finishing the quest, it can be used to transform it into a {{ilink|Jade Dragon Head (Charged)}} [[\"",
         "wiki_url": "https://tibia.fandom.com/wiki/Jade_Dragon_Head"
+      }
+    },
+    "oteryn:item.tibia.i9407": {
+      "name": "slain boogey",
+      "profile": "trash",
+      "reason": "name pattern 'slain X' matches the confirmed corpse family (see 'slain ghoul' -> Infobox Corpse on TibiaWiki)",
+      "source": {
+        "facts": "no wiki page found",
+        "wiki_url": null
       }
     }
   },

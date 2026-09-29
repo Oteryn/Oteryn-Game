@@ -120,12 +120,12 @@ DEFINITION_SOURCE_PINS = {
     },
 }
 REAL_ITEM_SOURCE_OBSERVATION_DIGESTS = {
-    "oteryn:item.registry.i00003167": "4424a710831a58d59637a76a85c2117cc0401c8b0312f4f10344eaa2da2dd5da",
-    "oteryn:item.registry.i00003256": "6b62dc0882b526d9b53313c0c50797bf65f60907c6c3ed57ec8e38a9d788fdf2",
-    "oteryn:item.registry.i00002752": "dc7be4977a7a67686c6ed806e2989c38b86326304232d7023e95b70703bd22a3",
-    "oteryn:item.registry.i00003447": "ea390265b539184ec45ad15921b0fdd9e35cfa68b9d4aca1cf377a6f294c8a08",
-    "oteryn:item.consumable.sudden_death_rune": "d791f47099f8c8c585f56e2497f1816d45d4155f3c29f8f319c1df435e682aa4",
-    "oteryn:item.registry.i00002771": "aaa6065a2b35b24d2121cae84a522ff6ec245c73c78f488c41f271da7854b850",
+    "oteryn:item.tibia.i3288": "4424a710831a58d59637a76a85c2117cc0401c8b0312f4f10344eaa2da2dd5da",
+    "oteryn:item.tibia.i3388": "6b62dc0882b526d9b53313c0c50797bf65f60907c6c3ed57ec8e38a9d788fdf2",
+    "oteryn:item.tibia.i2854": "dc7be4977a7a67686c6ed806e2989c38b86326304232d7023e95b70703bd22a3",
+    "oteryn:item.tibia.i3585": "ea390265b539184ec45ad15921b0fdd9e35cfa68b9d4aca1cf377a6f294c8a08",
+    "oteryn:item.tibia.i3155": "d791f47099f8c8c585f56e2497f1816d45d4155f3c29f8f319c1df435e682aa4",
+    "oteryn:item.tibia.i2874": "aaa6065a2b35b24d2121cae84a522ff6ec245c73c78f488c41f271da7854b850",
 }
 MAGIC_SWORD_PROFICIENCY_IDENT = (
     MAGIC_SWORD_PROFICIENCY_REF["family"],

@@ -488,7 +488,7 @@ def self_check(result_doc, new_ids):
         assert row["outcome"] == "resolved", row
         assert row["family_profile"] == profile, row
         assert row["family_profile_basis"] == "wiki_evidence_fallback", row
-        assert row["key"].startswith("oteryn:item.registry.i000"), row
+        assert row["key"].startswith("oteryn:item.tibia.i"), row
     for item_id in SELF_CHECK_HELD_IDS:
         assert result_doc["items"][str(item_id)]["key"] == donor_key(item_id)
     assert result_doc["owner_leftover_table_resolved"] == 0, result_doc

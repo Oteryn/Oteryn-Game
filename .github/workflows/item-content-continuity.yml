@@ -64,7 +64,7 @@ jobs:
           set -euo pipefail
           ROOT="$RUNNER_TEMP/item-target-continuity"
           mkdir -p "$ROOT"
-          cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
+          cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json" --retired
           python tools/reference-world-corridor-census/item_classification_crosswalk_self_test.py --native-map "$ROOT/native-map.json"
           python tools/reference-world-corridor-census/item_classification_crosswalk.py \
             --game-root . \

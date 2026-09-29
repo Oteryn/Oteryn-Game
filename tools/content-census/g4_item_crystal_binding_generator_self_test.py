@@ -241,27 +241,40 @@ def epoch2_committed_output() -> None:
     assert payload == again_payload and output == again_output
     assert MODULE.OUTPUT.read_bytes() == payload
 
-    # Epoch 1 is byte-identical: its rows, regenerated from the frozen allocator, are the
-    # first 38,157 rows, and their canonical bytes are a strict prefix of the file.
+    # History: the retired epoch-1 bindings, regenerated from the frozen allocator, still
+    # reproduce their pinned bytes.
     bindings = output["bindings"]
-    epoch1 = MODULE.build_bindings(epoch1_allocations, MODULE.parse_source_revision(text))
-    assert bindings[: MODULE.EXPECTED_TOTAL] == epoch1
-    assert len(bindings) == MODULE.EXPECTED_TOTAL + len(allocations)
+    source_revision = MODULE.parse_source_revision(text)
+    retired = MODULE.build_bindings(epoch1_allocations, source_revision)
+    retired_bytes = MODULE.canonical_bytes(
+        {"schema": MODULE.SCHEMA, "family": "Item", "bindings": retired}
+    )
+    assert MODULE.sha256_hex(retired_bytes) == MODULE.EXPECTED_EPOCH1_OUTPUT_SHA256
+    assert len(retired_bytes) == MODULE.EXPECTED_EPOCH1_OUTPUT_BYTES
+
+    # A12: the admitted epoch-1 rows are the Tibia keys of the retired allocation, minus D149,
+    # and their canonical bytes are a strict prefix of the file.
+    successors = MODULE.load_alias_successors()
+    admitted = MODULE.translate_allocations(epoch1_allocations, successors)
+    assert len(admitted) == MODULE.EXPECTED_ADMITTED == 33_567
+    assert all(key == MODULE.tibia_key(source_id) for source_id, key in admitted)
+    epoch1 = MODULE.build_bindings(admitted, source_revision)
+    assert bindings[: MODULE.EXPECTED_ADMITTED] == epoch1
+    assert len(bindings) == MODULE.EXPECTED_ADMITTED + len(allocations)
     epoch1_bytes = MODULE.canonical_bytes(
         {"schema": MODULE.SCHEMA, "family": "Item", "bindings": epoch1}
     )
-    assert MODULE.sha256_hex(epoch1_bytes) == MODULE.EXPECTED_EPOCH1_OUTPUT_SHA256
-    assert len(epoch1_bytes) == MODULE.EXPECTED_EPOCH1_OUTPUT_BYTES
     assert payload.startswith(epoch1_bytes[: -len(MODULE.OUTPUT_ARRAY_SUFFIX)])
     assert payload.endswith(MODULE.OUTPUT_ARRAY_SUFFIX)
 
-    # Epoch-2 rows: one EXACT binding per minted id at the donor commit, source id verbatim.
-    epoch2 = bindings[MODULE.EXPECTED_TOTAL :]
+    # Epoch-2 rows: one EXACT binding per minted id at the donor commit, at its Tibia key.
+    epoch2 = bindings[MODULE.EXPECTED_ADMITTED :]
     assert [row["external_id"] for row in epoch2] == [
         str(source_id) for source_id, _ in allocations
     ]
     assert not {row["external_id"] for row in bindings} & {str(i) for i in held}
-    for row, (source_id, key) in zip(epoch2, allocations):
+    for row, (source_id, _retired_key) in zip(epoch2, allocations):
+        key = MODULE.tibia_key(source_id)
         assert row == {
             "disposition": "EXACT",
             "external_id": str(source_id),
@@ -453,7 +466,7 @@ def main() -> None:
     # verify_allocations: missing canonical definition key must fail closed.
     fake_allocations = [
         (i, f"oteryn:item.synthetic.i{i:08d}")
-        for i in range(1, MODULE.EXPECTED_TOTAL + 1)
+        for i in range(1, MODULE.EXPECTED_ADMITTED + 1)
     ]
     fake_definition_keys = {key for _, key in fake_allocations}
     fake_definition_keys.discard(fake_allocations[0][1])
@@ -487,7 +500,7 @@ def main() -> None:
         {},
     )
     drifted_cross_check_allocations = list(fake_allocations)
-    drifted_cross_check_allocations[3287] = (3288, "oteryn:item.registry.i00003167")
+    drifted_cross_check_allocations[3287] = (3288, "oteryn:item.tibia.i3288")
     expect_error(
         "CROSS_CHECK_TIBIAWIKI_TARGET_MISSING",
         MODULE.verify_allocations,
@@ -498,14 +511,15 @@ def main() -> None:
     MODULE.verify_allocations(
         drifted_cross_check_allocations,
         {key for _, key in drifted_cross_check_allocations},
-        {"oteryn:item.registry.i00003167": {"5810"}},
+        {"oteryn:item.tibia.i3288": {"5810"}},
     )
 
-    # Identity promotions: parsed from `<PREFIX>_{SOURCE_ITEM_ID,OLD_KEY,KEY}` constants.
+    # Identity promotions: parsed from `<PREFIX>_{SOURCE_ITEM_ID,OLD_KEY,NAMED_KEY}` constants
+    # (both keys are retired history since A12 D147).
     rust = (
         "pub const R7_P04_GOLD_COIN_SOURCE_ITEM_ID: u64 = 3_031;\n"
         'pub const R7_P04_GOLD_COIN_OLD_KEY: &str = "oteryn:item.registry.i00002921";\n'
-        'pub const R7_P04_GOLD_COIN_KEY: &str = "oteryn:item.currency.gold_coin";\n'
+        'pub const R7_P04_GOLD_COIN_NAMED_KEY: &str = "oteryn:item.currency.gold_coin";\n'
     )
     promotions = MODULE.parse_identity_promotions(rust)
     assert promotions == {
@@ -550,6 +564,28 @@ def main() -> None:
             "revision": "definition-r1",
         },
     }
+
+    # A12 translation: through the alias table only; D149 drops; continuity fails closed.
+    successors = {
+        "oteryn:item.registry.i00000007": "oteryn:item.tibia.i3031",
+        "oteryn:item.registry.i00000008": None,
+    }
+    assert MODULE.translate_allocations(
+        [(3031, "oteryn:item.registry.i00000007"), (9, "oteryn:item.registry.i00000008")],
+        successors,
+    ) == [(3031, "oteryn:item.tibia.i3031")]
+    expect_error(
+        "ALIAS_SOURCE_CONTINUITY",
+        MODULE.translate_allocations,
+        [(3032, "oteryn:item.registry.i00000007")],
+        successors,
+    )
+    expect_error(
+        "RETIRED_KEY_WITHOUT_ALIAS_ENTRY",
+        MODULE.translate_allocations,
+        [(1, "oteryn:item.registry.i00000001")],
+        successors,
+    )
 
     epoch2_alias_gate_and_allocation()
     epoch2_committed_output()

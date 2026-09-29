@@ -32,7 +32,7 @@ def page(content: str, *, revid: int = 777, page_id: int = 42) -> dict:
         "revision_timestamp": "2024-01-01T00:00:00Z",
         "source_digest": hashlib.sha256(content.encode("utf-8")).hexdigest(),
         "title": "Test Shield",
-        "target": {"family": "Item", "key": "oteryn:item.registry.i00000001", "revision": "definition-r1"},
+        "target": {"family": "Item", "key": "oteryn:item.tibia.i1", "revision": "definition-r1"},
     }
 
 

@@ -249,6 +249,14 @@ def registry_item_names():
             presentation = definition.get('semantics', {}).get('presentation', {})
             if presentation.get('state') == 'KNOWN' and presentation['value']['name'].get('state') == 'KNOWN':
                 names[definition['identity']['key']] = fold(presentation['value']['name']['value'])
+    # The staged NPC packets and samples are pinned history keyed by retired Item keys (A12, ITEM-ID-1b):
+    # a retired key resolves to its Tibia-id successor's name through the frozen alias table only.
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'content-census'))
+    from item_id_alias_table import load_successors
+    for retired, successor in load_successors().items():
+        if successor in names:
+            names[retired] = names[successor]
     return names
 
 

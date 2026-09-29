@@ -6,9 +6,14 @@ on:
     paths:
       - tools/content-census/g4_item_crystal_binding_generator.py
       - tools/content-census/g4_item_crystal_binding_generator_self_test.py
+      - tools/content-census/item_id_alias_table.py
+      - tools/content-census/item_id_alias_table_self_test.py
+      - content/items/aliases.json
+      - docs/agents/evidence/OTV2-20260929-item-id-1-d149-tombstones.json
       - imports/crystalserver/bindings/**
       - imports/tibiawiki/bindings/items.json
-      - content/items/definitions/**
+      - content/**
+      - apps/**
       - apps/game-server/src/content/cw2_b1_import.rs
       - docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json
       - .github/workflows/g4-item-crystal-bindings.yml
@@ -52,3 +57,12 @@ jobs:
             tools/content-census/g4_item_crystal_binding_generator_self_test.py
           python tools/content-census/g4_item_crystal_binding_generator_self_test.py
           python tools/content-census/g4_item_crystal_binding_generator.py --check
+
+      - name: Verify the frozen A12 alias table and that no retired key is referenced
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/content-census/item_id_alias_table.py \
+            tools/content-census/item_id_alias_table_self_test.py
+          python tools/content-census/item_id_alias_table_self_test.py
+          python tools/content-census/item_id_alias_table.py --check

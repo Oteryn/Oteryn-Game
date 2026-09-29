@@ -7,6 +7,8 @@
 - Protected base observed for the final draft refresh: `main@02f52378b32791025d1c1d30356acb7b14185315`
 - Runtime authority: **THIS DRAFT GRANTS NONE; RESOLVE LIVE AT PUBLICATION**
 - Production acceptance: **PENDING LIVE EXACT-COMMIT REGISTRATION CHECKPOINT**
+- Amended by ITEM-ID-1b (A12 D149): the record count and every size derived from it use 33,567 Item records;
+  the per-record maxima are unchanged.
 
 This draft defines the smallest evidence-backed finite resource profile for the
 typed Reference Item successor artifact. It does not accept a wire format,
@@ -73,7 +75,9 @@ records the exact input digest.
 
 ## 3. Authority and compatibility boundary
 
-- All 38,157 protected native Item identities remain unchanged. This profile
+- All protected native Item identities remain unchanged by this profile. The item count is 33,567 since
+  A12 D149 (ITEM-ID-1b removed the 4,590 Crystal rows without an admitted CipSoft appearance; the measured
+  38,157-row candidate census above is the pre-A12 history). This profile
   performs no Crystal/B1 import and no identity generation.
 - Existing Reference Item artifact versions v1, v2 and v3 retain their current
   decoding and limits. A typed successor uses a new version discriminator; old
@@ -104,7 +108,7 @@ records the exact input digest.
 
 | Resource | Maximum | Derivation |
 |---|---:|---|
-| Item identities / records per projection | 38,157 | protected identity closure; exact structural coverage |
+| Item identities / records per projection | 33,567 | protected identity closure; exact structural coverage |
 | presentation name | 46 UTF-8 bytes | maximum measured in the exact pinned XML input |
 | presentation description | 200 UTF-8 bytes | maximum measured in the exact pinned XML input |
 | presentation aliases | 0 entries | explicit unsupported v1; no source vocabulary |
@@ -142,13 +146,13 @@ values use exact signed numerator / nonzero `u64` denominator rationals.
 |---|---:|---|
 | one server-authoritative Item body | 3,555 | retained server core plus typed extension at every admitted semantic maximum, `P=2`, `G=2` and two 512-byte group keys per pattern |
 | one client-safe Item body | 3,433 | retained client core plus the same extension projected through the explicit client allowlist |
-| server Item body section | 135,648,135 | `38,157 * 3,555` |
-| client Item body section | 130,992,981 | `38,157 * 3,433` |
+| server Item body section | 119,330,685 | `33,567 * 3,555` |
+| client Item body section | 115,235,511 | `33,567 * 3,433` |
 | manifest | 7,500 | preserved existing Reference carrier maximum |
-| index | 40,789,837 | `4 + 38,157 * (1 + 2 + 512 + 2 + 512 + 4 + 4 + 32)` |
-| server-authoritative artifact | 176,445,672 | `200 envelope + 7,500 manifest + 40,789,837 index + 135,648,135 body` |
-| client-safe artifact | 171,790,518 | `200 envelope + 7,500 manifest + 40,789,837 index + 130,992,981 body` |
-| combined generation pair | 348,236,190 | checked sum of the two artifact maxima |
+| index | 35,883,127 | `4 + 33,567 * (1 + 2 + 512 + 2 + 512 + 4 + 4 + 32)` |
+| server-authoritative artifact | 155,221,512 | `200 envelope + 7,500 manifest + 35,883,127 index + 119,330,685 body` |
+| client-safe artifact | 151,126,338 | `200 envelope + 7,500 manifest + 35,883,127 index + 115,235,511 body` |
+| combined generation pair | 306,347,850 | checked sum of the two artifact maxima |
 
 The observed protected index (3,358,044 bytes) and observed manifests (498 and
 489 bytes) are scenario measurements only. They are not maxima. The artifact

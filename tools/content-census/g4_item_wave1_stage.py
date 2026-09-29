@@ -13,10 +13,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from item_id_alias_table import load_successors
+
 SNAPSHOT = ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-source-snapshot.json"
 FIELD_CENSUS = ROOT / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
 LEGACY_REFERENCE = ROOT / "content/world/definitions/reference.json"
@@ -106,6 +110,9 @@ def known_semantics(record: dict[str, Any]) -> dict[str, Any]:
 def stage(snapshot: dict[str, Any], census: dict[str, Any], legacy: dict[str, Any]) -> dict[str, Any]:
     assignments = census["family_assignments"]
     by_key = {record["identity"]["key"]: record for record in legacy["records"]}
+    # The snapshot and the staged packet are pinned history with retired keys; the live
+    # WorldProject is keyed by Tibia id (A12, ITEM-ID-1b). Look up through the alias table only.
+    successors = load_successors()
     items: list[dict[str, Any]] = []
     unknown: list[dict[str, Any]] = []
     conflicts: list[dict[str, Any]] = []
@@ -113,8 +120,11 @@ def stage(snapshot: dict[str, Any], census: dict[str, Any], legacy: dict[str, An
     for row in sorted(snapshot["rows"], key=lambda value: value["target"]["key"]):
         fields = row["fields"]
         key = row["target"]["key"]
-        record = by_key.get(key)
-        if record is None or record["identity"] != row["target"]:
+        current = successors.get(key, key)
+        if current is None:
+            raise StageError(f"TARGET_RETIRED_D149:{key}")
+        record = by_key.get(current)
+        if record is None or record["identity"] != {**row["target"], "key": current}:
             raise StageError(f"TARGET_ABSENT:{key}")
         provenance = {"external_id": row["external_id"], "revision_id": row["revision_id"], "source_digest": row["source_digest"]}
 

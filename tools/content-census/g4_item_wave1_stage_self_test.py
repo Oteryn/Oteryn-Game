@@ -12,7 +12,7 @@ if spec is None or spec.loader is None:
 stage = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(stage)
 
-TARGET = {"family": "Item", "key": "oteryn:item.registry.i00000001", "revision": "definition-r1"}
+TARGET = {"family": "Item", "key": "oteryn:item.tibia.i1", "revision": "definition-r1"}
 CENSUS = {"family_assignments": {"Espadas": "weapon_melee"}}
 
 

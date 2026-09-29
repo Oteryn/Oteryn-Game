@@ -6,11 +6,15 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from pathlib import Path
+import sys
 from collections import Counter
+from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools" / "content-census"))
+from item_id_alias_table import load_successors, rekey_retired_strings
+
 LEGACY = ROOT / "content" / "world"
 ITEM_SHARD_SIZE = 500
 ADMISSION_MAIN = "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c"
@@ -76,7 +80,8 @@ def main() -> int:
     imports = load(LEGACY / "provenance" / "imports.json")
 
     family_assignments = load(FIELD_CENSUS)["family_assignments"]
-    wave1 = load(WAVE1_STAGED)
+    # The staged packet is pinned history with retired keys; A12 translates it (ITEM-ID-1b).
+    wave1 = rekey_retired_strings(load(WAVE1_STAGED), load_successors())
     authoring_by_target = {target_id(row["item"]): row for row in declarations.get("item_authoring", [])}
     editors = {target_id(row["target"]): row for row in editor["entries"]}
     bindings: dict[tuple[str, str, str], list[dict[str, Any]]] = {}

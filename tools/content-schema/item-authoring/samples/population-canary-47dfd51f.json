@@ -3,3095 +3,3095 @@
     {
       "blocker": "sprite_atlas_not_admitted",
       "examples": [
-        "oteryn:item.registry.i00000023",
-        "oteryn:item.registry.i00000028",
-        "oteryn:item.registry.i00000031",
-        "oteryn:item.registry.i00000033",
-        "oteryn:item.registry.i00000034"
+        "oteryn:item.tibia.i102",
+        "oteryn:item.tibia.i107",
+        "oteryn:item.tibia.i110",
+        "oteryn:item.tibia.i112",
+        "oteryn:item.tibia.i113"
       ],
       "items": 11706
     },
     {
-      "blocker": "converter_missing:proficiency.proficiency_id",
-      "examples": [
-        "oteryn:item.registry.i00000770",
-        "oteryn:item.registry.i00001685",
-        "oteryn:item.registry.i00002884",
-        "oteryn:item.registry.i00002951",
-        "oteryn:item.weapon.wand.snakebite_rod"
-      ],
-      "items": 631
-    },
-    {
       "blocker": "delivery_task_decision_not_admitted",
       "examples": [],
-      "items": 227
+      "items": 4816
     },
     {
       "blocker": "identity_not_in_b1_catalog",
       "examples": [],
-      "items": 227
+      "items": 4816
+    },
+    {
+      "blocker": "converter_missing:proficiency.proficiency_id",
+      "examples": [
+        "oteryn:item.tibia.i860",
+        "oteryn:item.tibia.i1781",
+        "oteryn:item.tibia.i2992",
+        "oteryn:item.tibia.i3065",
+        "oteryn:item.tibia.i3066"
+      ],
+      "items": 631
     },
     {
       "blocker": "converter_missing:augments",
       "examples": [
-        "oteryn:item.registry.i00036065",
-        "oteryn:item.registry.i00036066",
-        "oteryn:item.registry.i00036067",
-        "oteryn:item.registry.i00036068",
-        "oteryn:item.registry.i00036069"
+        "oteryn:item.tibia.i43864",
+        "oteryn:item.tibia.i43865",
+        "oteryn:item.tibia.i43866",
+        "oteryn:item.tibia.i43867",
+        "oteryn:item.tibia.i43868"
       ],
       "items": 82
     },
     {
       "blocker": "converter_missing:stopduration",
       "examples": [
-        "oteryn:item.registry.i00002806",
-        "oteryn:item.registry.i00002809",
-        "oteryn:item.decor.candlestick",
-        "oteryn:item.registry.i00002814",
-        "oteryn:item.registry.i00002816"
+        "oteryn:item.tibia.i2911",
+        "oteryn:item.tibia.i2914",
+        "oteryn:item.tibia.i2917",
+        "oteryn:item.tibia.i2920",
+        "oteryn:item.tibia.i2922"
       ],
       "items": 50
     },
     {
       "blocker": "converter_missing:flags.container",
       "examples": [
-        "oteryn:item.registry.i00004134",
-        "oteryn:item.registry.i00011107",
-        "oteryn:item.registry.i00012173",
-        "oteryn:item.registry.i00012265",
-        "oteryn:item.registry.i00012266"
+        "oteryn:item.tibia.i4279",
+        "oteryn:item.tibia.i11540",
+        "oteryn:item.tibia.i12644",
+        "oteryn:item.tibia.i12763",
+        "oteryn:item.tibia.i12764"
       ],
       "items": 41
     },
     {
       "blocker": "converter_missing:changedtoexpire.former_object_typeid",
       "examples": [
-        "oteryn:item.registry.i00000816",
-        "oteryn:item.registry.i00002970",
-        "oteryn:item.registry.i00002971",
-        "oteryn:item.registry.i00002972",
-        "oteryn:item.registry.i00002973"
+        "oteryn:item.tibia.i908",
+        "oteryn:item.tibia.i3086",
+        "oteryn:item.tibia.i3087",
+        "oteryn:item.tibia.i3088",
+        "oteryn:item.tibia.i3089"
       ],
       "items": 39
     },
     {
       "blocker": "converter_missing:flags.changedtoexpire",
       "examples": [
-        "oteryn:item.registry.i00000816",
-        "oteryn:item.registry.i00002970",
-        "oteryn:item.registry.i00002971",
-        "oteryn:item.registry.i00002972",
-        "oteryn:item.registry.i00002973"
+        "oteryn:item.tibia.i908",
+        "oteryn:item.tibia.i3086",
+        "oteryn:item.tibia.i3087",
+        "oteryn:item.tibia.i3088",
+        "oteryn:item.tibia.i3089"
       ],
       "items": 39
     },
     {
       "blocker": "converter_missing:runespellname",
       "examples": [
-        "oteryn:item.registry.i00003032",
-        "oteryn:item.registry.i00003033",
-        "oteryn:item.registry.i00003036",
-        "oteryn:item.registry.i00003037",
-        "oteryn:item.consumable.sudden_death_rune"
+        "oteryn:item.tibia.i3148",
+        "oteryn:item.tibia.i3149",
+        "oteryn:item.tibia.i3152",
+        "oteryn:item.tibia.i3153",
+        "oteryn:item.tibia.i3155"
       ],
       "items": 36
     },
     {
       "blocker": "unresolved:flags.forceuse",
       "examples": [
-        "oteryn:item.registry.i00000510",
-        "oteryn:item.registry.i00000523",
-        "oteryn:item.registry.i00007563",
-        "oteryn:item.registry.i00011626",
-        "oteryn:item.registry.i00011627"
+        "oteryn:item.tibia.i593",
+        "oteryn:item.tibia.i606",
+        "oteryn:item.tibia.i7749",
+        "oteryn:item.tibia.i12059",
+        "oteryn:item.tibia.i12060"
       ],
       "items": 34
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:219",
       "examples": [
-        "oteryn:item.registry.i00003147",
-        "oteryn:item.weapon.blade.dagger",
-        "oteryn:item.registry.i00003152",
-        "oteryn:item.registry.i00003153",
-        "oteryn:item.registry.i00003154"
+        "oteryn:item.tibia.i3264",
+        "oteryn:item.tibia.i3267",
+        "oteryn:item.tibia.i3271",
+        "oteryn:item.tibia.i3272",
+        "oteryn:item.tibia.i3273"
       ],
       "items": 23
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:227",
       "examples": [
-        "oteryn:item.registry.i00003151",
-        "oteryn:item.registry.i00003162",
-        "oteryn:item.weapon.club.mace",
-        "oteryn:item.weapon.club.battle_hammer",
-        "oteryn:item.registry.i00003187"
+        "oteryn:item.tibia.i3270",
+        "oteryn:item.tibia.i3282",
+        "oteryn:item.tibia.i3286",
+        "oteryn:item.tibia.i3305",
+        "oteryn:item.tibia.i3310"
       ],
       "items": 23
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:223",
       "examples": [
-        "oteryn:item.registry.i00003149",
-        "oteryn:item.registry.i00003150",
-        "oteryn:item.registry.i00003156",
-        "oteryn:item.registry.i00003180",
-        "oteryn:item.registry.i00003190"
+        "oteryn:item.tibia.i3266",
+        "oteryn:item.tibia.i3269",
+        "oteryn:item.tibia.i3275",
+        "oteryn:item.tibia.i3302",
+        "oteryn:item.tibia.i3313"
       ],
       "items": 20
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:224",
       "examples": [
-        "oteryn:item.weapon.axe.hand",
-        "oteryn:item.registry.i00003155",
-        "oteryn:item.registry.i00003157",
-        "oteryn:item.registry.i00003172",
-        "oteryn:item.registry.i00003193"
+        "oteryn:item.tibia.i3268",
+        "oteryn:item.tibia.i3274",
+        "oteryn:item.tibia.i3276",
+        "oteryn:item.tibia.i3293",
+        "oteryn:item.tibia.i3316"
       ],
       "items": 16
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:226",
       "examples": [
-        "oteryn:item.registry.i00003160",
-        "oteryn:item.registry.i00003206",
-        "oteryn:item.registry.i00003214",
-        "oteryn:item.registry.i00003317",
-        "oteryn:item.registry.i00007229"
+        "oteryn:item.tibia.i3279",
+        "oteryn:item.tibia.i3332",
+        "oteryn:item.tibia.i3340",
+        "oteryn:item.tibia.i3453",
+        "oteryn:item.tibia.i7414"
       ],
       "items": 11
     },
     {
       "blocker": "family_profile_unresolved",
       "examples": [
-        "oteryn:item.registry.i00008938",
-        "oteryn:item.registry.i00018670",
-        "oteryn:item.registry.i00019369",
-        "oteryn:item.registry.i00019371",
-        "oteryn:item.registry.i00020437"
+        "oteryn:item.tibia.i9132",
+        "oteryn:item.tibia.i19392",
+        "oteryn:item.tibia.i20129",
+        "oteryn:item.tibia.i20131",
+        "oteryn:item.tibia.i21212"
       ],
       "items": 10
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:225",
       "examples": [
-        "oteryn:item.registry.i00003148",
-        "oteryn:item.registry.i00003179",
-        "oteryn:item.registry.i00007197",
-        "oteryn:item.registry.i00007201",
-        "oteryn:item.registry.i00007218"
+        "oteryn:item.tibia.i3265",
+        "oteryn:item.tibia.i3301",
+        "oteryn:item.tibia.i7382",
+        "oteryn:item.tibia.i7386",
+        "oteryn:item.tibia.i7403"
       ],
       "items": 9
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:229",
       "examples": [
-        "oteryn:item.registry.i00003168",
-        "oteryn:item.registry.i00010169",
-        "oteryn:item.registry.i00017115",
-        "oteryn:item.registry.i00037531",
-        "oteryn:item.registry.i00037536"
+        "oteryn:item.tibia.i3289",
+        "oteryn:item.tibia.i10389",
+        "oteryn:item.tibia.i17828",
+        "oteryn:item.tibia.i50166",
+        "oteryn:item.tibia.i50171"
       ],
       "items": 8
     },
     {
       "blocker": "converter_missing:writeable",
       "examples": [
-        "oteryn:item.registry.i00000556",
-        "oteryn:item.registry.i00002721",
-        "oteryn:item.registry.i00002723",
-        "oteryn:item.registry.i00006221",
-        "oteryn:item.registry.i00020635"
+        "oteryn:item.tibia.i639",
+        "oteryn:item.tibia.i2820",
+        "oteryn:item.tibia.i2822",
+        "oteryn:item.tibia.i6387",
+        "oteryn:item.tibia.i21413"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:162",
       "examples": [
-        "oteryn:item.registry.i00025212",
-        "oteryn:item.registry.i00025213",
-        "oteryn:item.registry.i00025214",
-        "oteryn:item.registry.i00025215",
-        "oteryn:item.registry.i00025216"
+        "oteryn:item.tibia.i26068",
+        "oteryn:item.tibia.i26069",
+        "oteryn:item.tibia.i26070",
+        "oteryn:item.tibia.i26071",
+        "oteryn:item.tibia.i26072"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:163",
       "examples": [
-        "oteryn:item.registry.i00025206",
-        "oteryn:item.registry.i00025207",
-        "oteryn:item.registry.i00025208",
-        "oteryn:item.registry.i00025209",
-        "oteryn:item.registry.i00025210"
+        "oteryn:item.tibia.i26062",
+        "oteryn:item.tibia.i26063",
+        "oteryn:item.tibia.i26064",
+        "oteryn:item.tibia.i26065",
+        "oteryn:item.tibia.i26066"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:164",
       "examples": [
-        "oteryn:item.registry.i00025200",
-        "oteryn:item.registry.i00025201",
-        "oteryn:item.registry.i00025202",
-        "oteryn:item.registry.i00025203",
-        "oteryn:item.registry.i00025204"
+        "oteryn:item.tibia.i26056",
+        "oteryn:item.tibia.i26057",
+        "oteryn:item.tibia.i26058",
+        "oteryn:item.tibia.i26059",
+        "oteryn:item.tibia.i26060"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:165",
       "examples": [
-        "oteryn:item.registry.i00025194",
-        "oteryn:item.registry.i00025195",
-        "oteryn:item.registry.i00025196",
-        "oteryn:item.registry.i00025197",
-        "oteryn:item.registry.i00025198"
+        "oteryn:item.tibia.i26050",
+        "oteryn:item.tibia.i26051",
+        "oteryn:item.tibia.i26052",
+        "oteryn:item.tibia.i26053",
+        "oteryn:item.tibia.i26054"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:166",
       "examples": [
-        "oteryn:item.registry.i00025188",
-        "oteryn:item.registry.i00025189",
-        "oteryn:item.registry.i00025190",
-        "oteryn:item.registry.i00025191",
-        "oteryn:item.registry.i00025192"
+        "oteryn:item.tibia.i26044",
+        "oteryn:item.tibia.i26045",
+        "oteryn:item.tibia.i26046",
+        "oteryn:item.tibia.i26047",
+        "oteryn:item.tibia.i26048"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:177",
       "examples": [
-        "oteryn:item.registry.i00025152",
-        "oteryn:item.registry.i00025153",
-        "oteryn:item.registry.i00025154",
-        "oteryn:item.registry.i00025155",
-        "oteryn:item.registry.i00025156"
+        "oteryn:item.tibia.i26007",
+        "oteryn:item.tibia.i26008",
+        "oteryn:item.tibia.i26009",
+        "oteryn:item.tibia.i26010",
+        "oteryn:item.tibia.i26011"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:178",
       "examples": [
-        "oteryn:item.registry.i00025146",
-        "oteryn:item.registry.i00025147",
-        "oteryn:item.registry.i00025148",
-        "oteryn:item.registry.i00025149",
-        "oteryn:item.registry.i00025150"
+        "oteryn:item.tibia.i26001",
+        "oteryn:item.tibia.i26002",
+        "oteryn:item.tibia.i26003",
+        "oteryn:item.tibia.i26004",
+        "oteryn:item.tibia.i26005"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:179",
       "examples": [
-        "oteryn:item.registry.i00025140",
-        "oteryn:item.registry.i00025141",
-        "oteryn:item.registry.i00025142",
-        "oteryn:item.registry.i00025143",
-        "oteryn:item.registry.i00025144"
+        "oteryn:item.tibia.i25995",
+        "oteryn:item.tibia.i25996",
+        "oteryn:item.tibia.i25997",
+        "oteryn:item.tibia.i25998",
+        "oteryn:item.tibia.i25999"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:180",
       "examples": [
-        "oteryn:item.registry.i00025134",
-        "oteryn:item.registry.i00025135",
-        "oteryn:item.registry.i00025136",
-        "oteryn:item.registry.i00025137",
-        "oteryn:item.registry.i00025138"
+        "oteryn:item.tibia.i25989",
+        "oteryn:item.tibia.i25990",
+        "oteryn:item.tibia.i25991",
+        "oteryn:item.tibia.i25992",
+        "oteryn:item.tibia.i25993"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:181",
       "examples": [
-        "oteryn:item.registry.i00025128",
-        "oteryn:item.registry.i00025129",
-        "oteryn:item.registry.i00025130",
-        "oteryn:item.registry.i00025131",
-        "oteryn:item.registry.i00025132"
+        "oteryn:item.tibia.i25983",
+        "oteryn:item.tibia.i25984",
+        "oteryn:item.tibia.i25985",
+        "oteryn:item.tibia.i25986",
+        "oteryn:item.tibia.i25987"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:192",
       "examples": [
-        "oteryn:item.registry.i00025182",
-        "oteryn:item.registry.i00025183",
-        "oteryn:item.registry.i00025184",
-        "oteryn:item.registry.i00025185",
-        "oteryn:item.registry.i00025186"
+        "oteryn:item.tibia.i26038",
+        "oteryn:item.tibia.i26039",
+        "oteryn:item.tibia.i26040",
+        "oteryn:item.tibia.i26041",
+        "oteryn:item.tibia.i26042"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:193",
       "examples": [
-        "oteryn:item.registry.i00025176",
-        "oteryn:item.registry.i00025177",
-        "oteryn:item.registry.i00025178",
-        "oteryn:item.registry.i00025179",
-        "oteryn:item.registry.i00025180"
+        "oteryn:item.tibia.i26032",
+        "oteryn:item.tibia.i26033",
+        "oteryn:item.tibia.i26034",
+        "oteryn:item.tibia.i26035",
+        "oteryn:item.tibia.i26036"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:194",
       "examples": [
-        "oteryn:item.registry.i00025170",
-        "oteryn:item.registry.i00025171",
-        "oteryn:item.registry.i00025172",
-        "oteryn:item.registry.i00025173",
-        "oteryn:item.registry.i00025174"
+        "oteryn:item.tibia.i26026",
+        "oteryn:item.tibia.i26027",
+        "oteryn:item.tibia.i26028",
+        "oteryn:item.tibia.i26029",
+        "oteryn:item.tibia.i26030"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:195",
       "examples": [
-        "oteryn:item.registry.i00025164",
-        "oteryn:item.registry.i00025165",
-        "oteryn:item.registry.i00025166",
-        "oteryn:item.registry.i00025167",
-        "oteryn:item.registry.i00025168"
+        "oteryn:item.tibia.i26020",
+        "oteryn:item.tibia.i26021",
+        "oteryn:item.tibia.i26022",
+        "oteryn:item.tibia.i26023",
+        "oteryn:item.tibia.i26024"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:196",
       "examples": [
-        "oteryn:item.registry.i00025158",
-        "oteryn:item.registry.i00025159",
-        "oteryn:item.registry.i00025160",
-        "oteryn:item.registry.i00025161",
-        "oteryn:item.registry.i00025162"
+        "oteryn:item.tibia.i26014",
+        "oteryn:item.tibia.i26015",
+        "oteryn:item.tibia.i26016",
+        "oteryn:item.tibia.i26017",
+        "oteryn:item.tibia.i26018"
       ],
       "items": 6
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:294",
       "examples": [
-        "oteryn:item.registry.i00025101",
-        "oteryn:item.registry.i00025102",
-        "oteryn:item.registry.i00025103",
-        "oteryn:item.registry.i00025104",
-        "oteryn:item.registry.i00025105"
+        "oteryn:item.tibia.i25955",
+        "oteryn:item.tibia.i25956",
+        "oteryn:item.tibia.i25957",
+        "oteryn:item.tibia.i25958",
+        "oteryn:item.tibia.i25959"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:295",
       "examples": [
-        "oteryn:item.registry.i00025096",
-        "oteryn:item.registry.i00025097",
-        "oteryn:item.registry.i00025098",
-        "oteryn:item.registry.i00025099",
-        "oteryn:item.registry.i00025100"
+        "oteryn:item.tibia.i25950",
+        "oteryn:item.tibia.i25951",
+        "oteryn:item.tibia.i25952",
+        "oteryn:item.tibia.i25953",
+        "oteryn:item.tibia.i25954"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:296",
       "examples": [
-        "oteryn:item.registry.i00025091",
-        "oteryn:item.registry.i00025092",
-        "oteryn:item.registry.i00025093",
-        "oteryn:item.registry.i00025094",
-        "oteryn:item.registry.i00025095"
+        "oteryn:item.tibia.i25945",
+        "oteryn:item.tibia.i25946",
+        "oteryn:item.tibia.i25947",
+        "oteryn:item.tibia.i25948",
+        "oteryn:item.tibia.i25949"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:297",
       "examples": [
-        "oteryn:item.registry.i00025116",
-        "oteryn:item.registry.i00025117",
-        "oteryn:item.registry.i00025118",
-        "oteryn:item.registry.i00025119",
-        "oteryn:item.registry.i00025120"
+        "oteryn:item.tibia.i25970",
+        "oteryn:item.tibia.i25971",
+        "oteryn:item.tibia.i25972",
+        "oteryn:item.tibia.i25973",
+        "oteryn:item.tibia.i25974"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:298",
       "examples": [
-        "oteryn:item.registry.i00025111",
-        "oteryn:item.registry.i00025112",
-        "oteryn:item.registry.i00025113",
-        "oteryn:item.registry.i00025114",
-        "oteryn:item.registry.i00025115"
+        "oteryn:item.tibia.i25965",
+        "oteryn:item.tibia.i25966",
+        "oteryn:item.tibia.i25967",
+        "oteryn:item.tibia.i25968",
+        "oteryn:item.tibia.i25969"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:299",
       "examples": [
-        "oteryn:item.registry.i00025106",
-        "oteryn:item.registry.i00025107",
-        "oteryn:item.registry.i00025108",
-        "oteryn:item.registry.i00025109",
-        "oteryn:item.registry.i00025110"
+        "oteryn:item.tibia.i25960",
+        "oteryn:item.tibia.i25961",
+        "oteryn:item.tibia.i25962",
+        "oteryn:item.tibia.i25963",
+        "oteryn:item.tibia.i25964"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:300",
       "examples": [
-        "oteryn:item.registry.i00025086",
-        "oteryn:item.registry.i00025087",
-        "oteryn:item.registry.i00025088",
-        "oteryn:item.registry.i00025089",
-        "oteryn:item.registry.i00025090"
+        "oteryn:item.tibia.i25940",
+        "oteryn:item.tibia.i25941",
+        "oteryn:item.tibia.i25942",
+        "oteryn:item.tibia.i25943",
+        "oteryn:item.tibia.i25944"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:301",
       "examples": [
-        "oteryn:item.registry.i00025081",
-        "oteryn:item.registry.i00025082",
-        "oteryn:item.registry.i00025083",
-        "oteryn:item.registry.i00025084",
-        "oteryn:item.registry.i00025085"
+        "oteryn:item.tibia.i25935",
+        "oteryn:item.tibia.i25936",
+        "oteryn:item.tibia.i25937",
+        "oteryn:item.tibia.i25938",
+        "oteryn:item.tibia.i25939"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:302",
       "examples": [
-        "oteryn:item.registry.i00025076",
-        "oteryn:item.registry.i00025077",
-        "oteryn:item.registry.i00025078",
-        "oteryn:item.registry.i00025079",
-        "oteryn:item.registry.i00025080"
+        "oteryn:item.tibia.i25930",
+        "oteryn:item.tibia.i25931",
+        "oteryn:item.tibia.i25932",
+        "oteryn:item.tibia.i25933",
+        "oteryn:item.tibia.i25934"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:303",
       "examples": [
-        "oteryn:item.registry.i00025071",
-        "oteryn:item.registry.i00025072",
-        "oteryn:item.registry.i00025073",
-        "oteryn:item.registry.i00025074",
-        "oteryn:item.registry.i00025075"
+        "oteryn:item.tibia.i25925",
+        "oteryn:item.tibia.i25926",
+        "oteryn:item.tibia.i25927",
+        "oteryn:item.tibia.i25928",
+        "oteryn:item.tibia.i25929"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:304",
       "examples": [
-        "oteryn:item.registry.i00025066",
-        "oteryn:item.registry.i00025067",
-        "oteryn:item.registry.i00025068",
-        "oteryn:item.registry.i00025069",
-        "oteryn:item.registry.i00025070"
+        "oteryn:item.tibia.i25920",
+        "oteryn:item.tibia.i25921",
+        "oteryn:item.tibia.i25922",
+        "oteryn:item.tibia.i25923",
+        "oteryn:item.tibia.i25924"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:305",
       "examples": [
-        "oteryn:item.registry.i00025061",
-        "oteryn:item.registry.i00025062",
-        "oteryn:item.registry.i00025063",
-        "oteryn:item.registry.i00025064",
-        "oteryn:item.registry.i00025065"
+        "oteryn:item.tibia.i25915",
+        "oteryn:item.tibia.i25916",
+        "oteryn:item.tibia.i25917",
+        "oteryn:item.tibia.i25918",
+        "oteryn:item.tibia.i25919"
       ],
       "items": 5
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:215",
       "examples": [
-        "oteryn:item.registry.i00026597",
-        "oteryn:item.registry.i00026598"
+        "oteryn:item.tibia.i27455",
+        "oteryn:item.tibia.i27456"
       ],
       "items": 2
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:228",
       "examples": [
-        "oteryn:item.weapon.ranged.crossbow",
-        "oteryn:item.weapon.ranged.bow"
+        "oteryn:item.tibia.i3349",
+        "oteryn:item.tibia.i3350"
       ],
       "items": 2
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:239",
       "examples": [
-        "oteryn:item.registry.i00000770",
-        "oteryn:item.registry.i00007200"
+        "oteryn:item.tibia.i860",
+        "oteryn:item.tibia.i7385"
       ],
       "items": 2
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:284",
       "examples": [
-        "oteryn:item.registry.i00007203",
-        "oteryn:item.registry.i00007226"
+        "oteryn:item.tibia.i7388",
+        "oteryn:item.tibia.i7411"
       ],
       "items": 2
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:54",
       "examples": [
-        "oteryn:item.registry.i00037107",
-        "oteryn:item.registry.i00037108"
+        "oteryn:item.tibia.i49520",
+        "oteryn:item.tibia.i49522"
       ],
       "items": 2
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:64",
       "examples": [
-        "oteryn:item.registry.i00037335",
-        "oteryn:item.registry.i00037338"
+        "oteryn:item.tibia.i49858",
+        "oteryn:item.tibia.i49861"
       ],
       "items": 2
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:74",
       "examples": [
-        "oteryn:item.registry.i00037336",
-        "oteryn:item.registry.i00037339"
+        "oteryn:item.tibia.i49859",
+        "oteryn:item.tibia.i49862"
       ],
       "items": 2
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:86",
       "examples": [
-        "oteryn:item.registry.i00037337",
-        "oteryn:item.registry.i00037340"
+        "oteryn:item.tibia.i49860",
+        "oteryn:item.tibia.i49863"
       ],
       "items": 2
     },
     {
       "blocker": "converter_missing:writeonceitemid",
       "examples": [
-        "oteryn:item.registry.i00008555"
+        "oteryn:item.tibia.i8747"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:10",
       "examples": [
-        "oteryn:item.registry.i00036071"
+        "oteryn:item.tibia.i43870"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:100",
       "examples": [
-        "oteryn:item.registry.i00033225"
+        "oteryn:item.tibia.i36675"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:101",
       "examples": [
-        "oteryn:item.registry.i00019316"
+        "oteryn:item.tibia.i20076"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:102",
       "examples": [
-        "oteryn:item.registry.i00019310"
+        "oteryn:item.tibia.i20070"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:103",
       "examples": [
-        "oteryn:item.registry.i00019304"
+        "oteryn:item.tibia.i20064"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:104",
       "examples": [
-        "oteryn:item.registry.i00019319"
+        "oteryn:item.tibia.i20079"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:105",
       "examples": [
-        "oteryn:item.registry.i00019313"
+        "oteryn:item.tibia.i20073"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:106",
       "examples": [
-        "oteryn:item.registry.i00019307"
+        "oteryn:item.tibia.i20067"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:107",
       "examples": [
-        "oteryn:item.registry.i00037528"
+        "oteryn:item.tibia.i50163"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:108",
       "examples": [
-        "oteryn:item.registry.i00019322"
+        "oteryn:item.tibia.i20082"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:109",
       "examples": [
-        "oteryn:item.registry.i00019317"
+        "oteryn:item.tibia.i20077"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:11",
       "examples": [
-        "oteryn:item.registry.i00036075"
+        "oteryn:item.tibia.i43874"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:110",
       "examples": [
-        "oteryn:item.registry.i00019311"
+        "oteryn:item.tibia.i20071"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:111",
       "examples": [
-        "oteryn:item.registry.i00019305"
+        "oteryn:item.tibia.i20065"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:112",
       "examples": [
-        "oteryn:item.registry.i00019320"
+        "oteryn:item.tibia.i20080"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:113",
       "examples": [
-        "oteryn:item.registry.i00019314"
+        "oteryn:item.tibia.i20074"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:114",
       "examples": [
-        "oteryn:item.registry.i00019308"
+        "oteryn:item.tibia.i20068"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:115",
       "examples": [
-        "oteryn:item.registry.i00037529"
+        "oteryn:item.tibia.i50164"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:117",
       "examples": [
-        "oteryn:item.registry.i00019318"
+        "oteryn:item.tibia.i20078"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:118",
       "examples": [
-        "oteryn:item.registry.i00019312"
+        "oteryn:item.tibia.i20072"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:119",
       "examples": [
-        "oteryn:item.registry.i00019306"
+        "oteryn:item.tibia.i20066"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:12",
       "examples": [
-        "oteryn:item.registry.i00036073"
+        "oteryn:item.tibia.i43872"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:120",
       "examples": [
-        "oteryn:item.registry.i00019321"
+        "oteryn:item.tibia.i20081"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:121",
       "examples": [
-        "oteryn:item.registry.i00019315"
+        "oteryn:item.tibia.i20075"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:122",
       "examples": [
-        "oteryn:item.registry.i00019309"
+        "oteryn:item.tibia.i20069"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:123",
       "examples": [
-        "oteryn:item.registry.i00037530"
+        "oteryn:item.tibia.i50165"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:124",
       "examples": [
-        "oteryn:item.registry.i00019324"
+        "oteryn:item.tibia.i20084"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:125",
       "examples": [
-        "oteryn:item.registry.i00001685"
+        "oteryn:item.tibia.i1781"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:126",
       "examples": [
-        "oteryn:item.registry.i00002884"
+        "oteryn:item.tibia.i2992"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:127",
       "examples": [
-        "oteryn:item.registry.i00003158"
+        "oteryn:item.tibia.i3277"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:128",
       "examples": [
-        "oteryn:item.registry.i00003166"
+        "oteryn:item.tibia.i3287"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:129",
       "examples": [
-        "oteryn:item.registry.i00003176"
+        "oteryn:item.tibia.i3298"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:13",
       "examples": [
-        "oteryn:item.registry.i00036078"
+        "oteryn:item.tibia.i43877"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:130",
       "examples": [
-        "oteryn:item.registry.i00019323"
+        "oteryn:item.tibia.i20083"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:131",
       "examples": [
-        "oteryn:item.registry.i00003221"
+        "oteryn:item.tibia.i3347"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:132",
       "examples": [
-        "oteryn:item.registry.i00007181"
+        "oteryn:item.tibia.i7366"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:133",
       "examples": [
-        "oteryn:item.registry.i00007182"
+        "oteryn:item.tibia.i7367"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:134",
       "examples": [
-        "oteryn:item.registry.i00029514"
+        "oteryn:item.tibia.i30395"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:135",
       "examples": [
-        "oteryn:item.registry.i00029515"
+        "oteryn:item.tibia.i30396"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:136",
       "examples": [
-        "oteryn:item.registry.i00029517"
+        "oteryn:item.tibia.i30398"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:137",
       "examples": [
-        "oteryn:item.registry.i00037532"
+        "oteryn:item.tibia.i50167"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:138",
       "examples": [
-        "oteryn:item.registry.i00029512"
+        "oteryn:item.tibia.i30393"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:139",
       "examples": [
-        "oteryn:item.registry.i00032628"
+        "oteryn:item.tibia.i34254"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:14",
       "examples": [
-        "oteryn:item.registry.i00037522"
+        "oteryn:item.tibia.i50157"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:140",
       "examples": [
-        "oteryn:item.registry.i00032627"
+        "oteryn:item.tibia.i34253"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:141",
       "examples": [
-        "oteryn:item.registry.i00032547"
+        "oteryn:item.tibia.i34155"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:142",
       "examples": [
-        "oteryn:item.registry.i00037527"
+        "oteryn:item.tibia.i50162"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:143",
       "examples": [
-        "oteryn:item.registry.i00032542"
+        "oteryn:item.tibia.i34150"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:144",
       "examples": [
-        "oteryn:item.registry.i00027847"
+        "oteryn:item.tibia.i28725"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:145",
       "examples": [
-        "oteryn:item.registry.i00027845"
+        "oteryn:item.tibia.i28723"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:146",
       "examples": [
-        "oteryn:item.registry.i00027846"
+        "oteryn:item.tibia.i28724"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:147",
       "examples": [
-        "oteryn:item.registry.i00037526"
+        "oteryn:item.tibia.i50161"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:148",
       "examples": [
-        "oteryn:item.registry.i00027840"
+        "oteryn:item.tibia.i28718"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:149",
       "examples": [
-        "oteryn:item.registry.i00007183"
+        "oteryn:item.tibia.i7368"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:15",
       "examples": [
-        "oteryn:item.registry.i00036083"
+        "oteryn:item.tibia.i43882"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:150",
       "examples": [
-        "oteryn:item.registry.i00007193"
+        "oteryn:item.tibia.i7378"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:151",
       "examples": [
-        "oteryn:item.registry.i00029519"
+        "oteryn:item.tibia.i30400"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:152",
       "examples": [
-        "oteryn:item.registry.i00029518"
+        "oteryn:item.tibia.i30399"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:153",
       "examples": [
-        "oteryn:item.registry.i00032543"
+        "oteryn:item.tibia.i34151"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:154",
       "examples": [
-        "oteryn:item.registry.i00032544"
+        "oteryn:item.tibia.i34152"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:155",
       "examples": [
-        "oteryn:item.registry.i00027838"
+        "oteryn:item.tibia.i28716"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:156",
       "examples": [
-        "oteryn:item.registry.i00027839"
+        "oteryn:item.tibia.i28717"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:157",
       "examples": [
-        "oteryn:item.registry.i00020383"
+        "oteryn:item.tibia.i21158"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:158",
       "examples": [
-        "oteryn:item.registry.i00024897"
+        "oteryn:item.tibia.i25735"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:159",
       "examples": [
-        "oteryn:item.registry.i00024921"
+        "oteryn:item.tibia.i25759"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:16",
       "examples": [
-        "oteryn:item.registry.i00036086"
+        "oteryn:item.tibia.i43885"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:161",
       "examples": [
-        "oteryn:item.registry.i00003164"
+        "oteryn:item.tibia.i3284"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:17",
       "examples": [
-        "oteryn:item.registry.i00036070"
+        "oteryn:item.tibia.i43869"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:18",
       "examples": [
-        "oteryn:item.registry.i00036068"
+        "oteryn:item.tibia.i43867"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:19",
       "examples": [
-        "oteryn:item.registry.i00036066"
+        "oteryn:item.tibia.i43865"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:20",
       "examples": [
-        "oteryn:item.registry.i00036072"
+        "oteryn:item.tibia.i43871"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:207",
       "examples": [
-        "oteryn:item.registry.i00026596"
+        "oteryn:item.tibia.i27454"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:208",
       "examples": [
-        "oteryn:item.registry.i00026595"
+        "oteryn:item.tibia.i27453"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:209",
       "examples": [
-        "oteryn:item.registry.i00026593"
+        "oteryn:item.tibia.i27451"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:21",
       "examples": [
-        "oteryn:item.registry.i00036074"
+        "oteryn:item.tibia.i43873"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:210",
       "examples": [
-        "oteryn:item.registry.i00026591"
+        "oteryn:item.tibia.i27449"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:211",
       "examples": [
-        "oteryn:item.registry.i00026594"
+        "oteryn:item.tibia.i27452"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:212",
       "examples": [
-        "oteryn:item.registry.i00026592"
+        "oteryn:item.tibia.i27450"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:213",
       "examples": [
-        "oteryn:item.registry.i00037533"
+        "oteryn:item.tibia.i50168"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:214",
       "examples": [
-        "oteryn:item.registry.i00026600"
+        "oteryn:item.tibia.i27458"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:216",
       "examples": [
-        "oteryn:item.registry.i00026599"
+        "oteryn:item.tibia.i27457"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:217",
       "examples": [
-        "oteryn:item.registry.i00028544"
+        "oteryn:item.tibia.i29425"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:218",
       "examples": [
-        "oteryn:item.registry.i00003219"
+        "oteryn:item.tibia.i3345"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:22",
       "examples": [
-        "oteryn:item.registry.i00036076"
+        "oteryn:item.tibia.i43875"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:220",
       "examples": [
-        "oteryn:item.registry.i00027948"
+        "oteryn:item.tibia.i28826"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:221",
       "examples": [
-        "oteryn:item.registry.i00027947"
+        "oteryn:item.tibia.i28825"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:222",
       "examples": [
-        "oteryn:item.registry.i00024862"
+        "oteryn:item.tibia.i25700"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:23",
       "examples": [
-        "oteryn:item.registry.i00036079"
+        "oteryn:item.tibia.i43878"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:231",
       "examples": [
-        "oteryn:item.registry.i00003169"
+        "oteryn:item.tibia.i3290"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:232",
       "examples": [
-        "oteryn:item.registry.i00003175"
+        "oteryn:item.tibia.i3297"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:233",
       "examples": [
-        "oteryn:item.registry.i00003177"
+        "oteryn:item.tibia.i3299"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:234",
       "examples": [
-        "oteryn:item.registry.i00003185"
+        "oteryn:item.tibia.i3308"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:235",
       "examples": [
-        "oteryn:item.registry.i00003204"
+        "oteryn:item.tibia.i3330"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:236",
       "examples": [
-        "oteryn:item.registry.i00003212"
+        "oteryn:item.tibia.i3338"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:237",
       "examples": [
-        "oteryn:item.registry.i00028405"
+        "oteryn:item.tibia.i29286"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:24",
       "examples": [
-        "oteryn:item.registry.i00037523"
+        "oteryn:item.tibia.i50158"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:240",
       "examples": [
-        "oteryn:item.registry.i00007219"
+        "oteryn:item.tibia.i7404"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:241",
       "examples": [
-        "oteryn:item.registry.i00007231"
+        "oteryn:item.tibia.i7416"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:242",
       "examples": [
-        "oteryn:item.registry.i00009198"
+        "oteryn:item.tibia.i9396"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:243",
       "examples": [
-        "oteryn:item.registry.i00003182"
+        "oteryn:item.tibia.i3304"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:244",
       "examples": [
-        "oteryn:item.registry.i00009175"
+        "oteryn:item.tibia.i9373"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:245",
       "examples": [
-        "oteryn:item.registry.i00009187"
+        "oteryn:item.tibia.i9385"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:246",
       "examples": [
-        "oteryn:item.registry.i00009178"
+        "oteryn:item.tibia.i9376"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:247",
       "examples": [
-        "oteryn:item.registry.i00026665"
+        "oteryn:item.tibia.i27523"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:248",
       "examples": [
-        "oteryn:item.registry.i00003222"
+        "oteryn:item.tibia.i3348"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:249",
       "examples": [
-        "oteryn:item.registry.i00017100"
+        "oteryn:item.tibia.i17813"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:25",
       "examples": [
-        "oteryn:item.registry.i00036087"
+        "oteryn:item.tibia.i43886"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:250",
       "examples": [
-        "oteryn:item.registry.i00003091"
+        "oteryn:item.tibia.i3208"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:251",
       "examples": [
-        "oteryn:item.registry.i00035149"
+        "oteryn:item.tibia.i39156"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:252",
       "examples": [
-        "oteryn:item.registry.i00035150"
+        "oteryn:item.tibia.i39157"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:253",
       "examples": [
-        "oteryn:item.registry.i00035156"
+        "oteryn:item.tibia.i39163"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:254",
       "examples": [
-        "oteryn:item.registry.i00035148"
+        "oteryn:item.tibia.i39155"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:255",
       "examples": [
-        "oteryn:item.registry.i00035155"
+        "oteryn:item.tibia.i39162"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:256",
       "examples": [
-        "oteryn:item.registry.i00035152"
+        "oteryn:item.tibia.i39159"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:257",
       "examples": [
-        "oteryn:item.registry.i00037525"
+        "oteryn:item.tibia.i50160"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:258",
       "examples": [
-        "oteryn:item.registry.i00003217"
+        "oteryn:item.tibia.i3343"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:259",
       "examples": [
-        "oteryn:item.registry.i00009177"
+        "oteryn:item.tibia.i9375"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:26",
       "examples": [
-        "oteryn:item.registry.i00036084"
+        "oteryn:item.tibia.i43883"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:260",
       "examples": [
-        "oteryn:item.registry.i00009189"
+        "oteryn:item.tibia.i9387"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:261",
       "examples": [
-        "oteryn:item.registry.i00032809"
+        "oteryn:item.tibia.i35521"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:262",
       "examples": [
-        "oteryn:item.registry.i00032810"
+        "oteryn:item.tibia.i35522"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:263",
       "examples": [
-        "oteryn:item.registry.i00032802"
+        "oteryn:item.tibia.i35514"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:264",
       "examples": [
-        "oteryn:item.registry.i00032803"
+        "oteryn:item.tibia.i35515"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:265",
       "examples": [
-        "oteryn:item.registry.i00032806"
+        "oteryn:item.tibia.i35518"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:266",
       "examples": [
-        "oteryn:item.registry.i00007223"
+        "oteryn:item.tibia.i7408"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:268",
       "examples": [
-        "oteryn:item.registry.i00003213"
+        "oteryn:item.tibia.i3339"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:269",
       "examples": [
-        "oteryn:item.registry.i00020573"
+        "oteryn:item.tibia.i21348"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:27",
       "examples": [
-        "oteryn:item.registry.i00032483"
+        "oteryn:item.tibia.i34084"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:270",
       "examples": [
-        "oteryn:item.registry.i00020575"
+        "oteryn:item.tibia.i21350"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:271",
       "examples": [
-        "oteryn:item.weapon.wand.snakebite_rod"
+        "oteryn:item.tibia.i3066"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:272",
       "examples": [
-        "oteryn:item.registry.i00002959"
+        "oteryn:item.tibia.i3074"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:273",
       "examples": [
-        "oteryn:item.registry.i00002955"
+        "oteryn:item.tibia.i3070"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:274",
       "examples": [
-        "oteryn:item.registry.i00002960"
+        "oteryn:item.tibia.i3075"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:275",
       "examples": [
-        "oteryn:item.registry.i00003208"
+        "oteryn:item.tibia.i3334"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:28",
       "examples": [
-        "oteryn:item.registry.i00032485"
+        "oteryn:item.tibia.i34086"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:283",
       "examples": [
-        "oteryn:item.registry.i00015524"
+        "oteryn:item.tibia.i16162"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:285",
       "examples": [
-        "oteryn:item.registry.i00007217"
+        "oteryn:item.tibia.i7402"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:286",
       "examples": [
-        "oteryn:item.registry.i00002957"
+        "oteryn:item.tibia.i3072"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:287",
       "examples": [
-        "oteryn:item.registry.i00002954"
+        "oteryn:item.tibia.i3069"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:288",
       "examples": [
-        "oteryn:item.registry.i00007206"
+        "oteryn:item.tibia.i7391"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:289",
       "examples": [
-        "oteryn:item.registry.i00003161"
+        "oteryn:item.tibia.i3281"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:29",
       "examples": [
-        "oteryn:item.registry.i00032481"
+        "oteryn:item.tibia.i34082"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:290",
       "examples": [
-        "oteryn:item.registry.i00007903"
+        "oteryn:item.tibia.i8093"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:291",
       "examples": [
-        "oteryn:item.registry.i00007893"
+        "oteryn:item.tibia.i8083"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:292",
       "examples": [
-        "oteryn:item.registry.i00002958"
+        "oteryn:item.tibia.i3073"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:293",
       "examples": [
-        "oteryn:item.registry.i00002951"
+        "oteryn:item.tibia.i3065"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:30",
       "examples": [
-        "oteryn:item.registry.i00032482"
+        "oteryn:item.tibia.i34083"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:307",
       "examples": [
-        "oteryn:item.registry.i00007220"
+        "oteryn:item.tibia.i7405"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:308",
       "examples": [
-        "oteryn:item.registry.i00006361"
+        "oteryn:item.tibia.i6527"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:309",
       "examples": [
-        "oteryn:item.registry.i00007914"
+        "oteryn:item.tibia.i8104"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:31",
       "examples": [
-        "oteryn:item.registry.i00032486"
+        "oteryn:item.tibia.i34087"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:310",
       "examples": [
-        "oteryn:item.registry.i00003159"
+        "oteryn:item.tibia.i3278"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:311",
       "examples": [
-        "oteryn:item.registry.i00003174"
+        "oteryn:item.tibia.i3296"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:312",
       "examples": [
-        "oteryn:item.registry.i00002956"
+        "oteryn:item.tibia.i3071"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:313",
       "examples": [
-        "oteryn:item.registry.i00002952"
+        "oteryn:item.tibia.i3067"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:315",
       "examples": [
-        "oteryn:item.registry.i00036246"
+        "oteryn:item.tibia.i47377"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:316",
       "examples": [
-        "oteryn:item.registry.i00015537"
+        "oteryn:item.tibia.i16175"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:317",
       "examples": [
-        "oteryn:item.registry.i00007913"
+        "oteryn:item.tibia.i8103"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:318",
       "examples": [
-        "oteryn:item.registry.i00021397"
+        "oteryn:item.tibia.i22183"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:319",
       "examples": [
-        "oteryn:item.registry.i00007894"
+        "oteryn:item.tibia.i8084"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:32",
       "examples": [
-        "oteryn:item.registry.i00032484"
+        "oteryn:item.tibia.i34085"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:320",
       "examples": [
-        "oteryn:item.registry.i00012133"
+        "oteryn:item.tibia.i12603"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:321",
       "examples": [
-        "oteryn:item.registry.i00007902"
+        "oteryn:item.tibia.i8092"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:322",
       "examples": [
-        "oteryn:item.registry.i00015480"
+        "oteryn:item.tibia.i16117"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:323",
       "examples": [
-        "oteryn:item.registry.i00015481"
+        "oteryn:item.tibia.i16118"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:324",
       "examples": [
-        "oteryn:item.registry.i00015459"
+        "oteryn:item.tibia.i16096"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:325",
       "examples": [
-        "oteryn:item.registry.i00015478"
+        "oteryn:item.tibia.i16115"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:326",
       "examples": [
-        "oteryn:item.registry.i00007892"
+        "oteryn:item.tibia.i8082"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:327",
       "examples": [
-        "oteryn:item.registry.i00007904"
+        "oteryn:item.tibia.i8094"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:328",
       "examples": [
-        "oteryn:item.registry.i00007194"
+        "oteryn:item.tibia.i7379"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:329",
       "examples": [
-        "oteryn:item.registry.i00007267"
+        "oteryn:item.tibia.i7452"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:33",
       "examples": [
-        "oteryn:item.registry.i00037524"
+        "oteryn:item.tibia.i50159"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:330",
       "examples": [
-        "oteryn:item.registry.i00007241"
+        "oteryn:item.tibia.i7426"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:331",
       "examples": [
-        "oteryn:item.registry.i00009180"
+        "oteryn:item.tibia.i9378"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:332",
       "examples": [
-        "oteryn:item.registry.i00013421"
+        "oteryn:item.tibia.i13987"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:333",
       "examples": [
-        "oteryn:item.registry.i00007253"
+        "oteryn:item.tibia.i7438"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:334",
       "examples": [
-        "oteryn:item.registry.i00012211"
+        "oteryn:item.tibia.i12683"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:335",
       "examples": [
-        "oteryn:item.registry.i00018640"
+        "oteryn:item.tibia.i19362"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:336",
       "examples": [
-        "oteryn:item.registry.i00007840"
+        "oteryn:item.tibia.i8029"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:337",
       "examples": [
-        "oteryn:item.registry.i00013425"
+        "oteryn:item.tibia.i13991"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:338",
       "examples": [
-        "oteryn:item.registry.i00007837"
+        "oteryn:item.tibia.i8026"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:339",
       "examples": [
-        "oteryn:item.registry.i00003189"
+        "oteryn:item.tibia.i3312"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:34",
       "examples": [
-        "oteryn:item.registry.i00032487"
+        "oteryn:item.tibia.i34088"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:340",
       "examples": [
-        "oteryn:item.registry.i00007838"
+        "oteryn:item.tibia.i8027"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:341",
       "examples": [
-        "oteryn:item.registry.i00013435"
+        "oteryn:item.tibia.i14001"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:342",
       "examples": [
-        "oteryn:item.registry.i00007224"
+        "oteryn:item.tibia.i7409"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:343",
       "examples": [
-        "oteryn:item.registry.i00003183"
+        "oteryn:item.tibia.i3306"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:344",
       "examples": [
-        "oteryn:item.registry.i00003203"
+        "oteryn:item.tibia.i3329"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:345",
       "examples": [
-        "oteryn:item.registry.i00009186"
+        "oteryn:item.tibia.i9384"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:346",
       "examples": [
-        "oteryn:item.registry.i00009188"
+        "oteryn:item.tibia.i9386"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:347",
       "examples": [
-        "oteryn:item.registry.i00029402"
+        "oteryn:item.tibia.i30283"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:348",
       "examples": [
-        "oteryn:item.registry.i00013680"
+        "oteryn:item.tibia.i14246"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:349",
       "examples": [
-        "oteryn:item.registry.i00031586"
+        "oteryn:item.tibia.i32616"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:35",
       "examples": [
-        "oteryn:item.registry.i00032490"
+        "oteryn:item.tibia.i34091"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:350",
       "examples": [
-        "oteryn:item.registry.i00003205"
+        "oteryn:item.tibia.i3331"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:351",
       "examples": [
-        "oteryn:item.registry.i00012247"
+        "oteryn:item.tibia.i12741"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:352",
       "examples": [
-        "oteryn:item.registry.i00012238"
+        "oteryn:item.tibia.i12732"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:353",
       "examples": [
-        "oteryn:item.registry.i00003209"
+        "oteryn:item.tibia.i3335"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:354",
       "examples": [
-        "oteryn:item.registry.i00007268"
+        "oteryn:item.tibia.i7453"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:355",
       "examples": [
-        "oteryn:item.registry.i00006387"
+        "oteryn:item.tibia.i6553"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:356",
       "examples": [
-        "oteryn:item.registry.i00012239"
+        "oteryn:item.tibia.i12733"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:357",
       "examples": [
-        "oteryn:item.registry.i00012237"
+        "oteryn:item.tibia.i12731"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:358",
       "examples": [
-        "oteryn:item.registry.i00024922"
+        "oteryn:item.tibia.i25760"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:359",
       "examples": [
-        "oteryn:item.registry.i00007908"
+        "oteryn:item.tibia.i8098"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:36",
       "examples": [
-        "oteryn:item.registry.i00032489"
+        "oteryn:item.tibia.i34090"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:360",
       "examples": [
-        "oteryn:item.registry.i00003181"
+        "oteryn:item.tibia.i3303"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:361",
       "examples": [
-        "oteryn:item.registry.i00015526"
+        "oteryn:item.tibia.i16164"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:362",
       "examples": [
-        "oteryn:item.registry.i00007832"
+        "oteryn:item.tibia.i8021"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:363",
       "examples": [
-        "oteryn:item.registry.i00022065"
+        "oteryn:item.tibia.i22866"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:364",
       "examples": [
-        "oteryn:item.registry.i00028536"
+        "oteryn:item.tibia.i29417"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:365",
       "examples": [
-        "oteryn:item.registry.i00030555"
+        "oteryn:item.tibia.i31581"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:366",
       "examples": [
-        "oteryn:item.weapon.sword.bright"
+        "oteryn:item.tibia.i3295"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:367",
       "examples": [
-        "oteryn:item.registry.i00026793"
+        "oteryn:item.tibia.i27651"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:368",
       "examples": [
-        "oteryn:item.registry.i00028541"
+        "oteryn:item.tibia.i29422"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:369",
       "examples": [
-        "oteryn:item.registry.i00028540"
+        "oteryn:item.tibia.i29421"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:37",
       "examples": [
-        "oteryn:item.registry.i00036243"
+        "oteryn:item.tibia.i47374"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:370",
       "examples": [
-        "oteryn:item.registry.i00021959"
+        "oteryn:item.tibia.i22760"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:372",
       "examples": [
-        "oteryn:item.registry.i00005645"
+        "oteryn:item.tibia.i5803"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:373",
       "examples": [
-        "oteryn:item.registry.i00013681"
+        "oteryn:item.tibia.i14247"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:374",
       "examples": [
-        "oteryn:item.registry.i00007199"
+        "oteryn:item.tibia.i7384"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:375",
       "examples": [
-        "oteryn:item.registry.i00007204"
+        "oteryn:item.tibia.i7389"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:376",
       "examples": [
-        "oteryn:item.registry.i00007230"
+        "oteryn:item.tibia.i7415"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:377",
       "examples": [
-        "oteryn:item.registry.i00007205"
+        "oteryn:item.tibia.i7390"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:378",
       "examples": [
-        "oteryn:item.registry.i00007833"
+        "oteryn:item.tibia.i8022"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:379",
       "examples": [
-        "oteryn:item.registry.i00007249"
+        "oteryn:item.tibia.i7434"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:38",
       "examples": [
-        "oteryn:item.registry.i00036244"
+        "oteryn:item.tibia.i47375"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:380",
       "examples": [
-        "oteryn:item.registry.i00007244"
+        "oteryn:item.tibia.i7429"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:381",
       "examples": [
-        "oteryn:item.registry.i00018634"
+        "oteryn:item.tibia.i19356"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:382",
       "examples": [
-        "oteryn:item.registry.i00007836"
+        "oteryn:item.tibia.i8025"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:383",
       "examples": [
-        "oteryn:item.registry.i00007207"
+        "oteryn:item.tibia.i7392"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:384",
       "examples": [
-        "oteryn:item.registry.i00007195"
+        "oteryn:item.tibia.i7380"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:385",
       "examples": [
-        "oteryn:item.registry.i00007221"
+        "oteryn:item.tibia.i7406"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:386",
       "examples": [
-        "oteryn:item.registry.i00015525"
+        "oteryn:item.tibia.i16163"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:387",
       "examples": [
-        "oteryn:item.registry.i00011260"
+        "oteryn:item.tibia.i11693"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:388",
       "examples": [
-        "oteryn:item.registry.i00007835"
+        "oteryn:item.tibia.i8024"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:389",
       "examples": [
-        "oteryn:item.registry.i00007912"
+        "oteryn:item.tibia.i8102"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:39",
       "examples": [
-        "oteryn:item.registry.i00036245"
+        "oteryn:item.tibia.i47376"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:391",
       "examples": [
-        "oteryn:item.registry.i00014201"
+        "oteryn:item.tibia.i14768"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:392",
       "examples": [
-        "oteryn:item.registry.i00022066"
+        "oteryn:item.tibia.i22867"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:393",
       "examples": [
-        "oteryn:item.registry.i00007834"
+        "oteryn:item.tibia.i8023"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:397",
       "examples": [
-        "oteryn:item.registry.i00037594"
+        "oteryn:item.tibia.i50272"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:398",
       "examples": [
-        "oteryn:item.registry.i00037595"
+        "oteryn:item.tibia.i50273"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:399",
       "examples": [
-        "oteryn:item.registry.i00037593"
+        "oteryn:item.tibia.i50271"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:40",
       "examples": [
-        "oteryn:item.registry.i00036239"
+        "oteryn:item.tibia.i47370"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:400",
       "examples": [
-        "oteryn:item.registry.i00010171"
+        "oteryn:item.tibia.i10391"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:401",
       "examples": [
-        "oteryn:item.registry.i00037537"
+        "oteryn:item.tibia.i50176"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:402",
       "examples": [
-        "oteryn:item.registry.i00037592"
+        "oteryn:item.tibia.i50270"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:403",
       "examples": [
-        "oteryn:item.registry.i00007841"
+        "oteryn:item.tibia.i8030"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:404",
       "examples": [
-        "oteryn:item.registry.i00007248"
+        "oteryn:item.tibia.i7433"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:405",
       "examples": [
-        "oteryn:item.registry.i00007839"
+        "oteryn:item.tibia.i8028"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:406",
       "examples": [
-        "oteryn:item.registry.i00015523"
+        "oteryn:item.tibia.i16161"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:407",
       "examples": [
-        "oteryn:item.registry.i00021958"
+        "oteryn:item.tibia.i22759"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:408",
       "examples": [
-        "oteryn:item.registry.i00007910"
+        "oteryn:item.tibia.i8100"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:409",
       "examples": [
-        "oteryn:item.registry.i00021961"
+        "oteryn:item.tibia.i22762"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:41",
       "examples": [
-        "oteryn:item.registry.i00036238"
+        "oteryn:item.tibia.i47369"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:410",
       "examples": [
-        "oteryn:item.registry.i00030554"
+        "oteryn:item.tibia.i31580"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:411",
       "examples": [
-        "oteryn:item.registry.i00020403"
+        "oteryn:item.tibia.i21178"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:412",
       "examples": [
-        "oteryn:item.registry.i00020405"
+        "oteryn:item.tibia.i21180"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:413",
       "examples": [
-        "oteryn:item.registry.i00020404"
+        "oteryn:item.tibia.i21179"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:414",
       "examples": [
-        "oteryn:item.registry.i00003195"
+        "oteryn:item.tibia.i3319"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:415",
       "examples": [
-        "oteryn:item.registry.i00007235"
+        "oteryn:item.tibia.i7420"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:416",
       "examples": [
-        "oteryn:item.registry.i00007270"
+        "oteryn:item.tibia.i7455"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:417",
       "examples": [
-        "oteryn:item.registry.i00007250"
+        "oteryn:item.tibia.i7435"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:418",
       "examples": [
-        "oteryn:item.registry.i00007906"
+        "oteryn:item.tibia.i8096"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:419",
       "examples": [
-        "oteryn:item.registry.i00007907"
+        "oteryn:item.tibia.i8097"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:42",
       "examples": [
-        "oteryn:item.registry.i00036237"
+        "oteryn:item.tibia.i47368"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:420",
       "examples": [
-        "oteryn:item.registry.i00020397"
+        "oteryn:item.tibia.i21172"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:421",
       "examples": [
-        "oteryn:item.registry.i00035736"
+        "oteryn:item.tibia.i40530"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:422",
       "examples": [
-        "oteryn:item.registry.i00013683"
+        "oteryn:item.tibia.i14250"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:423",
       "examples": [
-        "oteryn:item.registry.i00003196"
+        "oteryn:item.tibia.i3321"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:424",
       "examples": [
-        "oteryn:item.registry.i00003199"
+        "oteryn:item.tibia.i3325"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:425",
       "examples": [
-        "oteryn:item.registry.i00007225"
+        "oteryn:item.tibia.i7410"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:426",
       "examples": [
-        "oteryn:item.registry.i00027952"
+        "oteryn:item.tibia.i28832"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:427",
       "examples": [
-        "oteryn:item.registry.i00027951"
+        "oteryn:item.tibia.i28831"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:428",
       "examples": [
-        "oteryn:item.registry.i00027950"
+        "oteryn:item.tibia.i28830"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:429",
       "examples": [
-        "oteryn:item.registry.i00027949"
+        "oteryn:item.tibia.i28829"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:43",
       "examples": [
-        "oteryn:item.registry.i00037564"
+        "oteryn:item.tibia.i50239"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:430",
       "examples": [
-        "oteryn:item.registry.i00007246"
+        "oteryn:item.tibia.i7431"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:431",
       "examples": [
-        "oteryn:item.registry.i00011259"
+        "oteryn:item.tibia.i11692"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:432",
       "examples": [
-        "oteryn:item.registry.i00003186"
+        "oteryn:item.tibia.i3309"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:433",
       "examples": [
-        "oteryn:item.registry.i00007909"
+        "oteryn:item.tibia.i8099"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:434",
       "examples": [
-        "oteryn:item.registry.i00021963"
+        "oteryn:item.tibia.i22764"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:435",
       "examples": [
-        "oteryn:item.registry.i00020444"
+        "oteryn:item.tibia.i21219"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:436",
       "examples": [
-        "oteryn:item.registry.i00003215"
+        "oteryn:item.tibia.i3341"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:437",
       "examples": [
-        "oteryn:item.registry.i00007265"
+        "oteryn:item.tibia.i7450"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:438",
       "examples": [
-        "oteryn:item.registry.i00028538"
+        "oteryn:item.tibia.i29419"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:439",
       "examples": [
-        "oteryn:item.registry.i00007238"
+        "oteryn:item.tibia.i7423"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:44",
       "examples": [
-        "oteryn:item.registry.i00036240"
+        "oteryn:item.tibia.i47371"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:440",
       "examples": [
-        "oteryn:item.registry.i00007911"
+        "oteryn:item.tibia.i8101"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:441",
       "examples": [
-        "oteryn:item.registry.i00021964"
+        "oteryn:item.tibia.i22765"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:442",
       "examples": [
-        "oteryn:item.registry.i00021965"
+        "oteryn:item.tibia.i22766"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:443",
       "examples": [
-        "oteryn:item.registry.i00005938"
+        "oteryn:item.tibia.i6101"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:445",
       "examples": [
-        "oteryn:item.registry.i00035741"
+        "oteryn:item.tibia.i40535"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:446",
       "examples": [
-        "oteryn:item.registry.i00026667"
+        "oteryn:item.tibia.i27525"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:447",
       "examples": [
-        "oteryn:item.registry.i00036080"
+        "oteryn:item.tibia.i43879"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:448",
       "examples": [
-        "oteryn:item.registry.i00032488"
+        "oteryn:item.tibia.i34089"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:449",
       "examples": [
-        "oteryn:item.registry.i00030588"
+        "oteryn:item.tibia.i31614"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:45",
       "examples": [
-        "oteryn:item.registry.i00036242"
+        "oteryn:item.tibia.i47373"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:450",
       "examples": [
-        "oteryn:item.registry.i00036081"
+        "oteryn:item.tibia.i43880"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:451",
       "examples": [
-        "oteryn:item.registry.i00019327"
+        "oteryn:item.tibia.i20087"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:452",
       "examples": [
-        "oteryn:item.registry.i00019326"
+        "oteryn:item.tibia.i20086"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:453",
       "examples": [
-        "oteryn:item.registry.i00019325"
+        "oteryn:item.tibia.i20085"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:46",
       "examples": [
-        "oteryn:item.registry.i00036241"
+        "oteryn:item.tibia.i47372"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:47",
       "examples": [
-        "oteryn:item.registry.i00037111"
+        "oteryn:item.tibia.i49525"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:48",
       "examples": [
-        "oteryn:item.registry.i00037109"
+        "oteryn:item.tibia.i49523"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:49",
       "examples": [
-        "oteryn:item.registry.i00037113"
+        "oteryn:item.tibia.i49527"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:50",
       "examples": [
-        "oteryn:item.registry.i00037112"
+        "oteryn:item.tibia.i49526"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:51",
       "examples": [
-        "oteryn:item.registry.i00037110"
+        "oteryn:item.tibia.i49524"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:52",
       "examples": [
-        "oteryn:item.registry.i00037116"
+        "oteryn:item.tibia.i49530"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:53",
       "examples": [
-        "oteryn:item.registry.i00037574"
+        "oteryn:item.tibia.i50250"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:55",
       "examples": [
-        "oteryn:item.registry.i00037114"
+        "oteryn:item.tibia.i49528"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:56",
       "examples": [
-        "oteryn:item.registry.i00037115"
+        "oteryn:item.tibia.i49529"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:57",
       "examples": [
-        "oteryn:item.registry.i00037350"
+        "oteryn:item.tibia.i49873"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:58",
       "examples": [
-        "oteryn:item.registry.i00037344"
+        "oteryn:item.tibia.i49867"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:59",
       "examples": [
-        "oteryn:item.registry.i00037356"
+        "oteryn:item.tibia.i49879"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:6",
       "examples": [
-        "oteryn:item.registry.i00036065"
+        "oteryn:item.tibia.i43864"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:60",
       "examples": [
-        "oteryn:item.registry.i00037347"
+        "oteryn:item.tibia.i49870"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:61",
       "examples": [
-        "oteryn:item.registry.i00037341"
+        "oteryn:item.tibia.i49864"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:62",
       "examples": [
-        "oteryn:item.registry.i00037353"
+        "oteryn:item.tibia.i49876"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:63",
       "examples": [
-        "oteryn:item.registry.i00037575"
+        "oteryn:item.tibia.i50251"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:65",
       "examples": [
-        "oteryn:item.registry.i00037359"
+        "oteryn:item.tibia.i49882"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:66",
       "examples": [
-        "oteryn:item.registry.i00037362"
+        "oteryn:item.tibia.i49885"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:67",
       "examples": [
-        "oteryn:item.registry.i00037351"
+        "oteryn:item.tibia.i49874"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:68",
       "examples": [
-        "oteryn:item.registry.i00037345"
+        "oteryn:item.tibia.i49868"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:69",
       "examples": [
-        "oteryn:item.registry.i00037357"
+        "oteryn:item.tibia.i49880"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:70",
       "examples": [
-        "oteryn:item.registry.i00037348"
+        "oteryn:item.tibia.i49871"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:71",
       "examples": [
-        "oteryn:item.registry.i00037342"
+        "oteryn:item.tibia.i49865"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:72",
       "examples": [
-        "oteryn:item.registry.i00037354"
+        "oteryn:item.tibia.i49877"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:73",
       "examples": [
-        "oteryn:item.registry.i00037576"
+        "oteryn:item.tibia.i50252"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:75",
       "examples": [
-        "oteryn:item.registry.i00037363"
+        "oteryn:item.tibia.i49886"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:76",
       "examples": [
-        "oteryn:item.registry.i00037360"
+        "oteryn:item.tibia.i49883"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:77",
       "examples": [
-        "oteryn:item.registry.i00037352"
+        "oteryn:item.tibia.i49875"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:78",
       "examples": [
-        "oteryn:item.registry.i00037346"
+        "oteryn:item.tibia.i49869"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:79",
       "examples": [
-        "oteryn:item.registry.i00037358"
+        "oteryn:item.tibia.i49881"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:8",
       "examples": [
-        "oteryn:item.registry.i00036069"
+        "oteryn:item.tibia.i43868"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:80",
       "examples": [
-        "oteryn:item.registry.i00037349"
+        "oteryn:item.tibia.i49872"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:81",
       "examples": [
-        "oteryn:item.registry.i00037343"
+        "oteryn:item.tibia.i49866"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:82",
       "examples": [
-        "oteryn:item.registry.i00037355"
+        "oteryn:item.tibia.i49878"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:83",
       "examples": [
-        "oteryn:item.registry.i00037577"
+        "oteryn:item.tibia.i50253"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:84",
       "examples": [
-        "oteryn:item.registry.i00037361"
+        "oteryn:item.tibia.i49884"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:85",
       "examples": [
-        "oteryn:item.registry.i00037364"
+        "oteryn:item.tibia.i49887"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:87",
       "examples": [
-        "oteryn:item.registry.i00033209"
+        "oteryn:item.tibia.i36659"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:88",
       "examples": [
-        "oteryn:item.registry.i00033211"
+        "oteryn:item.tibia.i36661"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:89",
       "examples": [
-        "oteryn:item.registry.i00033207"
+        "oteryn:item.tibia.i36657"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:9",
       "examples": [
-        "oteryn:item.registry.i00036067"
+        "oteryn:item.tibia.i43866"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:90",
       "examples": [
-        "oteryn:item.registry.i00037534"
+        "oteryn:item.tibia.i50169"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:91",
       "examples": [
-        "oteryn:item.registry.i00033214"
+        "oteryn:item.tibia.i36664"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:92",
       "examples": [
-        "oteryn:item.registry.i00033224"
+        "oteryn:item.tibia.i36674"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:93",
       "examples": [
-        "oteryn:item.registry.i00033218"
+        "oteryn:item.tibia.i36668"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:94",
       "examples": [
-        "oteryn:item.registry.i00033210"
+        "oteryn:item.tibia.i36660"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:95",
       "examples": [
-        "oteryn:item.registry.i00033212"
+        "oteryn:item.tibia.i36662"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:96",
       "examples": [
-        "oteryn:item.registry.i00033208"
+        "oteryn:item.tibia.i36658"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:97",
       "examples": [
-        "oteryn:item.registry.i00037535"
+        "oteryn:item.tibia.i50170"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:98",
       "examples": [
-        "oteryn:item.registry.i00033215"
+        "oteryn:item.tibia.i36665"
       ],
       "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:99",
       "examples": [
-        "oteryn:item.registry.i00033219"
+        "oteryn:item.tibia.i36669"
       ],
       "items": 1
     },
     {
       "blocker": "unresolved:type=magicshieldpotion",
       "examples": [
-        "oteryn:item.registry.i00032814"
+        "oteryn:item.tibia.i35563"
       ],
       "items": 1
     }
   ],
-  "bundle_digest": "1a193b6eddaa8806066cd8d199806a9b1038c6f7443a5bc8024782e34d17f2cd",
+  "bundle_digest": "ce13d96da252a8f408579078d2dffa5184c181e1f95087de275584d7511c7a6d",
   "by_profile": {
     "container": 280,
     "container_equipment": 8,
     "decoration": 3064,
-    "document": 434,
+    "document": 433,
     "equipment_armor": 459,
     "equipment_offhand": 439,
-    "event_collectible": 198,
+    "event_collectible": 184,
     "fluid": 91,
     "food": 197,
     "key": 13,
     "light_source": 178,
-    "material_valuable": 2974,
-    "plant": 904,
+    "material_valuable": 2972,
+    "plant": 898,
     "progression_material": 10,
-    "quest_item": 1149,
+    "quest_item": 983,
     "rune": 41,
-    "tool": 332,
+    "tool": 329,
     "transformation_item": 25,
-    "trash": 217,
-    "unresolved": 25620,
-    "weapon_distance": 183,
+    "trash": 211,
+    "unresolved": 25821,
+    "weapon_distance": 180,
     "weapon_magic": 86,
     "weapon_melee": 625
   },
@@ -3136,19 +3136,19 @@
       "unique": 436
     },
     "decision": {
-      "eligible_false": 11503,
+      "eligible_false": 11302,
       "eligible_true": 404,
       "override": 0,
       "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
     },
     "observation": {
       "member": 9,
-      "not_member": 11898,
+      "not_member": 11697,
       "source": "canary_task_board_weekly_items"
     }
   },
   "family_profile_basis": {
-    "engine_attribute": 10366,
+    "engine_attribute": 10165,
     "engine_wrap_target": 85,
     "owner_name_rule": 92,
     "wiki_evidence_fallback": 1364
@@ -3237,7 +3237,7 @@
     "action": {
       "converter": "missing",
       "disposition": "unresolved_semantics",
-      "items": 86
+      "items": 85
     },
     "allowdistread": {
       "converter": "implemented",
@@ -3252,7 +3252,7 @@
     "ammotype": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 84
+      "items": 83
     },
     "appearance.description": {
       "converter": "implemented",
@@ -3282,12 +3282,12 @@
     "article": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 25388
+      "items": 25233
     },
     "attack": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 619
+      "items": 616
     },
     "augments": {
       "converter": "missing",
@@ -3342,7 +3342,7 @@
     "charges": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 126
+      "items": 125
     },
     "cleavepercent": {
       "converter": "implemented",
@@ -3357,7 +3357,7 @@
     "containersize": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 2693
+      "items": 2692
     },
     "criticalhitchance": {
       "converter": "implemented",
@@ -3397,7 +3397,7 @@
     "description": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 3717
+      "items": 3702
     },
     "destroyto": {
       "converter": "implemented",
@@ -3422,7 +3422,7 @@
     "effect": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 142
+      "items": 139
     },
     "elementalbond": {
       "converter": "implemented",
@@ -3822,7 +3822,7 @@
     "fluidsource": {
       "converter": "routed",
       "disposition": "external_domain",
-      "items": 1477
+      "items": 1474
     },
     "fromdamage": {
       "converter": "implemented",
@@ -4027,7 +4027,7 @@
     "maxhitchance": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 39
+      "items": 38
     },
     "maxhitpoints": {
       "converter": "missing",
@@ -4062,7 +4062,7 @@
     "name": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 37300
+      "items": 32711
     },
     "npcsaledata.buy_price": {
       "converter": "routed",
@@ -4132,7 +4132,7 @@
     "primarytype": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 16679
+      "items": 16439
     },
     "proficiency": {
       "converter": "missing",
@@ -4197,7 +4197,7 @@
     "shoottype": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 108
+      "items": 107
     },
     "showattributes": {
       "converter": "implemented",
@@ -4207,7 +4207,7 @@
     "showcharges": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 59
+      "items": 58
     },
     "showcount": {
       "converter": "implemented",
@@ -4267,7 +4267,7 @@
     "slot": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 1299
+      "items": 1298
     },
     "slottype": {
       "converter": "implemented",
@@ -4402,17 +4402,17 @@
     "weapontype": {
       "converter": "missing",
       "disposition": "unresolved_semantics",
-      "items": 801
+      "items": 800
     },
     "weight": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 6976
+      "items": 6789
     },
     "wrapableto": {
       "converter": "implemented",
       "disposition": "mapped",
-      "items": 1460
+      "items": 1459
     },
     "wrapcontainer": {
       "converter": "implemented",
@@ -4441,112 +4441,90 @@
     }
   },
   "identity_basis": {
-    "crystal_exact_binding": 37136,
+    "crystal_exact_binding": 32547,
     "tibiawiki_exact_binding": 164
   },
   "outcome": {
     "blocked": 877,
-    "fully_resolved": 11030,
+    "fully_resolved": 10829,
     "items": 37527,
-    "not_converted": 237,
-    "routed_non_item": 25383
+    "not_converted": 4826,
+    "routed_non_item": 20995
   },
   "routed_non_item": [
     {
       "examples": [
-        "oteryn:item.registry.i00000026",
-        "oteryn:item.registry.i00000053",
-        "oteryn:item.registry.i00000055",
-        "oteryn:item.registry.i00000067",
-        "oteryn:item.registry.i00000068"
+        "oteryn:item.tibia.i105",
+        "oteryn:item.tibia.i132",
+        "oteryn:item.tibia.i134",
+        "oteryn:item.tibia.i146",
+        "oteryn:item.tibia.i147"
       ],
       "items": 8376,
       "owner_reason": "WorldObject:immovable_unclassified"
     },
     {
       "examples": [
-        "oteryn:item.registry.i00000025",
-        "oteryn:item.registry.i00000151",
-        "oteryn:item.registry.i00000152",
-        "oteryn:item.registry.i00000153",
-        "oteryn:item.registry.i00000159"
+        "oteryn:item.tibia.i104",
+        "oteryn:item.tibia.i230",
+        "oteryn:item.tibia.i231",
+        "oteryn:item.tibia.i232",
+        "oteryn:item.tibia.i240"
       ],
-      "items": 4942,
+      "items": 4907,
       "owner_reason": "Terrain:primarytype_world_object"
     },
     {
       "examples": [
-        "oteryn:item.registry.i00000089",
-        "oteryn:item.registry.i00000288",
-        "oteryn:item.registry.i00000312",
-        "oteryn:item.registry.i00000343",
-        "oteryn:item.registry.i00000344"
-      ],
-      "items": 4352,
-      "owner_reason": "WorldObject:appearance_placeholder_slot"
-    },
-    {
-      "examples": [
-        "oteryn:item.registry.i00000021",
-        "oteryn:item.registry.i00000022",
-        "oteryn:item.registry.i00000024",
-        "oteryn:item.registry.i00000027",
-        "oteryn:item.registry.i00000029"
+        "oteryn:item.tibia.i100",
+        "oteryn:item.tibia.i101",
+        "oteryn:item.tibia.i103",
+        "oteryn:item.tibia.i106",
+        "oteryn:item.tibia.i108"
       ],
       "items": 3433,
       "owner_reason": "Terrain:ground_or_border"
     },
     {
       "examples": [
-        "oteryn:item.registry.i00000032",
-        "oteryn:item.registry.i00000186",
-        "oteryn:item.registry.i00000187",
-        "oteryn:item.registry.i00000188",
-        "oteryn:item.registry.i00000189"
+        "oteryn:item.tibia.i111",
+        "oteryn:item.tibia.i269",
+        "oteryn:item.tibia.i270",
+        "oteryn:item.tibia.i271",
+        "oteryn:item.tibia.i272"
       ],
       "items": 3160,
       "owner_reason": "WorldObject:corpse"
     },
     {
       "examples": [
-        "oteryn:item.registry.i00000035",
-        "oteryn:item.registry.i00000036",
-        "oteryn:item.registry.i00000172",
-        "oteryn:item.registry.i00000173",
-        "oteryn:item.registry.i00000174"
+        "oteryn:item.tibia.i114",
+        "oteryn:item.tibia.i115",
+        "oteryn:item.tibia.i253",
+        "oteryn:item.tibia.i254",
+        "oteryn:item.tibia.i255"
       ],
-      "items": 981,
+      "items": 976,
       "owner_reason": "WorldObject:primarytype_world_object"
     },
     {
       "examples": [
-        "oteryn:item.registry.i00004282",
-        "oteryn:item.registry.i00005617",
-        "oteryn:item.registry.i00005618",
-        "oteryn:item.registry.i00005706",
-        "oteryn:item.registry.i00006758"
+        "oteryn:item.tibia.i470",
+        "oteryn:item.tibia.i2557",
+        "oteryn:item.tibia.i4023",
+        "oteryn:item.tibia.i4653",
+        "oteryn:item.tibia.i9044"
       ],
-      "items": 105,
-      "owner_reason": "WorldObject:no_client_appearance"
+      "items": 129,
+      "owner_reason": "WorldObject:appearance_placeholder_slot"
     },
     {
       "examples": [
-        "oteryn:item.registry.i00000001",
-        "oteryn:item.registry.i00000002",
-        "oteryn:item.registry.i00000003",
-        "oteryn:item.registry.i00000004",
-        "oteryn:item.registry.i00000005"
-      ],
-      "items": 20,
-      "owner_reason": "Fluid:fluid_type_without_appearance"
-    },
-    {
-      "examples": [
-        "oteryn:item.registry.i00004143",
-        "oteryn:item.registry.i00004144",
-        "oteryn:item.registry.i00004148",
-        "oteryn:item.registry.i00004149",
-        "oteryn:item.registry.i00004154"
+        "oteryn:item.tibia.i4288",
+        "oteryn:item.tibia.i4289",
+        "oteryn:item.tibia.i4293",
+        "oteryn:item.tibia.i4294",
+        "oteryn:item.tibia.i4299"
       ],
       "items": 14,
       "owner_reason": "WorldObject:corpse_decoration"

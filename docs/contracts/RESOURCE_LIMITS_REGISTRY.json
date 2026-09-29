@@ -4335,20 +4335,20 @@
       "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
       "resource": "Canonical Item records in each server or client-safe projection",
       "unit": "records",
-      "hard_maximum": 38157,
+      "hard_maximum": 33567,
       "configurable_range": {
-        "minimum": 38157,
-        "maximum": 38157
+        "minimum": 33567,
+        "maximum": 33567
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Validate exact identity/index/body cardinality before allocating record or index collections.",
       "client_visible": true,
       "boundary_tests": [
-        "38,157 unique native Item records accepted when all nested limits pass",
-        "38,156 or 38,158 records rejected before collection allocation",
+        "33,567 unique native Item records accepted when all nested limits pass",
+        "33,566 or 33,568 records rejected before collection allocation",
         "duplicate native identity rejected independently"
       ],
-      "notes": "Protected identity closure; this profile performs no identity generation."
+      "notes": "Protected identity closure after A12 D149 (ITEM-ID-1b removed the 4,590 Crystal rows without an admitted CipSoft appearance); this profile performs no identity generation."
     },
     {
       "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-PRESENTATION-NAME-BYTES",
@@ -4756,20 +4756,20 @@
       "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
       "resource": "Reference Item artifact index section",
       "unit": "bytes",
-      "hard_maximum": 40789837,
+      "hard_maximum": 35883127,
       "configurable_range": {
         "minimum": 4,
-        "maximum": 40789837
+        "maximum": 35883127
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Validate index section length before retention; bound every entry atom before allocation/copy.",
       "client_visible": true,
       "boundary_tests": [
-        "40,789,837-byte index accepted only with exactly 38,157 valid entries",
+        "35,883,127-byte index accepted only with exactly 33,567 valid entries",
         "40,789,838 bytes rejected before retention",
         "entry/section arithmetic overflow rejected"
       ],
-      "notes": "4 + 38,157 * (1 + 2 + 512 + 2 + 512 + 4 + 4 + 32)."
+      "notes": "4 + 33,567 * (1 + 2 + 512 + 2 + 512 + 4 + 4 + 32)."
     },
     {
       "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-SERVER-RECORD-BYTES",
@@ -4814,16 +4814,16 @@
       "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
       "resource": "Aggregate server Item body section",
       "unit": "bytes",
-      "hard_maximum": 135648135,
+      "hard_maximum": 119330685,
       "configurable_range": {
         "minimum": 0,
-        "maximum": 135648135
+        "maximum": 119330685
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Use checked multiplication/addition before section allocation; enforce every nested record bound.",
       "client_visible": false,
       "boundary_tests": [
-        "135,648,135-byte body accepted only with 38,157 valid bounded records",
+        "119,330,685-byte body accepted only with 33,567 valid bounded records",
         "135,648,136 bytes rejected before section allocation",
         "aggregate arithmetic overflow rejected"
       ]
@@ -4833,16 +4833,16 @@
       "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
       "resource": "Aggregate client-safe Item body section",
       "unit": "bytes",
-      "hard_maximum": 130992981,
+      "hard_maximum": 115235511,
       "configurable_range": {
         "minimum": 0,
-        "maximum": 130992981
+        "maximum": 115235511
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Use checked multiplication/addition before section allocation; enforce every nested client record bound.",
       "client_visible": true,
       "boundary_tests": [
-        "130,992,981-byte body accepted only with 38,157 valid bounded records",
+        "115,235,511-byte body accepted only with 33,567 valid bounded records",
         "130,992,982 bytes rejected before section allocation",
         "aggregate arithmetic overflow rejected"
       ]
@@ -4852,16 +4852,16 @@
       "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
       "resource": "One full server-authoritative Reference Item artifact",
       "unit": "bytes",
-      "hard_maximum": 176445672,
+      "hard_maximum": 155221512,
       "configurable_range": {
         "minimum": 1,
-        "maximum": 176445672
+        "maximum": 155221512
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Check total slice length before header parse or input-sized allocation; all nested section limits remain conjunctive.",
       "client_visible": false,
       "boundary_tests": [
-        "176,445,672-byte artifact accepted only when every nested limit passes",
+        "155,221,512-byte artifact accepted only when every nested limit passes",
         "176,445,673 bytes rejected before parse/allocation",
         "section range overflow rejected"
       ]
@@ -4871,16 +4871,16 @@
       "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
       "resource": "One full client-safe Reference Item artifact",
       "unit": "bytes",
-      "hard_maximum": 171790518,
+      "hard_maximum": 151126338,
       "configurable_range": {
         "minimum": 1,
-        "maximum": 171790518
+        "maximum": 151126338
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Check total slice length before header parse or input-sized allocation; all nested allowlist limits remain conjunctive.",
       "client_visible": true,
       "boundary_tests": [
-        "171,790,518-byte artifact accepted only when every nested limit passes",
+        "151,126,338-byte artifact accepted only when every nested limit passes",
         "171,790,519 bytes rejected before parse/allocation",
         "server-only section content rejected independently"
       ]
@@ -4890,16 +4890,16 @@
       "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
       "resource": "Combined encoded server and client-safe Reference Item artifacts in one generation",
       "unit": "bytes",
-      "hard_maximum": 348236190,
+      "hard_maximum": 306347850,
       "configurable_range": {
         "minimum": 2,
-        "maximum": 348236190
+        "maximum": 306347850
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Use checked addition and validate both projection maxima before staging either artifact as a pair.",
       "client_visible": false,
       "boundary_tests": [
-        "348,236,190 cumulative bytes accepted only when both projection maxima pass",
+        "306,347,850 cumulative bytes accepted only when both projection maxima pass",
         "348,236,191 bytes rejected before pair staging",
         "checked-add overflow rejects the generation without partial publication"
       ]

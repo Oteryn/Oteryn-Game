@@ -48,24 +48,24 @@ META = {
 # --- D93 identity ---------------------------------------------------------------------
 
 
-def test_family_key_keeps_the_sequence_number():
-    item = "oteryn:item.registry.i00000100"
+def test_family_key_keeps_the_tibia_id():
+    item = "oteryn:item.tibia.i100"
     check(
-        world_objects.family_key(item, "Terrain")
-        == "oteryn:terrain.registry.i00000100",
+        world_objects.family_key(item, "Terrain") == "oteryn:terrain.tibia.i100",
         "terrain key",
     )
     check(
         world_objects.family_key(item, "WorldObject")
-        == "oteryn:world-object.registry.i00000100",
+        == "oteryn:world-object.tibia.i100",
         "world-object key",
     )
     check(raises(world_objects.family_key, item, "Item"), "Item is not a routed family")
     check(raises(world_objects.family_key, item, "LocalObject"), "LocalObject rejected")
     for bad in (
         "oteryn:item.ammunition.arrow",
-        "oteryn:item.registry.i100",
-        "oteryn:terrain.registry.i00000100",
+        "oteryn:item.tibia.i0100",
+        "oteryn:item.registry.i00000100",
+        "oteryn:terrain.tibia.i100",
         "",
         None,
     ):
@@ -96,7 +96,7 @@ def test_route_exclusions_d94():
 def terrain(attrs=None, flags=None, appearance=True, item_id=100):
     return world_objects.build_terrain(
         item_id,
-        f"oteryn:item.registry.i{item_id:08d}",
+        f"oteryn:item.tibia.i{item_id}",
         "ground_or_border",
         {"name": "t", "attrs": attrs or {}},
         {"id": item_id, "flags": flags or {}} if appearance else None,
@@ -107,7 +107,7 @@ def terrain(attrs=None, flags=None, appearance=True, item_id=100):
 def world_object(attrs=None, flags=None, reason="immovable_unclassified", item_id=200):
     return world_objects.build_world_object(
         item_id,
-        f"oteryn:item.registry.i{item_id:08d}",
+        f"oteryn:item.tibia.i{item_id}",
         reason,
         {"name": "o", "attrs": attrs or {}},
         {"id": item_id, "flags": flags or {}},
@@ -301,10 +301,10 @@ def test_validate_record_rejects():
     cases = {
         "extra property": lambda r: r.update({"loot": {}}),
         "wrong family key": lambda r: r["identity"].update(
-            {"key": "oteryn:world-object.registry.i00000100"}
+            {"key": "oteryn:world-object.tibia.i100"}
         ),
         "sequence mismatch": lambda r: r["identity"].update(
-            {"key": "oteryn:terrain.registry.i00000101"}
+            {"key": "oteryn:terrain.tibia.i101"}
         ),
         "kind outside set": lambda r: r.update(
             {"kind": {"state": "KNOWN", "value": "door"}}
@@ -336,20 +336,20 @@ def test_validate_record_rejects():
 
 def test_routed_item_pointer():
     pointer = world_objects.routed_item_pointer(
-        "oteryn:item.registry.i00001234", "WorldObject"
+        "oteryn:item.tibia.i1234", "WorldObject"
     )
     check(world_objects.validate_routed_item_pointer(pointer) == [], pointer)
     check(
         pointer["routed_to"]
         == {
             "family": "WorldObject",
-            "key": "oteryn:world-object.registry.i00001234",
+            "key": "oteryn:world-object.tibia.i1234",
             "revision": "definition-r1",
         },
         pointer,
     )
     bare = copy.deepcopy(pointer)
-    bare["routed_to"] = "oteryn:world-object.registry.i00001234"
+    bare["routed_to"] = "oteryn:world-object.tibia.i1234"
     check(world_objects.validate_routed_item_pointer(bare) != [], "bare key rejected")
     unknown_family = copy.deepcopy(pointer)
     unknown_family["routed_to"]["family"] = "LocalObject"
@@ -364,7 +364,7 @@ def test_routed_item_pointer():
         "family/key mismatch",
     )
     shifted = copy.deepcopy(pointer)
-    shifted["routed_to"]["key"] = "oteryn:world-object.registry.i00001235"
+    shifted["routed_to"]["key"] = "oteryn:world-object.tibia.i1235"
     check(
         world_objects.validate_routed_item_pointer(shifted) != [], "sequence mismatch"
     )
@@ -436,7 +436,10 @@ def test_census_maps_every_routed_id_once_and_is_reproducible():
     for item_id, family in ((100, "Terrain"), (200, "WorldObject")):
         item_key = index[item_id][0]
         expected = world_objects.family_key(item_key, family)
-        check(expected.endswith(item_key[-8:]), (item_key, expected))
+        check(
+            expected.rsplit(".i", 1)[1] == item_key.rsplit(".i", 1)[1],
+            (item_key, expected),
+        )
     check(
         first["records"]["by_kind"]
         == {
@@ -459,11 +462,14 @@ def test_committed_census_sample_is_consistent():
     check(records["total"] == sum(routes.values()) - sum(excluded.values()), "total")
     check(sum(records["by_family"].values()) == records["total"], "by_family")
     check(sum(records["by_kind"].values()) == records["total"], "by_kind")
+    # A12 D149 removed every Item without an admitted CipSoft appearance, so the
+    # `no_client_appearance` and fluid-kind routes no longer occur; placeholders remain.
     check(
         set(excluded)
-        == {f"{owner}:{reason}" for owner, reason in world_objects.EXCLUDED_ROUTES},
+        <= {f"{owner}:{reason}" for owner, reason in world_objects.EXCLUDED_ROUTES},
         excluded,
     )
+    check("WorldObject:appearance_placeholder_slot" in excluded, excluded)
     for name, keys in records["examples"].items():
         family = name.split(":", 1)[0]
         for key in keys:

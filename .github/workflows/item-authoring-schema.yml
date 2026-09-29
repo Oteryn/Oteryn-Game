@@ -14,6 +14,7 @@ on:
       - imports/tibiawiki/sources.json
       - tools/content-census/item_wiki_family_capture.py
       - content/assets/files/appearances-*.dat
+      - imports/official/appearance-membership/**
       - .github/workflows/item-authoring-schema.yml
   workflow_dispatch:
 
@@ -72,6 +73,12 @@ jobs:
 
       - name: Client appearance census fixture tests
         run: python test_client_appearance_census.py
+
+      - name: Appearance membership fixture tests and 15.30 drift
+        run: |
+          set -euo pipefail
+          python test_appearance_membership.py
+          python appearance_membership.py --check
 
       - name: Client appearance census drift against the in-repo 15.30 appearances
         run: |

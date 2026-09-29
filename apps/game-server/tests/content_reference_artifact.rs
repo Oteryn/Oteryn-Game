@@ -134,11 +134,11 @@ fn promoted_family_linked() -> Result<CanonicalReferencePlayableContent, Box<dyn
     let promoted = protected_cw2_b1_item_semantic_promotion_lowering_v1_import(B1_EVIDENCE)?;
     assert_eq!(
         promoted.promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT
     );
     assert_eq!(
         promoted.promoted_items,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_ITEM_COUNT
     );
     let canonical = CanonicalProjectDocuments::from_draft(
         ProjectDraft {
@@ -211,11 +211,11 @@ fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v
         .sum::<usize>();
     assert_eq!(
         promoted_items,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_ITEM_COUNT
     );
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT
     );
 
     let compiled = compile_reference_playable(&linked)?;
@@ -260,11 +260,11 @@ fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v
     }
     assert_eq!(
         server_promoted,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT
     );
     assert_eq!(
         client_promoted,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT
     );
     Ok(())
 }
@@ -518,8 +518,8 @@ fn typed_item_v4_representative_families_round_trip_through_project_and_both_pro
         compile_reference_playable(&below),
         Err(ContentError::LimitExceeded {
             resource: "Reference playable definitions",
-            actual: 38_156,
-            limit: 38_157,
+            actual: 33_566,
+            limit: 33_567,
         })
     ));
     let mut above = linked.clone();
@@ -530,8 +530,8 @@ fn typed_item_v4_representative_families_round_trip_through_project_and_both_pro
         compile_reference_playable(&above),
         Err(ContentError::LimitExceeded {
             resource: "Reference playable definitions",
-            actual: 38_158,
-            limit: 38_157,
+            actual: 33_568,
+            limit: 33_567,
         })
     ));
 
@@ -543,7 +543,7 @@ fn typed_item_v4_representative_families_round_trip_through_project_and_both_pro
             ReferenceArtifactProjection::ServerAuthoritative => &compiled.server_artifact,
             ReferenceArtifactProjection::ClientSafe => &compiled.client_artifact,
         };
-        for invalid_count in [38_156, 38_158] {
+        for invalid_count in [33_566, 33_568] {
             let mut malformed = source.clone();
             write_u32(&mut malformed, INDEX_ENTRY + 12, invalid_count);
             write_u32(&mut malformed, BODY_ENTRY + 12, invalid_count);
@@ -614,20 +614,22 @@ fn protected_project_links_compiles_loads_and_stages_with_semantic_equivalence()
 -> Result<(), Box<dyn std::error::Error>> {
     let linked = linked_from_enumeration(false)?;
     let compiled = compile_reference_playable(&linked)?;
-    assert_eq!(compiled.server_artifact.len(), 788);
-    assert_eq!(compiled.client_artifact.len(), 776);
+    // The vase key is `oteryn:item.tibia.i2876` (A12), one byte longer than the retired
+    // named vase key, in each projection.
+    assert_eq!(compiled.server_artifact.len(), 789);
+    assert_eq!(compiled.client_artifact.len(), 777);
     assert_eq!(
         compiled.server_digest(),
         [
-            186, 118, 60, 192, 82, 100, 10, 110, 116, 222, 209, 39, 237, 39, 120, 104, 80, 44, 208,
-            107, 57, 4, 77, 129, 216, 46, 245, 148, 194, 207, 107, 61,
+            117, 239, 110, 148, 37, 2, 173, 36, 14, 144, 101, 115, 62, 235, 188, 113, 231, 201,
+            109, 226, 250, 200, 6, 45, 5, 187, 7, 190, 93, 50, 136, 100,
         ]
     );
     assert_eq!(
         compiled.client_digest(),
         [
-            165, 218, 30, 88, 175, 45, 42, 201, 105, 195, 56, 147, 104, 172, 199, 22, 170, 233, 56,
-            104, 100, 2, 53, 76, 196, 140, 22, 16, 18, 220, 118, 142,
+            174, 31, 201, 80, 106, 234, 135, 254, 24, 104, 160, 181, 34, 156, 49, 202, 226, 204,
+            207, 130, 247, 125, 188, 241, 25, 143, 115, 229, 245, 103, 122, 214,
         ]
     );
     assert!(compiled.server_artifact.len() <= REFERENCE_PLAYABLE_MAX_SERVER_ARTIFACT_BYTES);

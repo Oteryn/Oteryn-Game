@@ -27,8 +27,9 @@ runtime `LocalObject` overlay, and not runtime serialization.
   - `Fluid:fluid_type_without_appearance`, which stays Item fluid.
 
   The route is never re-decided here.
-- **Identity (D93).** `oteryn:item.registry.iNNNNNNNN` becomes `oteryn:terrain.registry.iNNNNNNNN` or
-  `oteryn:world-object.registry.iNNNNNNNN`, keeping the same number. Nothing else is accepted.
+- **Identity (D93, as amended by A12 §4.6).** The Item key `oteryn:item.tibia.i<id>` becomes
+  `oteryn:terrain.tibia.i<id>` or `oteryn:world-object.tibia.i<id>`, with the same Tibia id. Nothing else is
+  accepted: a retired `oteryn:item.registry.i*` key is rejected.
 - **Facts.**
   - A boolean `appearances.dat` flag is complete for an id that has an appearance, because an unset optional bool
     is false. It is therefore always KNOWN. An unset hook is `none`, and an unset height is elevation `0`.
@@ -46,7 +47,9 @@ runtime `LocalObject` overlay, and not runtime serialization.
 
 ## Pinned Crystal census (`ff7ede5`)
 
-- 25,846 routed ids, of which 4,476 are excluded, leaving **21,370 records**: 8,581 Terrain and 12,789 WorldObject.
+- 21,457 routed ids, of which 128 are excluded (placeholder slots), leaving **21,329 records**: 8,545 Terrain and
+  12,784 WorldObject. Before ITEM-ID-1b the census had 25,846 routed ids and 21,370 records; A12 D149 removed every
+  Crystal row without an admitted CipSoft appearance, and with them the `no_client_appearance` and fluid-kind routes.
   This matches D94's "about 21.4k".
 - Terrain: 3,779 border, 2,197 ground, 2,171 wall, 104 field, 330 UNKNOWN.
 - WorldObject: 5,653 object, 3,358 corpse, 2,771 decoration, 728 door, 192 bed, 49 teleport, 17 ladder, 21 UNKNOWN.

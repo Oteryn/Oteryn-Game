@@ -5,17 +5,18 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use oteryn_game_server::content::{
-    CW2_B1_FULL_ITEM_FAMILY_COUNT, CandidateValue, CanonicalProjectDocuments, ImportBatch,
-    ProjectDraft, ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2AuthoringProfile,
-    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry,
-    ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring,
-    ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle,
-    ProjectV2ItemTaxonomy, ProjectV2Source, ProjectV2SourceIdentityBinding,
-    ProjectV2SourceIdentityDisposition, ProjectV2State, R7_P04_GOLD_COIN_EVIDENCE_PACKET,
-    ReferenceCells, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation,
-    ReferenceItemSemantics, ReferenceItemStack, ReferenceItemTradeRestrictions,
-    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType,
-    ReimportDecision, ReimportFieldState, protected_r7_p04_gold_coin_item_family_import,
+    CW2_B1_FULL_ITEM_FAMILY_COUNT, CW2_B1_RETIRED_EPOCH1_ALLOCATION_SHA256, CandidateValue,
+    CanonicalProjectDocuments, ImportBatch, ProjectDraft, ProjectEvidenceLimits,
+    ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2Declaration,
+    ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry, ProjectV2EvidenceClass,
+    ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile,
+    ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
+    ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
+    R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField, ReferenceItemImbuement,
+    ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
+    ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
+    ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
+    RetiredItemKey, protected_item_key_alias_table, protected_r7_p04_gold_coin_item_family_import,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -85,8 +86,8 @@ const CREATURE_CRYSTAL_SOURCE_REVISION: &str =
 const CREATURE_CRYSTAL_COUNT: usize = 13;
 const CANARY_BUNDLE_INDEX_SHA256: &str =
     "5251e62c7009a12a4d10d85a7a6ff59aa9526f169ec8c6d27fbdd7a687b571d9";
-const ITEM_ALLOCATION_SHA256: &str =
-    "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
+/// The allocation the pinned creature packet was staged against: the retired epoch-1 registry.
+const ITEM_ALLOCATION_SHA256: &str = CW2_B1_RETIRED_EPOCH1_ALLOCATION_SHA256;
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
 const NPC_STAGED_SHA256: &str = "44d11c4cb3075c7bf54d43f968e9d366da1e985bafdafc0fe342571f095c898b";
@@ -229,34 +230,22 @@ fn promote<T: PartialEq>(
 /// names look like crosswalk/identity drift, not a formatting difference, even though
 /// their `weapon.*` facts agree exactly) — see the task record.
 const ITEM_NAME_LOWERING_OVERRIDES: &[(&str, &str, &str)] = &[
+    ("oteryn:item.tibia.i50181", "Staff", "pair of monk fists"),
+    ("oteryn:item.tibia.i6527", "The Avenger", "avenger"),
+    ("oteryn:item.tibia.i8103", "The Epiphany", "epiphany"),
     (
-        "oteryn:item.registry.i00037538",
-        "Staff",
-        "pair of monk fists",
-    ),
-    ("oteryn:item.registry.i00006361", "The Avenger", "avenger"),
-    ("oteryn:item.registry.i00007913", "The Epiphany", "epiphany"),
-    (
-        "oteryn:item.registry.i00007205",
+        "oteryn:item.tibia.i7390",
         "The Justice Seeker",
         "justice seeker",
     ),
-    ("oteryn:item.registry.i00007835", "The Devileye", "devileye"),
+    ("oteryn:item.tibia.i8024", "The Devileye", "devileye"),
     (
-        "oteryn:item.registry.i00021963",
+        "oteryn:item.tibia.i22764",
         "Ferumbras' Staff (Club)",
         "Ferumbras' staff",
     ),
-    (
-        "oteryn:item.registry.i00032484",
-        "Souleater (Axe)",
-        "souleater",
-    ),
-    (
-        "oteryn:item.registry.i00037526",
-        "Crypt Strike",
-        "falcon sai",
-    ),
+    ("oteryn:item.tibia.i34085", "Souleater (Axe)", "souleater"),
+    ("oteryn:item.tibia.i50161", "Crypt Strike", "falcon sai"),
 ];
 
 /// `promote`'s `presentation.name` counterpart. The #1048 Item semantic-promotion
@@ -430,6 +419,42 @@ struct ItemPopulation {
     editor: Vec<ProjectV2EditorEntry>,
 }
 
+/// Re-key every retired Item key in one pinned evidence packet to its Tibia-id successor (A12).
+///
+/// The packets stay byte-pinned history; the translation runs after their digest checks, on the
+/// decoded value, through the frozen alias table only. A string is rewritten when it is exactly a
+/// retired key or a retired key followed by `@revision`. A retired key without a successor (D149)
+/// fails closed: no admitted content may name one.
+fn rekey_item_strings(value: &mut Value) -> Result<usize, Box<dyn std::error::Error>> {
+    let table = protected_item_key_alias_table()?;
+    let mut rewritten = 0_usize;
+    let mut stack = vec![value];
+    while let Some(node) = stack.pop() {
+        match node {
+            Value::String(text) if text.starts_with("oteryn:item.") => {
+                let (key, suffix) = match text.split_once('@') {
+                    Some((key, revision)) => (key.to_owned(), format!("@{revision}")),
+                    None => (text.clone(), String::new()),
+                };
+                match table.resolve(&key) {
+                    Some(RetiredItemKey::Alias { target, .. }) => {
+                        *text = format!("{target}{suffix}");
+                        rewritten += 1;
+                    }
+                    Some(RetiredItemKey::RetiredWithoutSuccessor) => {
+                        return Err(format!("evidence names a D149 Item key: {key}").into());
+                    }
+                    None => {}
+                }
+            }
+            Value::Array(items) => stack.extend(items.iter_mut()),
+            Value::Object(fields) => stack.extend(fields.values_mut()),
+            _ => {}
+        }
+    }
+    Ok(rewritten)
+}
+
 fn populate_items(
     records: &mut [ProjectReferenceRecord],
 ) -> Result<ItemPopulation, Box<dyn std::error::Error>> {
@@ -440,7 +465,8 @@ fn populate_items(
     if selected_sha256 != ITEM_SELECTED_SHA256 {
         return Err("selected Item input digest drifted".into());
     }
-    let packet: Value = serde_json::from_slice(ITEM_SELECTED)?;
+    let mut packet: Value = serde_json::from_slice(ITEM_SELECTED)?;
+    rekey_item_strings(&mut packet)?;
     if packet["schema"] != "oteryn-item-g4-selected-input/v1"
         || packet["source_population_sha256"]
             != "853aa2d1cc3cde0e3b77ae7d4f16eaaf21f1f63eaf45ef19e87e7ad12ba1cf16"
@@ -757,7 +783,8 @@ fn populate_item_wave1(
     if hex_sha256(ITEM_WAVE1_STAGED) != ITEM_WAVE1_STAGED_SHA256 {
         return Err("staged Item Wave 1 input digest drifted".into());
     }
-    let packet: Value = serde_json::from_slice(ITEM_WAVE1_STAGED)?;
+    let mut packet: Value = serde_json::from_slice(ITEM_WAVE1_STAGED)?;
+    rekey_item_strings(&mut packet)?;
     if packet["schema"] != "OTERYN_G4_ITEM_WAVE1_STAGED/v1"
         || packet["batch_id"] != "g4-item-wave1-tibiawiki-r1"
         || packet["source"]["source_revision"] != WIKI_REVISION
@@ -1178,7 +1205,8 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
     if hex_sha256(CREATURE_STAGED) != CREATURE_STAGED_SHA256 {
         return Err("staged creature admission input digest drifted".into());
     }
-    let packet: Value = serde_json::from_slice(CREATURE_STAGED)?;
+    let mut packet: Value = serde_json::from_slice(CREATURE_STAGED)?;
+    rekey_item_strings(&mut packet)?;
     let counts = &packet["counts"];
     if packet["schema"] != "OTERYN_CREATURE_ADMISSION_STAGED/v1"
         || packet["wave"] != "A"
@@ -1416,7 +1444,8 @@ fn verify_npc_dialogues(
     if hex_sha256(NPC_DIALOGUE_STAGED) != NPC_DIALOGUE_STAGED_SHA256 {
         return Err("staged NPC dialogue input digest drifted".into());
     }
-    let packet: Value = serde_json::from_slice(NPC_DIALOGUE_STAGED)?;
+    let mut packet: Value = serde_json::from_slice(NPC_DIALOGUE_STAGED)?;
+    rekey_item_strings(&mut packet)?;
     if packet["schema"] != "OTERYN_NPC_DIALOGUE_STAGED/v1"
         || packet["source"]["canary_revision"] != CANARY_REVISION
         || packet["source"]["crystal_revision"] != CRYSTAL_REVISION
@@ -1469,7 +1498,8 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
     if hex_sha256(NPC_STAGED) != NPC_STAGED_SHA256 {
         return Err("staged NPC admission input digest drifted".into());
     }
-    let packet: Value = serde_json::from_slice(NPC_STAGED)?;
+    let mut packet: Value = serde_json::from_slice(NPC_STAGED)?;
+    rekey_item_strings(&mut packet)?;
     let source = &packet["source"];
     let counts = &packet["counts"];
     if packet["schema"] != "OTERYN_NPC_ADMISSION_STAGED/v1"

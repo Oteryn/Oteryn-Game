@@ -129,7 +129,7 @@ def test_typed_value_count_and_capacity():
 def sample_row(**overrides):
     row = {
         "field_path": "weapon.attack",
-        "native_key": "oteryn:item.registry.i00000001",
+        "native_key": "oteryn:item.tibia.i1",
         "source_item_id": 1,
         "source_value": 20,
         "typed_value": {"kind": "SIGNED_POINTS", "value": 20},
@@ -298,8 +298,8 @@ def sample_packet(rows):
 
 def test_validate_packet_rejects_ordering_violation():
     rows = [
-        sample_row(native_key="oteryn:item.registry.i00000002"),
-        sample_row(native_key="oteryn:item.registry.i00000001"),
+        sample_row(native_key="oteryn:item.tibia.i2"),
+        sample_row(native_key="oteryn:item.tibia.i1"),
     ]
     expect_lowering_error(
         lambda: lpp.validate_packet(sample_packet(rows)), "rows must be sorted"
@@ -378,7 +378,7 @@ def test_build_packet_covers_every_admitted_field_path():
     check(packet["counts"]["promoted_fields"] == len(packet["promotions"]), packet)
 
     rows = {(row["native_key"], row["field_path"]): row for row in packet["promotions"]}
-    weapon_key = "oteryn:item.registry.i00000277"
+    weapon_key = "oteryn:item.tibia.i360"
     check(
         rows[(weapon_key, "weapon.attack")]["typed_value"]
         == {"kind": "SIGNED_POINTS", "value": 20},
@@ -428,7 +428,7 @@ def test_build_packet_skips_a_decoder_out_of_range_value_instead_of_smuggling_it
     packet, skipped = lpp.build_packet(sources)
     check(skipped == {"weapon.attack": 1}, skipped)
     rows = {(row["native_key"], row["field_path"]) for row in packet["promotions"]}
-    over_range_key = "oteryn:item.registry.i00000207"
+    over_range_key = "oteryn:item.tibia.i290"
     check((over_range_key, "weapon.attack") not in rows, rows)
     check((over_range_key, "presentation.name") in rows, rows)
     check(packet["counts"]["promoted_items"] == 5, packet["counts"])

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Fail-closed tests for the ITEM-ID-1a alias table and D149 tombstones.
 
-Synthetic cases cover each §4.2/§4.5 rule; the committed-data cases prove the table is
-total, regenerates byte-identically, and that every old Item key still named in
-`content/` or `apps/` resolves through an alias or a tombstone.
+Synthetic cases cover each §4.2/§4.5 rule; the committed-data cases prove the frozen table
+is total and re-derivable from its own evidence, and that no authored content or code names a
+retired key (ITEM-ID-1b): old keys survive only in the alias table, the tombstone archive,
+pinned history under `docs/` and the explicitly listed history verifiers.
 """
 
 from __future__ import annotations
@@ -126,42 +127,71 @@ def synthetic_table_checks() -> None:
         alias("oteryn:item.registry.i00000001", 5),
         alias("oteryn:item.currency.x", 5),
     ]
-    expect_error("COUNT_MISMATCH", table.verify_table, same_item, INDEX)
+    expect_error("ALIAS_TARGET_SHARED", table.verify_table, same_item, INDEX)
 
 
 def committed_table() -> dict:
-    table_bytes, tombstone_bytes = table.generate()
-    assert table.ALIAS_TABLE.read_bytes() == table_bytes, "alias table drift"
-    assert table.TOMBSTONES.read_bytes() == tombstone_bytes, "tombstone drift"
-    document = json.loads(table_bytes)
+    counts = table.verify_frozen()
+    assert counts["retired_keys"] == table.EXPECTED_RETIRED_KEYS, counts
+    document = json.loads(table.ALIAS_TABLE.read_bytes())
     entries = document["entries"]
-    keys = [entry["key"] for entry in entries]
-    assert len(keys) == len(set(keys)) == table.EXPECTED_RETIRED_KEYS, len(keys)
     assert all(entry["version"] == 1 for entry in entries)
-    tombstones = json.loads(tombstone_bytes)
-    archived = {record["key"]: record for record in tombstones["records"]}
-    for entry in entries:
-        if entry["state"] == table.RETIRED:
-            record = archived[entry["key"]]
-            assert record["definition_sha256"] == entry["tombstone_sha256"], entry[
-                "key"
-            ]
-            assert (
-                table.sha256_hex(table.canonical_bytes(record["definition"]))
-                == record["definition_sha256"]
-            ), entry["key"]
-    assert set(archived) == {e["key"] for e in entries if e["state"] == table.RETIRED}
     return {entry["key"]: entry for entry in entries}
 
 
-def old_refs_resolve(entries: dict) -> int:
-    """Every retired-namespace key still named in content/ or apps/ has an entry."""
+def synthetic_frozen_checks() -> None:
+    shared = [
+        {
+            "key": "oteryn:item.registry.i00000001",
+            "state": table.ALIAS,
+            "target": "oteryn:item.tibia.i5",
+            "evidence": {"source_item_id": 5},
+        },
+        {
+            "key": "oteryn:item.decor.five",
+            "state": table.ALIAS,
+            "target": "oteryn:item.tibia.i5",
+            "evidence": {"source_item_id": 5},
+        },
+    ]
+    expect_error("ALIAS_TARGET_SHARED", table.verify_table, shared, INDEX)
+    tombstone = {
+        "key": "oteryn:item.registry.i00000009",
+        "definition": {
+            "definition": {"identity": {"key": "oteryn:item.registry.i00000009"}}
+        },
+    }
+    tombstone["definition_sha256"] = "0" * 64
+    payload = table.canonical_bytes(
+        {
+            "schema": table.TOMBSTONE_SCHEMA,
+            "decision": table.DECISION,
+            "owner_decision": "D149",
+            "record_count": 1,
+            "records_sha256": table.sha256_hex(table.canonical_bytes([tombstone])),
+            "records": [tombstone],
+        }
+    )
+    expect_error("TOMBSTONE_RECORD", table.archived_tombstones, payload)
+
+
+# Files that must keep retired keys because they verify pinned history: the retired
+# allocations, the named-key batch and the R7-P04 packet contract (ITEM-ID-1b).
+HISTORY_VERIFIERS = {
+    "apps/game-server/src/content/cw2_b1_import.rs",
+    "apps/game-server/tests/content_world_cw2_b1_import.rs",
+}
+
+
+def no_retired_refs(entries: dict) -> int:
+    """No authored content names a retired key; code does so only in the history verifiers."""
     registry = re.compile(r"oteryn:item\.registry\.i\d{8}")
     named = {key for key in entries if not key.startswith("oteryn:item.registry.")}
     named_pattern = re.compile(
         "|".join(re.escape(key) for key in sorted(named, key=len, reverse=True))
     )
-    seen: set[str] = set()
+    offending: dict[str, list[str]] = {}
+    verifier_refs = 0
     for base in ("content", "apps"):
         for directory, _dirs, files in os.walk(table.ROOT / base):
             if "content/assets/files" in Path(directory).as_posix():
@@ -173,22 +203,33 @@ def old_refs_resolve(entries: dict) -> int:
                 if path == table.ALIAS_TABLE:
                     continue
                 text = path.read_text(encoding="utf-8")
-                seen.update(registry.findall(text))
-                seen.update(named_pattern.findall(text))
-    # Synthetic keys in Rust tests that were never allocated are not retired keys.
-    synthetic = {"oteryn:item.registry.i00099999", "oteryn:item.registry.i99999999"}
-    unresolved = sorted(seen - set(entries) - synthetic)
-    assert not unresolved, f"old keys without an alias entry: {unresolved[:5]}"
-    return len(seen)
+                found = {
+                    key
+                    for key in set(registry.findall(text))
+                    | set(named_pattern.findall(text))
+                    if key in entries
+                }
+                if not found:
+                    continue
+                relative = path.relative_to(table.ROOT).as_posix()
+                if relative in HISTORY_VERIFIERS:
+                    verifier_refs += len(found)
+                else:
+                    offending[relative] = sorted(found)[:3]
+    assert not offending, (
+        f"retired Item keys outside the history verifiers: {offending}"
+    )
+    return verifier_refs
 
 
 def main() -> None:
     synthetic_rules()
     synthetic_table_checks()
+    synthetic_frozen_checks()
     entries = committed_table()
-    resolved = old_refs_resolve(entries)
+    verifier_refs = no_retired_refs(entries)
     print(
-        f"item_id_alias_table self-test: PASS entries={len(entries)} old_refs_resolved={resolved}"
+        f"item_id_alias_table self-test: PASS entries={len(entries)} history_verifier_refs={verifier_refs}"
     )
 
 

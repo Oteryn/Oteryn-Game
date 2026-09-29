@@ -39,13 +39,13 @@ import engine_items
 
 DEFAULT_SAMPLE = ROOT / "samples" / "census-crystal-ff7ede5.json"
 DEFINITION_REVISION = "definition-r1"
-ITEM_KEY = re.compile(r"^oteryn:item\.registry\.i([0-9]{8})$")
+ITEM_KEY = re.compile(r"^oteryn:item\.tibia\.i([1-9][0-9]*)$")
 FAMILY_PREFIX = {
-    "Terrain": "oteryn:terrain.registry.i",
-    "WorldObject": "oteryn:world-object.registry.i",
+    "Terrain": "oteryn:terrain.tibia.i",
+    "WorldObject": "oteryn:world-object.tibia.i",
 }
 FAMILY_KEY = {
-    family: re.compile("^" + re.escape(prefix) + "([0-9]{8})$")
+    family: re.compile("^" + re.escape(prefix) + "([1-9][0-9]*)$")
     for family, prefix in FAMILY_PREFIX.items()
 }
 # D94: no family key for these routes (the Fluid kinds stay Item fluid).
@@ -89,12 +89,12 @@ SCHEMA_FILES = {
 
 
 def family_key(item_key, family):
-    """Return the D93 family key for a frozen CW2-B1 Item key; raise on anything else."""
+    """Return the D93 family key (A12 §4.6) for an Item Tibia key; raise on anything else."""
     if family not in FAMILY_PREFIX:
         raise ValueError(f"no family key for family {family!r}")
     match = ITEM_KEY.match(item_key or "")
     if match is None:
-        raise ValueError(f"not a CW2-B1 Item registry key: {item_key!r}")
+        raise ValueError(f"not an A12 Item Tibia key: {item_key!r}")
     return FAMILY_PREFIX[family] + match.group(1)
 
 

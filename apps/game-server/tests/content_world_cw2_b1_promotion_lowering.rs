@@ -32,7 +32,7 @@ fn lowering_limits() -> ProjectEvidenceLimits {
 
 /// The identity/materializable/stack_class shape to compare the lowering-v1 import
 /// against. This must be the *renamed* full family (source item `3031` already moved
-/// to `oteryn:item.currency.gold_coin`), since the #1018 lowering candidate's own
+/// to `oteryn:item.tibia.i3031`), since the #1018 lowering candidate's own
 /// population census resolves that same current identity, not the plain opaque
 /// allocation. Its `.semantics` (which also carries the unrelated existing 69-field
 /// promotion) is intentionally never read here — only identity/materializable/
@@ -166,11 +166,11 @@ fn lowering_v1_promotes_exactly_14643_atoms_across_12021_items_without_identity_
 
     assert_eq!(
         promoted.promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT
     );
     assert_eq!(
         promoted.promoted_items,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_ITEM_COUNT
     );
     assert_eq!(promoted.family.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
     assert_eq!(
@@ -219,10 +219,13 @@ fn lowering_v1_promotes_exactly_14643_atoms_across_12021_items_without_identity_
         promoted_items += usize::from(atoms > 0);
     }
 
-    assert_eq!(atom_count, ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT);
+    assert_eq!(
+        atom_count,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT
+    );
     assert_eq!(
         promoted_items,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_ITEM_COUNT
     );
 
     // Self-check triple from `lower_promotion_packet.py::self_check`, resolved by
@@ -313,7 +316,7 @@ fn lowering_v1_compiles_into_the_reference_artifact_v4_path_and_survives_round_t
         .sum();
     assert_eq!(
         promoted_atom_total,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT
     );
 
     let magic_sword = linked

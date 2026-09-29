@@ -123,7 +123,7 @@ pub const REFERENCE_ITEM_MAX_RESISTANCES: usize = 12;
 pub const REFERENCE_ITEM_MAX_MODIFIERS: usize = 37;
 pub const REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES: usize = 20;
 pub const REFERENCE_ITEM_MAX_IMBUEMENT_SLOTS: u8 = 3;
-pub const REFERENCE_ITEM_REGISTRY_SIZE: u32 = 38_157;
+pub const REFERENCE_ITEM_REGISTRY_SIZE: u32 = 33_567;
 pub const REFERENCE_ITEM_EXPLICIT_UNSUPPORTED_V1: [&str; 7] = [
     "presentation.appearance_binding",
     "presentation.aliases",

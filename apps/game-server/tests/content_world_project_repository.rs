@@ -17,27 +17,27 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "1fb6a5b174af29359a60c3ffe9f17dcf5562ea4561d461724f15ca19528a4691",
+        "f0fe85ac884923347545de02d44b8449618f786c5fa9579ee074e2f5a12962b1",
     ),
     (
         "definitions/declarations.json",
-        14_941_145,
-        "dcbb0325e37c5edb9312be9f53f8523ca7100a3bfc402f13f8d777430e763a00",
+        14_834_242,
+        "8285f535f72551a5c149d619514b5ec37e6c4cd50c22c57b0e0fb87689dee7ba",
     ),
     (
         "definitions/reference.json",
-        22_584_907,
-        "d9f32aeda02a453caf02ba4c64a282fa0cca75e80300e4fa604308d28ef8cdbc",
+        21_258_697,
+        "6ee7da59dab0c6bc00ab65a336c9f18c07c2310cd672b134c4293abc082636ae",
     ),
     (
         "editor/author.json",
-        121_657,
-        "a41044d85174f5c8f9a86c8433d880f43ea48a0c988d7772260a02eb78deea42",
+        120_557,
+        "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
     ),
     (
         "manifest.json",
         1937,
-        "42c0dad8711e8496316cad226ce078cded1f82b9ab3b3a495168addf961cb32e",
+        "81106935ba5c7cb6a7e18e4faff6ff46d9ddf3a9be31e1d7e53380623fa33a03",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "fc7480eaa8a4633ffcf5d27fac094be6f4d96e92a32d6876681907d8d50233a6",
+        "22e5712d07836d8f73a201c26310586d6bd872346ec4573346cfcf5d85b36c75",
     ),
     (
         "provenance/imports.json",
@@ -56,8 +56,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "provenance/sources.json",
-        1_294_992,
-        "45e9bf4fd15eb8cf540efec08e8609d4f9ef0246ef5761b3f54a4ca67c59c324",
+        1_293_892,
+        "80291ae36670f3299d03db97095f8bb4ede548e7169f292e304e3ce459be4087",
     ),
     (
         "worlds/world.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "e6c174f4e9ddb88412fd83935141984d26c9699d6c619c2d5297274ff8dea339";
+const TREE_SHA256: &str = "fa64bbbc96a2b35dfd92f82c9c67a17f1adee4b6cb6fbe52efef0e363eaec09b";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -829,7 +829,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert!(keys.contains(R7_P04_GOLD_COIN_KEY));
     assert!(!keys.contains(R7_P04_GOLD_COIN_OLD_KEY));
-    assert!(keys.contains(R7_P04_UNRELATED_REGISTRY_KEY));
+    assert!(!keys.contains(R7_P04_GOLD_COIN_NAMED_KEY));
+    assert!(!keys.contains(R7_P04_UNRELATED_REGISTRY_KEY));
+    assert!(keys.contains(tibia_item_key(R7_P04_UNRELATED_SOURCE_ITEM_ID).as_str()));
+    assert!(
+        keys.iter()
+            .filter(|key| key.starts_with("oteryn:item."))
+            .all(|key| key.starts_with(TIBIA_ITEM_KEY_PREFIX))
+    );
     let gold_coin = linked
         .definitions
         .iter()
@@ -894,10 +901,13 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             let atoms = promoted_atom_count(&item.semantics);
             (items + usize::from(atoms > 0), fields + atoms)
         });
-    assert_eq!(promoted_items, 12_301);
+    assert_eq!(
+        promoted_items,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_ITEM_COUNT
+    );
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT + 12
     );
     let (wave1_items, wave1_fields) = linked
         .definitions

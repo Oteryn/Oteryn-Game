@@ -17,6 +17,7 @@ use serde::Deserialize;
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::{self, Display, Formatter},
+    sync::OnceLock,
 };
 
 pub const PROTECTED_CW2_B1_EVIDENCE_BYTES: usize = 16_877_870;
@@ -42,13 +43,21 @@ pub const CW2_B1_SOURCE_SHA256: &str =
 pub const CW2_B1_SOURCE_BYTES: i64 = 3_819_874;
 pub const CW2_B1_SOURCE_ITEM_ID: u64 = 2_876;
 
-pub const CW2_B1_VASE_KEY: &str = "oteryn:item.decor.vase";
+pub const CW2_B1_VASE_KEY: &str = ITEM_DECOR_VASE;
 pub const CW2_B1_VASE_REVISION: &str = "definition-r1";
 pub const CW2_B1_NATIVE_ITEM_BATCH_REVISION: &str = "definition-r1";
 pub const CW2_B1_NATIVE_ITEM_BATCH_COUNT: usize = 64;
-pub const CW2_B1_FULL_ITEM_FAMILY_COUNT: usize = 38_157;
+/// Rows of the protected B1 catalogue: the source denominator of the retired epoch-1 allocation.
+pub const CW2_B1_SOURCE_CATALOG_ROW_COUNT: usize = 38_157;
+/// Catalogue rows whose id is in no admitted CipSoft appearance file (A12 D149): removed from
+/// authored content, their retired keys kept as tombstones.
+pub const CW2_B1_D149_RETIRED_ROW_COUNT: usize = 4_590;
+/// Item records the full family admits under the A12 Tibia-id key rule.
+pub const CW2_B1_FULL_ITEM_FAMILY_COUNT: usize =
+    CW2_B1_SOURCE_CATALOG_ROW_COUNT - CW2_B1_D149_RETIRED_ROW_COUNT;
+/// Retired epoch-1 opaque sequence length (history; the numbers are never minted again).
 pub const CW2_B1_OPAQUE_ITEM_COUNT: usize =
-    CW2_B1_FULL_ITEM_FAMILY_COUNT - CW2_B1_NATIVE_ITEM_BATCH_COUNT;
+    CW2_B1_SOURCE_CATALOG_ROW_COUNT - CW2_B1_NATIVE_ITEM_BATCH_COUNT;
 pub const CW2_B1_FULL_ITEM_REVISION: &str = "definition-r1";
 pub const CW2_B1_OPAQUE_ITEM_NAMESPACE: &str = "oteryn:item.registry";
 pub const CW2_B1_FULL_ITEM_REGISTRY_PROFILE: &str = "OTERYN_CONTENT_ITEM_FAMILY_SCALE_REGISTRY/v1";
@@ -187,7 +196,7 @@ struct NativeItemSpec {
     source_item_id: u64,
     source_label: &'static str,
     item_class: &'static str,
-    native_key: &'static str,
+    retired_key: &'static str,
     stack_capable: bool,
     node_sha256: &'static str,
     field_profile_sha256: &'static str,
@@ -198,7 +207,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3035,
         source_label: "platinum coin",
         item_class: "currency_stackable",
-        native_key: "oteryn:item.currency.platinum_coin",
+        retired_key: "oteryn:item.currency.platinum_coin",
         stack_capable: true,
         node_sha256: "2a2400eb87de8067677d3d00b82e973135b12fe3e29348040dbc1724d3da12d8",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -207,7 +216,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3043,
         source_label: "crystal coin",
         item_class: "currency_stackable",
-        native_key: "oteryn:item.currency.crystal_coin",
+        retired_key: "oteryn:item.currency.crystal_coin",
         stack_capable: true,
         node_sha256: "a5538fe905de344f0df8e9994859ab7d2cdc0cdc40df51b3f584a95fe42501c1",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -216,7 +225,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3492,
         source_label: "worm",
         item_class: "currency_stackable",
-        native_key: "oteryn:item.material.worm",
+        retired_key: "oteryn:item.material.worm",
         stack_capable: true,
         node_sha256: "85c932f8c74f5147c4d834ccb0811a0c959035749a8ef1b706c8de6347419ba9",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -225,7 +234,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 675,
         source_label: "small enchanted sapphire",
         item_class: "currency_stackable",
-        native_key: "oteryn:item.material.gem.small_enchanted_sapphire",
+        retired_key: "oteryn:item.material.gem.small_enchanted_sapphire",
         stack_capable: true,
         node_sha256: "2fa3ffba601d8a3dad55a6cd545d403ff295d5a5c693d2b722c95f5387507765",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -234,7 +243,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 676,
         source_label: "small enchanted ruby",
         item_class: "currency_stackable",
-        native_key: "oteryn:item.material.gem.small_enchanted_ruby",
+        retired_key: "oteryn:item.material.gem.small_enchanted_ruby",
         stack_capable: true,
         node_sha256: "36112a05b9c2be382ba24e97234e888bb54c4cf0a6ac1a414bc0885aa45a89d5",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -243,7 +252,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 677,
         source_label: "small enchanted emerald",
         item_class: "currency_stackable",
-        native_key: "oteryn:item.material.gem.small_enchanted_emerald",
+        retired_key: "oteryn:item.material.gem.small_enchanted_emerald",
         stack_capable: true,
         node_sha256: "34428b6f050f90adb424e4bd6898317f0f58c449ea971184bb42b59dfb335ea8",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -252,7 +261,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 678,
         source_label: "small enchanted amethyst",
         item_class: "currency_stackable",
-        native_key: "oteryn:item.material.gem.small_enchanted_amethyst",
+        retired_key: "oteryn:item.material.gem.small_enchanted_amethyst",
         stack_capable: true,
         node_sha256: "342a7ebfd1e74252c3e1f5132cce2909dd85c5a5ff057beec41fb7a56841a97c",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -261,7 +270,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3447,
         source_label: "arrow",
         item_class: "currency_stackable",
-        native_key: "oteryn:item.ammunition.arrow",
+        retired_key: "oteryn:item.ammunition.arrow",
         stack_capable: true,
         node_sha256: "f2b3c59423df63a433fda13ca945ee7510f1664b03c9f4d45de75136b72030bd",
         field_profile_sha256: "f58edc73b19db6864b4d88c89ead00d0dc3b842368746a3e0bf310d9686cb299",
@@ -270,7 +279,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3267,
         source_label: "dagger",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.blade.dagger",
+        retired_key: "oteryn:item.weapon.blade.dagger",
         stack_capable: false,
         node_sha256: "755ce623d930a572152886a8393df358995b608d6e51c9cb75ef5e9a93702710",
         field_profile_sha256: "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
@@ -279,7 +288,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3280,
         source_label: "fire sword",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.sword.fire",
+        retired_key: "oteryn:item.weapon.sword.fire",
         stack_capable: false,
         node_sha256: "9a0c6c7b8b82d0c1ddb02d70da8a63db9aa25f5bf1063a157b3a491ce72e55fa",
         field_profile_sha256: "00c9f780f6e879239cf4c0639d3f9cd768a5b3255a857e78a1e9a688ab22abf9",
@@ -288,7 +297,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3295,
         source_label: "bright sword",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.sword.bright",
+        retired_key: "oteryn:item.weapon.sword.bright",
         stack_capable: false,
         node_sha256: "8e7bfd90afcc484cdd01f54ea36440308b428bd258ba0eb166143c663068f5a3",
         field_profile_sha256: "73f000129a1cc9400b4947bb8fb4e74f9ab5d1b98654122b99b013e11680a5a4",
@@ -297,7 +306,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3268,
         source_label: "hand axe",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.axe.hand",
+        retired_key: "oteryn:item.weapon.axe.hand",
         stack_capable: false,
         node_sha256: "242953c6602a914269736e904dd1822b9537a4cd32f62fafa94eccf930705b94",
         field_profile_sha256: "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
@@ -306,7 +315,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3320,
         source_label: "fire axe",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.axe.fire",
+        retired_key: "oteryn:item.weapon.axe.fire",
         stack_capable: false,
         node_sha256: "6312557dbf49bac7366925126cb6b331655456df9aa41ce8dee4043707969fb8",
         field_profile_sha256: "00c9f780f6e879239cf4c0639d3f9cd768a5b3255a857e78a1e9a688ab22abf9",
@@ -315,7 +324,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3318,
         source_label: "knight axe",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.axe.knight",
+        retired_key: "oteryn:item.weapon.axe.knight",
         stack_capable: false,
         node_sha256: "5579e21fef40b215aeb5438d6bef0d950cb8098e4015afd852f0be647f710b07",
         field_profile_sha256: "9ddbf315c0145fa263a931c85d03d708245953795a41731c0d82b191e874b593",
@@ -324,7 +333,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3286,
         source_label: "mace",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.club.mace",
+        retired_key: "oteryn:item.weapon.club.mace",
         stack_capable: false,
         node_sha256: "3819ae74118f58055cf925ff0a5616ae4e971c1fccfff96093a18c4ed0514eb8",
         field_profile_sha256: "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
@@ -333,7 +342,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3324,
         source_label: "skull staff",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.club.skull_staff",
+        retired_key: "oteryn:item.weapon.club.skull_staff",
         stack_capable: false,
         node_sha256: "14e4fa7532a9afbc2b8ef04a7176c5f740cd14c4ed4143baa4cc2140a0120b5c",
         field_profile_sha256: "73f000129a1cc9400b4947bb8fb4e74f9ab5d1b98654122b99b013e11680a5a4",
@@ -342,7 +351,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3305,
         source_label: "battle hammer",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.club.battle_hammer",
+        retired_key: "oteryn:item.weapon.club.battle_hammer",
         stack_capable: false,
         node_sha256: "d587b5b105cdc67bcfe9d40e92f8423893e68ca5aad52089bf3d78f5921fe65f",
         field_profile_sha256: "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
@@ -351,7 +360,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3349,
         source_label: "crossbow",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.ranged.crossbow",
+        retired_key: "oteryn:item.weapon.ranged.crossbow",
         stack_capable: false,
         node_sha256: "f2415dbc73fdb717f07636e0806686bf7ce7f3aba82de720b917742993a8f760",
         field_profile_sha256: "225f761f198c6bdfd74a6cf483861e276dec4e4d3bd8feebdf017160318250cf",
@@ -360,7 +369,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3350,
         source_label: "bow",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.ranged.bow",
+        retired_key: "oteryn:item.weapon.ranged.bow",
         stack_capable: false,
         node_sha256: "04cf9514fa182b56f2240f557444b46b9ec71028283174caec102f333b18e076",
         field_profile_sha256: "3f213c9d451c38cdd984ae9e3f3790cafd835a7ab7e3aad0fa7b9d1f3e99ba12",
@@ -369,7 +378,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3066,
         source_label: "snakebite rod",
         item_class: "weapon",
-        native_key: "oteryn:item.weapon.wand.snakebite_rod",
+        retired_key: "oteryn:item.weapon.wand.snakebite_rod",
         stack_capable: false,
         node_sha256: "9345fbf7ad0a54f912e097136375a957e9291365355836eb2952bf8d600078e1",
         field_profile_sha256: "f4fc7ac67bb34b3b6c222cb738286258efb6113cf49da3d412ff1ab211617452",
@@ -378,7 +387,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3351,
         source_label: "steel helmet",
         item_class: "equipment",
-        native_key: "oteryn:item.equipment.steel_helmet",
+        retired_key: "oteryn:item.equipment.steel_helmet",
         stack_capable: false,
         node_sha256: "b7ac518e8a97c0efb4e52ec4c1daf77dd38944da841ae50eddadb45119825dda",
         field_profile_sha256: "83c2e166d10682deea3f6eda02904f6a9ced4da21b0486545360aa76d0e48823",
@@ -387,7 +396,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3357,
         source_label: "plate armor",
         item_class: "equipment",
-        native_key: "oteryn:item.armor.plate_armor",
+        retired_key: "oteryn:item.armor.plate_armor",
         stack_capable: false,
         node_sha256: "006dd5aac4ea304f1cfbede93b9b757e9697b6d89bafc533fab5fe5d397a6793",
         field_profile_sha256: "83c2e166d10682deea3f6eda02904f6a9ced4da21b0486545360aa76d0e48823",
@@ -396,7 +405,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3557,
         source_label: "plate legs",
         item_class: "equipment",
-        native_key: "oteryn:item.equipment.plate_legs",
+        retired_key: "oteryn:item.equipment.plate_legs",
         stack_capable: false,
         node_sha256: "63249035017fa13d9ac598bc41babf466e0bc45b9c185f173f36131099423ee1",
         field_profile_sha256: "83c2e166d10682deea3f6eda02904f6a9ced4da21b0486545360aa76d0e48823",
@@ -405,7 +414,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3409,
         source_label: "steel shield",
         item_class: "equipment",
-        native_key: "oteryn:item.equipment.steel_shield",
+        retired_key: "oteryn:item.equipment.steel_shield",
         stack_capable: false,
         node_sha256: "6dd9ed793bc00b52b980402ad0ae7c76fe37a761592c4325128714914c368082",
         field_profile_sha256: "1151295383ab15474f226cac81b4d6f5242094e371fcb06b6a3402fc0006b04d",
@@ -414,7 +423,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3412,
         source_label: "wooden shield",
         item_class: "equipment",
-        native_key: "oteryn:item.equipment.wooden_shield",
+        retired_key: "oteryn:item.equipment.wooden_shield",
         stack_capable: false,
         node_sha256: "a7fcf4b6cbd73783256bd0d58767af814668ac4138d36b6e083d9b8b971fd371",
         field_profile_sha256: "127dca5e2e2ecb8b26898d5f19e4957156ed8268423288c429e690ae69bc312d",
@@ -423,7 +432,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3055,
         source_label: "platinum amulet",
         item_class: "equipment",
-        native_key: "oteryn:item.equipment.platinum_amulet",
+        retired_key: "oteryn:item.equipment.platinum_amulet",
         stack_capable: false,
         node_sha256: "8e22605db18521528f2aff0e289ebfd7350a7b5ac676e0b09f9ccc8fb8a4e6a4",
         field_profile_sha256: "ff3a4d3b8cdb492ccba844425f2a28a9e9cc361417170d9986af4be07e691834",
@@ -432,7 +441,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 812,
         source_label: "terra legs",
         item_class: "equipment",
-        native_key: "oteryn:item.equipment.terra_legs",
+        retired_key: "oteryn:item.equipment.terra_legs",
         stack_capable: false,
         node_sha256: "9f3f20696e67671ed262557fd3dce4d6c82b5d5a5f9d72561174fb247b2f3b21",
         field_profile_sha256: "8c7df30bd6dee7644067aee2b2090162c428dbd84fb03ab59eef9ddc135566ed",
@@ -441,7 +450,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 824,
         source_label: "glacier robe",
         item_class: "equipment",
-        native_key: "oteryn:item.equipment.glacier_robe",
+        retired_key: "oteryn:item.equipment.glacier_robe",
         stack_capable: false,
         node_sha256: "4a1d051d07a643a181e3ddf411d2b8488daf6c7f65b909eb1f0e3c739c84e4ae",
         field_profile_sha256: "e856903cf287582b2a100f4e9bbc75be584b243ffd45e42e342718339c882286",
@@ -450,7 +459,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 827,
         source_label: "magma monocle",
         item_class: "equipment",
-        native_key: "oteryn:item.equipment.magma_monocle",
+        retired_key: "oteryn:item.equipment.magma_monocle",
         stack_capable: false,
         node_sha256: "c9a4ddc01bf25a279e3c533c5d31f96617eb9a8003531bf4ad0816fcc88065e5",
         field_profile_sha256: "13c9be2c1b84f9b7199d50c4f43b8597c1cc9a35fd58a8182ff5cab02b6bded3",
@@ -459,7 +468,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3391,
         source_label: "crusader helmet",
         item_class: "equipment",
-        native_key: "oteryn:item.equipment.crusader_helmet",
+        retired_key: "oteryn:item.equipment.crusader_helmet",
         stack_capable: false,
         node_sha256: "c5d4953ee231b39adf03d2340c4cd9a2c37fd1b930c5ed80e983c1a87944654c",
         field_profile_sha256: "f59e1b9f71ca5347cca5d5aa9c18ca05c1e31d6ecc8c2197e1a596a212613a72",
@@ -468,7 +477,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3370,
         source_label: "knight armor",
         item_class: "equipment",
-        native_key: "oteryn:item.equipment.knight_armor",
+        retired_key: "oteryn:item.equipment.knight_armor",
         stack_capable: false,
         node_sha256: "a087ba076bcbc6b3f967d339b9d00ddcf99d352214bb78f1d7daec8e9cfff0da",
         field_profile_sha256: "f59e1b9f71ca5347cca5d5aa9c18ca05c1e31d6ecc8c2197e1a596a212613a72",
@@ -477,7 +486,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3385,
         source_label: "crown helmet",
         item_class: "equipment",
-        native_key: "oteryn:item.equipment.crown_helmet",
+        retired_key: "oteryn:item.equipment.crown_helmet",
         stack_capable: false,
         node_sha256: "3f773e34581386ee337a89049a586d49a5135c8c835572d4465abe85820e1c4f",
         field_profile_sha256: "f59e1b9f71ca5347cca5d5aa9c18ca05c1e31d6ecc8c2197e1a596a212613a72",
@@ -486,7 +495,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2871,
         source_label: "golden backpack",
         item_class: "container",
-        native_key: "oteryn:item.container.golden_backpack",
+        retired_key: "oteryn:item.container.golden_backpack",
         stack_capable: false,
         node_sha256: "d8fe87b4bd22a5244ba83289b406ca2a6930d2482c963d9e6cc6bc6778534d2f",
         field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
@@ -495,7 +504,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 5926,
         source_label: "pirate backpack",
         item_class: "container",
-        native_key: "oteryn:item.container.pirate_backpack",
+        retired_key: "oteryn:item.container.pirate_backpack",
         stack_capable: false,
         node_sha256: "508b2a6740ce10e609c6452676c011931366fd278659b89208642f61e026011d",
         field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
@@ -504,7 +513,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 5927,
         source_label: "pirate bag",
         item_class: "container",
-        native_key: "oteryn:item.container.pirate_bag",
+        retired_key: "oteryn:item.container.pirate_bag",
         stack_capable: false,
         node_sha256: "133ea978d3ea2b922a77f4f6255a2c058570e550c45e9219a8cd540740250dc4",
         field_profile_sha256: "93cd457c45acf4b2a6d5dc4044e42c2094715f09db1e484629d011fe5aca5172",
@@ -513,7 +522,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 7343,
         source_label: "fur bag",
         item_class: "container",
-        native_key: "oteryn:item.container.fur_bag",
+        retired_key: "oteryn:item.container.fur_bag",
         stack_capable: false,
         node_sha256: "da1c5482ade8e41fe0efbe3a884de0e6ff792863efc0ae06f87f8be55ab15306",
         field_profile_sha256: "93cd457c45acf4b2a6d5dc4044e42c2094715f09db1e484629d011fe5aca5172",
@@ -522,7 +531,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 9604,
         source_label: "moon backpack",
         item_class: "container",
-        native_key: "oteryn:item.container.moon_backpack",
+        retired_key: "oteryn:item.container.moon_backpack",
         stack_capable: false,
         node_sha256: "8dffabf589c66a3cf8cda4cac92e5b23c3ed91cc1d50ec4dd646c5f2df8d8afc",
         field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
@@ -531,7 +540,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 14248,
         source_label: "deepling backpack",
         item_class: "container",
-        native_key: "oteryn:item.container.deepling_backpack",
+        retired_key: "oteryn:item.container.deepling_backpack",
         stack_capable: false,
         node_sha256: "7a496de66726bf3e6e469372cfed2506bf08a7c8ac4d0958e6d95343a737f968",
         field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
@@ -540,7 +549,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 24393,
         source_label: "pillow backpack",
         item_class: "container",
-        native_key: "oteryn:item.container.pillow_backpack",
+        retired_key: "oteryn:item.container.pillow_backpack",
         stack_capable: false,
         node_sha256: "733323428cf4d2461b64136380355b719cee9e46d14acf960b82fedb20587754",
         field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
@@ -549,7 +558,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 28571,
         source_label: "book backpack",
         item_class: "container",
-        native_key: "oteryn:item.container.book_backpack",
+        retired_key: "oteryn:item.container.book_backpack",
         stack_capable: false,
         node_sha256: "235d4b3daaac7b30759bb8108c49fbcd163a1c2d134fe036e68f16c17b0a63cf",
         field_profile_sha256: "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
@@ -558,7 +567,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 237,
         source_label: "strong mana potion",
         item_class: "consumable_charges",
-        native_key: "oteryn:item.consumable.potion.strong_mana",
+        retired_key: "oteryn:item.consumable.potion.strong_mana",
         stack_capable: true,
         node_sha256: "8107df439e0b1965dc6a7ba8b8590581fa4e87c30d6b1a9dd40a0048b17f1853",
         field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
@@ -567,7 +576,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 239,
         source_label: "great health potion",
         item_class: "consumable_charges",
-        native_key: "oteryn:item.consumable.potion.great_health",
+        retired_key: "oteryn:item.consumable.potion.great_health",
         stack_capable: true,
         node_sha256: "1676d400a1f7e4a37efa63f06e8bf1ad012ef4732b74fa816f78b4211824b7f8",
         field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
@@ -576,7 +585,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 266,
         source_label: "health potion",
         item_class: "consumable_charges",
-        native_key: "oteryn:item.consumable.potion.health",
+        retired_key: "oteryn:item.consumable.potion.health",
         stack_capable: true,
         node_sha256: "29d71d0e7dbd3f57adabafdef63b6224e0d0eb97aca0820a2ca5c1fc9b8036ed",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -585,7 +594,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 268,
         source_label: "mana potion",
         item_class: "consumable_charges",
-        native_key: "oteryn:item.consumable.potion.mana",
+        retired_key: "oteryn:item.consumable.potion.mana",
         stack_capable: true,
         node_sha256: "4f3104c0a2a4cfc7ee1eb50f21cc39bae73a31c697d160a82d3c8e8905cc5b2c",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -594,7 +603,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3048,
         source_label: "might ring",
         item_class: "consumable_charges",
-        native_key: "oteryn:item.charged.might_ring",
+        retired_key: "oteryn:item.charged.might_ring",
         stack_capable: false,
         node_sha256: "a52e35b19f031bc94f44c71c402eb29a97928b91c649efb655e7c68aa8c759a0",
         field_profile_sha256: "ab35b1698f5a53bb4b4f29991e7e23aaa7cc0af72540f070e17b87b053b68782",
@@ -603,7 +612,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3081,
         source_label: "stone skin amulet",
         item_class: "consumable_charges",
-        native_key: "oteryn:item.charged.stone_skin_amulet",
+        retired_key: "oteryn:item.charged.stone_skin_amulet",
         stack_capable: false,
         node_sha256: "5c6c64e234b76e1b79e5e2d1d2228cbe5ab13bd854482cb455a12f5a6743ef7b",
         field_profile_sha256: "02b64132c553e683d58fa5910a5ae55fc96b91e203fe30cf20aeaa2fbd87da37",
@@ -612,7 +621,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 3155,
         source_label: "sudden death rune",
         item_class: "consumable_charges",
-        native_key: "oteryn:item.consumable.sudden_death_rune",
+        retired_key: "oteryn:item.consumable.sudden_death_rune",
         stack_capable: true,
         node_sha256: "574e1ee5c03676abdcbdc3a5120db3d85ba693279a05a59ffd62b0341a0e223f",
         field_profile_sha256: "1d153b0d9524f79947e3d3a5adb4719798354e011c5d2ec977b4abf561479dbc",
@@ -621,7 +630,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 9302,
         source_label: "sacred tree amulet",
         item_class: "consumable_charges",
-        native_key: "oteryn:item.charged.sacred_tree_amulet",
+        retired_key: "oteryn:item.charged.sacred_tree_amulet",
         stack_capable: false,
         node_sha256: "7e0f1cf96e72d0b1cacb220d195b00c86f29da2acfa4a2107712d20ef463037b",
         field_profile_sha256: "ed3d4a2dd94bf1ff705516c36454de2f39091d9392078521915bde405bc0ce9a",
@@ -630,7 +639,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2389,
         source_label: "small blue pillow",
         item_class: "physical_decor",
-        native_key: "oteryn:item.decor.pillow.small_blue",
+        retired_key: "oteryn:item.decor.pillow.small_blue",
         stack_capable: false,
         node_sha256: "9326478595c91bdc0cd132c264f3072cd182885f000f35f5d42db0b5ef6cc233",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -639,7 +648,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2848,
         source_label: "purple tome",
         item_class: "physical_decor",
-        native_key: "oteryn:item.decor.tome.purple",
+        retired_key: "oteryn:item.decor.tome.purple",
         stack_capable: false,
         node_sha256: "f7a5a3f46ed282e8c3b13d61712a0484f4b6f6b82ad8de01f63a5b863b6b474a",
         field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
@@ -648,7 +657,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2850,
         source_label: "blue tome",
         item_class: "physical_decor",
-        native_key: "oteryn:item.decor.tome.blue",
+        retired_key: "oteryn:item.decor.tome.blue",
         stack_capable: false,
         node_sha256: "9557feb1f960911e48aa89b3c066d4ba0525bf9e23fa219be7eef98b14b16335",
         field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
@@ -657,7 +666,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2852,
         source_label: "red tome",
         item_class: "physical_decor",
-        native_key: "oteryn:item.decor.tome.red",
+        retired_key: "oteryn:item.decor.tome.red",
         stack_capable: false,
         node_sha256: "e22b2abbef6842cd5de6bb8597e0fa9f3cd9ce5d0e4896783a6c47b6b8c22b31",
         field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
@@ -666,7 +675,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2876,
         source_label: "vase",
         item_class: "physical_decor",
-        native_key: "oteryn:item.decor.vase",
+        retired_key: "oteryn:item.decor.vase",
         stack_capable: false,
         node_sha256: "b7c5c457cdccf047b251313e27cf283442a7346ddc556eaece8c2fdc30d655c3",
         field_profile_sha256: "11da415530a0c8678cdb3d05c3205f21f3cc708f13a7342674538f97b911472e",
@@ -675,7 +684,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2885,
         source_label: "brown flask",
         item_class: "physical_decor",
-        native_key: "oteryn:item.decor.flask.brown",
+        retired_key: "oteryn:item.decor.flask.brown",
         stack_capable: false,
         node_sha256: "876efad2b78488af6aa09fd7dde055a460a0b2f9316b632e3ccc9b361ad05bd3",
         field_profile_sha256: "11da415530a0c8678cdb3d05c3205f21f3cc708f13a7342674538f97b911472e",
@@ -684,7 +693,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2917,
         source_label: "candlestick",
         item_class: "physical_decor",
-        native_key: "oteryn:item.decor.candlestick",
+        retired_key: "oteryn:item.decor.candlestick",
         stack_capable: false,
         node_sha256: "34410387d5be6973f665aa2f038c32311763e4a7ba02e25018e6191ad96a21e6",
         field_profile_sha256: "5974cb399f5abd02cee50220bb2d5ab4cbb97af42ac30c6b4605ddf9e70b5ed0",
@@ -693,7 +702,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2933,
         source_label: "small oil lamp",
         item_class: "physical_decor",
-        native_key: "oteryn:item.decor.oil_lamp.small",
+        retired_key: "oteryn:item.decor.oil_lamp.small",
         stack_capable: false,
         node_sha256: "2d168d5565f0c7fe94a9d10f6f31c55d2203af837c443ea5cfdad3378a9e0926",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -702,7 +711,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2953,
         source_label: "panpipes",
         item_class: "physical_decor",
-        native_key: "oteryn:item.decor.panpipes",
+        retired_key: "oteryn:item.decor.panpipes",
         stack_capable: false,
         node_sha256: "638ecc4852144c304f962dfb44b4dfc319485bd69e7293439013f0b4f1f2e5d7",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -711,7 +720,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2993,
         source_label: "teddy bear",
         item_class: "physical_decor",
-        native_key: "oteryn:item.decor.teddy_bear",
+        retired_key: "oteryn:item.decor.teddy_bear",
         stack_capable: false,
         node_sha256: "339845df118885389556307c190d38f504edebd8baebb14b0714aed59a5fa88b",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -720,7 +729,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 2995,
         source_label: "piggy bank",
         item_class: "physical_decor",
-        native_key: "oteryn:item.decor.piggy_bank",
+        retired_key: "oteryn:item.decor.piggy_bank",
         stack_capable: false,
         node_sha256: "5414b44e1d5e986d5c883e38dcad0dfd7378d99e490fd66bff55265801b20b95",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -729,7 +738,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 953,
         source_label: "nail",
         item_class: "physical_decor",
-        native_key: "oteryn:item.physical.nail",
+        retired_key: "oteryn:item.physical.nail",
         stack_capable: false,
         node_sha256: "bc7dc34b75c7b262d6ba0368f803393cc9ca417a7a9c2dd7c941e1929b4c6e12",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -738,7 +747,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 940,
         source_label: "natural soil",
         item_class: "physical_decor",
-        native_key: "oteryn:item.physical.soil.natural",
+        retired_key: "oteryn:item.physical.soil.natural",
         stack_capable: false,
         node_sha256: "7d030e8ccc016d95cda9eabe533e57032531c5abd9458f978de3a688c45ebd56",
         field_profile_sha256: "7aaf75e89a491139e016bfa720eefffec0b7c659655db25d1cd13a9e97237d88",
@@ -747,7 +756,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 941,
         source_label: "glimmering soil",
         item_class: "physical_decor",
-        native_key: "oteryn:item.physical.soil.glimmering",
+        retired_key: "oteryn:item.physical.soil.glimmering",
         stack_capable: false,
         node_sha256: "a0429e1e89785d0207f50eaf2043fec97171c9fd939c6f6056f5867cee945882",
         field_profile_sha256: "7aaf75e89a491139e016bfa720eefffec0b7c659655db25d1cd13a9e97237d88",
@@ -756,7 +765,7 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 942,
         source_label: "flawless ice crystal",
         item_class: "physical_decor",
-        native_key: "oteryn:item.physical.crystal.ice.flawless",
+        retired_key: "oteryn:item.physical.crystal.ice.flawless",
         stack_capable: false,
         node_sha256: "7fc23279085c279d190bdbb0d50b106d53b6d8003c28bb22c906d7a89431f5ab",
         field_profile_sha256: "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
@@ -765,12 +774,81 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
         source_item_id: 901,
         source_label: "marlin",
         item_class: "physical_decor",
-        native_key: "oteryn:item.physical.marlin",
+        retired_key: "oteryn:item.physical.marlin",
         stack_capable: false,
         node_sha256: "251b4ee4dc7c3b36ec6514f4a5829fc8c90254bd33b03b669c74ca5ca87eff01",
         field_profile_sha256: "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
     },
 ];
+
+// A12 D147: every retired named Item key survives only as a code constant that points at the
+// item's canonical Tibia-id key. The retired strings stay in `NATIVE_ITEM_BATCH` (history) and
+// in the alias table; a unit test proves each constant equals that entry's alias target.
+pub const ITEM_AMMUNITION_ARROW: &str = "oteryn:item.tibia.i3447";
+pub const ITEM_ARMOR_PLATE_ARMOR: &str = "oteryn:item.tibia.i3357";
+pub const ITEM_CHARGED_MIGHT_RING: &str = "oteryn:item.tibia.i3048";
+pub const ITEM_CHARGED_SACRED_TREE_AMULET: &str = "oteryn:item.tibia.i9302";
+pub const ITEM_CHARGED_STONE_SKIN_AMULET: &str = "oteryn:item.tibia.i3081";
+pub const ITEM_CONSUMABLE_POTION_GREAT_HEALTH: &str = "oteryn:item.tibia.i239";
+pub const ITEM_CONSUMABLE_POTION_HEALTH: &str = "oteryn:item.tibia.i266";
+pub const ITEM_CONSUMABLE_POTION_MANA: &str = "oteryn:item.tibia.i268";
+pub const ITEM_CONSUMABLE_POTION_STRONG_MANA: &str = "oteryn:item.tibia.i237";
+pub const ITEM_CONSUMABLE_SUDDEN_DEATH_RUNE: &str = "oteryn:item.tibia.i3155";
+pub const ITEM_CONTAINER_BOOK_BACKPACK: &str = "oteryn:item.tibia.i28571";
+pub const ITEM_CONTAINER_DEEPLING_BACKPACK: &str = "oteryn:item.tibia.i14248";
+pub const ITEM_CONTAINER_FUR_BAG: &str = "oteryn:item.tibia.i7343";
+pub const ITEM_CONTAINER_GOLDEN_BACKPACK: &str = "oteryn:item.tibia.i2871";
+pub const ITEM_CONTAINER_MOON_BACKPACK: &str = "oteryn:item.tibia.i9604";
+pub const ITEM_CONTAINER_PILLOW_BACKPACK: &str = "oteryn:item.tibia.i24393";
+pub const ITEM_CONTAINER_PIRATE_BACKPACK: &str = "oteryn:item.tibia.i5926";
+pub const ITEM_CONTAINER_PIRATE_BAG: &str = "oteryn:item.tibia.i5927";
+pub const ITEM_CURRENCY_CRYSTAL_COIN: &str = "oteryn:item.tibia.i3043";
+pub const ITEM_CURRENCY_GOLD_COIN: &str = "oteryn:item.tibia.i3031";
+pub const ITEM_CURRENCY_PLATINUM_COIN: &str = "oteryn:item.tibia.i3035";
+pub const ITEM_DECOR_CANDLESTICK: &str = "oteryn:item.tibia.i2917";
+pub const ITEM_DECOR_FLASK_BROWN: &str = "oteryn:item.tibia.i2885";
+pub const ITEM_DECOR_OIL_LAMP_SMALL: &str = "oteryn:item.tibia.i2933";
+pub const ITEM_DECOR_PANPIPES: &str = "oteryn:item.tibia.i2953";
+pub const ITEM_DECOR_PIGGY_BANK: &str = "oteryn:item.tibia.i2995";
+pub const ITEM_DECOR_PILLOW_SMALL_BLUE: &str = "oteryn:item.tibia.i2389";
+pub const ITEM_DECOR_TEDDY_BEAR: &str = "oteryn:item.tibia.i2993";
+pub const ITEM_DECOR_TOME_BLUE: &str = "oteryn:item.tibia.i2850";
+pub const ITEM_DECOR_TOME_PURPLE: &str = "oteryn:item.tibia.i2848";
+pub const ITEM_DECOR_TOME_RED: &str = "oteryn:item.tibia.i2852";
+pub const ITEM_DECOR_VASE: &str = "oteryn:item.tibia.i2876";
+pub const ITEM_EQUIPMENT_CROWN_HELMET: &str = "oteryn:item.tibia.i3385";
+pub const ITEM_EQUIPMENT_CRUSADER_HELMET: &str = "oteryn:item.tibia.i3391";
+pub const ITEM_EQUIPMENT_GLACIER_ROBE: &str = "oteryn:item.tibia.i824";
+pub const ITEM_EQUIPMENT_KNIGHT_ARMOR: &str = "oteryn:item.tibia.i3370";
+pub const ITEM_EQUIPMENT_MAGMA_MONOCLE: &str = "oteryn:item.tibia.i827";
+pub const ITEM_EQUIPMENT_PLATE_LEGS: &str = "oteryn:item.tibia.i3557";
+pub const ITEM_EQUIPMENT_PLATINUM_AMULET: &str = "oteryn:item.tibia.i3055";
+pub const ITEM_EQUIPMENT_STEEL_HELMET: &str = "oteryn:item.tibia.i3351";
+pub const ITEM_EQUIPMENT_STEEL_SHIELD: &str = "oteryn:item.tibia.i3409";
+pub const ITEM_EQUIPMENT_TERRA_LEGS: &str = "oteryn:item.tibia.i812";
+pub const ITEM_EQUIPMENT_WOODEN_SHIELD: &str = "oteryn:item.tibia.i3412";
+pub const ITEM_MATERIAL_GEM_SMALL_ENCHANTED_AMETHYST: &str = "oteryn:item.tibia.i678";
+pub const ITEM_MATERIAL_GEM_SMALL_ENCHANTED_EMERALD: &str = "oteryn:item.tibia.i677";
+pub const ITEM_MATERIAL_GEM_SMALL_ENCHANTED_RUBY: &str = "oteryn:item.tibia.i676";
+pub const ITEM_MATERIAL_GEM_SMALL_ENCHANTED_SAPPHIRE: &str = "oteryn:item.tibia.i675";
+pub const ITEM_MATERIAL_WORM: &str = "oteryn:item.tibia.i3492";
+pub const ITEM_PHYSICAL_CRYSTAL_ICE_FLAWLESS: &str = "oteryn:item.tibia.i942";
+pub const ITEM_PHYSICAL_MARLIN: &str = "oteryn:item.tibia.i901";
+pub const ITEM_PHYSICAL_NAIL: &str = "oteryn:item.tibia.i953";
+pub const ITEM_PHYSICAL_SOIL_GLIMMERING: &str = "oteryn:item.tibia.i941";
+pub const ITEM_PHYSICAL_SOIL_NATURAL: &str = "oteryn:item.tibia.i940";
+pub const ITEM_WEAPON_AXE_FIRE: &str = "oteryn:item.tibia.i3320";
+pub const ITEM_WEAPON_AXE_HAND: &str = "oteryn:item.tibia.i3268";
+pub const ITEM_WEAPON_AXE_KNIGHT: &str = "oteryn:item.tibia.i3318";
+pub const ITEM_WEAPON_BLADE_DAGGER: &str = "oteryn:item.tibia.i3267";
+pub const ITEM_WEAPON_CLUB_BATTLE_HAMMER: &str = "oteryn:item.tibia.i3305";
+pub const ITEM_WEAPON_CLUB_MACE: &str = "oteryn:item.tibia.i3286";
+pub const ITEM_WEAPON_CLUB_SKULL_STAFF: &str = "oteryn:item.tibia.i3324";
+pub const ITEM_WEAPON_RANGED_BOW: &str = "oteryn:item.tibia.i3350";
+pub const ITEM_WEAPON_RANGED_CROSSBOW: &str = "oteryn:item.tibia.i3349";
+pub const ITEM_WEAPON_SWORD_BRIGHT: &str = "oteryn:item.tibia.i3295";
+pub const ITEM_WEAPON_SWORD_FIRE: &str = "oteryn:item.tibia.i3280";
+pub const ITEM_WEAPON_WAND_SNAKEBITE_ROD: &str = "oteryn:item.tibia.i3066";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProtectedCw2B1ImportError {
@@ -922,12 +1000,31 @@ pub struct ProtectedCw2B1NativeItemBatchImport {
     pub batch: ImportBatch,
 }
 
-/// Produce the first bounded multi-class native Item binding batch.
+/// Produce the first bounded multi-class native Item binding batch, keyed by Tibia id (A12).
+pub fn protected_cw2_b1_native_item_batch_import(
+    evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1NativeItemBatchImport, ProtectedCw2B1ImportError> {
+    let legacy = legacy_native_item_batch_import(evidence_bytes)?;
+    let (records, batch) = rekey_item_import(
+        legacy.records,
+        legacy.batch,
+        protected_item_key_alias_table()?,
+        RekeyScope::NoRetiredRows,
+    )?;
+    if records.len() != CW2_B1_NATIVE_ITEM_BATCH_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "native item batch Tibia key closure",
+        ));
+    }
+    Ok(ProtectedCw2B1NativeItemBatchImport { records, batch })
+}
+
+/// The retired-key native batch (the 64 named keys), kept as the history the translation checks.
 ///
 /// Stable keys and minimal stack shapes are Oteryn-authored decisions. Source labels, numeric IDs,
 /// candidate field profiles, B3 occurrence evidence and all unsupported semantics remain
 /// provenance-only. They never generate or modify a native identity or gameplay value.
-pub fn protected_cw2_b1_native_item_batch_import(
+fn legacy_native_item_batch_import(
     evidence_bytes: &[u8],
 ) -> Result<ProtectedCw2B1NativeItemBatchImport, ProtectedCw2B1ImportError> {
     validate_protected_evidence(evidence_bytes)?;
@@ -939,9 +1036,9 @@ pub fn protected_cw2_b1_native_item_batch_import(
     let mut reimport_states = Vec::with_capacity(CW2_B1_NATIVE_ITEM_BATCH_COUNT);
 
     let mut specs = NATIVE_ITEM_BATCH;
-    specs.sort_by_key(|spec| spec.native_key);
+    specs.sort_by_key(|spec| spec.retired_key);
     for spec in specs {
-        if !source_ids.insert(spec.source_item_id) || !native_keys.insert(spec.native_key) {
+        if !source_ids.insert(spec.source_item_id) || !native_keys.insert(spec.retired_key) {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
                 "native item batch uniqueness",
             ));
@@ -949,7 +1046,7 @@ pub fn protected_cw2_b1_native_item_batch_import(
 
         let identity = DefinitionIdentityDocument {
             family: "Item".to_owned(),
-            key: spec.native_key.to_owned(),
+            key: spec.retired_key.to_owned(),
             revision: CW2_B1_NATIVE_ITEM_BATCH_REVISION.to_owned(),
         };
         records.push(ProjectReferenceRecord::Item {
@@ -1018,7 +1115,7 @@ pub fn protected_cw2_b1_native_item_batch_import(
             source_numeric_id: Some(spec.source_item_id),
             candidate_family: ImportCandidateFamily::Item,
             candidate_operation: ImportCandidateOperation::BindNativeItem,
-            candidate_target: format!("{}@{}", spec.native_key, CW2_B1_NATIVE_ITEM_BATCH_REVISION),
+            candidate_target: format!("{}@{}", spec.retired_key, CW2_B1_NATIVE_ITEM_BATCH_REVISION),
             candidate_formula: "NOT_APPLICABLE".to_owned(),
             evidence_class: "OTS_HYPOTHESIS_ONLY".to_owned(),
             closure_disposition: CandidateDisposition::LocalNonProduction,
@@ -1027,7 +1124,7 @@ pub fn protected_cw2_b1_native_item_batch_import(
         });
         let source_id_value = CandidateValue::SourceId(spec.source_item_id);
         reimport_states.push(ReimportFieldState {
-            stable_identity: spec.native_key.to_owned(),
+            stable_identity: spec.retired_key.to_owned(),
             field_path: "source.item-id".to_owned(),
             baseline: Some(source_id_value.clone()),
             upstream: Some(source_id_value.clone()),
@@ -1090,14 +1187,50 @@ fn opaque_item_key(sequence: usize) -> String {
     format!("{CW2_B1_OPAQUE_ITEM_NAMESPACE}.i{sequence:08}")
 }
 
-/// Admit the complete protected B1 Item identity family into one Oteryn-owned registry epoch.
+/// Admit the complete protected B1 Item identity family under the A12 Tibia-id key rule.
+///
+/// The retired epoch-1 allocation is still derived and must reproduce its frozen digest; it is
+/// the history every retired key in the pinned evidence packets refers to. Each record is then
+/// re-keyed through the frozen alias table: an `ALIAS` entry becomes `oteryn:item.tibia.i<id>`
+/// (checked against the row's own source id), and a `RETIRED_WITHOUT_SUCCESSOR` row (D149) is
+/// dropped from authored content. `allocation_digest_sha256` is the digest of the admitted
+/// `(source id, Tibia key)` pairs.
+pub fn protected_cw2_b1_full_item_family_import(
+    evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1FullItemFamilyImport, ProtectedCw2B1ImportError> {
+    let legacy = legacy_full_item_family_import(evidence_bytes)?;
+    if legacy.allocation_digest_sha256 != CW2_B1_RETIRED_EPOCH1_ALLOCATION_SHA256 {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "retired epoch 1 allocation digest",
+        ));
+    }
+    rekey_full_item_family(legacy, protected_item_key_alias_table()?)
+}
+
+/// The retired epoch-1 registry allocation, checked against its frozen digest (A12 history).
+///
+/// Only for reproducing pinned evidence pipelines that are keyed by retired keys (the
+/// classification crosswalk and its successors). It is never a source of canonical keys.
+pub fn protected_cw2_b1_retired_item_family_allocation(
+    evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1FullItemFamilyImport, ProtectedCw2B1ImportError> {
+    let legacy = legacy_full_item_family_import(evidence_bytes)?;
+    if legacy.allocation_digest_sha256 != CW2_B1_RETIRED_EPOCH1_ALLOCATION_SHA256 {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "retired epoch 1 allocation digest",
+        ));
+    }
+    Ok(legacy)
+}
+
+/// The retired epoch-1 registry allocation (history for the translation).
 ///
 /// The exact protected B1 catalogue remains the immutable source denominator. Existing protected
 /// semantic keys from the 64-item predecessor are preserved byte-for-byte. Every other source
 /// identity receives an opaque Oteryn registry key whose allocation is frozen by this exact source
 /// generation. OTS fields remain provenance only; identity-only records carry no materialization,
 /// physical or stack semantics.
-pub fn protected_cw2_b1_full_item_family_import(
+fn legacy_full_item_family_import(
     evidence_bytes: &[u8],
 ) -> Result<ProtectedCw2B1FullItemFamilyImport, ProtectedCw2B1ImportError> {
     validate_protected_evidence(evidence_bytes)?;
@@ -1110,7 +1243,7 @@ pub fn protected_cw2_b1_full_item_family_import(
         .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
             "identity record array",
         ))?;
-    if rows.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+    if rows.len() != CW2_B1_SOURCE_CATALOG_ROW_COUNT {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
             "full item family count",
         ));
@@ -1127,13 +1260,13 @@ pub fn protected_cw2_b1_full_item_family_import(
         ));
     }
 
-    let mut allocations = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    let mut allocations = Vec::with_capacity(CW2_B1_SOURCE_CATALOG_ROW_COUNT);
     let mut source_ids = BTreeSet::new();
     let mut native_keys = BTreeSet::new();
     let mut previous_source_id = None;
     let mut opaque_sequence = 0_usize;
     let mut preserved_semantic_bindings = 0_usize;
-    let mut allocation_digest_input = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT * 48);
+    let mut allocation_digest_input = Vec::with_capacity(CW2_B1_SOURCE_CATALOG_ROW_COUNT * 48);
 
     for row in rows {
         let source_item_id = row
@@ -1177,7 +1310,7 @@ pub fn protected_cw2_b1_full_item_family_import(
                 }
                 preserved_semantic_bindings += 1;
                 (
-                    spec.native_key.to_owned(),
+                    spec.retired_key.to_owned(),
                     spec.source_label.to_owned(),
                     true,
                     if spec.stack_capable {
@@ -1222,8 +1355,8 @@ pub fn protected_cw2_b1_full_item_family_import(
 
     if opaque_sequence != CW2_B1_OPAQUE_ITEM_COUNT
         || preserved_semantic_bindings != CW2_B1_NATIVE_ITEM_BATCH_COUNT
-        || source_ids.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT
-        || native_keys.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT
+        || source_ids.len() != CW2_B1_SOURCE_CATALOG_ROW_COUNT
+        || native_keys.len() != CW2_B1_SOURCE_CATALOG_ROW_COUNT
     {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
             "full item registry closure",
@@ -1233,9 +1366,9 @@ pub fn protected_cw2_b1_full_item_family_import(
     let allocation_digest_sha256 = world_project_sha256(&allocation_digest_input);
     allocations.sort_by(|left, right| left.native_key.cmp(&right.native_key));
 
-    let mut records = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
-    let mut candidates = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
-    let mut reimport_states = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    let mut records = Vec::with_capacity(CW2_B1_SOURCE_CATALOG_ROW_COUNT);
+    let mut candidates = Vec::with_capacity(CW2_B1_SOURCE_CATALOG_ROW_COUNT);
+    let mut reimport_states = Vec::with_capacity(CW2_B1_SOURCE_CATALOG_ROW_COUNT);
     for allocation in allocations {
         let identity = DefinitionIdentityDocument {
             family: "Item".to_owned(),
@@ -1416,12 +1549,13 @@ pub fn protected_cw2_b1_donor_identity_epoch_2_import(
     census_bytes: &[u8],
     crosswalk_bytes: &[u8],
 ) -> Result<ProtectedCw2B1DonorIdentityEpoch2Import, ProtectedCw2B1ImportError> {
-    admit_donor_identity_epoch_2(
+    let legacy = admit_donor_identity_epoch_2(
         b1_evidence_bytes,
         census_bytes,
         crosswalk_bytes,
         &DONOR_EPOCH2_FROZEN_PINS,
-    )
+    )?;
+    rekey_donor_identity_epoch_2(legacy, protected_item_key_alias_table()?)
 }
 
 /// The digest-bound inputs of one epoch-2 admission. The public function always passes the
@@ -1466,7 +1600,7 @@ fn admit_donor_identity_epoch_2(
     )?;
 
     // The frozen denominator: its source ids and every key any earlier epoch has bound.
-    let epoch1 = protected_cw2_b1_full_item_family_import(b1_evidence_bytes)?;
+    let epoch1 = legacy_full_item_family_import(b1_evidence_bytes)?;
     let mut epoch1_source_ids = BTreeSet::new();
     for candidate in &epoch1.batch.candidates {
         let Some(source_item_id) = candidate.source_numeric_id else {
@@ -1483,8 +1617,8 @@ fn admit_donor_identity_epoch_2(
     // R7-P04 re-keyed the gold coin; its retired number stays retired and its new key is bound.
     let mut bound_keys = earlier_keys.clone();
     bound_keys.remove(R7_P04_GOLD_COIN_OLD_KEY);
-    bound_keys.insert(R7_P04_GOLD_COIN_KEY.to_owned());
-    if earlier_keys.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT
+    bound_keys.insert(R7_P04_GOLD_COIN_NAMED_KEY.to_owned());
+    if earlier_keys.len() != CW2_B1_SOURCE_CATALOG_ROW_COUNT
         || !earlier_keys.contains(&opaque_item_key(CW2_B1_OPAQUE_ITEM_COUNT))
         || earlier_keys.contains(&opaque_item_key(CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE))
     {
@@ -1732,7 +1866,10 @@ pub const R7_P04_GOLD_COIN_EVIDENCE_SHA256: &str =
 pub const R7_P04_GOLD_COIN_SOURCE_ITEM_ID: u64 = 3_031;
 pub const R7_P04_GOLD_COIN_OPAQUE_SEQUENCE: usize = 2_921;
 pub const R7_P04_GOLD_COIN_OLD_KEY: &str = "oteryn:item.registry.i00002921";
-pub const R7_P04_GOLD_COIN_KEY: &str = "oteryn:item.currency.gold_coin";
+/// The retired named key R7-P04 gave Crystal 3031 (A12 D147: now history only).
+pub const R7_P04_GOLD_COIN_NAMED_KEY: &str = "oteryn:item.currency.gold_coin";
+/// The gold coin's canonical key (A12 D146): its Tibia id.
+pub const R7_P04_GOLD_COIN_KEY: &str = ITEM_CURRENCY_GOLD_COIN;
 pub const R7_P04_UNRELATED_REGISTRY_KEY: &str = "oteryn:item.registry.i00003031";
 pub const R7_P04_UNRELATED_SOURCE_ITEM_ID: u64 = 3_147;
 
@@ -1759,6 +1896,10 @@ pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_SHA256: &str =
     "69d5c1ff24b979658fc24a310d6715c131cfca6abe759ff1fa29479da0ecffe2";
 pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT: usize = 14_927;
 pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT: usize = 12_301;
+/// The packet's atoms and items left after A12 D149 removed their rows from authored content
+/// (204 atoms on 201 items name a D149 key).
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT: usize = 14_723;
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_ITEM_COUNT: usize = 12_100;
 const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SCHEMA: &str =
     "OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING/v1";
 const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PROFILE: &str =
@@ -2338,7 +2479,7 @@ fn validate_item_semantic_promotion_lowering_v1_packet(
 ///
 /// The lowering candidate's own population census already resolves source item
 /// `3031` to its current, post-R7-P04 native key
-/// (`R7_P04_GOLD_COIN_KEY`/`oteryn:item.currency.gold_coin`), so this function applies
+/// (`R7_P04_GOLD_COIN_NAMED_KEY`/`oteryn:item.currency.gold_coin`), so this function applies
 /// that same pinned identity rename to its fresh full-family import before matching
 /// rows. `protected_r7_p04_gold_coin_item_family_import` delegates directly to this
 /// function (after independently validating its own `gold_coin_evidence_bytes`
@@ -2346,6 +2487,22 @@ fn validate_item_semantic_promotion_lowering_v1_packet(
 pub fn protected_cw2_b1_item_semantic_promotion_lowering_v1_import(
     evidence_bytes: &[u8],
 ) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
+    let (legacy, atoms_by_key) = legacy_item_semantic_promotion_lowering_v1_import(evidence_bytes)?;
+    rekey_promoted_item_family(legacy, &atoms_by_key, protected_item_key_alias_table()?)
+}
+
+/// The retired-key lowering pass. It matches the pinned packet's retired `native_key` rows
+/// against the retired epoch-1 allocation exactly as before; the public function translates the
+/// result to Tibia-id keys (A12) and drops the D149 rows.
+fn legacy_item_semantic_promotion_lowering_v1_import(
+    evidence_bytes: &[u8],
+) -> Result<
+    (
+        ProtectedCw2B1PromotedItemFamilyImport,
+        BTreeMap<String, usize>,
+    ),
+    ProtectedCw2B1ImportError,
+> {
     validate_item_semantic_promotion_lowering_v1_bytes()?;
     let packet: ItemSemanticPromotionLoweringV1Packet =
         serde_json::from_slice(ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET).map_err(|_| {
@@ -2356,7 +2513,7 @@ pub fn protected_cw2_b1_item_semantic_promotion_lowering_v1_import(
     validate_item_semantic_promotion_lowering_v1_packet(&packet)?;
     validate_r7_p04_gold_coin_evidence(R7_P04_GOLD_COIN_EVIDENCE_PACKET)?;
 
-    let mut family = protected_cw2_b1_full_item_family_import(evidence_bytes)?;
+    let mut family = legacy_full_item_family_import(evidence_bytes)?;
     apply_r7_p04_gold_coin_identity_rename(&mut family)?;
 
     let mut source_to_native = BTreeMap::<u64, String>::new();
@@ -2394,7 +2551,7 @@ pub fn protected_cw2_b1_item_semantic_promotion_lowering_v1_import(
             ));
         }
     }
-    if source_to_native.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+    if source_to_native.len() != CW2_B1_SOURCE_CATALOG_ROW_COUNT {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
             "item semantic promotion lowering v1 source identity count",
         ));
@@ -2413,7 +2570,7 @@ pub fn protected_cw2_b1_item_semantic_promotion_lowering_v1_import(
             ));
         }
     }
-    if record_index.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+    if record_index.len() != CW2_B1_SOURCE_CATALOG_ROW_COUNT {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
             "item semantic promotion lowering v1 record identity count",
         ));
@@ -2421,6 +2578,7 @@ pub fn protected_cw2_b1_item_semantic_promotion_lowering_v1_import(
 
     let mut seen_atoms = BTreeSet::<(String, String)>::new();
     let mut seen_items = BTreeSet::<String>::new();
+    let mut atoms_by_key = BTreeMap::<String, usize>::new();
     let mut per_field = BTreeMap::<String, usize>::new();
     let mut previous: Option<(&str, &str, u64)> = None;
 
@@ -2454,6 +2612,7 @@ pub fn protected_cw2_b1_item_semantic_promotion_lowering_v1_import(
             ));
         }
         seen_items.insert(row.native_key.clone());
+        *atoms_by_key.entry(row.native_key.clone()).or_default() += 1;
         *per_field.entry(row.field_path.clone()).or_default() += 1;
 
         let value = decode_item_semantic_promotion_value(row)?;
@@ -2479,11 +2638,14 @@ pub fn protected_cw2_b1_item_semantic_promotion_lowering_v1_import(
         ));
     }
 
-    Ok(ProtectedCw2B1PromotedItemFamilyImport {
-        family,
-        promoted_fields: seen_atoms.len(),
-        promoted_items: seen_items.len(),
-    })
+    Ok((
+        ProtectedCw2B1PromotedItemFamilyImport {
+            family,
+            promoted_fields: seen_atoms.len(),
+            promoted_items: seen_items.len(),
+        },
+        atoms_by_key,
+    ))
 }
 
 fn validate_r7_p04_gold_coin_evidence(
@@ -2534,7 +2696,7 @@ fn validate_r7_p04_gold_coin_evidence(
         || source["protected_catalog_index"] != 2_948
         || source["opaque_sequence"] != R7_P04_GOLD_COIN_OPAQUE_SEQUENCE
         || source["current_native_key"] != R7_P04_GOLD_COIN_OLD_KEY
-        || source["target_native_key"] != R7_P04_GOLD_COIN_KEY
+        || source["target_native_key"] != R7_P04_GOLD_COIN_NAMED_KEY
         || source["target_revision"] != CW2_B1_FULL_ITEM_REVISION
         || source["source_node_sha256"]
             != "9528fadc4f8fdf66e7937d15e3843b3f39b35ae47ae8a737d93ca76efe652124"
@@ -2549,7 +2711,7 @@ fn validate_r7_p04_gold_coin_evidence(
         || fields["runtime_activation"] != "NOT_AUTHORIZED"
         || fields["mint_transfer"] != "NOT_IMPLEMENTED"
         || fields["global_parity"] != "UNKNOWN"
-        || invariants["full_item_family_count"] != CW2_B1_FULL_ITEM_FAMILY_COUNT
+        || invariants["full_item_family_count"] != CW2_B1_SOURCE_CATALOG_ROW_COUNT
         || invariants["replace_exactly_one_opaque_identity"] != true
         || invariants["preserve_unrelated_registry_key_i00003031"] != true
         || invariants["all_typed_semantics_remain_unknown"] != true
@@ -2591,7 +2753,7 @@ fn apply_r7_p04_gold_coin_identity_rename(
     family: &mut ProtectedCw2B1FullItemFamilyImport,
 ) -> Result<(), ProtectedCw2B1ImportError> {
     if family.records.iter().any(|record| {
-        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_KEY)
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_NAMED_KEY)
     }) {
         return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
             "R7 P04 Gold Coin target identity already exists",
@@ -2633,7 +2795,7 @@ fn apply_r7_p04_gold_coin_identity_rename(
             "R7 P04 Gold Coin opaque record baseline",
         ));
     }
-    identity.key = R7_P04_GOLD_COIN_KEY.to_owned();
+    identity.key = R7_P04_GOLD_COIN_NAMED_KEY.to_owned();
     *materializable = true;
     *stack_class = ItemStackDocument::StackCapable;
 
@@ -2676,8 +2838,9 @@ fn apply_r7_p04_gold_coin_identity_rename(
             "R7 P04 Gold Coin native binding baseline",
         ));
     }
-    binding.identity.key = R7_P04_GOLD_COIN_KEY.to_owned();
-    candidate.candidate_target = format!("{R7_P04_GOLD_COIN_KEY}@{CW2_B1_FULL_ITEM_REVISION}");
+    binding.identity.key = R7_P04_GOLD_COIN_NAMED_KEY.to_owned();
+    candidate.candidate_target =
+        format!("{R7_P04_GOLD_COIN_NAMED_KEY}@{CW2_B1_FULL_ITEM_REVISION}");
     candidate.disposition_reason =
         "R7_P04_REFERENCE_CONTENT_PROMOTION_RUNTIME_UNQUALIFIED".to_owned();
     let authorship = candidate
@@ -2719,7 +2882,7 @@ fn apply_r7_p04_gold_coin_identity_rename(
             "R7 P04 Gold Coin reimport baseline",
         ));
     }
-    reimport.stable_identity = R7_P04_GOLD_COIN_KEY.to_owned();
+    reimport.stable_identity = R7_P04_GOLD_COIN_NAMED_KEY.to_owned();
 
     let unrelated = family
         .batch
@@ -2745,7 +2908,7 @@ fn apply_r7_p04_gold_coin_identity_rename(
         ));
     }
 
-    let mut allocations = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    let mut allocations = Vec::with_capacity(CW2_B1_SOURCE_CATALOG_ROW_COUNT);
     for candidate in &family.batch.candidates {
         let source_item_id =
             candidate
@@ -2766,7 +2929,7 @@ fn apply_r7_p04_gold_coin_identity_rename(
         allocations.push((source_item_id, binding.identity.key.as_str()));
     }
     allocations.sort_unstable_by_key(|(source_item_id, _)| *source_item_id);
-    let mut digest_input = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT * 48);
+    let mut digest_input = Vec::with_capacity(CW2_B1_SOURCE_CATALOG_ROW_COUNT * 48);
     for (source_item_id, native_key) in allocations {
         digest_input.extend_from_slice(source_item_id.to_string().as_bytes());
         digest_input.push(0);
@@ -2859,6 +3022,430 @@ fn reference_item_definition_gap(item_class: &str) -> &'static str {
     }
 }
 
+// ---------------------------------------------------------------------------------------------
+// A12 Tibia-id Item keys (decision `A12-ITEM-IDENTITY-TIBIA-ID-V1`, owner decisions D146-D149).
+//
+// Every retired key (epoch 1, epoch 2 and the named keys) translates through the frozen,
+// append-only alias table written by ITEM-ID-1a. The retired allocations above stay the
+// history the pinned evidence packets refer to; nothing re-derives a key from its number.
+// ---------------------------------------------------------------------------------------------
+
+pub const TIBIA_ITEM_KEY_PREFIX: &str = "oteryn:item.tibia.i";
+pub const TIBIA_ITEM_KEY_RULE: &str = "OTERYN_TIBIA_ID_KEY_RULE_V1";
+pub const ITEM_KEY_ALIAS_TABLE: &[u8] = include_bytes!("../../../../content/items/aliases.json");
+pub const ITEM_KEY_ALIAS_TABLE_BYTES: usize = 15_667_171;
+pub const ITEM_KEY_ALIAS_TABLE_SHA256: &str =
+    "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2";
+pub const ITEM_KEY_ALIAS_TABLE_RETIRED_KEYS: usize = 38_562;
+/// The frozen digest of the retired epoch-1 allocation (`id \0 key \n`, ascending source id).
+pub const CW2_B1_RETIRED_EPOCH1_ALLOCATION_SHA256: &str =
+    "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
+
+/// The canonical Item key of a CipSoft Tibia item id: decimal, no padding (A12 §4.1).
+pub fn tibia_item_key(tibia_id: u64) -> String {
+    format!("{TIBIA_ITEM_KEY_PREFIX}{tibia_id}")
+}
+
+/// The current entry of one retired Item key.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RetiredItemKey {
+    /// The key's own source row id is an admitted CipSoft id: its successor is that Tibia key.
+    Alias { target: String, source_item_id: u64 },
+    /// D149: the id is in no admitted CipSoft file; the key keeps only a tombstone.
+    RetiredWithoutSuccessor,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ItemKeyAliasTable {
+    entries: BTreeMap<String, RetiredItemKey>,
+}
+
+impl ItemKeyAliasTable {
+    pub fn resolve(&self, retired_key: &str) -> Option<&RetiredItemKey> {
+        self.entries.get(retired_key)
+    }
+
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    /// The successor of a retired key: `Some(tibia key)`, or `None` for a D149 key.
+    pub fn successor(&self, retired_key: &str) -> Result<Option<&str>, ProtectedCw2B1ImportError> {
+        match self.entries.get(retired_key) {
+            Some(RetiredItemKey::Alias { target, .. }) => Ok(Some(target.as_str())),
+            Some(RetiredItemKey::RetiredWithoutSuccessor) => Ok(None),
+            None => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "retired Item key missing from the alias table",
+            )),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct AliasTableDocument {
+    schema: String,
+    decision: String,
+    key_rule: String,
+    entries: Vec<AliasTableEntryDocument>,
+}
+
+#[derive(Deserialize)]
+struct AliasTableEntryDocument {
+    key: String,
+    state: String,
+    #[serde(default)]
+    target: Option<String>,
+    evidence: AliasTableEvidenceDocument,
+}
+
+#[derive(Deserialize)]
+struct AliasTableEvidenceDocument {
+    source_item_id: u64,
+}
+
+/// Decode and check one alias table payload. The committed table is pinned by exact bytes.
+pub fn item_key_alias_table(bytes: &[u8]) -> Result<ItemKeyAliasTable, ProtectedCw2B1ImportError> {
+    if bytes.len() != ITEM_KEY_ALIAS_TABLE_BYTES
+        || world_project_sha256(bytes) != ITEM_KEY_ALIAS_TABLE_SHA256
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "Item key alias table bytes",
+        ));
+    }
+    let document: AliasTableDocument = serde_json::from_slice(bytes).map_err(|_| {
+        ProtectedCw2B1ImportError::EvidenceMismatch("Item key alias table JSON decoding")
+    })?;
+    if document.schema != "OTERYN_ITEM_KEY_ALIAS_TABLE/v1"
+        || document.decision != "A12-ITEM-IDENTITY-TIBIA-ID-V1"
+        || document.key_rule != TIBIA_ITEM_KEY_RULE
+        || document.entries.len() != ITEM_KEY_ALIAS_TABLE_RETIRED_KEYS
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "Item key alias table header",
+        ));
+    }
+    let mut entries = BTreeMap::new();
+    let mut retired_without_successor = 0_usize;
+    for entry in document.entries {
+        if entry.key.starts_with(TIBIA_ITEM_KEY_PREFIX) {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "Item key alias table retires a canonical key",
+            ));
+        }
+        let value = match (entry.state.as_str(), entry.target) {
+            ("ALIAS", Some(target)) => {
+                if entry.evidence.source_item_id == 0
+                    || target != tibia_item_key(entry.evidence.source_item_id)
+                {
+                    return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                        "Item key alias target is not the key's own Tibia id",
+                    ));
+                }
+                RetiredItemKey::Alias {
+                    target,
+                    source_item_id: entry.evidence.source_item_id,
+                }
+            }
+            ("RETIRED_WITHOUT_SUCCESSOR", None) => {
+                retired_without_successor += 1;
+                RetiredItemKey::RetiredWithoutSuccessor
+            }
+            _ => {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "Item key alias table entry state",
+                ));
+            }
+        };
+        if entries.insert(entry.key, value).is_some() {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "Item key alias table duplicate retired key",
+            ));
+        }
+    }
+    if retired_without_successor != CW2_B1_D149_RETIRED_ROW_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "Item key alias table D149 count",
+        ));
+    }
+    Ok(ItemKeyAliasTable { entries })
+}
+
+/// The committed alias table, decoded once per process.
+pub fn protected_item_key_alias_table()
+-> Result<&'static ItemKeyAliasTable, ProtectedCw2B1ImportError> {
+    static TABLE: OnceLock<Result<ItemKeyAliasTable, ProtectedCw2B1ImportError>> = OnceLock::new();
+    TABLE
+        .get_or_init(|| item_key_alias_table(ITEM_KEY_ALIAS_TABLE))
+        .as_ref()
+        .map_err(Clone::clone)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RekeyScope {
+    /// Every retired key must have a successor (the named batch, epoch 2).
+    NoRetiredRows,
+    /// D149 rows leave authored content (the full family).
+    DropRetiredRows,
+}
+
+fn native_binding_mut(candidate: &mut ImportCandidate) -> Option<&mut NativeItemBindingDocument> {
+    candidate
+        .normalized_fields
+        .iter_mut()
+        .find_map(|field| match &mut field.value {
+            CandidateValue::NativeItemBinding(binding)
+                if field.field_path == "binding.native-item" =>
+            {
+                Some(binding)
+            }
+            _ => None,
+        })
+}
+
+/// Re-key one import from retired keys to Tibia-id keys through the alias table.
+///
+/// Returns the re-keyed records and batch and the retired keys dropped under D149. Each
+/// candidate's source id must equal its alias entry's own source id (§4.2 continuity), and
+/// every candidate keeps its retired key as `evidence.retired-key`.
+fn rekey_item_import(
+    records: Vec<ProjectReferenceRecord>,
+    mut batch: ImportBatch,
+    table: &ItemKeyAliasTable,
+    scope: RekeyScope,
+) -> Result<(Vec<ProjectReferenceRecord>, ImportBatch), ProtectedCw2B1ImportError> {
+    let successor = |retired: &str| -> Result<Option<String>, ProtectedCw2B1ImportError> {
+        match (table.successor(retired)?, scope) {
+            (Some(target), _) => Ok(Some(target.to_owned())),
+            (None, RekeyScope::DropRetiredRows) => Ok(None),
+            (None, RekeyScope::NoRetiredRows) => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "retired Item key without successor in a successor-only import",
+            )),
+        }
+    };
+
+    let mut rekeyed_records = Vec::with_capacity(records.len());
+    let mut keys = BTreeSet::new();
+    for mut record in records {
+        let ProjectReferenceRecord::Item { identity, .. } = &mut record else {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "Tibia key translation non-Item record",
+            ));
+        };
+        let Some(target) = successor(&identity.key)? else {
+            continue;
+        };
+        if !keys.insert(target.clone()) {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "Tibia key translation collision",
+            ));
+        }
+        identity.key = target;
+        rekeyed_records.push(record);
+    }
+    rekeyed_records.sort_by(|left, right| item_record_key(left).cmp(item_record_key(right)));
+
+    let mut candidates = Vec::with_capacity(batch.candidates.len());
+    for mut candidate in std::mem::take(&mut batch.candidates) {
+        let source_item_id = candidate.source_numeric_id;
+        let binding = native_binding_mut(&mut candidate).ok_or(
+            ProtectedCw2B1ImportError::EvidenceMismatch("Tibia key translation native binding"),
+        )?;
+        let retired = binding.identity.key.clone();
+        let Some(target) = successor(&retired)? else {
+            continue;
+        };
+        match table.resolve(&retired) {
+            Some(RetiredItemKey::Alias {
+                source_item_id: alias_source,
+                ..
+            }) if Some(*alias_source) == source_item_id => {}
+            _ => {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "Tibia key translation source continuity",
+                ));
+            }
+        }
+        binding.identity.key = target.clone();
+        let revision = binding.identity.revision.clone();
+        if candidate.candidate_target != format!("{retired}@{revision}") {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "Tibia key translation candidate target",
+            ));
+        }
+        candidate.candidate_target = format!("{target}@{revision}");
+        let authorship = candidate
+            .normalized_fields
+            .iter_mut()
+            .find(|field| field.field_path == "source.native-key-authorship");
+        let retired_authorship = match authorship {
+            Some(field) => {
+                let previous = std::mem::replace(
+                    &mut field.value,
+                    CandidateValue::Text(TIBIA_ITEM_KEY_RULE.to_owned()),
+                );
+                Some(previous)
+            }
+            None => {
+                candidate.normalized_fields.push(text_field(
+                    "source.native-key-authorship",
+                    TIBIA_ITEM_KEY_RULE,
+                ));
+                None
+            }
+        };
+        if let Some(previous) = retired_authorship {
+            candidate
+                .normalized_fields
+                .push(field("evidence.retired-key-authorship", previous));
+        }
+        candidate
+            .normalized_fields
+            .push(text_field("evidence.retired-key", &retired));
+        candidate
+            .normalized_fields
+            .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+        candidates.push(candidate);
+    }
+    candidates.sort_by(|left, right| left.source_candidate_id.cmp(&right.source_candidate_id));
+    batch.candidates = candidates;
+
+    let mut reimport_states = Vec::with_capacity(batch.reimport_states.len());
+    for mut state in std::mem::take(&mut batch.reimport_states) {
+        let Some(target) = successor(&state.stable_identity)? else {
+            continue;
+        };
+        state.stable_identity = target;
+        reimport_states.push(state);
+    }
+    reimport_states.sort_by(|left, right| {
+        left.stable_identity
+            .cmp(&right.stable_identity)
+            .then_with(|| left.field_path.cmp(&right.field_path))
+    });
+    batch.reimport_states = reimport_states;
+
+    if batch.candidates.len() != rekeyed_records.len() {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "Tibia key translation candidate closure",
+        ));
+    }
+    Ok((rekeyed_records, batch))
+}
+
+/// `(source id, Tibia key)` allocation digest, ascending source id (the epoch digests' form).
+fn tibia_allocation_digest(batch: &ImportBatch) -> Result<String, ProtectedCw2B1ImportError> {
+    let mut allocations = Vec::with_capacity(batch.candidates.len());
+    for candidate in &batch.candidates {
+        let source_item_id =
+            candidate
+                .source_numeric_id
+                .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "Tibia allocation source identity",
+                ))?;
+        let key = candidate
+            .candidate_target
+            .split_once('@')
+            .map(|(key, _)| key)
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "Tibia allocation candidate target",
+            ))?;
+        allocations.push((source_item_id, key));
+    }
+    allocations.sort_unstable_by_key(|(source_item_id, _)| *source_item_id);
+    let mut digest_input = Vec::with_capacity(allocations.len() * 32);
+    for (source_item_id, key) in allocations {
+        digest_input.extend_from_slice(source_item_id.to_string().as_bytes());
+        digest_input.push(0);
+        digest_input.extend_from_slice(key.as_bytes());
+        digest_input.push(b'\n');
+    }
+    Ok(world_project_sha256(&digest_input))
+}
+
+fn rekey_full_item_family(
+    legacy: ProtectedCw2B1FullItemFamilyImport,
+    table: &ItemKeyAliasTable,
+) -> Result<ProtectedCw2B1FullItemFamilyImport, ProtectedCw2B1ImportError> {
+    let (records, batch) = rekey_item_import(
+        legacy.records,
+        legacy.batch,
+        table,
+        RekeyScope::DropRetiredRows,
+    )?;
+    if records.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "Tibia key full family closure",
+        ));
+    }
+    let allocation_digest_sha256 = tibia_allocation_digest(&batch)?;
+    Ok(ProtectedCw2B1FullItemFamilyImport {
+        records,
+        batch,
+        allocation_digest_sha256,
+    })
+}
+
+fn rekey_promoted_item_family(
+    legacy: ProtectedCw2B1PromotedItemFamilyImport,
+    atoms_by_key: &BTreeMap<String, usize>,
+    table: &ItemKeyAliasTable,
+) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
+    let mut promoted_fields = 0_usize;
+    let mut promoted_items = 0_usize;
+    for (retired, atoms) in atoms_by_key {
+        if table.successor(retired)?.is_some() {
+            promoted_fields += atoms;
+            promoted_items += 1;
+        }
+    }
+    if promoted_fields != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT
+        || promoted_items != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_ITEM_COUNT
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 admitted partition",
+        ));
+    }
+    Ok(ProtectedCw2B1PromotedItemFamilyImport {
+        family: rekey_full_item_family(legacy.family, table)?,
+        promoted_fields,
+        promoted_items,
+    })
+}
+
+fn rekey_donor_identity_epoch_2(
+    legacy: ProtectedCw2B1DonorIdentityEpoch2Import,
+    table: &ItemKeyAliasTable,
+) -> Result<ProtectedCw2B1DonorIdentityEpoch2Import, ProtectedCw2B1ImportError> {
+    let (records, batch) = rekey_item_import(
+        legacy.records,
+        legacy.batch,
+        table,
+        RekeyScope::NoRetiredRows,
+    )?;
+    let mut alias_bindings = Vec::with_capacity(legacy.alias_bindings.len());
+    for (source_item_id, retired) in legacy.alias_bindings {
+        let target =
+            table
+                .successor(&retired)?
+                .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "donor alias binding targets a D149 key",
+                ))?;
+        alias_bindings.push((source_item_id, target.to_owned()));
+    }
+    let allocation_digest_sha256 = tibia_allocation_digest(&batch)?;
+    Ok(ProtectedCw2B1DonorIdentityEpoch2Import {
+        records,
+        batch,
+        allocation_digest_sha256,
+        alias_bindings,
+        unbound_source_item_ids: legacy.unbound_source_item_ids,
+    })
+}
+
 fn text_field(path: &str, value: &str) -> NamedCandidateField {
     field(path, CandidateValue::Text(value.to_owned()))
 }
@@ -2899,6 +3486,17 @@ mod donor_identity_epoch_2_tests {
             .expect("donor identity epoch 2")
     }
 
+    /// The retired epoch-2 allocation (history the Tibia keys translate from).
+    fn legacy_epoch2() -> ProtectedCw2B1DonorIdentityEpoch2Import {
+        admit_donor_identity_epoch_2(
+            B1_EVIDENCE,
+            DONOR_CENSUS,
+            ALIAS_CROSSWALK,
+            &DONOR_EPOCH2_FROZEN_PINS,
+        )
+        .expect("retired donor identity epoch 2")
+    }
+
     fn record_key(record: &ProjectReferenceRecord) -> &str {
         item_record_key(record)
     }
@@ -2934,8 +3532,8 @@ mod donor_identity_epoch_2_tests {
     }
 
     #[test]
-    fn epoch_2_mints_exactly_the_pinned_range_in_ascending_source_id_order() {
-        let imported = epoch2();
+    fn retired_epoch_2_allocation_is_the_pinned_range_in_ascending_source_id_order() {
+        let imported = legacy_epoch2();
         assert_eq!(imported.records.len(), CW2_B1_DONOR_EPOCH2_MINTED_COUNT);
         assert_eq!(imported.records.len(), 404);
         assert_eq!(CW2_B1_DONOR_EPOCH2_FIRST_SEQUENCE, 38_094);
@@ -2999,23 +3597,21 @@ mod donor_identity_epoch_2_tests {
 
     #[test]
     fn epoch_2_is_deterministic_and_leaves_the_frozen_epoch_1_import_untouched() {
-        let first = epoch2();
-        let second = epoch2();
+        assert_eq!(epoch2(), epoch2());
+        let first = legacy_epoch2();
+        let second = legacy_epoch2();
         assert_eq!(first, second);
 
-        let frozen =
-            protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("frozen full item family");
+        let frozen = legacy_full_item_family_import(B1_EVIDENCE).expect("frozen full item family");
         assert_eq!(
             frozen.allocation_digest_sha256,
             FROZEN_FULL_FAMILY_ALLOCATION_DIGEST
         );
-        assert_eq!(frozen.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+        assert_eq!(frozen.records.len(), CW2_B1_SOURCE_CATALOG_ROW_COUNT);
         assert_eq!(CW2_B1_OPAQUE_ITEM_COUNT, 38_093);
         assert_eq!(
             frozen.allocation_digest_sha256,
-            protected_cw2_b1_full_item_family_import(B1_EVIDENCE)
-                .expect("frozen full item family")
-                .allocation_digest_sha256
+            CW2_B1_RETIRED_EPOCH1_ALLOCATION_SHA256
         );
 
         // No key and no source id is shared with epoch 1, and retired 2,921 stays retired.
@@ -3042,7 +3638,11 @@ mod donor_identity_epoch_2_tests {
                 .iter()
                 .any(|(_, key)| key == R7_P04_GOLD_COIN_OLD_KEY)
         );
-        assert!(!minted.iter().any(|(_, key)| key == R7_P04_GOLD_COIN_KEY));
+        assert!(
+            !minted
+                .iter()
+                .any(|(_, key)| key == R7_P04_GOLD_COIN_NAMED_KEY)
+        );
         assert_eq!(
             minted
                 .iter()
@@ -3054,33 +3654,26 @@ mod donor_identity_epoch_2_tests {
     }
 
     #[test]
-    fn committed_bindings_carry_epoch_1_unchanged_and_exactly_the_epoch_2_allocation() {
+    fn committed_bindings_target_exactly_the_tibia_keys_of_both_epochs() {
         let imported = epoch2();
-        let frozen =
-            protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("frozen full item family");
+        let family =
+            protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("full item family");
         let bindings = bindings_file();
         assert_eq!(
             bindings.len(),
             CW2_B1_FULL_ITEM_FAMILY_COUNT + CW2_B1_DONOR_EPOCH2_MINTED_COUNT
         );
 
-        // Epoch 1: the 38,157 base-revision rows are the frozen allocation, with only the
-        // R7-P04 gold coin at its promoted key.
-        let mut expected_epoch1 = frozen
+        // Epoch 1: one row per admitted base-revision source id at its Tibia key; the D149
+        // rows are gone.
+        let mut expected_epoch1 = family
             .batch
             .candidates
             .iter()
             .map(|candidate| {
-                let key = binding_key(candidate);
-                let key = if key == R7_P04_GOLD_COIN_OLD_KEY {
-                    R7_P04_GOLD_COIN_KEY
-                } else {
-                    key
-                };
-                (
-                    candidate.source_numeric_id.expect("source id").to_string(),
-                    key.to_owned(),
-                )
+                let source_id = candidate.source_numeric_id.expect("source id");
+                assert_eq!(binding_key(candidate), tibia_item_key(source_id));
+                (source_id.to_string(), binding_key(candidate).to_owned())
             })
             .collect::<BTreeMap<_, _>>();
         let epoch1_rows = bindings
@@ -3095,13 +3688,12 @@ mod donor_identity_epoch_2_tests {
             let external_id = row["external_id"].as_str().expect("external id");
             let key = expected_epoch1
                 .remove(external_id)
-                .expect("epoch-1 source id in the frozen allocation");
+                .expect("epoch-1 source id in the admitted family");
             assert_eq!(row["target"]["key"], key.as_str());
         }
         assert!(expected_epoch1.is_empty());
 
-        // Epoch 2: one EXACT row per minted id at the donor commit, in ascending source id
-        // order after every epoch-1 row, at exactly the keys the function mints.
+        // Epoch 2: one EXACT row per minted id at the donor commit, after every epoch-1 row.
         let epoch2_rows = &bindings[CW2_B1_FULL_ITEM_FAMILY_COUNT..];
         assert!(
             bindings[..CW2_B1_FULL_ITEM_FAMILY_COUNT]
@@ -3118,16 +3710,54 @@ mod donor_identity_epoch_2_tests {
             assert_eq!(row["external_id"], source_id.to_string().as_str());
             assert_eq!(row["target"]["family"], "Item");
             assert_eq!(row["target"]["key"], key.as_str());
+            assert_eq!(key, &tibia_item_key(*source_id));
             assert_eq!(row["target"]["revision"], CW2_B1_DONOR_EPOCH2_REVISION);
         }
 
-        // No collision anywhere in the file: every key and every (revision, id) is unique.
+        // No collision and no retired key anywhere in the file.
         let keys = bindings
             .iter()
             .map(|row| row["target"]["key"].as_str().expect("key"))
             .collect::<BTreeSet<_>>();
         assert_eq!(keys.len(), bindings.len());
-        assert!(!keys.contains(R7_P04_GOLD_COIN_OLD_KEY));
+        assert!(
+            keys.iter()
+                .all(|key| key.starts_with(TIBIA_ITEM_KEY_PREFIX))
+        );
+    }
+
+    #[test]
+    fn epoch_2_translates_every_retired_key_to_its_own_tibia_id() {
+        let legacy = legacy_epoch2();
+        let imported = epoch2();
+        let retired = minted(&legacy);
+        let current = minted(&imported);
+        assert_eq!(current.len(), CW2_B1_DONOR_EPOCH2_MINTED_COUNT);
+        for ((legacy_id, retired_key), (source_id, key)) in retired.iter().zip(&current) {
+            assert_eq!(legacy_id, source_id);
+            assert_eq!(key, &tibia_item_key(*source_id), "{retired_key}");
+        }
+        assert_ne!(
+            imported.allocation_digest_sha256,
+            CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256
+        );
+        assert_eq!(imported.unbound_source_item_ids, HELD_DONOR_IDS.to_vec());
+        for candidate in &imported.batch.candidates {
+            let retired_key = candidate
+                .normalized_fields
+                .iter()
+                .find(|field| field.field_path == "evidence.retired-key")
+                .map(|field| field.value.clone());
+            let legacy_key = retired
+                .iter()
+                .find(|(id, _)| Some(*id) == candidate.source_numeric_id)
+                .map(|(_, key)| CandidateValue::Text(key.clone()));
+            assert_eq!(retired_key, legacy_key);
+            assert!(candidate.normalized_fields.iter().any(|field| {
+                field.field_path == "source.native-key-authorship"
+                    && field.value == CandidateValue::Text(TIBIA_ITEM_KEY_RULE.to_owned())
+            }));
+        }
     }
 
     #[test]
@@ -3198,7 +3828,7 @@ mod donor_identity_epoch_2_tests {
 
     #[test]
     fn only_no_match_rows_mint_and_aliases_bind_to_existing_keys() {
-        let baseline = minted(&epoch2());
+        let baseline = minted(&legacy_epoch2());
         // Minted ids 1 (alias), 2 (ambiguous) and 3 (conflict) mint nothing; every later rank
         // shifts down, so the key is the rank among the minted ids and not the census position.
         let expected = std::iter::once(baseline[0].clone())
@@ -3244,7 +3874,7 @@ mod donor_identity_epoch_2_tests {
         // The gold coin's retired key is not an alias target; its promoted key is.
         for (target, admitted) in [
             (R7_P04_GOLD_COIN_OLD_KEY, false),
-            (R7_P04_GOLD_COIN_KEY, true),
+            (R7_P04_GOLD_COIN_NAMED_KEY, true),
             ("oteryn:item.registry.i00038094", false),
             ("oteryn:item.registry.i99999999", false),
         ] {
@@ -3265,7 +3895,7 @@ mod donor_identity_epoch_2_tests {
 
     #[test]
     fn a_state_that_carries_a_target_or_is_unknown_fails_closed() {
-        let baseline = minted(&epoch2());
+        let baseline = minted(&legacy_epoch2());
         let shifted = baseline[1..]
             .iter()
             .enumerate()
@@ -3307,5 +3937,155 @@ mod donor_identity_epoch_2_tests {
             .is_err()
         );
         assert!(admit_modified(|rows| rows.swap(0, 1), baseline.len(), &baseline).is_err());
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
+mod tibia_item_key_tests {
+    use super::*;
+
+    const B1_EVIDENCE: &[u8] = include_bytes!(
+        "../../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
+    );
+
+    fn candidate_key(candidate: &ImportCandidate) -> &str {
+        candidate
+            .candidate_target
+            .split_once('@')
+            .map(|(key, _)| key)
+            .expect("candidate target")
+    }
+
+    #[test]
+    fn the_key_rule_is_the_decimal_tibia_id_without_padding() {
+        assert_eq!(tibia_item_key(3031), "oteryn:item.tibia.i3031");
+        assert_eq!(tibia_item_key(7), "oteryn:item.tibia.i7");
+        assert_eq!(CW2_B1_VASE_KEY, "oteryn:item.tibia.i2876");
+        assert_eq!(R7_P04_GOLD_COIN_KEY, "oteryn:item.tibia.i3031");
+    }
+
+    #[test]
+    fn every_named_constant_is_its_retired_keys_alias_target() {
+        let table = protected_item_key_alias_table().expect("alias table");
+        assert_eq!(table.len(), ITEM_KEY_ALIAS_TABLE_RETIRED_KEYS);
+        let constants = [
+            (R7_P04_GOLD_COIN_NAMED_KEY, R7_P04_GOLD_COIN_KEY),
+            (R7_P04_GOLD_COIN_OLD_KEY, R7_P04_GOLD_COIN_KEY),
+            ("oteryn:item.decor.vase", CW2_B1_VASE_KEY),
+            (
+                "oteryn:item.currency.platinum_coin",
+                ITEM_CURRENCY_PLATINUM_COIN,
+            ),
+            ("oteryn:item.armor.plate_armor", ITEM_ARMOR_PLATE_ARMOR),
+        ];
+        for (retired, constant) in constants {
+            assert_eq!(table.successor(retired).expect("entry"), Some(constant));
+        }
+        for spec in NATIVE_ITEM_BATCH {
+            assert_eq!(
+                table.successor(spec.retired_key).expect("entry"),
+                Some(tibia_item_key(spec.source_item_id).as_str()),
+                "{}",
+                spec.retired_key
+            );
+        }
+        // The retired epoch-1 slot 3031 is an axe-like unrelated row, never the gold coin.
+        assert_eq!(
+            table
+                .successor(R7_P04_UNRELATED_REGISTRY_KEY)
+                .expect("entry"),
+            Some(tibia_item_key(R7_P04_UNRELATED_SOURCE_ITEM_ID).as_str())
+        );
+        assert!(table.successor("oteryn:item.registry.i99999999").is_err());
+    }
+
+    #[test]
+    fn the_alias_table_is_pinned_by_exact_bytes() {
+        let mut tampered = ITEM_KEY_ALIAS_TABLE.to_vec();
+        let at = tampered.len() / 2;
+        tampered[at] ^= 1;
+        assert_eq!(
+            item_key_alias_table(&tampered),
+            Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "Item key alias table bytes"
+            ))
+        );
+        assert!(item_key_alias_table(&ITEM_KEY_ALIAS_TABLE[1..]).is_err());
+    }
+
+    #[test]
+    fn the_full_family_is_keyed_by_tibia_id_and_drops_the_d149_rows() {
+        let table = protected_item_key_alias_table().expect("alias table");
+        let legacy = legacy_full_item_family_import(B1_EVIDENCE).expect("retired allocation");
+        let family = protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("family");
+        assert_eq!(family.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+        assert_eq!(family.records.len(), 33_567);
+        assert_eq!(family.batch.candidates.len(), family.records.len());
+        assert_eq!(family.batch.reimport_states.len(), family.records.len());
+        assert_ne!(
+            family.allocation_digest_sha256,
+            CW2_B1_RETIRED_EPOCH1_ALLOCATION_SHA256
+        );
+
+        let mut dropped = 0_usize;
+        for candidate in &legacy.batch.candidates {
+            if table
+                .successor(candidate_key(candidate))
+                .expect("entry")
+                .is_none()
+            {
+                dropped += 1;
+            }
+        }
+        assert_eq!(dropped, CW2_B1_D149_RETIRED_ROW_COUNT);
+
+        let mut keys = BTreeSet::new();
+        for candidate in &family.batch.candidates {
+            let source_item_id = candidate.source_numeric_id.expect("source id");
+            assert_eq!(candidate_key(candidate), tibia_item_key(source_item_id));
+            assert!(keys.insert(candidate_key(candidate).to_owned()));
+        }
+        let record_keys = family
+            .records
+            .iter()
+            .map(|record| item_record_key(record).to_owned())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(record_keys, keys);
+        let materializable = family
+            .records
+            .iter()
+            .filter(|record| {
+                matches!(
+                    record,
+                    ProjectReferenceRecord::Item {
+                        materializable: true,
+                        ..
+                    }
+                )
+            })
+            .count();
+        assert_eq!(materializable, CW2_B1_NATIVE_ITEM_BATCH_COUNT);
+    }
+
+    #[test]
+    fn the_lowered_family_keeps_every_admitted_atom_under_its_tibia_key() {
+        let promoted = protected_cw2_b1_item_semantic_promotion_lowering_v1_import(B1_EVIDENCE)
+            .expect("lowering");
+        assert_eq!(promoted.family.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+        assert!(promoted.promoted_items <= ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT);
+        assert!(promoted.promoted_fields <= ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT);
+        assert!(promoted.family.records.iter().any(|record| matches!(
+            record,
+            ProjectReferenceRecord::Item { identity, materializable: true, .. }
+                if identity.key == R7_P04_GOLD_COIN_KEY
+        )));
+        assert!(
+            promoted
+                .family
+                .records
+                .iter()
+                .all(|record| item_record_key(record).starts_with(TIBIA_ITEM_KEY_PREFIX))
+        );
     }
 }

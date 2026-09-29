@@ -10,8 +10,8 @@ const B1_EVIDENCE: &[u8] = include_bytes!(
 const BATCH_PRODUCT: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260921-content-world-cw2-native-item-batch.json"
 );
-const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_098_651;
-const FULL_FAMILY_MAX_STRING_BYTES: usize = 42_332_603;
+const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_181_871;
+const FULL_FAMILY_MAX_STRING_BYTES: usize = 42_106_471;
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -524,6 +524,9 @@ fn native_item_batch_matches_the_machine_readable_binding_product() {
         })
         .collect::<BTreeMap<_, _>>();
 
+    // The binding product is pinned history keyed by retired named keys (A12 D147): each row's
+    // key must translate, through the frozen alias table only, to the imported Tibia key.
+    let aliases = protected_item_key_alias_table().expect("alias table");
     let mut prior_candidate = None;
     let mut native_keys = std::collections::BTreeSet::new();
     for candidate in &imported.batch.candidates {
@@ -554,9 +557,14 @@ fn native_item_batch_matches_the_machine_readable_binding_product() {
         let binding = candidate_binding(candidate);
         assert!(native_keys.insert(binding.identity.key.as_str()));
         assert_eq!(binding.identity.family, "Item");
+        let retired_key = row["native_identity"]["key"].as_str().expect("native key");
+        assert_eq!(
+            aliases.successor(retired_key).expect("alias entry"),
+            Some(binding.identity.key.as_str())
+        );
         assert_eq!(
             binding.identity.key,
-            row["native_identity"]["key"].as_str().expect("native key")
+            tibia_item_key(candidate.source_numeric_id.expect("source id"))
         );
         assert_eq!(
             binding.identity.revision,
@@ -594,9 +602,17 @@ fn native_item_batch_matches_the_machine_readable_binding_product() {
         );
         assert_eq!(
             fields.get("source.native-key-authorship"),
+            Some(&&CandidateValue::Text(TIBIA_ITEM_KEY_RULE.to_owned()))
+        );
+        assert_eq!(
+            fields.get("evidence.retired-key-authorship"),
             Some(&&CandidateValue::Text(
                 "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED".to_owned()
             ))
+        );
+        assert_eq!(
+            fields.get("evidence.retired-key"),
+            Some(&&CandidateValue::Text(retired_key.to_owned()))
         );
         assert_eq!(
             fields.get("loss.source-values-as-gameplay-truth"),
@@ -609,7 +625,7 @@ fn native_item_batch_matches_the_machine_readable_binding_product() {
     assert!(by_source.contains_key("crystal:item:2876"));
     assert_eq!(
         by_source["crystal:item:2876"]["native_identity"]["key"],
-        CW2_B1_VASE_KEY
+        "oteryn:item.decor.vase"
     );
     assert_eq!(
         by_source["crystal:item:3357"]["native_identity"]["key"],
@@ -619,6 +635,9 @@ fn native_item_batch_matches_the_machine_readable_binding_product() {
         by_source["crystal:item:3155"]["native_identity"]["key"],
         "oteryn:item.consumable.sudden_death_rune"
     );
+    assert_eq!(CW2_B1_VASE_KEY, "oteryn:item.tibia.i2876");
+    assert_eq!(ITEM_ARMOR_PLATE_ARMOR, "oteryn:item.tibia.i3357");
+    assert_eq!(ITEM_CONSUMABLE_SUDDEN_DEATH_RUNE, "oteryn:item.tibia.i3155");
 }
 
 #[test]
@@ -811,24 +830,18 @@ fn protected_semantic_promotion_changes_exactly_14643_atoms_with_only_the_r7_p04
 
     assert_eq!(
         promoted.promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT
     );
     assert_eq!(
         promoted.promoted_items,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_ITEM_COUNT
     );
-    // Unlike the retired 69-field pass, the single lowering v1 promotion source folds
-    // in the R7 P04 Gold Coin identity rename (`apply_r7_p04_gold_coin_identity_rename`),
-    // so the identity allocation digest is expected to change from the raw full-family
-    // import — by exactly the same pinned rename `r7_p04_renames_exactly_source_3031_
-    // and_carries_only_its_pinned_lowering_v1_promotion` below verifies directly.
-    assert_ne!(
-        promoted.family.allocation_digest_sha256,
-        base.allocation_digest_sha256
-    );
+    // The lowering folds in the R7 P04 Gold Coin rename, which renamed one retired key to
+    // another. Under A12 both translate to the gold coin's Tibia key, so the Tibia-key
+    // allocation is the raw full family's.
     assert_eq!(
         promoted.family.allocation_digest_sha256,
-        "c666b4411f358e45b5e0e7be09a088f85916112d032dfd3558f70bed4d8ede45"
+        base.allocation_digest_sha256
     );
     assert_eq!(promoted.family.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
 
@@ -878,10 +891,13 @@ fn protected_semantic_promotion_changes_exactly_14643_atoms_with_only_the_r7_p04
         promoted_items += usize::from(atoms > 0);
     }
 
-    assert_eq!(atom_count, ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT);
+    assert_eq!(
+        atom_count,
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT
+    );
     assert_eq!(
         promoted_items,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_ITEM_COUNT
     );
 }
 
@@ -910,26 +926,27 @@ fn r7_p04_renames_exactly_source_3031_and_carries_only_its_pinned_lowering_v1_pr
     );
     assert_eq!(
         after.promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_FIELD_COUNT
     );
     assert_eq!(
         after.promoted_items,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ADMITTED_ITEM_COUNT
     );
-    assert_ne!(
+    // A12: the rename is identity-neutral (both retired keys translate to `tibia.i3031`);
+    // what R7 P04 still changes is the carrier shape of that one record.
+    assert_eq!(
         after.family.allocation_digest_sha256,
         base.allocation_digest_sha256
     );
-    assert_eq!(
-        after.family.allocation_digest_sha256,
-        "c666b4411f358e45b5e0e7be09a088f85916112d032dfd3558f70bed4d8ede45"
-    );
-
     assert!(base.records.iter().any(|record| {
-        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_OLD_KEY)
+        matches!(
+            record,
+            ProjectReferenceRecord::Item { identity, materializable: false, .. }
+                if identity.key == R7_P04_GOLD_COIN_KEY
+        )
     }));
     assert!(!base.records.iter().any(|record| {
-        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_KEY)
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_OLD_KEY)
     }));
 
     let mut gold_records = 0_usize;
@@ -978,7 +995,7 @@ fn r7_p04_renames_exactly_source_3031_and_carries_only_its_pinned_lowering_v1_pr
         matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_OLD_KEY)
     }));
     assert!(after.family.records.iter().any(|record| {
-        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_UNRELATED_REGISTRY_KEY)
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == tibia_item_key(R7_P04_UNRELATED_SOURCE_ITEM_ID))
     }));
 
     let gold_candidate = after
@@ -1006,7 +1023,11 @@ fn r7_p04_renames_exactly_source_3031_and_carries_only_its_pinned_lowering_v1_pr
         .expect("unrelated source 3147 candidate");
     assert_eq!(
         candidate_binding(unrelated).identity.key,
-        R7_P04_UNRELATED_REGISTRY_KEY
+        tibia_item_key(R7_P04_UNRELATED_SOURCE_ITEM_ID)
+    );
+    assert_ne!(
+        tibia_item_key(R7_P04_UNRELATED_SOURCE_ITEM_ID),
+        R7_P04_GOLD_COIN_KEY
     );
 }
 
@@ -1089,8 +1110,8 @@ fn full_item_family_registry_closes_the_exact_b1_denominator() {
     assert_eq!(imported.allocation_digest_sha256.len(), 64);
     assert_eq!(
         imported.allocation_digest_sha256,
-        "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966",
-        "CONTROLLED_RED_CAPTURE_FULL_FAMILY_ALLOCATION_DIGEST"
+        "53a6c2e3930a7ba2d953a0f115f6fc849f2ab92caf76440a82f5aa33d43bf795",
+        "A12 (source id, Tibia key) allocation digest"
     );
     assert_eq!(
         imported.allocation_digest_sha256,
@@ -1121,7 +1142,7 @@ fn full_item_family_registry_closes_the_exact_b1_denominator() {
         .expect("preserved plate armor binding");
     assert_eq!(
         candidate_binding(plate).identity.key,
-        "oteryn:item.armor.plate_armor"
+        "oteryn:item.tibia.i3357"
     );
 
     let gold_coin = imported
@@ -1130,11 +1151,9 @@ fn full_item_family_registry_closes_the_exact_b1_denominator() {
         .iter()
         .find(|candidate| candidate.source_numeric_id == Some(3031))
         .expect("full-family gold coin identity");
-    assert!(
-        candidate_binding(gold_coin)
-            .identity
-            .key
-            .starts_with("oteryn:item.registry.i")
+    assert_eq!(
+        candidate_binding(gold_coin).identity.key,
+        R7_P04_GOLD_COIN_KEY
     );
     assert_eq!(
         gold_coin.disposition_reason,
@@ -1155,11 +1174,14 @@ fn full_item_family_registry_closes_the_exact_b1_denominator() {
             )
         })
         .count();
-    assert_eq!(identity_only, CW2_B1_OPAQUE_ITEM_COUNT);
+    assert_eq!(
+        identity_only,
+        CW2_B1_FULL_ITEM_FAMILY_COUNT - CW2_B1_NATIVE_ITEM_BATCH_COUNT
+    );
 }
 
 #[test]
-fn full_item_family_round_trip_compiles_v3_and_rejects_38158() {
+fn full_item_family_round_trip_compiles_v3_and_rejects_33568() {
     let documents = CanonicalProjectDocuments::from_draft(
         full_family_draft(full_family_import()),
         full_family_limits(),
@@ -1231,7 +1253,10 @@ fn full_item_family_round_trip_compiles_v3_and_rejects_38158() {
             )
         })
         .count();
-    assert_eq!(unresolved, CW2_B1_OPAQUE_ITEM_COUNT);
+    assert_eq!(
+        unresolved,
+        CW2_B1_FULL_ITEM_FAMILY_COUNT - CW2_B1_NATIVE_ITEM_BATCH_COUNT
+    );
 
     let first = compile_reference_playable(&linked).expect("full-family v3 artifact");
     let second =
@@ -1251,8 +1276,8 @@ fn full_item_family_round_trip_compiles_v3_and_rejects_38158() {
         compile_reference_playable(&above),
         Err(ContentError::LimitExceeded {
             resource: "Reference playable definitions",
-            actual: 38_158,
-            limit: 38_157,
+            actual: 33_568,
+            limit: 33_567,
         })
     ));
 }

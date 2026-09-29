@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """Generate explicit EXACT Crystal -> canonical Item identity bindings.
 
+ITEM-ID-1b (decision `A12-ITEM-IDENTITY-TIBIA-ID-V1`, owner decisions D146-D149): the
+canonical key of every bound Crystal row is now `oteryn:item.tibia.i<id>`. The retired
+allocations described below are still re-derived and must reproduce their frozen digests (they
+are the history every retired key refers to); each retired key is then translated through the
+frozen alias table `content/items/aliases.json` only. A row whose retired key has no successor
+(D149: its id is in no admitted CipSoft file) is not bound. Nothing maps a key by its number.
+
+The description below is the retired allocation the translation starts from.
+
 The committed CW2-B1 native-item allocator
 (`apps/game-server/src/content/cw2_b1_import.rs`) already assigns every one of
 the 38,157 `content/items/definitions/*.json` Item keys from an ascending walk
@@ -97,6 +106,11 @@ EXPECTED_EVIDENCE_SHA256 = (
 EXPECTED_TOTAL = 38_157
 EXPECTED_NATIVE_BATCH = 64
 EXPECTED_OPAQUE = EXPECTED_TOTAL - EXPECTED_NATIVE_BATCH
+# A12 (ITEM-ID-1b): base-revision rows bound after the D149 removals, and the Tibia key rule.
+EXPECTED_D149_RETIRED = 4_590
+EXPECTED_ADMITTED = EXPECTED_TOTAL - EXPECTED_D149_RETIRED
+TIBIA_KEY_PREFIX = "oteryn:item.tibia.i"
+ALIAS_TABLE = ROOT / "content/items/aliases.json"
 
 # Epoch 1 as committed on `main` before epoch 2: the canonical bytes of the frozen
 # allocator's 38,157 bindings. Regenerating epoch 1 must reproduce this digest.
@@ -128,7 +142,7 @@ EPOCH2_DONOR_APPEARANCES = "data/items/appearances.dat"
 # TibiaWiki EXACT binding that targets the same canonical Item -- at minimum
 # Magic Sword (i00003167 / Crystal 3288 / TibiaWiki page 5810).
 CROSS_CHECKS: tuple[tuple[int, str, str], ...] = (
-    (3288, "oteryn:item.registry.i00003167", "5810"),
+    (3288, "oteryn:item.tibia.i3288", "5810"),
 )
 
 
@@ -180,7 +194,7 @@ def parse_native_batch(text: str) -> dict[int, str]:
     if not table_match:
         raise GeneratorError("NATIVE_ITEM_BATCH_TABLE_NOT_FOUND")
     entries = re.findall(
-        r"NativeItemSpec\s*\{\s*source_item_id:\s*(\d+),.*?native_key:\s*\"([^\"]+)\"",
+        r"NativeItemSpec\s*\{\s*source_item_id:\s*(\d+),.*?retired_key:\s*\"([^\"]+)\"",
         table_match.group(1),
         re.DOTALL,
     )
@@ -201,7 +215,8 @@ def parse_identity_promotions(text: str) -> dict[int, tuple[str, str]]:
     for prefix, old_key in re.findall(
         r'pub const (\w+)_OLD_KEY: &str = "([^"]+)";', text
     ):
-        new_match = re.search(rf'pub const {prefix}_KEY: &str = "([^"]+)";', text)
+        # The promoted key is itself retired now (A12 D147): `<PREFIX>_NAMED_KEY`.
+        new_match = re.search(rf'pub const {prefix}_NAMED_KEY: &str = "([^"]+)";', text)
         id_match = re.search(
             rf"pub const {prefix}_SOURCE_ITEM_ID: u64 = ([0-9_]+);", text
         )
@@ -315,10 +330,10 @@ def verify_allocations(
     definition_keys: set[str],
     tibiawiki_targets: dict[str, set[str]],
 ) -> None:
-    if len(allocations) != EXPECTED_TOTAL:
+    if len(allocations) != EXPECTED_ADMITTED:
         raise GeneratorError("ALLOCATION_COUNT_MISMATCH")
     allocation_keys = {key for _, key in allocations}
-    if len(allocation_keys) != EXPECTED_TOTAL:
+    if len(allocation_keys) != EXPECTED_ADMITTED:
         raise GeneratorError("ALLOCATION_KEY_UNIQUENESS")
     missing = allocation_keys - definition_keys
     if missing:
@@ -337,6 +352,46 @@ def verify_allocations(
         wiki_ids = tibiawiki_targets.get(expected_key)
         if not wiki_ids or page_id not in wiki_ids:
             raise GeneratorError(f"CROSS_CHECK_TIBIAWIKI_TARGET_MISSING:{expected_key}")
+
+
+def tibia_key(source_id: int) -> str:
+    return f"{TIBIA_KEY_PREFIX}{source_id}"
+
+
+def load_alias_successors() -> dict[str, str | None]:
+    """Retired key -> Tibia key (`None` for D149), from the frozen, byte-pinned alias table."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import item_id_alias_table
+
+    payload = ALIAS_TABLE.read_bytes()
+    if sha256_hex(payload) != item_id_alias_table.FROZEN_ALIAS_TABLE_SHA256:
+        raise GeneratorError("ALIAS_TABLE_DIGEST_MISMATCH")
+    successors: dict[str, str | None] = {}
+    for entry in json.loads(payload)["entries"]:
+        if entry["state"] == "ALIAS":
+            if entry["target"] != tibia_key(entry["evidence"]["source_item_id"]):
+                raise GeneratorError(f"ALIAS_TARGET_NOT_OWN_ID:{entry['key']}")
+            successors[entry["key"]] = entry["target"]
+        else:
+            successors[entry["key"]] = None
+    return successors
+
+
+def translate_allocations(
+    allocations: list[tuple[int, str]], successors: dict[str, str | None]
+) -> list[tuple[int, str]]:
+    """Retired `(source id, key)` pairs -> Tibia keys; D149 rows drop. Continuity is checked."""
+    translated = []
+    for source_id, retired in allocations:
+        if retired not in successors:
+            raise GeneratorError(f"RETIRED_KEY_WITHOUT_ALIAS_ENTRY:{retired}")
+        target = successors[retired]
+        if target is None:
+            continue
+        if target != tibia_key(source_id):
+            raise GeneratorError(f"ALIAS_SOURCE_CONTINUITY:{retired}:{source_id}")
+        translated.append((source_id, target))
+    return translated
 
 
 def build_bindings(
@@ -825,29 +880,55 @@ def generate() -> tuple[dict[str, Any], bytes]:
     allocations = epoch2_allocations(
         census, census_payload, crosswalk, pins, epoch1_allocations, namespace
     )
-    # Epoch-2 keys have no Item definition until the content tree is regenerated; a
-    # definition for one is allowed but never required, so only epoch-1 keys are held
-    # to the exact allocation/definition closure.
-    definition_keys = load_definition_keys() - {key for _, key in allocations}
-    verify_allocations(epoch1_allocations, definition_keys, load_tibiawiki_targets())
-    epoch1 = build_bindings(epoch1_allocations, source_revision)
-    if len(epoch1) != EXPECTED_TOTAL:
-        raise GeneratorError("BINDING_COUNT_MISMATCH")
+    # History: the retired epoch-1 bindings must reproduce their frozen bytes exactly.
+    retired_epoch1 = build_bindings(epoch1_allocations, source_revision)
+    retired_bytes = canonical_bytes(
+        {"schema": SCHEMA, "family": "Item", "bindings": retired_epoch1}
+    )
+    if (
+        len(retired_epoch1) != EXPECTED_TOTAL
+        or len(retired_bytes) != EXPECTED_EPOCH1_OUTPUT_BYTES
+        or sha256_hex(retired_bytes) != EXPECTED_EPOCH1_OUTPUT_SHA256
+    ):
+        raise GeneratorError("EPOCH1_BINDINGS_DRIFT")
+
+    # A12: translate both epochs through the frozen alias table.
+    successors = load_alias_successors()
+    admitted_epoch1 = translate_allocations(epoch1_allocations, successors)
+    if len(epoch1_allocations) - len(admitted_epoch1) != EXPECTED_D149_RETIRED:
+        raise GeneratorError("D149_COUNT_MISMATCH")
+    admitted_epoch2 = translate_allocations(allocations, successors)
+    if len(admitted_epoch2) != len(allocations):
+        raise GeneratorError("EPOCH2_KEY_WITHOUT_SUCCESSOR")
+    translated_rows = []
+    for row in crosswalk["rows"]:
+        if row["state"] in EPOCH2_BOUND_STATES:
+            target = successors.get(row["alias_target_key"])
+            if target is None:
+                raise GeneratorError(
+                    f"ALIAS_TARGET_WITHOUT_SUCCESSOR:{row['source_item_id']}"
+                )
+            row = {**row, "alias_target_key": target}
+        translated_rows.append(row)
+
+    # Epoch-2 keys have no Item definition until the content tree carries them; a definition
+    # for one is allowed but never required, so only epoch-1 keys are held to the closure.
+    definition_keys = load_definition_keys() - {key for _, key in admitted_epoch2}
+    verify_allocations(admitted_epoch1, definition_keys, load_tibiawiki_targets())
+    epoch1 = build_bindings(admitted_epoch1, source_revision)
     if (
         len({(row["external_id"], row["target"]["key"]) for row in epoch1})
-        != EXPECTED_TOTAL
+        != EXPECTED_ADMITTED
     ):
         raise GeneratorError("BINDING_UNIQUENESS")
     epoch1_bytes = canonical_bytes(
         {"schema": SCHEMA, "family": "Item", "bindings": epoch1}
     )
-    if (
-        len(epoch1_bytes) != EXPECTED_EPOCH1_OUTPUT_BYTES
-        or sha256_hex(epoch1_bytes) != EXPECTED_EPOCH1_OUTPUT_SHA256
-    ):
-        raise GeneratorError("EPOCH1_BINDINGS_DRIFT")
     epoch2 = epoch2_bindings(
-        allocations, crosswalk, pins["source_revision"], pins["revision"]
+        admitted_epoch2,
+        {**crosswalk, "rows": translated_rows},
+        pins["source_revision"],
+        pins["revision"],
     )
     if {row["external_id"] for row in epoch1} & {row["external_id"] for row in epoch2}:
         raise GeneratorError("BINDING_SOURCE_ID_SHARED_ACROSS_EPOCHS")
