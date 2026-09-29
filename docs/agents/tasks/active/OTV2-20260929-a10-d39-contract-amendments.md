@@ -4,12 +4,12 @@
 task_id: OTV2-20260929-a10-d39-contract-amendments
 title: "A10 corpse container DUR-03 amendment and D39 chest USE GAME-INTERACTION amendment"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1210
 base_sha: 005550daa1bc2ecc9345d07322bc013eddfa3d06
 head_sha: null
 final_head_sha: null
@@ -72,11 +72,11 @@ allocations.
 ## Context checkpoint
 
 ```yaml
-last_progress: authored
-status: implementing
+last_progress: authored; PR #1210 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1210
 owner_action_required: null
 blocker: null
-next_action: open the PR, freeze the head, exact-head review and Merge Queue integration
+next_action: exact-head review and Merge Queue integration of #1210
 ```
