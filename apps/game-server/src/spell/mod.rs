@@ -15,6 +15,9 @@ pub(crate) mod chain;
 #[cfg(test)]
 mod chain_tests;
 pub(crate) mod formula;
+pub(crate) mod party;
+#[cfg(test)]
+mod party_tests;
 pub(crate) mod plan;
 #[cfg(test)]
 mod tests;
@@ -25,8 +28,9 @@ use std::fmt::{self, Display, Formatter};
 
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
-use chain::{ChainHit, ChainSpec, ChainStart, ChainWorld, pick_chain, step_value};
+use chain::{ChainCreature, ChainHit, ChainSpec, ChainStart, ChainWorld, pick_chain, step_value};
 pub(crate) use formula::{Formula, FormulaError, FormulaInputs};
+use party::{PartyBuffSpec, PartyFailure, PartyWorld};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum Vocation {
@@ -98,9 +102,11 @@ pub(crate) enum SpellEffect {
     RemoveCondition {
         condition: String,
     },
-    /// An authored effect this core does not resolve yet (conditions, fields, presentation).
+    /// An authored effect this core does not resolve yet (conditions, fields, presentation);
+    /// `effect` is its Effect key for the owner that applies it.
     Other {
         operation: String,
+        effect: String,
     },
 }
 
@@ -112,6 +118,8 @@ pub(crate) enum Execution {
         result: u32,
         count: u32,
     },
+    /// `native_behavior` `party_buff` (part C.3).
+    PartyBuff(PartyBuffSpec),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -313,6 +321,13 @@ pub(crate) enum CastRejection {
     NoChainTarget,
     /// A chain cast was resolved without the world facts it needs ([`resolve_chain_cast`]).
     ChainWorldRequired,
+    /// A party buff found no party, or too few members in its area (C.3 steps 1 and 3); nothing
+    /// is spent.
+    NoPartyMembers,
+    /// A party buff was resolved without the party facts it needs ([`resolve_party_cast`]).
+    PartyWorldRequired,
+    /// A party buff's scaled mana does not fit the exact integer computation.
+    PartyCostOverflow,
     TimeOverflow,
     Formula(FormulaError),
 }
@@ -338,6 +353,9 @@ impl Display for CastRejection {
             Self::TargetRequired => formatter.write_str("the spell needs a target"),
             Self::NoChainTarget => formatter.write_str("no valid creature is in range"),
             Self::ChainWorldRequired => formatter.write_str("a chain cast needs the world facts"),
+            Self::NoPartyMembers => formatter.write_str("no party members in range"),
+            Self::PartyWorldRequired => formatter.write_str("a party cast needs the party facts"),
+            Self::PartyCostOverflow => formatter.write_str("party mana cost overflow"),
             Self::TimeOverflow => formatter.write_str("cooldown time overflow"),
             Self::Formula(error) => write!(formatter, "formula: {error}"),
         }
@@ -365,6 +383,7 @@ pub(crate) enum ResolvedEffect {
     },
     Unresolved {
         operation: String,
+        effect: String,
     },
 }
 
@@ -375,15 +394,25 @@ pub(crate) struct ChainHitResolution {
     pub(crate) effects: Vec<ResolvedEffect>,
 }
 
+/// One party member a party buff affects and the effects it receives.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct PartyMemberResolution {
+    pub(crate) creature: u64,
+    pub(crate) actor: String,
+    pub(crate) effects: Vec<ResolvedEffect>,
+}
+
 /// The outcome of an accepted cast; nothing is applied yet.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CastResolution {
     pub(crate) mana_spent: u32,
     pub(crate) soul_spent: u32,
-    /// Effects of a cast that does not chain.
+    /// Effects of a cast that neither chains nor buffs a party.
     pub(crate) effects: Vec<ResolvedEffect>,
     /// Creatures of a chain cast in hit order, each with its own effects; empty otherwise.
     pub(crate) chain: Vec<ChainHitResolution>,
+    /// Members a party buff affects, by creature id, each with its own effects; empty otherwise.
+    pub(crate) party: Vec<PartyMemberResolution>,
     pub(crate) cooldowns: Cooldowns,
 }
 
@@ -397,8 +426,16 @@ pub(crate) fn mana_cost(spell: &SpellDefinition, caster: &CasterState) -> u32 {
     }
 }
 
+/// The world facts a cast reads beyond the caster.
+#[derive(Clone, Copy)]
+enum Facts<'a> {
+    None,
+    Chain(&'a dyn ChainWorld, ChainStart),
+    Party(&'a dyn PartyWorld),
+}
+
 /// Check and resolve one cast at `now`. `draw(minimum, maximum)` is the world damage distribution.
-/// A cast that chains needs [`resolve_chain_cast`].
+/// A cast that chains needs [`resolve_chain_cast`], a party buff [`resolve_party_cast`].
 pub(crate) fn resolve_cast(
     spell: &SpellDefinition,
     caster: &CasterState,
@@ -410,7 +447,30 @@ pub(crate) fn resolve_cast(
     if spell.chains(has_target) {
         return Err(CastRejection::ChainWorldRequired);
     }
-    resolve(spell, caster, cooldowns, now, has_target, None, draw)
+    resolve(spell, caster, cooldowns, now, has_target, Facts::None, draw)
+}
+
+/// [`resolve_cast`] for a party buff (part C.3), with the party facts it reads. The cast checks
+/// run first; then a caster without a party, or with fewer than `min_affected` members in the
+/// area, fails the cast, and then the caster must have the computed mana. Nothing is spent on a
+/// failure. Each affected member draws its own values.
+pub(crate) fn resolve_party_cast(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    world: &dyn PartyWorld,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<CastResolution, CastRejection> {
+    resolve(
+        spell,
+        caster,
+        cooldowns,
+        now,
+        false,
+        Facts::Party(world),
+        draw,
+    )
 }
 
 /// [`resolve_cast`] for any spell, with the world facts a chain reads (chain §3). The cast checks
@@ -436,7 +496,7 @@ pub(crate) fn resolve_chain_cast(
         cooldowns,
         now,
         start.target.is_some(),
-        Some((world, start)),
+        Facts::Chain(world, start),
         draw,
     )
 }
@@ -447,7 +507,7 @@ fn resolve(
     cooldowns: &Cooldowns,
     now: SemanticTimeMicros,
     has_target: bool,
-    world: Option<(&dyn ChainWorld, ChainStart)>,
+    facts: Facts<'_>,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<CastResolution, CastRejection> {
     // Order of Canary Spell::playerSpellCheck (group, spell, secondary group cooldowns first).
@@ -476,7 +536,7 @@ fn resolve(
             required: magic_level,
         });
     }
-    let mana = mana_cost(spell, caster);
+    let mut mana = mana_cost(spell, caster);
     if caster.mana < mana {
         return Err(CastRejection::NotEnoughMana { required: mana });
     }
@@ -499,8 +559,8 @@ fn resolve(
     if spell.needs_target && !has_target {
         return Err(CastRejection::TargetRequired);
     }
-    let hits = match (&spell.chain, world) {
-        (Some(chain), Some((world, start))) if spell.chains(has_target) => {
+    let hits = match (&spell.chain, facts) {
+        (Some(chain), Facts::Chain(world, start)) if spell.chains(has_target) => {
             let target_range = spell.range_tiles.unwrap_or(chain.initial_range_tiles);
             let hits = pick_chain(chain, world, start, target_range);
             if hits.is_empty() {
@@ -508,9 +568,26 @@ fn resolve(
             }
             hits
         }
-        (Some(_), None) if spell.chains(has_target) => {
+        (Some(_), _) if spell.chains(has_target) => {
             return Err(CastRejection::ChainWorldRequired);
         }
+        _ => Vec::new(),
+    };
+    let members = match (&spell.execution, facts) {
+        (Execution::PartyBuff(buff), Facts::Party(world)) => {
+            let members = buff.affected(world).map_err(party_rejection)?;
+            // The authored `costs.mana` is 0 for a party buff (reader rule); the buff's mana is added.
+            mana = buff
+                .mana_cost(members.len())
+                .ok()
+                .and_then(|cost| mana.checked_add(cost))
+                .ok_or(CastRejection::PartyCostOverflow)?;
+            if caster.mana < mana {
+                return Err(CastRejection::NotEnoughMana { required: mana });
+            }
+            members
+        }
+        (Execution::PartyBuff(_), _) => return Err(CastRejection::PartyWorldRequired),
         _ => Vec::new(),
     };
     let inputs = FormulaInputs {
@@ -537,12 +614,30 @@ fn resolve(
             .map(|effect| resolve_effect(effect, &inputs, draw))
             .collect::<Result<Vec<_>, _>>()
             .map_err(CastRejection::Formula),
+        Execution::PartyBuff(buff) => buff
+            .effects
+            .iter()
+            .map(|effect| resolve_effect(effect, &inputs, draw))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(CastRejection::Formula),
     };
     let step_percent = spell
         .chain
         .as_ref()
         .map_or(0, |chain| chain.damage_step_percent);
-    let (effects, chain) = if hits.is_empty() {
+    let party = members
+        .into_iter()
+        .map(|member: &ChainCreature| {
+            Ok(PartyMemberResolution {
+                creature: member.id,
+                actor: member.actor.clone(),
+                effects: resolve_effects(draw)?,
+            })
+        })
+        .collect::<Result<Vec<_>, CastRejection>>()?;
+    let (effects, chain) = if !party.is_empty() {
+        (Vec::new(), Vec::new())
+    } else if hits.is_empty() {
         (resolve_effects(draw)?, Vec::new())
     } else {
         let chain = hits
@@ -575,8 +670,16 @@ fn resolve(
         soul_spent: spell.soul,
         effects,
         chain,
+        party,
         cooldowns: after,
     })
+}
+
+fn party_rejection(failure: PartyFailure) -> CastRejection {
+    match failure {
+        PartyFailure::NoMembersInRange => CastRejection::NoPartyMembers,
+        PartyFailure::CostOverflow => CastRejection::PartyCostOverflow,
+    }
 }
 
 /// A chain step scales the rolled damage or heal value (chain §3 step 8; D12 rounding).
@@ -635,8 +738,9 @@ fn resolve_effect(
         SpellEffect::RemoveCondition { condition } => ResolvedEffect::RemoveCondition {
             condition: condition.clone(),
         },
-        SpellEffect::Other { operation } => ResolvedEffect::Unresolved {
+        SpellEffect::Other { operation, effect } => ResolvedEffect::Unresolved {
             operation: operation.clone(),
+            effect: effect.clone(),
         },
     })
 }

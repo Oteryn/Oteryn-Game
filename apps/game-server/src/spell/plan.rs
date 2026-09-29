@@ -2,7 +2,7 @@
 //! origin). Damage and heal become an [`EffectPlan`] for the owner commit; effects the Ability
 //! pipeline does not type yet (condition removal, conjure) are returned beside it, unchanged.
 //! A chain cast becomes one plan per creature hit, each its own occurrence resolving at the hit's
-//! delay.
+//! delay; a party buff becomes one plan per affected member.
 
 use crate::ability::{
     AbilityError, AbilityIntent, AbilityOccurrence, CalculationStage, CommitGroup, Effect,
@@ -30,7 +30,8 @@ pub(crate) struct CastPlan {
 pub(crate) enum CastPlanError {
     /// A damage effect needs a resolved target.
     MissingTarget,
-    /// A chain cast needs [`chain_plans`]; a cast that does not chain needs [`effect_plan`].
+    /// A chain cast needs [`chain_plans`], a party buff [`party_plans`], any other cast
+    /// [`effect_plan`].
     WrongPlanKind,
     Ability(AbilityError),
 }
@@ -51,17 +52,67 @@ pub(crate) fn effect_plan(
     occurrence: AbilityOccurrence,
     owner_scope: &str,
 ) -> Result<CastPlan, CastPlanError> {
-    if !resolution.chain.is_empty() {
+    if !resolution.chain.is_empty() || !resolution.party.is_empty() {
         return Err(CastPlanError::WrongPlanKind);
     }
     plan(
-        spell,
         &resolution.effects,
         caster,
         target,
+        healed(spell, caster, target),
         occurrence,
         owner_scope,
     )
+}
+
+/// A heal of a self-target spell, or of a spell cast without a target, applies to the caster.
+fn healed<'a>(spell: &SpellDefinition, caster: &'a str, target: Option<&'a str>) -> &'a str {
+    if spell.self_target {
+        caster
+    } else {
+        target.unwrap_or(caster)
+    }
+}
+
+/// The plan of one party member a party buff affects.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct PartyMemberPlan {
+    pub(crate) member: String,
+    pub(crate) plan: CastPlan,
+}
+
+/// Build the plans of an accepted party buff, one per affected member in creature id order; each
+/// member's effects apply to that member. Member `n` is the occurrence `<occurrence id>/party-<n>`
+/// with the cast's revisions.
+pub(crate) fn party_plans(
+    resolution: &CastResolution,
+    caster: &str,
+    occurrence: &AbilityOccurrence,
+    owner_scope: &str,
+) -> Result<Vec<PartyMemberPlan>, CastPlanError> {
+    if resolution.party.is_empty() {
+        return Err(CastPlanError::WrongPlanKind);
+    }
+    resolution
+        .party
+        .iter()
+        .enumerate()
+        .map(|(index, member)| {
+            let id = format!("{}/party-{index}", occurrence.id().as_str());
+            let member_occurrence = AbilityOccurrence::new(&id, occurrence.revisions().clone())?;
+            Ok(PartyMemberPlan {
+                member: member.actor.clone(),
+                plan: plan(
+                    &member.effects,
+                    caster,
+                    Some(&member.actor),
+                    &member.actor,
+                    member_occurrence,
+                    owner_scope,
+                )?,
+            })
+        })
+        .collect()
 }
 
 /// The plan of one creature a chain reaches.
@@ -97,10 +148,10 @@ pub(crate) fn chain_plans(
                 delay_micros: hit.hit.delay_micros,
                 effect_tiles: hit.hit.effect_tiles.clone(),
                 plan: plan(
-                    spell,
                     &hit.effects,
                     caster,
                     Some(&hit.hit.actor),
+                    healed(spell, caster, Some(&hit.hit.actor)),
                     hit_occurrence,
                     owner_scope,
                 )?,
@@ -110,10 +161,10 @@ pub(crate) fn chain_plans(
 }
 
 fn plan(
-    spell: &SpellDefinition,
     resolved_effects: &[ResolvedEffect],
     caster: &str,
     target: Option<&str>,
+    healed: &str,
     occurrence: AbilityOccurrence,
     owner_scope: &str,
 ) -> Result<CastPlan, CastPlanError> {
@@ -128,11 +179,6 @@ fn plan(
                 )?);
             }
             ResolvedEffect::Heal { magnitude } if *magnitude > 0 => {
-                let healed = if spell.self_target {
-                    caster
-                } else {
-                    target.unwrap_or(caster)
-                };
                 effects.push(Effect::heal(healed, *magnitude)?);
             }
             // A zero draw changes no health; the Ability effects carry only positive magnitudes.
