@@ -234,6 +234,22 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
     let (mut markers, mut actual): (Vec<_>, Vec<_>) = files
         .into_iter()
         .partition(|locator| SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()));
+    // Populated successor catalogs (`<marker directory>/definitions/**`, e.g. WO-2
+    // `terrain/definitions/*.json`) are not manifest locators and never enter the package.
+    let successor_catalog_prefixes = SUCCESSOR_TREE_MARKERS
+        .iter()
+        .map(|marker| {
+            format!(
+                "{}definitions/",
+                marker.strip_suffix("index.json").expect("marker suffix")
+            )
+        })
+        .collect::<Vec<_>>();
+    actual.retain(|locator| {
+        !successor_catalog_prefixes
+            .iter()
+            .any(|prefix| locator.starts_with(prefix))
+    });
     markers.sort();
     actual.sort();
     assert_eq!(markers, SUCCESSOR_TREE_MARKERS);

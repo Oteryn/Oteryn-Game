@@ -6,5 +6,5 @@
   "repository": "Oteryn/Oteryn-Game",
   "population_state": "READY_UNPOPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Terrain definitions. WO-2 slice 1 populates definitions/ (8121 Terrain records; 460 held with no key, see definitions/held.json). population_state is unchanged because validate_materialized_game_tree.py and the Rust tree test admit only READY_UNPOPULATED or LEGACY_COMPAT_PRESENT; the state flip needs a shared lease."
+  "notes": "Terrain definitions. WO-2 slice 1 populates definitions/ (8413 Terrain records, 297 of them with UNKNOWN kind; 168 held with no key, see definitions/held.json). population_state is unchanged because validate_materialized_game_tree.py and the Rust tree test admit only READY_UNPOPULATED or LEGACY_COMPAT_PRESENT; the state flip needs a shared lease."
 }

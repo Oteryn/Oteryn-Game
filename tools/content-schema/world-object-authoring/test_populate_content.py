@@ -66,6 +66,8 @@ def test_committed_records_follow_d93_and_validate():
                 check(wo.family_key(item_key, family) == key, f"D93 {key}")
                 source_id = record["provenance"]["source_item_id"]
                 check(bindings[source_id] == item_key, f"frozen binding {key}")
+                projection = record["client_projection"]
+                check(projection.get("state") == "KNOWN", f"D94 appearance {key}")
         check(total == index["record_count"], "record_count")
         check(digest.hexdigest() == index["shards_sha256"], "shards_sha256")
         check(sum(index["kind_counts"].values()) == total, "kind_counts")
@@ -75,6 +77,17 @@ def test_committed_records_follow_d93_and_validate():
             check(row["reasons"] and set(row["reasons"]) <= set(pc.HOLD_REASONS), row)
             check(wo.family_key(row["item_key"], family) not in seen, "held minted")
             check(bindings[row["source_item_id"]] == row["item_key"], "held binding")
+        if family == "Terrain":
+            unappearanced = {
+                row["source_item_id"]
+                for row in held["held"]
+                if "no_client_appearance" in row["reasons"]
+            }
+            check(
+                {15293, 15294, 15295, 21558, 50134} <= unappearanced,
+                "no_client_appearance holds",
+            )
+            check("kind_unresolved" not in pc.HOLD_REASONS, "kind is not a hold")
 
 
 def test_family_keys_are_disjoint_from_other_families():

@@ -43,17 +43,21 @@ records) is slice 2 and needs its own allocation.
   allocator, no renumbering, and no Item key changes.
 - **Facts.** Records are the WO-1 builders' output, unchanged, and each passes the WO-1 validator.
   Unset facts stay UNKNOWN. Upstream (Crystal, `OTS_HYPOTHESIS_ONLY`) is facts only.
-- **Minted: 8,121 Terrain records** in 17 shards of at most 500, ascending source id: border 3,755,
-  ground 2,091, wall 2,171, field 104. Five walls have no client appearance and keep UNKNOWN
-  appearance facts.
-- **Held: 460 ids, no key.** They are listed by their existing Item key in
+- **Minted: 8,413 Terrain records** in 17 shards of at most 500, ascending source id: border 3,755,
+  ground 2,091, wall 2,166, field 104, and 297 with `kind` `{"state":"UNKNOWN"}`. The D93 key is a
+  pure function of the route, so an unresolved kind does not hold an id. It is a closed typed
+  field that a later additive kind call fills without changing the key.
+- **Held: 168 ids, no key.** They are listed by their existing Item key in
   `content/world/terrain/definitions/held.json`.
-  - `kind_unresolved` 330: roofs, floors and shallow water with no ground, border, wall or field
-    rule. The kind is a closed typed field, and a family key is frozen once minted.
+  - `no_client_appearance` 36: D94 excludes ids with no client appearance, including 15293-15295,
+    21558 and 50134 (walls minted before the Codex fix).
   - `type_outside_family` 135: `items.xml` type trashholder (106), carpet (18) and teleport (11)
     routed to Terrain, though WO-0 §4.3 assigns those types to WorldObject or Interaction. This is
     the family itself, so it is key-affecting.
-  - Five ids carry both reasons.
+  - Three ids carry both reasons.
+- **Codex review fixes (P1 x2).** `kind_unresolved` is no longer a hold reason (the 330 ids are
+  minted unless another reason applies). Records with no appearance get no family key. Net against
+  the first head: 8,121 + 325 - 5 - 28 = 8,413 minted; 460 -> 168 held.
 - **Layout (proposal, not fixed by WO-0).** `content/world/terrain/definitions/` holds
   `terrain-NNNNN-NNNNN.json` shards, an `OTERYN_FAMILY_INDEX/v1` `index.json`, and `held.json`.
   Shards are compact sorted-key JSON, in the other family trees' envelope.
@@ -78,14 +82,14 @@ committed files against an in-memory regeneration. The WO-1 census `--check` is 
 - **CI wiring.** `test_populate_content.py` is not yet a CI step, since that needs `.github/**`.
 - **Relations.** `source_item_id` relations (rotateto, bed parts) resolve in the WorldObject slice.
 - **Donor ids.** B1b epoch-2 donor ids are outside this Crystal slice.
-- **Holds.** They need an owner or architect call, then a later additive mint.
+- **Holds.** `type_outside_family` needs an owner or architect call, then a later additive mint. `no_client_appearance` is a D94 exclusion. Rust tree test: `terrain/definitions/**` is partitioned out of the package locators.
 - **Identity review.** WO-2 requires independent identity review of the exact frozen head.
 
 ## Validation
 
 Bound to the frozen final head of the PR.
 
-- `python3 tools/content-schema/world-object-authoring/test_populate_content.py`: PASS, 50,640 checks.
+- `python3 tools/content-schema/world-object-authoring/test_populate_content.py`: PASS (rerun after the Codex fixes; see the PR).
 - `python3 tools/content-schema/world-object-authoring/test_world_objects.py`: PASS, 140 checks.
 - `python3 tools/content-schema/world-object-authoring/world_objects.py --source <ff7ede5> --check`: PASS, 21,370.
 - `python3 tools/content-schema/world-object-authoring/populate_content.py --source <ff7ede5> --family Terrain --check`: PASS.
@@ -100,7 +104,7 @@ last_progress: Terrain slice generated, deterministic, validated
 status: validating
 branch: claude/wo2-world-object-population
 pr: 1189
-owner_action_required: "decide the 460 Terrain holds; allocate WO-2 slice 2 (WorldObject) and the shared lease for marker state and Item routed_to"
+owner_action_required: "decide the 135 type_outside_family Terrain holds; allocate WO-2 slice 2 (WorldObject) and the shared lease for marker state and Item routed_to"
 blocker: null
 next_action: exact-head freeze, independent identity review, Merge Queue
 ```

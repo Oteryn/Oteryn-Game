@@ -9,9 +9,12 @@ unchanged and only adds the physical layout and the holds:
 - A family key is the D93 pure function of the frozen CW2-B1 Item key. It is also
   cross-checked here against `imports/crystalserver/bindings/items.json`.
 - A **held** id gets no family key. It is listed by its existing Item key in
-  `held.json` with the reason. Holds are the WO-1 census "contested routes":
-  `kind_unresolved` (no kind rule matched) and `type_outside_family` (an `items.xml`
-  `type` that the routed family's kind set does not express).
+  `held.json` with the reason. Holds are `no_client_appearance` (D94 excludes an id
+  with no client appearance) and the WO-1 census "contested route"
+  `type_outside_family` (an `items.xml` `type` that the routed family's kind set does
+  not express).
+- An unresolved `kind` is not a hold. The D93 key is a pure function of the route, so
+  the id is minted and its `kind` stays `{"state": "UNKNOWN"}`.
 
 Generation is deterministic; `--check` regenerates in memory and diffs the committed
 files byte for byte.
@@ -36,9 +39,9 @@ FAMILY_DIRECTORY = {
     "WorldObject": ("content/world/objects/definitions", "objects"),
 }
 HOLD_REASONS = {
-    "kind_unresolved": (
-        "No WO-0 kind rule matched. The family route is fixed by the converter, but the "
-        "kind needs an owner or architect call, and a family key is frozen once minted."
+    "no_client_appearance": (
+        "The id has no client appearance, so D94 excludes it from the family; it stays "
+        "a non-materializable Item record."
     ),
     "type_outside_family": (
         "The items.xml type is one the routed family's kind set does not express, so the "
@@ -68,10 +71,10 @@ def frozen_item_keys():
     return keys
 
 
-def hold_reasons(family, record, attrs):
+def hold_reasons(family, attrs, appearance):
     reasons = []
-    if record["kind"].get("state") != "KNOWN":
-        reasons.append("kind_unresolved")
+    if appearance is None:
+        reasons.append("no_client_appearance")
     if wo.type_outside_family(family, attrs):
         reasons.append("type_outside_family")
     return reasons
@@ -99,7 +102,7 @@ def collect(sources, family):
         if errors:
             raise SystemExit(f"id {item_id}: invalid {family} record: {errors[:3]}")
         attrs = dict(xml_record["attrs"]) if xml_record else {}
-        reasons = hold_reasons(family, record, attrs)
+        reasons = hold_reasons(family, attrs, appearance)
         if reasons:
             held.append(
                 {
@@ -146,7 +149,10 @@ def render(sources, family):
         )
         digest.update(body)
         files[path] = body
-    by_kind = Counter(record["kind"]["value"] for record in records)
+    by_kind = Counter(
+        record["kind"]["value"] if record["kind"].get("state") == "KNOWN" else "UNKNOWN"
+        for record in records
+    )
     held_reasons = Counter(reason for row in held for reason in row["reasons"])
     files[f"{directory}/held.json"] = pretty_dumps(
         {

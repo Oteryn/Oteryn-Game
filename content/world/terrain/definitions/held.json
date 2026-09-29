@@ -11,54 +11,6 @@
       "source_item_id": 516
     },
     {
-      "item_key": "oteryn:item.registry.i00000488",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 571
-    },
-    {
-      "item_key": "oteryn:item.registry.i00000489",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 572
-    },
-    {
-      "item_key": "oteryn:item.registry.i00000506",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 589
-    },
-    {
-      "item_key": "oteryn:item.registry.i00000507",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 590
-    },
-    {
-      "item_key": "oteryn:item.registry.i00000508",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 591
-    },
-    {
-      "item_key": "oteryn:item.registry.i00000509",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 592
-    },
-    {
       "item_key": "oteryn:item.registry.i00000539",
       "reasons": [
         "type_outside_family"
@@ -69,7 +21,6 @@
     {
       "item_key": "oteryn:item.registry.i00000545",
       "reasons": [
-        "kind_unresolved",
         "type_outside_family"
       ],
       "route": "Terrain:primarytype_world_object",
@@ -190,355 +141,10 @@
     {
       "item_key": "oteryn:item.registry.i00000788",
       "reasons": [
-        "kind_unresolved",
         "type_outside_family"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 878
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001057",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1153
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001058",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1154
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001059",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1155
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001061",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1157
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001064",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1160
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001066",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1162
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001067",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1163
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001068",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1164
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001069",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1165
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001070",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1166
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001071",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1167
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001074",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1170
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001076",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1172
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001077",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1173
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001078",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1174
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001079",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1175
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001080",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1176
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001081",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1177
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001085",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1181
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001086",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1182
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001087",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1183
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001088",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1184
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001089",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1185
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001090",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1186
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001091",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1187
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001095",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1191
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001096",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1192
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001097",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1193
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001098",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1194
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001099",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1195
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001100",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1196
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001102",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1198
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001103",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1199
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001104",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1200
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001105",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1201
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001106",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1202
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001107",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1203
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001108",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1204
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001109",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1205
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001110",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1206
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001111",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1207
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001112",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1208
-    },
-    {
-      "item_key": "oteryn:item.registry.i00001113",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 1209
     },
     {
       "item_key": "oteryn:item.registry.i00002048",
@@ -925,236 +531,12 @@
       "source_item_id": 4814
     },
     {
-      "item_key": "oteryn:item.registry.i00004885",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5041
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004886",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5042
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004887",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5043
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004888",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5044
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004889",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5045
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004891",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5047
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004892",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5048
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004893",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5049
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004894",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5050
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004895",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5051
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004896",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5052
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004897",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5053
-    },
-    {
-      "item_key": "oteryn:item.registry.i00004898",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5054
-    },
-    {
-      "item_key": "oteryn:item.registry.i00005245",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5401
-    },
-    {
-      "item_key": "oteryn:item.registry.i00005246",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5402
-    },
-    {
-      "item_key": "oteryn:item.registry.i00005247",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 5403
-    },
-    {
       "item_key": "oteryn:item.registry.i00005598",
       "reasons": [
         "type_outside_family"
       ],
       "route": "Terrain:ground_or_border",
       "source_item_id": 5756
-    },
-    {
-      "item_key": "oteryn:item.registry.i00005996",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6159
-    },
-    {
-      "item_key": "oteryn:item.registry.i00005997",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6160
-    },
-    {
-      "item_key": "oteryn:item.registry.i00005998",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6161
-    },
-    {
-      "item_key": "oteryn:item.registry.i00005999",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6162
-    },
-    {
-      "item_key": "oteryn:item.registry.i00006000",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6163
-    },
-    {
-      "item_key": "oteryn:item.registry.i00006001",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6164
-    },
-    {
-      "item_key": "oteryn:item.registry.i00006002",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6165
-    },
-    {
-      "item_key": "oteryn:item.registry.i00006003",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6166
-    },
-    {
-      "item_key": "oteryn:item.registry.i00006004",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6167
-    },
-    {
-      "item_key": "oteryn:item.registry.i00006005",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6168
-    },
-    {
-      "item_key": "oteryn:item.registry.i00006006",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6169
-    },
-    {
-      "item_key": "oteryn:item.registry.i00006007",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6170
     },
     {
       "item_key": "oteryn:item.registry.i00006186",
@@ -1165,220 +547,12 @@
       "source_item_id": 6352
     },
     {
-      "item_key": "oteryn:item.registry.i00006396",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 6565
-    },
-    {
       "item_key": "oteryn:item.registry.i00008003",
       "reasons": [
         "type_outside_family"
       ],
       "route": "Terrain:ground_or_border",
       "source_item_id": 8193
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008028",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8218
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008429",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8621
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008430",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8622
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008431",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8623
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008432",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8624
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008433",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8625
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008434",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8626
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008435",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8627
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008436",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8628
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008437",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8629
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008438",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8630
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008439",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8631
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008440",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8632
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008441",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8633
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008442",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8634
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008443",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8635
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008444",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8636
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008445",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8637
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008446",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8638
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008447",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8639
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008448",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8640
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008449",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8641
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008450",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8642
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008451",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8643
-    },
-    {
-      "item_key": "oteryn:item.registry.i00008452",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 8644
     },
     {
       "item_key": "oteryn:item.registry.i00008524",
@@ -1395,102 +569,6 @@
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 8969
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009752",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9968
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009753",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9969
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009754",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9970
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009755",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9971
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009756",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9972
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009757",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9973
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009758",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9974
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009759",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9975
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009760",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9976
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009761",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9977
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009762",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9978
-    },
-    {
-      "item_key": "oteryn:item.registry.i00009763",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 9979
     },
     {
       "item_key": "oteryn:item.registry.i00012094",
@@ -1541,12 +619,28 @@
       "source_item_id": 12563
     },
     {
-      "item_key": "oteryn:item.registry.i00012180",
+      "item_key": "oteryn:item.registry.i00014674",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
-      "source_item_id": 12651
+      "source_item_id": 15293
+    },
+    {
+      "item_key": "oteryn:item.registry.i00014675",
+      "reasons": [
+        "no_client_appearance"
+      ],
+      "route": "Terrain:primarytype_world_object",
+      "source_item_id": 15294
+    },
+    {
+      "item_key": "oteryn:item.registry.i00014676",
+      "reasons": [
+        "no_client_appearance"
+      ],
+      "route": "Terrain:primarytype_world_object",
+      "source_item_id": 15295
     },
     {
       "item_key": "oteryn:item.registry.i00015661",
@@ -1639,74 +733,10 @@
     {
       "item_key": "oteryn:item.registry.i00015779",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 16483
-    },
-    {
-      "item_key": "oteryn:item.registry.i00016945",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 17658
-    },
-    {
-      "item_key": "oteryn:item.registry.i00016946",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 17659
-    },
-    {
-      "item_key": "oteryn:item.registry.i00016947",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 17660
-    },
-    {
-      "item_key": "oteryn:item.registry.i00016948",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 17661
-    },
-    {
-      "item_key": "oteryn:item.registry.i00016949",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 17662
-    },
-    {
-      "item_key": "oteryn:item.registry.i00016950",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 17663
-    },
-    {
-      "item_key": "oteryn:item.registry.i00016951",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 17664
-    },
-    {
-      "item_key": "oteryn:item.registry.i00016952",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 17665
     },
     {
       "item_key": "oteryn:item.registry.i00017237",
@@ -1717,428 +747,12 @@
       "source_item_id": 17950
     },
     {
-      "item_key": "oteryn:item.registry.i00017686",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18400
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017687",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18401
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017688",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18402
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017689",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18403
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017690",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18404
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017691",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18405
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017852",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18566
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017853",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18567
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017854",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18568
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017855",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18569
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017856",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18570
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017857",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18571
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017858",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18572
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017859",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18573
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017860",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18574
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017861",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18575
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017862",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18576
-    },
-    {
-      "item_key": "oteryn:item.registry.i00017863",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 18577
-    },
-    {
       "item_key": "oteryn:item.registry.i00019773",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 20543
-    },
-    {
-      "item_key": "oteryn:item.registry.i00019881",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20652
-    },
-    {
-      "item_key": "oteryn:item.registry.i00019952",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20727
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020030",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20805
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020031",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20806
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020048",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20823
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020049",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20824
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020050",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20825
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020053",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20828
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020054",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20829
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020055",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20830
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020061",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20836
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020064",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20839
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020065",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20840
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020066",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20841
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020067",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20842
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020068",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20843
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020069",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20844
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020070",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20845
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020071",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20846
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020072",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20847
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020073",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20848
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020074",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20849
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020075",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20850
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020076",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20851
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020077",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20852
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020078",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20853
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020104",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20879
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020105",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20880
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020106",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20881
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020107",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20882
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020108",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20883
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020109",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20884
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020110",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20885
-    },
-    {
-      "item_key": "oteryn:item.registry.i00020111",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 20886
     },
     {
       "item_key": "oteryn:item.registry.i00020527",
@@ -2191,7 +805,7 @@
     {
       "item_key": "oteryn:item.registry.i00020533",
       "reasons": [
-        "kind_unresolved",
+        "no_client_appearance",
         "type_outside_family"
       ],
       "route": "Terrain:primarytype_world_object",
@@ -2200,7 +814,7 @@
     {
       "item_key": "oteryn:item.registry.i00020534",
       "reasons": [
-        "kind_unresolved",
+        "no_client_appearance",
         "type_outside_family"
       ],
       "route": "Terrain:primarytype_world_object",
@@ -2209,7 +823,7 @@
     {
       "item_key": "oteryn:item.registry.i00020535",
       "reasons": [
-        "kind_unresolved",
+        "no_client_appearance",
         "type_outside_family"
       ],
       "route": "Terrain:primarytype_world_object",
@@ -2322,15 +936,23 @@
     {
       "item_key": "oteryn:item.registry.i00020705",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 21483
     },
     {
+      "item_key": "oteryn:item.registry.i00020777",
+      "reasons": [
+        "no_client_appearance"
+      ],
+      "route": "Terrain:primarytype_world_object",
+      "source_item_id": 21558
+    },
+    {
       "item_key": "oteryn:item.registry.i00020817",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 21598
@@ -2370,7 +992,7 @@
     {
       "item_key": "oteryn:item.registry.i00023104",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23929
@@ -2378,7 +1000,7 @@
     {
       "item_key": "oteryn:item.registry.i00023105",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23930
@@ -2386,7 +1008,7 @@
     {
       "item_key": "oteryn:item.registry.i00023106",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23931
@@ -2394,7 +1016,7 @@
     {
       "item_key": "oteryn:item.registry.i00023107",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23932
@@ -2402,7 +1024,7 @@
     {
       "item_key": "oteryn:item.registry.i00023108",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23933
@@ -2410,7 +1032,7 @@
     {
       "item_key": "oteryn:item.registry.i00023109",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23934
@@ -2418,7 +1040,7 @@
     {
       "item_key": "oteryn:item.registry.i00023110",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23935
@@ -2426,7 +1048,7 @@
     {
       "item_key": "oteryn:item.registry.i00023111",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23936
@@ -2434,7 +1056,7 @@
     {
       "item_key": "oteryn:item.registry.i00023112",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23937
@@ -2442,7 +1064,7 @@
     {
       "item_key": "oteryn:item.registry.i00023113",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23938
@@ -2450,7 +1072,7 @@
     {
       "item_key": "oteryn:item.registry.i00023114",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23939
@@ -2458,7 +1080,7 @@
     {
       "item_key": "oteryn:item.registry.i00023115",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23940
@@ -2466,7 +1088,7 @@
     {
       "item_key": "oteryn:item.registry.i00023116",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23941
@@ -2474,7 +1096,7 @@
     {
       "item_key": "oteryn:item.registry.i00023117",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23942
@@ -2482,7 +1104,7 @@
     {
       "item_key": "oteryn:item.registry.i00023118",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23943
@@ -2490,7 +1112,7 @@
     {
       "item_key": "oteryn:item.registry.i00023119",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23944
@@ -2498,7 +1120,7 @@
     {
       "item_key": "oteryn:item.registry.i00023120",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23945
@@ -2506,7 +1128,7 @@
     {
       "item_key": "oteryn:item.registry.i00023121",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23946
@@ -2514,7 +1136,7 @@
     {
       "item_key": "oteryn:item.registry.i00023122",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23947
@@ -2522,7 +1144,7 @@
     {
       "item_key": "oteryn:item.registry.i00023123",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 23948
@@ -2538,7 +1160,7 @@
     {
       "item_key": "oteryn:item.registry.i00027420",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 28293
@@ -2546,7 +1168,7 @@
     {
       "item_key": "oteryn:item.registry.i00027432",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 28305
@@ -2568,900 +1190,12 @@
       "source_item_id": 28673
     },
     {
-      "item_key": "oteryn:item.registry.i00028299",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29180
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028300",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29181
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028301",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29182
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028302",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29183
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028303",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29184
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028306",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29187
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028307",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29188
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028308",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29189
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028309",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29190
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028310",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29191
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028312",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29193
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028313",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29194
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028314",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29195
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028317",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29198
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028318",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29199
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028319",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29200
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028320",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29201
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028321",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29202
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028324",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29205
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028325",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29206
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028326",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29207
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028327",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29208
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028328",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29209
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028330",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29211
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028331",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29212
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028332",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29213
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028335",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29216
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028336",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29217
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028337",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29218
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028338",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29219
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028339",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29220
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028342",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29223
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028343",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29224
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028344",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29225
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028345",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29226
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028346",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29227
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028348",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29229
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028349",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29230
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028350",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29231
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028353",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29234
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028354",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29235
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028355",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29236
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028356",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29237
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028357",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29238
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028360",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29241
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028361",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29242
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028362",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29243
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028363",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29244
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028364",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29245
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028366",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29247
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028367",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29248
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028368",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29249
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028370",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29251
-    },
-    {
       "item_key": "oteryn:item.registry.i00028371",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 29252
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028372",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29253
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028373",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29254
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028374",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29255
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028375",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29256
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028376",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29257
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028377",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29258
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028378",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29259
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028379",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29260
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028380",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29261
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028381",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29262
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028382",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29263
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028383",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29264
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028384",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29265
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028385",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29266
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028386",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29267
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028387",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29268
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028388",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29269
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028389",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29270
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028390",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29271
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028391",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29272
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028392",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29273
-    },
-    {
-      "item_key": "oteryn:item.registry.i00028526",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 29407
-    },
-    {
-      "item_key": "oteryn:item.registry.i00029631",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 30655
-    },
-    {
-      "item_key": "oteryn:item.registry.i00029632",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 30656
-    },
-    {
-      "item_key": "oteryn:item.registry.i00029633",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 30657
-    },
-    {
-      "item_key": "oteryn:item.registry.i00029634",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 30658
-    },
-    {
-      "item_key": "oteryn:item.registry.i00029635",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 30659
-    },
-    {
-      "item_key": "oteryn:item.registry.i00029636",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 30660
-    },
-    {
-      "item_key": "oteryn:item.registry.i00029645",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 30670
-    },
-    {
-      "item_key": "oteryn:item.registry.i00029646",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 30671
-    },
-    {
-      "item_key": "oteryn:item.registry.i00029647",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 30672
-    },
-    {
-      "item_key": "oteryn:item.registry.i00029648",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 30673
-    },
-    {
-      "item_key": "oteryn:item.registry.i00030272",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 31298
-    },
-    {
-      "item_key": "oteryn:item.registry.i00030273",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 31299
-    },
-    {
-      "item_key": "oteryn:item.registry.i00030274",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 31300
-    },
-    {
-      "item_key": "oteryn:item.registry.i00030285",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 31311
-    },
-    {
-      "item_key": "oteryn:item.registry.i00030286",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 31312
-    },
-    {
-      "item_key": "oteryn:item.registry.i00030287",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 31313
-    },
-    {
-      "item_key": "oteryn:item.registry.i00030291",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 31317
-    },
-    {
-      "item_key": "oteryn:item.registry.i00030293",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 31319
-    },
-    {
-      "item_key": "oteryn:item.registry.i00030355",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 31381
-    },
-    {
-      "item_key": "oteryn:item.registry.i00032208",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 33692
-    },
-    {
-      "item_key": "oteryn:item.registry.i00032209",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 33693
-    },
-    {
-      "item_key": "oteryn:item.registry.i00032211",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 33695
-    },
-    {
-      "item_key": "oteryn:item.registry.i00032212",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 33696
-    },
-    {
-      "item_key": "oteryn:item.registry.i00032213",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 33697
-    },
-    {
-      "item_key": "oteryn:item.registry.i00032214",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 33698
-    },
-    {
-      "item_key": "oteryn:item.registry.i00032215",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 33699
-    },
-    {
-      "item_key": "oteryn:item.registry.i00032217",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 33701
-    },
-    {
-      "item_key": "oteryn:item.registry.i00032218",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 33702
-    },
-    {
-      "item_key": "oteryn:item.registry.i00032219",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 33703
-    },
-    {
-      "item_key": "oteryn:item.registry.i00032220",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 33704
-    },
-    {
-      "item_key": "oteryn:item.registry.i00033008",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 36078
-    },
-    {
-      "item_key": "oteryn:item.registry.i00033009",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 36079
-    },
-    {
-      "item_key": "oteryn:item.registry.i00033010",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 36080
-    },
-    {
-      "item_key": "oteryn:item.registry.i00033011",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 36081
-    },
-    {
-      "item_key": "oteryn:item.registry.i00033012",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 36082
-    },
-    {
-      "item_key": "oteryn:item.registry.i00033013",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 36083
     },
     {
       "item_key": "oteryn:item.registry.i00033122",
@@ -3594,90 +1328,10 @@
     {
       "item_key": "oteryn:item.registry.i00034192",
       "reasons": [
-        "kind_unresolved"
+        "no_client_appearance"
       ],
       "route": "Terrain:primarytype_world_object",
       "source_item_id": 38114
-    },
-    {
-      "item_key": "oteryn:item.registry.i00034543",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 38479
-    },
-    {
-      "item_key": "oteryn:item.registry.i00034544",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 38480
-    },
-    {
-      "item_key": "oteryn:item.registry.i00034545",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 38481
-    },
-    {
-      "item_key": "oteryn:item.registry.i00034546",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 38482
-    },
-    {
-      "item_key": "oteryn:item.registry.i00034547",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 38483
-    },
-    {
-      "item_key": "oteryn:item.registry.i00034548",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 38484
-    },
-    {
-      "item_key": "oteryn:item.registry.i00034549",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 38485
-    },
-    {
-      "item_key": "oteryn:item.registry.i00034550",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 38486
-    },
-    {
-      "item_key": "oteryn:item.registry.i00034551",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 38487
-    },
-    {
-      "item_key": "oteryn:item.registry.i00034552",
-      "reasons": [
-        "kind_unresolved"
-      ],
-      "route": "Terrain:primarytype_world_object",
-      "source_item_id": 38488
     },
     {
       "item_key": "oteryn:item.registry.i00035868",
@@ -3686,11 +1340,19 @@
       ],
       "route": "Terrain:ground_or_border",
       "source_item_id": 42337
+    },
+    {
+      "item_key": "oteryn:item.registry.i00037502",
+      "reasons": [
+        "no_client_appearance"
+      ],
+      "route": "Terrain:primarytype_world_object",
+      "source_item_id": 50134
     }
   ],
-  "held_count": 460,
+  "held_count": 168,
   "reasons": {
-    "kind_unresolved": "No WO-0 kind rule matched. The family route is fixed by the converter, but the kind needs an owner or architect call, and a family key is frozen once minted.",
+    "no_client_appearance": "The id has no client appearance, so D94 excludes it from the family; it stays a non-materializable Item record.",
     "type_outside_family": "The items.xml type is one the routed family's kind set does not express, so the family itself is contested (WO-0 remaining_unknowns: contested routes)."
   },
   "schema": "OTERYN_WORLD_OBJECT_TERRAIN_HELD/v1",
