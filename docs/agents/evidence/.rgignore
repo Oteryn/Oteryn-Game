@@ -1,0 +1,4 @@
+# Keeps agent searches (ripgrep / the Grep tool) out of the multi-megabyte
+# single-line evidence JSON here. A match prints the whole line. Read these
+# files with jq or Python when a task needs them.
+*.json
