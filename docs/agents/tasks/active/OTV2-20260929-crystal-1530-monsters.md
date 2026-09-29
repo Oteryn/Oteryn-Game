@@ -4,14 +4,14 @@
 task_id: OTV2-20260929-crystal-1530-monsters
 title: Game version 15.30 monsters from the CrystalServer summer-update branch (Canary lacks them)
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1209
 jira: KAN-16
-base_sha: null
+base_sha: 0bd0fd75
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
