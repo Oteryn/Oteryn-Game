@@ -4,18 +4,20 @@
 task_id: OTV2-20260929-spell-chain-runtime
 title: Engine chain runtime for player spells with Ability.chain (D12, S23)
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1219
 allocation_comment: "#162 5886481110"
 base_branch: main
 branch: claude/spell-chain-runtime
 base_sha: 1869ade0e657856c2125ff8c5fdbe21cc61f4e1a
-head_sha: null
+head_sha: 46889a4641ddc499f068a71b9cd0d1e61f0f2c0e
+final_head_sha: 46889a4641ddc499f068a71b9cd0d1e61f0f2c0e
+final_head_frozen_at: null
 owner: "Oteryn: content" (Claude Code)
 created_at: 2026-09-29T08:50:00Z
-updated_at: 2026-09-29T08:50:00Z
+updated_at: 2026-09-29T10:30:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/spell/**
@@ -23,7 +25,7 @@ owned_paths:
   - apps/game-server/tests/*spell*
   - tools/content-schema/spell-authoring/**
   - docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md
-  - docs/agents/tasks/active/OTV2-20260929-spell-chain-runtime.md
+  - docs/agents/tasks/archive/OTV2-20260929-spell-chain-runtime.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -59,3 +61,13 @@ wire and scheduler, and the chain doc itself.
 - `cargo fmt --check`, `cargo clippy --workspace --all-targets --quiet -- -D warnings`,
   `cargo test --quiet -p oteryn-game-server`
 - `python validate_spell.py` over the starter bundles, `python tools/agents/validate_governance.py`
+
+## Terminal integration
+
+- **Final head:** `46889a4641ddc499f068a71b9cd0d1e61f0f2c0e`.
+- **Integration:** merged into main as PR #1219, merge commit
+  `291f5eb79d6720c627335a0ad2aa84fb0603f074` (2026-09-29T09:46:57Z).
+- **Closeout:** the record was archived by `OTV2-20260929-spell-part-c` (issue #162, allocation comment 5887751302).
+- **Owned paths:** released.
+- **Binding carry-over:** Q1-Q2 of the chain candidate remain for the owner's in-game tests; the support chains
+  (chain §4.2) and the four excluded spells stay blocked by their own behaviours.
