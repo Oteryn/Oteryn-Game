@@ -55,6 +55,18 @@
   receipt now carries immutable origin metadata and is evictable only when that metadata is present
   and matches the attacker's *current* high-water session with a covered sequence; an unsequenced
   receipt is never evictable. Both fixes are in §4.2; D140, D142, D143 and D144 remain unchanged.
+- Revision note (2026-09-29, control-plane correction, round 4): round 3's orphan rule was backwards.
+  A receipt whose origin session has been *superseded* is the **safest** to evict, not the least
+  safe: that session is terminal and non-revivable (FND-04B §21), and the session-generation fence
+  (§3) refuses its commands before they ever reach the carrier, so no command from it can ever arrive
+  to replay that receipt. Never evicting orphaned receipts let up to 16 reconnect-orphaned receipts
+  from one attacker permanently occupy the pool and block new hits — reintroducing the unkillable-
+  creature bug round 1 fixed, in a new guise. Corrected rule (§4.2 point 4): a sequenced receipt is
+  evictable iff its attacker is currently tracked and either its origin session differs from the
+  attacker's current session (superseded, hence fenced, hence safe) or it is covered by the current
+  session's high-water mark (the ordinary same-session case); an unsequenced receipt remains never
+  evictable. The reachability statement and the round-3 regression test are corrected to match (§5).
+  D140, D142, D143 and D144 remain unchanged.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
 ## 1. Question
@@ -304,14 +316,14 @@ the caller's opaque `occurrence` bytes as its identity, exactly as today; such a
 "unsequenced" and, per the next point, never evictable.
 
 **4. The mechanism: bounded eviction, guarded by immutable per-receipt origin metadata and the
-attacker's current session-scoped high-water mark (round 3, P1 fix b).** Each retained
-`OwnerCommitRecord` gains an immutable field set once, at creation, never mutated:
-`origin: Option<(CharacterId, GameSessionId, u64)>` — `Some((attacker, attacker_session,
-attacker_sequence))` for an attributed commit (point 3, above), `None` for an unsequenced one.
-D132/D3-3's bounded 16-entry `DamageContributor` map (already keyed by `CharacterId`,
-`COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX`) gains one field per entry, `high_water:
-Option<(GameSessionId, u64)>`, reusing the same bounded structure rather than adding a second one.
-The lookup widens:
+attacker's current session-scoped high-water mark (round 3, P1 fix b; corrected round 4, see header
+revision note).** Each retained `OwnerCommitRecord` gains an immutable field set once, at creation,
+never mutated: `origin: Option<(CharacterId, GameSessionId, u64)>` — `Some((attacker,
+attacker_session, attacker_sequence))` for an attributed commit (point 3, above), `None` for an
+unsequenced one. D132/D3-3's bounded 16-entry `DamageContributor` map (already keyed by
+`CharacterId`, `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX`) gains one field per entry,
+`high_water: Option<(GameSessionId, u64)>`, reusing the same bounded structure rather than adding a
+second one. The lookup widens:
 
 - **Match found** (a retained record's occurrence identity — carrier-derived for an attributed
   commit, point 3 — equals the incoming one): unchanged idempotent-replay/`PlanConflict` logic,
@@ -337,76 +349,79 @@ The lookup widens:
   monotonically raise — a differing session always replaces) that attacker's `high_water` to
   `(attacker_session, attacker_sequence)`; append a new record, storing its own `origin` (point 3)
   and the next ordinal (D142). If the retained set is already at 16, **evict the oldest evictable
-  record first** to make room, rather than refusing the new occurrence — where **a record is
-  evictable if and only if** its own `origin = Some((character, session, sequence))` **and** the
-  attacker's *current* `high_water` is `Some((session', seq'))` with `session' == session` (the
-  same session the record was created under) **and** `seq' >= sequence` (the mark has reached or
-  passed this exact record). A record with `origin = None` is never evictable. Critically, a record
-  whose `origin.session` no longer equals the attacker's *current* `high_water.session` (that
-  attacker reconnected since this record was made) is **also never evictable** — the mark having
-  moved to a different session says nothing about whether *this* record's own session/sequence is
-  covered, so treating "attacker is tracked at all" as sufficient (the round-2 shape) was exactly
-  the P1: it could evict a record whose own stale replay the current mark can no longer prove safe
-  to refuse (§4.2's "differs" branch would treat that replay as a fresh reconnect, not a refusal).
-  Under the corrected condition, every record made within one unbroken session remains evictable for
-  as long as that session keeps producing higher sequences (the ordinary single-attacker,
-  many-hits case is unaffected), and a record only "freezes" into permanently retained once its own
-  session is superseded by a reconnect.
+  record first** to make room, rather than refusing the new occurrence — where **a record with
+  `origin = Some((character, session, sequence))` is evictable if and only if** the attacker's
+  *current* `high_water` is `Some((session', seq'))` for that same `character`, **and either**:
+  - **its origin session is not the attacker's current session** (`session' != session`) — the
+    record's own session has been *superseded*, and a superseded `GameSessionId` is fenced (FND-04B
+    §21, `ConnectionFence`/`StaleConnectionGeneration`, §3): no command from it can ever reach the
+    carrier again, so a stale replay of this exact record is not merely refusable — it is
+    structurally impossible. This makes an orphaned record the **safest** to evict, not the least
+    safe (corrected round 4; the round-3 text had this backwards); or
+  - **it is covered by the current session's high-water mark** (`session' == session` and
+    `seq' >= sequence`) — the ordinary same-session progression case.
+
+  A record with `origin = None` is never evictable, whatever its attacker's later state. In
+  practice every record whose attacker is currently tracked at all satisfies one of the two branches
+  (a same-session record is always covered, since `high_water`'s sequence for one session can only
+  ever equal or exceed an already-accepted earlier sequence from that same session; a
+  different-session record is always superseded-hence-safe) — a record fails to be evictable only
+  when its attacker has no current `high_water` entry at all (untracked: a 17th-or-later distinct
+  attacker past `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX`, or never wired with attacker
+  metadata) or the record itself has `origin = None`.
 - **No match, health > 0, retained set at 16, and no evictable record exists** (every retained
-  receipt either has `origin = None`, or has an `origin` whose session no longer matches its
-  attacker's current `high_water` session — including a 17th-or-later distinct attacker past
-  `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX` = 16, which is never tracked in D132's map at
-  all): refuse with `CarrierError::DamageReceiptCapacityExceeded`, fail-closed, exactly as
-  GAME-ABILITY-01 §12 requires — HP and every retained receipt stay untouched. **Restated and
-  confirmed unreachable on the rat/playable path:** reaching it needs 16 simultaneously
-  non-evictable receipts, which requires either genuinely unsequenced (attacker-less) sources, a
-  17th-plus distinct attacker, or receipts orphaned by an *in-fight reconnect* — every ordinary
-  player hit against the D116 rat carries a `CommandRef` (point 3) under one continuous session, so
-  its own receipts stay mutually evictable throughout and the bound is not reached by any number of
-  hits from one uninterrupted session.
+  receipt has `origin = None`, or an `origin` whose attacker is not currently tracked at all —
+  D132's bounded contributor map has no entry for that `CharacterId`, whether because it is a
+  17th-or-later distinct attacker past `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX` = 16 or
+  because attribution was never wired for that commit): refuse with
+  `CarrierError::DamageReceiptCapacityExceeded`, fail-closed, exactly as GAME-ABILITY-01 §12
+  requires — HP and every retained receipt stay untouched. **Restated and confirmed unreachable on
+  the rat/playable path:** reaching it needs 16 simultaneously non-evictable receipts, which now
+  requires genuinely unsequenced (attacker-less) sources or a 17th-plus distinct attacker —
+  reconnect-orphaned receipts no longer count toward this, because they are evictable (above); every
+  ordinary player hit against the D116 rat carries a `CommandRef` (point 3) from a tracked attacker,
+  so the bound is not reached by any number of hits, reconnects included.
 
 `CarrierError::OccurrenceConflict` is still removed as unreachable (§4.2 original reasoning
 unchanged); its two test sites are rewritten to assert `CreatureNotActionable`, as before.
 
-**Replay window.** Exactly the currently retained receipts (up to 16) replay byte-identically; an
-occurrence whose receipt was evicted, if it is ever resubmitted **under the same origin
-`(character, session, sequence)`**, is provably stale (refused, never re-applied, §4.2 point 4) —
-because eviction only ever removes a record whose origin session still matches the attacker's
-*current* high-water session, i.e. exactly the records whose future resubmission the stale check can
-still catch. A record whose origin's session has since been superseded by a reconnect is never
-evicted at all; it stays retained and still replays byte-identically for the rest of the generation.
-A resubmission under a genuinely different, current session is never treated as a replay of a prior
-one (it is a new player action, §4.2 point 4's "differs" branch). No record is ever evicted, and no
-receipt whose replay the carrier could no longer detect is ever discarded.
+**Replay window.** Exactly the currently retained receipts (up to 16) replay byte-identically. An
+occurrence whose receipt was evicted, if it is ever resubmitted, is handled by the stale-vs-new
+check (above), not by an exact-match lookup: a resubmission under the *same, still-current* session
+and a sequence the mark already covers is refused `StaleAttackerSequence` (never re-applied); a
+resubmission under the record's *original* session, once that session has been superseded, cannot
+occur at all — the session-generation fence (§3) refuses it before it reaches the carrier, which is
+exactly why an orphaned record is safe to evict in the first place. A resubmission under a genuinely
+different, current session is a new player action (§4.2 point 4's "differs" branch), never a replay
+of a prior one. No record's eviction ever removes protection a live session could still need: either
+the resubmission is structurally impossible (fenced), or it is still caught by the stale check
+against the live session's own mark.
 
 **Why eviction is now safe (unlike the originally rejected FIFO option, §6, and unlike the round-2
-shape Codex found unsound, header revision note round 3).** Plain FIFO eviction was rejected because
-evicting a receipt with no ordering signal at all could let a later replay of it be mistaken for
-new. The round-2 shape closed that for the common case but eviction eligibility was keyed on "is
-this attacker tracked," which can stay true across a reconnect while the *specific record's own*
-coverage does not: evicting a record whose origin session no longer matches the current high-water
-session would have discarded the one thing that let the stale check refuse that record's own
-replay. The round-3 fix ties eviction strictly to each record's own immutable origin matching the
-*current* high-water mark for that *same* session: a record is only ever evicted when a resubmission
-of it, by construction, cannot reach the "differs — not stale" branch, because its origin session is
-exactly the attacker's current one. Eviction can therefore never remove the one piece of state a
-future stale check depends on.
+shape Codex found unsound on PR #1218).** Plain FIFO eviction was rejected because evicting a
+receipt with no ordering signal at all could let a later replay of it be mistaken for new. The
+round-2 shape ("attacker tracked at all") and the round-3 shape ("same session and covered") both
+under- or over-restricted eviction; round 4 ties it to one consistent trust boundary the design
+already relies on elsewhere (§4.2 point 4's "differs" branch): the session-generation fence (§3),
+already proven and already wired, is what makes *both* directions safe — trusting a differing
+session id as legitimately current (admission) and trusting a superseded session id as never
+resubmittable (eviction) are the same trust, applied symmetrically, not two different assumptions.
+A same-session record is protected by the ordinary stale check for as long as its session lives; an
+orphaned record needs no protection at all, because nothing can ever resubmit it.
 
 **Residual, explicitly accepted limitation.** `DamageReceiptCapacityExceeded` remains reachable only
 when at least 16 of the retained receipts are simultaneously non-evictable — `origin = None`
-(genuinely attacker-less, AI/environment-sourced), or `origin` present but its attacker either has
-no current `high_water` entry at all (a 17th-or-later distinct attacker past D132's own
-already-accepted 16-attacker cardinality ceiling, `COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE`, whose
-own overflow rule already accepts that a 17th+ attacker's damage is applied but not tracked for
-attribution; this decision extends the same accepted ceiling to eviction-safety) or a current
-`high_water` under a *different* session (that attacker reconnected since this record was made, and
-this specific record was never superseded by a later one from the same, now-stale session). Reaching
-the bound needs 16 simultaneously non-evictable receipts, never merely 16 total hits from one
-uninterrupted attacker — narrower than, and consistent with, D132's already-accepted boundary, and
-not reachable by the rat/playable path (every player attacker supplies a `CharacterId` and one
-continuous session for the length of one rat fight, §4.2 point 4). Raising this further (e.g. a
-larger or unbounded high-water-mark map for untracked sources, or retaining reconnect-orphaned
-receipts outside the 16-slot pool) is a later decision if content needs it (§7).
+(genuinely attacker-less, AI/environment-sourced), or an `origin` whose attacker has no current
+`high_water` entry at all (a 17th-or-later distinct attacker past D132's own already-accepted
+16-attacker cardinality ceiling, `COMBAT01-DAMAGE-CONTRIBUTORS-PER-CREATURE`, whose own overflow
+rule already accepts that a 17th+ attacker's damage is applied but not tracked for attribution; this
+decision extends the same accepted ceiling to eviction-safety). Reconnects no longer contribute to
+this limitation (round 4): a reconnected attacker's pre-reconnect receipts are evictable, not stuck.
+Reaching the bound needs 16 simultaneously non-evictable receipts, never merely 16 total hits or any
+number of reconnects from one attacker — narrower than, and consistent with, D132's already-accepted
+boundary, and not reachable by the rat/playable path (every player attacker supplies a `CharacterId`,
+§4.2 point 4). Raising this further (e.g. a larger or unbounded high-water-mark map for untracked
+sources) is a later decision if content needs it (§7).
 
 **Reconnect, closed (round 2).** The round-1 open question — whether a `CommandId` sequence stays
 monotonic across a reconnect — is closed by FND-04B itself, not inferred: there are only two cases,
@@ -529,26 +544,31 @@ Required tests (this child, white-box against the carrier unless noted):
   an exact resubmission of the *same* `(character, session, sequence)` still replays byte-identical
   regardless of what `occurrence` bytes the caller passes for it, since only the triple is read as
   identity for an attributed commit.
-- **Reconnect-orphaned receipts are never evicted (round 3, P1 fix b).** Attacker lands a hit under
-  session `A`, sequence 1 (retained, `origin = Some((attacker, A, 1))`); the attacker reconnects
-  under session `B` and lands 16 further distinct hits, each one evicting the *previous* `B`-origin
-  receipt as usual — the original `A`-origin receipt is never chosen for eviction throughout,
-  because its origin session (`A`) never again matches the attacker's current `high_water` session
-  (`B`). It stays retained and still replays byte-identically if resubmitted. A separate test drives
-  enough simultaneously non-evictable receipts (orphaned-by-reconnect and/or untracked) to exactly
-  16 and proves the 17th such receipt returns `DamageReceiptCapacityExceeded`, matching §4.2's
-  restated bound exactly.
+- **Reconnect-orphaned receipts are the safest to evict, so they are evicted (round 4, corrected).**
+  Attacker lands a hit under session `A`, sequence 1 (retained, `origin = Some((attacker, A, 1))`);
+  the attacker reconnects under session `B` and lands hits until the retained set is at 16 and a 17th
+  `B`-origin occurrence needs room: the `A`-origin receipt (now superseded, hence the *most*
+  evictable, not the least) is evicted, never the reverse — proving a reconnect cannot let one
+  attacker's stale-session receipts pile up and starve new hits, the exact regression round 3
+  introduced. A second assertion proves the fence side of the same guarantee, not the carrier's own
+  job to re-verify (§3): a late command still carrying session `A` and any sequence, submitted after
+  `B` has taken over, is refused upstream by the session-generation fence
+  (`reconnect_advances_generation_and_fences_stale_transport`, §3) before it ever reaches
+  `commit_creature_damage_inner` — so even though the carrier itself would (correctly, per §4.2
+  point 4's "differs" branch) treat a differing session as a new, current one if it ever arrived, no
+  such command from a genuinely superseded session ever does.
 - **Conflict.** A replay of an already-committed occurrence with a different `binding`/`damage`
   still returns `PlanConflict` (unchanged). A genuinely new, distinct occurrence after the creature
   is already dead returns `CreatureNotActionable` (replacing the two `OccurrenceConflict` sites
   named in §4.2).
 - **The bound at max and max+1, evictable vs. non-evictable.** 16 distinct occurrences from one
-  attacker under one unbroken session (each evictable by the next, per §4.2 point 4) retain; a 17th
-  such occurrence evicts the oldest and still applies (never `DamageReceiptCapacityExceeded`).
-  Separately, 16 distinct *non-evictable* occurrences (any mix of `origin = None`, a 17th-plus
-  distinct attacker past `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX`, and reconnect-orphaned
-  origins) retain; a 17th non-evictable occurrence returns `DamageReceiptCapacityExceeded`, proving
-  the residual limitation is exactly as narrow as §4.2 states.
+  attacker, mixing same-session progression and at least one reconnect (each still evictable by the
+  next, per §4.2 point 4's corrected rule) retain; a 17th such occurrence evicts the oldest —
+  reconnect-orphaned or not — and still applies (never `DamageReceiptCapacityExceeded`). Separately,
+  16 distinct *non-evictable* occurrences (any mix of `origin = None` and 17th-plus distinct
+  attackers past `COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX`, with no reconnect involved) retain;
+  a 17th non-evictable occurrence returns `DamageReceiptCapacityExceeded`, proving the residual
+  limitation is exactly as narrow as §4.2 now states.
 - **The ordinal feeding D3-3's accumulator end-to-end.** Two distinct attackers land hits in a
   known interleaved order against one creature; the ordinal D142 assigns at each new commit is
   asserted strictly increasing and gap-free across *both* attackers' commits (not just one
@@ -565,12 +585,19 @@ Required tests (this child, white-box against the carrier unless noted):
   Superseded, not simply rejected: the current D141 (§4.2) evicts, but only ever a record whose own
   immutable origin still matches its attacker's *current* high-water session — the two options
   differ exactly in that guarantee.
-- **Eviction eligibility inferred from "is this attacker currently tracked at all"** (the round-2
-  shape). A Codex P1 on PR #1218 (header revision note round 3): tracked-at-all can stay true across
-  a reconnect while a *specific* record's own coverage does not, so this could evict a record whose
-  own stale replay the current, now-different-session high-water mark could no longer catch — the
-  round-3 fix instead stores immutable origin metadata per record and requires the origin's own
-  session to match the attacker's current one before that record is ever eviction-eligible.
+- **Eviction eligibility inferred from "is this attacker currently tracked at all," with no
+  per-record origin metadata to justify it** (the round-2 shape). A Codex P1 on PR #1218 (header
+  revision note round 3): with no immutable record of what session/sequence a receipt was actually
+  created under, there was nothing to audit *why* a given eviction was safe — round 3 added the
+  missing per-record `origin` metadata this decision now keeps.
+- **Eviction restricted to same-session-and-covered records only, treating a superseded session's
+  records as permanently non-evictable** (the round-3 shape). Rejected by the control plane (header
+  revision note round 4): this had the safety direction backwards — a superseded session cannot ever
+  resubmit anything (FND-04B §21, the session-generation fence, §3), making its records the *safest*
+  to evict, not the least safe. Treating them as permanently protected let up to 16 reconnect-orphaned
+  records from one attacker occupy the pool forever, reintroducing an unkillable-creature bug. The
+  corrected rule (§4.2 point 4) keeps round 3's per-record `origin` metadata but evicts a superseded
+  record precisely because it is superseded, not in spite of it.
 - **The caller's opaque `AbilityOccurrenceId` as the authoritative replay identity for an attributed
   commit** (the round-1/round-2 shape). A second Codex P1: nothing tied that opaque identity to the
   session/sequence the stale check reasons about, so a current session could present an evicted
@@ -650,7 +677,7 @@ required_revalidation:
   - "replay: a still-retained occurrence replays byte-identical; a replay of an evicted occurrence (same origin session) returns StaleAttackerSequence and mutates nothing"
   - "reconnect: a stale sequence resubmitted within the same session is refused; a lower sequence under a new GameSessionId for the same attacker is accepted, never StaleAttackerSequence"
   - "cross-session identity: a session's commit cannot be made to carry another session's occurrence identity via caller-supplied bytes (round 3, P1 a); exact same-origin resubmission still replays regardless of caller-supplied bytes"
-  - "reconnect-orphaned receipts: a receipt whose origin session no longer matches its attacker's current high-water session is never evicted (round 3, P1 b); it still replays if resubmitted"
+  - "reconnect-orphaned receipts: a receipt whose origin session no longer matches its attacker's current high-water session IS evicted before a same-session-covered one is needed (round 4, corrected); a late command from that superseded session is refused by the session-generation fence before it reaches the carrier"
   - "conflict: PlanConflict unchanged; CreatureNotActionable replaces OccurrenceConflict for a new occurrence against a dead creature"
   - "bound: evictable occurrences past 16 always evict-and-admit, never DamageReceiptCapacityExceeded; 16 simultaneously non-evictable occurrences plus a 17th does return it"
   - "ordinal: strictly increasing and gap-free across attackers; D132's tie-break proven to consume the same sequence"
