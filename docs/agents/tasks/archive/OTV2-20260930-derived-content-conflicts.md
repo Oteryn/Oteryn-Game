@@ -17,6 +17,7 @@ created_at: 2026-09-30
 updated_at: 2026-09-30
 owned_paths:
   - tools/content-migration/regenerate_content.py
+  - tools/content-migration/test_regenerate_content.py
   - tools/content-migration/world_project_v2_to_tree.py  # shared: registry file format only
   - tools/content-schema/charm-authoring/charm_authoring.py  # shared: registry file format only
   - tools/content-schema/proficiency-authoring/proficiency_authoring.py  # shared: registry file format only
@@ -63,12 +64,25 @@ so no file format avoids the conflict. It is resolved by regeneration every time
 - **Registry format.** `content/{project,manifest,content.lock}.json` are written one key per
   line. That halves the `manifest.json` conflicts (20 to 10); the lock still conflicts on
   `legacy_blobs`.
-- **Coordinator procedure.** One paragraph: use the script for derived conflicts, and serialize
-  work that writes derived content.
+- **Coordinator procedure.** One paragraph: only the content integrator merges and regenerates
+  (Amendment 01 §5, #1390); authors change sources only.
 
 The Rust package pins stay. They are the only required-lane guard of the exact package bytes:
 `game-gate` is the only required status, and the materialize-and-compare workflow is advisory.
 Removing them would weaken protection, so the script re-pins them instead.
+
+## Review fixes (control-plane advisory review of `34983c0b`)
+
+- **HIGH.** A conflict in `imports/**` or `content/interactions/index.json` now stops the script:
+  those files hold hand-maintained rows (TibiaWiki import-only sources and batches, hand-written
+  index fields), and `--theirs` dropped one side's rows. `test_regenerate_content.py` builds a real
+  stopped merge and proves the script refuses and both sides' rows stay in the merge stages; it
+  fails on `34983c0b`.
+- **MEDIUM.** The checks add `test_engine_items.py`, `item_weapon_proficiency.py --check` and
+  `g4_item_crystal_binding_generator.py --check`. The docstring states the scope: the tree,
+  `content/world` and the Rust pins; other Item-derived artifacts and hand-written count pins may
+  need a manual edit.
+- **LOW.** The coordinator paragraph follows Amendment 01 §5 and STOP_WRITES.
 
 ## Evidence
 
@@ -93,7 +107,7 @@ Removing them would weaken protection, so the script re-pins them instead.
 
 ## Validation
 
-- `regenerate_content.py`: the determinism run and both replays above.
+- `regenerate_content.py`: the determinism run and both replays above; `test_regenerate_content.py`.
 - The tree generator, validator and tests pass; `content --check` passes for Charm, Proficiency
   and RewardClaim, and their tests pass.
 - `validate_materialized_game_tree.py` and `test_classify_content_routing.py` pass.

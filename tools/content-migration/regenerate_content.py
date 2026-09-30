@@ -7,12 +7,21 @@ After `git merge origin/main` stops on conflicts, run:
 
 Every file below is derived from committed inputs, so a conflict in it is never a decision: take
 either side, regenerate, and the result is exact. A conflict in any other path stops the script,
-because that one needs a person.
+because that one needs a person. So does a conflict in a file the steps rewrite but that also
+holds hand-maintained rows (`imports/**`, `content/interactions/index.json`): taking one side
+would drop the other side's rows.
 
 Steps: the legacy WorldProject package (content/world, from the materializer), the Rust
 inventory pins in content_world_project_repository.rs, the content tree (world_project_v2_to_tree),
 the Charm, Proficiency and RewardClaim registrations, then the validators. The script never
 commits; review `git status` and commit the merge yourself.
+
+Scope: the command regenerates only the content tree, `content/world` and the Rust package pins.
+It does not regenerate other Item-derived artifacts (the weapon proficiency sample, the TibiaWiki
+snapshot re-key and promotion packet, the pins in `item_stats_promotion.rs`, the Crystal binding
+output); where a `--check` exists it runs it, and a failure there needs a manual regeneration.
+Hand-written count pins (for example `PROFICIENCY_BINDING_COUNT`) can go stale after a clean merge;
+the checks catch that, and the pin is then edited by hand.
 """
 
 from __future__ import annotations
@@ -39,6 +48,11 @@ REGISTRY = (
 )
 # Written by the authoring tools but not listed in the content manifest.
 EXTRA_DERIVED = ("content/interactions/index.json",)
+# Rewritten by the steps below but holding hand-maintained rows: the TibiaWiki import-only
+# sources and batches (read back by world_project_v2_to_tree), hand-captured import records, and
+# the hand-written fields of the interactions index. A conflict here needs a person.
+HAND_MAINTAINED_PREFIXES = ("imports/",)
+HAND_MAINTAINED = ("content/interactions/index.json",)
 
 AUTHORING_TOOLS = (
     "tools/content-schema/charm-authoring/charm_authoring.py",
@@ -52,6 +66,9 @@ CHECKS = (
     ["python3", "tools/content-schema/validate_materialized_game_tree.py"],
     ["python3", "tools/content-census/item_key_references.py"],
     *(["python3", tool, "content", "--check"] for tool in AUTHORING_TOOLS),
+    ["python3", "tools/content-schema/item-authoring/test_engine_items.py"],
+    ["python3", "tools/content-schema/item-authoring/item_weapon_proficiency.py", "--check"],
+    ["python3", "tools/content-census/g4_item_crystal_binding_generator.py", "--check"],
     [
         "cargo",
         "test",
@@ -96,16 +113,22 @@ def derived_paths() -> set[str]:
     return managed | world | set(REGISTRY) | set(EXTRA_DERIVED)
 
 
+def needs_person(path: str, derived: set[str]) -> bool:
+    if path.startswith(HAND_MAINTAINED_PREFIXES) or path in HAND_MAINTAINED:
+        return True
+    return path not in derived and path != PIN_PATH
+
+
 def resolve_conflicts() -> list[str]:
     conflicted = git("diff", "--name-only", "--diff-filter=U").split()
     derived = derived_paths()
-    manual = [path for path in conflicted if path not in derived and path != PIN_PATH]
+    manual = [path for path in conflicted if needs_person(path, derived)]
     # Check everything before writing anything, so a stop leaves the merge untouched.
     if not manual and PIN_PATH in conflicted and not merge_pin_test(write=False):
         manual = [PIN_PATH]
     if manual:
         print(
-            "Conflicts outside derived content need a person; resolve these first:",
+            "These conflicts need a person; resolve them first:",
             file=sys.stderr,
         )
         for path in manual:
