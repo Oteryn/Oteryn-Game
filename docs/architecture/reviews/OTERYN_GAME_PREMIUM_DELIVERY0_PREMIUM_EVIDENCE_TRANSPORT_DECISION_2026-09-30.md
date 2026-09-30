@@ -65,9 +65,10 @@ How does Game learn, safely and in time, that an account has Premium?
   native handoff exists, and whose failure only withholds evidence (consumer contract §8.2: transport
   is not truth).
 - **When:** at fresh admission and reconnect (before any Premium benefit), and for each online
-  account from `refresh_after` on. `refresh_after` is only Game's scheduling hint; the producer's
-  refresh point is `authority_valid_until` (§5). At most one request in flight per account; a
-  failed refresh is retried with backoff until `authority_valid_until`.
+  account from `refresh_after` on. Platform sets `refresh_after` in each snapshot (Game requests
+  issue + 40 minutes, §5); Game only schedules its next pull from it, and it never affects the
+  class. The producer's refresh point is `authority_valid_until` (§5). At most one request in
+  flight per account; a failed refresh is retried with backoff until `authority_valid_until`.
 - **Authentication:** mutual TLS on the private network between the Game server and Platform, with
   a Platform-issued service identity for the Game server, scoped to this one read purpose. The
   credential is an environment secret; this decision stores none. Platform rotates it with two
@@ -127,9 +128,10 @@ The consumer contract makes these Platform's product/version policy; Game reques
 | `max_clock_skew` | 5 seconds | the FND-04 security-source bound; Game servers run NTP |
 | bounded stale use | not permitted | PREMIUM-ACTIVATION §4.1 is `REQUIRE_CURRENT` on every surface |
 
-Game starts refreshing 40 minutes after issue (`refresh_after`, its own scheduling), so a Platform
+Game requests `refresh_after` = issue + 40 minutes (set by Platform in the snapshot), so a Platform
 outage longer than about 20 minutes suspends Premium benefits (never login) at `authority_valid_until`
-until a refresh succeeds; nothing is lost, and D73/D76 already define benefits checked at use.
+until a refresh succeeds; nothing is lost, D73/D76 already define benefits checked at use, and a
+lapsed lease never relocates a character (§6).
 
 **Time.** Game evaluates the absolute times against the node's clock, synchronized by NTP, with
 uncertainty at most `max_clock_skew`; a node whose clock is not synchronized treats Premium as not
@@ -146,6 +148,10 @@ current (consumer contract §7, ENT-CDF-04).
 - `premium_current(account, now)` is true only for `CURRENT_AUTHORITY` (§8.3); every other class is
   Free. Every Premium check in Game (PREM-2..5, the depot limit, charms, and the Market and house
   gates once the owner's pre-Premium answers end) reads it.
+- `premium_entitlement_ended(account, now)` is true only when the latest accepted evidence says the
+  entitlement itself ended: producer state `EXPIRED`, `REVOKED` or `NONE`, or `effective_until`
+  passed. A lease past `authority_valid_until`, missing evidence or a failed pull never makes it
+  true. PREMIUM-ACTIVATION §4.5's login relocation reads only this predicate.
 - **Switch-over.** The owner's answers 4 and 5 (#162 5913348961) end when this consumer is
   delivered: PREM-1's activation record names the date, and the Market and house gates then read
   `premium_current`.
@@ -162,7 +168,8 @@ current (consumer contract §7, ENT-CDF-04).
 ## 8. Decision test
 
 - **Must decide now:** YES. The owner asked for Premium now, and both lanes need the same message.
-- **Minimum sufficient:** one pull endpoint, one message, one fence row per account.
+- **Minimum sufficient:** one pull endpoint, one message, one fence row per (account, entitlement)
+  plus one account high-water row.
 - **Superseding evidence:** Platform's PREM-P choosing other values (they are Platform's), or a
   measured outage profile.
 - **Deliberately not decided:** payment, prices, the Store, VIP, push delivery.
@@ -170,7 +177,8 @@ current (consumer contract §7, ENT-CDF-04).
 ## 9. Before-freeze checklist
 
 1. **Contract amendments:** none in this repository; PREM-P records the producer side in Platform.
-2. **Serialization:** one fence row per account, monotonic revisions.
+2. **Serialization:** one fence row per (account, entitlement) and one account high-water row,
+   monotonic revisions.
 3. **Restart:** the fence and evidence are durable; a restart re-pulls before any benefit.
 4. **Typed references:** AccountId, EntitlementId, revisions, absolute UTC times.
 5. **Wire:** no client wire; a private service endpoint (§3, §4).

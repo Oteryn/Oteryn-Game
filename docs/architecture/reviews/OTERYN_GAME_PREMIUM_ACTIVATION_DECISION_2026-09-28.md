@@ -127,7 +127,9 @@ PREM-2 (promotion benefits and soul), PREM-3 (areas), PREM-4 (spells), PREM-5 (N
   their home town's temple, or at the Thais temple if the home town is a Premium city (tibia.com
   manual). This is the gameplay transition that consumer contract §12 requires for a relocation.
   **Amendment (pending on acceptance of PREMIUM-DELIVERY-0):** the relocation runs only when the
-  class is `EXPIRED`, `REVOKED` or no entitlement; when evidence is merely unavailable or stale, the
+  entitlement itself has ended: `premium_entitlement_ended(account, now)` (PREMIUM-DELIVERY-0 §6)
+  is true. A lapsed lease never relocates, although consumer §7 and §8.3 classify a passed
+  `authority_valid_until` as `EXPIRED`: when evidence is unavailable, stale or past its lease, the
   character stays where it is, and Premium-area entry and other benefits are refused until evidence
   is current again.
 - A character already inside when Premium expires mid-session is not moved until the next login.

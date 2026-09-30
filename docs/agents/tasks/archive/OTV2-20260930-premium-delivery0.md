@@ -81,6 +81,10 @@ production authority.
   `producer_profile` field and compatibility records, the clock source, the restrictive-state rule,
   credential rotation; and the activation amendments (policy revision and product binding,
   degraded-behaviour owners, relocation only on `EXPIRED`/`REVOKED`/none, the §5 rows).
+- Re-review of `8743d295` (#1369 5914786280: 1 MEDIUM, 2 LOW), answered in one push: login
+  relocation keys only on the entitlement ending (`premium_entitlement_ended`), never on a lapsed
+  lease; the fence wording is per (account, entitlement) everywhere; Platform sets `refresh_after`
+  and it never affects the class.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
