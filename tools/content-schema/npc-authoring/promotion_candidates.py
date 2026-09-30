@@ -241,14 +241,23 @@ def route_fact(row):
 
 
 def registry_item_names():
-    """Folded registered names of the committed Item definitions, by Item key."""
+    """Folded registered names of the committed Item definitions, by Item key. The pinned candidate packets are
+    history naming retired Item keys (ITEM-ID-1b, A12), so each retired key that aliases to a named definition in
+    `content/items/aliases.json` maps to that definition's name as well."""
+    root = Path(__file__).resolve().parents[3]
     names = {}
-    for path in sorted((Path(__file__).resolve().parents[3] / 'content/items/definitions').glob('items-*.json')):
+    for path in sorted((root / 'content/items/definitions').glob('items-*.json')):
         for record in json.loads(path.read_text(encoding='utf-8'))['records']:
             definition = record['definition']
             presentation = definition.get('semantics', {}).get('presentation', {})
             if presentation.get('state') == 'KNOWN' and presentation['value']['name'].get('state') == 'KNOWN':
                 names[definition['identity']['key']] = fold(presentation['value']['name']['value'])
+    current = {}
+    for entry in json.loads((root / 'content/items/aliases.json').read_text(encoding='utf-8'))['entries']:
+        current[entry['key']] = entry
+    for key, entry in current.items():
+        if entry['state'] == 'ALIAS' and entry['target'] in names:
+            names[key] = names[entry['target']]
     return names
 
 

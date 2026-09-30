@@ -264,7 +264,7 @@ After every rule above, 144 Crystal / 103 Canary ids stayed `family_profile_unre
 The owner manually reviewed every one and produced a per-item family decision or an
 explicit `UNSURE`; the non-`UNSURE` rows are committed as
 `owner-item-family-decisions.json` (schema `OTERYN_ITEM_OWNER_FAMILY_DECISIONS/v1`,
-keyed by Oteryn registry key: `name`/`profile`/`reason`/`source`), loaded by
+keyed by canonical Item key -- the Tibia key since ITEM-ID-1b: `name`/`profile`/`reason`/`source`), loaded by
 `engine_items.load_owner_family_decisions` -- a strict, fail-closed loader modelled on
 `load_delivery_overrides` (unique keys, closed key sets, a known registry key, an
 admitted profile, non-empty `reason`/`source.facts`). It is the LAST classifier: only
@@ -273,7 +273,10 @@ tiers, wrap-target inheritance and the dead-item rules -- has already failed, ga
 `skip_post_wiki_fallback_routes` the same way as every other post-wiki-fallback rule. A
 hit sets `family_profile_basis: "owner_name_rule"` with evidence
 `{rule: "owner_leftover_review_2026_09_28", name}`. Resolves 121 Crystal / 80 Canary
-items.
+items. ITEM-ID-1b added the 14 owner-approved Q13d rows that have an engine binding
+(lists B and C of `docs/agents/evidence/OTV2-20260929-item-family-proposals-266.md`); the
+register `docs/agents/evidence/OTV2-20260929-item-id-1b-q13d-family-decisions.json` holds
+every Q13d row with its status, and the approved client-only rows wait for their record.
 
 Once even the owner table has failed, an item that DOES have an `appearances.dat`
 object but whose `flags` dict is completely empty (not even `take`/`usable`) routes the

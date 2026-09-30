@@ -27,8 +27,8 @@ runtime `LocalObject` overlay, and not runtime serialization.
   - `Fluid:fluid_type_without_appearance`, which stays Item fluid.
 
   The route is never re-decided here.
-- **Identity (D93).** `oteryn:item.registry.iNNNNNNNN` becomes `oteryn:terrain.registry.iNNNNNNNN` or
-  `oteryn:world-object.registry.iNNNNNNNN`, keeping the same number. Nothing else is accepted.
+- **Identity (D93, A12 §4.6).** `oteryn:item.tibia.i<id>` becomes `oteryn:terrain.tibia.i<id>` or
+  `oteryn:world-object.tibia.i<id>`, keeping the same Tibia id. Nothing else is accepted.
 - **Facts.**
   - A boolean `appearances.dat` flag is complete for an id that has an appearance, because an unset optional bool
     is false. It is therefore always KNOWN. An unset hook is `none`, and an unset height is elevation `0`.

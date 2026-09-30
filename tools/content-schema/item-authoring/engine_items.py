@@ -283,6 +283,8 @@ FLAG_REPEATED_SUBMESSAGE = {
         },
     )
 }
+# CipSoft `market.category` values. 26 is soul cores: all 835 objects carrying it in client
+# 15.30 `2dfa943b` are soul cores (ITEM-ID-1b); 28-30 occur in no admitted file.
 ITEM_CATEGORY_NAMES = {
     1: "armors",
     2: "amulets",
@@ -309,12 +311,11 @@ ITEM_CATEGORY_NAMES = {
     23: "tibia_coins",
     24: "creature_products",
     25: "quiver",
-    26: "twohandweapon",
+    26: "soul_cores",
     27: "fist_weapons",
     28: "backpack",
     29: "onehandweapon",
     30: "arrow",
-    31: "soulcores",
 }
 PLAYER_PROFESSION_NAMES = {
     -1: "any",

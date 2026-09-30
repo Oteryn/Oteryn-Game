@@ -4,14 +4,14 @@
 task_id: OTV2-20260929-cw2-encounter-transcriptions
 title: Transcribe, type and restage the four section 12 encounters (Alptramun, Gorzindel, Melting Frozen Horror, The Sandking)
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/friendly-albattani-rfzvku
-pr: null
-base_sha: 4ea220fa
-head_sha: null
+pr: 1300
+base_sha: 4ea220fa (main merged at e1824d3e after #1305)
+head_sha: null  # the PR head on #1300 is authoritative
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: content world import"
@@ -28,7 +28,7 @@ owned_paths:
   - apps/game-server/examples/materialize_content_world_project_v2.rs (pinned constants)
   - apps/game-server/tests/content_world_project_repository.rs (pinned constants)
   - docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json
-  - content/world/** and the generated successor tree under content/ (regenerated, not hand-edited)
+  - content/world/**, the generated successor tree under content/ and imports/** (regenerated, not hand-edited)
   - docs/architecture/OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md (section 12.5 status line)
   - docs/agents/tasks/archive/OTV2-20260929-cw2-encounter-transcriptions.md
 public_contracts: []
@@ -54,6 +54,10 @@ guide mostly through manifest citation strings; the rest is generated data):
 - step 3, Rust: the typed v2 Encounter profile mirrors CW2-1..4 with positive and negative tests
   (`cw2_triggering_variants_are_admitted`, `cw2_triggering_variants_fail_closed`, 11 refusals). `remove triggering`
   now also needs a one-creature trigger in Rust, as in `validate_encounter.py`.
+- merge of main after #1305 (ITEM-ID-1b): `creature_admission_stage.py` checks the historical Item keys it stages
+  against `content/items/aliases.json` (an ALIAS whose Tibia-id target is in `content/world`) instead of the rewritten
+  `content/world` keys, and treats D149 retired keys as unregistered. The staged data is unchanged; everything is
+  regenerated with the post-#1305 materializer.
 - step 4, E4 restage: `creature_admission_stage.py` lowers the CW2 forms (`triggering` subject and teleport target,
   `random_in.free`). Encounters 58 -> 61 (Alptramun, Gorzindel, The Sandking), creatures 1463 -> 1476, deferred
   encounters 25 -> 22. Melting Frozen Horror is deferred behind `canary:creature/dragon_egg`.
@@ -64,5 +68,9 @@ guide mostly through manifest citation strings; the rest is generated data):
 - `verify_formal_schema.py` 241/241; `population_census.py` regenerated.
 - `world_project_v2_to_tree.py`, `validate_world_project_v2_to_tree.py`, `test_world_project_v2_to_tree.py`: PASS.
 - `cargo fmt --check`, `cargo clippy -p oteryn-game-server --all-targets -D warnings`: pass.
-- `content_world_project_repository` 3/3, `content_world_project_v2_encounter_admission` 5/5; full package run below.
+- `content_world_project_repository` 3/3, `content_world_project_v2_encounter_admission` 5/5; full
+  `cargo test -p oteryn-game-server` passes (PostgreSQL targets left to CI).
+- after the main merge: `item_key_references.py` PASS (0 retired keys), tree regen/validate/test PASS.
+- Independent Content/World review on `583d3a14`: FIX (merge main); findings 1-2 fixed on the new head. Finding 3
+  (no workflow runs the encounter/monster schema checks) is an existing gap outside this task.
 - `validate_governance.py` and `tools/agents/tests`: pass.

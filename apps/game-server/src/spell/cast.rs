@@ -52,7 +52,13 @@ const V1_BUNDLES: [(&str, &str); 3] = [
 /// The V1 spell book, in the canonical SPELL-D1 order. Any bundle that does not load fails the
 /// whole book closed; nothing is skipped, so an index never shifts silently.
 pub(crate) fn v1_spell_book() -> Result<SpellBook, String> {
-    let spells = V1_BUNDLES
+    book_from_bundles(&V1_BUNDLES)
+}
+
+/// The loader behind [`v1_spell_book`], parameterized only so a test can inject a bundle that
+/// does not load (behaviour-neutral for production, which passes `V1_BUNDLES`).
+fn book_from_bundles(bundles: &[(&str, &str)]) -> Result<SpellBook, String> {
+    let spells = bundles
         .iter()
         .map(|(spell, dependencies)| {
             let spell: Value = serde_json::from_str(spell).map_err(|error| error.to_string())?;
@@ -103,6 +109,12 @@ impl PlayerSpellState {
                 cooldowns: Cooldowns::default(),
                 revision: 1,
             })
+    }
+
+    /// Test only: stages a wounded actor (no damage owner exists yet).
+    #[cfg(test)]
+    pub(crate) const fn set_health_for_test(&mut self, health: u32) {
+        self.health = health;
     }
 
     pub(crate) const fn revision(&self) -> u64 {

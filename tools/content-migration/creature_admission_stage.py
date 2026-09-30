@@ -36,6 +36,8 @@ ITEM_ALLOCATION_SHA256 = 'ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91
 # Protected Item rekeys applied on top of the allocation map (the allocation keeps the old key).
 ITEM_REKEYS = (ROOT / 'docs/agents/evidence/OTV2-20260927-r7-p04-gold-coin.json',)
 REFERENCE = ROOT / 'content/world/definitions/reference.json'
+# ITEM-ID-1b: content/world holds Tibia-id Item keys; the stage keeps the historical keys the materializer rewrites.
+ITEM_ALIASES = ROOT / 'content/items/aliases.json'
 # Admission §2: a pilot covering each profile shape (shared spell, inline condition, summons,
 # voices, variants, chain, invisible and familiar appearance, skipped loot entry, bosstiary).
 PILOT = ('rat', 'dragon', 'dragon_lord', 'demon', 'warlock', 'orc_shaman', 'bonebeast', 'hydra',
@@ -709,8 +711,13 @@ def main() -> None:
         item_map[source_id] = new
         rekeys.append({'source_item_id': source_id, 'from': old, 'to': new,
                        'evidence_sha256': hashlib.sha256(path.read_bytes()).hexdigest()})
-    registered = {record['identity']['key'] for record in json.loads(REFERENCE.read_text(encoding='utf-8'))['records']
-                  if record['identity']['family'] == 'Item'}
+    admitted = {record['identity']['key'] for record in json.loads(REFERENCE.read_text(encoding='utf-8'))['records']
+                if record['identity']['family'] == 'Item'}
+    aliases = json.loads(ITEM_ALIASES.read_text(encoding='utf-8'))['entries']
+    registered = {entry['key'] for entry in aliases if entry['state'] == 'ALIAS' and entry['target'] in admitted}
+    retired = {entry['key'] for entry in aliases if entry['state'] == 'RETIRED_WITHOUT_SUCCESSOR'}
+    # A D149 item is not in content/world: a creature or encounter that names one waits as unregistered_items.
+    item_map = {source_id: key for source_id, key in item_map.items() if key not in retired}
     if not set(item_map.values()) <= registered:
         raise StageError('Item identity map names keys absent from content/world')
     mapper = Mapper(item_map)
