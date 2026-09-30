@@ -128,10 +128,12 @@ request binding, like HOUSE-OWN-0 §4 "Replay".
   required until PREM-1 delivers `premium_current`; from then on founding and every move into
   levels 1 and 2 require it (`NOT_PREMIUM`), and a lapse keeps the rank.
 - **Invite `{character}` / revoke.** By levels 1 and 2; the target is of the same World and not a
-  member of this guild; at most `GUILD0-RL-08` (500) open invitations per guild.
+  member of this guild; at most `GUILD0-RL-08` (500) open invitations per guild and at most `GUILD0-RL-17` (50) open
+  invitations per target character across all guilds (`INVITATION_LIMIT`, architect ruling).
 - **Accept.** By the invited character, which is in no guild; it joins at the lowest level. At most
   `GUILD0-RL-05` (2,000, `PARITY_PENDING`: Tibia has no limit) members per guild; a further join is
-  `GUILD_FULL`. Accepting removes the character's other invitations.
+  `GUILD_FULL`. Accepting removes the character's other invitations: at most `GUILD0-RL-17` (50) rows, so one
+  transaction stays bounded.
 - **Leave.** Any member but the leader.
 - **Exclude `{character}`.** By levels 1 and 2, of a member at a strictly lower level.
 - **Set rank `{character, level}`.** The actor's level `a`, the target's current level `t` and new
@@ -154,6 +156,11 @@ request binding, like HOUSE-OWN-0 §4 "Replay".
   guild cannot be accepted. The closed exceptions are the §3.4 disband job steps and
   `claim_disband_payout` (§5.3), which reads only the claim row. So no balance, member,
   invitation, rank or bid can appear after the disband transaction commits.
+- **Deadline gate** (architect ruling, `GUILD0-RL-18`): under the same guild lock, a transaction
+  compares the database transaction time with the deadline. In `FORMING` past `formation_deadline`
+  nothing may bring the guild to 4 vices; in `ACTIVE` with `vice_deficit_since` older than 14 days
+  nothing may clear it. Such a rank change or accept is refused `GUILD_DEADLINE_PASSED` and writes
+  nothing, so a late World job still finds the guild due and disbands it (§3.3).
 - **Effect time.** Every change applies at once on every channel. The manual's "an online member
   stays until logout" is a web-admin artifact (declared difference).
 
@@ -250,7 +257,11 @@ profile (purpose `GUILD_ACTIVITY`, bank entries also `ECONOMY_LEDGER`).
 
 ### 5.1 Storage
 
-- `game_guild_bank_balances`: one row per guild (0 to `BANK0-RL-01`), `last_entry_id`.
+- `game_guild_bank_balances`: one row per guild (0 to `BANK0-RL-01`), `last_entry_id`. A deferred
+  guard keeps `balance + sum(escrow_guild_gold of the guild's open bids)` at most `BANK0-RL-01`
+  (architect ruling, `GUILD0-RL-19`): a deposit or credit that would break it is refused
+  `BALANCE_LIMIT`, so returning guild escrow to its source always fits and never blocks auction
+  cleanup or disband.
 - `game_guild_bank_entries`: immutable, the BANK-0 entry shape keyed by guild instead of Account:
   kinds `GUILD_DEPOSIT`, `GUILD_WITHDRAW`, `GUILDHALL_BID_RESERVE`, `GUILDHALL_BID_RELEASE`,
   `GUILDHALL_PRICE`, `GUILDHALL_RENT`, `GUILD_DISBAND_PAYOUT`; amount, before and after, acting
@@ -444,6 +455,9 @@ belongs to the house interior runtime, which admits only characters with house a
 | `GUILD0-RL-06` ranks per guild | 3 to 20 |
 | `GUILD0-RL-07` invitation lifetime | 30 days (`PARITY_PENDING`) |
 | `GUILD0-RL-08` open invitations per guild | 500 |
+| `GUILD0-RL-17` open invitations per target character | 50 |
+| `GUILD0-RL-18` deadline gate | transactions cannot activate or cure a guild past its deadline |
+| `GUILD0-RL-19` guild balance plus outstanding guild escrow | at most `BANK0-RL-01` |
 | `GUILD0-RL-09` guilds per job pass | 100 |
 | `GUILD0-RL-10` activity log window | 30 days |
 | `GUILD0-RL-11` Premium leaders and vices required | 5, once PREM-1 delivers Premium (G1 a) |
