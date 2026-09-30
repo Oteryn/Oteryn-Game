@@ -27,15 +27,9 @@ pub mod foundation;
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
 
-// `combat.rs` re-exports only the pre-CHARM-2 composition, so this target
-// loads the two Combat reward modules directly as crate-root siblings (their
-// `super::loot_plan` then resolves to the module below).
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/death_reward.rs"]
-mod death_reward;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/combat/loot_plan.rs"]
-mod loot_plan;
+#[path = "../src/combat.rs"]
+pub mod combat;
 
 #[allow(dead_code)]
 #[path = "support/bestiary_postgres_harness.rs"]

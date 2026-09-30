@@ -1,15 +1,18 @@
 // CHARM-2: the Bestiary kill as one more independent descendant of a
 // committed creature death, next to loot and XP
-// (`death_reward::settle_creature_death_rewards_with_bestiary`).
+// (`combat::settle_creature_death_rewards_with_bestiary`).
 
 use crate::bestiary_postgres_harness::{
     CHANNEL, CHARACTER, Harness, TestResult, WORLD, configured_admin, context, debug, fence, id,
     runtime,
 };
-use crate::death_reward::{
+use crate::combat::{
     CombatBestiaryOutcome, CombatDeathRewardBestiaryError, CombatDeathRewardXpError,
     CreatureDeathBestiaryInput, CreatureDeathRewardInput, DeathGroundContext, DurabilitySession,
     RewardPrincipal, RewardProgressionBinding, settle_creature_death_rewards_with_bestiary,
+};
+use crate::combat::{
+    LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
 };
 use crate::domain::bestiary::{BestiaryError, BestiaryKillCredit, BestiaryRace};
 use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
@@ -18,9 +21,6 @@ use crate::durability::character_progression::{
     CharacterProgressionError, ExperienceCommitOutcome,
 };
 use crate::foundation::{ChannelId, CombatDeathFixture, ScopeOwnershipGeneration, WorldId};
-use crate::loot_plan::{
-    LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
-};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
 const RAT: &str = "oteryn:creature.rat";
