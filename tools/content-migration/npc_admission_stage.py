@@ -17,6 +17,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATES = ROOT / 'tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json'
 REFERENCE = ROOT / 'content/world/definitions/reference.json'
+ALIASES = ROOT / 'content/items/aliases.json'
 CANARY_REVISION = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
 CRYSTAL_REVISION = 'ff7ede593c69d4c658b382c97443e8155926924a'
 ITEM_MAP_SHA256 = '83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a'
@@ -107,6 +108,8 @@ def trade_declaration(service: dict, registered: set[str]) -> dict:
         for field in ('count', 'sub_type'):
             if offer[field] is not None:
                 row[field] = offer[field]
+        if offer.get('parity_pending'):  # D15: the wikis dispute the source price; it stays, pending
+            row['parity_pending'] = True
         offers.append(row)
     offers.sort(key=lambda row: (row['item']['key'], row['direction'], row.get('currency', {}).get('key', ''),
                                  row.get('count', 0), row.get('sub_type', -1)))
@@ -286,6 +289,10 @@ def main() -> int:
     report = json.loads(CANDIDATES.read_text())
     registered = {r['identity']['key'] for r in json.loads(REFERENCE.read_text())['records']
                   if r['identity'].get('family') == 'Item' or r.get('kind') == 'Item'}
+    # the candidates name the retired Item keys of the pinned item map; since ITEM-ID-1b each one that aliases to a
+    # registered Item is registered too (the materializer switches every key to its Tibia id key)
+    registered |= {entry['key'] for entry in json.loads(ALIASES.read_text())['entries']
+                   if entry['state'] == 'ALIAS' and entry['target'] in registered}
     dialogue_index = dialogue_sha256 = None
     if args.dialogues:
         dialogue_bytes = args.dialogues.read_bytes()
