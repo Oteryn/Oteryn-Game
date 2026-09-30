@@ -1,0 +1,30 @@
+{
+  "schema": "oteryn.spell-party-behaviours.v1",
+  "note": "Accepted party_buff parameters of the party spells (owner S27; OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md C.3). The area is the radius-3 circle of 37 tiles on the caster's floor (C.3 step 2); at least one other member must be affected (min_affected 2 counts the caster); the mana is ceil(base x 0.9^(X-1) x X) rounded up (C.3 step 4); each member gets one condition for 120 s. A spell with a 'blocked' entry stays blocked for that reason.",
+  "area": ["..xxx..", ".xxxxx.", "xxxxxxx", "xxxCxxx", "xxxxxxx", ".xxxxx.", "..xxx.."],
+  "spells": {
+    "heal party": {
+      "base_mana": 120,
+      "condition": {"type": "regeneration", "regeneration": {"health_gain": 20, "health_interval_ms": 2000}},
+      "sources": "F1182737 (formula, base 120, 20 HP every 2 s for 120 s), BR, Canary 99902524 heal_party.lua (baseMana 120, CONDITION_REGENERATION HEALTHGAIN 20, HEALTHTICKS 2000, TICKS 120000, BUFF_SPELL)."
+    },
+    "protect party": {
+      "base_mana": 90,
+      "condition": {"type": "attributes", "attribute_modifiers": [{"attribute": "skill_shield", "mode": "add", "value": 3}]},
+      "sources": "F1182881 and BR (shielding +3 for 120 s); base mana 90 from Canary 99902524 protect_party.lua only (C.3 Q16: the wikis state 'varies'; S3 lets the source supply what the wiki does not state)."
+    },
+    "enchant party": {
+      "base_mana": 120,
+      "condition": {"type": "attributes", "attribute_modifiers": [{"attribute": "stat_magicpoints", "mode": "add", "value": 1}]},
+      "sources": "F1182666 and BR (magic level +1 for 120 s); base mana 120 from Canary 99902524 enchant_party.lua only (C.3 Q16)."
+    },
+    "train party": {
+      "blocked": "S3 CONFLICT (C.3 Q15): Fandom F1182927 adds fist fighting to the +3 sword, axe, club and distance; TibiaWiki BR and Canary do not. A BR/Fandom conflict stays with the owner.",
+      "sources": "F1182927, BR, Canary 99902524 train_party.lua (SKILL_MELEE 3, SKILL_DISTANCE 3, baseMana 60)."
+    },
+    "enlighten party": {
+      "blocked": "C.3 Q14: the mana restored, its interval and the duration are unknown (BR 160 over 2 min; Canary 5000 over 5 min; Crystal 750 over 5 min), and BR contradicts its own fixed mana 75.",
+      "sources": "F1182676, BR, Canary 99902524, Crystal ff7ede5."
+    }
+  }
+}

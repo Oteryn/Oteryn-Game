@@ -52,9 +52,11 @@ TIBIACOM_NAMES = {'invisibility': 'invisible', 'paralyze rune': 'paralyse rune',
 OFFICIAL = ROOT / 'official-changes.json'
 # S23: accepted chain parameters of player spells (OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md).
 CHAINS = json.loads((ROOT / 'chain-behaviours.json').read_text(encoding='utf-8'))['spells']
+# S27 C.3: accepted party_buff parameters of the party spells (OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md).
+PARTY = json.loads((ROOT / 'party-behaviours.json').read_text(encoding='utf-8'))
 CHAIN_FIELDS = ('max_targets', 'range_tiles', 'backtracking', 'shape', 'initial_range_tiles', 'damage_step_percent')
 CANARY_DECIDES = 'S21: the Canary 15.30 branch decides a Canary/Crystal conflict no wiki or tibia.com states'
-REVISION = 'spell-p2-r12'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level; r9: S23 chains; r10: S24 removed spells, rune groups from the wiki runegroup; r11: S25 unstated secondary groups, Dawnport conjure spells; r12: S26 Harmony role
+REVISION = 'spell-p2-r13'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level; r9: S23 chains; r10: S24 removed spells, rune groups from the wiki runegroup; r11: S25 unstated secondary groups, Dawnport conjure spells; r12: S26 Harmony role; r13: S27 party_buff
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
                       'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -654,6 +656,10 @@ class Bundle:
         mana = self.field(base + '/costs/mana', 'mana', 'mana', pages if carrier == 'instant' else {}, required=False)
         if isinstance(mana, int):
             costs['mana'] = mana
+        elif mana == 'varies' and 'base_mana' in PARTY['spells'].get(self.name, {}):
+            self.row('mapped', 'mana', base + '/costs/mana', 'S27 C.3: the wiki mana varies; the party_buff parameters '
+                     'define it and costs.mana is 0.', source=next(iter(self.records)), method='mana')
+            costs['mana'] = 0
         elif mana == 'varies':
             self.row('unresolved_semantics', 'mana', resolution='the wiki mana varies (party spells); a native '
                      'behaviour must define it.', source=next(iter(self.records)), method='mana')
@@ -868,6 +874,8 @@ class Bundle:
                          'Player:conjureItem(reagent, result, count) is the S2 conjure execution.', source=source,
                          kind='script')
             return {'conjure': body}
+        if self.name in PARTY['spells']:
+            return self.party_buff(PARTY['spells'][self.name], deps)
         plain = {s for s, t in tiers.items() if t in ('plain_combat', 'random_combat')}
         if not plain:
             patterns = sorted({p for r in self.records.values() for p in r['cast'].get('patterns', [])})
@@ -919,6 +927,25 @@ class Bundle:
                  f'Plain combat converted with the monster combat_ability rules ({chosen}).', source=chosen,
                  method='setCallback' if deps['formulas'] else None, kind='script')
         return {'ability': ref('Ability', key)}
+
+    def party_buff(self, party, deps):
+        """S27 C.3: the party_buff execution from party-behaviours.json; the scripts are custom in both sources."""
+        if 'blocked' in party:
+            self.row('unresolved_semantics', 'onCastSpell', resolution=party['blocked'], source=next(iter(self.records)),
+                     kind='script')
+            return {'native_behavior': {'key': 'unresolved', 'parameters': {'patterns': ['party']}}}
+        condition = party['condition']
+        key = f'candidate:spell/{slug(self.name)}/effect-{condition["type"]}'
+        deps['effects'].append({'identity': ident(key), 'operation': 'condition', 'duration_ms': 120000,
+                                'condition': {**condition, 'lifetime': 'fixed_duration', 'buff_spell': True}})
+        for source in self.records:
+            self.row('resolved_native_behavior', 'onCastSpell', '/spell/spell/execution/native_behavior',
+                     'S27 C.3: party_buff from party-behaviours.json (' + party['sources'] + ')', source=source,
+                     kind='script')
+        return {'native_behavior': {'key': 'party_buff', 'parameters': {
+            'area': PARTY['area'], 'same_floor': True, 'min_affected': 2, 'requires_party': True,
+            'mana': {'mode': 'scaled', 'base': party['base_mana'], 'falloff': 0.9, 'rounding': 'up'},
+            'effect': ref('Effect', key)}}}
 
 
 # ------------------------------------------------------------------------------------------------
