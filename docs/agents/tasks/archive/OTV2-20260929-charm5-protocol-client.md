@@ -17,7 +17,7 @@ final_head_frozen_at: null
 owner: "hard worker (Claude Code)"
 control_plane: session_012nzPTz29NThWJG45F2m5fP
 created_at: 2026-09-29
-updated_at: 2026-09-29
+updated_at: 2026-09-30
 execution_policy: continuous_progress
 owned_paths:
   - crates/protocol-oteryn/src/bestiary.rs
@@ -49,7 +49,7 @@ jira: null   # sync pending (coordinator batch)
   - proposed command types 4 `CHARM_UNLOCK_STAGE_INTENT` and 5 `CHARM_ASSIGN_INTENT`;
   - proposed state domains 4 `CHARACTER_BESTIARY` and 5 `CHARACTER_CHARMS`;
   - proposed limits `CHARM5-RL-01` to `CHARM5-RL-05`;
-  - the proto3 schema, and three open questions.
+  - the proto3 schema, and the owner answers 8a, 9a, 10a and 11a (§7, 2026-09-30).
   - No registry, proto file or resource registry was changed.
 - **Codecs** `crates/protocol-oteryn/src/{bestiary,charm,charm_wire}.rs`: strict encode and decode for the Bestiary
   view, the Charm view, both intents and both results.

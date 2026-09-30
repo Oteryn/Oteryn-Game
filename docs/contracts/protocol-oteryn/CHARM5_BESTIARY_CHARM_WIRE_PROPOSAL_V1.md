@@ -53,7 +53,7 @@ Identifiers:
 - **Charm index:** 1-based into the charm list of the loaded content generation (`content/charms/`, CHARM-1),
   ordered by charm key.
 - Both follow SPELL-D1: an index, not a key string, so there is no free text on the wire and the server looks it up
-  in O(1). The client resolves names from the same content generation (open question 1).
+  in O(1). The client resolves names from the same content generation (owner answer 8a, §7).
 
 Proposed resource limits (for `RESOURCE_LIMITS_REGISTRY.json` on acceptance):
 
@@ -123,8 +123,8 @@ message CharmViewV1 {
 - The view is small, so **every delta replaces the whole view**.
 - The balances are derived by CHARM-3 (earned minus spent, CHARM-0 §4.2 and §7 answer 2a). The wire carries only
   what is available, which is what the client can act on.
-- How many charms one race may hold is still `UNKNOWN` (CHARM-0 §7). The view does not constrain it: two charms may
-  name the same race.
+- One race holds at most one major and one minor charm at a time. CHARM-3 enforces it (migration 0020, #1307); the view
+  does not re-check it, so two charms may name the same race.
 
 ### 3.3 Unlock the next stage
 
@@ -211,15 +211,17 @@ type or domain is dispatched until the IDs are registered.
 application, the derived stage and progress, the local preconditions for the two commands, and one line of player
 feedback per disposition. Session wiring (sending the commands and routing domains 4 and 5) follows registration.
 
-## 7. Open questions
+## 7. Owner answers (2026-09-30, in session)
 
-1. **Names on the client.** The wire carries indices. How does the client resolve race and charm names?
-   - a) A client content export of the same content generation (recommended; no text on the wire).
-   - b) A bounded name string in each view entry.
-2. **State-domain owner.** Is the owner of domains 4 and 5 recorded as the Character Authority (recommended; it is
-   Character state), or as the current ChannelRuntime like the other domains?
-3. **Races with no kills.** Only counted races are sent. Should the view also list every Bestiary race with zero
-   kills (recommended: no; the client lists the rest from the content export of question 1)?
+Recorded in the CHARM-0 packet §8 (PR #1295); decision-register numbers are assigned by the coordinator batch on
+`#162`.
+
+| Question | Answer | Effect |
+|---|---|---|
+| 8. Names on the client | **a** | The client resolves race and charm names from a client content export of the same content generation. No text is sent on the wire. |
+| 9. State-domain owner | **a** | Domains 4 and 5 are owned by the Character Authority. |
+| 10. Races with no kills | **a** | Only counted races are sent. The client lists the other races of a class from the content export, shown as unknown. |
+| 11. Wire identifiers | **a** | Race and charm indices follow SPELL-D1 (§2): 1-based and derived per content generation. They are never stored; durable state keeps the Creature and charm keys. A display-name change moves no index. An added or removed race moves indices only in a new content generation, which both peers derive again. |
 
 ## 8. On acceptance
 
