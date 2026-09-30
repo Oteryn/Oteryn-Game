@@ -6543,8 +6543,8 @@
     {
       "allocation_impact": "Checked on the input length before any header field is trusted; the u32 offsets need the file below 4 GiB.",
       "boundary_tests": [
-        "a bundle of exactly 1 GiB is size-accepted",
-        "a bundle over 1 GiB is rejected before parsing"
+        "a bundle is size-accepted at a reduced file_bytes cap equal to its length (ReadCaps)",
+        "the same bundle is rejected before parsing at a cap one byte smaller; a zero-filled input one byte over 1 GiB is rejected by read()"
       ],
       "client_visible": false,
       "configurable_range": {
@@ -6589,8 +6589,8 @@
     {
       "allocation_impact": "Checked from the header, and the table must fit inside the file before any row is read or the sector list is reserved.",
       "boundary_tests": [
-        "1,048,576 rows are count-accepted",
-        "a count over 1,048,576 is rejected before the table is read"
+        "a bundle is count-accepted at a reduced sectors cap equal to its row count (ReadCaps)",
+        "the same bundle is rejected at a cap one row smaller, and a header count over 1,048,576 is rejected by read() before the table is read"
       ],
       "client_visible": false,
       "configurable_range": {
@@ -6612,7 +6612,7 @@
     {
       "allocation_impact": "raw_length is checked against 16 MiB and against 1,024 times compressed_length before decompression; decompression writes into exactly raw_length bytes and the output must be exactly that long. The compressed frame is bounded by the file size.",
       "boundary_tests": [
-        "a 16 MiB payload is accepted",
+        "a payload is accepted at a reduced sector_raw_bytes cap equal to the largest raw_length (ReadCaps), and rejected at one byte less",
         "raw_length over 16 MiB is rejected before decompression",
         "raw_length over 1,024 times the frame length is rejected before decompression",
         "a frame that decompresses to a length other than raw_length is rejected"
@@ -6637,8 +6637,8 @@
     {
       "allocation_impact": "Running total checked per row before that sector is decompressed.",
       "boundary_tests": [
-        "a running total of 1 GiB is accepted",
-        "the row that takes the total over 1 GiB is rejected before decompression"
+        "a bundle is accepted at a reduced total_raw_bytes cap equal to its payload total (ReadCaps)",
+        "at a cap one byte smaller, the row that takes the total over it is rejected before decompression"
       ],
       "client_visible": false,
       "configurable_range": {
