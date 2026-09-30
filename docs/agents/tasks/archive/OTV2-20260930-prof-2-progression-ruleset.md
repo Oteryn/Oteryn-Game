@@ -4,12 +4,12 @@
 task_id: OTV2-20260930-prof-2-progression-ruleset
 title: PROF-2 ruleset slice - Weapon Proficiency thresholds, Mastery and kill points
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/inspiring-lamport-nc623x
 issue: 162
-pr: null
+pr: 1374
 base_sha: de1a622
 head_sha: null
 final_head_sha: null
@@ -61,3 +61,9 @@ runtime content loading. The catalogue copy of the threshold tables in
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`, `cargo fmt --check`
 - `tools/content-schema/validate_materialized_game_tree.py` (97/97)
 - `tools/agents/validate_governance.py`
+
+## Closeout
+
+Delivered in #1374: the ruleset file, the pure rules module and its six tests. The record reaches
+`main` only when #1374 merges. Handed off to the control plane on #162: PROF-1 (Character state),
+PROF-2 accrual/selection/effects, PROF-WIRE-1, and runtime loading of `content/proficiencies/`.
