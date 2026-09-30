@@ -152,8 +152,29 @@ These cut reading, writing and waiting; they change no authority, review or inte
 - **Quiet session.** Stay reactive to PR events but keep the session small: handle no-op events (subscription or enqueue notices, cancelled or superseded runs) without a reply, keep state in `STATE`, and write to the owner only for questions, blockers and a short note when something significant finishes. On #162 post allocations, every FREEZE_SHA (each new candidate gets its own) and integrations, as the YAML packet plus at most five lines; fold validation results into the next of those entries.
 - **Batches.** Apply root `AGENTS.md` *Work in batches*; allocate follow-up findings as the next batch, not one task each. One owner-decision PR per day, regenerating `docs/agents/DECISION_INDEX.md` (`python tools/agents/build_decision_index.py`). Task records are archived inside their own final PR (`tasks/archive/README.md`); only leftovers go into one archive PR per day. Jira once a day in one batch (`docs/agents/JIRA_PROGRAMME_COORDINATION.md`); you are the only Jira writer.
 - **Expensive paths.** A PR touching `tools/agents/`, `tools/repository/`, `.github/workflows/` or the Cargo manifests runs the full Rust Linux and Windows lanes; keep docs, task-record and content PRs off them.
-- **Paid review only where required.** Trigger owner-funded review only when the bound review policy requires it for that head, not for docs-, content-data- or task-record-only heads unless the policy says so.
+- **Paid review only where required.** Trigger owner-funded review only when the bound review policy requires it for that head, or when the review split below (D245) calls for it.
 - **Context.** After closing a task in a long session, run `/compact` keeping task_ids, PRs, SHAs, blockers, decisions and the next step. After a second compaction, hand off to a new session with a 20-line state summary.
+
+## Review and Merge Queue rules (owner decisions 2026-09-30)
+
+- **Review split (D245).** Codex is the default exact-head reviewer, under `OWNER_FUNDED_AI_POLICY.md`, for every frozen candidate that needs review, docs-only architecture decisions included.
+  - Codex's part: after the live de-duplication check above, post one `@codex review` per exact frozen head, naming the head SHA and the review focus. A new freeze after a material repair gets one new trigger.
+  - Your part is a light qualification, with no local full-suite run:
+    - `merge-tree` against current `main`;
+    - changed paths against the allocation and owned paths;
+    - green CI on the exact head;
+    - fit with the owning decision and the owner's direction;
+    - the migration and registry leases.
+  - Codex P0/P1 findings block. P2 findings follow *Batches*.
+  - A verdict (KEEP or FIX) needs both parts on the same head.
+  - Claude reviewer agents are a fallback only, used when Codex is unavailable or out of quota, and for advisory content-train reviews the owner asks for.
+  - Workers never post `@codex review` and never enable auto-merge or enqueue. Say so in every packet.
+- **Findings reach the writer.** Task sessions do not receive PR comments. Deliver a FIX to the session that writes the branch. If that session is idle or unreachable, archive it and start one new fix session as the single writer. Never write to the branch yourself while another writer holds it.
+- **Merge Queue grouping (D246).** The queue builds up to 5 PRs at once and removes only a failing one. Keep the content train serialized anyway: at most one derived-content PR (`content/manifest.json` or locks) in the queue at a time. Order dependent PRs so that a migration or registry prerequisite enters first.
+- **Enqueue readback.** After enabling auto-merge, confirm the PR is queued: a `merge_group` run appears, or a branch update is refused with "queued for merging". A PR whose `mergeable_state` is `clean` can report auto-merge as enabled without being queued, and a direct merge answers 405.
+  - If it is not queued, update the branch from `main` with a merge commit (never rebase).
+  - Then enable auto-merge again while the new head's CI runs.
+  - Check it again on the next sweep.
 
 ## Architecture escalation
 
