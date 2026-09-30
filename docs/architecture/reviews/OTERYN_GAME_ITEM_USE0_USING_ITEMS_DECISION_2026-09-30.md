@@ -49,7 +49,7 @@ How does a player eat and drink a potion?
   to open a corpse; handles also name entries of an open corpse.
 - DUR-03: §11.1 keeps an item's identity on a quantity adjustment; §11.5 retires a stack at zero;
   §11.3 plans fresh identities in the reservation; §7.1 reserves sources and destinations; §15
-  admits `DECAY_RETIRE` and `FeeBurnCause` (and, with NPC-0, a candidate, `NpcTradeCause`); §17
+  admits `DECAY_RETIRE`, `FeeBurnCause` and, with NPC-0 (merged), `NpcTradeCause`; §17
   classes BURN and TRANSFORM; §39.1 excludes burn, transform, mint into an existing stack and
   multiple touched items outside named shapes. The fee burn has its own suffixed rows
   (`DUR03-RL-01-FEE-BURN` and others).
