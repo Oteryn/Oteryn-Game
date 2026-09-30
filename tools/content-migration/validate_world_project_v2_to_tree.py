@@ -93,6 +93,12 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
                              migrated_authoring: dict[tuple[str, str, str], dict[str, Any]]) -> tuple[int, int, int, int]:
     """Round-trip Item authoring/taxonomy/relations and prove per-fact provenance."""
     staged = load(ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json")
+    stats = load(ROOT / "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json")
+    content_path = {"weapon.range_cells": "weapon.range"}
+    superseding = {
+        (("Item", row["item_key"], "definition-r1"), content_path.get(row["field_path"], row["field_path"])): row["typed_value"]["value"]
+        for row in stats["promotions"]
+    }
     assignments = load(ROOT / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json")["family_assignments"]
     legacy_authoring = {target_id(row["item"]): row for row in declarations.get("item_authoring", [])}
     taxonomy = load(ROOT / "content/items/taxonomy/items.json")
@@ -139,13 +145,18 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         require(len(record["source_digest"]) == 64 and record["revision_id"] > 0, "PROVENANCE_SOURCE_COORDINATES")
         known = known_paths(definitions[key])
         for entry in record["definition_facts"]:
-            require(known.get(entry["field_path"]) == entry["value"], f"PROVENANCE_DEFINITION_FACT:{entry['field_path']}")
+            # ITEM-SEM-2b: an English TibiaWiki stat row supersedes the Wave 1 value; the
+            # definition must then carry the superseding value instead.
+            expected = superseding.get((key, entry["field_path"]), entry["value"])
+            require(known.get(entry["field_path"]) == expected, f"PROVENANCE_DEFINITION_FACT:{entry['field_path']}")
             fact_count += 1
         for entry in record["authoring_facts"]:
             authoring_value(legacy_authoring[key], entry["field_path"])
             fact_count += 1
-        # Blocked contracts stay UNKNOWN even when the source carried a value.
-        for blocked in ("physical.weight", "stack.stack_max"):
+        # Blocked contracts stay UNKNOWN even when the source carried a value. Weight is no
+        # longer blocked: the owner fixed its unit (hundredths of an ounce, 2026-09-30) and
+        # ITEM-SEM-2b promotes it from TibiaWiki.
+        for blocked in ("stack.stack_max",):
             require(blocked not in known, f"BLOCKED_FIELD_PROMOTED:{blocked}")
         require(definitions[key].get("semantics", {}).get("equipment", {}).get("state", "UNKNOWN") == "UNKNOWN", "BLOCKED_EQUIPMENT_PROMOTED")
     require(fact_count == staged["counts"]["definition_facts"] + staged["counts"]["authoring_facts"], "PROVENANCE_FACT_COUNT")

@@ -44,6 +44,9 @@ owned_paths:
   - tools/content-census/g4_item_crystal_binding_generator.py
   - tools/content-census/g4_item_crystal_binding_generator_self_test.py
   - docs/agents/tasks/archive/OTV2-20260930-item-add-1-donor-and-appearance-items.md
+  - docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json   # regenerated after merging #1336
+  - apps/game-server/src/content/item_stats_promotion.rs   # packet sha and counts
+  - tools/content-schema/item-authoring/samples/item-weapon-proficiency-15-30-7fea90ec.json   # regenerated
 public_contracts: []
 depends_on:
   - "docs/architecture/reviews/OTERYN_GAME_A12_ITEM_IDENTITY_TIBIA_ID_DECISION_2026-09-29.md"
@@ -70,6 +73,15 @@ creature admission.
 
 Content goes from 33,567 to 34,031 Item records. No existing record, key, alias entry or
 binding changed.
+
+After #1336 (ITEM-SEM-2b-1) merged, the branch merged `main`. Two derived artifacts follow the
+new Items:
+- The TibiaWiki stat packet (`OTV2-20260930-item-stats-promotion-v2.json`, lowered from content
+  Item ids) now covers 159 donor epoch-2 Items: 10,523 fields on 6,541 Items, up from 10,260 on
+  6,382. `item_stats_promotion.rs` re-pins its sha and counts; earlier values are unchanged.
+- The weapon proficiency sample (`item-weapon-proficiency-15-30-7fea90ec.json`) finds an Item
+  definition for 22 more bindings (`bindings_without_item_definition` 23 → 1). No binding
+  changed.
 
 ## Owner decisions (2026-09-30, via the coordinating session)
 
