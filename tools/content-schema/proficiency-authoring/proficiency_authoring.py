@@ -358,6 +358,11 @@ def compact(payload: object) -> str:
     )
 
 
+def registry(payload: object) -> str:
+    """One key per line, matching world_project_v2_to_tree.py, so registrations merge cleanly."""
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+
+
 def content_files(catalogue: dict) -> dict[str, str]:
     """The populated family: shards of definitions and the family index.
 
@@ -441,7 +446,7 @@ def content_command(check: bool) -> int:
     outputs = content_files(catalogue)
     count = len(catalogue["proficiencies"])
     for name, doc in zip(names, registered(*docs, count, sorted(outputs)), strict=True):
-        outputs[f"content/{name}.json"] = compact(doc)
+        outputs[f"content/{name}.json"] = registry(doc)
     stale = []
     for rel, text in sorted(outputs.items()):
         path = ROOT / rel
