@@ -150,10 +150,10 @@ jobs:
           except Exception:
               server_qualification = 'true'
 
-          # A candidate whose changed files are all unconsumed auxiliary inputs skips
-          # the Rust and Windows lanes, using the protected-base exact-consumer routing
-          # and protected-base Cargo metadata that the PR gate uses. Any other routing
-          # result, and any classifier or metadata failure, stays FULL.
+          # Use protected-base exact-consumer routing and Cargo metadata for the
+          # exact synthetic candidate. Unconsumed auxiliary inputs skip both lanes;
+          # a proven server-only closure keeps Linux/PG and deselects Windows.
+          # Any other routing result or classifier/metadata failure stays FULL.
           if result['surface'] == 'full' and isinstance(records, list) and records:
               try:
                   metadata_path = os.path.join(os.environ['RUNNER_TEMP'], 'queue-metadata.json')
@@ -171,6 +171,12 @@ jobs:
                       if not isinstance(surface, str) or re.fullmatch(r'[a-z-]+', surface) is None:
                           raise ValueError('invalid routed surface')
                       result = {'rust': 'false', 'windows': 'false', 'surface': surface}
+                  elif (
+                      routed.get('rust') is True and routed.get('windows') is False
+                      and routed.get('surface') in ('server', 'durability')
+                      and routed.get('reason') == 'server-only-exact-consumer-closure'
+                  ):
+                      result = {'rust': 'true', 'windows': 'false', 'surface': routed['surface']}
               except Exception:
                   result = {'rust': 'true', 'windows': 'true', 'surface': 'full'}
 
@@ -694,13 +700,16 @@ jobs:
           SERVER_SEAM: ${{ needs.server_seam.result }}
         run: |
           set -euo pipefail
-          RUST_REQUIRED="${RUST_REQUIRED:-true}"
-          WINDOWS_REQUIRED="${WINDOWS_REQUIRED:-true}"
+          # Incomplete lane outputs restore FULL together, never a partial skip.
+          if [[ -z "${RUST_REQUIRED:-}" || -z "${WINDOWS_REQUIRED:-}" ]]; then
+            RUST_REQUIRED=true
+            WINDOWS_REQUIRED=true
+          fi
           for result in "$CANDIDATE" "$DEPENDENCY_REVIEW" "$CODEQL"; do
             test "$result" = success
           done
           case "$RUST_REQUIRED:$WINDOWS_REQUIRED" in
-            true:true|false:false) ;;
+            true:true|true:false|false:false) ;;
             *)
               echo "invalid Merge Queue lane selection: rust=$RUST_REQUIRED windows=$WINDOWS_REQUIRED" >&2
               exit 1
