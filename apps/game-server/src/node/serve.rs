@@ -1106,8 +1106,8 @@ async fn boot_and_serve(
         .map_err(|_| BootError::ContentActivation("spell book"))?;
     // ACHIEVEMENT: the Achievement catalogue loads with the Content activation as well; a
     // malformed catalogue, or activated Content whose RewardClaim names an achievement the
-    // catalogue lacks (contract §3.3), refuses readiness. The chest USE dispatch takes it from
-    // here (C2).
+    // catalogue lacks (contract §3.3), refuses readiness. The gameplay seam takes it for the
+    // `ACCOUNT_ACHIEVEMENTS_QUERY` display read and the chest USE dispatch (C2).
     let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
         .map_err(|_| BootError::ContentActivation("achievement catalogue"))?;
     if !achievements
@@ -1252,8 +1252,8 @@ async fn boot_and_serve(
         movement_cells: &movement_cells,
         door: &door,
         chest: &chest,
-        achievements: &achievements,
         spells: &spells,
+        achievements: &achievements,
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(

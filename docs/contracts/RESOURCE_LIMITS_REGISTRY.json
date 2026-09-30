@@ -5863,47 +5863,48 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
       "resource": "One exact OneItemTransactionV1 payload (event type 2, operation fee_burn) inside EventEnvelope.payload",
       "unit": "bytes",
-      "hard_maximum": 24181,
+      "hard_maximum": 25398,
       "configurable_range": {
-        "minimum": 24181,
-        "maximum": 24181
+        "minimum": 25398,
+        "maximum": 25398
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Check the encoded or borrowed payload length before decoding or copying; ANL01-EVENT-PAYLOAD-BYTES (196,608 B) still applies on top.",
       "client_visible": false,
       "boundary_tests": [
-        "the measured worst case of the registered schema (20 whole burns, 512-byte revisions, the longest charm key, maximal integers) is exactly 24,181 B and accepted",
-        "24,182 bytes rejected before decode"
+        "the measured worst case of the registered schema (20 whole burns, two change MINTs of 99 coins, 512-byte revisions, the longest charm key, maximal integers) is exactly 25,398 B and accepted",
+        "25,399 bytes rejected before decode"
       ],
       "consumers": [
         "apps/game-server/src/durability/item_fee_burn_audit.rs",
         "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
       ],
-      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
     },
     {
       "id": "DUR03-RL-07-FEE-BURN-ENVELOPE-BYTES",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
       "resource": "One encoded normative ANL-01 EventEnvelope carrying event type 2 operation fee_burn, including payload",
       "unit": "bytes",
-      "hard_maximum": 24495,
+      "hard_maximum": 25712,
       "configurable_range": {
-        "minimum": 24495,
-        "maximum": 24495
+        "minimum": 25712,
+        "maximum": 25712
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. Migration 0023 admits a stored envelope above the one-item 9,216 B only for a fee event of the same transaction.",
+      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. Migration 0023 admits a stored envelope above the one-item 9,216 B only for a fee event of the same transaction; migration 0031 sets the stored ceiling to this row.",
       "client_visible": false,
       "boundary_tests": [
-        "the measured worst-case envelope (128-byte build id) is exactly 24,495 B and accepted",
-        "24,496 bytes rejected before decode"
+        "the measured worst-case envelope (128-byte build id) is exactly 25,712 B and accepted",
+        "25,713 bytes rejected before decode"
       ],
       "consumers": [
         "apps/game-server/src/durability/item_fee_burn_audit.rs",
         "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)",
-        "apps/game-server/migrations/0023_character_gold_fee_burn.sql (stored envelope ceiling)"
+        "apps/game-server/migrations/0023_character_gold_fee_burn.sql (stored envelope ceiling)",
+        "apps/game-server/migrations/0031_character_gold_fee_change_mint.sql (stored envelope ceiling, re-measured)"
       ],
-      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
     },
     {
       "id": "DUR03-AUDIT-RETENTION-S",

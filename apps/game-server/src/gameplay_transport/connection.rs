@@ -30,10 +30,15 @@ use super::world_spatial::{
     StepDisposition, WorldSpatialObservation, decode_step_intent, encode_step_result,
     encode_world_spatial,
 };
+use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::foundation::{
     CommandStatus, DomainSnapshot, encode_command_protocol_error, encode_command_result,
     encode_liveness_probe, encode_single_chunk_snapshot, encode_state_delta,
 };
+use oteryn_protocol_oteryn::account_achievements::{
+    COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, decode_account_achievements_query,
+};
+use oteryn_protocol_oteryn::encode_command_error_result;
 
 /// Foundation schema revision served by this build (FND-02 v1 contract).
 pub(crate) const SERVER_SCHEMA_REVISION: u32 = 1;
@@ -256,6 +261,16 @@ pub(crate) trait FreshAdmissionAuthority {
         async { SpellCastOutcome::rejected() }
     }
 
+    /// One `ACCOUNT_ACHIEVEMENTS_QUERY` page of the request's account's earned facts (display
+    /// contract §4). The transport passes the account of the admitted controller, never one from
+    /// the payload, with the session and CommandId of the request.
+    fn account_achievements(
+        &self,
+        _request: AccountAchievementsRequest,
+    ) -> impl Future<Output = AccountAchievementsReply> {
+        async { AccountAchievementsReply::Rejected }
+    }
+
     /// The periodic Serene evaluation of the admitted actor (SPELL-D8 §8.2), run every
     /// [`SERENE_EVALUATION`] while it has `ACTOR_VITALS`: the new revision and value when Serene
     /// changed, which the loop publishes as a delta.
@@ -294,6 +309,20 @@ pub(crate) trait FreshAdmissionAuthority {
     ) -> impl Future<Output = GraceExpiryResult> {
         async { GraceExpiryResult::NotApplicable }
     }
+}
+
+/// The terminal outcome of one `ACCOUNT_ACHIEVEMENTS_QUERY` (display contract §3.3, §4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum AccountAchievementsReply {
+    /// The encoded `AccountAchievementsResult` of the page.
+    Page(Vec<u8>),
+    /// `REJECTED` with this registered operation-terminal code and no rows (FND-02 §18):
+    /// `PAYLOAD_LIMIT_EXCEEDED` for a reply over its bounds, `ACCOUNT_DATA_INTEGRITY` for a fact
+    /// under a key the catalogue lacks.
+    Terminal(FoundationProtocolError),
+    /// No controller, a malformed query, unreadable storage or a malformed row: `REJECTED`, no
+    /// rows, no code.
+    Rejected,
 }
 
 /// The outcome of one step: its disposition and, only when it moved, the new observation.
@@ -821,10 +850,14 @@ where
         // never makes a second transition.
         // WORLD_ACTOR_SPELL_CAST_INTENT (command type 3) follows the same discipline: a replayed
         // CommandId expires above, so a retry never casts or pays a second time (SPELL-D3).
+        // ACCOUNT_ACHIEVEMENTS_QUERY (command type 10, display contract D223-D228) is a read of
+        // the session's own account: the admitted controller's, never the payload's; a session
+        // without a controller binding has none and is REJECTED.
         enum Dispatch {
             Step(StepOutcome),
             Use(UseOutcome),
             Spell(SpellCastOutcome),
+            Achievements(AccountAchievementsReply),
             Unregistered,
         }
         let dispatch = if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
@@ -857,6 +890,23 @@ where
                         .await,
                 ),
                 Err(_) => Dispatch::Spell(SpellCastOutcome::rejected()),
+            }
+        } else if command.command_type == COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY {
+            match (
+                decode_account_achievements_query(command.payload),
+                admitted.controller,
+            ) {
+                (Ok(query), Some(controller)) => Dispatch::Achievements(
+                    authority
+                        .account_achievements(AccountAchievementsRequest {
+                            account_id: controller.account_id,
+                            page: query.page,
+                            game_session_id: *admitted.game_session_id.as_bytes(),
+                            command_id: command.command_id,
+                        })
+                        .await,
+                ),
+                _ => Dispatch::Achievements(AccountAchievementsReply::Rejected),
             }
         } else {
             Dispatch::Unregistered
@@ -895,15 +945,29 @@ where
                 },
                 encode_spell_cast_result(outcome.disposition),
             ),
-            Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
+            Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
+                (CommandStatus::Accepted, payload.clone())
+            }
+            Dispatch::Achievements(
+                AccountAchievementsReply::Terminal(_) | AccountAchievementsReply::Rejected,
+            )
+            | Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
         };
-        let Ok(result) = encode_command_result(
-            generation,
-            sequence,
-            command.command_id,
-            status,
-            &result_payload,
-        ) else {
+        let result =
+            if let Dispatch::Achievements(AccountAchievementsReply::Terminal(error)) = &dispatch {
+                // Display contract §3.3, §4.3: fail closed with the registered operation-terminal
+                // error and nothing else.
+                encode_command_error_result(generation, sequence, command.command_id, *error)
+            } else {
+                encode_command_result(
+                    generation,
+                    sequence,
+                    command.command_id,
+                    status,
+                    &result_payload,
+                )
+            };
+        let Ok(result) = result else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
         if write_frame(stream, &result).await.is_err() {
@@ -991,7 +1055,7 @@ where
                     }
                 }
             }
-            Dispatch::Unregistered => {}
+            Dispatch::Achievements(_) | Dispatch::Unregistered => {}
         }
     }
 }
@@ -2705,6 +2769,147 @@ mod tests {
                 authority.observe_vitals(actor, session).await,
                 Some((2, paid))
             );
+            Ok(())
+        })
+    }
+
+    /// A fixture authority for `ACCOUNT_ACHIEVEMENTS_QUERY` dispatch: every call is recorded and
+    /// answered with one canned reply.
+    struct AchievementsAuthority {
+        calls: RefCell<Vec<AccountAchievementsRequest>>,
+        reply: AccountAchievementsReply,
+    }
+
+    impl FreshAdmissionAuthority for AchievementsAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+
+        async fn account_achievements(
+            &self,
+            request: AccountAchievementsRequest,
+        ) -> AccountAchievementsReply {
+            self.calls.borrow_mut().push(request);
+            self.reply.clone()
+        }
+    }
+
+    fn achievements_command(id: u64, query: &[u8]) -> Vec<u8> {
+        let mut payload = Vec::new();
+        scalar(&mut payload, 1, id);
+        scalar(
+            &mut payload,
+            2,
+            u64::from(COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY),
+        );
+        bytes(&mut payload, 4, query);
+        envelope(7, ADMITTED_GENERATION, &payload)
+    }
+
+    /// Display contract §4: the query reads the admitted controller's account, never one from the
+    /// payload; a malformed query or a session without a controller is REJECTED without a read;
+    /// an over-bound reply is REJECTED with `PAYLOAD_LIMIT_EXCEEDED` and an integrity fault with
+    /// `ACCOUNT_DATA_INTEGRITY` (owner decision 2026-09-30), each with no rows.
+    #[test]
+    fn account_achievements_query_reads_only_the_controller_account() -> Result<(), Box<dyn Error>>
+    {
+        const ACCOUNT: [u8; 16] = uuid_v7(0x55);
+        let request = |page, command_id| AccountAchievementsRequest {
+            account_id: ACCOUNT,
+            page,
+            game_session_id: SESSION,
+            command_id,
+        };
+        run(async {
+            let world_id = WorldId::decode(&WORLD)?;
+            let channel_id = ChannelId::decode(&CHANNEL)?;
+            let session = |controller| AdmittedSession {
+                game_session_id: GameSessionId::decode(&SESSION).expect("session"),
+                world_id,
+                channel_id,
+                runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller,
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            };
+            let controller = Some(ControllerBinding {
+                transport: AuthenticatedTransportRefV1::decode(&[0x5a; 16])?,
+                account_id: ACCOUNT,
+            });
+            let authority = AchievementsAuthority {
+                calls: RefCell::new(Vec::new()),
+                reply: AccountAchievementsReply::Page(vec![0x08, 0x02]),
+            };
+            let (_end, frames) = drive_session(
+                &authority,
+                session(controller),
+                &[
+                    // Page 3; a payload has no field for an account.
+                    achievements_command(1, &[0x08, 0x03]),
+                    // An unknown field (as if naming an account) does not decode.
+                    achievements_command(2, &[0x08, 0x00, 0x12, 0x01, 0x07]),
+                ],
+            )
+            .await?;
+            let mut expected = baseline();
+            expected.extend([
+                encode_command_result(
+                    ADMITTED_GENERATION,
+                    1,
+                    1,
+                    CommandStatus::Accepted,
+                    &[0x08, 0x02],
+                )?,
+                encode_command_result(ADMITTED_GENERATION, 2, 2, CommandStatus::Rejected, &[])?,
+            ]);
+            assert_eq!(frames, expected);
+            assert_eq!(*authority.calls.borrow(), [request(3, 1)]);
+
+            // No controller binding: no account to read.
+            let (_end, frames) =
+                drive_session(&authority, session(None), &[achievements_command(1, &[])]).await?;
+            assert_eq!(
+                frames.last(),
+                Some(&encode_command_result(
+                    ADMITTED_GENERATION,
+                    1,
+                    1,
+                    CommandStatus::Rejected,
+                    &[]
+                )?)
+            );
+            assert_eq!(authority.calls.borrow().len(), 1);
+
+            for error in [
+                FoundationProtocolError::PayloadLimitExceeded,
+                FoundationProtocolError::AccountDataIntegrity,
+            ] {
+                let failing = AchievementsAuthority {
+                    calls: RefCell::new(Vec::new()),
+                    reply: AccountAchievementsReply::Terminal(error),
+                };
+                let (_end, frames) = drive_session(
+                    &failing,
+                    session(controller),
+                    &[achievements_command(1, &[])],
+                )
+                .await?;
+                let terminal = encode_command_error_result(ADMITTED_GENERATION, 1, 1, error)?;
+                assert_ne!(
+                    terminal,
+                    encode_command_result(ADMITTED_GENERATION, 1, 1, CommandStatus::Rejected, &[])?
+                );
+                assert_eq!(frames.last(), Some(&terminal), "{error:?}");
+                assert_eq!(*failing.calls.borrow(), [request(0, 1)]);
+            }
             Ok(())
         })
     }
