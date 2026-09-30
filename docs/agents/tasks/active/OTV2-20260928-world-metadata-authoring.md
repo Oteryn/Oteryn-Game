@@ -82,7 +82,13 @@ official name and may have:
 - `parent_regions`: every subregion (437; Tibiadrome has five);
 - `footprint`: floor 7 bounding box, tile count and mask image (209 subregions);
 - `cities`: City Areas whose temple lies in the subregion mask on the same floor (21 of 35
-  cities; a region lists its subregions' cities).
+  cities; a region lists its subregions' cities). A temple on floor != 7 links when its
+  floor-7 (x, y) lies in exactly one subregion mask (method `temple_projected_to_floor_7` in
+  the capture summary; 12 more cities, 33 of 35). Ambiguous or outside projections stay
+  unlinked (Gnomprona); Home (outside every mask) stays unlinked, with its nearest mask
+  (Greenshore, 66) recorded in the summary only.
+- `convert_world_metadata.py` applies the city enrichment when the snapshot exists, so its
+  `--check` no longer reports the cities STALE.
 
 The Thais temple lies in the `Thais City` mask only and the Ab'Dendriel temple in
 `Ab'Dendriel City` only. The hierarchy has two levels, so `areas/streets/` stays untouched.

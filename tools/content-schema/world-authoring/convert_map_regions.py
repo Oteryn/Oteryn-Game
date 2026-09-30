@@ -34,6 +34,8 @@ SOURCE_KEY = "oteryn:source.tibia_client"
 CLIENT_VERSION = "15.30"
 FAMILY = "Area.Region"
 KEY_PREFIX = "oteryn:area.region."
+PROJECTION = "temple_projected_to_floor_7"
+PROJECTION_FLOOR = 7
 KINDS = {1: "region", 2: "subregion"}
 IMAGE_NAME = re.compile(r"^subarea-[0-9]{4}-([0-9a-f]{64})\.bmp\.lzma$")
 MAP_NAME = re.compile(r"^map-([0-9a-f]{64})\.dat$")
@@ -74,6 +76,21 @@ def cities(root: Path) -> list[tuple[str, dict]]:
             declaration = record["declaration"]
             found.append((declaration["identity"]["key"], declaration["temple"]))
     return sorted(found, key=lambda row: row[0])
+
+
+def nearest_mask(masks: dict, by_area: dict, x: int, y: int, floor: int) -> dict:
+    """The mask on `floor` nearest to tile (x, y) by Chebyshev distance; recorded only."""
+    best = None
+    for area_id, mask in masks.items():
+        if mask.z != floor:
+            continue
+        for r, row in enumerate(mask.rows):
+            for c, cell in enumerate(row):
+                if cell:
+                    d = max(abs(mask.x + c - x), abs(mask.y + r - y))
+                    if best is None or (d, by_area[area_id]) < best:
+                        best = (d, by_area[area_id])
+    return {} if best is None else {"nearest_mask": best[1], "distance": best[0]}
 
 
 def check_hierarchy(facts: reader.MapFile) -> dict[int, reader.Area]:
@@ -181,18 +198,34 @@ def build(root: Path = ROOT) -> dict[str, bytes]:
         }
     city_rows = cities(root)
     linked: dict[int, list[str]] = {}
+    projected, unlinked = [], []
     floor_differs = outside = 0
     for city_key, temple in city_rows:
-        hits = [
-            area_id
-            for area_id, mask in masks.items()
-            if mask.contains(temple["x"], temple["y"], temple["floor"])
-        ]
+        x, y, floor = temple["x"], temple["y"], temple["floor"]
+        hits = [a for a, mask in masks.items() if mask.contains(x, y, floor)]
+        if not hits and floor != PROJECTION_FLOOR:
+            hits = [a for a, m in masks.items() if m.contains(x, y, PROJECTION_FLOOR)]
+            if len(hits) == 1:
+                projected.append(
+                    {
+                        "city": city_key,
+                        "method": PROJECTION,
+                        "subregion": by_area[hits[0]],
+                    }
+                )
+            else:
+                reason = "projection_ambiguous" if hits else "projection_outside"
+                unlinked.append({"city": city_key, "reason": reason})
+                hits = []
         for area_id in hits:
             linked.setdefault(area_id, []).append(city_key)
         if not hits:
-            if any(m.z == temple["floor"] for m in masks.values()):
+            if any(m.z == floor for m in masks.values()):
                 outside += 1
+                unlinked.append(
+                    {"city": city_key, "reason": "outside_every_mask"}
+                    | nearest_mask(masks, by_area, x, y, floor)
+                )
             else:
                 floor_differs += 1
     records, counts = (
@@ -259,7 +292,9 @@ def build(root: Path = ROOT) -> dict[str, bytes]:
     summary = {
         "cities": {
             "linked": len({c for row in linked.values() for c in row}),
+            "projected": sorted(projected, key=lambda row: row["city"]),
             "total": len(city_rows),
+            "unlinked": sorted(unlinked, key=lambda row: row["city"]),
         },
         "families": {FAMILY: len(records)},
         "not_imported": {
