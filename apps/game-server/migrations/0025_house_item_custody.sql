@@ -67,6 +67,28 @@ CREATE TABLE game_item_house_reclaim_provenance (
 CREATE INDEX game_item_house_reclaim_provenance_subject
     ON game_item_house_reclaim_provenance (reclaim_subject_character_id);
 
+-- Every placement transaction ever used by a HouseInterior row, append-only.
+-- A deleted row keeps its entry, so a later row (a move, a re-placement) can
+-- never reuse a historical placement transaction, and the provenance, bound
+-- to its row's placement by the FK above, can never return to one.
+CREATE TABLE game_item_house_placement_transactions (
+    placed_transaction_id UUID PRIMARY KEY,
+    item_instance_id UUID NOT NULL
+);
+
+-- SECURITY DEFINER: nothing but this trigger writes the ledger.
+CREATE FUNCTION game_item_house_placement_record() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    INSERT INTO game_item_house_placement_transactions (placed_transaction_id, item_instance_id)
+    VALUES (NEW.placed_transaction_id, NEW.item_instance_id);
+    RETURN NEW;
+EXCEPTION WHEN unique_violation THEN
+    RAISE EXCEPTION 'HouseInterior placement transaction was already used'
+        USING ERRCODE = '23505';
+END;
+$$;
+
 -- A HouseInterior row commits only with its provenance, checked when the row
 -- is inserted. A provenance is deleted only when its item leaves the house
 -- (§3.2): a delete while the item still has a house row at commit fails, so a
@@ -204,6 +226,14 @@ CREATE CONSTRAINT TRIGGER game_item_house_reclaim_provenance_retired_proven
 
 CREATE TRIGGER game_item_house_interior_location_immutable BEFORE UPDATE
     ON game_item_house_interior_locations FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_item_house_placement_record BEFORE INSERT
+    ON game_item_house_interior_locations FOR EACH ROW
+    EXECUTE FUNCTION game_item_house_placement_record();
+CREATE TRIGGER game_item_house_placement_transaction_immutable BEFORE UPDATE OR DELETE
+    ON game_item_house_placement_transactions FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_item_house_placement_transactions_no_truncate BEFORE TRUNCATE
+    ON game_item_house_placement_transactions
+    FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
 CREATE TRIGGER game_item_house_reclaim_provenance_guard BEFORE UPDATE
     ON game_item_house_reclaim_provenance FOR EACH ROW
     EXECUTE FUNCTION game_item_house_reclaim_provenance_guard();
@@ -231,6 +261,7 @@ DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_item_location_exclusive(UUID) SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_location_exclusivity_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_house_reclaim_provenance_stamp_xact() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_item_house_placement_record() SET search_path = %I, pg_temp', current_schema());
 END $$;
 
 -- The guard does not re-check rows that already exist, so the migration
@@ -246,12 +277,14 @@ END $$;
 
 REVOKE ALL ON
     game_item_house_interior_locations,
-    game_item_house_reclaim_provenance
+    game_item_house_reclaim_provenance,
+    game_item_house_placement_transactions
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_item_house_interior_provenance_proven(),
     game_item_house_reclaim_provenance_guard(),
     game_item_house_reclaim_provenance_stamp_xact(),
+    game_item_house_placement_record(),
     game_item_location_exclusive(UUID),
     game_item_location_exclusivity_guard()
 FROM PUBLIC;
@@ -259,5 +292,6 @@ FROM PUBLIC;
 -- the house tables. Control reads them like every other item table.
 GRANT SELECT ON
     game_item_house_interior_locations,
-    game_item_house_reclaim_provenance
+    game_item_house_reclaim_provenance,
+    game_item_house_placement_transactions
 TO oteryn_game_control;

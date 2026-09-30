@@ -471,29 +471,52 @@ fn house_location_and_provenance_are_one_to_one() -> TestResult {
         .await?;
         insert_location(&mut tx, &world, &items[0], HOUSE, 8).await?;
         assert!(tx.commit().await.is_err());
-        // Nor can the replacing row reuse the old placement transaction with
-        // the provenance untouched: the provenance must be written in the
-        // same transaction as the new row.
-        let mut tx = connection.begin().await?;
-        let old: String = sqlx::query_scalar(
-            "DELETE FROM game_item_house_interior_locations WHERE item_instance_id = $1::uuid \
-             RETURNING placed_transaction_id::text",
+        // Nor can a replacing row reuse the old placement transaction, whether
+        // the provenance is left untouched or cycled through a temporary
+        // placement and back: a placement transaction is used once, ever.
+        let current: String = sqlx::query_scalar(
+            "SELECT placed_transaction_id::text FROM game_item_house_interior_locations \
+              WHERE item_instance_id = $1::uuid",
         )
         .bind(&items[0])
-        .fetch_one(&mut *tx)
+        .fetch_one(&mut *connection)
         .await?;
-        sqlx::query(
-            "INSERT INTO game_item_house_interior_locations(item_instance_id, world_id, house_key, \
-               spatial_position, stack_ordinal, placed_transaction_id) \
-             VALUES ($1::uuid, $2::uuid, $3, '\\x0100020007'::bytea, 9, $4::uuid)",
-        )
-        .bind(&items[0])
-        .bind(&world)
-        .bind(HOUSE)
-        .bind(&old)
-        .execute(&mut *tx)
-        .await?;
-        assert!(message(tx.commit().await)?.contains("HousingReclaimProvenance"));
+        for cycle in [false, true] {
+            let mut tx = connection.begin().await?;
+            sqlx::query(
+                "DELETE FROM game_item_house_interior_locations WHERE item_instance_id = $1::uuid",
+            )
+            .bind(&items[0])
+            .execute(&mut *tx)
+            .await?;
+            if cycle {
+                for placement in ["game_character_uuid_v7()", "$2::uuid"] {
+                    sqlx::query(sqlx::AssertSqlSafe(format!(
+                        "UPDATE game_item_house_reclaim_provenance \
+                            SET provenance_revision = provenance_revision + 1, \
+                                placement_transaction_id = {placement} \
+                          WHERE item_instance_id = $1::uuid AND $2::uuid IS NOT NULL"
+                    )))
+                    .bind(&items[0])
+                    .bind(&current)
+                    .execute(&mut *tx)
+                    .await?;
+                }
+            }
+            let reused = sqlx::query(
+                "INSERT INTO game_item_house_interior_locations(item_instance_id, world_id, \
+                   house_key, spatial_position, stack_ordinal, placed_transaction_id) \
+                 VALUES ($1::uuid, $2::uuid, $3, '\\x0100020007'::bytea, 9, $4::uuid)",
+            )
+            .bind(&items[0])
+            .bind(&world)
+            .bind(HOUSE)
+            .bind(&current)
+            .execute(&mut *tx)
+            .await;
+            assert!(message(reused)?.contains("already used"));
+            tx.rollback().await?;
+        }
         // A revision bump that does not name a new placement is rejected.
         let bumped = sqlx::query(
             "UPDATE game_item_house_reclaim_provenance SET provenance_revision = 3 \
@@ -570,6 +593,7 @@ fn runtime_role_cannot_read_or_write_the_house_tables() -> TestResult {
         for table in [
             "game_item_house_interior_locations",
             "game_item_house_reclaim_provenance",
+            "game_item_house_placement_transactions",
         ] {
             let any: bool = sqlx::query_scalar(
                 "SELECT has_table_privilege('oteryn_game_runtime', $1, \

@@ -90,6 +90,11 @@ set, so `0025` needs no renumber.
   unchanged provenance): accepted and repaired in the next candidate. The provenance carries a
   trigger-stamped `written_xact_id`; a new location row needs a provenance written in its own
   physical transaction. One case and one mutation.
+- Codex P2 4150301957 on `f7bb4561` (the provenance cycles through a temporary placement and back
+  to the old one): accepted and repaired at the root in the next candidate. An append-only
+  `game_item_house_placement_transactions` ledger, written only by a SECURITY DEFINER insert
+  trigger, makes a placement transaction usable by at most one HouseInterior row ever. Cases for
+  the untouched and the cycled provenance; one mutation.
 
 ## Closeout
 
