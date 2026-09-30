@@ -7,15 +7,16 @@
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to start the depot (2026-09-30) and the owner answer **2b** (one
   depot per Character, world-wide, reachable from any town), given in the architect session on
-  2026-09-30 and recorded on #162 (5912078734) for a D-number
+  2026-09-30, verbatim record on #162 5912593702
 - Builds on: DUR-03 §5.2, §5.3, §28, §39.1 and §39.3; HOUSE-CUSTODY-0 (custody family pattern and
   the item-level exclusivity guard); ITEM-MOVE-WIRE-0 (command 9, domain 11, handles, the USE item
   target, the non-durable view open); ITEM-MOVE-WIRE-1 (backpack entry deletion by TRANSFER);
   USE-WIRE-V1; WO-0 (`container_fixture`); ADR-0021 (base map lockers); B3 (D80-D83); the
   composition decision §3; PROD-ENTITLEMENTS-01 §9; owner rule 5905825574
-- Amends: DUR-03 §5.2 and §39.1/§39.3 (the `CharacterDepot` family and its shapes, a paragraph
-  after the HOUSE-CUSTODY-0 amendment in §5.2); the composition decision (a paragraph before its §5);
-  USE-WIRE-V1 and ITEM-MOVE-WIRE-0 §5 (under a new capability)
+- Amends, each pending on acceptance of DEPOT-0 (#162 5912405163): DUR-03 §5.2 and §39.1/§39.3
+  (the `CharacterDepot` family and its shapes, a paragraph after the HOUSE-CUSTODY-0 amendment in
+  §5.2); the composition decision (a paragraph before its §5). USE-WIRE-V1 and ITEM-MOVE-WIRE-0 §5
+  are not edited here: DEPOT-WIRE-1 makes those edits after #1344 and #1354 integrate.
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -75,7 +76,9 @@ Where does a character keep items outside its backpack, and how does it reach th
 
 **Owner decision**
 
-- **2b:** one depot per Character, world-wide, reachable from any town. This matches Global.
+- **2b** (#162 5912593702, verbatim: "Jeden wspólny w całym świecie, jak w obecnej Tibii, gdzie
+  depozyt i stash są dostępne z każdego miasta"): one depot per Character, world-wide, reachable
+  from any town. This matches Global.
 
 ## 3. Storage (DEPOT-1)
 
@@ -129,8 +132,8 @@ Where does a character keep items outside its backpack, and how does it reach th
 
 ### 4.2 Capability and destination
 
-- **Capability `DEPOT_V1`**, which requires capability 4; its number is reserved on #162 at
-  allocation. Without it, a locker is `NOTHING_TO_USE` and domain 11 never shows a depot.
+- **Capability 5 `DEPOT_V1`** (reserved by the control plane, #162 5912405163), which requires
+  capability 4. Without it, a locker is `NOTHING_TO_USE` and domain 11 never shows a depot.
 - Command 9 gains the destination `DEPOT {box}`, and its source may be the handle of an entry on the
   open box page. Whole items only. The depot view must be open when the command runs.
 - Results: `NO_ROOM` (the depot is full for the account), `NOT_SUPPORTED` (an item with contents, a
@@ -140,9 +143,13 @@ Where does a character keep items outside its backpack, and how does it reach th
 
 - **Shapes**, each one item and one transaction:
   - a main backpack direct entry into a box (`DEPOT {box}`);
-  - a depot entry out to the main backpack, by the whole B3 rule (the container slot when it is
-    empty and the item is an empty container with a container-slot pattern; otherwise a merge,
-    top-up or new entry). So a character without a backpack can take a spare one from its depot.
+  - a depot entry out to the main backpack: into the container slot when it is empty and the
+    item is an empty container with a container-slot pattern (so a character without a backpack
+    can take a spare one from its depot); otherwise into a new direct entry. There is no merge or
+    top-up out of the depot in this slice, so every move is one item and a depot row is only ever
+    removed by that item's TRANSFER. No free entry is `NO_ROOM`.
+- **Merges later.** Merging into an existing stack on the way out is a SPLIT_MERGE_QUANTITY shape
+  (two items, a depot row retired by merge) and waits for its own amendment.
 - **Checks when the command runs:** the open depot view, the character's current position next to
   the locker it opened (a command reserved before a reconnect is checked again, FND-02 §13.3), and
   the capacity of §3.
@@ -224,8 +231,9 @@ lock is already held.
 ## 11. Before-freeze checklist
 
 1. **Contract amendments:** DUR-03 §5.2 with §39.1 and §39.3 for the depot shapes; the composition
-   decision rule 1, 2 and 4 texts; USE-WIRE-V1 (locker open, field 6); ITEM-MOVE-WIRE-0 §5 (the
-   depot destination).
+   decision rule 1, 2 and 4 texts; both written "pending on acceptance of DEPOT-0". USE-WIRE-V1
+   (locker open, field 6) and ITEM-MOVE-WIRE-0 §5 (the depot destination) are edited by
+   DEPOT-WIRE-1 after #1344 and #1354.
 2. **Serialization:** one transaction per move, Character fence and root lock.
 3. **Restart:** depot items are durable and untouched by resets.
 4. **Typed references:** CharacterId, box 1..17, page, handles.

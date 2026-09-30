@@ -176,8 +176,9 @@ presentation ownership
 
 remain separate. Possession, CharacterId equality, binding or custody does not grant mutation authority.
 
-**Amendment (DEPOT-0, 2026-09-30).**
-`reviews/OTERYN_GAME_DEPOT0_CHARACTER_DEPOT_DECISION_2026-09-30.md` admits the second custody family:
+**Amendment (DEPOT-0, 2026-09-30), pending on acceptance of DEPOT-0.**
+`reviews/OTERYN_GAME_DEPOT0_CHARACTER_DEPOT_DECISION_2026-09-30.md`, once accepted, admits the
+second custody family:
 
 ```text
 CharacterDepot { character_id: CharacterId, box: 1..17, ordinal: NUMERIC(20) }
@@ -186,7 +187,7 @@ CharacterDepot { character_id: CharacterId, box: 1..17, ordinal: NUMERIC(20) }
 Character + World scope, no channel and no runtime scope; the 17 boxes are fixed compartments, not
 items. Its DEPOT-1 child admits two one-item TRANSFER shapes, superseding the §39.1 and §39.3
 source and destination limits for them only: a main backpack direct entry into a box, and a depot entry
-out to the main backpack by the B3 rule. Corpse and Ground sources are refused. The table joins the
+out to the main backpack's container slot or a new direct entry (no merge). Corpse and Ground sources are refused. The table joins the
 HOUSE-CUSTODY-0 item-level exclusivity guard.
 
 ## 6. Runtime simulation authority versus durable recoverability
