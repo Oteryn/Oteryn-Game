@@ -1,0 +1,68 @@
+name: House TibiaWiki BR Capture
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/content-schema/house-authoring/wiki_br_houses.py
+      - .github/workflows/house-tibiawiki-br-capture.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: house-tibiawiki-br-capture-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: House / TibiaWiki BR snapshot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/house-authoring
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Install pinned requirements
+        run: python -m pip install -r requirements.txt
+
+      - name: Run offline self-test
+        run: python wiki_br_houses.py self-test
+
+      - name: Capture House pages and compare
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/house-tibiawiki-br"
+          python wiki_br_houses.py fetch --out "$out/tibiawiki-br-house-snapshot.json"
+          python wiki_br_houses.py facts --snapshot "$out/tibiawiki-br-house-snapshot.json" \
+            --out "$out/tibiawiki-br-house-facts.json"
+          python convert_houses.py convert --check --out "$out/house-catalog.json"
+          python wiki_br_houses.py compare --facts "$out/tibiawiki-br-house-facts.json" \
+            --catalog "$out/house-catalog.json" | tee "$out/tibiawiki-br-house-compare.json"
+          sha256sum "$out"/*.json
+
+      - name: Upload snapshot, facts and comparison
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: house-tibiawiki-br-snapshot-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/house-tibiawiki-br/tibiawiki-br-house-snapshot.json
+            ${{ runner.temp }}/house-tibiawiki-br/tibiawiki-br-house-facts.json
+            ${{ runner.temp }}/house-tibiawiki-br/tibiawiki-br-house-compare.json
+          if-no-files-found: error
+          retention-days: 30
