@@ -81,18 +81,6 @@ def make_root(root: Path) -> None:
     )
     families = {
         "Area.City": {"temple": pos(800, 800, 7)},
-        "House": {
-            "entry": pos(900, 1000, 9),
-            "doors": [{"door_id": 1, "position": pos(901, 1000, 9)}],
-            "footprint": {
-                "floors": [{"floor": 9, "tiles": 4}],
-                "max_x": 902,
-                "max_y": 1002,
-                "min_x": 900,
-                "min_y": 1000,
-                "tile_count": 4,
-            },
-        },
         "Transition.Teleport": {"from": pos(800, 800, 7), "to": pos(900, 1000, 9)},
         "Area.HuntingPlace": {"position": pos(1000, 1480, 7)},
         "Area.Region": {
@@ -232,14 +220,14 @@ class WorldRecordTest(unittest.TestCase):
                 write(self.root, path, shard)
         self.assertEqual(self.errors(), [])
 
-    def test_house_door_and_footprint_positions_are_rejected(self):
-        path = f"{validate.FAMILIES['House'][0]}/x-00000-00000.json"
+    def test_region_footprint_positions_are_rejected(self):
+        path = f"{validate.FAMILIES['Area.Region'][0]}/x-00000-00000.json"
         shard = json.loads((self.root / path).read_text())
         declaration = shard["records"][0]["declaration"]
-        declaration["doors"][0]["position"] = pos(901, 1000, 8)
+        declaration["footprint"]["floor"] = 8
         write(self.root, path, shard)
         self.assertTrue(self.has("undeclared floor"))
-        declaration["doors"][0]["position"] = pos(901, 1000, 9)
+        declaration["footprint"]["floor"] = 7
         declaration["footprint"]["max_x"] = 5000
         write(self.root, path, shard)
         self.assertTrue(self.has("outside the world bounds"))

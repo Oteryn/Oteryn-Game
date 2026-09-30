@@ -6,7 +6,7 @@ python validate_world_record.py [--root REPOSITORY_ROOT]
 Checks the family files (schema, canonical bytes, no stray file beside the legacy locator),
 that the record's bounds and floors equal the exact tile bounding box and floors of the
 committed base map, that the source map header covers the bounds, and that every city,
-house (entry, doors, footprint), teleport and hunting place position lies inside the bounds
+teleport and hunting place position lies inside the bounds
 on a declared floor. Base map tiles are inside by the exact-extent equality.
 """
 
@@ -69,7 +69,7 @@ def family_positions(root: Path, family: str) -> list[tuple[str, dict]]:
             footprint = declaration.get("footprint")
             if footprint:
                 # The footprint box corners, on each floor the footprint occupies
-                # (a house lists `floors`, a region footprint has one `floor`).
+                # (a footprint lists `floors` or has one `floor`).
                 for row in footprint.get("floors") or [footprint]:
                     for x in (footprint["min_x"], footprint["max_x"]):
                         for y in (footprint["min_y"], footprint["max_y"]):

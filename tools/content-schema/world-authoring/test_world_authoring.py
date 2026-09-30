@@ -6,7 +6,6 @@ import gzip
 import hashlib
 import json
 import lzma
-import re
 import shutil
 import struct
 import tempfile
@@ -98,21 +97,6 @@ def fixture_map(extra_houses=(), extra_areas=()) -> bytes:
     )
 
 
-HOUSE_XML = (
-    b'<?xml version="1.0"?><houses><house name="Fixture Hall" houseid="254" entryx="1001" '
-    b'entryy="1002" entryz="7" rent="1000" guildhall="true" townid="7" size="2" clientid="1" '
-    b'beds="1" /></houses>'
-)
-
-
-def house_row(house_id: int, name: str) -> bytes:
-    return (
-        f'<house name="{name}" houseid="{house_id}" entryx="1001" entryy="1002" '
-        'entryz="7" rent="1000" guildhall="false" townid="7" size="1" clientid="1" '
-        'beds="1" />'
-    ).encode()
-
-
 class ReaderTest(unittest.TestCase):
     def test_reads_towns_houses_teleports_and_escaped_bytes(self):
         for raw in (fixture_map(), gzip.compress(fixture_map())):
@@ -153,7 +137,6 @@ class ConvertAndValidateTest(unittest.TestCase):
     def setUp(self):
         blobs = {
             "data-global/world/world.otbm": fixture_map(),
-            "data-global/world/world-house.xml": HOUSE_XML,
         }
         self.root = Path(tempfile.mkdtemp())
         self.out = convert.build(blobs, self.root)
@@ -196,15 +179,9 @@ class ConvertAndValidateTest(unittest.TestCase):
         self.assertEqual(validate.validate(self.root), [])
         summary = json.loads(self.out[str(convert.SUMMARY.relative_to(convert.ROOT))])
         self.assertEqual(
-            summary["families"], {"Area.City": 1, "House": 1, "Transition.Teleport": 1}
+            summary["families"], {"Area.City": 1, "Transition.Teleport": 1}
         )
         self.assertEqual(summary["not_imported"]["teleports"]["unset_destination"], 1)
-        house = self.shard("House")["records"][0]["declaration"]
-        self.assertEqual(house["identity"]["key"], "oteryn:house.fixture_hall")
-        self.assertEqual(house["city"]["key"], "oteryn:area.city.test_town")
-        self.assertEqual(
-            (house["declared_size"], house["footprint"]["tile_count"]), (2, 2)
-        )
         teleport = self.shard("Transition.Teleport")["records"][0]["declaration"]
         self.assertEqual(
             teleport["identity"]["key"], "oteryn:transition.teleport.x1001_y1003_z7"
@@ -214,70 +191,9 @@ class ConvertAndValidateTest(unittest.TestCase):
     def test_conversion_is_deterministic(self):
         blobs = {
             "data-global/world/world.otbm": fixture_map(),
-            "data-global/world/world-house.xml": HOUSE_XML,
         }
         with tempfile.TemporaryDirectory() as empty:
             self.assertEqual(convert.build(blobs, Path(empty)), self.out)
-
-    def test_house_xml_must_match_map_house_tiles(self):
-        blobs = {
-            "data-global/world/world.otbm": fixture_map(),
-            "data-global/world/world-house.xml": HOUSE_XML.replace(b'"254"', b'"9"'),
-        }
-        with self.assertRaises(convert.ConvertError):
-            convert.build(blobs, self.root)
-
-    def rebuild(self, house_xml: bytes, extra_houses=()) -> dict[str, bytes]:
-        """Second build against the families already committed in the temp root."""
-        blobs = {
-            "data-global/world/world.otbm": fixture_map(extra_houses),
-            "data-global/world/world-house.xml": house_xml,
-        }
-        return convert.build(blobs, self.root)
-
-    @staticmethod
-    def house_records(out):
-        (path,) = [p for p in out if re.fullmatch(r"content/houses/houses-.*\.json", p)]
-        return {
-            r["declaration"]["identity"]["key"]: r
-            for r in json.loads(out[path])["records"]
-        }
-
-    def test_renamed_house_keeps_its_key(self):
-        renamed = HOUSE_XML.replace(b"Fixture Hall", b"Renamed Hall")
-        records = self.house_records(self.rebuild(renamed))
-        self.assertEqual(list(records), ["oteryn:house.fixture_hall"])
-        record = records["oteryn:house.fixture_hall"]
-        self.assertEqual(record["declaration"]["name"], "Renamed Hall")
-        self.assertEqual(
-            record["source_bindings"][0]["target"]["key"], "oteryn:house.fixture_hall"
-        )
-
-    def test_new_house_gets_a_new_slug_key(self):
-        renamed = HOUSE_XML.replace(b"Fixture Hall", b"Renamed Hall")
-        xml = renamed.replace(
-            b"</houses>", house_row(300, "Second Hall") + b"</houses>"
-        )
-        records = self.house_records(self.rebuild(xml, (300,)))
-        self.assertEqual(
-            sorted(records),
-            ["oteryn:house.fixture_hall", "oteryn:house.second_hall"],
-        )
-
-    def test_new_house_colliding_with_a_committed_key_fails_closed(self):
-        xml = HOUSE_XML.replace(
-            b"</houses>", house_row(300, "Fixture Hall") + b"</houses>"
-        )
-        with self.assertRaises(convert.ConvertError):
-            self.rebuild(xml, (300,))
-
-    def test_rejects_unknown_city_reference(self):
-        shard = self.shard("House")
-        shard["records"][0]["declaration"]["city"]["key"] = "oteryn:area.city.nowhere"
-        self.rewrite("House", shard)
-        self.assertTrue(
-            any("is not a City Area" in e for e in validate.validate(self.root))
-        )
 
     def test_rejects_stray_file_in_family_directory(self):
         (self.root / "content/world/transitions/extra.json").write_text("{}\n")
@@ -452,7 +368,6 @@ class HuntingPlaceEndToEndTest(unittest.TestCase):
         self.root = Path(tempfile.mkdtemp())
         blobs = {
             "data-global/world/world.otbm": fixture_map(),
-            "data-global/world/world-house.xml": HOUSE_XML,
         }
         self.write(convert.build(blobs, self.root))
         bindings = self.root / validate.ITEM_BINDINGS
@@ -902,7 +817,6 @@ class MapRegionEndToEndTest(unittest.TestCase):
         self.root = Path(tempfile.mkdtemp())
         blobs = {
             "data-global/world/world.otbm": fixture_map(),
-            "data-global/world/world-house.xml": HOUSE_XML,
         }
         write_files(self.root, convert.build(blobs, self.root))
         bindings = self.root / validate.ITEM_BINDINGS
@@ -1251,7 +1165,6 @@ class CityFactsTest(unittest.TestCase):
         self.root = Path(tempfile.mkdtemp())
         blobs = {
             "data-global/world/world.otbm": fixture_map(),
-            "data-global/world/world-house.xml": HOUSE_XML,
         }
         write_files(self.root, convert.build(blobs, self.root))
         self.plain = (self.root / "content/world/areas/cities/index.json").read_bytes()
@@ -1352,7 +1265,6 @@ class CityFactsTest(unittest.TestCase):
     def test_world_metadata_regeneration_keeps_the_city_enrichment(self):
         blobs = {
             "data-global/world/world.otbm": fixture_map(),
-            "data-global/world/world-house.xml": HOUSE_XML,
         }
         out = convert.build(blobs, self.root)
         self.assertIn(cityfacts.SUMMARY, out)
@@ -1379,7 +1291,6 @@ class CityFactsTest(unittest.TestCase):
         self.assertEqual(cityfacts.build(data, self.root), first)
         blobs = {
             "data-global/world/world.otbm": fixture_map(),
-            "data-global/world/world-house.xml": HOUSE_XML,
         }
         write_files(self.root, convert.build(blobs, self.root))
         self.assertEqual(cityfacts.build(data, self.root), first)

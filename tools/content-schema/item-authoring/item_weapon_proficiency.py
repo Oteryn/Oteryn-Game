@@ -16,6 +16,13 @@ profiles; the owner-accepted D199 meaning and unit table is emitted beside them 
 ammunition means crossbow (D198), Knight applies only to knight-restricted sword/axe/club
 weapons (D200), and any binding without in-repo evidence is `unknown`, never guessed.
 Nothing is an Oteryn gameplay definition. `--check` diffs an in-memory regeneration.
+
+ITEM-PROF-1b: the weapon vocation of each binding comes, in source-policy order, from the
+pinned TibiaWiki stat snapshot (`imports/tibiawiki/facts/items-stats.json`, `vocrequired`,
+read by numeric item id; PROVEN), else from the Crystal ff7ede5 `items.xml` weapon
+`vocation` attribute staged by `--stage-crystal` into
+`imports/crystalserver/facts/items-weapon-vocations.json` (DERIVED hypothesis; a weapon node
+without the attribute is `unrestricted`), else it is UNKNOWN with a reason.
 """
 
 from __future__ import annotations
@@ -24,6 +31,7 @@ import argparse
 import hashlib
 import json
 import sys
+import xml.etree.ElementTree as ET
 from collections import Counter
 from pathlib import Path
 
@@ -52,9 +60,24 @@ CRYSTAL_CATALOG = (
 CRYSTAL_CATALOG_SHA256 = (
     "7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7"
 )
-WIKI_SNAPSHOT = EVIDENCE / "OTV2-20260925-item-enrichment-wave1-source-snapshot.json"
-WIKI_SNAPSHOT_SHA256 = (
-    "5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5"
+# TibiaWiki stat snapshot (ITEM-SEM-2a). Read by numeric item id, not by record key, and
+# not byte-pinned: its record keys and snapshot digest may change on a re-key. A value
+# change still shows up as a `--check` difference in the regenerated artifact.
+WIKI_STATS = ROOT / "imports" / "tibiawiki" / "facts" / "items-stats.json"
+WIKI_STATS_SCHEMA = "OTERYN_ITEM_WIKI_STATS_SNAPSHOT/v1"
+# Crystal items.xml weapon vocation facts, staged by `--stage-crystal` (ITEM-PROF-1b).
+CRYSTAL_ITEMS_XML = {
+    "repository": "zimbadev/crystalserver",
+    "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "path": "data/items/items.xml",
+    "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+}
+CRYSTAL_VOCATIONS = (
+    ROOT / "imports" / "crystalserver" / "facts" / "items-weapon-vocations.json"
+)
+CRYSTAL_VOCATIONS_SCHEMA = "OTERYN_CRYSTAL_ITEM_WEAPON_VOCATION_FACTS/v1"
+CRYSTAL_VOCATIONS_SHA256 = (
+    "048572bc4eab032b6c274fadf4c87cbe9256e43917c2040a7c5a2a866eb65fbe"
 )
 
 # Owner-accepted evidence: #162 comments 5905884086 (table) and 5905899852 (decision).
@@ -105,11 +128,17 @@ THRESHOLD_DECISIONS = {
     "D198": "bolt ammunition (Crystal ff7ede5 items.xml ammotype=bolt, in-repo catalog "
     "OTV2-20260919 cw2-b1; TibiaWiki secondarytype=Crossbows) selects the Crossbow table "
     "per binding, including shared bow/crossbow profiles",
+    "D198_wiki": "a ranged-family binding without ammotype uses TibiaWiki secondarytype: "
+    "Crossbows = crossbow, Bows = standard",
     "D200": "Knight table only for knight-restricted sword/axe/club weapons (Canary "
     "getExperienceArray: weapon vocation includes knight); every other melee weapon, "
     "including fist (D197), is standard",
-    "unknown": "no in-repo per-item evidence (no ammotype for a ranged-family profile, "
-    "no vocation evidence for a sword/axe/club): class stays unknown, never guessed",
+    "vocation": "weapon vocation per binding: TibiaWiki items-stats vocrequired by item id "
+    "(PROVEN), else Crystal ff7ede5 items.xml weapon vocation attribute, a weapon node "
+    "without one being unrestricted (DERIVED), else UNKNOWN",
+    "unknown": "no per-item evidence (no ammotype or wiki secondarytype for a "
+    "ranged-family profile, UNKNOWN vocation for a sword/axe/club): class stays unknown, "
+    "never guessed",
 }
 CLASSES = ("crossbow", "knight", "standard", "unknown")
 KNIGHT_WORDS = {"Sword", "Axe", "Club"}
@@ -279,43 +308,155 @@ def crystal_ammotypes() -> dict[int, str | None]:
     }
 
 
-def wiki_vocations(client_names: dict[int, str]) -> dict[int, str | None]:
-    """TibiaWiki `vocrequired` per client id, joined by an unambiguous item name.
+def xml_item_ids(item: ET.Element) -> list[int]:
+    if "id" in item.attrib:
+        return [int(item.attrib["id"])]
+    if "fromid" in item.attrib:
+        return list(range(int(item.attrib["fromid"]), int(item.attrib["toid"]) + 1))
+    return []
 
-    Only rows whose name matches exactly one binding are used; a row without a
-    `vocrequired` value carries no evidence (None).
-    """
-    rows = read_pinned_json(WIKI_SNAPSHOT, WIKI_SNAPSHOT_SHA256)["rows"]
-    by_name: dict[str, list[int]] = {}
-    for client_id, name in client_names.items():
-        by_name.setdefault(name.lower(), []).append(client_id)
-    out: dict[int, str | None] = {}
-    for row in rows:
-        fields = row["fields"]
-        name = fields.get("name", {}).get("value", "").lower()
-        matches = by_name.get(name, [])
-        if len(matches) == 1:
-            out[matches[0]] = fields.get("vocrequired", {}).get("value")
-    return out
+
+def stage_crystal(xml_path: Path, ids: set[int]) -> dict:
+    """Extract the weapon vocation facts of the binding ids from the pinned items.xml."""
+    raw = xml_path.read_bytes()
+    if sha256_bytes(raw) != CRYSTAL_ITEMS_XML["sha256"]:
+        raise SystemExit(f"{xml_path}: digest differs from {CRYSTAL_ITEMS_XML}")
+    records: dict[str, dict] = {}
+    for item in ET.fromstring(raw).iter("item"):
+        attributes = list(item.iter("attribute"))
+        keys = [
+            (a.attrib.get("key", "").lower(), a.attrib.get("value", ""))
+            for a in attributes
+        ]
+        fact = {
+            "name": item.attrib.get("name"),
+            "weapon": any(
+                k == "weapontype" or (k == "script" and "weapon" in v) for k, v in keys
+            ),
+            "vocation": [v for k, v in keys if k == "vocation"],
+        }
+        for item_id in xml_item_ids(item):
+            if item_id in ids:
+                if str(item_id) in records:
+                    raise SystemExit(f"{xml_path}: item {item_id} listed twice")
+                records[str(item_id)] = fact
+    return {
+        "schema": CRYSTAL_VOCATIONS_SCHEMA,
+        "evidence": "OtsHypothesisOnly",
+        "source": CRYSTAL_ITEMS_XML,
+        "extracted_by": "tools/content-schema/item-authoring/item_weapon_proficiency.py "
+        "--stage-crystal",
+        "scope": "the client 15.30 weapon proficiency binding ids",
+        "absent_ids": sorted(i for i in ids if str(i) not in records),
+        "records": dict(sorted(records.items(), key=lambda kv: int(kv[0]))),
+    }
+
+
+def render_facts(document: dict) -> str:
+    head = {k: v for k, v in document.items() if k != "records"}
+    lines = ["{"]
+    for key in sorted(head):
+        lines.append(f"  {json.dumps(key)}: {json.dumps(head[key], sort_keys=True)},")
+    lines.append('  "records": {')
+    rows = [
+        f"    {json.dumps(k)}: {json.dumps(v, sort_keys=True)}"
+        for k, v in document["records"].items()
+    ]
+    lines.append(",\n".join(rows))
+    lines.append("  }")
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
+def crystal_vocations() -> dict[int, dict]:
+    document = read_pinned_json(CRYSTAL_VOCATIONS, CRYSTAL_VOCATIONS_SHA256)
+    if (
+        document["schema"] != CRYSTAL_VOCATIONS_SCHEMA
+        or document["source"] != CRYSTAL_ITEMS_XML
+    ):
+        raise SystemExit(f"{CRYSTAL_VOCATIONS}: schema or source pin differs")
+    return {int(k): v for k, v in document["records"].items()}
+
+
+def wiki_stats() -> tuple[dict, dict[int, dict[str, list[str]]]]:
+    """TibiaWiki stat fields per numeric item id: field -> distinct observed values."""
+    document = json.loads(WIKI_STATS.read_text(encoding="utf-8"))
+    if document["schema"] != WIKI_STATS_SCHEMA:
+        raise SystemExit(f"{WIKI_STATS}: schema {document['schema']!r}")
+    out: dict[int, dict[str, list[str]]] = {}
+    for key, record in document["records"].items():
+        item_id = int(record.get("item_id", key.rsplit(".i", 1)[-1]))
+        fields = out.setdefault(item_id, {})
+        for observation in record["observations"]:
+            for name in ("vocrequired", "secondarytype"):
+                value = observation["fields"].get(name)
+                if value and value not in fields.setdefault(name, []):
+                    fields[name].append(value)
+    meta = {
+        "path": str(WIKI_STATS.relative_to(ROOT)),
+        "batch_id": document["batch_id"],
+        "read_by": "numeric item_id (robust to record re-keying)",
+    }
+    return meta, out
+
+
+def single(values: list[str] | None) -> str | None:
+    return values[0] if values and len(values) == 1 else None
+
+
+def vocation_evidence(wiki: dict[str, list[str]], crystal: dict | None) -> dict:
+    """PROVEN (TibiaWiki), DERIVED (Crystal items.xml) or UNKNOWN weapon vocation."""
+    values = wiki.get("vocrequired", [])
+    if len(values) == 1:
+        return {"basis": "PROVEN", "source": "tibiawiki", "value": values[0]}
+    if len(values) > 1:
+        return {
+            "basis": "UNKNOWN",
+            "reason": f"TibiaWiki observations disagree: {values}",
+        }
+    if crystal is None:
+        return {
+            "basis": "UNKNOWN",
+            "reason": "no TibiaWiki vocrequired; not in Crystal items.xml",
+        }
+    if crystal["vocation"]:
+        return {
+            "basis": "DERIVED",
+            "source": "crystal_items_xml",
+            "value": ", ".join(crystal["vocation"]),
+        }
+    if crystal["weapon"]:
+        return {
+            "basis": "DERIVED",
+            "source": "crystal_items_xml",
+            "value": "unrestricted",
+        }
+    return {
+        "basis": "UNKNOWN",
+        "reason": "no TibiaWiki vocrequired; Crystal items.xml has no weapon node",
+    }
 
 
 def threshold_class(
     profile_name: str,
     ammotype: str | None = None,
     vocation: str | None = None,
+    secondarytype: str | None = None,
 ) -> str:
     """Per-binding class: crossbow (bolt), knight (knight sword/axe/club), standard, unknown.
 
-    `ammotype` is the Crystal items.xml value, `vocation` the wiki `vocrequired` value;
-    both are per-item evidence and None means none is available.
+    `ammotype` is the Crystal items.xml value, `vocation` the resolved weapon vocation and
+    `secondarytype` the TibiaWiki value; all are per-item evidence, None means none.
     """
     words = set(profile_name.replace("-", " ").split())
     if ammotype == "bolt":
         return "crossbow"
     if words & RANGED_WORDS:
-        # A bow/crossbow family profile can be shared; without ammunition evidence
-        # (replicas, items newer than the pinned catalog) the class is not guessed.
-        return "standard" if ammotype == "arrow" else "unknown"
+        # A bow/crossbow family profile can be shared; without ammunition or wiki
+        # bow/crossbow evidence the class is not guessed.
+        if ammotype == "arrow" or secondarytype == "Bows":
+            return "standard"
+        return "crossbow" if secondarytype == "Crossbows" else "unknown"
     if words & KNIGHT_WORDS:
         if vocation is None:
             return "unknown"
@@ -389,7 +530,8 @@ def build() -> dict:
     verify_pins(proficiency_manifest, binding_manifest)
     known_items = item_keys()
     ammotypes = crystal_ammotypes()
-    vocations = wiki_vocations({b["source_id"]: b["name"] for b in bindings})
+    wiki_meta, wiki = wiki_stats()
+    crystal = crystal_vocations()
 
     profiles = []
     by_id = {}
@@ -421,24 +563,34 @@ def build() -> dict:
             raise SystemExit(
                 f"{key}: dangling proficiency id {binding['proficiency_id']}"
             )
+        item_id = binding["source_id"]
+        item_wiki = wiki.get(item_id, {})
+        vocation = vocation_evidence(item_wiki, crystal.get(item_id))
+        secondarytype = single(item_wiki.get("secondarytype"))
+        evidence = {
+            "ammotype": ammotypes.get(item_id),
+            "secondarytype": secondarytype,
+            "vocation": vocation,
+        }
         out_bindings.append(
             {
                 "item_key": key,
-                "client_object_id": binding["source_id"],
+                "client_object_id": item_id,
                 "client_name": binding["name"],
                 "proficiency_id": binding["proficiency_id"],
                 "threshold_class": threshold_class(
                     profile["name"],
-                    ammotypes.get(binding["source_id"]),
-                    vocations.get(binding["source_id"]),
+                    evidence["ammotype"],
+                    vocation.get("value"),
+                    secondarytype,
                 ),
-                "threshold_evidence": {
-                    "ammotype": ammotypes.get(binding["source_id"]),
-                    "vocrequired": vocations.get(binding["source_id"]),
-                },
+                "threshold_evidence": evidence,
                 "item_defined": key in known_items,
             }
         )
+        conflict = {"bolt": "Bows", "arrow": "Crossbows"}.get(evidence["ammotype"])
+        if conflict is not None and secondarytype == conflict:
+            raise SystemExit(f"{key}: ammotype and TibiaWiki secondarytype disagree")
     out_bindings.sort(key=lambda b: b["client_object_id"])
 
     return {
@@ -460,9 +612,11 @@ def build() -> dict:
                 "path": str(CRYSTAL_CATALOG.relative_to(ROOT)),
                 "sha256": CRYSTAL_CATALOG_SHA256,
             },
-            "wiki_snapshot": {
-                "path": str(WIKI_SNAPSHOT.relative_to(ROOT)),
-                "sha256": WIKI_SNAPSHOT_SHA256,
+            "wiki_stats": wiki_meta,
+            "crystal_vocations": {
+                "path": str(CRYSTAL_VOCATIONS.relative_to(ROOT)),
+                "sha256": CRYSTAL_VOCATIONS_SHA256,
+                "source": CRYSTAL_ITEMS_XML,
             },
         },
         "thresholds": THRESHOLDS,
@@ -476,6 +630,14 @@ def build() -> dict:
             "referenced_profiles": len({b["proficiency_id"] for b in out_bindings}),
             "bindings_by_threshold_class": dict(
                 sorted(Counter(b["threshold_class"] for b in out_bindings).items())
+            ),
+            "bindings_by_vocation_basis": dict(
+                sorted(
+                    Counter(
+                        b["threshold_evidence"]["vocation"]["basis"]
+                        for b in out_bindings
+                    ).items()
+                )
             ),
         },
         "perk_mapping": perk_mapping(),
@@ -507,7 +669,26 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--check", action="store_true", help="diff instead of writing")
+    parser.add_argument(
+        "--stage-crystal",
+        type=Path,
+        metavar="ITEMS_XML",
+        help="stage the weapon vocation facts from the pinned Crystal items.xml",
+    )
     args = parser.parse_args(argv)
+    if args.stage_crystal:
+        _, bindings = load_family(
+            STAGING / "weapon-proficiency-bindings",
+            "WeaponProficiencyBinding",
+            EXPECTED_BINDINGS,
+        )
+        facts = stage_crystal(args.stage_crystal, {b["source_id"] for b in bindings})
+        CRYSTAL_VOCATIONS.parent.mkdir(parents=True, exist_ok=True)
+        CRYSTAL_VOCATIONS.write_text(
+            render_facts(facts), encoding="utf-8", newline="\n"
+        )
+        print(f"wrote {CRYSTAL_VOCATIONS}")
+        return 0
     text = render(build())
     json.loads(text)  # the rendering must stay valid JSON
     if args.check:

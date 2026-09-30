@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Convert pinned CrystalServer world metadata into Oteryn content families.
 
-Writes City Areas (content/world/areas/cities/), Houses (content/houses/) and teleport
+Writes City Areas (content/world/areas/cities/) and teleport
 Transitions (content/world/transitions/) plus the committed capture summary. The source
 is OTS_HYPOTHESIS_ONLY migration evidence: only normalized facts are written, never map
 bytes. Terrain, objects and placements are out of scope.
@@ -16,7 +16,6 @@ import hashlib
 import json
 import re
 import sys
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import otbm_reader
@@ -30,10 +29,6 @@ ITEM_BINDINGS = ROOT / "imports/crystalserver/bindings/items.json"
 SOURCE = {
     "evidence": "OtsHypothesisOnly",
     "files": [
-        {
-            "path": "data-global/world/world-house.xml",
-            "sha256": "36044bf9636c5a84cac7dda6582965fba05378822fdce4a5c1f84d0dd7e6e90b",
-        },
         {
             "path": "data-global/world/world.otbm",
             "sha256": "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7",
@@ -70,11 +65,6 @@ FAMILIES = {
         "dir": "content/world/areas/regions",
         "stem": "regions",
         "schema": "OTERYN_AREA_AUTHORING_SHARD/v1",
-    },
-    "House": {
-        "dir": "content/houses",
-        "stem": "houses",
-        "schema": "OTERYN_HOUSE_AUTHORING_SHARD/v1",
     },
     "Terrain": {
         "dir": "content/world/terrain",
@@ -217,68 +207,6 @@ def cities(facts, root: Path = ROOT) -> tuple[list[dict], dict[int, str]]:
     return unique(records, "Area.City"), by_id
 
 
-def houses(
-    facts, house_xml: bytes, city_keys: dict[int, str], root: Path = ROOT
-) -> list[dict]:
-    records = []
-    rows = ET.fromstring(house_xml).findall("house")
-    xml_ids = {int(row.get("houseid")) for row in rows}
-    if xml_ids != set(facts.houses):
-        raise ConvertError("world-house.xml and OTBM house tiles disagree")
-    keys = assign_keys(
-        [(row.get("houseid"), row.get("name")) for row in rows],
-        committed_keys(root, "House", "crystalserver/house-id"),
-        "oteryn:house.",
-        "House",
-    )
-    for row in rows:
-        house_id = int(row.get("houseid"))
-        tiles = facts.houses[house_id]
-        key = keys[row.get("houseid")]
-        entry = (int(row.get("entryx")), int(row.get("entryy")), int(row.get("entryz")))
-        town_id = int(row.get("townid"))
-        if town_id not in city_keys:
-            raise ConvertError(f"{key}: unknown town {town_id}")
-        if not in_map(facts, *entry):
-            raise ConvertError(f"{key}: entry outside map")
-        doors = sorted(tiles.doors, key=lambda d: (d[3], d[2], d[1], d[0]))
-        records.append(
-            {
-                "declaration": {
-                    "beds": int(row.get("beds")),
-                    "city": ref("Area", city_keys[town_id]),
-                    "declared_size": int(row.get("size")),
-                    "doors": [
-                        {"door_id": d[3], "position": position(d[0], d[1], d[2])}
-                        for d in doors
-                    ],
-                    "entry": position(*entry),
-                    "footprint": {
-                        "coordinate_frame": COORDINATE_FRAME,
-                        "floors": [
-                            {"floor": z, "tiles": n}
-                            for z, n in sorted(tiles.floors.items())
-                        ],
-                        "max_x": tiles.bbox[2],
-                        "max_y": tiles.bbox[3],
-                        "min_x": tiles.bbox[0],
-                        "min_y": tiles.bbox[1],
-                        "tile_count": tiles.tiles,
-                    },
-                    "guildhall": row.get("guildhall") == "true",
-                    "identity": {"key": key, "revision": REVISION},
-                    "kind": "House",
-                    "name": row.get("name"),
-                    "rent": int(row.get("rent")),
-                },
-                "source_bindings": [
-                    binding("House", key, "crystalserver/house-id", str(house_id))
-                ],
-            }
-        )
-    return unique(records, "House")
-
-
 def teleport_candidates(facts) -> tuple[list[dict], dict]:
     kept, rejected = [], {"unset_destination": 0, "destination_outside_map": 0}
     for tp in facts.teleports:
@@ -391,10 +319,7 @@ def build(blobs: dict[str, bytes], root: Path = ROOT) -> dict[str, bytes]:
         raise ConvertError(
             f"unknown OTBM item attributes: {dict(facts.unknown_item_attrs)}"
         )
-    city_records, city_keys = cities(facts, root)
-    house_records = houses(
-        facts, blobs["data-global/world/world-house.xml"], city_keys, root
-    )
+    city_records, _city_keys = cities(facts, root)
     candidates, rejected = teleport_candidates(facts)
     present = otbm_reader.read(otbm, probe={tp["to"] for tp in candidates}).present
     tp_records, unbound = teleports(candidates, present, item_keys(), rejected)
@@ -409,12 +334,10 @@ def build(blobs: dict[str, bytes], root: Path = ROOT) -> dict[str, bytes]:
         out.update(
             convert_city_facts.build(snapshot.read_bytes(), root, plain=dict(out))
         )
-    out.update(shard_files("House", house_records))
     out.update(shard_files("Transition.Teleport", tp_records))
     summary = {
         "families": {
             "Area.City": len(city_records),
-            "House": len(house_records),
             "Transition.Teleport": len(tp_records),
         },
         "map": {

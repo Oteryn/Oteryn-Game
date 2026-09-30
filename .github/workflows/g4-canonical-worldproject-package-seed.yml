@@ -62,6 +62,9 @@ jobs:
           python3 tools/content-schema/validate_materialized_game_tree.py
           python3 tools/content-schema/validate_materialized_game_tree.py --print-world-successor-files > "$RUNNER_TEMP/world-successors.txt"
           while IFS= read -r successor; do rm -- "${tracked:?}/${successor:?}"; done < "$RUNNER_TEMP/world-successors.txt"
+          # WO-2 catalogue shards are not WorldProject locators either; build_catalogue.py
+          # --check pins their bytes (item-authoring-schema).
+          rm -- "$tracked"/terrain/terrain-*.json "$tracked"/objects/objects-*.json
           find "$tracked" -mindepth 1 -type d -empty -delete
           diff --no-dereference --recursive "$tracked" "$RUNNER_TEMP/world-a"
 

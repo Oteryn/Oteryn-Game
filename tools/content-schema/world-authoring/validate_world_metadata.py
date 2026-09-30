@@ -51,7 +51,6 @@ FAMILIES = {
         "Area",
     ),
     "Area.Region": ("content/world/areas/regions", "regions", "Area"),
-    "House": ("content/houses", "houses", "House"),
     "Transition.Teleport": ("content/world/transitions", "teleports", "Transition"),
 }
 SHARD_SIZE = 500
@@ -487,31 +486,7 @@ def validate(root: Path) -> list[str]:
     cities(root, city_summary, families, errors)
     hunting_places(root, hunting_summary, families, errors)
     regions(root, region_summary, families, summary["map"], errors)
-    city_keys = {r["declaration"]["identity"]["key"] for r in families["Area.City"]}
     item_keys = {row["target"]["key"] for row in load(root, ITEM_BINDINGS)["bindings"]}
-    for record in families["House"]:
-        declaration = record["declaration"]
-        key = declaration["identity"]["key"]
-        if declaration["city"]["key"] not in city_keys:
-            errors.append(
-                f"{key}: city {declaration['city']['key']} is not a City Area"
-            )
-        footprint = declaration["footprint"]
-        if sum(row["tiles"] for row in footprint["floors"]) != footprint["tile_count"]:
-            errors.append(f"{key}: footprint floors do not sum to tile_count")
-        floors = [row["floor"] for row in footprint["floors"]]
-        if floors != sorted(set(floors)):
-            errors.append(f"{key}: footprint floors must be unique and ascending")
-        for door in declaration["doors"]:
-            pos = door["position"]
-            inside = (
-                footprint["min_x"] <= pos["x"] <= footprint["max_x"]
-                and footprint["min_y"] <= pos["y"] <= footprint["max_y"]
-            )
-            if not inside or pos["floor"] not in floors:
-                errors.append(
-                    f"{key}: door {door['door_id']} outside the house footprint"
-                )
     for record in families["Transition.Teleport"]:
         declaration = record["declaration"]
         if "object" in declaration and declaration["object"]["key"] not in item_keys:

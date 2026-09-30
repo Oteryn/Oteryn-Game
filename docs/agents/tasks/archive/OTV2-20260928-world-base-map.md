@@ -88,7 +88,7 @@ sha256-pinned and `OtsHypothesisOnly`.
       and floors 0-15, generated offline by `convert_world_record.py --check`. The one
       explicit exception to "no family beside a legacy locator" is `worlds/` (index plus
       exactly one shard); the repository test scan budget grows by exactly that entry.
-      `validate_world_record.py` checks every placement extent, City, House, teleport and
+      `validate_world_record.py` checks every placement extent, City, teleport and
       hunting place position against the bounds and floors.
 - [x] Floor changes have no family here: the WO-2 catalogues carry the `floorchange` value as the
       `floor_change` fact (444 of 447 item types: 158 Terrain, 286 WorldObject; 166, 167 and 53431

@@ -1,9 +1,13 @@
 # House authoring schema candidate v1
 
+Owner contract (candidate): [`OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1.md`](../../../docs/architecture/OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1.md),
+under the accepted housing architecture
+[`EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md`](../../../docs/architecture/EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md).
+
 Static House definitions for `content/houses/` (owner `House/Area` in
 [`OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md`](../../../docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md)).
-CANDIDATE only: not a WorldProject/v2 contract, not runtime activation, and
-`content/houses/` stays `READY_UNPOPULATED` until the schema is accepted.
+CANDIDATE schema: not a WorldProject/v2 contract and not runtime activation.
+`content/houses/` is `POPULATED` by `build_catalogue.py` (see Catalogue).
 
 Runtime House state (owner, rent payment, ACL/access lists, auction, custody) is
 World/persistence state by the tree contract and is **not** modeled here. Rent
@@ -56,7 +60,8 @@ discovers the infobox parameters instead of assuming them, joins by the paramete
 values are client house ids, and reports agreement per field plus disagreement examples.
 A local run against four Fandom pages joined on `houseid` and agreed on rent, size and
 beds (4/4), which supports the official `size_sqm` over the engine value. The snapshot
-stays a CI artifact; the facts file may be committed from it.
+stays a CI artifact; no facts file is committed (owner decision 3b, 2026-09-30):
+this section is the summary.
 
 First runner capture (head `a6900ccb`, artifact
 `house-tibiawiki-br-snapshot-a6900ccbed77168436e8c2d6b86350c8e8f20c5f`): 963 pages with an
@@ -81,6 +86,7 @@ not exist.
 | `otbm_tile_check.py` | local-only: pinned `world.otbm` House tiles and doors → `samples/otbm-tile-check.json` (cell order and door evidence) |
 | `wiki_br_houses.py` | TibiaWiki BR `fetch` / `facts` / `compare` / `self-test` |
 | `convert_houses.py` | `extract-crystal`: pinned `world-house.xml` → `samples/crystal-world-house-00ce02a5.json`; `extract-door-items`: pinned `items.xml` → `samples/crystal-door-item-ids-00ce02a5.json`; `convert`: joins it with `imports/cipsoft-staticdata/houses/` (digest-checked), validates all 995 houses, writes `samples/conversion-report.json` |
+| `build_catalogue.py` | builds `content/houses/houses-*.json` (995 records, shards of 500) from `convert`, keeps the key and revision of every committed record by `provenance.source_id`, validates the whole catalogue; `--check` regenerates it byte for byte |
 
 ```text
 pip install -r requirements.txt -r requirements-dev.txt
@@ -118,6 +124,15 @@ client doors and 834 houses have identical door sets. The engine `entrance` is n
 door for 968 houses, so it is the tile in front of the front door. Beds stay a count: the
 official layout has no bed items, and bed positions come with the world map placements.
 
+## Catalogue
+
+`content/houses/` holds the 995 client 15.30 houses (878 private houses, 66 guildhalls,
+51 shops; 117,226 tiles, 5,372 doors) under the House catalogue owner contract, §3 source
+precedence. `build_catalogue.py` is the only writer: a rebuild keeps every committed key
+and revision, so a later client rename changes `name`, never the key. The divergences
+reported for review are in `samples/conversion-report.json` (engine `size` for 812 houses,
+one engine name, 27 entrances not next to a door, 10 not next to a House tile).
+
 ## Identity stability
 
 A House key is assigned once from the official name and never changes afterwards, even if
@@ -128,4 +143,5 @@ CipSoft renames the House: the record keeps the key and updates `name` and
 
 1. House key: slug of the official name. 2. Town: city `Area` ref. 3. `entrance`: engine
 entry tile. 4. Next: House tiles from the official layout, verified against the engine map
-(done here), then the TibiaWiki BR capture (workflow here; facts to commit after its first run).
+(done here), then the TibiaWiki BR capture (workflow and summary here;
+no committed facts file, owner decision 3b of 2026-09-30).
