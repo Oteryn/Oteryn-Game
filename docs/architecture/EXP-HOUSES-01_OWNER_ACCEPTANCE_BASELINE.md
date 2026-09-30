@@ -279,6 +279,12 @@ The rule applies when the Account actually acquires/retains the incoming physica
 - public auction settlement;
 - Bazaar choice `KEEP_INCOMING_HOUSE`.
 
+> **Owner supersession (2026-09-30, #162 5913348961, answer 5a; §30).** Until the Premium consumer
+> contract (`PROD-ENTITLEMENTS-01`, `PREMIUM-ACTIVATION-V1`) is delivered, acquiring a physical
+> house does not require active Premium; `PhysicalHouseEligibility` still applies (HOUSE-OWN-0 §4).
+> From delivery on, active Premium is required again, and a house acquired before is kept under
+> §10.1.
+
 ### 10.1 Premium lapse
 
 Premium expiration after legitimate acquisition does **not** itself evict the owner or release property.
@@ -987,9 +993,8 @@ Whole-gate acceptance does **not** freeze:
 > the first values for ordinary physical houses: a 7-day auction from the first bid, a 1-gold
 > increment, a 15-minute anti-sniping extension, the catalogue rent every 30 days in advance, a
 > 7-day grace, a 30-day eviction ban per Account and World, a 1-30 day move-out notice, at most
-> 256 bidders per auction, no reserve price and eligibility level 20. Its owner questions H1 (price
-> and rent as D178 sinks) and H2 (houses before Premium exists; until answered, §10 holds and
-> bidding fails closed) are open. This section keeps the values tunable.
+> 256 bidders per auction, no reserve price and eligibility level 20. The owner admitted price and
+> rent as D178 sinks, paid from the bank (#162 5913348961). This section keeps the values tunable.
 
 ### Auction / rent / economy numbers
 

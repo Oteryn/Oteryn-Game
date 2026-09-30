@@ -4,7 +4,8 @@
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   economy, security and protocol) and protected integration. It builds on BANK-0 (PR #1357),
   MARKET-0 (PR #1367, `CharacterInbox`) and HOUSE-CUSTODY-0, and integrates after them. Owner
-  questions H1 and H2 (§14) are open; until H2 is answered the Premium gate fails closed.
+  questions H1 and H2 (§14) are answered (#162 5913348961); H2a supersedes EXP-HOUSES-01 §10 until
+  Premium is delivered.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to start house ownership (2026-09-30); it fills, for ordinary
   physical houses, the numbers and shapes EXP-HOUSES-01 §26 leaves open, and the HOUSE-CUSTODY-0
@@ -18,7 +19,7 @@
 - Amends, each pending on acceptance of HOUSE-OWN-0 (#162 5912405163): EXP-HOUSES-01 §26 (a
   pointer to the values chosen here); HOUSE-CUSTODY-0 §4 (the delivery order, a pointer). After
   #1357 and #1367 integrate, HOUSE-1 adds the ledger kinds to BANK-0 §3 and the house delivery to
-  MARKET-0 §5. The gold fee §4.4 variants wait for H1.
+  MARKET-0 §5. The gold fee §4.4 variants are admitted by the H1 answer and written by HOUSE-1.
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -26,7 +27,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| HOUSE-1 | hard, persistence, economy and security review | property, tile, slot, auction, bid, rent, ban and disposition tables; the bid, settlement, rent, move-out and eviction transactions; the content fence; the World jobs (§3-§9) | BANK-1; INBOX-1; HOUSE-CUSTODY-1; the house interior runtime child; H1; H2 |
+| HOUSE-1 | hard, persistence, economy and security review | property, tile, slot, auction, bid, rent, ban and disposition tables; the bid, settlement, rent, move-out and eviction transactions; the content fence; the World jobs (§3-§9) | BANK-1; INBOX-1; HOUSE-CUSTODY-1; the house interior runtime child |
 | HOUSE-ACL-1 | hard, security review | the ACL tables and revisioned edits (§10) | HOUSE-1 |
 | HOUSE-WIRE-1 | impl, protocol review | capability `HOUSE_V1`, the house commands and domain: house list, bids, move-out, the House Management panel (§11) | HOUSE-1; HOUSE-ACL-1 |
 
@@ -99,9 +100,10 @@ How does a character get, keep and lose an ordinary physical house?
 - **Eligibility, checked at bid and at settlement.** The nominated Character belongs to the
   bidder's Account and the auction's World, is not junior (BANK-0 §4.4), and meets
   `PhysicalHouseEligibility` v1: level at least `HOUSEOWN0-RL-01` (20, tunable). The Account's slot
-  is empty and it has no active house ban (§6). Active Premium (EXP-HOUSES-01 §10): the Premium
-  source answers Free until the consumer contract is accepted, so bidding fails closed
-  (`NOT_PREMIUM`) unless the owner answers H2 otherwise.
+  is empty and it has no active house ban (§6). Premium (owner answer H2a, a supersession of
+  EXP-HOUSES-01 §10 under §30): not required until the Premium consumer contract is delivered;
+  from then on active Premium is required at acquisition (`NOT_PREMIUM`), and a house acquired
+  before that is kept under §10.1.
 - **One bid per (Account, World)** across all auctions (the slot allows one house; Tibia's rule is
   per character). At most `HOUSEOWN0-RL-05` (256) bidders per auction; a further bidder is
   `AUCTION_FULL`.
@@ -128,7 +130,7 @@ How does a character get, keep and lose an ordinary physical house?
      bid (at most 256) and excludes each whose subject fails any eligibility guard at that moment,
      ignoring its max. The first remaining bid by max (then the tie rule) wins, at the price
      computed from the remaining maxima. From the winner's escrow it burns the price and the rent
-     (`HOUSE_PRICE`, `HOUSE_RENT`, pending H1) and returns the rest. The state becomes `OWNED`
+     (`HOUSE_PRICE`, `HOUSE_RENT`, owner answer H1) and returns the rest. The state becomes `OWNED`
      with `paid_until` = +30 days, and the slot is taken. With no valid bid, the house returns to
      `VACANT` and nothing is charged.
   2. Release steps return the escrow of every other bid, excluded ones included, at most
@@ -209,7 +211,7 @@ direct grant on the house tables (HOUSE-CUSTODY-0 §3.5).
   then the balance rows by `account_id`.
 - No `CharacterRevision` advance: houses, bids and ledger entries are not Character state.
 - **Classes (§17):** reservations and releases are `TRANSFER` value lines; price and rent are one
-  `BURN` value line each under the house variants of `FeeBurnCause` (H1); disposition moves are item
+  `BURN` value line each under the house variants of `FeeBurnCause` (owner answer H1); disposition moves are item
   `TRANSFER` lines. One house event per transaction, retention under BANK-RET-0's economy profile.
 - **Evidence** (EXP-HOUSES-01 §24), in the house event: the bid subject; each exclusion and its
   reason; the recomputed winner and price; the eligibility version and inputs; ownership and slot
@@ -274,7 +276,9 @@ direct grant on the house tables (HOUSE-CUSTODY-0 §3.5).
 - **House spells for the list.** EXP-HOUSES-01 §17.
 - **Auctions before the interior runtime.** Players would pay for a house they cannot enter.
 
-## 14. Owner questions
+## 14. Owner questions (answered)
+
+Owner answers, verbatim record on #162 5913348961: H1 "tak z konta" (yes, from the bank); H2 a.
 
 **H1. Admit the house auction price and rent as gold sinks?** D178 needs an owner decision for every
 new fee source (asked together with MARKET-0 Q1). a) Yes, as in Tibia (recommended); b) no.

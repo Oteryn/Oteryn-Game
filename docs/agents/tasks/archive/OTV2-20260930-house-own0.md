@@ -42,8 +42,8 @@ HOUSE-OWN-0 decides ownership of ordinary physical houses under the owner-accept
 - **Disposition** under a database-enforced content fence with a fenced content set, items to each
   reclaim subject's Inbox in bounded steps.
 - **Ground on house tiles** (HOUSE-CUSTODY-0 §3.5 gate), **ACL** lists with revisions, **wire**.
-- **Owner questions** H1 (price and rent as D178 sinks) and H2 (houses before Premium exists; §10
-  holds and bidding fails closed until answered).
+- **Owner answers** (#162 5913348961): H1 yes, from the bank; H2 a, a recorded supersession of
+  EXP-HOUSES-01 §10 until Premium is delivered.
 
 No code, migration or content change is made.
 
@@ -93,7 +93,7 @@ protocol review.
 last_progress: final authoring commit; archived before freeze
 status: completed
 branch: claude/arch-house-own-0
-owner_action_required: "H1 and H2 in the decision §14"
+owner_action_required: null
 blocker: null
 next_action: null
 ```
