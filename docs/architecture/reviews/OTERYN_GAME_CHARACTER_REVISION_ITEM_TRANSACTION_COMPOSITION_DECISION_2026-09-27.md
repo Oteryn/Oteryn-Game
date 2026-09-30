@@ -153,6 +153,16 @@ How does such a transaction relate to the global `CharacterRevision`?
      advances the revision with its receipt, and §3.1 covers the item part. This decision does
      not require or allocate such a combined transaction.
 
+**Amendment (CHAR-POSITION-0, 2026-09-30): Character runtime-state projections, pending on
+acceptance of CHAR-POSITION-0.** Once accepted: a Character runtime-state projection is a mutable
+row that mirrors runtime state for the next admission and
+carries no semantic value: first, the last position
+(`OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md` §3.2). It does not advance
+`CharacterRevision` and writes no root, progression or receipt row. It takes rule 2's session
+checks without a cause lock or replay, and no rule 4 root lock, because it reads no inventory,
+occupancy or claim. Its own decision fixes its write order. Any other projection needs its own
+decision under rule 6.
+
 ### 3.1 Amendment (2026-09-28): B3 and reward chest locations
 
 The B3 decision (`OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md`,
@@ -170,6 +180,13 @@ equipment slots are not covered until their own decisions.
 row (`game_character_pending_arrivals`), an obligation outside the revision chain like DEATH-0's
 pending respawn (DEATH-0 §3.4). NPC BUY, SELL and travel are item-only transactions under rules
 1-6 (`OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6).
+
+**Amendment (PLAYER-TRADE-0, 2026-09-30), pending on acceptance of PLAYER-TRADE-0.** Once
+PLAYER-TRADE-0 is accepted (`OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md` §5), one item-only transaction may fence two
+Characters for a trade swap: the second accepter by rule 2 with its pending CommandRef, the first
+accepter by its terminal accept recorded in the cause, with its GameSessionId, lease and scope
+generations pinned at that accept. Both `character_root` rows are locked in `character_id` order,
+then the items in ItemInstanceId order. No `CharacterRevision` advances.
 
 ## 4. Rejected options
 
@@ -266,3 +283,14 @@ remaining_unknowns:
   - RewardClaim physical schema and cooldown identity
   - TRANSFER admission
 ```
+
+## Amendment (ITEM-MOVE-WIRE-1, 2026-09-30), pending on acceptance of ITEM-MOVE-WIRE-1
+
+Once ITEM-MOVE-WIRE-1 is accepted, §3.1 is extended from the equipment container slot to every
+`CharacterEquipment` slot (`OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md`
+§7.2). The Character-related effects are the character's own item locations; Ground and corpse
+entries are endpoints outside the Character, bound by rule 2 and by DUR-03 §32 for their scope.
+Such a transaction does not advance `CharacterRevision`. Rules 2-6 apply unchanged, and rule 4's
+lock order is extended after `character_root`: the items in ItemInstanceId order, the
+container-slot row taken by the deferred `0011` placement check, then the Ground tile row and the
+per-channel counter.

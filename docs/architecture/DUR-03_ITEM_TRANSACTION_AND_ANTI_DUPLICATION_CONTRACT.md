@@ -383,7 +383,8 @@ Silent row deletion, `quantity=0` live state or disappearance during recovery is
 
 Besides the D3 `DECAY_RETIRE` cause, the admitted burn sink is the closed `FeeBurnCause` of the
 gold fee amendment in §39.3 (owner decisions D174-D178), and, with the NPC service amendment in
-§39.3, the closed `NpcTradeCause` of a SELL.
+§39.3, the closed `NpcTradeCause` of a SELL. Pending on acceptance of ITEM-USE-0, the item use
+amendment in §39.3 admits the closed `ItemUseCause`.
 
 ## 16. Transform semantics
 
@@ -631,6 +632,14 @@ GAME-ITEM owns equip legality. DUR-03 requires all old location/claims, complete
 
 No half two-hand/mutually-exclusive claim.
 
+**Amendment (ITEM-MOVE-WIRE-1, 2026-09-30), pending on acceptance of ITEM-MOVE-WIRE-1.**
+`reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md` §6, once accepted, admits, each in its
+child and for those shapes only, superseding the §39.1 and §39.3 limits named there: TRANSFER of a whole item
+between the main backpack and the nine non-container `CharacterEquipment` slots, including a swap
+with the target slot's occupant (two items, four location lines, with its own resource rows); and
+TRANSFER of a whole item from a backpack entry or a slot to `Ground`, and from Ground back to the
+main backpack, under §32. No new burn sink: dropped items are retired by `WorldReset` (D191).
+
 ## 34. Multi-transaction typed custody
 
 Future workflow may span transactions only when every committed step is safe:
@@ -645,6 +654,13 @@ stable OperationId where needed
 After custody commit, value is not spendable from prior location. Each step has own TransactionId and is conservation-safe. Workflow is restartable/idempotent. Compensation is new transaction. No hidden end-to-end atomicity across separate commits.
 
 Owning domain defines business lifecycle/eligibility.
+
+**Amendment (PLAYER-TRADE-0, 2026-09-30), pending on acceptance of PLAYER-TRADE-0.**
+`reviews/OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md` §5-§6, once accepted, admits one trade swap: two whole items
+of two Characters on one channel, each into a new direct entry of the other's main backpack, in
+one transaction keyed by the trade occurrence, with both Characters fenced. It supersedes the §39.1
+one-item and one-Character limits for that cause only. Offered items stay in place until the swap,
+so no custody family is used.
 
 ## 35. Current database authority boundary
 
@@ -762,7 +778,9 @@ amendment in §39.3 admits the two-item merge and top-up shapes and direct entri
 the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`; the gold fee
 amendment in §39.3 admits typed BURN of up to 20 coin stacks with up to 2 change MINTs, composed
 with a Character change in one transaction; the NPC service amendment in §39.3 admits the NPC BUY,
-SELL and travel shapes.) Unsupported
+SELL and travel shapes; pending on acceptance of ITEM-USE-0, the item use amendment in §39.3 admits
+a one-unit BURN, or a one-unit TRANSFORM into a flask stack or a fresh flask, under
+`ItemUseCause`.) Unsupported
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
 Content definition or a production quantity ceiling.
@@ -1475,6 +1493,23 @@ unchanged.
   - the matching extension of the Ground-removal proof triggers.
 
   This amendment grants no runtime or DDL authority.
+
+**Item use amendment (ITEM-USE-0, 2026-09-30), pending on acceptance of ITEM-USE-0.**
+`reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md` §4, once accepted,
+admits, in its ITEM-USE-1 child and for these shapes only:
+
+- **Burn.** One BURN line (§17) of exactly one unit from the used stack, which keeps its identity
+  (§11.1) or retires at zero (§11.5), under the closed sink `ItemUseCause` (`Food`, `Potion`),
+  keyed by the using command's CommandRef.
+- **Flask.** For a potion whose content names an empty flask, one unit-level TRANSFORM line (§17)
+  instead: one unit of the used stack in, one flask unit out, either as a quantity adjustment of a
+  compatible flask stack in the main backpack (§11.1) or as a fresh flask item in a new entry,
+  planned in the reservation (§11.3). §16.1's instance policy does not apply, because no whole
+  instance changes type. At most two items. Nothing is minted.
+- **Supersession.** For these shapes only, the §39.1 exclusions of burn, transform, mint into an
+  existing stack and multiple touched items. Every other §39 obligation is unchanged. One audit
+  event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
+  use's effect, with its own suffixed resource rows.
 
 ## 40. Durable acknowledgement
 
