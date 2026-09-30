@@ -89,9 +89,13 @@ review.
 - Codex round-2 repair (PR #1415, 1 finding): `REVISION_CHANGED` persisted as a receipt-only
   terminal record keyed by (occurrence, character); every later replay returns the same
   rejection (§10).
-- Codex round 3 (#1415, 1 P1, 2 P2): bounded checkpoint transactions (`IMBFORGE0-RL-11`, 10 items,
+- Codex round 3 (#1415, 1 P1, 2 P2): bounded checkpoint transactions (10 items,
   max+1 rejected, §4.3, §15); `FeeBurnCause::ForgeFusion` carries kind, items and occurrence (§10);
   concrete PR number in the record.
+- Codex round 4 (#1415, 2 P1): the checkpoint bound has its own ID `IMBFORGE0-RL-13`
+  (`RL-11` stays the 2,000 ms ambiguity bound); checkpoint-specific `DUR03-RL-06` participant (1)
+  and effect-work-unit (10) ceilings registered with max+1 rejection; the 10-items-per-checkpoint
+  cap recorded as owner-confirmed (#162 comment 5919525206).
 - Owner answers (2026-09-30, #162): I1 a) (all imbuing and forge gold fees at Global prices,
   D178) and I2 a) (dust, slivers and the conversions as in Global, D208) made binding in the
   decision and the gold fee §4.4 amendment.

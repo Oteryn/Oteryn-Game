@@ -157,8 +157,10 @@ fee and resource spent exactly once and the item's new state durable?
 - The runtime keeps the exact remaining time per ticking slot in memory.
 - **Checkpoint:** after each 60 s of ticking (`IMBFORGE0-RL-05`), the runtime writes the exact
   remaining time of every ticking slot of the character in item-only transactions, each touching
-  at most `IMBFORGE0-RL-11` items (§15); a character with more ticking items is checkpointed in
-  successive bounded transactions, and a transaction above the bound is rejected (max+1). A
+  at most `IMBFORGE0-RL-13` items (§15; the 10-item cap is owner-confirmed on #162, comment
+  5919525206); a character with more ticking items is checkpointed in successive bounded
+  transactions, and a transaction above the bound (items, participants or effect work units) is
+  rejected (max+1). A
   checkpoint interval is complete only when every batch committed; a failed batch takes the
   fail-closed path below for the items it covers. It also
   writes it at logout, channel transfer, reconnect loss, and inside every DUR-03 transaction that
@@ -368,7 +370,9 @@ The chance per tier is content (Canary quadratic; `PARITY_PENDING`). Only equipp
 | `IMBFORGE0-RL-07` item tier | 0-10, capped by class |
 | `IMBFORGE0-RL-08` dust limit | 100-225 |
 | `IMBFORGE0-RL-09` fiendish creatures per channel | content, `PARITY_PENDING` (Canary 4) |
-| `IMBFORGE0-RL-11` items touched per checkpoint transaction | 10 (Global's ten equipment slots; 3 rows each, no materials or fee); `DUR03-RL-01-IMBUE-CHECKPOINT` registers it, IMBUE-RT-1 proves the bound and the max+1 rejection |
+| `IMBFORGE0-RL-13` items touched per checkpoint transaction | 10 (Global's ten equipment slots; 3 rows each, no materials or fee; owner-confirmed on #162, comment 5919525206); `DUR03-RL-01-IMBUE-CHECKPOINT` registers it, IMBUE-RT-1 proves the bound and the max+1 (11) rejection |
+| `DUR03-RL-06-IMBUE-CHECKPOINT-PARTICIPANTS` | 1 (the Character; item-only, no counterparty); max+1 (2) rejected by IMBUE-RT-1 |
+| `DUR03-RL-06-IMBUE-CHECKPOINT-EFFECT-WORK-UNITS` | 10 (one per touched item; no DUR-03 event is emitted, the ceiling bounds the batch); max+1 (11) rejected by IMBUE-RT-1; other shapes' `DUR03-RL-06` rows unchanged |
 | `IMBFORGE0-RL-10` influenced creatures per channel | content, `PARITY_PENDING` (Canary 300) |
 | `IMBFORGE0-RL-11` operation ambiguity bound | 2,000 ms (as `ITEMUSE0-RL-04`) |
 | `IMBFORGE0-RL-12` forge history rows per character | 1,000, oldest dropped |
