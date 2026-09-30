@@ -110,8 +110,11 @@ chain, with no cause and no replay.
 admits the character into that house scope through that decision's serialized admission commit
 when its access and the property state still hold, at the saved tile if still valid or else the
 §3.3 fallback's nearest free walkable tile of the same house; otherwise it places the character at
-the house's `entrance`, and the admission transaction clears the house columns and writes the
-`entrance` tile.
+the house's `entrance` if that tile is free and walkable, else by the §3.3 occupied-or-blocked
+fallback from it (nearest free walkable tile within 3, then step 4; that decision's §4.2 outside
+tile, never a refusal), and the admission
+transaction clears the house columns and writes the tile actually chosen. Every house exit and a
+house scope recovery fallback write the same resolved tile.
 
 ### 3.3 Admission
 

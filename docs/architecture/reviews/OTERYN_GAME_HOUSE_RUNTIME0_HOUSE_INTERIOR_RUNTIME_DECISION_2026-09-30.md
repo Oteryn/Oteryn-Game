@@ -26,9 +26,11 @@
 |---|---|---|---|
 | SCOPE-HANDOFF-1 | hard, security and durability review | the session transition between a Channel scope and a house scope (§4): the house scope kind in scope assignments and sessions (the migration HOUSE-CUSTODY-0 §3.4 names), origin routing metadata, the transition protocol, refusal rules; built so the later channel change reuses it | this decision |
 | HOUSE-RUNTIME-1 | hard, security and persistence review | the interior runtime (§3, §5-§8): activation and unload, presence and movement on house tiles, doors and ACL checks, kick and leave, revalidation, the three `HouseInterior` transfer shapes with provenance, the disposition quiesce, login into a house | SCOPE-HANDOFF-1; HOUSE-CUSTODY-1; HOUSE-1 and HOUSE-ACL-1 (for owned houses) |
-| HOUSE-VIEW-1 | impl, protocol review | house scope snapshots and deltas on MAP-WIRE-1; the read-only projection of `HouseInterior` items into Channel views (windows) (§9) | HOUSE-RUNTIME-1; MAP-WIRE-1 children |
+| HOUSE-VIEW-1 | impl, protocol review | house scope snapshots and deltas on MAP-WIRE-1, with `HouseInterior` items as domain 1 entities; the read-only projection of `HouseInterior` items into Channel views (windows) (§9) | HOUSE-RUNTIME-1; MAP-WIRE-1 children |
+| HOUSE-ITEM-WIRE-1 | protocol decision first, then impl with protocol and security review | the client path to the §6.1 shapes (§6.4): a versioned command 9 capability with house sources and destinations, handles, reach checks, results and replay | its own wire decision; HOUSE-RUNTIME-1; HOUSE-VIEW-1; ITEM-MOVE-WIRE-1 |
 
-Order: SCOPE-HANDOFF-1 and HOUSE-CUSTODY-1 first; HOUSE-RUNTIME-1 can land before HOUSE-1 and be
+Order: SCOPE-HANDOFF-1 and HOUSE-CUSTODY-1 first; HOUSE-ITEM-WIRE-1 last, after its own wire
+decision; HOUSE-RUNTIME-1 can land before HOUSE-1 and be
 tested on an operator-owned test house (§10); HOUSE-1 then opens auctions (HOUSE-CUSTODY-0 §4),
 GUILDHALL-1 opens guildhalls. Later, each with its own decision: beds, Rested and offline training
 (the EXP-HOUSES-01 §18 numbers); Residence; containers placed in houses (HOUSE-CUSTODY-0 §3.1
@@ -103,7 +105,7 @@ and how do house items change?
     mutation or pending operation (ADR-0001 §10);
   - the house is not in `DISPOSITION`.
 - A refusal leaves the character outside with a typed reason (`NO_ACCESS`, `IN_COMBAT`, `BUSY`,
-  `HOUSE_CLOSED`); nothing is written.
+  `HOUSE_CLOSED`, `NO_ROOM`); nothing is written.
 - The Channel check is a pre-check only. The admission commit (below) re-reads, in its own
   transaction and under a FOR SHARE lock on the property row, which every content-fence and ACL
   write updates (HOUSE-OWN-0 §9, §10), the property state, the content fence, and the exact
@@ -118,22 +120,33 @@ and how do house items change?
   house scope, including login (§6.3), uses this commit.
 - On success the transition runs ADR-0001 §10 (checkpoint, close the Channel session, fresh
   admission into the house scope, fresh `GameSessionId`) as a recoverable handoff:
-  1. **Prepare.** One transaction records a handoff row (CharacterId, source `GameSessionId`,
-     destination `HouseId` and scope generation, origin ChannelId) and reserves the destination
-     while the source session stays live and fenced; the character takes no further action in
-     the source.
+  1. **Prepare.** The source Channel runtime, the single writer of the character's actor, runs
+     the prepare as one actor command, serialized with that actor's combat processing (the task
+     that applies ATTACK-0 in-fight deadlines, PZ and combat locks). At that point it re-checks
+     the combat, trade and pending-operation guards above and freezes the actor; a failed guard
+     refuses (`IN_COMBAT` or `BUSY`) before anything is written. The house runtime, the single
+     writer per `HouseId` (activating it if needed), selects and reserves the tile inside the door
+     under the §6.3 tile rules (a tile of this house, walkable, not blocked by an item, not
+     occupied, else that section's in-house fallback); with no valid tile, or `HOUSERT0-RL-03`
+     reached, the entry refuses (`NO_ROOM`) before the commit. One transaction then records a
+     handoff row (CharacterId, source `GameSessionId`, destination `HouseId` and scope
+     generation, origin ChannelId, reserved tile) while the source session stays live and fenced;
+     the frozen character takes no further action in the source. A lock that would apply to the
+     frozen actor before the commit point (an attack landing on it) aborts the handoff (step 3,
+     `IN_COMBAT`), so an entry never escapes a combat restriction (EXP-HOUSES-01 §5.3).
   2. **Commit.** One transaction, with the revalidation above, makes the source session terminal
      and admits the destination session with its fresh `GameSessionId`, the origin Channel
      recorded on it, and marks the handoff committed. Where source and destination cannot share
      one transaction, the durable handoff row is the commit point and each side reconciles to it;
      the source never becomes terminal before that point.
-  3. **Abort.** A refusal or failure before the commit deletes the reservation and resumes the
-     source session; nothing else is written.
+  3. **Abort.** A refusal or failure before the commit deletes the reservation (the handoff row
+     and the reserved tile) and resumes the source session; nothing else is written.
 
   A crash at any point leaves the character in exactly one admitted scope: before the commit
   point the source, after it the destination. Restart reconciles every open handoff row to that
   outcome before either scope admits or resumes the character (§4.3). The character is placed on
-  the tile inside the door.
+  the reserved tile; the house runtime keeps the reservation until then, so item commands and
+  other placements cannot take it.
 - The client receives a snapshot (MAP-WIRE-1's teleport trigger). The player sees one walk
   through a door; the transition target is `HOUSERT0-RL-02` (500 ms at the 99th percentile),
   measured before activation.
@@ -147,7 +160,7 @@ and how do house items change?
   clears the house columns (§6.3) and records the tile actually placed under the destination
   session's order key. The destination Channel resolves that tile at the commit: the `entrance`
   if it is free and walkable, otherwise the CHAR-POSITION-0 §3.3 fallback (the nearest free
-  walkable tile within 3, in that order). An exit is never refused for an occupied or blocked
+  walkable tile within 3, in that order, then its step 4). An exit is never refused for an occupied or blocked
   entrance. A disconnect right after any exit therefore never returns the character inside.
 - If the origin Channel is draining or unavailable, admission picks another Channel of the World
   under its normal rules (EXP-HOUSES-01 §5.3 fallback). A house is never a way to change channel
@@ -160,9 +173,10 @@ and how do house items change?
 - An open handoff row (§4.1, either direction) is reconciled at restart before the character is
   admitted or resumed anywhere: committed, the destination holds; not committed, the source holds
   and the reservation is released.
-- A character whose house scope cannot be recovered is placed at the `entrance` on its origin
-  Channel at the next admission, and that admission transaction clears the house columns of the
-  last-position row and writes the entrance position, exactly as for an exit (§4.2, §6.3), so a
+- A character whose house scope cannot be recovered is placed at the `entrance` (or its §4.2
+  fallback tile) on its origin Channel at the next admission, and that admission transaction
+  clears the house columns of the last-position row and writes the tile actually chosen, exactly
+  as for an exit (§4.2, §6.3), so a
   disconnect before the next periodic or terminal write cannot leave the stale house position
   authoritative.
 
@@ -258,7 +272,8 @@ beds decision.
   actor placements serialize with it; the placement commit revalidates the reserved tile and, if
   it was taken, repeats the selection. If it is not valid, the
   CHAR-POSITION-0 §3.3 fallback applies inside the house (the nearest free walkable tile of the same
-  house within 3, in that fallback's order); if none, the house is refused as below. On success the
+  house within 3, in that fallback's order); if none, or `HOUSERT0-RL-03` is reached, the house is
+  refused as below. On success the
   character is admitted into the house scope at the chosen tile (activating it if needed), with
   the Channel admission chooses recorded as origin.
 - **Rejected house position.** If access, the property state or the tile fallback refuses, the
@@ -267,6 +282,16 @@ beds decision.
   chosen under the new session's order key, as every exit does (§4.2). A later change of access or owner never returns the character to
   the stale interior tile. As in Tibia, a character logs in where it logged out when it still
   may.
+
+### 6.4 Client path (declared gap, HOUSE-ITEM-WIRE-1)
+
+No accepted client command reaches the §6.1 shapes: command 9 (ITEM-MOVE-WIRE-0 §5,
+ITEM-MOVE-WIRE-1 §3) has no `HouseInterior` source or destination, and ITEM-MOVE-WIRE-1 §5 answers a
+drop on a house tile `BLOCKED`. This decision adds no wire variant. Binding the shapes to a versioned
+command 9 capability (the house item handle from domain 1, the destinations, reach and line of
+sight, results and replay) needs its own protocol decision, owed by the child HOUSE-ITEM-WIRE-1.
+Until it lands, placing, taking and rearranging house items is not playable: HOUSE-RUNTIME-1 builds
+and tests the shapes server-side only, no client command invokes them, and that `BLOCKED` stays.
 
 ## 7. Disposition quiesce (HOUSE-RUNTIME-1)
 
@@ -287,15 +312,19 @@ Release (the state `VACANT`) reopens entry for the next owner.
 
 ## 9. Views (HOUSE-VIEW-1)
 
-- **Inside.** House scope snapshots and deltas use MAP-WIRE-1 unchanged: the house tiles, walls,
-  doors and `HouseInterior` items as map items with their handles.
+- **Inside.** House scope snapshots and deltas use MAP-WIRE-1 unchanged (§§3-4): the house tiles'
+  base entries (walls, doors and the other map-authored items of §6.2) travel in `MAP_TILES` with
+  their `map_item_handle`s; `HouseInterior` items are durable custody and travel only as domain 1
+  entities, exactly like Ground items (D85), with the ITEM-MOVE-WIRE-0 §4.1 item handle bound to
+  their `ItemInstanceId`. `MAP_TILES` never carries them, and they have no `placement_key`.
 - **Outside.** Channels project the `HouseInterior` items of houses in view, read-only, from a house
   content revision. Every authoritative `HouseInterior` mutation advances it in the same
   transaction: the three shapes (§6.1), each HOUSE-OWN-0 disposition job step (§7), and any write
   made while the house runtime is unloaded. A mutation that does not advance it is refused, so a
   vacant house never keeps a stale projection. So furniture is seen through
   windows, as in Tibia. Characters inside a house are not seen from outside (declared difference:
-  one presence per house cannot be shown in every Channel).
+  one presence per house cannot be shown in every Channel). The projection uses the same domain 1
+  entities, read-only.
 
 ## 10. Test house
 
@@ -319,7 +348,8 @@ migration.
 Kept as in Tibia: the door is the way in; invited characters only; door rights; kick and leave;
 the interior is a protection zone without regeneration; login where one logged out; furniture seen
 through windows; the guildhall depot locker. Declared differences: guests take only their own
-items; characters inside are not seen from outside; a bounded number of characters per house.
+items; characters inside are not seen from outside; a bounded number of characters per house;
+until HOUSE-ITEM-WIRE-1, house items cannot be placed, taken or moved by a client (§6.4).
 
 ## 13. Decision test
 
@@ -330,7 +360,7 @@ items; characters inside are not seen from outside; a bounded number of characte
 - **Superseding evidence:** measured transition latency above `HOUSERT0-RL-02`; the channel
   change decision may generalize SCOPE-HANDOFF-1.
 - **Deliberately not decided:** beds, Rested, offline training, Residence, containers in houses,
-  cross-house moves.
+  cross-house moves, the house item wire (§6.4, HOUSE-ITEM-WIRE-1).
 
 ## 14. Before-freeze checklist
 
@@ -339,15 +369,18 @@ items; characters inside are not seen from outside; a bounded number of characte
 2. **Serialization:** one live generation per `HouseId`; item shapes under the house fence, the
    acting character's session fence and its `character_root` lock; every admission, login
    included, revalidates access and property state under a lock on the property row and on the
-   granting guild and membership rows; every `HouseInterior` mutation advances the content
-   revision in its transaction.
+   granting guild and membership rows; the entry prepare re-checks the combat guards as a
+   source-actor command serialized with its combat processing; every `HouseInterior` mutation
+   advances the content revision in its transaction.
 3. **Restart:** items and positions are durable; a lost house scope sends characters to the
    entrance; transitions are fresh admissions through a durable handoff reconciled at restart;
    every exit, and every login that rejects a saved house position, commits the outside position
-   actually placed (entrance with the §3.3 fallback, never refused); a saved interior tile is
-   reserved by the house runtime and revalidated at the placement commit with a deterministic
-   fallback.
+   actually placed (entrance with the §3.3 fallback, never refused); every interior tile, at a
+   door entry or a login, is reserved by the house runtime before the commit and revalidated at
+   the placement commit with a deterministic fallback or a pre-commit refusal.
 4. **Typed references:** HouseId, WorldId, ChannelId (origin), CharacterId, GameSessionId, scope
    generation.
-5. **Wire:** MAP-WIRE-1 snapshots; HOUSE-WIRE-1 gains `kick` and `leave` (HOUSE-OWN-0 §11 pointer).
+5. **Wire:** MAP-WIRE-1 snapshots, with `HouseInterior` items as domain 1 entities and base
+   entries in `MAP_TILES` (§9); HOUSE-WIRE-1 gains `kick` and `leave` (HOUSE-OWN-0 §11 pointer); no
+   command 9 variant: the house item wire is the declared gap owed by HOUSE-ITEM-WIRE-1 (§6.4).
 6. **Split work:** one item per transaction; one character per transition.

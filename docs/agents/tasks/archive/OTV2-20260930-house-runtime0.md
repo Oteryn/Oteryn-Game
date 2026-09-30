@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-house-runtime-0
-pr: "exact PR in the #162 FREEZE_SHA entry"
+pr: 1399
 base_sha: a6a054e6
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -89,5 +89,17 @@ persistence review.
 - Codex round 4 (#1399, 0 P1, 2 P2): saved-tile selection reserved by the house runtime and
   revalidated at the placement commit (§6.3); exits place the entrance with the CHAR-POSITION-0
   fallback and persist the tile actually chosen (§4.2); validators re-run PASS.
+- Codex round 5 (final batched round, #1399, 3 P1, 2 P2), all fixed in one authoring write:
+  4149455263 P1 fixed (the prepare runs as a source-actor command serialized with its combat
+  processing, re-checks the combat, trade and pending-operation guards as it freezes the actor, and
+  a lock landing before the commit point aborts; §4.1); 4149455277 P1 fixed (`HouseInterior` items
+  travel as domain 1 entities per MAP-WIRE-1 §§3-4, base walls, doors and map items stay in
+  `MAP_TILES`; §9, checklist 5); 4149455271 P1 fixed as a declared gap (no accepted command reaches
+  the §6.1 shapes; child HOUSE-ITEM-WIRE-1 owes the versioned command 9 capability after its own
+  wire decision; house furniture moves are not playable until then; §6.4, brief, §12, §13);
+  4149455286 P2 fixed (ordinary entry selects and reserves a valid interior tile in the prepare,
+  with the §6.3 in-house fallback or a pre-commit `NO_ROOM` refusal; §4.1); 4149455290 P2 fixed
+  (the CHAR-POSITION-0 amendment and the §4.3 recovery fallback persist the resolved outside
+  tile, the `entrance` or its fallback); validators re-run PASS.
 
 This record was archived in the final authoring commit of its PR.
