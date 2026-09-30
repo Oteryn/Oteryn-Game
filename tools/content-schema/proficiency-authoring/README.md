@@ -50,6 +50,31 @@ None of these is modelled here. Nothing is written to `content/`, `rulesets/` or
 - **Not modelled:** shaping (reshape, rank 0-10, refine, Lunar Ascension Orb) and its costs, deferred
   to PROFICIENCY-1; the point table; shared progress across weapons.
 
+## Canary and Crystal comparison (2026-09-30, `OtsHypothesisOnly`)
+
+Canary `04b83b5` (`src/creatures/players/components/weapon_proficiency.*`) and Crystal `96d13ef`
+(`src/creatures/players/proficiencies/*`, `player.cpp`) were read for cross-checking only:
+
+- **Definitions.** Both load the CipSoft JSON as it is, with the same file (SHA-256 `1a915dff…`,
+  420 definitions). The 15.30 client file has 443: 23 newer ids (474+), one changed definition (43),
+  and the Type 32 homing missile (22 perks), which neither engine has. Canary quietly cuts levels and
+  perks above its config caps; this schema rejects a definition that does not fit instead.
+- **Weapon binding.** Both take the proficiency id from the appearances flag. Canary also lets
+  `items.xml` override it. This matches the Item `profile_binding`.
+- **Thresholds.** Canary picks the table per weapon: bolt ammunition gets crossbow; a sword, axe or
+  club whose vocations include knight gets knight; everything else gets standard. Mastery is
+  `maxLevel + 2`, capped at 9. It uses the same three tables. This matches the catalogue-level
+  tables and D197/D198/D200.
+- **Character state.** Both keep one track per weapon item id. Crystal stores experience and
+  `(level, perk position)` pairs; Canary stores copies of the selected perks in KV. Storing the index
+  (PROFICIENCY-0 §4.2, and the source order kept here) matches Crystal. Canary's perk copies would go
+  stale when a definition changes.
+- **Point table** (ruleset, not content). Both give 1/30/70/100/165/240 by Bestiary stars and
+  500/5000/15000 for bane/archfoe/nemesis bosses. Crystal also applies ×1.1 influenced, ×2.5 fiendish
+  and 1500 for soulpit bosses. These values exceed the manual's 1-175 per kill and 1,000 per boss, so
+  the point table stays a PROFICIENCY-0 §4.5 parity gate.
+- **Shaping** is in neither engine.
+
 ## Rules (`validate`)
 
 - The schema passes.
