@@ -40,7 +40,13 @@ Answers taken as D174-D178: #162 [5905498654](https://github.com/Oteryn/Oteryn-G
 | D175 | Q36 b | Gold, platinum and crystal coins (`i3031`, `i3035`, `i3043`). Change is minted back as coins; if the change does not fit, the whole transaction is rejected. | 36b |
 | D176 | Q37 a | `max_stack` = 100 for `i3031`, `i3035` and `i3043`, from Reference. | 37a |
 | D177 | Q38 a | One atomic transaction carries the Character change and the BURN lines, with one TransactionId, one receipt and the full gameplay fence. | 38a |
-| D178 | Q39 a | A closed typed BURN cause per fee source (`CharmUnassign { charm, occurrence }`, extendable only by contract amendment); at most 20 input stacks plus 1 change output; `DUR03-RL-03` stays 0. | 39a |
+| D178 | Q39 a | A closed typed BURN cause per fee source (`CharmUnassign { charm, occurrence }`, extendable only by contract amendment); at most 20 input stacks plus the change outputs (see the interpretation below); `DUR03-RL-03` stays 0. | 39a |
+
+**Control-plane interpretation (2026-09-30, T0 repair).** D175 governs the change: change is
+minted back, and the transaction is rejected only when the change does not fit. A change below one
+crystal coin can need a platinum stack and a gold stack, so the "+ 1 change output" in the Q39
+option text was a wording error, not an owner limit. The fee shape therefore admits **at most 2
+change outputs** (one platinum stack and one gold stack) beside at most 20 input stacks.
 
 ## 3. Facts
 
@@ -133,17 +139,19 @@ arithmetic is exact, unsigned 64-bit and checked (the reachable maximum is 20 x 
 3. Consequences: at most one input is partly burned (the last); every earlier input is burned
    whole. Change arises only on the last input and `C < worth` of that input, so it is never a
    crystal coin.
-4. **Change output.** `C = 0`: no output. Otherwise the change is exactly one stack: `C` gold coins
-   if `C <= 99`, or `C / 100` platinum coins if `C` is a multiple of 100. Any other `C` would need
-   two stacks (platinum and gold), which D178 does not admit: reject (`ChangeDoesNotFit`). All
-   stacks of the change denomination were burned whole in step 2, so no merge target exists: the
-   change is one fresh ItemInstance in a new backpack entry (next ordinal), placed after the burn
-   lines. If the backpack then has no free entry, reject (`ChangeDoesNotFit`).
+4. **Change outputs (at most 2).** `C = 0`: no output. Otherwise the change is `floor(C / 100)`
+   platinum coins and `C mod 100` gold coins, each output present only when its count is positive.
+   Since `C < 10,000`, each count is at most 99, so each output is one stack within `max_stack`.
+   All stacks of both change denominations were burned whole in step 2 (they have lower worth
+   than the last input), so no merge target exists: each output is one fresh ItemInstance in a new
+   backpack entry, placed after the burn lines, platinum first and then gold, each taking the next
+   ordinal. If the backpack, counted after the burn lines, has fewer free entries than outputs,
+   reject (`ChangeDoesNotFit`).
 5. A plan needing more than 20 inputs is rejected (`CAPACITY_EXCEEDED`), even though B3 makes it
    unreachable today.
 
 Every rejection writes nothing. Conservation: `sum(burned units x worth) - C = F` exactly; the net
-value destroyed equals the fee. The change is a MINT under the same cause, not a CONVERSION rule
+value destroyed equals the fee. Each change output is a MINT under the same cause, not a CONVERSION rule
 and not a bank exchange.
 
 D176 is the typed stack maximum of those three definitions (GAME-ITEM-01 §4.1, within
@@ -204,8 +212,8 @@ evidence:
 - each BURN line: ItemInstanceId, type, quantity before and after, location before (the backpack
   `Container` entry) and after (the same entry for a partial burn; `RETIRED`, no location, for a
   whole burn, the §11.4/§11.5 terminal shape);
-- the change MINT line: explicit nonexistence before, the live item in its new entry after, type
-  and quantity;
+- each change MINT line (at most 2): explicit nonexistence before, the live item in its new entry
+  after, type and quantity;
 - cause, `F`, the worth table key set, and the conservation summary of §4.2;
 - WorldId, runtime scope, the Character and its committed `CharacterRevision`, compatible
   definition revisions, and safe fence references without secrets.
@@ -221,13 +229,13 @@ Per-shape values for the fee transaction. The other shapes keep their values.
 
 | Row | Fee shape | Derivation |
 |---|---|---|
-| `DUR03-RL-01` touched items | **21** | 20 inputs + 1 change output (amended) |
-| `DUR03-RL-02` location lines | **21** | 20 whole-burn removals + 1 change placement (amended) |
+| `DUR03-RL-01` touched items | **22** | 20 inputs + 2 change outputs (amended) |
+| `DUR03-RL-02` location lines | **22** | 20 whole-burn removals + 2 change placements (amended) |
 | `DUR03-RL-03` value lines | **0** | unchanged; coin quantities are item state (B3 §4.4) |
 | `DUR03-RL-04` transform | 0 | unchanged |
 | `DUR03-RL-05` container expansion | 0 | unchanged; direct backpack entries only |
-| `DUR03-RL-06-PARTICIPANTS` | **21** | one per touched item (amended) |
-| `DUR03-RL-06-EFFECT-WORK-UNITS` | **62** | whole burn = participant + removal + retirement = 3; partial burn 2; change MINT 2; worst case 20 x 3 + 2 (amended) |
+| `DUR03-RL-06-PARTICIPANTS` | **22** | one per touched item (amended) |
+| `DUR03-RL-06-EFFECT-WORK-UNITS` | **64** | whole burn = participant + removal + retirement = 3; partial burn 2; change MINT 2; worst case 20 x 3 + 2 x 2 (amended) |
 | `DUR03-RL-07-EVENTS` | 1 | unchanged |
 | `DUR03-RL-07` payload / envelope | measured by GOLD-FEE-1 | exact protobuf worst case of the registered schema by the D50 method; must stay within ANL payload 196,608 B / envelope 262,144 B |
 | `DUR03-RL-08` retry work | 3 | unchanged |
@@ -249,10 +257,10 @@ For the `FeeBurnCause` shape only, this decision supersedes:
   "Every other retire cause (burn, …) stays excluded" — typed BURN under a `FeeBurnCause` is
   admitted, with whole-stack retirement and partial quantity reduction;
 - §39.1: "mint into an existing stack, multiple touched items" exclusions — up to 20 BURN inputs
-  and one change MINT into a fresh backpack entry are admitted (mint into an existing stack stays
+  and up to 2 change MINTs into fresh backpack entries are admitted (mint into an existing stack stays
   excluded);
 - §39.1: "MINT, the later TRANSFER … are separate transactions … Aggregation does not combine
-  their sequence into one commit" — the change MINT commits in the fee transaction;
+  their sequence into one commit" — the change MINTs commit in the fee transaction;
 - §39.3 composition paragraph and DUR-02 schema packet §7.5 — for fee sources, the Character +
   value boundary is the §4.3 composition. GOLD-FEE-1 must prove it (§9 revalidation) before any
   such path is enabled.
@@ -269,7 +277,7 @@ advances the revision once, as for any Character semantic transaction.
 | GOLD-FEE-1a | Stack maximum 100 for the three coins (item authoring); the pure payment planner of §4.2 with its tests; the resource rows of §4.6 and the audit schema/registry | this decision accepted |
 | GOLD-FEE-1b | Migration 0023+ (or the next free number, D173): the in-transaction burn/change function composed by a fee source inside its fenced Character transaction; guards against a burn without a `FeeBurnCause` receipt; PostgreSQL tests | 1a |
 | CHARM-6 | Charm unassign (and later reset, by amendment) composing GOLD-FEE-1b | 1b, D170 |
-| Later | Bank ledger stage 2 (D174); nested bags as sources; two-stack change (§8 question) | own decisions |
+| Later | Bank ledger stage 2 (D174); nested bags as sources | own decisions |
 
 ## 7. Rejected options
 
@@ -287,7 +295,7 @@ advances the revision once, as for any Character semantic transaction.
 
 - **Must decide now:** YES. CHARM-6 and player-facing charm release (D170) wait on it, and
   GOLD-FEE-1 cannot start without a burn shape, a composition and a stack maximum.
-- **Minimum sufficient:** backpack coins only, three denominations, one change stack, one closed
+- **Minimum sufficient:** backpack coins only, three denominations, at most two change stacks, one closed
   cause; no ledger, no exchange service, no generic burn.
 - **Harder later:** receipts and audit events carry the cause type and the worth table; changing
   them after coins are burned needs a migration of retained evidence.
@@ -295,9 +303,8 @@ advances the revision once, as for any Character semantic transaction.
   accepted bank contract; a measured RL-07 worst case above the ANL ceilings.
 - **Deliberately not decided:** the charm fee amount and discounts (CHARM-6); the bank ledger;
   nested bags; field numbers and physical schema; client messages.
-- **Consequence to watch:** a fee paid only from crystal coins whose change needs both platinum and
-  gold (for example 2,350 from one crystal) is rejected. Admitting a second change stack is a
-  reversible widening (RL-01 22) that needs an owner decision.
+- **Example:** 2,350 paid from one crystal coin burns the crystal and mints 76 platinum and 50 gold
+  (7,650), which needs two free entries after the burn.
 
 ## 9. Handback
 
@@ -315,11 +322,11 @@ production_authority_changed: false
 cross_repository_authority_changed: false
 implementation_may_resume: true   # GOLD-FEE-1a after protected integration
 required_fresh_allocation: true
-required_independent_review: "exact-head independent review (typed BURN admission, payment plan and change conservation, Character + value atomic composition and fence, one-receipt idempotency, resource rows)"
+required_independent_review: "exact-head independent review (typed BURN admission, payment plan and two-stack change conservation, Character + value atomic composition and fence, one-receipt idempotency, resource rows)"
 required_revalidation:
-  - "planner: exact conservation; insufficient funds writes nothing; ascending worth then display order; at most one partial input; change 1..99 gold or a multiple of 100 as platinum; two-stack change and no free entry reject; 21 inputs reject"
+  - "planner: exact conservation; insufficient funds writes nothing; ascending worth then display order; at most one partial input; change as floor(C/100) platinum plus C mod 100 gold, at most 2 fresh stacks, each <= 99; fewer free entries than outputs rejects; 21 inputs reject"
   - "transaction: Character change, burns, change MINT and audit commit together or not at all; CharacterRevision +1 exactly once; replay of the same occurrence returns the first outcome; a changed binding conflicts; each stale fence part (connection generation, GameSession, lease, scope generation, session_state, assignment, node incarnation, revision) commits nothing"
-  - "rows: max and max+1 for RL-01 21, RL-02 21, RL-06 21/62; RL-03 still 0; the measured RL-07 worst case within the ANL ceilings"
+  - "rows: max and max+1 for RL-01 22, RL-02 22, RL-06 22/64; RL-03 still 0; the measured RL-07 worst case within the ANL ceilings"
 remaining_unknowns:
   - Global coin selection order and change behaviour
   - bank ledger (stage 2)

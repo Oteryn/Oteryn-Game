@@ -706,7 +706,7 @@ the one named `DECAY_RETIRE` cause above), transform,
 non-item accounts, nested containers or additional custody families. (The B3
 amendment in §39.3 admits the two-item merge and top-up shapes and direct entries of
 the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`; the gold fee
-amendment in §39.3 admits typed BURN of up to 20 coin stacks with one change MINT, composed
+amendment in §39.3 admits typed BURN of up to 20 coin stacks with up to 2 change MINTs, composed
 with a Character change in one transaction.) Unsupported
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
@@ -1197,12 +1197,14 @@ authority, conservation) is unchanged.
 - **Coins (D175, D176).** Exactly `oteryn:item.tibia.i3031` (gold, worth 1), `i3035` (platinum,
   100) and `i3043` (crystal, 10,000), each with stack maximum 100. The source supplies the fee in
   gold units. The deterministic plan (decision §4.2) burns inputs by worth ascending, then display
-  order; at most the last input is partly burned. Change is exactly one fresh stack in a new backpack
-  entry (1-99 gold, or a multiple of 100 as platinum); a change needing two stacks or finding no
-  free entry, insufficient funds, or more than 20 inputs rejects the whole transaction and writes
-  nothing. Conservation: burned worth minus change equals the fee.
+  order; at most the last input is partly burned. Change `C` is minted back as at most 2 fresh
+  stacks in new backpack entries, `floor(C / 100)` platinum and `C mod 100` gold (D175; the
+  control-plane interpretation in decision §2 reads Q39's "+1 change output" as a wording error).
+  Fewer free entries than change outputs after the burn, insufficient funds, or more than 20
+  inputs rejects the whole transaction and writes nothing. Conservation: burned worth minus change
+  equals the fee.
 - **Composition (D177).** One transaction commits the fee source's Character change and receipt
-  (`CharacterRevision` +1 exactly once), every BURN line, the change MINT and the audit event, or
+  (`CharacterRevision` +1 exactly once), every BURN line, the change MINTs and the audit event, or
   none. One TransactionId; one receipt, the source's Character receipt keyed by its occurrence,
   which binds the cause, the fee and the change. The fence and lock order are the Character
   writer's (`CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1` §3 rules 2-4, with the expected
@@ -1211,9 +1213,9 @@ authority, conservation) is unchanged.
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.
 - **Evidence and rows.** One event: each BURN line (quantity before and after; a whole burn ends
-  `RETIRED` with no location), the change MINT (absent before), cause, fee, conservation summary,
-  WorldId, scope, Character revision and fence references. Fee-shape rows: `DUR03-RL-01` 21,
-  `DUR03-RL-02` 21, `DUR03-RL-06` 21 participants / 62 work units, `DUR03-RL-07-EVENTS` 1, payload
+  `RETIRED` with no location), each change MINT (absent before), cause, fee, conservation summary,
+  WorldId, scope, Character revision and fence references. Fee-shape rows: `DUR03-RL-01` 22,
+  `DUR03-RL-02` 22, `DUR03-RL-06` 22 participants / 64 work units, `DUR03-RL-07-EVENTS` 1, payload
   and envelope measured within the ANL ceilings, other rows unchanged. The rows, schema and field
   numbers are registered by GOLD-FEE-1, not here.
 

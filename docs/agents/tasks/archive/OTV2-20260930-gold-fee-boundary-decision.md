@@ -38,9 +38,10 @@ jira: null   # sync pending (coordinator batch)
 
 Owner decisions D174-D178 (#162 5905416975 questions, 5905498654 answers) are recorded as
 `CHARACTER-GOLD-FEE-BOUNDARY-V1`. DUR-03 §39.3 admits a typed BURN of up to 20 coin stacks with
-one change MINT, composed with a Character change in one fenced transaction. DUR-02 §7.5 and
+up to 2 change MINTs (platinum + gold), composed with a Character change in one fenced
+transaction. DUR-02 §7.5 and
 GAME-ITEM-01 §9 carry pointers. No registry row, migration or code changes here; GOLD-FEE-1a
-registers the fee-shape rows (RL-01 21, RL-02 21, RL-06 21/62), because the offline evidence test
+registers the fee-shape rows (RL-01 22, RL-02 22, RL-06 22/64), because the offline evidence test
 and runtime constants bind `DUR03-RL-01` = 2 today.
 
 ## Architecture and source of truth
@@ -63,5 +64,6 @@ burns twice, and a rejection writes nothing. No runtime path exists in this task
 - Validation: `validate_governance.py` pass; `tools/agents/tests` 36/36 pass; `git diff --check`
   pass. The contracts JSON is unchanged, so the repository policy check does not apply.
 - Review: required independent exact-head review, triggered by the control plane on the frozen head.
-- Open owner question (in the worker report): whether to admit a second change stack
-  (platinum + gold) so small fees can be paid from crystal coins.
+- T0 repair (control plane, before freeze): Q39's "+1 change output" is read as a wording error;
+  D175 governs, so the fee shape admits at most 2 change outputs (RL-01 22). Recorded in decision
+  §2 as a control-plane interpretation; the earlier owner question is withdrawn.
