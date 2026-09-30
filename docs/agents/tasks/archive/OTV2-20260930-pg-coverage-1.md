@@ -48,7 +48,21 @@ cases were not aggregated into a CI-run target: `item_fee_burn`, `chest_use`, `c
 
 ## Validation (local, PostgreSQL 17.6 pinned image)
 
-Filled in the FREEZE_SHA packet on #162 (per-target counts, fmt, clippy).
+On `origin/main` 09ccf36 (with #1340 and LCFA-1 #1330) merged into the branch, every target passes
+(passed / failed):
+
+- `character_authority_postgres` (CI-run, aggregating): 867 / 0, including the guard.
+- `durability_postgres` 767 / 0; `native_admission_source_postgres` 694 / 0;
+  `runtime_scope_assignment_postgres` 702 / 0.
+- Newly aggregated standalone targets: `item_fee_burn` 684, `chest_use` 752, `combat_bestiary` 723,
+  `combat_death_reward` 729, `combat_pickup` 751; all 0 failed.
+- Other standalone targets: `account_achievement` 686, `bestiary_progress` 684,
+  `character_death_receipts` 6, `character_progression` 691, `character_stance` 5, `charm_state` 687,
+  `check_function_privileges` 1, `corpse_decay` 704, `corpse_transfer` 699, `item_mint` 700,
+  `item_transfer` 694, `reward_claim_mint` 686; all 0 failed.
+- Before #1340, the aggregated `item_fee_burn` cases failed 5/5 (SQLSTATE 23502), which is the
+  regression this lane now catches.
+- `cargo fmt --all --check`: pass. `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass.
 
 ## Product bugs found
 
