@@ -159,8 +159,9 @@ How do players of one World buy and sell items through the Market, safely across
 - **Capacity.** The counter row holds `committed` = Inbox entries + entries reserved by the
   character's open offers (a buy offer reserves `remaining`, its worst case, since sellers' entries
   may be single units; a sell offer reserves its escrowed entries). A new offer or an accept that
-  would raise it above `MARKET0-RL-06` (100,000) is `INBOX_FULL`; reserved deliveries and returns
-  never fail. This bounds a character's open buy offers to 100,000 units in all (a declared
+  would raise it above `MARKET0-RL-06` (100,000) is `INBOX_FULL`. The ceiling refuses only new
+  offers and accepts: no delivery is ever refused, whether a reserved Market delivery or return, or
+  another decision's delivery (house disposition, HOUSE-OWN-0), which counts without a reservation. This bounds a character's open buy offers to 100,000 units in all (a declared
   Reference difference, `PARITY_PENDING`).
 
 ## 6. Escrow and fills (MARKET-1)
