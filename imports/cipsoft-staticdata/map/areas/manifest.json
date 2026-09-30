@@ -1,0 +1,37 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "family": "MapArea",
+  "files": [
+    {
+      "path": "areas-00000-00149.json",
+      "records": 150,
+      "sha256": "ff00f0b2e08928e94143446935fc8f581054089ea6f6ebb68ff25b1cfff43add"
+    },
+    {
+      "path": "areas-00150-00299.json",
+      "records": 150,
+      "sha256": "17d2be0cf71efe35c31db228c68bf904c14da28d0296f1ef220a044017e22588"
+    },
+    {
+      "path": "areas-00300-00449.json",
+      "records": 150,
+      "sha256": "644a7346ed568fd696d6aa725e484191ee84cc960e4c3f4fa6b90350e116a3aa"
+    },
+    {
+      "path": "areas-00450-00464.json",
+      "records": 15,
+      "sha256": "c8b44e08a7af1111716700648bd1ed7ffeaa310033ee5a11827c0edde08fedd0"
+    }
+  ],
+  "identity_namespace": "cipsoft/map_area",
+  "inputs": {
+    "map": {
+      "file": "content/assets/files/map-c54dfeb8f3880e9534f1330fa547f06d99c5afa55f641b875ceee23cc04e3496.dat",
+      "sha256": "c54dfeb8f3880e9534f1330fa547f06d99c5afa55f641b875ceee23cc04e3496"
+    }
+  },
+  "record_count": 465,
+  "schema": "OTERYN_CIPSOFT_MAPAREA_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_ASSETS"
+}

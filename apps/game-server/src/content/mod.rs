@@ -36,6 +36,7 @@ mod cw2_b4_import;
 mod digest;
 pub mod encounter_map_item;
 mod fixture;
+pub mod item_identity;
 mod model;
 mod production;
 mod project;

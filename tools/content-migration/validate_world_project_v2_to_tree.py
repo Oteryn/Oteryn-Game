@@ -49,6 +49,17 @@ def require(condition: bool, code: str) -> None:
     if not condition:
         raise ValidationError(code)
 
+def staged_item_target(target: dict[str, Any], aliases: dict[str, str]) -> tuple[str, str, str]:
+    """A staged (historical) Item target through the append-only alias table (A12, ITEM-ID-1)."""
+    require(target["family"] == "Item" and target["key"] in aliases, f"STAGED_TARGET_WITHOUT_ALIAS:{target['key']}")
+    return ("Item", aliases[target["key"]], target["revision"])
+
+def item_alias_targets() -> dict[str, str]:
+    current: dict[str, dict[str, Any]] = {}
+    for entry in load(ROOT / "content/items/aliases.json")["entries"]:
+        current[entry["key"]] = entry
+    return {key: entry["target"] for key, entry in current.items() if entry["state"] == "ALIAS"}
+
 def target_id(target: dict[str, Any]) -> tuple[str, str, str]:
     return (target["family"], target["key"], target["revision"])
 
@@ -94,7 +105,8 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         rebuilt.setdefault(key, {"item": row["target"]})["taxonomy"] = row["source_taxonomy"]
     require(canonical_sorted(list(rebuilt.values())) == canonical_sorted(list(legacy_authoring.values())), "ITEM_AUTHORING_ROUNDTRIP")
 
-    staged_items = {target_id(item["target"]): item for item in staged["items"]}
+    aliases = item_alias_targets()
+    staged_items = {staged_item_target(item["target"], aliases): item for item in staged["items"]}
     require(set(staged_items) == set(legacy_authoring), "WAVE1_AUTHORING_TARGETS")
     relation_count = 0
     seen_sources = set()
@@ -323,12 +335,12 @@ def main() -> int:
         "legacy_mutated": False,
         "runtime_switch_authorized": False,
     }, "COMPATIBILITY_BOUNDARY")
-    require(lock["family_counts"] == {"Item": 38157, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
+    require(lock["family_counts"] == {"Item": 33567, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
-    require(item_index["record_count"] == 38157 and len(item_index["shards"]) == 77, "ITEM_INDEX")
+    require(item_index["record_count"] == 33567 and len(item_index["shards"]) == 68, "ITEM_INDEX")
     require(mount_index["record_count"] == 252 and len(mount_index["shards"]) == 1, "MOUNT_INDEX")
 
     migrated_items: list[Any] = []
@@ -356,7 +368,7 @@ def main() -> int:
         expected_start = payload["shard"]["end"] + 1
 
     legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
-    require(migrated_items == legacy_items and expected_start == 38157, "ITEM_DEFINITION_ROUNDTRIP")
+    require(migrated_items == legacy_items and expected_start == 33567, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
     mount_payload = load(ROOT / mount_index["shards"][0])
@@ -388,7 +400,7 @@ def main() -> int:
     require(canonical_sorted(item_bindings) == canonical_sorted(legacy_item_bindings), "ITEM_BINDING_ROUNDTRIP")
     require(canonical_sorted(mount_bindings) == canonical_sorted(legacy_mount_bindings), "MOUNT_BINDING_ROUNDTRIP")
 
-    require(len({target_id(row["identity"]) for row in migrated_items}) == 38157, "ITEM_IDENTITY_UNIQUENESS")
+    require(len({target_id(row["identity"]) for row in migrated_items}) == 33567, "ITEM_IDENTITY_UNIQUENESS")
     require(len({
         ("Mount", row["identity"]["key"], row["identity"]["revision"])
         for row in migrated_mounts
@@ -410,7 +422,7 @@ def main() -> int:
     require(charm_shard["family"] == "Charm" and charm_shard["shard"]["count"] == len(charm_shard["records"]) == CHARM_COUNT, "CHARM_SHARD")
     require(len({row["definition"]["identity"]["key"] for row in charm_shard["records"]}) == CHARM_COUNT, "CHARM_IDENTITY_UNIQUENESS")
     print(
-        "PASS items=38157 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
+        "PASS items=33567 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "

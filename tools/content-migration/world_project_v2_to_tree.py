@@ -20,6 +20,9 @@ WAVE1_STAGED = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-item-enric
 # Charm is a static family authored under tools/content-schema/charm-authoring (`charm_authoring.py content`);
 # it has no legacy WorldProject source, so this generator only registers the committed family.
 CHARM_INDEX = "content/charms/index.json"
+# A12 (ITEM-ID-1): the staged packet is history naming retired Item keys; its targets are emitted
+# through the append-only alias table (content/items/aliases.json).
+ITEM_ALIASES = ROOT / "content" / "items" / "aliases.json"
 # Creature admission families (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1): family -> (tree node, shard stem).
 CREATURE_FAMILIES = {
     "Creature": ("content/creatures/definitions/", "creatures"),
@@ -67,6 +70,18 @@ def capability_relations(definition: dict[str, Any], authoring: dict[str, Any] |
     }
     return [{"relation": "CAPABILITY_GOVERNED_BY", "ruleset": ruleset, "basis": basis} for ruleset, basis in CAPABILITY_RULES if facts[basis]]
 
+def item_alias_targets() -> dict[str, str]:
+    """The current alias target of every retired Item key (latest entry version wins)."""
+    current: dict[str, dict[str, Any]] = {}
+    for entry in load(ITEM_ALIASES)["entries"]:
+        current[entry["key"]] = entry
+    return {key: entry["target"] for key, entry in current.items() if entry["state"] == "ALIAS"}
+
+def canonical_item_target(target: dict[str, Any], aliases: dict[str, str]) -> dict[str, Any]:
+    if target["family"] != "Item" or target["key"] not in aliases:
+        raise RuntimeError(f"STAGED_ITEM_TARGET_WITHOUT_ALIAS:{target['key']}")
+    return {**target, "key": aliases[target["key"]]}
+
 def git_blob_sha(path: Path) -> str:
     data = path.read_bytes()
     return hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\0" + data).hexdigest()
@@ -80,6 +95,7 @@ def main() -> int:
 
     family_assignments = load(FIELD_CENSUS)["family_assignments"]
     wave1 = load(WAVE1_STAGED)
+    item_aliases = item_alias_targets()
     authoring_by_target = {target_id(row["item"]): row for row in declarations.get("item_authoring", [])}
     editors = {target_id(row["target"]): row for row in editor["entries"]}
     bindings: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
@@ -154,7 +170,7 @@ def main() -> int:
             relation_rows.append({"source": authoring["item"], "relations": relations})
     wave1_facts = [
         {
-            "target": item["target"],
+            "target": canonical_item_target(item["target"], item_aliases),
             "batch_id": wave1["batch_id"],
             "source_key": wave1["source"]["source_key"],
             "source_revision": wave1["source"]["source_revision"],

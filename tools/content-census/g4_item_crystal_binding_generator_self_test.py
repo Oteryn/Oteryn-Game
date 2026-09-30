@@ -44,7 +44,9 @@ def epoch2_alias_gate_and_allocation() -> None:
     assert gate([candidate(1, ["article_plural"], ["attributes"])])[0] == "NO_MATCH"
     assert gate([candidate(1, [], both)])[0] == "NO_MATCH"
     assert MODULE.counterpart(candidate(1, both, ["visual"]))
-    assert not MODULE.counterpart(candidate(1, ["visual", "attributes"], ["article_plural"]))
+    assert not MODULE.counterpart(
+        candidate(1, ["visual", "attributes"], ["article_plural"])
+    )
     # Presentation is never an identity signal: a candidate that agrees on article/plural
     # and the full attribute set but differs only in sprite is held, not minted (a sprite
     # change never remints an identity). Its differing sprite is not evidence of a distinct
@@ -53,9 +55,9 @@ def epoch2_alias_gate_and_allocation() -> None:
         "PROBABLE_MATCH",
         "SPRITE_ONLY_DIFFERENCE_HELD",
     )
-    assert gate([candidate(1, both, ["visual"]), candidate(2, both, ["visual"])])[0] == (
-        "AMBIGUOUS"
-    )
+    assert gate([candidate(1, both, ["visual"]), candidate(2, both, ["visual"])])[
+        0
+    ] == ("AMBIGUOUS")
     # Only non-presentation contradictions leave NO_MATCH, whatever the sprite says.
     assert gate([candidate(1, ["article_plural"], ["attributes", "visual"])])[:2] == (
         "NO_MATCH",
@@ -64,13 +66,24 @@ def epoch2_alias_gate_and_allocation() -> None:
     assert gate([candidate(1, ["visual", "attributes"], ["article_plural"])])[0] == (
         "CONFLICT"
     )
-    assert gate(
-        [candidate(1, ["article_plural"], ["attributes", "visual"]), candidate(2, both, ["visual"])]
-    )[0] == "PROBABLE_MATCH"
+    assert (
+        gate(
+            [
+                candidate(1, ["article_plural"], ["attributes", "visual"]),
+                candidate(2, both, ["visual"]),
+            ]
+        )[0]
+        == "PROBABLE_MATCH"
+    )
     # Proven counterpart: all three non-name signals agree, and it is unique.
     assert gate([candidate(1, full, [])])[0] == "ACCEPTED_ALIAS"
     assert (
-        gate([candidate(1, full, []), candidate(2, ["article_plural"], ["attributes", "visual"])])[0]
+        gate(
+            [
+                candidate(1, full, []),
+                candidate(2, ["article_plural"], ["attributes", "visual"]),
+            ]
+        )[0]
         == "ACCEPTED_ALIAS"
     )
     # A second counterpart that differs only in sprite competes with the alias target.
@@ -201,7 +214,9 @@ def epoch2_committed_output() -> None:
     assert by_id[35500]["state"] == "PROBABLE_MATCH"
     assert by_id[35500]["reason"] == "SPRITE_ONLY_DIFFERENCE_HELD"
     assert by_id[54610]["state"] == "PROBABLE_MATCH"
-    assert all(by_id[i]["state"] == "AMBIGUOUS" for i in held if i not in (35500, 54610))
+    assert all(
+        by_id[i]["state"] == "AMBIGUOUS" for i in held if i not in (35500, 54610)
+    )
     sprite_only = [
         c
         for c in by_id[35500]["same_name_base_items"]
@@ -241,35 +256,66 @@ def epoch2_committed_output() -> None:
     assert payload == again_payload and output == again_output
     assert MODULE.OUTPUT.read_bytes() == payload
 
-    # Epoch 1 is byte-identical: its rows, regenerated from the frozen allocator, are the
-    # first 38,157 rows, and their canonical bytes are a strict prefix of the file.
-    bindings = output["bindings"]
-    epoch1 = MODULE.build_bindings(epoch1_allocations, MODULE.parse_source_revision(text))
-    assert bindings[: MODULE.EXPECTED_TOTAL] == epoch1
-    assert len(bindings) == MODULE.EXPECTED_TOTAL + len(allocations)
+    # History: the historical epoch-1 rows still reproduce the retired bytes exactly.
+    epoch1 = MODULE.build_bindings(
+        epoch1_allocations, MODULE.parse_source_revision(text)
+    )
     epoch1_bytes = MODULE.canonical_bytes(
         {"schema": MODULE.SCHEMA, "family": "Item", "bindings": epoch1}
     )
     assert MODULE.sha256_hex(epoch1_bytes) == MODULE.EXPECTED_EPOCH1_OUTPUT_SHA256
     assert len(epoch1_bytes) == MODULE.EXPECTED_EPOCH1_OUTPUT_BYTES
-    assert payload.startswith(epoch1_bytes[: -len(MODULE.OUTPUT_ARRAY_SUFFIX)])
-    assert payload.endswith(MODULE.OUTPUT_ARRAY_SUFFIX)
+
+    # A12 §4.2: every emitted row is EXACT to the Tibia key of its own external id; the
+    # D149 rows (no CipSoft appearance) and the held donor ids emit no binding.
+    bindings = output["bindings"]
+    assert len(bindings) == MODULE.EXPECTED_BOUND == 33_971
+    assert bindings == sorted(bindings, key=MODULE.canonical_bytes)
+    for row in bindings:
+        assert row["disposition"] == "EXACT", row
+        assert row["target"]["key"] == f"oteryn:item.tibia.i{row['external_id']}", row
+    aliases = MODULE.load_alias_entries()
+    d149 = {
+        str(entry["evidence"]["source_item_id"])
+        for entry in aliases.values()
+        if entry["state"] == "RETIRED_WITHOUT_SUCCESSOR"
+    }
+    assert len(d149) == MODULE.EXPECTED_D149_UNBOUND
+    assert not {row["external_id"] for row in bindings} & (
+        d149 | {str(i) for i in held}
+    )
 
     # Epoch-2 rows: one EXACT binding per minted id at the donor commit, source id verbatim.
-    epoch2 = bindings[MODULE.EXPECTED_TOTAL :]
-    assert [row["external_id"] for row in epoch2] == [
-        str(source_id) for source_id, _ in allocations
+    epoch2 = [
+        row for row in bindings if row["source_revision"] == pins["source_revision"]
     ]
-    assert not {row["external_id"] for row in bindings} & {str(i) for i in held}
-    for row, (source_id, key) in zip(epoch2, allocations):
-        assert row == {
-            "disposition": "EXACT",
-            "external_id": str(source_id),
-            "identity_namespace": "ots/item_server_id",
-            "source_key": "oteryn:source.crystalserver",
-            "source_revision": pins["source_revision"],
-            "target": {"family": "Item", "key": key, "revision": "definition-r1"},
+    assert sorted(row["external_id"] for row in epoch2) == sorted(
+        str(source_id) for source_id, _ in allocations
+    )
+
+    # Requalification fails closed on a row whose alias evidence is another row's.
+    row = dict(epoch1[0])
+    expect_error(
+        "ALIAS_EVIDENCE_NOT_THIS_ROW",
+        MODULE.requalify,
+        [{**row, "external_id": "999999"}],
+        aliases,
+    )
+    expect_error(
+        "HISTORICAL_KEY_WITHOUT_ALIAS",
+        MODULE.requalify,
+        [{**row, "target": {**row["target"], "key": "oteryn:item.registry.i99999999"}}],
+        aliases,
+    )
+    tampered = {
+        row["target"]["key"]: {
+            **aliases[row["target"]["key"]],
+            "state": "ALIAS",
+            "target": "oteryn:item.tibia.i1",
         }
+    }
+    if tampered[row["target"]["key"]]["evidence"]["source_item_id"] != 1:
+        expect_error("ALIAS_TARGET_NOT_OWN_ID", MODULE.requalify, [row], tampered)
 
     # NO_MATCH versus alias: an alias id mints nothing and shifts every later rank down.
     mutated = [dict(row) for row in crosswalk["rows"]]
@@ -453,7 +499,7 @@ def main() -> None:
     # verify_allocations: missing canonical definition key must fail closed.
     fake_allocations = [
         (i, f"oteryn:item.synthetic.i{i:08d}")
-        for i in range(1, MODULE.EXPECTED_TOTAL + 1)
+        for i in range(1, MODULE.EXPECTED_BOUND_EPOCH1 + 1)
     ]
     fake_definition_keys = {key for _, key in fake_allocations}
     fake_definition_keys.discard(fake_allocations[0][1])
@@ -487,7 +533,7 @@ def main() -> None:
         {},
     )
     drifted_cross_check_allocations = list(fake_allocations)
-    drifted_cross_check_allocations[3287] = (3288, "oteryn:item.registry.i00003167")
+    drifted_cross_check_allocations[3287] = (3288, "oteryn:item.tibia.i3288")
     expect_error(
         "CROSS_CHECK_TIBIAWIKI_TARGET_MISSING",
         MODULE.verify_allocations,
@@ -498,7 +544,7 @@ def main() -> None:
     MODULE.verify_allocations(
         drifted_cross_check_allocations,
         {key for _, key in drifted_cross_check_allocations},
-        {"oteryn:item.registry.i00003167": {"5810"}},
+        {"oteryn:item.tibia.i3288": {"5810"}},
     )
 
     # Identity promotions: parsed from `<PREFIX>_{SOURCE_ITEM_ID,OLD_KEY,KEY}` constants.
