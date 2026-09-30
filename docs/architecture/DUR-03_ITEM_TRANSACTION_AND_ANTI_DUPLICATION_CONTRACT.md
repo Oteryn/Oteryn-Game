@@ -1442,8 +1442,8 @@ unchanged.
   This amendment grants no runtime or DDL authority.
 
 **Item use amendment (ITEM-USE-0, 2026-09-30), pending on acceptance of ITEM-USE-0.**
-`reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md` §4, once accepted, admits, in its
-ITEM-USE-1 child and for these shapes only:
+`reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md` §4, once accepted,
+admits, in its ITEM-USE-1 child and for these shapes only:
 
 - **Burn.** One BURN line (§17) of exactly one unit from the used stack, which keeps its identity
   (§11.1) or retires at zero (§11.5), under the closed sink `ItemUseCause` (`Food`, `Potion`),

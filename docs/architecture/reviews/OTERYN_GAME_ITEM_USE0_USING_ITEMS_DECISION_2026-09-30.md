@@ -141,6 +141,8 @@ admitted shapes and by a paragraph at the end of §39.3. Every other §39 obliga
 | `DUR03-RL-02-ITEM-USE`, effect work units, envelope and payload | measured on the flask shape; a cap that would exceed the generic rows sends the shape back |
 | `ITEMUSE0-RL-01` item uses per actor per second | 5 (the 200 ms food gate; potions 1 per second) |
 | `ITEMUSE0-RL-02` item-use commits per channel per second, and their database p99 latency | measured before ITEM-USE-1 ships |
+| `ITEMUSE0-RL-03` `USE_INTENT` payload with fields 4 and 5 | at most 529 bytes (unchanged `max_payload_bytes`), measured by ITEM-USE-WIRE-1 |
+| `ITEMUSE0-RL-04` ambiguous-commit bound before the in-flight slot is freed | 2,000 ms |
 
 ## 5. Reservations and cooldowns (ITEM-USE-1)
 
@@ -152,6 +154,15 @@ admitted shapes and by a paragraph at the end of §39.3. Every other §39 obliga
   rows and answers `STALE_STATE` if they changed; it never searches again.
 - **Commit, then effect.** The DUR-03 transaction commits first. On a known commit the runtime runs
   PRIMARY COMMIT of the effect in the same owner lane. If the commit fails, there is no effect.
+- **Why potions and food differ from runes (SPELL-D3).** SPELL-D3 governs a spell's own costs
+  (mana, soul, cooldowns), which commit with its effect; it says nothing about an item cost. For
+  food and potions every check that can fail (requirements, reach, cooldown, the target's
+  visibility) runs at PREPARE, before the burn. After a known commit the effect is a heal, a mana
+  restore or a regeneration condition that cannot be refused. The one remaining case is a potion
+  target that leaves reach or dies between PREPARE and PRIMARY COMMIT: then the effect is not
+  applied and the unit stays spent, as in Tibia, where a used potion is gone even if its target
+  moved. This is the defined semantics for a failed effect. Runes have spell target validation at
+  PRIMARY COMMIT that can fail for many reasons, which is why they wait for RUNE-USE-0.
 - **Ambiguous commit.** After `ITEMUSE0-RL-04` (2,000 ms) without an outcome, the actor's
   in-flight slot is freed, but the reserved stack stays unspendable until reconciliation (hotkeys
   skip it). A commit known only after reconciliation applies no late effect; the unit is spent, as
