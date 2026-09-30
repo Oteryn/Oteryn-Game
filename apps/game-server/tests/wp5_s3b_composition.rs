@@ -85,7 +85,7 @@ use std::{env, fs, io};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const SOURCE_AUTHORITY: &str = "platform";
-const PLATFORM_SOURCE: &str = "9147bfd3a771762a6646fd87b9172cdb3a6c9a01";
+const PLATFORM_SOURCE: &str = "5d4883acf7079e26fd51e03f460166730de1ada0";
 /// Game-owned interpretation configured by the operator procedure; the Platform
 /// intents issued by `run.sh` request exactly these revisions.
 const INTERPRETATION: [&str; 4] = [

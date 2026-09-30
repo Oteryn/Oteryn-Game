@@ -114,7 +114,7 @@ fn configured_admin() -> Option<String> {
 }
 
 fn bootstrap_binding() -> Vec<u8> {
-    let mut binding = vec![1];
+    let mut binding = vec![2];
     binding.extend_from_slice(&id(31));
     binding.extend_from_slice(&1_i64.to_be_bytes());
     binding.extend_from_slice(&id(30));
@@ -127,6 +127,9 @@ fn bootstrap_binding() -> Vec<u8> {
         binding.extend_from_slice(&length.to_be_bytes());
         binding.extend_from_slice(value.as_bytes());
     }
+    // Contract version 2 binds the requested name last (CHAR-NAME-1).
+    binding.extend_from_slice(&12_u16.to_be_bytes());
+    binding.extend_from_slice(b"Fixture Hero");
     binding
 }
 
@@ -139,7 +142,7 @@ async fn seed_character(pool: &sqlx::PgPool) -> TestResult {
            (1,'profile-1','ruleset-1','content-1','starter-1',1); \
          INSERT INTO game_character_account_guards VALUES ({account}); \
          INSERT INTO game_character_roots VALUES \
-           ({character},{account},{world},1,1,'profile-1','ruleset-1','content-1','starter-1'); \
+           ({character},{account},{world},1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero'); \
          INSERT INTO game_character_operation_receipts(\
            operation_id,command_binding,account_id,character_id,world_id,character_revision,\
            event_id,occurred_at,server_build_id,transaction_id,issuer_decision_id,\

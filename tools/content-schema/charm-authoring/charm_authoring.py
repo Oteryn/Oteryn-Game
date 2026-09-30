@@ -8,12 +8,16 @@ build     turns the committed source facts into the candidate catalogue and the
           wiki/Canary comparison report; --check regenerates in memory and diffs.
 validate  checks a catalogue against charm.schema.json and the semantic rules.
 
-Nothing here writes content/charms/ or mints identity; see README.md.
+content    writes (or, with --check, verifies) the populated content/charms/ family and its
+          registration in content/project.json, content/manifest.json and content/content.lock.json.
+
+capture/build/validate write only under this directory; see README.md.
 """
 
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import itertools
 import json
@@ -26,6 +30,7 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parent
+REPO = ROOT.parents[2]
 SCHEMA = ROOT / "charm.schema.json"
 SOURCES = ROOT / "samples" / "charm-sources-2026-09-29.json"
 CATALOGUE = ROOT / "samples" / "charms-candidate.json"
@@ -38,6 +43,15 @@ CANARY_SHA256 = "19350ba311a04797705d0e82f608d61080924ac95f8b0d592ae93fe0bb8debd
 CATALOGUE_SCHEMA = "OTERYN_CHARM_AUTHORING_CATALOGUE/v1"
 SOURCES_SCHEMA = "OTERYN_CHARM_SOURCE_FACTS/v1"
 REPORT_SCHEMA = "OTERYN_CHARM_SOURCE_COMPARISON/v1"
+
+FAMILY = "Charm"
+CONTENT_DIR = "content/charms/"
+INDEX_PATH = CONTENT_DIR + "index.json"
+SHARD_PATH = CONTENT_DIR + "charms-00000-00024.json"
+REVISION = "definition-r1"
+CATALOGUE_REL = "tools/content-schema/charm-authoring/samples/charms-candidate.json"
+INDEX_SCHEMA = "OTERYN_FAMILY_INDEX/v1"
+SHARD_SCHEMA = "OTERYN_CHARM_SHARD/v1"
 
 CURRENCY = {"major": "charm_points", "minor": "minor_charm_echoes"}
 CHANCE, EFFECT = "trigger_chance_percent", "effect_percent"
@@ -536,6 +550,94 @@ def validate(catalogue: dict) -> list[str]:
     return errors
 
 
+def compact(payload: object) -> str:
+    return (
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    )
+
+
+def content_files(catalogue: dict) -> dict[str, str]:
+    """The populated family: one shard of definitions and the family index."""
+    charms = sorted(catalogue["charms"], key=lambda c: c["key"])
+    records = []
+    for charm in charms:
+        definition = {k: v for k, v in charm.items() if k != "key"}
+        definition["identity"] = {"key": charm["key"], "revision": REVISION}
+        records.append({"definition": definition})
+    last = len(records) - 1
+    shard = {
+        "family": FAMILY,
+        "records": records,
+        "schema": SHARD_SCHEMA,
+        "shard": {"count": len(records), "end": last, "index": 0, "start": 0},
+    }
+    index = {
+        "authoring_source": {
+            "path": CATALOGUE_REL,
+            "schema": CATALOGUE_SCHEMA,
+            "sha256": sha256(dumps(catalogue).encode()),
+        },
+        "family": FAMILY,
+        "record_count": len(records),
+        "schema": INDEX_SCHEMA,
+        "shards": [SHARD_PATH],
+    }
+    return {INDEX_PATH: compact(index), SHARD_PATH: compact(shard)}
+
+
+def registered(project: dict, manifest: dict, lock: dict, count: int) -> tuple:
+    """The three registration documents with the Charm family registered."""
+    project, manifest, lock = map(copy.deepcopy, (project, manifest, lock))
+    project["migrated_families"] = [
+        f for f in project["migrated_families"] if f != FAMILY
+    ] + [FAMILY]
+    project["next_population_families"] = [
+        f for f in project["next_population_families"] if f != FAMILY
+    ]
+    manifest["families"][FAMILY] = {"records": count, "index": INDEX_PATH}
+    paths = {row["path"] for row in manifest["managed_files"]} | {
+        INDEX_PATH,
+        SHARD_PATH,
+    }
+    manifest["managed_files"] = [{"path": p} for p in sorted(paths)]
+    lock["family_counts"][FAMILY] = count
+    return project, manifest, lock
+
+
+def content_command(check: bool) -> int:
+    catalogue = json.loads(CATALOGUE.read_text(encoding="utf-8"))
+    errors = validate(catalogue)
+    for error in errors:
+        print(error, file=sys.stderr)
+    if errors:
+        return 1
+    names = ("project", "manifest", "content.lock")
+    docs = [
+        json.loads((REPO / f"content/{n}.json").read_text(encoding="utf-8"))
+        for n in names
+    ]
+    outputs = dict(content_files(catalogue))
+    for name, doc in zip(
+        names, registered(*docs, len(catalogue["charms"])), strict=True
+    ):
+        outputs[f"content/{name}.json"] = compact(doc)
+    stale = []
+    for rel, text in sorted(outputs.items()):
+        path = REPO / rel
+        if path.is_file() and path.read_text(encoding="utf-8") == text:
+            continue
+        stale.append(rel)
+        if not check:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8", newline="\n")
+    if check:
+        print("charm content check: " + (f"FAIL, stale {stale}" if stale else "ok"))
+        return 1 if stale else 0
+    print(f"charm content: wrote {stale}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -557,6 +659,14 @@ def main(argv: list[str] | None = None) -> int:
         "--check",
         action="store_true",
         help="diff an in-memory build against the committed samples",
+    )
+    cnt = sub.add_parser(
+        "content", help="write the content/charms/ family and its registration"
+    )
+    cnt.add_argument(
+        "--check",
+        action="store_true",
+        help="fail if the committed content tree differs from the candidate catalogue",
     )
     val = sub.add_parser("validate", help="validate catalogue files")
     val.add_argument("files", nargs="+", type=Path)
@@ -592,6 +702,8 @@ def main(argv: list[str] | None = None) -> int:
         for path, text in outputs.items():
             path.write_text(text, encoding="utf-8", newline="\n")
         return 0
+    if args.command == "content":
+        return content_command(args.check)
     failed = False
     for path in args.files:
         errors = validate(json.loads(path.read_text(encoding="utf-8")))

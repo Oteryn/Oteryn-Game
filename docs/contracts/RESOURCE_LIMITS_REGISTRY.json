@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-29T00:00:00+00:00",
+  "updated_at": "2026-09-30T00:00:00+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -6285,6 +6285,95 @@
         "apps/game-server/src/native_admission_source/runtime_status.rs"
       ],
       "notes": "Compiled H = 5000 ms (U-RS1); 60000 ms is the contract hard maximum. Contract sections 3 and 11. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered' and never gates boot, serving, admission or shutdown. Registered by OTV2-20260929-runtime-status-producer (#162 owner-accepted package Q21, 5900403086)."
+    },
+    {
+      "allocation_impact": "Qualification budget on the reference node (the owner's 4 vCPU / 15.7 GiB benchmark node, pinned by MAP-SPIKE-0); a load over the budget fails MAP-LOAD-1 qualification. It is not a runtime timeout.",
+      "boundary_tests": [
+        "full bundle load at or under 5,000 ms passes",
+        "a measured load over 5,000 ms fails qualification"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 5000,
+        "minimum": 5000
+      },
+      "consumers": [
+        "game server World runtime"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 5000,
+      "id": "MAP01-BASE-LOAD-MS",
+      "notes": "Owner answer 8a (2026-09-30); initial gate confirmed or revised by the first compact-model measurement (ADR-0021 \u00a74.8).",
+      "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+      "resource": "Full decode of one World's server World Bundle into the compact base model at node start",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Qualification budget per World per node, measured after load and before any channel is admitted; not a runtime cutoff.",
+      "boundary_tests": [
+        "base RSS at or under 1 GiB passes",
+        "base RSS over 1 GiB fails qualification and reopens the mmap option"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1073741824,
+        "minimum": 1073741824
+      },
+      "consumers": [
+        "game server World runtime"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1073741824,
+      "id": "MAP01-BASE-RSS-BYTES",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.1 and \u00a74.8.",
+      "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+      "resource": "Resident memory of one World's shared read-only base model",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Runtime cutoff for volatile entries only: a new volatile entry that would exceed the budget is refused atomically with no partial state. Durable DUR-03 Ground items are never refused or dropped for this budget; they are counted, and an overflow raises an operational alarm.",
+      "boundary_tests": [
+        "overlay at 64 MiB accepts no further volatile entry",
+        "a volatile entry that would exceed 64 MiB is refused before allocation",
+        "a Ground rebuild over 64 MiB still admits every durable item and raises the alarm"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 67108864,
+        "minimum": 67108864
+      },
+      "consumers": [
+        "game server World runtime"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 67108864,
+      "id": "MAP01-CHANNEL-OVERLAY-BYTES",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.4 and \u00a74.8.",
+      "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+      "resource": "Memory of one channel's volatile map overlay: volatile added items, hidden base origins and the expiry index",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Qualification budget at p99, hotspots included; not a runtime cutoff.",
+      "boundary_tests": [
+        "p99 viewport at or under 100 us passes",
+        "p99 over 100 us fails qualification"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 100,
+        "minimum": 100
+      },
+      "consumers": [
+        "game server World runtime"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 100,
+      "id": "MAP01-VIEWPORT-US",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.8.",
+      "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+      "resource": "Server cost of assembling one 18x14 viewport from base and overlay, over every floor the client sees",
+      "unit": "microseconds"
     }
   ]
 }

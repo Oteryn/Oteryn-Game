@@ -144,6 +144,36 @@ def test_validate_negatives() -> None:
         assert any(fragment in e for e in errors), f"{fragment!r} not in {errors}"
 
 
+def test_content_tree_is_current_and_registered() -> None:
+    files = ca.content_files(committed())
+    for rel, text in files.items():
+        assert (ca.REPO / rel).read_text(encoding="utf-8") == text, rel
+    shard = json.loads(files[ca.SHARD_PATH])
+    assert shard["shard"] == {"count": 25, "end": 24, "index": 0, "start": 0}
+    keys = [r["definition"]["identity"]["key"] for r in shard["records"]]
+    assert keys == sorted(set(keys)) and all(
+        k.startswith("oteryn:charm.") for k in keys
+    )
+    assert all("key" not in r["definition"] for r in shard["records"])
+    assert ca.content_command(check=True) == 0
+
+
+def test_registration_is_idempotent_and_leaves_family_counts() -> None:
+    docs = [
+        json.loads((ca.REPO / f"content/{n}.json").read_text(encoding="utf-8"))
+        for n in ("project", "manifest", "content.lock")
+    ]
+    project, manifest, lock = ca.registered(*docs, 25)
+    assert ca.registered(project, manifest, lock, 25) == (project, manifest, lock)
+    assert "Charm" in project["migrated_families"]
+    assert "Charm" not in project["next_population_families"]
+    assert manifest["families"]["Charm"] == {
+        "records": 25,
+        "index": "content/charms/index.json",
+    }
+    assert lock["family_counts"]["Charm"] == 25
+
+
 if __name__ == "__main__":
     tests = [
         value for name, value in sorted(globals().items()) if name.startswith("test_")
