@@ -25,6 +25,7 @@ use crate::durability::fresh_admission::{
     ExpiredLossReleaseV1, FreshAdmissionStore, FreshLossReconciliation, FreshReconciliation,
 };
 use crate::durability::fresh_admission_composition::FreshAdmissionSubject;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::runtime_scope_assignment::{AssignmentState, NodeIncarnationProof};
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1, FreshAdmissionClaimTransitionV1,
@@ -327,6 +328,11 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// `ComposedFreshAdmission::step` and `::use_object` both lock, alongside `runtime`, to
     /// decide movement blocking and USE_INTENT transitions.
     pub(crate) door: &'a Mutex<crate::world_runtime::LocalObjectRuntime>,
+    /// C2: the activated entry-room Content with the one reward chest injected
+    /// (`interaction_chest_use::with_entry_chest`), read by `::use_object` for a chest `USE`.
+    pub(crate) chest: &'a crate::content::CanonicalReferencePlayableContent,
+    /// The runtime Achievement catalogue a chest's achievement resolves in.
+    pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
     /// The V1 spell book the cast intent's index resolves against (spell cast §3, SPELL-D1).
     pub(crate) spells: &'a crate::spell::SpellBook,
 }
@@ -398,6 +404,8 @@ pub async fn serve_gameplay(
         runtime: owners.runtime,
         movement_cells: owners.movement_cells,
         door: owners.door,
+        chest: owners.chest,
+        achievements: owners.achievements,
         spells: owners.spells,
         spell_states: Mutex::default(),
         clock_origin: std::time::Instant::now(),
@@ -469,6 +477,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// `runtime`, never before, so `step` and `use_object` can never deadlock against each
     /// other.
     pub(crate) door: &'a Mutex<crate::world_runtime::LocalObjectRuntime>,
+    /// C2: the entry-room Content with the injected reward chest; never locked, read-only.
+    pub(crate) chest: &'a crate::content::CanonicalReferencePlayableContent,
+    pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
     pub(crate) spells: &'a crate::spell::SpellBook,
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
@@ -567,6 +578,84 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && (i64::from(cell.x) - i64::from(actor_x)).abs() <= 1
                 && (i64::from(cell.y) - i64::from(actor_y)).abs() <= 1
         })
+    }
+
+    /// C2 routing: the chest placement of `chest` that `placement` names, if any. The client
+    /// names only the placement; the chest, its claim and its reward come from Content.
+    fn chest_target<'c>(
+        chest: &'c crate::content::CanonicalReferencePlayableContent,
+        placement: &[u8],
+    ) -> Option<&'c crate::content::PlacementRef> {
+        chest
+            .placements
+            .iter()
+            .find(|candidate| candidate.key.as_str().as_bytes() == placement)
+    }
+
+    /// C2: one `USE_INTENT` on the entry chest (USE-WIRE-V1 field 1, #162 5914960502). Reach is
+    /// the door's rule (same floor, Chebyshev distance <=1 from the chest's cell), read under
+    /// the Channel-owner lock, which is released before the durable MINT so the Channel is
+    /// never blocked on the database. The MINT itself is DUR-03's
+    /// (`interaction_chest_use::use_chest`), fenced by the admitted session's item fence and
+    /// keyed by this `USE`'s `CommandRef`: a mint is `COMMITTED` with no overlay delta, a claim
+    /// already taken is `NOTHING_TO_USE`, anything else `REJECTED` with nothing written.
+    async fn use_chest(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        chest: &crate::content::PlacementRef,
+    ) -> UseOutcome {
+        use crate::interaction_chest_use::{ChestUseRequest, entry_chest, use_chest};
+        // The chest must stand in this Channel's World (D39 review 5906461018 item 7).
+        if chest.address.world_id != self.world_id {
+            return UseOutcome::rejected();
+        }
+        {
+            let mut runtime = self.runtime.lock().await;
+            let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
+                return UseOutcome::rejected();
+            };
+            let position = expected.position();
+            let cells = std::collections::BTreeSet::from([chest.address.cell]);
+            if !Self::use_object_reachable(
+                position.x,
+                position.y,
+                i32::from(position.floor),
+                &cells,
+            ) {
+                return UseOutcome {
+                    disposition: world_object::UseDisposition::TooFar,
+                    committed: None,
+                };
+            }
+        }
+        let Ok(command_id) = crate::foundation::CommandId::new(command.command_id) else {
+            return UseOutcome::rejected();
+        };
+        let request = ChestUseRequest {
+            command: crate::foundation::CommandRef::new(command.game_session_id, command_id),
+            chest: chest.key.clone(),
+            content_revision: entry_chest::CONTENT_REVISION.to_owned(),
+            ruleset_revision: entry_chest::RULESET_REVISION.to_owned(),
+            sim_revision: entry_chest::SIM_REVISION.to_owned(),
+        };
+        let session = crate::combat::DurabilitySession {
+            root: self.root,
+            authority: self.character,
+            node: self.holder,
+        };
+        let (disposition, _) = use_chest(
+            &session,
+            self.chest,
+            self.achievements,
+            command.item_fence,
+            request,
+        )
+        .await;
+        UseOutcome {
+            disposition,
+            committed: None,
+        }
     }
 }
 
@@ -692,11 +781,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// `door`, the same fixed order `step` uses, so the two can never deadlock against each
     /// other; both stay locked for this whole decision so nothing else can move the acting actor
     /// or the door state in between.
+    ///
+    /// C2: a `USE` naming the injected entry chest is routed to [`Self::use_chest`] instead;
+    /// every other placement takes the unchanged door path.
     async fn use_object(
         &self,
         actor: ExactActorRef,
+        command: connection::UseCommand,
         target: world_object::WorldObjectTarget,
     ) -> UseOutcome {
+        if let Some(chest) = Self::chest_target(self.chest, &target.placement) {
+            return self.use_chest(actor, command, chest).await;
+        }
         let mut runtime = self.runtime.lock().await;
         let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
             return UseOutcome::rejected();
@@ -1045,7 +1141,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         // the Channel owner write the first-entry position. A failure here
         // writes nothing and fabricates no rollback: the committed actor stays
         // unpositioned and is not input-eligible.
-        let first_entry = self
+        let (first_entry, item_fence) = self
             .initialize_first_entry(&request, attempt.game_session_id, attempt.transport, actor)
             .await;
         Ok(AdmittedSession {
@@ -1059,6 +1155,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 account_id: *record.account_id.as_bytes(),
             }),
             continuity: SessionContinuity::FRESH,
+            item_fence,
         })
     }
 }
@@ -1323,19 +1420,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// authority (#935): the current GameSession, the current Character guard
     /// (owner, World, eligibility, lease generation and holder) and the current
     /// assignment of this runtime. The immutable request supplies only the
-    /// expected values those current reads are compared against.
+    /// expected values those current reads are compared against. A positioned
+    /// actor also gets its session's item fence (C2), from that current read.
     async fn initialize_first_entry(
         &self,
         request: &FreshAdmissionCommitRequestV1,
         game_session_id: GameSessionId,
         transport: AuthenticatedTransportRefV1,
         actor: ExactActorRef,
-    ) -> FirstEntryOutcome {
+    ) -> (FirstEntryOutcome, Option<CurrentCharacterItemFence>) {
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let current = match store.reconcile(request.operation()).await {
             Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
-            Ok(_) => return FirstEntryOutcome::RefusedStaleAuthority,
-            Err(_) => return FirstEntryOutcome::RefusedUnavailable,
+            Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None),
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
         };
         let key = AdmissionAuthorityGuardKeyV1::Character(current.commit().character_id());
         let character = match AdmissionGuardStore::from_root(self.root.clone())
@@ -1343,12 +1441,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(rows) => rows.into_iter().next().flatten().map(|row| row.state),
-            Err(_) => return FirstEntryOutcome::RefusedUnavailable,
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None),
         };
         match self.reserve_precondition().await {
             Ok(()) => {}
-            Err(AdmissionRefusal::Unavailable) => return FirstEntryOutcome::RefusedUnavailable,
-            Err(_) => return FirstEntryOutcome::RefusedStaleAuthority,
+            Err(AdmissionRefusal::Unavailable) => {
+                return (FirstEntryOutcome::RefusedUnavailable, None);
+            }
+            Err(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None),
         }
         // One Channel-owner lock covers the binding comparison and the write.
         let mut runtime = self.runtime.lock().await;
@@ -1361,13 +1461,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             scope_generation: runtime.binding().scope_generation(),
         };
         if !first_entry_authority_is_current(&expected, current, character.as_ref()) {
-            return FirstEntryOutcome::RefusedStaleAuthority;
+            return (FirstEntryOutcome::RefusedStaleAuthority, None);
         }
         let outcome = match runtime.initialize_first_entry_position(actor) {
             Ok(FirstEntryPosition::Initialized(_)) => FirstEntryOutcome::Positioned,
             Ok(FirstEntryPosition::Reconciled(_)) => FirstEntryOutcome::Reconciled,
-            Err(_) => return FirstEntryOutcome::RefusedByChannel,
+            Err(_) => return (FirstEntryOutcome::RefusedByChannel, None),
         };
+        // C2: the item fence of the admitted session, from the same current session read that
+        // just proved it is this admission's own.
+        let item_fence = item_fence_of(current);
         // Spell cast §4: the vitals and cooldowns are created in this same owner step, before the
         // actor's first command, and only from Character-owned facts.
         if let Some(facts) = character_cast_facts(current.commit().character_id())
@@ -1378,9 +1481,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .initialize(&runtime, actor, game_session_id, facts)
                 .is_none()
         {
-            return FirstEntryOutcome::RefusedByChannel;
+            return (FirstEntryOutcome::RefusedByChannel, None);
         }
-        outcome
+        (outcome, item_fence)
     }
 
     async fn rollback_runtime_player(
@@ -1489,6 +1592,24 @@ fn first_entry_authority_is_current(
             && *holder == Some(expected.game_session_id)
     );
     session && guard
+}
+
+/// C2: the Character item fence of `current`, the durable GameSession a connection serves: its
+/// Character, current GameSession and connection generation, current Character lease
+/// generation, runtime scope and scope ownership generation. Only ever built from a current
+/// durable session read; each fenced write rechecks every field against current authority.
+pub(super) fn item_fence_of<T: Copy + Eq>(
+    current: GameSessionAuthoritySnapshot<T>,
+) -> Option<CurrentCharacterItemFence> {
+    Some(CurrentCharacterItemFence {
+        character_id: domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+            .ok()?,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+    })
 }
 
 /// The reconciled current session is still the untouched fresh admission bound
@@ -1820,6 +1941,7 @@ mod tests {
                 first_entry: FirstEntryOutcome::NotApplicable,
                 controller: None,
                 continuity: SessionContinuity::FRESH,
+                item_fence: None,
             })
         }
     }
@@ -2297,6 +2419,155 @@ mod tests {
         assert!(!owns_fresh_session(lost, session, 9));
         let terminal = snapshot(GameSessionState::Terminal, 1, None);
         assert!(!owns_fresh_session(terminal, session, 9));
+    }
+
+    /// C2: the item fence is exactly the current session's Character, GameSession, connection
+    /// generation, current Character lease generation, runtime scope and scope generation, so
+    /// a resume (a new connection generation) or a new lease yields a different fence.
+    #[test]
+    fn item_fence_is_the_current_session_binding() {
+        use crate::foundation::{
+            CharacterLease, ConnectionGeneration, FreshAdmissionCommit, FreshAdmissionFacts,
+        };
+        let session = GameSessionId::decode(&uuid_v7(0x41)).expect("session");
+        let character = CharacterId::decode(&CHARACTER).expect("character");
+        let world = WorldId::decode(&uuid_v7(0x43)).expect("world");
+        let channel = ChannelId::decode(&uuid_v7(0x44)).expect("channel");
+        let transport = AuthenticatedTransportRefV1::decode(&[9; 16]).expect("transport");
+        let facts =
+            FreshAdmissionFacts::new([7; 32], character, world, channel, 3, 5).expect("facts");
+        let commit = FreshAdmissionCommit::from_facts(session, facts, transport).expect("commit");
+        let scope = RuntimeScopeRefV1::channel(world, channel);
+        let snapshot = |connection, lease| {
+            GameSessionAuthoritySnapshot::from_current_facts(
+                commit,
+                GameSessionState::Active,
+                ConnectionGeneration::new(connection).expect("generation"),
+                Some(transport),
+                CharacterLease::new(character, lease).expect("lease"),
+                Some(CharacterWorldEligibilityClaimV1::new(character, world)),
+                scope,
+                ScopeOwnershipGeneration::new(5).expect("scope"),
+            )
+            .expect("snapshot")
+        };
+        let fence = item_fence_of(snapshot(1, 3)).expect("fence");
+        assert_eq!(
+            fence,
+            CurrentCharacterItemFence {
+                character_id: domain::CharacterId::from_bytes(CHARACTER).expect("character"),
+                game_session_id: session,
+                connection_generation: ConnectionGeneration::new(1).expect("generation"),
+                character_lease_generation: 3,
+                runtime_scope: scope,
+                scope_ownership_generation: ScopeOwnershipGeneration::new(5).expect("scope"),
+            }
+        );
+        let resumed = item_fence_of(snapshot(2, 3)).expect("fence");
+        assert_eq!(resumed.connection_generation.get(), 2);
+        assert_ne!(resumed, fence);
+        assert_eq!(
+            item_fence_of(snapshot(1, 4))
+                .expect("fence")
+                .character_lease_generation,
+            4
+        );
+    }
+
+    /// C2 routing over the real activated entry room: only the injected chest placement is
+    /// routed to the chest `USE`; the door and any other placement keep the door path. The
+    /// injection leaves the activated Content (and so its digests) unchanged, the chest stands
+    /// on the non-walkable `entry-north` cell in reach of the start cell, its reward and backpack
+    /// resolve with known stack classes (D82) and its claim names no achievement.
+    #[test]
+    fn use_routes_only_the_injected_entry_chest_away_from_the_door_path()
+    -> Result<(), Box<dyn Error>> {
+        use crate::combat_pickup::resolve_item_definition_facts;
+        use crate::content::{LogicalCell, accepted};
+        use crate::durability::item_transfer::ItemStackClass;
+        use crate::interaction_chest_use::{entry_chest, resolve_chest, with_entry_chest};
+        use crate::world_runtime::ReferenceContentGeneration;
+
+        let world = WorldId::decode(&uuid_v7(0x45))?;
+        let room = crate::content::qualify_native_entry_room(world)
+            .map_err(|error| format!("{error:?}"))?;
+        let activated = room.door().clone();
+        let chest = with_entry_chest(&activated).map_err(|error| format!("{error:?}"))?;
+        assert_eq!(&activated, room.door());
+        assert_eq!(
+            ReferenceContentGeneration::from_content(&activated)?,
+            ReferenceContentGeneration::from_content(room.door())?
+        );
+
+        let placement =
+            ComposedFreshAdmission::chest_target(&chest, entry_chest::PLACEMENT.as_bytes())
+                .ok_or("chest not routed")?;
+        for other in [accepted::DOOR_CELL.0, "oteryn:cell/unknown", ""] {
+            assert!(
+                ComposedFreshAdmission::chest_target(&chest, other.as_bytes()).is_none(),
+                "{other}"
+            );
+            assert!(ComposedFreshAdmission::chest_target(&activated, other.as_bytes()).is_none());
+        }
+
+        let north = accepted::CELLS[2];
+        assert!(!north.4, "the chest cell must not be walkable");
+        assert_eq!(
+            placement.address.cell,
+            LogicalCell {
+                x: north.1,
+                y: north.2,
+                z: i32::from(north.3)
+            }
+        );
+        let cells = std::collections::BTreeSet::from([placement.address.cell]);
+        let start = accepted::CELLS[0];
+        assert!(ComposedFreshAdmission::use_object_reachable(
+            start.1,
+            start.2,
+            i32::from(start.3),
+            &cells
+        ));
+        assert_eq!(entry_chest::CONTENT_REVISION, accepted::REVISIONS[0]);
+        assert_eq!(entry_chest::MAP_REVISION, accepted::REVISIONS[1]);
+        assert_eq!(entry_chest::RULESET_REVISION, accepted::REVISIONS[2]);
+        assert_eq!(entry_chest::SIM_REVISION, accepted::REVISIONS[6]);
+
+        let resolved = resolve_chest(&chest, &placement.key).map_err(|error| format!("{error}"))?;
+        assert_eq!(resolved.claim.production_key, entry_chest::CLAIM);
+        assert_eq!(resolved.quantity, entry_chest::REWARD_COUNT);
+        assert_eq!(resolved.achievement, None);
+        let reward = resolve_item_definition_facts(&chest, &resolved.reward_item)
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            reward.stack,
+            ItemStackClass::Stackable {
+                proven_maximum: Some(100)
+            }
+        );
+        let backpack = resolve_item_definition_facts(
+            &chest,
+            &crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: entry_chest::BACKPACK_ITEM.into(),
+                revision_ref: entry_chest::DEFINITION_REVISION.into(),
+            },
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(backpack.stack, ItemStackClass::NonStackable);
+        assert_eq!(
+            backpack.container_capacity,
+            Some(u32::from(entry_chest::BACKPACK_CAPACITY))
+        );
+        assert!(backpack.container_slot_equip_pattern);
+        let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(
+            achievements
+                .unbound_reward_claim_achievements(&chest)
+                .is_empty()
+        );
+        Ok(())
     }
 
     /// #935 no-write matrix: each independently changed binding alone refuses

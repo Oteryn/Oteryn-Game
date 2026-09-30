@@ -1106,8 +1106,8 @@ async fn boot_and_serve(
         .map_err(|_| BootError::ContentActivation("spell book"))?;
     // ACHIEVEMENT: the Achievement catalogue loads with the Content activation as well; a
     // malformed catalogue, or activated Content whose RewardClaim names an achievement the
-    // catalogue lacks (contract §3.3), refuses readiness. The chest USE dispatch will take it
-    // from here.
+    // catalogue lacks (contract §3.3), refuses readiness. The chest USE dispatch takes it from
+    // here (C2).
     let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
         .map_err(|_| BootError::ContentActivation("achievement catalogue"))?;
     if !achievements
@@ -1141,6 +1141,20 @@ async fn boot_and_serve(
         )
         .map_err(|_| BootError::Readiness("native entry door runtime binding"))?,
     );
+    // C2 (#162 5914960502 Q2a): inject the entry room's one reward chest, its RewardClaim and
+    // the reward and backpack Item definitions into a clone of this same activated content,
+    // like the door above. The compiled Content and its digests stay unchanged. Its claim's
+    // achievement (none today) must be in the catalogue, as for the activated content.
+    let chest = crate::interaction_chest_use::with_entry_chest(&door_content)
+        .map_err(|_| BootError::ContentActivation("native entry chest content"))?;
+    if !achievements
+        .unbound_reward_claim_achievements(&chest)
+        .is_empty()
+    {
+        return Err(BootError::ContentActivation(
+            "reward claim achievement not in the catalogue",
+        ));
+    }
     let runtime = Mutex::new(
         ChannelRuntimeV1::from_committed_assignment(
             material.world,
@@ -1237,6 +1251,8 @@ async fn boot_and_serve(
         runtime: &runtime,
         movement_cells: &movement_cells,
         door: &door,
+        chest: &chest,
+        achievements: &achievements,
         spells: &spells,
     };
     let loops_stop = CancellationToken::new();

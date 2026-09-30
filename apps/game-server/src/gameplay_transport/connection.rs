@@ -2,6 +2,7 @@
 //! hands the validated bootstrap to the owning admission authority; it never
 //! decides admission itself and fails closed for every message it does not own.
 
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{
     AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, FoundationProtocolError,
     GameSessionId, MessageType, ServerResumeAcceptedValue, WorldId, decode_wire_envelope,
@@ -74,6 +75,12 @@ pub(crate) struct AdmittedSession {
     /// FND-02 continuity of this controller connection, current at the moment the
     /// connection ends (the next CommandId, server_sequence and spatial revision).
     pub(crate) continuity: SessionContinuity,
+    /// C2: the Character item fence a fenced item write (the chest `USE` MINT) presents, read
+    /// from the durable GameSession this connection serves: set from the committed fresh
+    /// admission and refreshed from the committed resume. `None` when it could not be read or
+    /// for transport-only fixtures; a `USE` on a chest is then refused. It is expected
+    /// evidence only: every fenced write rechecks it against current durable authority.
+    pub(crate) item_fence: Option<CurrentCharacterItemFence>,
 }
 
 /// FND-02 continuity of one admitted controller connection. A same-session recovery
@@ -215,9 +222,13 @@ pub(crate) trait FreshAdmissionAuthority {
 
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
     /// #162 5868482467), applied by the Channel owner.
+    ///
+    /// `command_id` is the FND-02 CommandId of the `USE` and `item_fence` the admitted session's
+    /// [`AdmittedSession::item_fence`]; a chest `USE` keys its fenced MINT by both (C2).
     fn use_object(
         &self,
         _actor: ExactActorRef,
+        _use: UseCommand,
         _target: super::world_object::WorldObjectTarget,
     ) -> impl Future<Output = UseOutcome> {
         async { UseOutcome::rejected() }
@@ -288,6 +299,16 @@ impl StepOutcome {
             moved_to: None,
         }
     }
+}
+
+/// The command identity of one `USE_INTENT` (C2): its FND-02 `CommandRef` parts and the
+/// admitted session's Character item fence. Never client input beyond the CommandId, which the
+/// connection loop has already sequenced.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct UseCommand {
+    pub(crate) game_session_id: GameSessionId,
+    pub(crate) command_id: u64,
+    pub(crate) item_fence: Option<CurrentCharacterItemFence>,
 }
 
 /// The outcome of one `USE_INTENT`: its disposition and, only when it committed a transition,
@@ -761,7 +782,19 @@ where
             }
         } else if command.command_type == COMMAND_TYPE_USE_INTENT {
             match decode_use_intent(command.payload) {
-                Ok(target) => Dispatch::Use(authority.use_object(actor, target).await),
+                Ok(target) => Dispatch::Use(
+                    authority
+                        .use_object(
+                            actor,
+                            UseCommand {
+                                game_session_id: admitted.game_session_id,
+                                command_id: command.command_id,
+                                item_fence: admitted.item_fence,
+                            },
+                            target,
+                        )
+                        .await,
+                ),
                 Err(_) => Dispatch::Use(UseOutcome::rejected()),
             }
         } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT {
@@ -1006,6 +1039,7 @@ mod tests {
                 first_entry: FirstEntryOutcome::NotApplicable,
                 controller: None,
                 continuity: SessionContinuity::FRESH,
+                item_fence: None,
             })
         }
     }
@@ -1170,6 +1204,7 @@ mod tests {
     /// recorded and answered with one canned `UseOutcome`, independent of `target`.
     struct UseAuthority {
         uses: RefCell<Vec<super::super::world_object::WorldObjectTarget>>,
+        commands: RefCell<Vec<UseCommand>>,
         overlay: Option<WorldObjectOverlayEntry>,
         outcome: UseOutcome,
     }
@@ -1193,8 +1228,10 @@ mod tests {
         async fn use_object(
             &self,
             _actor: ExactActorRef,
+            command: UseCommand,
             target: super::super::world_object::WorldObjectTarget,
         ) -> UseOutcome {
+            self.commands.borrow_mut().push(command);
             self.uses.borrow_mut().push(target);
             self.outcome.clone()
         }
@@ -1236,6 +1273,7 @@ mod tests {
             first_entry: FirstEntryOutcome::Positioned,
             controller: None,
             continuity: SessionContinuity::FRESH,
+            item_fence: None,
         };
         drive_session(authority, admitted, client_frames).await
     }
@@ -1303,6 +1341,7 @@ mod tests {
             first_entry: FirstEntryOutcome::Positioned,
             controller: None,
             continuity: SessionContinuity::FRESH,
+            item_fence: None,
         })
     }
 
@@ -1655,6 +1694,7 @@ mod tests {
                 first_entry: FirstEntryOutcome::NotApplicable,
                 controller: None,
                 continuity: SessionContinuity::FRESH,
+                item_fence: None,
             };
             assert_eq!(end, ConnectionEnd::AdmittedThenDisconnected(admitted));
             assert_eq!(authority.calls.get(), 1);
@@ -1803,6 +1843,7 @@ mod tests {
             };
             let authority = UseAuthority {
                 uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
                 overlay: Some(overlay.clone()),
                 outcome: UseOutcome {
                     disposition: UseDisposition::Committed,
@@ -1890,6 +1931,7 @@ mod tests {
             };
             let authority = UseAuthority {
                 uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
                 overlay: Some(overlay),
                 outcome: UseOutcome::rejected(),
             };
@@ -1975,6 +2017,7 @@ mod tests {
             };
             let authority = UseAuthority {
                 uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
                 overlay: None,
                 outcome: UseOutcome {
                     disposition: UseDisposition::Committed,
@@ -1992,6 +2035,7 @@ mod tests {
                 first_entry: FirstEntryOutcome::Positioned,
                 controller: None,
                 continuity: SessionContinuity::FRESH,
+                item_fence: None,
             };
             let (server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 21);
             client
@@ -2016,6 +2060,83 @@ mod tests {
         })
     }
 
+    /// C2: the dispatch hands `use_object` the `USE`'s own CommandId and GameSession and the
+    /// admitted session's item fence, and a COMMITTED `USE` without an overlay entry (a chest's
+    /// MINT) gets its `CommandResult` and no `WORLD_OBJECT_OVERLAY` delta.
+    #[test]
+    fn admitted_use_passes_command_identity_and_fence_and_chest_commit_emits_no_delta()
+    -> Result<(), Box<dyn Error>> {
+        use crate::foundation::{
+            ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+        };
+        run(async {
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
+                overlay: None,
+                outcome: UseOutcome {
+                    disposition: UseDisposition::Committed,
+                    committed: None,
+                },
+            };
+            let world_id = WorldId::decode(&WORLD)?;
+            let channel_id = ChannelId::decode(&CHANNEL)?;
+            let game_session_id = GameSessionId::decode(&SESSION)?;
+            let fence = CurrentCharacterItemFence {
+                character_id: crate::domain::CharacterId::from_bytes(uuid_v7(0x55))
+                    .map_err(|error| format!("{error:?}"))?,
+                game_session_id,
+                connection_generation: ConnectionGeneration::new(1)
+                    .map_err(|error| format!("{error:?}"))?,
+                character_lease_generation: 3,
+                runtime_scope: RuntimeScopeRefV1::channel(world_id, channel_id),
+                scope_ownership_generation: ScopeOwnershipGeneration::new(4)
+                    .map_err(|error| format!("{error:?}"))?,
+            };
+            let admitted = AdmittedSession {
+                game_session_id,
+                world_id,
+                channel_id,
+                runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: Some(fence),
+            };
+            let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
+            let (_end, frames) = drive_session(
+                &authority,
+                admitted,
+                &[use_command(
+                    1,
+                    1,
+                    use_type,
+                    b"oteryn:placement/entry-chest",
+                    0,
+                )],
+            )
+            .await?;
+            let mut expected = baseline();
+            expected.push(encode_command_result(
+                1,
+                1,
+                1,
+                CommandStatus::Accepted,
+                &encode_use_result(UseDisposition::Committed),
+            )?);
+            assert_eq!(frames, expected);
+            assert_eq!(
+                authority.commands.borrow().as_slice(),
+                &[UseCommand {
+                    game_session_id,
+                    command_id: 1,
+                    item_fence: Some(fence),
+                }]
+            );
+            Ok(())
+        })
+    }
+
     /// A non-committing `USE_INTENT` disposition (here NOTHING_TO_USE) gets its own encoded
     /// `CommandResult` and never a `WORLD_OBJECT_OVERLAY` delta, and an unregistered command
     /// type still gets an empty result payload exactly as it does for STEP.
@@ -2025,6 +2146,7 @@ mod tests {
         run(async {
             let authority = UseAuthority {
                 uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
                 overlay: None,
                 outcome: UseOutcome {
                     disposition: UseDisposition::NothingToUse,
@@ -2166,6 +2288,7 @@ mod tests {
                 first_entry: FirstEntryOutcome::Positioned,
                 controller: None,
                 continuity: SessionContinuity::FRESH,
+                item_fence: None,
             };
             let (end, frames) = drive_session(
                 &authority,
@@ -2307,6 +2430,7 @@ mod tests {
                     first_entry: FirstEntryOutcome::Positioned,
                     controller: None,
                     continuity,
+                    item_fence: None,
                 })
             };
             drive_session(
