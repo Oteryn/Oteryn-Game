@@ -5,10 +5,20 @@
 //! serving, admission or shutdown: every failure is only "not delivered".
 //! The report never carries an endpoint; the World Registry owns the route.
 
-use super::{SourceError, TransientCapacity, descriptor::ProducerDescriptor, http1_mtls};
+use super::{
+    SourceError, TransientCapacity,
+    descriptor::{Operation, ProducerDescriptor},
+    http1_mtls,
+};
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde::{Deserialize, Serialize};
-use std::{future::Future, sync::Arc, time::Duration};
+use std::{
+    future::{Future, poll_fn},
+    pin::pin,
+    sync::Arc,
+    task::Poll,
+    time::Duration,
+};
 use tokio::sync::watch;
 
 /// `NRS-REPORT-BYTES`.
@@ -184,22 +194,42 @@ pub fn decode_response(raw: &[u8]) -> Result<Delivery, SourceError> {
 /// those of another purpose.
 pub struct RuntimeStatusDescriptor(ProducerDescriptor);
 
+fn leaf_spki(chain: &[CertificateDer<'_>]) -> Result<Vec<u8>, SourceError> {
+    let leaf = chain.first().ok_or(SourceError::InvalidDescriptor)?;
+    let parsed = rustls::server::ParsedCertificate::try_from(leaf)
+        .map_err(|_| SourceError::InvalidDescriptor)?;
+    Ok(parsed.subject_public_key_info().as_ref().to_vec())
+}
+
 impl RuntimeStatusDescriptor {
-    /// `other_purposes` are the chains and keys of every other Platform
-    /// identity this host holds; reusing any of them refuses.
+    /// `other_purposes` are the certificate chains of every other Platform
+    /// identity this host holds. The runtime-status certificate and key must
+    /// carry a public key (SPKI) that none of them uses.
     pub fn new(
         connect_endpoint: (String, u16),
         peer_name: String,
         roots: Vec<CertificateDer<'static>>,
         client_chain: Vec<CertificateDer<'static>>,
         client_key: PrivateKeyDer<'static>,
-        other_purposes: &[(&[CertificateDer<'static>], &PrivateKeyDer<'static>)],
+        other_purposes: &[&[CertificateDer<'static>]],
     ) -> Result<Self, SourceError> {
-        let leaf = client_chain.first().ok_or(SourceError::InvalidDescriptor)?;
-        if other_purposes.iter().any(|(chain, key)| {
-            chain.first() == Some(leaf) || key.secret_der() == client_key.secret_der()
-        }) {
+        let own = leaf_spki(&client_chain)?;
+        let signer = rustls::crypto::aws_lc_rs::default_provider()
+            .key_provider
+            .load_private_key(client_key.clone_key())
+            .map_err(|_| SourceError::InvalidDescriptor)?;
+        let key_spki = signer
+            .public_key()
+            .ok_or(SourceError::InvalidDescriptor)?
+            .as_ref()
+            .to_vec();
+        if key_spki != own {
             return Err(SourceError::InvalidDescriptor);
+        }
+        for chain in other_purposes {
+            if leaf_spki(chain)? == own {
+                return Err(SourceError::InvalidDescriptor);
+            }
         }
         ProducerDescriptor::new(
             PURPOSE.into(),
@@ -214,72 +244,280 @@ impl RuntimeStatusDescriptor {
     }
 }
 
+/// Why a report was not delivered. None of these is a statement about the
+/// node's readiness (§4); they are distinguished for logs only.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NotDelivered {
+    /// The local publication is outside the contract grammar; nothing sent.
+    InvalidReport,
+    /// `400`.
+    Malformed,
+    /// `401`: unauthenticated, wrong purpose or scope not allowed.
+    Unauthenticated,
+    /// `409`: epoch, generation or ordering conflict with the assignment.
+    Conflict,
+    /// `429`.
+    RateLimited,
+    /// A response outside the contract.
+    InvalidResponse,
+    /// `503`, any other status, or transport failure.
+    Unavailable,
+}
+
+impl NotDelivered {
+    #[must_use]
+    pub const fn class(self) -> &'static str {
+        match self {
+            Self::InvalidReport => "invalid_report",
+            Self::Malformed => "malformed",
+            Self::Unauthenticated => "unauthenticated",
+            Self::Conflict => "conflict",
+            Self::RateLimited => "rate_limited",
+            Self::InvalidResponse => "invalid_response",
+            Self::Unavailable => "unavailable",
+        }
+    }
+}
+
 /// One bounded `ReportRuntimeStatusV1` exchange on the reporter's own
-/// capacity (never an admission slot). Any non-200 is `Unavailable`.
+/// capacity (never an admission slot).
 pub async fn deliver(
     descriptor: &RuntimeStatusDescriptor,
     capacity: &TransientCapacity,
     publication: &Publication,
     observed_at: i64,
-) -> Result<Delivery, SourceError> {
-    if descriptor.0.source_authority() != PURPOSE {
-        return Err(SourceError::InvalidDescriptor);
-    }
-    let body = encode(publication, observed_at)?;
-    let mut permit = capacity.try_queue()?;
-    permit.try_activate()?;
-    let raw =
-        http1_mtls::exchange_at(&descriptor.0, PATH, REPORT_BYTES, &body, &mut permit).await?;
-    decode_response(&raw)
+) -> Result<Delivery, NotDelivered> {
+    let body = encode(publication, observed_at).map_err(|_| NotDelivered::InvalidReport)?;
+    let mut permit = capacity
+        .try_queue()
+        .map_err(|_| NotDelivered::Unavailable)?;
+    permit
+        .try_activate()
+        .map_err(|_| NotDelivered::Unavailable)?;
+    let (status, raw) = http1_mtls::exchange_with_status(
+        &descriptor.0,
+        Operation::ReportRuntimeStatusV1,
+        &body,
+        &mut permit,
+    )
+    .await
+    .map_err(|_| NotDelivered::Unavailable)?;
+    // Failures are empty bodies (§4).
+    let refused = |class| {
+        if raw.is_empty() {
+            class
+        } else {
+            NotDelivered::InvalidResponse
+        }
+    };
+    Err(match status {
+        200 => return decode_response(&raw).map_err(|_| NotDelivered::InvalidResponse),
+        400 => refused(NotDelivered::Malformed),
+        401 => refused(NotDelivered::Unauthenticated),
+        409 => refused(NotDelivered::Conflict),
+        429 => refused(NotDelivered::RateLimited),
+        _ => NotDelivered::Unavailable,
+    })
 }
 
-/// Report loop (§8). Each new committed publication is sent once; while it is
-/// `ready = true` and `gate` holds, it is repeated every `heartbeat` with a new
-/// `observed_at`. One report is in flight and the watch keeps only the latest
-/// publication. The loop ends when the sender is dropped, after sending any
-/// publication it has not yet seen.
-pub async fn run<G, F>(
+/// Monotonic and wall time for the report loop; injectable for tests.
+pub trait ReportClock: Send + Sync {
+    /// Monotonic time since an arbitrary origin.
+    fn elapsed(&self) -> Duration;
+    /// Unix seconds, the source of `observed_at`.
+    fn unix_now(&self) -> i64;
+    fn sleep(&self, duration: Duration) -> impl Future<Output = ()> + Send;
+}
+
+/// Production clock: tokio timers and the system wall clock.
+#[derive(Debug, Clone, Copy)]
+pub struct SystemClock(tokio::time::Instant);
+
+impl Default for SystemClock {
+    fn default() -> Self {
+        Self(tokio::time::Instant::now())
+    }
+}
+
+impl ReportClock for SystemClock {
+    fn elapsed(&self) -> Duration {
+        self.0.elapsed()
+    }
+    fn unix_now(&self) -> i64 {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()
+            .and_then(|elapsed| i64::try_from(elapsed.as_secs()).ok())
+            .unwrap_or(0)
+    }
+    fn sleep(&self, duration: Duration) -> impl Future<Output = ()> + Send {
+        tokio::time::sleep(duration)
+    }
+}
+
+/// The heartbeat conditions of §8.2 as seen by the node.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Gate {
+    /// Serving, durability root ready, assignment unchanged.
+    Holds,
+    /// The check could not run now (the durability connection is in use).
+    Busy,
+    /// Not serving or the durability root is not ready.
+    NotReady,
+    /// The scope is no longer assigned to this incarnation at this generation.
+    Lost,
+}
+
+pub trait HeartbeatGate: Send {
+    fn check(&mut self) -> impl Future<Output = Gate> + Send;
+}
+
+/// Where reports go: Platform over mTLS, or a test sink.
+pub trait ReportSink: Send {
+    fn send(
+        &mut self,
+        publication: &Publication,
+        observed_at: i64,
+    ) -> impl Future<Output = Result<Delivery, NotDelivered>> + Send;
+}
+
+/// The production sink: one exchange at a time on its own capacity.
+pub struct MtlsSink {
     descriptor: Arc<RuntimeStatusDescriptor>,
+    capacity: TransientCapacity,
+}
+
+impl MtlsSink {
+    #[must_use]
+    pub fn new(descriptor: Arc<RuntimeStatusDescriptor>) -> Self {
+        Self {
+            descriptor,
+            capacity: TransientCapacity::new(),
+        }
+    }
+}
+
+impl ReportSink for MtlsSink {
+    async fn send(
+        &mut self,
+        publication: &Publication,
+        observed_at: i64,
+    ) -> Result<Delivery, NotDelivered> {
+        deliver(&self.descriptor, &self.capacity, publication, observed_at).await
+    }
+}
+
+/// First retry delay after a busy check; doubled up to the maximum.
+pub const BUSY_RETRY_MIN: Duration = Duration::from_millis(100);
+pub const BUSY_RETRY_MAX: Duration = Duration::from_secs(1);
+
+/// `Some(output)` of `primary`, or `None` once `sleep` completes first.
+pub(crate) async fn first_of<C, S>(changed: C, sleep: S) -> Option<C::Output>
+where
+    C: Future,
+    S: Future<Output = ()>,
+{
+    let (mut changed, mut sleep) = (pin!(changed), pin!(sleep));
+    poll_fn(|context| {
+        if let Poll::Ready(result) = changed.as_mut().poll(context) {
+            return Poll::Ready(Some(result));
+        }
+        sleep.as_mut().poll(context).map(|()| None)
+    })
+    .await
+}
+
+fn log(publication: &Publication, what: &str, elapsed: Duration) {
+    // §10: operation, scope, `ready`, result class and timing only.
+    eprintln!(
+        "oteryn-game-server event=runtime_status operation=ReportRuntimeStatusV1 world_id={} channel_id={} ready={} {what} elapsed_ms={}",
+        publication.world_id,
+        publication.channel_id,
+        publication.ready,
+        elapsed.as_millis()
+    );
+}
+
+/// Report loop (§8). Each new committed publication (including the one
+/// present at start) is sent once. At every heartbeat tick a `ready = true`
+/// publication is repeated with a new `observed_at` when `gate` holds; a busy
+/// check is retried with bounded backoff until the next tick. One report is in
+/// flight and the watch keeps only the latest publication. The loop ends when
+/// the sender is dropped, after sending a publication it has not yet seen.
+pub async fn run<C, G, S>(
+    clock: C,
     mut latest: watch::Receiver<Option<Publication>>,
     heartbeat: Duration,
-    clock: fn() -> i64,
     mut gate: G,
+    mut sink: S,
 ) where
-    G: FnMut() -> F,
-    F: Future<Output = bool>,
+    C: ReportClock,
+    G: HeartbeatGate,
+    S: ReportSink,
 {
-    let capacity = TransientCapacity::new();
-    // The publication present at start is a new commit to report at once.
     latest.mark_changed();
-    let mut due = tokio::time::Instant::now() + heartbeat;
+    let mut due = clock.elapsed() + heartbeat;
+    let mut skipped = None;
     loop {
-        let heartbeat_tick = match tokio::time::timeout_at(due, latest.changed()).await {
-            Ok(Ok(())) => false,
-            Ok(Err(_)) => return,
-            Err(_) => true,
+        let wait = due.saturating_sub(clock.elapsed());
+        let tick = match first_of(latest.changed(), clock.sleep(wait)).await {
+            Some(Ok(())) => false,
+            Some(Err(_)) => return,
+            None => true,
         };
-        due = tokio::time::Instant::now() + heartbeat;
-        let Some(publication) = latest.borrow_and_update().clone() else {
-            continue;
-        };
-        if heartbeat_tick && !(publication.ready && gate().await) {
-            continue;
+        let publication = latest.borrow_and_update().clone();
+        if tick {
+            // Fixed rate from the previous tick, never in the past.
+            due = (due + heartbeat).max(clock.elapsed());
+        } else {
+            due = clock.elapsed() + heartbeat;
         }
-        let started = tokio::time::Instant::now();
-        let result = deliver(&descriptor, &capacity, &publication, clock()).await;
-        // §10: operation, scope, `ready`, result class and timing only.
-        eprintln!(
-            "oteryn-game-server event=runtime_status operation=ReportRuntimeStatusV1 world_id={} channel_id={} ready={} result={} elapsed_ms={}",
-            publication.world_id,
-            publication.channel_id,
-            publication.ready,
-            match result {
-                Ok(Delivery::Accepted) => "accepted",
-                Ok(Delivery::Refreshed) => "refreshed",
-                Ok(Delivery::Superseded) => "superseded",
-                Err(_) => "not_delivered",
-            },
-            started.elapsed().as_millis()
+        let Some(publication) = publication else {
+            continue;
+        };
+        if tick {
+            if !publication.ready {
+                continue;
+            }
+            let mut backoff = BUSY_RETRY_MIN;
+            let state = loop {
+                let state = gate.check().await;
+                if state != Gate::Busy || clock.elapsed() + backoff >= due {
+                    break state;
+                }
+                clock.sleep(backoff).await;
+                backoff = (backoff * 2).min(BUSY_RETRY_MAX);
+            };
+            if state != Gate::Holds {
+                if skipped != Some(state) {
+                    let reason = match state {
+                        Gate::Busy => "busy",
+                        Gate::NotReady => "not_ready",
+                        _ => "lost",
+                    };
+                    log(
+                        &publication,
+                        &format!("heartbeat=stopped reason={reason}"),
+                        Duration::ZERO,
+                    );
+                }
+                skipped = Some(state);
+                continue;
+            }
+        }
+        skipped = None;
+        let started = clock.elapsed();
+        let result = sink.send(&publication, clock.unix_now()).await;
+        let class = match result {
+            Ok(Delivery::Accepted) => "accepted",
+            Ok(Delivery::Refreshed) => "refreshed",
+            Ok(Delivery::Superseded) => "superseded",
+            Err(not_delivered) => not_delivered.class(),
+        };
+        log(
+            &publication,
+            &format!("result={class}"),
+            clock.elapsed().saturating_sub(started),
         );
     }
 }

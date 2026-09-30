@@ -263,7 +263,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 roots.clone(),
                 chain,
                 key,
-                &[(&client, &client_key)],
+                &[&client],
             )
             .map_err(|_| invalid("platform.runtime_status"))?;
             Some((std::sync::Arc::new(descriptor), status.assignment_epoch))
@@ -1186,16 +1186,19 @@ async fn boot_and_serve(
     let committed = readiness.publish(true, None).await?;
     // Contract §8.1: report the committed publication; never gates serving.
     let reporter = material.runtime_status.as_ref().map(|(descriptor, epoch)| {
-        super::runtime_status::Reporter::start(
+        super::runtime_status::start_platform(
             descriptor.clone(),
-            *epoch,
+            super::runtime_status::Reported {
+                world_id: config.scope.world_id.clone(),
+                channel_id: config.scope.channel_id.clone(),
+                node_id: uuid_text(fact.node_id().as_bytes()),
+                epoch: *epoch,
+            },
             root.clone(),
             scope,
-            (&config.scope.world_id, &config.scope.channel_id),
             fact,
             generation,
             &committed,
-            unix_now,
         )
     });
     // D3 step 9: three loops under one shutdown token.
@@ -1288,12 +1291,13 @@ async fn boot_and_serve(
         Poll::Pending
     })
     .await;
-    match (&withdrawn, &reporter) {
-        (Ok(committed), Some(reporter)) => reporter.publish(committed),
-        (Err(error), _) => event(&format!(
+    if let Some(reporter) = &reporter {
+        reporter.withdrawn(withdrawn.as_ref().ok());
+    }
+    if let Err(error) = withdrawn {
+        event(&format!(
             "event=readiness ready=false result=failed reason=\"{error}\""
-        )),
-        (Ok(_), None) => {}
+        ));
     }
     shutdown.cancel();
     loops_stop.cancel();
@@ -1311,7 +1315,9 @@ async fn boot_and_serve(
         expiry.as_mut().await;
     }
     if let Some(reporter) = reporter {
-        reporter.finish(budget).await;
+        reporter
+            .finish(budget.saturating_duration_since(tokio::time::Instant::now()))
+            .await;
     }
     let _ = std::fs::remove_file(&config.control.socket_path);
     event("event=shutdown state=complete");

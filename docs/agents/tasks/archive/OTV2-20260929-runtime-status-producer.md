@@ -30,9 +30,17 @@ owned_paths:
 
 ## Outcome
 
-- `native_admission_source/runtime_status.rs`: exact `ReportRuntimeStatusV1` wire (22 members, no endpoint), grammar checks, exact response decoder, purpose-bound `RuntimeStatusDescriptor` (refuses the evidence certificate or key), bounded delivery over the existing `http1_mtls` exchange on its own capacity (never an admission slot), and the report loop: send each committed publication once, heartbeat H = 5 s while `ready` and the gate holds, latest wins, ends after the last unseen publication. `route_revision(version, descriptor)` recomputes the Registry value for comparison only (JCS, SHA-256, 32 hex).
-- `http1_mtls::exchange_at`: compiled path with its own body cap (2048 for the report); `exchange` keeps 1024 for the evidence operations.
-- `node`: optional `[platform.runtime_status]` (`client_certificate_file`, `client_key_file`, `assignment_epoch`); absent means reporting off (contract section 15 rollback). The reporter starts after the `ready = true` commit, stops heartbeats at shutdown, reports the `ready = false` withdrawal and ends within the shutdown budget. Heartbeat gate: serving, durability root ready, assignment still `Assigned` to this incarnation at the published generation. `Readiness::publish` now returns the committed publication.
+- `native_admission_source/runtime_status.rs`:
+  - the exact `ReportRuntimeStatusV1` wire (22 members, no endpoint), grammar checks and an exact response decoder;
+  - a purpose-bound `RuntimeStatusDescriptor`, which refuses a certificate or key whose SPKI another purpose uses and a key that does not match its certificate;
+  - `deliver` on its own capacity (never an admission slot), with a classified `NotDelivered` result (`400`/`401`/`409`/`429`/unavailable);
+  - the report loop, driven by an injectable clock, gate and sink: each committed publication is sent once; the heartbeat H = 5 s runs at a fixed rate while `ready` and the gate holds; a busy check is retried with bounded backoff (100 ms doubling to 1 s) inside H; the latest publication wins;
+  - `route_revision(version, descriptor)`, which recomputes the Registry value for comparison only.
+- `Operation::ReportRuntimeStatusV1` with a per-operation body cap (2048; evidence operations keep 1024). `http1_mtls::exchange_with_status` returns final non-200 statuses for this operation only.
+- `node`:
+  - optional `[platform.runtime_status]` (`client_certificate_file`, `client_key_file`, `assignment_epoch`); when it is absent, reporting is off (section 15 rollback);
+  - `Reporter` starts only from the committed `ready = true` publication, stops heartbeats at shutdown, reports only a committed `ready = false` withdrawal and ends within the remaining shutdown budget;
+  - the heartbeat gate takes no durability transaction per heartbeat: the snapshot verified by the commit stands for `RECHECK` = 10 s. After that, one non-blocking read (`try_issue_semantic_pass`) re-verifies it. A busy connection keeps the snapshot for `BUSY_GRACE` = 5 s (RECHECK + BUSY_GRACE = F), then reports `Busy`. `Busy`, `NotReady` and `Lost` are distinct; `Lost` is final.
 - Registry: `NRS-REPORT-BYTES`, `NRS-RESPONSE-BYTES`, `NRS-INFLIGHT`, `NRS-HEARTBEAT`.
 
 ## Assumptions
@@ -42,7 +50,7 @@ owned_paths:
 
 ## High-risk authority/recovery qualification
 
-- AuthorityInvariant: the report is evidence only; it never mutates Game state. Identity/binding: the report is a projection of the committed publication (field-by-field unit test); purpose identity is separate (local refusal plus stub `401`). Liveness: heartbeats require serving, root readiness and the unchanged assignment. Temporal: `observed_at >= published_at`, never future-dated (clock read at send).
+- AuthorityInvariant: the report is evidence only; it never mutates Game state. Identity/binding: the report is a projection of the committed publication (field-by-field unit test); purpose identity is separate (local refusal plus stub `401`). Liveness: heartbeats require serving and an assignment verified within RECHECK (+ BUSY_GRACE while the connection is busy). Temporal: `observed_at >= published_at`, never future-dated (clock read at send).
 - ConsumerBoundary: Platform ingestion (stub in tests); no Game mutation boundary consumes the report.
 - MutationOperators: missing facts (zero epoch, generation, revision refused); stale generation (gate compares the current assignment); mismatched identity (evidence certificate/key refused); expired/future time (`observed_at < published_at` refused); provenance substitution (only `Applied`/`Existing` commits are reported); replay/concurrency (one in flight, latest wins). Fenced durable writes, restart and PostgreSQL reload: `NOT_APPLICABLE` (no write).
 
@@ -54,5 +62,5 @@ owned_paths:
 ## Closeout
 
 - Validation: fmt PASS; clippy -D warnings PASS; `cargo test -p oteryn-game-server` 9436 passed, 0 failed (focused rerun after final tests PASS); governance and repository-policy validators PASS; `git diff --check` clean.
-- Review: independent review required; run by the control plane after freeze.
+- Review: round 1 on `1ba81be7` returned FIX. Fixed in one push: (1) busy durability connection, material: a cached assignment snapshot, non-blocking re-check with grace and a bounded busy retry, and a test showing no gap above F plus a bounded try count; (2) wiring tests for the start, the committed and failed withdrawal and the budget, plus the real assignment classification; (3) a real other-purpose certificate refused with `401`; (4) SPKI comparison; (5) a `409` conflict class; (6) the `Operation` variant; (8) virtual-time heartbeat tests. Re-review is returned to the control plane.
 - Merge commit/result: squash merge of #1302.

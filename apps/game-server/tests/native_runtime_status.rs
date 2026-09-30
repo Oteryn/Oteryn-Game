@@ -3,14 +3,16 @@
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 use oteryn_game_server::native_admission_source::runtime_status::{
-    self as rs, Delivery, Publication, RouteDescriptor, RuntimeStatusDescriptor,
+    self as rs, Delivery, Gate, HeartbeatGate, MtlsSink, NotDelivered, Publication, ReportClock,
+    ReportSink, RouteDescriptor, RuntimeStatusDescriptor, SystemClock,
 };
 use oteryn_game_server::native_admission_source::{SourceError, TransientCapacity};
 use rcgen::{
     BasicConstraints, CertificateParams, CertifiedIssuer, ExtendedKeyUsagePurpose, IsCa, KeyPair,
 };
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::future::Future;
+use std::pin::pin;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -28,6 +30,8 @@ struct Pki {
     server: Identity,
     status: Identity,
     evidence: Identity,
+    /// A valid identity Platform maps to another purpose (projection).
+    projection: Identity,
 }
 
 fn issue(
@@ -49,18 +53,21 @@ fn pki() -> Pki {
     let mut params = CertificateParams::new(Vec::<String>::new()).unwrap();
     params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
     let ca = CertifiedIssuer::self_signed(params, KeyPair::generate().unwrap()).unwrap();
+    let client = ExtendedKeyUsagePurpose::ClientAuth;
     Pki {
         ca: ca.der().clone(),
         server: issue(&ca, PEER, ExtendedKeyUsagePurpose::ServerAuth),
-        status: issue(&ca, "node-a.status", ExtendedKeyUsagePurpose::ClientAuth),
-        evidence: issue(&ca, "node-a.evidence", ExtendedKeyUsagePurpose::ClientAuth),
+        status: issue(&ca, "node-a.runtime-status", client.clone()),
+        evidence: issue(&ca, "node-a.native-evidence", client.clone()),
+        projection: issue(&ca, "character-authority.projection", client),
     }
 }
 
 type Seen = Arc<Mutex<Vec<(Instant, String, serde_json::Value)>>>;
 
-/// Platform stub: accepts only the runtime-status identity (else `401`) and
-/// records `(arrival, path, body)`.
+/// Platform stub: only the runtime-status identity may report (else `401`);
+/// a report outside the current assignment epoch `1` is a `409`. Accepted
+/// reports are recorded as `(arrival, path, body)`.
 async fn platform(pki: &Pki) -> (u16, Seen) {
     let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
     let mut roots = rustls::RootCertStore::empty();
@@ -107,15 +114,18 @@ async fn platform(pki: &Pki) -> (u16, Seen) {
                 .1
                 .peer_certificates()
                 .and_then(|c| c.first().cloned());
-            let response = if identity.as_ref() == Some(&allowed) {
-                let value = serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null);
+            let value: serde_json::Value =
+                serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null);
+            let response = if identity.as_ref() != Some(&allowed) {
+                "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\n\r\n".to_owned()
+            } else if value["assignment_epoch"] != "1" {
+                "HTTP/1.1 409 Conflict\r\nContent-Length: 0\r\n\r\n".to_owned()
+            } else {
                 record.lock().unwrap().push((Instant::now(), path, value));
                 format!(
                     "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{ACK}",
                     ACK.len()
                 )
-            } else {
-                "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\n\r\n".to_owned()
             };
             let _ = tls.write_all(response.as_bytes()).await;
             let _ = tls.shutdown().await;
@@ -135,7 +145,7 @@ fn descriptor(
         vec![pki.ca.clone()],
         client.chain.clone(),
         client.key.clone_key(),
-        &[(&pki.evidence.chain, &pki.evidence.key)],
+        &[&pki.evidence.chain],
     )
 }
 
@@ -319,120 +329,206 @@ fn route_revision_is_recomputed_only_for_comparison() {
 }
 
 #[test]
-fn each_purpose_uses_its_own_certificate() {
+fn each_purpose_uses_its_own_certificate_and_refusals_are_classified() {
     let pki = pki();
-    // Reusing the evidence certificate or key for runtime status refuses locally.
+    // Locally: the evidence certificate, or a certificate whose key is not
+    // its own, never becomes a runtime-status identity.
     assert!(descriptor(&pki, 1, &pki.evidence).is_err());
-    let mixed = Identity {
+    let mismatched = Identity {
         chain: pki.status.chain.clone(),
         key: pki.evidence.key.clone_key(),
     };
-    assert!(descriptor(&pki, 1, &mixed).is_err());
+    assert!(descriptor(&pki, 1, &mismatched).is_err());
     block_on(async {
         let (port, seen) = platform(&pki).await;
         let capacity = TransientCapacity::new();
-        let good = descriptor(&pki, port, &pki.status).unwrap();
         let p = publication(3, 7, true);
+        let status = descriptor(&pki, port, &pki.status).unwrap();
         assert_eq!(
-            rs::deliver(&good, &capacity, &p, now()).await.unwrap(),
-            Delivery::Accepted
+            rs::deliver(&status, &capacity, &p, now()).await,
+            Ok(Delivery::Accepted)
         );
-        // Platform refuses a cross-purpose identity (401): not delivered.
-        let other = pki_identity_for_other_purpose(&pki);
-        let cross = RuntimeStatusDescriptor::new(
-            ("127.0.0.1".into(), port),
-            PEER.into(),
-            vec![pki.ca.clone()],
-            other.chain,
-            other.key,
-            &[],
-        )
-        .unwrap();
-        assert!(matches!(
-            rs::deliver(&cross, &capacity, &p, now()).await,
-            Err(SourceError::Unavailable)
-        ));
+        // Platform refuses a valid certificate of another purpose (401).
+        let projection = descriptor(&pki, port, &pki.projection).unwrap();
+        assert_eq!(
+            rs::deliver(&projection, &capacity, &p, now()).await,
+            Err(NotDelivered::Unauthenticated)
+        );
+        // An epoch the latest assignment does not carry is a conflict (409).
+        let mut other_epoch = p.clone();
+        other_epoch.assignment_epoch = 2;
+        assert_eq!(
+            rs::deliver(&status, &capacity, &other_epoch, now()).await,
+            Err(NotDelivered::Conflict)
+        );
         let seen = seen.lock().unwrap();
         assert_eq!(seen.len(), 1);
         assert_eq!(seen[0].1, "/internal/v1/game-auth/native-runtime-status");
     });
 }
 
-fn pki_identity_for_other_purpose(pki: &Pki) -> Identity {
-    Identity {
-        chain: pki.evidence.chain.clone(),
-        key: pki.evidence.key.clone_key(),
+/// Virtual time: sleeps complete only when the test advances the clock.
+#[derive(Clone, Default)]
+struct ManualClock {
+    now: Arc<Mutex<Duration>>,
+    tick: Arc<tokio::sync::Notify>,
+}
+
+impl ReportClock for ManualClock {
+    fn elapsed(&self) -> Duration {
+        *self.now.lock().unwrap()
+    }
+    fn unix_now(&self) -> i64 {
+        1_790_000_000 + i64::try_from(self.elapsed().as_secs()).unwrap()
+    }
+    fn sleep(&self, duration: Duration) -> impl Future<Output = ()> + Send {
+        let (clock, until) = (self.clone(), self.elapsed() + duration);
+        async move {
+            loop {
+                let mut notified = pin!(clock.tick.notified());
+                notified.as_mut().enable();
+                let reached = clock.elapsed() >= until;
+                if reached {
+                    return;
+                }
+                notified.await;
+            }
+        }
     }
 }
 
-fn triple(value: &serde_json::Value) -> (u64, u64, u64, i64) {
-    let field = |k: &str| value[k].as_str().unwrap().parse::<u64>().unwrap();
-    (
-        field("assignment_epoch"),
-        field("scope_ownership_generation"),
-        field("source_revision"),
-        value["observed_at"].as_str().unwrap().parse().unwrap(),
-    )
+impl ManualClock {
+    async fn advance(&self, total: Duration) {
+        let step = Duration::from_millis(50);
+        let mut left = total;
+        // Let every task reach its next wait before time moves.
+        for _ in 0..32 {
+            tokio::task::yield_now().await;
+        }
+        while !left.is_zero() {
+            *self.now.lock().unwrap() += step;
+            left = left.saturating_sub(step);
+            self.tick.notify_waiters();
+            for _ in 0..32 {
+                tokio::task::yield_now().await;
+            }
+        }
+    }
+}
+
+type Sent = Arc<Mutex<Vec<(Duration, Publication, i64)>>>;
+
+struct RecordingSink {
+    clock: ManualClock,
+    sent: Sent,
+}
+
+impl ReportSink for RecordingSink {
+    async fn send(
+        &mut self,
+        publication: &Publication,
+        observed_at: i64,
+    ) -> Result<Delivery, NotDelivered> {
+        self.sent
+            .lock()
+            .unwrap()
+            .push((self.clock.elapsed(), publication.clone(), observed_at));
+        Ok(Delivery::Accepted)
+    }
+}
+
+struct ScriptedGate(Arc<Mutex<Gate>>);
+
+impl HeartbeatGate for ScriptedGate {
+    async fn check(&mut self) -> Gate {
+        *self.0.lock().unwrap()
+    }
+}
+
+fn secs(value: u64) -> Duration {
+    Duration::from_secs(value)
 }
 
 #[test]
-fn heartbeat_cadence_ordering_and_stop_conditions() {
-    let pki = pki();
-    block_on(async {
-        let (port, seen) = platform(&pki).await;
-        let heartbeat = Duration::from_millis(200);
-        let gate_open = Arc::new(AtomicBool::new(true));
-        let gate = {
-            let gate_open = gate_open.clone();
-            move || std::future::ready(gate_open.load(Ordering::SeqCst))
-        };
-        let (sender, receiver) = tokio::sync::watch::channel(Some(publication(3, 1, true)));
-        let task = tokio::spawn(rs::run(
-            Arc::new(descriptor(&pki, port, &pki.status).unwrap()),
-            receiver,
-            heartbeat,
-            now,
-            gate,
-        ));
-        // Initial report plus heartbeats at H.
-        tokio::time::sleep(Duration::from_millis(1_100)).await;
-        let first = seen.lock().unwrap().len();
-        assert!((4..=7).contains(&first), "{first}");
-        // A newer publication supersedes; heartbeats continue with it.
-        sender.send_replace(Some(publication(3, 2, true)));
-        tokio::time::sleep(Duration::from_millis(500)).await;
-        // Gate failure (durability root not ready, lost assignment, shutdown): heartbeats stop.
-        gate_open.store(false, Ordering::SeqCst);
-        tokio::time::sleep(Duration::from_millis(100)).await;
-        let stopped = seen.lock().unwrap().len();
-        tokio::time::sleep(Duration::from_millis(600)).await;
-        assert_eq!(seen.lock().unwrap().len(), stopped);
-        // The ready=false commit is reported once, never heartbeated.
-        gate_open.store(true, Ordering::SeqCst);
-        sender.send_replace(Some(publication(3, 3, false)));
-        tokio::time::sleep(Duration::from_millis(700)).await;
-        assert_eq!(seen.lock().unwrap().len(), stopped + 1);
-        drop(sender);
-        tokio::time::timeout(Duration::from_secs(1), task)
-            .await
-            .unwrap()
-            .unwrap();
-
-        let seen = seen.lock().unwrap();
-        let mut previous = (0, 0, 0, 0);
-        for window in seen.windows(2) {
-            if window[0].2["source_revision"] == window[1].2["source_revision"] {
-                assert!(window[1].0 - window[0].0 >= heartbeat - Duration::from_millis(20));
+fn heartbeat_cadence_ordering_and_stop_conditions_in_virtual_time() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let clock = ManualClock::default();
+            let sent = Sent::default();
+            let gate = Arc::new(Mutex::new(Gate::Holds));
+            let (sender, receiver) = tokio::sync::watch::channel(Some(publication(3, 1, true)));
+            let task = tokio::spawn(rs::run(
+                clock.clone(),
+                receiver,
+                rs::HEARTBEAT,
+                ScriptedGate(gate.clone()),
+                RecordingSink {
+                    clock: clock.clone(),
+                    sent: sent.clone(),
+                },
+            ));
+            let at = |sent: &Sent| -> Vec<Duration> {
+                sent.lock().unwrap().iter().map(|(at, _, _)| *at).collect()
+            };
+            // Initial report at once, then exactly one heartbeat per H.
+            clock.advance(secs(21)).await;
+            assert_eq!(at(&sent), [0, 5, 10, 15, 20].map(secs));
+            // A newer publication is sent at once and heartbeats follow it.
+            sender.send_replace(Some(publication(3, 2, true)));
+            clock.advance(secs(6)).await;
+            assert_eq!(at(&sent)[5..], [secs(21), secs(26)]);
+            // A busy check is retried with backoff and sent within H.
+            *gate.lock().unwrap() = Gate::Busy;
+            clock.advance(secs(7)).await;
+            *gate.lock().unwrap() = Gate::Holds;
+            clock.advance(secs(1)).await;
+            let times = at(&sent);
+            let last = *times.last().unwrap();
+            assert!(last > secs(33) && last < secs(35), "{last:?}");
+            // Not ready or lost: heartbeats stop.
+            for state in [Gate::NotReady, Gate::Lost] {
+                *gate.lock().unwrap() = state;
+                let before = at(&sent).len();
+                clock.advance(secs(20)).await;
+                assert_eq!(at(&sent).len(), before);
             }
-        }
-        for (_, _, value) in seen.iter() {
-            let current = triple(value);
-            assert!(current >= previous, "{current:?} < {previous:?}");
-            previous = current;
-            assert_eq!(value.as_object().unwrap().len(), 22);
-        }
-        assert_eq!(seen.last().unwrap().2["ready"], false);
-    });
+            // The ready=false commit is sent once and never heartbeated.
+            *gate.lock().unwrap() = Gate::Holds;
+            sender.send_replace(Some(publication(3, 3, false)));
+            let before = at(&sent).len();
+            clock.advance(secs(20)).await;
+            assert_eq!(at(&sent).len(), before + 1);
+            drop(sender);
+            clock.advance(secs(1)).await;
+            task.await.unwrap();
+
+            let sent = sent.lock().unwrap();
+            let mut previous = (0, 0, 0, 0);
+            for (_, p, observed_at) in sent.iter() {
+                let current = (
+                    p.assignment_epoch,
+                    p.scope_ownership_generation,
+                    p.source_revision,
+                    *observed_at,
+                );
+                assert!(current >= previous, "{current:?} < {previous:?}");
+                previous = current;
+                let wire: serde_json::Map<String, serde_json::Value> =
+                    serde_json::from_str(&rs::encode(p, *observed_at).unwrap()).unwrap();
+                assert_eq!(wire.len(), 22);
+            }
+            assert!(!sent.last().unwrap().1.ready);
+        });
+}
+
+struct Open;
+
+impl HeartbeatGate for Open {
+    async fn check(&mut self) -> Gate {
+        Gate::Holds
+    }
 }
 
 #[test]
@@ -450,20 +546,20 @@ fn platform_outage_never_blocks_the_node() {
         });
         let started = Instant::now();
         let capacity = TransientCapacity::new();
-        let target = descriptor(&pki, port, &pki.status).unwrap();
-        assert!(matches!(
+        let target = Arc::new(descriptor(&pki, port, &pki.status).unwrap());
+        assert_eq!(
             rs::deliver(&target, &capacity, &publication(3, 1, true), now()).await,
-            Err(SourceError::Unavailable)
-        ));
+            Err(NotDelivered::Unavailable)
+        );
         assert!(started.elapsed() < Duration::from_millis(3_500));
 
         let (sender, receiver) = tokio::sync::watch::channel(Some(publication(3, 1, true)));
         let task = tokio::spawn(rs::run(
-            Arc::new(target),
+            SystemClock::default(),
             receiver,
-            Duration::from_millis(100),
-            now,
-            || std::future::ready(true),
+            rs::HEARTBEAT,
+            Open,
+            MtlsSink::new(target),
         ));
         tokio::time::sleep(Duration::from_millis(300)).await;
         // Publishing never waits on delivery, and the reporter ends within
