@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Convert pinned CrystalServer world metadata into Oteryn content families.
 
-Writes City Areas (content/world/areas/cities/) and teleport
-Transitions (content/world/transitions/) plus the committed capture summary. The source
-is OTS_HYPOTHESIS_ONLY migration evidence: only normalized facts are written, never map
-bytes. Terrain, objects and placements are out of scope.
+Writes teleport Transitions (content/world/transitions/) plus the committed capture
+summary; each teleport `object` is the A12 4.6 family key of its item id (WorldObject or
+Terrain from the WO-2 catalogue, else Item). The source is OTS_HYPOTHESIS_ONLY migration
+evidence: only normalized facts are written, never map bytes. Cities and Regions are owned
+by area-authoring; Terrain, objects and placements are out of scope.
 
     python convert_world_metadata.py --crystal-root /path/to/crystalserver [--check]
 """
@@ -22,7 +23,6 @@ import otbm_reader
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
-CITY_SNAPSHOT = "imports/tibiawiki/cities/fandom-snapshot-v1.json"
 SUMMARY = HERE / "samples/source-capture-v1.json"
 ITEM_BINDINGS = ROOT / "imports/crystalserver/bindings/items.json"
 
@@ -43,22 +43,13 @@ COORDINATE_FRAME = "global-target-2026-09-27"
 REVISION = "definition-r1"
 SHARD_SIZE = 500
 MAX_FLOOR = 15
+CATALOGUES = ("content/world/objects", "content/world/terrain")
 GENERATOR = "tools/content-schema/world-authoring/convert_world_metadata.py"
 
 FAMILIES = {
-    "Area.City": {
-        "dir": "content/world/areas/cities",
-        "stem": "cities",
-        "schema": "OTERYN_AREA_AUTHORING_SHARD/v1",
-    },
     "Area.HuntingPlace": {
         "dir": "content/world/areas/hunting-places",
         "stem": "hunting-places",
-        "schema": "OTERYN_AREA_AUTHORING_SHARD/v1",
-    },
-    "Area.Region": {
-        "dir": "content/world/areas/regions",
-        "stem": "regions",
         "schema": "OTERYN_AREA_AUTHORING_SHARD/v1",
     },
     "Transition.Teleport": {
@@ -167,36 +158,6 @@ def item_keys() -> dict[int, str]:
     }
 
 
-def cities(facts, root: Path = ROOT) -> tuple[list[dict], dict[int, str]]:
-    records, by_id = [], {}
-    keys = assign_keys(
-        [(str(t["town_id"]), t["name"]) for t in facts.towns],
-        committed_keys(root, "Area.City", "crystalserver/town-id"),
-        "oteryn:area.city.",
-        "Area.City",
-    )
-    for town in facts.towns:
-        key = keys[str(town["town_id"])]
-        if not in_map(facts, *town["temple"]):
-            raise ConvertError(f"{key}: temple outside map")
-        by_id[town["town_id"]] = key
-        records.append(
-            {
-                "declaration": {
-                    "area_kind": "city",
-                    "identity": {"key": key, "revision": REVISION},
-                    "kind": "Area",
-                    "name": town["name"],
-                    "temple": position(*town["temple"]),
-                },
-                "source_bindings": [
-                    binding("Area", key, "crystalserver/town-id", str(town["town_id"]))
-                ],
-            }
-        )
-    return unique(records, "Area.City"), by_id
-
-
 def teleport_candidates(facts) -> tuple[list[dict], dict]:
     kept, rejected = [], {"unset_destination": 0, "destination_outside_map": 0}
     for tp in facts.teleports:
@@ -209,12 +170,42 @@ def teleport_candidates(facts) -> tuple[list[dict], dict]:
     return kept, rejected
 
 
+def catalogue_keys(root: Path = ROOT) -> dict[str, str]:
+    """Record key -> family for the WO-2 WorldObject and Terrain catalogues."""
+    found: dict[str, str] = {}
+    for directory in CATALOGUES:
+        for shard in sorted((root / directory).glob("*-*.json")):
+            document = json.loads(shard.read_text(encoding="utf-8"))
+            for record in document["records"]:
+                found[record["identity"]["key"]] = document["family"]
+    return found
+
+
+def object_reference(item_id: int, catalogue: dict[str, str], items: dict[int, str]):
+    """A12 4.6: the family key of the id -- WorldObject, else Terrain, else Item."""
+    for family, key in (
+        ("WorldObject", f"oteryn:world-object.tibia.i{item_id}"),
+        ("Terrain", f"oteryn:terrain.tibia.i{item_id}"),
+    ):
+        if catalogue.get(key) == family:
+            return ref(family, key)
+    if item_id in items:
+        return ref("Item", items[item_id])
+    raise ConvertError(
+        f"teleport item {item_id} has no WorldObject, Terrain or Item key"
+    )
+
+
 def teleports(
-    candidates: list[dict], present: set, items: dict[int, str], rejected: dict
+    candidates: list[dict],
+    present: set,
+    items: dict[int, str],
+    rejected: dict,
+    catalogue: dict[str, str],
 ):
     records = []
     rejected["destination_tile_absent"] = 0
-    unbound = 0
+    families = {"Item": 0, "Terrain": 0, "WorldObject": 0}
     ordinal: dict[tuple, int] = {}
     for tp in sorted(
         candidates,
@@ -233,10 +224,8 @@ def teleports(
             "to": position(*tp["to"]),
             "transition_kind": "teleport",
         }
-        if tp["item"] in items:
-            declaration["object"] = ref("Item", items[tp["item"]])
-        else:
-            unbound += 1
+        declaration["object"] = object_reference(tp["item"], catalogue, items)
+        families[declaration["object"]["family"]] += 1
         records.append(
             {
                 "declaration": declaration,
@@ -250,7 +239,7 @@ def teleports(
                 ],
             }
         )
-    return unique(records, "Transition.Teleport"), unbound
+    return unique(records, "Transition.Teleport"), families
 
 
 def shard_files(
@@ -309,27 +298,15 @@ def build(blobs: dict[str, bytes], root: Path = ROOT) -> dict[str, bytes]:
         raise ConvertError(
             f"unknown OTBM item attributes: {dict(facts.unknown_item_attrs)}"
         )
-    city_records, _city_keys = cities(facts, root)
     candidates, rejected = teleport_candidates(facts)
     present = otbm_reader.read(otbm, probe={tp["to"] for tp in candidates}).present
-    tp_records, unbound = teleports(candidates, present, item_keys(), rejected)
+    tp_records, object_families = teleports(
+        candidates, present, item_keys(), rejected, catalogue_keys(root)
+    )
     out = {}
-    out.update(shard_files("Area.City", city_records))
-    snapshot = root / CITY_SNAPSHOT
-    if (
-        snapshot.is_file()
-    ):  # the committed TibiaWiki enrichment stays on regenerated records
-        import convert_city_facts
-
-        out.update(
-            convert_city_facts.build(snapshot.read_bytes(), root, plain=dict(out))
-        )
     out.update(shard_files("Transition.Teleport", tp_records))
     summary = {
-        "families": {
-            "Area.City": len(city_records),
-            "Transition.Teleport": len(tp_records),
-        },
+        "families": {"Transition.Teleport": len(tp_records)},
         "map": {
             "floors": [0, MAX_FLOOR],
             "height": facts.height,
@@ -343,10 +320,52 @@ def build(blobs: dict[str, bytes], root: Path = ROOT) -> dict[str, bytes]:
         },
         "schema": "OTERYN_WORLD_METADATA_SOURCE_CAPTURE/v1",
         "source": SOURCE,
-        "teleports_without_item_binding": unbound,
+        "teleport_object_families": object_families,
     }
     out[str(SUMMARY.relative_to(ROOT))] = canonical(summary)
     return out
+
+
+def generated_extras(out: dict[str, bytes], root: Path = ROOT) -> list[str]:
+    """Generator-owned shards on disk that this run no longer generates.
+
+    Owned means the family's own `<stem>-NNNNN-NNNNN.json` names in a directory whose index
+    this run writes; the index and any other file are never touched.
+    """
+    extras = []
+    for spec in FAMILIES.values():
+        if f"{spec['dir']}/index.json" not in out:
+            continue
+        pattern = re.compile(rf"^{re.escape(spec['stem'])}-\d{{5}}-\d{{5}}\.json$")
+        directory = root / spec["dir"]
+        for path in sorted(directory.iterdir() if directory.is_dir() else []):
+            relative = f"{spec['dir']}/{path.name}"
+            if pattern.fullmatch(path.name) and relative not in out:
+                extras.append(relative)
+    return extras
+
+
+def apply(out: dict[str, bytes], check: bool, root: Path = ROOT) -> int:
+    """Check or write `out`; both report and (in write mode) delete extra owned shards."""
+    stale = [
+        path
+        for path, data in out.items()
+        if not (root / path).is_file() or (root / path).read_bytes() != data
+    ]
+    extras = generated_extras(out, root)
+    if check:
+        for path in stale:
+            print(f"STALE {path}", file=sys.stderr)
+        for path in extras:
+            print(f"EXTRA {path}", file=sys.stderr)
+        return 1 if stale or extras else 0
+    for path in stale:
+        (root / path).parent.mkdir(parents=True, exist_ok=True)
+        (root / path).write_bytes(out[path])
+    for path in extras:
+        (root / path).unlink()
+    print(f"wrote {len(stale)} of {len(out)} files, removed {len(extras)}")
+    return 0
 
 
 def main() -> int:
@@ -359,20 +378,7 @@ def main() -> int:
     except (ConvertError, otbm_reader.OtbmError, OSError) as error:
         print(f"FAIL {error}", file=sys.stderr)
         return 1
-    stale = [
-        path
-        for path, data in out.items()
-        if not (ROOT / path).is_file() or (ROOT / path).read_bytes() != data
-    ]
-    if args.check:
-        for path in stale:
-            print(f"STALE {path}", file=sys.stderr)
-        return 1 if stale else 0
-    for path in stale:
-        (ROOT / path).parent.mkdir(parents=True, exist_ok=True)
-        (ROOT / path).write_bytes(out[path])
-    print(f"wrote {len(stale)} of {len(out)} files")
-    return 0
+    return apply(out, args.check)
 
 
 if __name__ == "__main__":

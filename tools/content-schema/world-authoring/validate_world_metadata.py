@@ -20,37 +20,25 @@ SUMMARY = "tools/content-schema/world-authoring/samples/source-capture-v1.json"
 HUNTING_SUMMARY = (
     "tools/content-schema/world-authoring/samples/hunting-places-capture-v1.json"
 )
-REGION_SUMMARY = (
-    "tools/content-schema/world-authoring/samples/map-regions-capture-v1.json"
-)
-CITY_SUMMARY = "tools/content-schema/world-authoring/samples/cities-capture-v1.json"
 SNAPSHOT = "imports/tibiawiki/hunting-places/fandom-snapshot-v1.json"
-PROJECTION = "temple_projected_to_floor_7"
-PROJECTION_FLOOR = 7
-UNLINKED_REASONS = {
-    "outside_every_mask",
-    "projection_ambiguous",
-    "projection_outside",
-}
-CITY_SNAPSHOT = "imports/tibiawiki/cities/fandom-snapshot-v1.json"
-NPC_INDEX = "content/npcs/definitions/index.json"
 WIKI_NAMESPACE = "tibiawiki-fandom/page-id"
-CLIENT_MANIFEST = "imports/official/client-assets/15.30/manifest.json"
+CITY_DIRECTORY = "content/world/areas/cities"
+CATALOGUES = {
+    "content/world/objects": "WorldObject",
+    "content/world/terrain": "Terrain",
+}
 ITEM_BINDINGS = "imports/crystalserver/bindings/items.json"
 GENERATORS = {
     "Area.HuntingPlace": "tools/content-schema/world-authoring/convert_hunting_places.py",
-    "Area.Region": "tools/content-schema/world-authoring/convert_map_regions.py",
 }
-OWN_SOURCE_REVISION = {"Area.HuntingPlace", "Area.Region"}
+OWN_SOURCE_REVISION = {"Area.HuntingPlace"}
 DEFAULT_GENERATOR = "tools/content-schema/world-authoring/convert_world_metadata.py"
 FAMILIES = {
-    "Area.City": ("content/world/areas/cities", "cities", "Area"),
     "Area.HuntingPlace": (
         "content/world/areas/hunting-places",
         "hunting-places",
         "Area",
     ),
-    "Area.Region": ("content/world/areas/regions", "regions", "Area"),
     "Transition.Teleport": ("content/world/transitions", "teleports", "Transition"),
 }
 SHARD_SIZE = 500
@@ -80,11 +68,9 @@ def structural(path: str, data, errors: list[str]) -> None:
 
 
 def positions(declaration: dict):
-    for name in ("temple", "entry", "from", "to", "position", "anchor"):
+    for name in ("from", "to", "position"):
         if name in declaration:
             yield declaration[name]
-    for door in declaration.get("doors", []):
-        yield door["position"]
 
 
 def family_records(
@@ -164,6 +150,24 @@ def family_records(
     return records
 
 
+def area_city_records(root: Path) -> list[dict]:
+    """The AREAS-1 City Area records (owned by area-authoring, read-only here)."""
+    records: list[dict] = []
+    for shard in sorted((root / CITY_DIRECTORY).glob("areas-*.json")):
+        records.extend(load(root, str(shard.relative_to(root)))["areas"])
+    return records
+
+
+def catalogue_keys(root: Path) -> dict[str, str]:
+    """Record key -> family for the WO-2 WorldObject and Terrain catalogues."""
+    found: dict[str, str] = {}
+    for directory, family in CATALOGUES.items():
+        for shard in sorted((root / directory).glob("*-*.json")):
+            for record in load(root, str(shard.relative_to(root)))["records"]:
+                found[record["identity"]["key"]] = family
+    return found
+
+
 def hunting_places(
     root: Path, summary: dict, families: dict[str, list[dict]], errors: list[str]
 ) -> None:
@@ -183,7 +187,8 @@ def hunting_places(
     if raw.decode("utf-8") != canonical(snapshot):
         errors.append(f"{SNAPSHOT}: not canonical JSON")
     pinned = {str(row["pageid"]): str(row["revid"]) for row in snapshot["pages"]}
-    city_keys = {r["declaration"]["identity"]["key"] for r in families["Area.City"]}
+    city_keys = {a["identity"]["key"] for a in area_city_records(root)}
+    city_names = {a["name"].lower() for a in area_city_records(root)}
     bound, with_ = set(), {"city": 0, "creatures": 0, "levels": 0, "position": 0}
     for record in records:
         declaration = record["declaration"]
@@ -196,8 +201,13 @@ def hunting_places(
             with_["city"] += 1
             if declaration["city"]["key"] not in city_keys:
                 errors.append(
-                    f"{key}: city {declaration['city']['key']} is not a City Area"
+                    f"{key}: city {declaration['city']['key']} is not an AREAS-1 City Area"
                 )
+        elif (
+            declaration.get("source_facts", {}).get("city_name", "").lower()
+            in city_names
+        ):
+            errors.append(f"{key}: city_name matches an AREAS-1 city but is not linked")
         with_["position"] += "position" in declaration
         with_["levels"] += "recommended_levels" in declaration
         with_["creatures"] += "creature_names" in declaration.get("source_facts", {})
@@ -212,265 +222,11 @@ def hunting_places(
         errors.append("Area.HuntingPlace: capture counts differ from the records")
 
 
-def cities(
-    root: Path, summary: dict, families: dict[str, list[dict]], errors: list[str]
-) -> None:
-    """City semantics: snapshot pin, page/revision bindings, NPC references, capture counts."""
-    records = families["Area.City"]
-    try:
-        raw = (root / CITY_SNAPSHOT).read_bytes()
-        snapshot = json.loads(raw)
-    except (OSError, json.JSONDecodeError) as error:
-        errors.append(f"{CITY_SNAPSHOT}: unreadable ({error})")
-        return
-    if summary["source"].get("snapshot") != {
-        "path": CITY_SNAPSHOT,
-        "sha256": hashlib.sha256(raw).hexdigest(),
-    }:
-        errors.append(f"{CITY_SNAPSHOT}: differs from the sha256 pinned in the capture")
-    if raw.decode("utf-8") != canonical(snapshot):
-        errors.append(f"{CITY_SNAPSHOT}: not canonical JSON")
-    index_path = f"{FAMILIES['Area.City'][0]}/index.json"
-    if load(root, index_path).get("enrichment") != summary["source"]:
-        errors.append(f"{index_path}: enrichment differs from the capture summary")
-    pages = {str(row["pageid"]): row for row in snapshot["pages"]}
-    unmatched = {row["name"] for row in snapshot["unmatched"]}
-    npc_keys = set()
-    for shard in load(root, NPC_INDEX)["shards"]:
-        npc_keys.update(
-            r["declaration"]["identity"]["key"] for r in load(root, shard)["records"]
-        )
-    bound, apart = set(), set()
-    with_ = {"implemented": 0, "npcs": 0, "source_facts": 0, "wiki_binding": 0}
-    linked = 0
-    for record in records:
-        declaration = record["declaration"]
-        key = declaration["identity"]["key"]
-        name = declaration["name"]
-        wiki = [
-            b
-            for b in record["source_bindings"]
-            if b["identity_namespace"] == WIKI_NAMESPACE
-        ]
-        if not wiki:
-            apart.add(name)
-            if any(f in declaration for f in ("implemented", "npcs", "source_facts")):
-                errors.append(f"{key}: wiki facts without a wiki binding")
-            continue
-        row = pages.get(wiki[0]["external_id"])
-        if row is None or str(row["revid"]) != wiki[0]["source_revision"]:
-            errors.append(f"{key}: page/revision is not in the pinned snapshot")
-            continue
-        if row["title"] != name:
-            errors.append(f"{key}: bound page {row['title']!r} is not the exact name")
-        bound.add(wiki[0]["external_id"])
-        with_["wiki_binding"] += 1
-        facts = declaration.get("source_facts", {})
-        with_["implemented"] += "implemented" in declaration
-        with_["npcs"] += "npcs" in declaration
-        with_["source_facts"] += "source_facts" in declaration
-        if "implemented" in declaration and (
-            facts.get("implemented") != declaration["implemented"]
-            or row["facts"].get("implemented", "").strip() != declaration["implemented"]
-        ):
-            errors.append(f"{key}: implemented differs from the pinned snapshot")
-        for field in ("ruler", "near"):
-            if (field in facts) != bool(row["facts"].get(field, "").strip()):
-                errors.append(f"{key}: source_facts.{field} differs from the snapshot")
-        npc_refs = [ref["key"] for ref in declaration.get("npcs", [])]
-        if npc_refs != sorted(set(npc_refs)):
-            errors.append(f"{key}: npcs must be unique and sorted")
-        for npc in npc_refs:
-            if npc not in npc_keys:
-                errors.append(f"{key}: npc {npc} is not an NPC definition")
-        names = facts.get("npc_names_unmatched", [])
-        snapshot_names = set(row["facts"]["npc_names"])
-        if names != sorted(names) or not set(names) <= snapshot_names:
-            errors.append(f"{key}: unmatched npc names differ from the snapshot")
-        if len(npc_refs) + len(names) != len(snapshot_names):
-            errors.append(f"{key}: npcs and unmatched names do not cover the snapshot")
-        linked += len(npc_refs)
-    if bound != set(pages) or apart != unmatched:
-        errors.append("Area.City: records must bind each snapshot page exactly once")
-    if (
-        summary.get("records_with") != with_
-        or summary.get("npc_names_linked") != linked
-    ):
-        errors.append("Area.City: capture counts differ from the records")
-
-
-def file_sha256(root: Path, path: str, errors: list[str]) -> str | None:
-    try:
-        return hashlib.sha256((root / path).read_bytes()).hexdigest()
-    except OSError:
-        errors.append(f"{path}: unreadable")
-        return None
-
-
-def regions(
-    root: Path,
-    summary: dict,
-    families: dict[str, list[dict]],
-    map_extent: dict,
-    errors: list[str],
-) -> None:
-    """Region semantics: source pin, hierarchy, footprint files, city links, capture counts."""
-    records = families["Area.Region"]
-    source_file = summary["source"]["files"][0]
-    manifest_doc = load(root, CLIENT_MANIFEST)
-    manifest = {row["name"]: row["sha256"] for row in manifest_doc["files"]}
-    if (
-        summary["source"]["manifest"]["archive_sha256"]
-        != manifest_doc["archive_sha256"]
-    ):
-        errors.append(f"{CLIENT_MANIFEST}: archive sha256 differs from the pinned one")
-    map_sha = source_file["sha256"]
-    if file_sha256(root, source_file["path"], errors) != map_sha or (
-        manifest.get(source_file["path"].rsplit("/", 1)[-1]) != map_sha
-        or not source_file["path"].endswith(f"map-{map_sha}.dat")
-    ):
-        errors.append(f"{source_file['path']}: differs from the pinned map file")
-    cities = {
-        r["declaration"]["identity"]["key"]: r["declaration"]["temple"]
-        for r in families["Area.City"]
-    }
-    declarations = {
-        r["declaration"]["identity"]["key"]: r["declaration"] for r in records
-    }
-    projections = {}
-    for row in summary.get("cities", {}).get("projected", []):
-        projections.setdefault(row.get("city"), []).append(row.get("subregion"))
-    projected_links = []
-    external_ids, children = set(), {}
-    with_ = {"anchor": 0, "cities": 0, "footprint": 0, "parent_regions": 0}
-    by_kind = {"region": 0, "subregion": 0}
-    for record in records:
-        declaration = record["declaration"]
-        key = declaration["identity"]["key"]
-        by_kind[declaration["area_kind"]] += 1
-        for row in record["source_bindings"]:
-            if row["source_revision"] != map_sha:
-                errors.append(
-                    f"{key}: binding revision differs from the pinned map file"
-                )
-            if row["external_id"] in external_ids:
-                errors.append(f"{key}: area id {row['external_id']} is bound twice")
-            external_ids.add(row["external_id"])
-        for name in ("anchor", "cities", "footprint", "parent_regions"):
-            with_[name] += name in declaration
-        parents = declaration.get("parent_regions", [])
-        parent_keys = [ref["key"] for ref in parents]
-        if parent_keys != sorted(set(parent_keys)):
-            errors.append(f"{key}: parent_regions must be unique and sorted")
-        for parent in parent_keys:
-            if declarations.get(parent, {}).get("area_kind") != "region":
-                errors.append(f"{key}: parent {parent} is not a region")
-            children.setdefault(parent, []).append(key)
-        city_keys = [ref["key"] for ref in declaration.get("cities", [])]
-        if city_keys != sorted(set(city_keys)):
-            errors.append(f"{key}: cities must be unique and sorted")
-        for city in city_keys:
-            if city not in cities:
-                errors.append(f"{key}: city {city} is not a City Area")
-        footprint = declaration.get("footprint")
-        if footprint is None:
-            if declaration["area_kind"] == "subregion" and city_keys:
-                errors.append(f"{key}: city links need a footprint")
-            continue
-        box = (
-            footprint["min_x"],
-            footprint["min_y"],
-            footprint["max_x"],
-            footprint["max_y"],
-        )
-        area = (box[2] - box[0] + 1) * (box[3] - box[1] + 1)
-        if (
-            box[0] > box[2]
-            or box[1] > box[3]
-            or not (box[2] < map_extent["width"] and box[3] < map_extent["height"])
-        ):
-            errors.append(
-                f"{key}: footprint is inverted or outside the source map extent"
-            )
-        if not 1 <= footprint["tile_count"] <= area:
-            errors.append(f"{key}: footprint tile_count does not fit its bounding box")
-        image = footprint["image"]
-        name = image["path"].rsplit("/", 1)[-1]
-        if int(name.split("-")[1]) != int(record["source_bindings"][0]["external_id"]):
-            errors.append(f"{key}: footprint image belongs to another area id")
-        if file_sha256(root, image["path"], errors) != image["sha256"] or (
-            manifest.get(name) != image["sha256"]
-        ):
-            errors.append(f"{key}: footprint image differs from the pinned file")
-        for city in city_keys:
-            temple = cities.get(city)
-            if temple is not None and temple["floor"] != footprint["floor"]:
-                projected_links.append((city, key))
-            if temple is not None and not (
-                (
-                    temple["floor"] == footprint["floor"]
-                    or key in projections.get(city, [])
-                )
-                and box[0] <= temple["x"] <= box[2]
-                and box[1] <= temple["y"] <= box[3]
-            ):
-                errors.append(f"{key}: city {city} temple is outside the footprint")
-    for key, declaration in declarations.items():
-        if declaration["area_kind"] != "region":
-            continue
-        kids = children.get(key, [])
-        if not kids:
-            errors.append(f"{key}: region without subregions")
-        expected = sorted(
-            {ref["key"] for kid in kids for ref in declarations[kid].get("cities", [])}
-        )
-        if [ref["key"] for ref in declaration.get("cities", [])] != expected:
-            errors.append(f"{key}: cities differ from the cities of its subregions")
-    linked = {ref["key"] for d in declarations.values() for ref in d.get("cities", [])}
-    stated = summary.get("cities", {})
-    projected = stated.get("projected", [])
-    unlinked = stated.get("unlinked", [])
-    unlinked_keys = [row.get("city") for row in unlinked]
-    if (
-        sorted(projected_links)
-        != sorted((row.get("city"), row.get("subregion")) for row in projected)
-        or any(
-            row.get("method") != PROJECTION
-            or cities[row["city"]]["floor"] == PROJECTION_FLOOR
-            for row in projected
-            if row.get("city") in cities
-        )
-        or any(row.get("city") not in cities for row in projected + unlinked)
-        or len(unlinked_keys) != len(set(unlinked_keys))
-        or set(unlinked_keys) & linked
-        or (set(cities) - linked) != set(unlinked_keys)
-        or any(
-            row.get("reason") not in UNLINKED_REASONS
-            or ("nearest_mask" in row) != (row.get("reason") == "outside_every_mask")
-            or ("distance" in row) != ("nearest_mask" in row)
-            for row in unlinked
-        )
-    ):
-        errors.append("Area.Region: city projection or unlinked records differ")
-    if (
-        summary.get("records_with") != with_
-        or summary.get("records_by_kind") != by_kind
-        or {k: stated.get(k) for k in ("linked", "total")}
-        != {"linked": len(linked), "total": len(cities)}
-    ):
-        errors.append("Area.Region: capture counts differ from the records")
-
-
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     summary = load(root, SUMMARY)
     hunting_summary = load(root, HUNTING_SUMMARY)
-    region_summary = load(root, REGION_SUMMARY)
-    city_summary = load(root, CITY_SUMMARY)
-    own_summaries = {
-        "Area.HuntingPlace": hunting_summary,
-        "Area.Region": region_summary,
-    }
+    own_summaries = {"Area.HuntingPlace": hunting_summary}
     families = {
         family: family_records(
             root,
@@ -483,18 +239,45 @@ def validate(root: Path) -> list[str]:
     }
     if any(": schema:" in error for error in errors):
         return errors  # semantic checks assume schema-valid records
-    cities(root, city_summary, families, errors)
     hunting_places(root, hunting_summary, families, errors)
-    regions(root, region_summary, families, summary["map"], errors)
     item_keys = {row["target"]["key"] for row in load(root, ITEM_BINDINGS)["bindings"]}
+    catalogue = catalogue_keys(root)
+    used = {"Item": 0, "Terrain": 0, "WorldObject": 0}
     for record in families["Transition.Teleport"]:
         declaration = record["declaration"]
-        if "object" in declaration and declaration["object"]["key"] not in item_keys:
+        key = declaration["identity"]["key"]
+        target = declaration.get("object")
+        item_id = (
+            record["source_bindings"][0]["external_id"].split(":")[1].split("#")[0]
+        )
+        expected = next(
+            (
+                (family, f"oteryn:{prefix}.tibia.i{item_id}")
+                for prefix, family in (
+                    ("world-object", "WorldObject"),
+                    ("terrain", "Terrain"),
+                )
+                if f"oteryn:{prefix}.tibia.i{item_id}" in catalogue
+            ),
+            None,
+        )
+        if target is None:
+            errors.append(f"{key}: teleport without an object")
+            continue
+        used[target["family"]] += 1
+        if expected is not None:
+            if (target["family"], target["key"]) != expected:
+                errors.append(f"{key}: object must be the catalogue key {expected[1]}")
+        elif target["family"] != "Item" or target["key"] not in item_keys:
             errors.append(
-                f"{declaration['identity']['key']}: object is not a bound Item"
+                f"{key}: object is neither a catalogue record nor a bound Item"
             )
         if declaration["from"] == declaration["to"]:
-            errors.append(f"{declaration['identity']['key']}: teleport to its own tile")
+            errors.append(f"{key}: teleport to its own tile")
+    if summary.get("teleport_object_families") != used:
+        errors.append(
+            "Transition.Teleport: object family counts differ from the capture"
+        )
     return errors
 
 
