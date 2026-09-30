@@ -36,7 +36,8 @@ Answers PREM-1b's `ARCHITECTURE_ESCALATION_REQUIRED` (#162 5916078350) with PREM
   hyphenated `account_id` and a 32-hex `nonce`, at most 256 bytes;
 - 200 with the §4 body only; an account without an entitlement is `NONE`, never a separate answer;
 - anything else (status, redirect, content type, 5-second timeout, TLS failure) is unavailable: no
-  new evidence, the fence keeps the last, retry with backoff, login unaffected;
+  new evidence, the fence keeps the last, Premium is denied at once as `AUTHORITY_UNAVAILABLE`
+  until a pull succeeds, retry with backoff, login unaffected;
 - the in-process test producer serves exactly this exchange.
 
 No code, migration or content change is made. Platform accepts or amends its side in PREM-P.
@@ -65,5 +66,8 @@ No code, migration or content change is made. Platform accepts or amends its sid
 - `python3 tools/agents/validate_governance.py`: PASS on the final authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the final authoring tree.
 - `git diff --check`: clean.
+- Codex round 4 (#1397, 1 P1): a failed admission, reconnect or refresh pull now classifies the
+  account `AUTHORITY_UNAVAILABLE` at once until a pull succeeds, keeping the fenced evidence; the
+  lease cutoff stays the separate `EXPIRED` transition (§3, §3.1, §5; consumer contract §8.3).
 
 This record was archived in the final authoring commit of its PR.

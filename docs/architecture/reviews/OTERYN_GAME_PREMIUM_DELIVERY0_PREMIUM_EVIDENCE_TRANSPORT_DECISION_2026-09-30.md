@@ -70,7 +70,7 @@ How does Game learn, safely and in time, that an account has Premium?
   account from `refresh_after` on. Platform sets `refresh_after` in each snapshot (Game requests
   issue + 40 minutes, §5); Game only schedules its next pull from it, and it never affects the
   class. The producer's refresh point is `authority_valid_until` (§5). At most one request in
-  flight per account; a failed refresh is retried with backoff until `authority_valid_until`.
+  flight per account; a failed pull is retried with backoff until one succeeds (§3.1).
 - **Authentication:** mutual TLS on the private network between the Game server and Platform, with
   a Platform-issued service identity for the Game server, scoped to this one read purpose. The
   credential is an environment secret; this decision stores none. Platform rotates it with two
@@ -105,10 +105,21 @@ PREM-1b's client and test producer and PREM-P serve the same exchange.
   `entitlement_state` `NONE`, `entitlement_id` null and Platform's normal `authority_revision`
   series: there is no separate "unknown account" answer.
 - **Anything else is unavailable:** any other status, a redirect (never followed), another content
-  type, a timeout after 5 seconds (`PREMDEL0-RL-03`), or a TLS failure. Unavailable yields no new
-  evidence: the fence keeps its last accepted evidence, the class is derived from its absolute times
-  (so benefits stop at `authority_valid_until`), and the §3 retry with backoff continues. A 429 or
-  503 `Retry-After` is honoured within that backoff. Login is never affected.
+  type, a timeout after 5 seconds (`PREMDEL0-RL-03`), or a TLS failure. A 200 whose body is
+  dropped under §3 or §4, or that the fence (§6) does not accept as newer evidence or as an exact
+  replay of the accepted revision (consumer contract §6.2 rule 3), counts as a failed pull too.
+- **A failed pull denies Premium at once.** A failed admission, reconnect or refresh pull yields no
+  new evidence: the fence keeps its last accepted evidence unchanged, but the account's class is
+  `AUTHORITY_UNAVAILABLE` from that failure until a later pull for the account succeeds, even while
+  the cached `ACTIVE` evidence is still inside its interval. This is consumer contract §8.3: a
+  failed refresh is `STALE_WITHIN_BOUND` only where stale use is permitted, and it is not
+  (PREMIUM-ACTIVATION §4.1 is `REQUIRE_CURRENT` on every surface; §5), so it is
+  `AUTHORITY_UNAVAILABLE`, which denies benefit (its §16 row "Same outage; surface requires
+  current"). A restrictive class from the kept evidence (`REVOKED`, `EXPIRED`,
+  `NOT_YET_EFFECTIVE`, `INVALID_OR_CONFLICTING`) still wins under §8.2, and reaching
+  `authority_valid_until` or `effective_until` is still the separate transition to `EXPIRED`. The
+  §3 retry with backoff continues; a 429 or 503 `Retry-After` is honoured within that backoff.
+  Login is never affected, and `premium_entitlement_ended` (§6) stays false.
 - **Test producer** (PREM-1b): an in-process server that speaks exactly this exchange and the §4
   body, used by PREM-1's tests and by the cross-repository end-to-end test's Game half.
 - PREM-P accepts or amends this in Platform (the cross-repository note in the header); a Platform change
@@ -164,14 +175,15 @@ The consumer contract makes these Platform's product/version policy; Game reques
 | Value | Requested | Why |
 |---|---|---|
 | `max_authority_lease` | 60 minutes | bounds how long a revocation can go unseen |
-| producer refresh point | `authority_valid_until` | no stale window: evidence is current until the lease ends |
+| producer refresh point | `authority_valid_until` | no stale window: evidence is current until the lease ends or a pull fails (§3.1) |
 | `max_clock_skew` | 5 seconds | the FND-04 security-source bound; Game servers run NTP |
 | bounded stale use | not permitted | PREMIUM-ACTIVATION §4.1 is `REQUIRE_CURRENT` on every surface |
 
-Game requests `refresh_after` = issue + 40 minutes (set by Platform in the snapshot), so a Platform
-outage longer than about 20 minutes suspends Premium benefits (never login) at `authority_valid_until`
-until a refresh succeeds; nothing is lost, D73/D76 already define benefits checked at use, and a
-lapsed lease never relocates a character (§6).
+Game requests `refresh_after` = issue + 40 minutes (set by Platform in the snapshot). A pull that
+fails suspends Premium benefits (never login) at once as `AUTHORITY_UNAVAILABLE` (§3.1), not at
+`authority_valid_until`; the lease cutoff is only the separate expiry for evidence that is never
+refreshed. Benefits return when a pull succeeds; nothing is lost, D73/D76 already define benefits
+checked at use, and neither an unavailable class nor a lapsed lease relocates a character (§6).
 
 **Time.** Game evaluates the absolute times against the node's clock, synchronized by NTP, with
 uncertainty at most `max_clock_skew`; a node whose clock is not synchronized treats Premium as not
