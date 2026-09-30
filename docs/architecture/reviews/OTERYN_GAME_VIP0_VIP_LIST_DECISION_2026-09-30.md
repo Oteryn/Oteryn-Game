@@ -131,9 +131,11 @@ are online, without learning more than Tibia shows and without breaking the soci
   the canonical request; the outcome (result code, `entry_no` or `group_no`, `EXHAUSTED` seconds,
   the list `revision` after the command); `committed_at`. The BANK-0 §3 pattern.
 - No writer role writes these tables directly. One SECURITY DEFINER function per operation first
-  reads the receipt of its CommandRef: a receipt with the same binding (character, kind, digest)
-  returns its stored outcome **before** any fence, lock, cap or rate check, writes nothing and
-  advances nothing; a receipt with a different binding is `REJECTED`. With no receipt, it checks
+  asserts the current recovery fence (composition decision rule 2, replay step: a stale recovery
+  fence returns no outcome), then reads the receipt of its CommandRef: a receipt with the same
+  binding (character, kind, digest) returns its stored outcome **before** the live session,
+  lease and runtime checks and any lock, cap or rate check, writes nothing and advances nothing;
+  a receipt with a different binding is `REJECTED`. With no receipt, it checks
   the acting session's fence (composition rule 2: session row in state 1 or 2, generations, the
   runtime-scope guard), that the session's Account and World own the list, then locks the list
   row, re-reads the receipt under that lock, checks caps and the rate bucket, writes, advances
