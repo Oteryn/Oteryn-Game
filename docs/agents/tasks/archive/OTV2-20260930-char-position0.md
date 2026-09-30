@@ -25,7 +25,8 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20260930-char-position0.md
 public_contracts:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
-depends_on: []
+depends_on:
+  - "OTV2-20260930-attack0-auto-attack (PR #1347: the in-fight deadline this decision cites)"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -85,6 +86,10 @@ No code, migration or content change is made.
   row; logout-block owner in ATTACK-0).
 - Control-plane rule (#162 5912405163): the composition, scope matrix and registry edits read
   "pending on acceptance of CHAR-POSITION-0".
+- Independent review of `706b7201` (5911721174, re-review 5912826375): FIX, 2 medium and 1 low,
+  all answered: the order key is per Character, (lease generation, `write_sequence`); consuming a
+  pending respawn or arrival upserts the placed tile in the same transaction; `depends_on` names
+  #1347.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

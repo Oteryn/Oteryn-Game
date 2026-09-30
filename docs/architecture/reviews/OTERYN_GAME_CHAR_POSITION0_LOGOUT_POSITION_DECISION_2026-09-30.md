@@ -63,8 +63,8 @@ restart?
 
 - `game_character_last_positions`: one row per Character (primary key `character_id`) with
   `world_id`, the native `WorldTilePosition`, the frame and map markers of
-  `pinned_position_context`, the bundle digest it was written under, the session generation that
-  wrote it, and a `write_sequence`.
+  `pinned_position_context`, the bundle digest it was written under, and the order key of §3.2:
+  the Character lease generation of the writing session and a `write_sequence`.
 - Foreign keys to the Character root and World, with a guard that `world_id` is the root's World,
   as the death guard does.
 - The channel is not stored: every channel of a World shares the base map (ADR-0001 §7), and
@@ -85,9 +85,11 @@ chain, with no cause and no replay.
 - **Fence.** The composition rule 2 session checks (reconnect-session row, runtime-scope
   assignment, admission guards), without a cause lock. It takes no `character_root` row lock: it
   reads no inventory, occupancy or claim. A stale session writes nothing.
-- **Order.** `write_sequence` increases per write within one session generation. An upsert
-  applies only when (session generation, `write_sequence`) is greater than the stored pair, so an
-  in-flight periodic write never overwrites the final one.
+- **Order.** The key is per Character and monotonic across logins: (Character lease generation,
+  `write_sequence`). The lease generation grows with every new lease of the Character, so a later
+  login always orders after an earlier one; `write_sequence` grows per write within one lease. An
+  upsert applies only when its key is greater than the stored key, so an in-flight periodic write
+  never overwrites the final one, and a new login's first write is never rejected.
 - **At logout.** The final write runs inside the terminal release transaction, before
   `session_state` becomes 3, as H-1 writes before the lease is released.
 - **Logout-blocked actor.** When the client closes during the ATTACK-0 in-fight deadline, the actor
@@ -113,6 +115,10 @@ The character is placed at the first of:
 
 1. a pending respawn (DEATH-0), consumed;
 2. a pending arrival (NPC-0), consumed;
+
+   When 1 or 2 is consumed, the same transaction upserts the last position with the placed tile,
+   under the new lease's key, so a crash right after placement never puts the character back at
+   the death spot or the travel origin, and a paid travel fee is never lost;
 3. the last position, if it is valid;
 4. the home temple once HOME-TOWN exists, else the pinned `entry_start`. A first login (no row)
    uses this step too.
