@@ -33,6 +33,15 @@ use oteryn_protocol_oteryn::{
     decode_snapshot_chunk_framing, decode_snapshot_id, decode_state_delta, decode_wire_envelope,
     encode_client_bootstrap, encode_client_command, encode_liveness_ack,
 };
+/// CHARM-5 view and command types (proposed wire, not yet routed by this crate), re-exported for
+/// the client views the same way.
+pub use oteryn_protocol_oteryn::{
+    bestiary::BestiaryRaceProgress,
+    charm::{
+        CharmAssignDisposition, CharmAssignIntent, CharmKind, CharmState, CharmUnlockDisposition,
+        CharmUnlockStageIntent, CharmView,
+    },
+};
 use std::error::Error as StdError;
 use std::fmt;
 use std::future::Future;
