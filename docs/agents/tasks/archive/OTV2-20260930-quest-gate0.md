@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-quest-gate-0
-pr: "the one named in the #162 FREEZE_SHA entry"
+pr: 1401
 base_sha: a6a054e6
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -94,13 +94,16 @@ No code, migration or content change is made.
   and its audit aggregate; relocation children are not trigger roots (no cascade); exchange
   preflight checks RL-07 (`OBLIGATIONS_FULL`); active quests render from their pinned revision
   (§7); exchange nodes must declare a transition (§5.2). Validators re-run PASS.
+- Codex round 5 (final batched round; #1401, 0 P1, 1 P2): 4149456886 fixed: the composition
+  rule 1 amendment requires a quest obligation row only for an exchange and for a claim whose node
+  names a transition; a claim-only node writes none (§5.4 says so too). Validators re-run PASS.
 - Owner answers applied (2026-09-30, #162): Q1b (§5.4 gold hand-in, coins then bank, rows §9) and
   Q2a (§7 journal text 1:1); the DUR-03 §39.3 quest exchange paragraph names the gold hand-in.
   Validators re-run PASS.
 
 ## Closeout
 
-- PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1401. Merge commit/result: its squash merge.
 - Jira sync: pending (coordinator batch).
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 

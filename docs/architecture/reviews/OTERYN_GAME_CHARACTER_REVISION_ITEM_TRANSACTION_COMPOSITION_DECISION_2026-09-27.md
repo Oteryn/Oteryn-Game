@@ -253,8 +253,10 @@ receipts, and advance no `CharacterRevision`. Rule 4's lock order is extended: a
 the revision chain, like the pending arrival; the claim still advances no `CharacterRevision`.
 
 **Amendment (pending on acceptance of QUEST-GATE-0; `OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).** Rule 1
-also covers a quest exchange (`QuestExchangeCause`) and a dialogue reward claim, each with its
-quest obligation row; neither advances `CharacterRevision`.
+also covers a quest exchange (`QuestExchangeCause`, which always names a transition) with its quest
+obligation row, and a dialogue reward claim, with a quest obligation row only when its node also
+names a transition; a claim-only node writes no obligation row. Neither advances
+`CharacterRevision`.
 
 ## 6. Handback
 

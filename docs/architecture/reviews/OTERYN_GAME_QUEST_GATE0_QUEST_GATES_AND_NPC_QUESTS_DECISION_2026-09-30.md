@@ -232,7 +232,8 @@ QUEST-STATE-0 §4 codes) selects the node's refusal reply and writes nothing.
   mint runs on the CHEST-1 path with the dialogue occurrence as a new D40 MINT source cause beside
   the `USE` child (amends DUR-03 §39.3). No room refuses and writes nothing; the NPC says why (D41,
   no ground drop). A node with a transition writes it as the claim's quest obligation
-  (QUEST-STATE-0 §5.4), so items come first and the step follows.
+  (QUEST-STATE-0 §5.4), so items come first and the step follows; a claim-only node (no
+  transition) writes no obligation row.
 - **Exchange** (the NPC takes items). One item-only DUR-03 transaction under the closed cause
   `QuestExchangeCause {npc, node, exchange_key, occurrence}`:
   - BURN lines (§17) of the declared items and counts from direct entries of the main backpack,
