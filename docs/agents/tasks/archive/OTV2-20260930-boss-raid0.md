@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-boss-raid-0
-pr: "the PR named in the #162 FREEZE_SHA entry"
+pr: 1407
 base_sha: "origin/main at branch creation"
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
@@ -99,10 +99,18 @@ persistence review; BOSS-REWARD-1 economy and security review; BOSS-WIRE-1 proto
   offline pending-claim deferral is dropped. Validators re-run PASS.
 - Owner answer applied (2026-09-30, #162): R4a, the slot swap fee as a D178 gold sink, coins then
   bank, first change per reset epoch free (§10.3, brief, §14, §16). Validators re-run PASS.
+- Codex round 5 (final batched round; #1407, 3 P1, 0 P2), all fixed: 4149452557 a committed
+  `at_reset` boss death sets `INACTIVE` for the current reset epoch, and the at_reset open-world
+  eligibility is one credit per reset epoch (§5, §9, RL-18); 4149452583 the loot snapshot stores
+  the exact typed definition reference (`family`, `production_key`, `revision_ref`), the loot table
+  revision and content generation, and the capped-drop/equipment-set flags and Boosted Boss bonus
+  chance, and MINTs never substitute a newer revision (§8.1); 4149452575 a raid without
+  `despawn_after_s` fires at most once per reset epoch via a durable per-epoch guard on
+  `game_world_raid_firings.reset_epoch` (§4.2, §4.4, RL-02). No deferrals. Validators re-run PASS.
 
 ## Closeout
 
-- PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1407. Merge commit/result: its squash merge.
 - Amendments follow the control-plane rule (#162 5912405163): pending on acceptance.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 

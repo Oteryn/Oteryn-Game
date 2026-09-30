@@ -155,11 +155,15 @@ creatures and anchors must be admitted (E4). A boss wave entry with `reward_boss
   activation; a retired raid's row stays, marked retired.
 - **Check** (World job, every `BOSSRAID0-RL-01`): for a due `random` raid, the draw uses the
   simulation-determinism RNG seeded by (WorldId, raid key, `check_ordinal`), with the chance
-  `check interval / mean_interval_s`. It fires only if `now - last_fired_at >= min_gap_s` and no
-  firing of the raid is `RUNNING`. The ordinal advances whether or not it fires, so a retry
-  replays the same draw. A `fixed` raid fires at its slot once.
+  `check interval / mean_interval_s`. It fires only if `now - last_fired_at >= min_gap_s`, no
+  firing of the raid is `RUNNING`, and, for a raid that omits `despawn_after_s` (a persistent raid,
+  whose creatures stay until the next reset, §4.1), no firing of the raid exists in the current
+  reset epoch. A persistent raid therefore fires at most once per reset epoch, and its closed
+  firing (§4.4) still blocks a second set while the first set's creatures remain; the next
+  `WorldReset` removes them and ends the guard. The ordinal advances whether or not it fires, so a retry
+  replays the same draw. A `fixed` raid fires at its slot once, under the same persistent-raid guard.
 - **Firing.** `game_world_raid_firings`: identity (WorldId, raid key, firing ordinal), with a
-  server UUIDv7 `firing_id`, `fired_at`, the bundle digest, the target channel set (the channels
+  server UUIDv7 `firing_id`, `fired_at`, the `reset_epoch` it fired in, the bundle digest, the target channel set (the channels
   whose scope was assigned and admitting at fire time) and state `RUNNING`, `DONE` or
   `CANCELLED`. The check and the firing commit in one transaction.
 - **Downtime.** Missed checks are never caught up: after a restart, `next_check_at` is the next
@@ -186,7 +190,8 @@ does not run.
   channel set (a channel with no row is not terminal, so an empty run table never completes a
   firing), or at the close deadline: the last wave's time plus `despawn_after_s`, or the last
   wave's time itself when `despawn_after_s` is omitted (architect ruling: creatures that persist
-  do not keep a firing open). At the deadline a target channel with no row is recorded `LOST` and
+  do not keep a firing open or a channel claim pending; the §4.2 per-epoch guard, not the firing
+  state, stops a persistent raid from firing again while they remain). At the deadline a target channel with no row is recorded `LOST` and
   the firing closes, so `min_gap_s` (§4.2) can apply. A `WorldReset` cancels running firings; raid creatures go with the overlay.
 
 ## 5. Open-world boss spawns (BOSS-1)
@@ -207,8 +212,10 @@ does not run.
   A later due time is kept as an ordinary owner timer. An `ALIVE` clock of the live generation is
   never realized twice.
 - A committed boss death advances the clock as one more death descendant (DUR-03 A4 live-generation
-  rule): `cycle + 1`, `DUE`, `due_at = death + draw(min_s, max_s)`, the draw seeded by (clock,
-  cycle). If the generation ends first, the death was not committed, so the clock is still `ALIVE`
+  rule). For a `respawn` spawn: `cycle + 1`, `DUE`, `due_at = death + draw(min_s, max_s)`, the draw
+  seeded by (clock, cycle). For an `at_reset` spawn, which has no `min_s` or `max_s`: `cycle + 1`
+  and `INACTIVE`, keeping the current `reset_epoch`, so nothing realizes it again in this epoch and
+  only the next epoch's draw (below) can reactivate it. If the generation ends first, the death was not committed, so the clock is still `ALIVE`
   under the ended generation and the next owner realizes the boss again (above). A restart therefore never gives a free boss and never loses a dead one's
   timer.
 - `at_reset`: the first activation of a channel in a new reset epoch performs the draw once per
@@ -340,9 +347,15 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
 ### 8.1 Death record and draw
 
 - `game_boss_reward_deaths`: one row per reward-boss death key, with the credited set and scores,
-  the loot table ref, a **snapshot of the resolved loot table** (entry key, item definition key,
-  count range and chance of each entry, taken from the active content generation at the death
-  commit) and the Boosted Boss flag, written by the death composition (ruling R3:
+  the loot table ref (key and revision) and the content generation, a **snapshot of the resolved
+  loot table** taken from the active content generation at the death commit, and the Boosted Boss
+  flag. Each snapshot entry holds its entry key, the exact typed item definition reference that
+  DUR-03 MINT identity uses (`family`, `production_key`, `revision_ref`, as
+  `OneItemTypedDefinitionRevisionV1`), its count range, its chance, and the draw-relevant flags
+  the bonus rules read (capped-drop, and membership of the equipment loot set that the §10.3 slot
+  bonus adds). The resolved Boosted Boss bonus chance is recorded
+  with the flag. The snapshot holds at most the table's entries, each key and revision within the
+  DUR-03 512 B bound (`DUR04-FIRST-PROD-KEY-BYTES`). The record is written by the death composition (ruling R3:
   committed with the death; its draws and MINTs resume after a restart, keyed so they never
   duplicate, in each credited character's own admitted session, below).
 - **Bonus snapshot.** The same death composition writes, per credited character, whether the
@@ -353,9 +366,10 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
   `BOSSRAID0-RL-11` (16) entries, chances scaled by its share (`PARITY_PENDING`), plus the boss
   slot bonus from the snapshot and the Boosted Boss bonus from the recorded flag (§10.3, §11).
   Every draw, including a resumed or retried one, reads only the death record (the snapshotted
-  table, never the live content definition), never live slot or Bosstiary state. A snapshot
-  entry whose item definition is no longer mintable in the active generation is skipped and
-  recorded in its step, never replaced by other content. The RNG is seeded by (death key, CharacterId).
+  table, never the live content definition), never live slot or Bosstiary state, and each MINT
+  uses the snapshotted typed reference exactly, never a newer revision of the same key. A snapshot
+  entry whose exact typed definition revision is no longer mintable is skipped and recorded in its
+  step, never replaced by another revision or other content. The RNG is seeded by (death key, CharacterId).
 - Each item is its own one-item DUR-03 MINT, cause `(death key, CharacterId, loot table ref,
   entry key, draw ordinal)`, in steps of `BOSSRAID0-RL-12` MINTs keyed by (death, CharacterId, step).
 - **Session-fenced continuation (architect ruling).** The death record keeps, per (death key,
@@ -392,9 +406,12 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
 - **Boss room:** the cooldown already bounds it; the ref is the admission.
 - **Open-world boss spawn** (ruling R2, §17): no derived window ref.
   `game_character_boss_open_world_eligibility` is one singleton row per (CharacterId, boss key)
-  with `next_eligible_at`. The death composition inserts it if absent and locks it FOR UPDATE; it
+  with `next_eligible_at` and `last_credited_epoch`. The death composition inserts it if absent and locks it FOR UPDATE; it
   credits the character only if the death commit time is at or after `next_eligible_at`, and then
-  sets `next_eligible_at = death commit time + BOSSRAID0-RL-18` in the same transaction. Two
+  sets `next_eligible_at = death commit time + BOSSRAID0-RL-18` in the same transaction. An
+  `at_reset` spawn has no `min_s`: its death instead credits only if the row's
+  `last_credited_epoch` is older than the current reset epoch, and sets it to the current epoch,
+  so a character is credited once per boss key per reset epoch across channels. Two
   concurrent deaths on different channels serialize on that row: the second sees the advanced
   time and credits nothing (no reward, no Bosstiary). No bucket boundary exists.
 - The row is written or claimed in the death composition, before the reward draw, under the
@@ -487,7 +504,7 @@ definition's `*_points`).
 | Row | Value |
 |---|---|
 | `BOSSRAID0-RL-01` raid check interval | 60 s |
-| `BOSSRAID0-RL-02` running firings per raid | 1 |
+| `BOSSRAID0-RL-02` running firings per raid | 1; a raid without `despawn_after_s`: 1 firing per reset epoch (§4.2) |
 | `BOSSRAID0-RL-03` raid creatures per firing per channel | 200 (`PARITY_PENDING`; content validation refuses more) |
 | `BOSSRAID0-RL-04` waves and announcements per raid | 32 waves, 16 announcements |
 | `BOSSRAID0-RL-05` rows per World job pass | 100 |
@@ -504,7 +521,7 @@ definition's `*_points`).
 | `BOSSRAID0-RL-15` Bosstiary increment | 1; 3 for the Boosted Boss; saturates at Mastery |
 | `BOSSRAID0-RL-16` boss slots | 2; slot 2 at 1,500 boss points |
 | `BOSSRAID0-RL-17` free slot changes | 1 per character per reset epoch, all slots |
-| `BOSSRAID0-RL-18` open-world eligibility interval | the spawn's `min_s` (R2 a), from the last credited death commit (§9) |
+| `BOSSRAID0-RL-18` open-world eligibility interval | the spawn's `min_s` (R2 a), from the last credited death commit; an `at_reset` spawn: one credit per reset epoch (§9) |
 | `BOSSRAID0-RL-19` boss cooldown | content, at most 30 days |
 | Lever admission | 0 items, 0 value lines, 15 cooldown rows, 1 event |
 | Reward step | 100 items, 0 value lines, 1 event |
