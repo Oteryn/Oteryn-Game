@@ -708,7 +708,7 @@ and by a buy offer's `escrow_gold` as §18 non-item value in custody. Its shapes
 cancel, expire, match, Inbox out) move whole items as `TRANSFER` lines with at most one §12 split
 (`SPLIT_MERGE_QUANTITY`, a §11.3 planned output identity), gold as `TRANSFER` value lines, and the
 placing fee as one `BURN` value line under the Market variant of `FeeBurnCause`. The owner
-admitted that fee source, paid from the bank (D178; #162 5913348961); this PR carries it into
+admitted that fee source, paid from the bank (D178; #162 5913348961); MARKET-0 carries it into
 §39.3 and the gold fee decision §4.4 as pending amendments. A held credit (MARKET-0 §6) is §18
 non-item value in custody on the offer, like `escrow_gold`. For those
 shapes only, it supersedes the §39.1 exclusions of non-item accounts, multiple touched items and

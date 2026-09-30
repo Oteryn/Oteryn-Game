@@ -178,7 +178,9 @@ How do players of one World buy and sell items through the Market, safely across
   `CREDIT_HELD` included.
 - **Held credit.** `held_credit_gold` is DUR-03 §18 non-item value in custody on the offer whose
   owner's credit is held (below); a guard keeps it 0 in every state except `CREDIT_HELD`, where it
-  is positive.
+  is positive. The transaction that moves a buy offer to `CREDIT_HELD` folds its remaining
+  `escrow_gold` into `held_credit_gold`, so both guards hold at commit and no escrow is returned
+  to the bank that is already at the ceiling.
 - **Fill price.** The maker is the older of the two offers; a fill is at the maker's price.
 - **Accepting a sell offer** (`accept {offer_id, amount}`, the accepter next to its open locker):
   the buyer's bank pays `amount × piece_price` (`MARKET_PURCHASE`), the seller's bank receives it
@@ -205,9 +207,11 @@ How do players of one World buy and sell items through the Market, safely across
     write;
   - to the **owner of an offer** (the maker of an accept, either side of a matching step): it is
     not written to the bank; the same transaction adds it to that offer's `held_credit_gold` and
-    moves the offer to `CREDIT_HELD`, off the book, so the ware's book never stalls. The job's next
-    step returns the offer's remaining escrow in the cancel shape and records `ended_as`; later
-    steps retry the held credit daily (`MARKET_HELD_CREDIT`: `held_credit_gold` falls, the bank
+    moves the offer to `CREDIT_HELD`, off the book, so the ware's book never stalls, and records
+    `ended_as`. For a buy offer the same transaction also folds the remaining `escrow_gold` into
+    `held_credit_gold` (escrow 0). For a sell offer the remaining escrowed items (no gold) return to
+    the owner's Inbox by the job's next step in the cancel shape. Later steps retry the held credit
+    daily (`MARKET_HELD_CREDIT`: `held_credit_gold` falls, the bank
     rises) until the balance can take it, then the offer takes `ended_as`. Nothing is lost.
 - **Causes.** Closed `MarketCause {Place | Accept | Cancel | Expire | Match | HeldCredit,
   offer_id, occurrence}`; the fee's BURN is under the Market variant of `FeeBurnCause` (Q1).
@@ -285,7 +289,7 @@ Each keeps the previous function body and adds one clause, as DEPOT-0 §6 does:
 | A buy taker matching a cheaper sell | 100 items, 200 location lines, 1 split, 3 value lines (`escrow_gold` fall, sale, refund), 304 work units, 1 event |
 | Cancel or expire a sell offer | 100 items, 200 location lines, 0 value lines, 300 work units, 1 event |
 | Cancel or expire a buy offer | 0 items, 2 value lines (`escrow_gold` fall, return), 1 event |
-| Any fill above whose credit is held | the same counts: the held credit replaces the credit line (`held_credit_gold` rise) |
+| Any fill above whose credit is held | the same counts: the held credit replaces the credit line (`held_credit_gold` rise); for a buy offer the fold of its remaining escrow is inside the same `escrow_gold` fall (to 0) and `held_credit_gold` rise lines |
 | Release a held credit | 0 items, 2 value lines (`held_credit_gold` fall, credit), 1 event |
 | Inbox out | 1 item, 2 location lines, 3 work units, 1 event |
 | `DUR03-RL-03-MARKET` value lines | 3; each ledger entry is one line (the fee's `FEE_DEBIT` is its BURN line, not a second one) and each `escrow_gold` or `held_credit_gold` change is one line |
