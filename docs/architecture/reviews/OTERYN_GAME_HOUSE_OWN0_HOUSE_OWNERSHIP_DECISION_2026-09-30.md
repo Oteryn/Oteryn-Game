@@ -178,10 +178,10 @@ How does a character get, keep and lose an ordinary physical house?
   declared difference, because the slot and the value are World-scoped.
 - A lapse of Premium changes nothing (EXP-HOUSES-01 §10.1).
 
-**Amendment (pending on acceptance of MAIL-0; `OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §10).** If the
-owner admits system letters (MAIL-0 Q1a), the step that sets `grace_until` also mints one stamped
+**Amendment (pending on acceptance of MAIL-0; `OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §10).** The
+owner admitted system letters (MAIL-0 Q1a): the step that sets `grace_until` also mints one stamped
 rent warning letter into the owner's Inbox, keyed by (house, period), as Tibia's "warning letter
-in inbox". The login warning stays until MAIL-SYSTEM-1 ships, and for good under answer Q1b.
+in inbox". The login warning stays until MAIL-SYSTEM-1 ships.
 
 ## 6. Moving out (HOUSE-1)
 

@@ -4,8 +4,9 @@
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   protocol, security and privacy) and protected integration. It builds on DEPOT-0, MARKET-0
   (`CharacterInbox`), HOUSE-OWN-0, CHAT-0, ITEM-MOVE-WIRE-0 and -1 and MAP-WIRE-1, and integrates
-  after them. Owner questions Q1 and Q2 (§14) are open. Q1 gates MAIL-SYSTEM-1; Q2 gates MAIL-1
-  and MAIL-PARCEL-1, which are not allocated until Q2 is answered. The other children do not wait.
+  after them. Owner questions Q1 and Q2 (§14) are answered (2026-09-30, #162): system letters are
+  delivered (Q1a); a junior sends and receives letters only, no parcels (Q2b). Q3 (§14), the
+  result a junior parcel recipient returns, is open; no child waits on it.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to build the mail system now, with full Tibia Global parity
   (2026-09-30); HOUSE-OWN-0 §5's "shown on login until a mail system exists"
@@ -28,10 +29,10 @@
 |---|---|---|---|
 | MAIL-CONTENT-1 | content lane | parcel, letter, label and stamped definitions (§3.1), the stamp rule, the base map's mailboxes as `container_fixture` bindings, the system letter texts | WO-1; MAP-LOAD-1 |
 | MAIL-TEXT-1 | hard, security and privacy review | the item text store and the text write transaction (§4) | ITEM-MOVE-1; MAIL-CONTENT-1 |
-| MAIL-1 | hard, persistence review | mail operations, letter posting, the stamp transform, the mail event, the Inbox mail ceiling and the posting rate (§5, §6, §8) | owner answer Q2; INBOX-1; ITEM-MOVE-2a; MAIL-TEXT-1; MAIL-CONTENT-1 |
+| MAIL-1 | hard, persistence review | mail operations, letter posting, the stamp transform, the mail event, the Inbox mail ceiling and the posting rate (§5, §6, §8) | INBOX-1; ITEM-MOVE-2a; MAIL-TEXT-1; MAIL-CONTENT-1 |
 | MAIL-WIRE-1 | impl, protocol review | capability `MAIL_V1`, the `MAILBOX` destination, the text view and write command, the mail notice (§9) | ITEM-VIEW-1; MAP-WIRE-2; MAIL-1 |
-| MAIL-PARCEL-1 | hard, persistence review | parcel posting as a container tree, parcel trees in the Inbox, the parcel-child out-shape (§7) | owner answer Q2; MAIL-1; the bags child of BAGS-0 |
-| MAIL-SYSTEM-1 | hard, persistence review | system letters minted into the Inbox, first the rent warning (§10) | owner answer Q1a; MAIL-1; HOUSE-1 |
+| MAIL-PARCEL-1 | hard, persistence review | parcel posting as a container tree, parcel trees in the Inbox, the parcel-child out-shape, the junior parcel refusal (§7) | MAIL-1; the bags child of BAGS-0 |
+| MAIL-SYSTEM-1 | hard, persistence review | system letters minted into the Inbox, first the rent warning (§10) | MAIL-1; HOUSE-1 |
 
 BAGS-0 (containers with contents in the main backpack, B3 RL-05 above 0) is not written yet. A
 parcel cannot be filled without it, so it is the next decision parcels need. Later, each with its
@@ -159,8 +160,8 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
   difference (`PARITY_PENDING`) that creates no Ground item.
 - **Allowed recipients.** Any character of the World: oneself, another character of the same
   Account, offline characters, characters on another channel. Mail moves no bank value, so
-  BANK-0 §4.3's same-Account refusal does not apply. Juniors: owner question Q2; MAIL-1 and
-  MAIL-PARCEL-1 are not allocated until it is answered, so no junior rule ships unanswered.
+  BANK-0 §4.3's same-Account refusal does not apply. A junior character (BANK-0 §4.4) sends and
+  receives letters (owner Q2b); parcels are refused to and from it (§7).
 - **Delivery is instant**, in the posting transaction, as in Tibia and Canary:
   1. the letter leaves the sender's backpack entry and becomes a new `CharacterInbox` entry of the
      recipient (TRANSFER);
@@ -211,6 +212,11 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
   (`PARITY_PENDING`) until BAGS-0 admits deeper nesting and this row is amended.
 - **Address.** The first label among the parcel's children in entry order whose text is not
   empty; its first line resolves as in §5. No such label is `NO_ADDRESS`.
+- **Juniors** (owner Q2b). A junior character (BANK-0 §4.4) neither posts nor receives a parcel.
+  A junior sender's parcel is refused as `NOT_MAILABLE`; a parcel addressed to a junior recipient
+  is refused, checked under §6's recipient root lock. Either refusal writes nothing and the parcel
+  stays in the backpack. The result the sender sees for a junior recipient is open (Q3, §14).
+  Juniors still receive letters and system letters.
 - **Shape.** One TRANSFER of the parcel root from the backpack entry to a new Inbox entry, and the
   stamp TRANSFORM of the root. The children keep their `Container {parent}` location (DUR-03 §10);
   they are locked and checked but not moved. The operation records the tree: its item count and a
@@ -253,12 +259,13 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
 - **Inbox view.** MARKET-0 §10's Inbox view shows stamped parcels as containers; opening one
   shows its children in domain 11, and command 9 takes a child as source (§7).
 
-## 10. System letters (MAIL-SYSTEM-1, pending Q1)
+## 10. System letters (MAIL-SYSTEM-1)
 
-- With owner answer Q1a, a system letter is a stamped letter minted into the recipient's Inbox:
-  one MINT line under `MailCause::SystemLetter {kind, occurrence_key}` with a text row whose writer
-  is NULL (shown as "Royal Tibian Mail"). The text is a content template with its parameters.
-  Who may request a kind stays with the owner answer to Q1; this section fixes only the shape.
+- System letters are delivered (owner Q1a): a system letter is a stamped letter minted into the
+  recipient's Inbox: one MINT line under `MailCause::SystemLetter {kind, occurrence_key}` with a
+  text row whose writer is NULL (shown as "Royal Tibian Mail"). The text is a content template
+  with its parameters. `SystemLetterKind` is closed: each kind is requested only by the step its
+  owning decision names, and a new kind needs an amendment of this section.
 - **Operation.** `game_mail_system_letters`, a row type of its own, never a
   `game_mail_operations` row: `kind` (closed `SystemLetterKind`), `occurrence_key` (typed per
   kind), the TransactionId, the recipient CharacterId, the outcome (closed: `DELIVERED` with the
@@ -274,7 +281,7 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
   twice.
 - System letters are never refused by the mail ceiling; at most one per house and period bounds
   them (the HOUSE-OWN-0 §7 rule for deliveries).
-- Until MAIL-SYSTEM-1 ships, and under answer Q1b, the login warning of HOUSE-OWN-0 §5 stays.
+- Until MAIL-SYSTEM-1 ships, the login warning of HOUSE-OWN-0 §5 stays.
 
 ## 11. Rows (registered by the children before implementation)
 
@@ -317,10 +324,11 @@ decision:
 - **Parity kept:** instant delivery to offline and other-channel recipients; the name as the
   only address; stamping, so a received parcel is repacked; the 79 and 1,999 character texts; the
   last writer and time shown; mail to oneself and to the same Account; the "New mail has arrived."
-  notice next to a depot.
+  notice next to a depot; the rent warning letter in the Inbox.
 - **Declared differences** (`PARITY_PENDING`): a misaddressed item stays in the backpack; parcels
   hold at most 10 children without contents; the 1 per second posting rate; the 50,000 mail
-  ceiling; posting only from backpack direct entries.
+  ceiling; posting only from backpack direct entries; juniors send and receive letters only (owner
+  Q2b).
 
 ## 14. Owner questions
 
@@ -328,11 +336,21 @@ decision:
 is unpaid. A minted letter is a new item source, which needs an owner decision (as D208 did).
 Letters have no NPC value. a) Yes, stamped system letters, first for rent warnings
 (recommended); b) no, keep the warning shown on login.
+Owner answer (2026-09-30, #162): a — yes, system letters are delivered (§10).
 
 **Q2. May junior (starter-island) characters send and receive mail?** The manual lists the junior
 limits (houses, Market selling, bank transfers) and not mail; Canary has none. Mail lets a main
 character send items and coins to a new one, which BANK-0's answer b keeps from the bank. a) Yes,
 as in Tibia (recommended); b) letters only, no parcels; c) no mail until it leaves the island.
+Owner answer (2026-09-30, #162): b — a junior on the starting island sends and receives letters
+only, no parcels (§5, §7).
+
+**Q3 (open). What does the sender see when a parcel is addressed to a junior?** Q2b refuses it
+(§7). A distinct result tells any player that the named character is a junior; `UNKNOWN_RECIPIENT`
+hides it but tells the sender that the name does not exist, while a letter to the same name is
+delivered. a) `UNKNOWN_RECIPIENT`, as CHAT-0 hides where a name exists; b) a new result
+`RECIPIENT_CANNOT_RECEIVE_PARCELS`. The refusal itself does not wait on Q3; MAIL-WIRE-1 registers
+the answer.
 
 ## 15. Decision test
 
@@ -340,7 +358,7 @@ as in Tibia (recommended); b) letters only, no parcels; c) no mail until it leav
   rent warnings.
 - **Minimum sufficient:** one command destination, one text store for two definitions, one
   operation table, one transaction per posting, one stamp rule; parcels reuse bags.
-- **Superseding evidence:** official mail limits or junior rules; an owner answer in §14.
+- **Superseding evidence:** official mail limits or junior rules; the owner answer to Q3.
 - **Deliberately not decided:** house mailboxes, posting from the ground, Store-bound items,
   nested bags in parcels, other writable items, delayed or returned mail.
 
