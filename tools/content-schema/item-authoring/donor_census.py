@@ -166,7 +166,7 @@ def classify_donor_item(
         or f"item {item_id}"
     )
 
-    non_item = non_item_route(xml_record, attrs, flags)
+    non_item = non_item_route(xml_record, attrs, flags, item_id)
     if non_item is not None:
         owner, reason = non_item
         return {"outcome": "routed", "name": name, "owner": owner, "reason": reason}

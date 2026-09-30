@@ -54,6 +54,15 @@ class ValidateAchievementsTest(unittest.TestCase):
             ["points 0 outside the grade 1 range"],
         )
 
+    def test_load_reads_a_catalogue_shard(self) -> None:
+        shard = Path(self.id().replace(".", "_") + ".json")
+        path = ROOT / shard
+        try:
+            path.write_text(json.dumps({"family": "Achievement", "records": [SAMPLE]}))
+            self.assertEqual(v.load([path]), [SAMPLE])
+        finally:
+            path.unlink()
+
     def test_duplicate_key_rejected(self) -> None:
         report = v.validate([SAMPLE, variant(description="Other text.")])
         self.assertEqual(

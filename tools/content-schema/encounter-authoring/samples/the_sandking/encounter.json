@@ -15,19 +15,200 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "sandking_fake",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_sandking_fake",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "sandking_split",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_sandking_fake",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "sand_brood",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/sand_brood",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "sand_vortex",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/sand_vortex",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
-  "anchors": [],
+  "anchors": [
+    {
+      "key": "sandking_room",
+      "kind": "area",
+      "description": "The brood check area, Canary (33087, 31848, 15) to (33109, 31871, 15).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33087,
+              33109
+            ],
+            "y": [
+              31848,
+              31871
+            ],
+            "floor": 15
+          }
+        ]
+      }
+    },
+    {
+      "key": "brood_area",
+      "kind": "area",
+      "description": "The brood tiles, Canary x 33092-33105, y 31853-31865, z 15.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33092,
+              33105
+            ],
+            "y": [
+              31853,
+              31865
+            ],
+            "floor": 15
+          }
+        ]
+      }
+    },
+    {
+      "key": "sandking_return",
+      "kind": "point",
+      "description": "Where the Sandking reappears; Canary (33099, 31859, 15).",
+      "location": {
+        "x": 33099,
+        "y": 31859,
+        "floor": 15
+      }
+    },
+    {
+      "key": "vortex_1",
+      "kind": "point",
+      "description": "Sand vortex 1; Canary (33095, 31854, 15).",
+      "location": {
+        "x": 33095,
+        "y": 31854,
+        "floor": 15
+      }
+    },
+    {
+      "key": "vortex_2",
+      "kind": "point",
+      "description": "Sand vortex 2; Canary (33102, 31854, 15).",
+      "location": {
+        "x": 33102,
+        "y": 31854,
+        "floor": 15
+      }
+    },
+    {
+      "key": "vortex_3",
+      "kind": "point",
+      "description": "Sand vortex 3; Canary (33095, 31864, 15).",
+      "location": {
+        "x": 33095,
+        "y": 31864,
+        "floor": 15
+      }
+    },
+    {
+      "key": "vortex_4",
+      "kind": "point",
+      "description": "Sand vortex 4; Canary (33102, 31864, 15).",
+      "location": {
+        "x": 33102,
+        "y": 31864,
+        "floor": 15
+      }
+    },
+    {
+      "key": "split_1",
+      "kind": "point",
+      "description": "Sandking split 1; Canary (33097, 31857, 15).",
+      "location": {
+        "x": 33097,
+        "y": 31857,
+        "floor": 15
+      }
+    },
+    {
+      "key": "split_2",
+      "kind": "point",
+      "description": "Sandking split 2; Canary (33099, 31856, 15).",
+      "location": {
+        "x": 33099,
+        "y": 31856,
+        "floor": 15
+      }
+    },
+    {
+      "key": "split_3",
+      "kind": "point",
+      "description": "Sandking split 3; Canary (33102, 31857, 15).",
+      "location": {
+        "x": 33102,
+        "y": 31857,
+        "floor": 15
+      }
+    }
+  ],
   "phases": [],
   "state": {
     "counters": [
       {
         "name": "stage",
+        "initial": 1
+      },
+      {
+        "name": "broods_left",
         "initial": 0
       }
     ],
-    "flags": [],
-    "timers": []
+    "flags": [
+      {
+        "name": "real_sandking_called",
+        "initial": false
+      }
+    ],
+    "timers": [
+      {
+        "name": "brood_wave",
+        "duration_ms": 5000,
+        "repeat": true
+      },
+      {
+        "name": "brood_check",
+        "duration_ms": 5000,
+        "repeat": true
+      }
+    ]
   },
   "rules": [
     {
@@ -54,6 +235,468 @@
           "kind": "emit_outcome",
           "outcome": "the_sandking_defeated",
           "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "sandking_vanishes",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "sandking_fake",
+        "percent": 95
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "stage",
+          "op": "<=",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "sandking_fake"
+          },
+          "text": "THE SANDKING VANISHES INTO THE SAND AND HIS BROOD EMERGES!",
+          "mode": "say"
+        },
+        {
+          "kind": "remove",
+          "triggering": true
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/sand_vortex",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "sand_vortex",
+          "count": 1,
+          "at": {
+            "anchor": "vortex_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/sand_vortex",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "sand_vortex",
+          "count": 1,
+          "at": {
+            "anchor": "vortex_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/sand_vortex",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "sand_vortex",
+          "count": 1,
+          "at": {
+            "anchor": "vortex_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/sand_vortex",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "sand_vortex",
+          "count": 1,
+          "at": {
+            "anchor": "vortex_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/sand_brood",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "sand_brood",
+          "count": 1,
+          "at": {
+            "random_in": "brood_area",
+            "free": true
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "broods_left",
+          "operation": "set",
+          "value": 9
+        },
+        {
+          "kind": "timer",
+          "timer": "brood_wave",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "brood_calls_end",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "brood_wave"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "broods_left",
+          "op": "==",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "brood_wave",
+          "operation": "stop"
+        },
+        {
+          "kind": "timer",
+          "timer": "brood_check",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "brood_called",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "brood_wave"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "broods_left",
+          "op": ">=",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/sand_brood",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "sand_brood",
+          "count": 1,
+          "at": {
+            "random_in": "brood_area",
+            "free": true
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "broods_left",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "key": "sandking_remerges",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "brood_check"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "sand_brood",
+          "anchor": "sandking_room",
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "brood_check",
+          "operation": "stop"
+        },
+        {
+          "kind": "remove",
+          "role": "sand_vortex"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_sandking_fake",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "sandking_fake",
+          "count": 1,
+          "at": {
+            "anchor": "sandking_return"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "spawned": true
+          },
+          "text": "THE BROOD RETREATS AND THE SANDKING REMERGES TO PROTECT HIS OFFSPRING!",
+          "mode": "say"
+        },
+        {
+          "kind": "counter",
+          "counter": "stage",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "sandking_splits",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "sandking_fake",
+        "percent": 50
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "stage",
+          "op": "==",
+          "value": 4
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "sandking_fake"
+          },
+          "text": "THE SANDKING VANISHES INTO THE SAND AND HIS BROOD EMERGES!",
+          "mode": "say"
+        },
+        {
+          "kind": "remove",
+          "triggering": true
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_sandking_fake",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "sandking_split",
+          "count": 1,
+          "at": {
+            "anchor": "split_1"
+          },
+          "owner": "none",
+          "health": {
+            "percent": 50
+          }
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_sandking_fake",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "sandking_split",
+          "count": 1,
+          "at": {
+            "anchor": "split_2"
+          },
+          "owner": "none",
+          "health": {
+            "percent": 50
+          }
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_sandking_fake",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "sandking_split",
+          "count": 1,
+          "at": {
+            "anchor": "split_3"
+          },
+          "owner": "none",
+          "health": {
+            "percent": 50
+          }
+        },
+        {
+          "kind": "shared_life",
+          "role": "sandking_split"
+        }
+      ]
+    },
+    {
+      "key": "real_sandking_appears",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "sandking_split"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "real_sandking_called",
+          "value": false
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "stage",
+          "op": "==",
+          "value": 4
+        }
+      ],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "real_sandking_called",
+          "value": true
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_sandking",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "the_sandking",
+          "count": 1,
+          "at": {
+            "anchor": "sandking_return"
+          },
+          "owner": "none",
+          "health": {
+            "percent": 50
+          }
+        }
+      ]
+    },
+    {
+      "key": "sandking_stage_5",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "sandking_split"
+      },
+      "delay_ms": 2000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "stage",
+          "operation": "set",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "key": "sandking_fake_eats_a_brood_corpse",
+      "trigger": {
+        "kind": "stepped_on",
+        "role": "sandking_fake",
+        "corpse_of": "sand_brood"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "sandking_fake"
+          },
+          "amount": {
+            "min": 100,
+            "max": 1000
+          }
+        },
+        {
+          "kind": "map_item",
+          "operation": "remove",
+          "triggering": true
+        }
+      ]
+    },
+    {
+      "key": "sandking_split_eats_a_brood_corpse",
+      "trigger": {
+        "kind": "stepped_on",
+        "role": "sandking_split",
+        "corpse_of": "sand_brood"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "sandking_split"
+          },
+          "amount": {
+            "min": 100,
+            "max": 1000
+          }
+        },
+        {
+          "kind": "map_item",
+          "operation": "remove",
+          "triggering": true
+        }
+      ]
+    },
+    {
+      "key": "the_sandking_eats_a_brood_corpse",
+      "trigger": {
+        "kind": "stepped_on",
+        "role": "the_sandking",
+        "corpse_of": "sand_brood"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "the_sandking"
+          },
+          "amount": {
+            "min": 100,
+            "max": 1000
+          }
+        },
+        {
+          "kind": "map_item",
+          "operation": "remove",
+          "triggering": true
         }
       ]
     }
