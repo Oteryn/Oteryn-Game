@@ -252,6 +252,12 @@ receipts, and advance no `CharacterRevision`. Rule 4's lock order is extended: a
 `game_character_quest_obligations` row written by a reward-claim transaction: an obligation outside
 the revision chain, like the pending arrival; the claim still advances no `CharacterRevision`.
 
+**Amendment (pending on acceptance of VIP-0;
+`reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md` §4).** Rule 1 also covers the VIP list,
+entry, group and group-member rows of the acting session's (Account, World): Account + World
+social rows, not Character state. A VIP write advances no `CharacterRevision`, touches no item and
+takes rule 2's fence of the acting session.
+
 ## 6. Handback
 
 ```yaml

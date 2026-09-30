@@ -102,6 +102,12 @@ the Bank row becomes "Game bank ledger (BANK-0); Account + World (owner answer 1
 5912593702); strong durable, immutable ledger; the same balance on all channels of the World,
 another World has its own; shared".
 
+**Amendment (pending on acceptance of VIP-0;
+`reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md` §4 and §8).** The VIP list is a Game
+table per Account + World, the same on every channel of the World. Its Presence use shows only
+online or offline on this World, from session rows and hints on the CHAT-0 World relay; it never
+shows a channel.
+
 ## Required identity envelope
 
 Every runtime command, event and timer that can mutate or address gameplay state must carry enough identity to resolve its owner without process-global lookup.
