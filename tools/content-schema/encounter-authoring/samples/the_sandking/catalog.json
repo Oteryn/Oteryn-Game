@@ -4,6 +4,21 @@
       "family": "Creature",
       "key": "canary:creature/the_sandking",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/the_sandking_fake",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/sand_brood",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/sand_vortex",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

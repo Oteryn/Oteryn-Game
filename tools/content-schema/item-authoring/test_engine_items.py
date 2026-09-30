@@ -3703,7 +3703,7 @@ def test_committed_owner_family_decisions_loads_fail_closed():
         engine_items.OWNER_FAMILY_DECISIONS_PATH, valid_keys
     )
     # 121 leftover decisions (task #15) plus 14 Q13d rows with an engine binding (ITEM-ID-1b).
-    check(len(decisions) == 135, len(decisions))
+    check(len(decisions) == 138, len(decisions))
     check(
         all(
             entry["profile"] in engine_items.PROFILE_ITEM_CLASS
@@ -3734,6 +3734,27 @@ def test_empty_client_object_routes_appearance_placeholder_slot():
         report,
     )
     check(report["blockers"] == [], report)
+
+
+def test_frost_cannon_routes_non_pickupable_blocking_prop():
+    # D165 27a: id 9132 is a quest-mechanism prop; it routes to WorldObject even though
+    # its client object carries flags that would otherwise resolve a family.
+    sources = synthetic_sources(
+        "crystal",
+        {9132: {"name": "frost cannon", "attrs": {}, "flags": {"flags.take": True}}},
+    )
+    item, _deps, report = engine_items.convert_item(sources, 9132)
+    check(item is None, report)
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "non_pickupable_blocking_prop"},
+        report,
+    )
+    check(report["blockers"] == [], report)
+    check(
+        engine_items.non_item_route(None, {}, {"flags.take": True}, 9133) is None,
+        "only the listed id routes",
+    )
 
 
 def test_empty_client_object_route_requires_zero_flags():

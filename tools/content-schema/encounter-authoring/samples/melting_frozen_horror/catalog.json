@@ -4,6 +4,21 @@
       "family": "Creature",
       "key": "canary:creature/melting_frozen_horror",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/dragon_egg",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/solid_frozen_horror",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/baby_dragon",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

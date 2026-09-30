@@ -277,6 +277,10 @@ items. ITEM-ID-1b added the 14 owner-approved Q13d rows that have an engine bind
 (lists B and C of `docs/agents/evidence/OTV2-20260929-item-family-proposals-266.md`); the
 register `docs/agents/evidence/OTV2-20260929-item-id-1b-q13d-family-decisions.json` holds
 every Q13d row with its status, and the approved client-only rows wait for their record.
+ITEM-Q13D-APPLY (owner decision D165, 2026-09-30) decided the 41 disputed rows: the three with an
+engine binding (54262, 23547, 21212, all `quest_item`) joined this table, the client-only rows stay
+`PENDING_MINT`, 44044 is `EXCLUDED`, and id 9132 (frost cannon) routes `WorldObject` with reason
+`non_pickupable_blocking_prop` (`NON_PICKUPABLE_BLOCKING_PROP_IDS`).
 
 Once even the owner table has failed, an item that DOES have an `appearances.dat`
 object but whose `flags` dict is completely empty (not even `take`/`usable`) routes the
