@@ -189,13 +189,22 @@ does not run.
 - A spawn whose creature has a `bosstiary` block or `reward_boss` is a **boss spawn**. Its content
   gives `respawn {min_s, max_s}` or `at_reset {chance}`.
 - `game_boss_spawn_clocks`: (World, ChannelId, spawn key) with `cycle`, state `DUE` or `ALIVE`,
-  `due_at`. Each channel keeps its own clock (the scope matrix spawn row).
-- At activation the channel realizes a boss spawn only if its clock is `DUE` and `due_at` has
-  passed; it sets `ALIVE`. A later due time is kept as an ordinary owner timer.
+  `due_at`, and `owner_generation`: the scope ownership generation that realized the `ALIVE`
+  boss. Each channel keeps its own clock (the scope matrix spawn row).
+- At activation, under its new scope ownership generation, the channel realizes a boss spawn
+  when:
+  - its clock is `DUE` and `due_at` has passed: it sets `ALIVE` with its own generation; or
+  - its clock is `ALIVE` with an `owner_generation` that has ended (not the activating
+    generation): the boss actor was lost with that owner, so the channel realizes it again at full
+    health and sets `owner_generation` to its own generation, by compare-and-set on the old
+    generation (a failed compare realizes nothing). The lost fight state is not restored (D52).
+
+  A later due time is kept as an ordinary owner timer. An `ALIVE` clock of the live generation is
+  never realized twice.
 - A committed boss death advances the clock as one more death descendant (DUR-03 A4 live-generation
   rule): `cycle + 1`, `DUE`, `due_at = death + draw(min_s, max_s)`, the draw seeded by (clock,
-  cycle). If the generation ends first, the death was not committed, so the boss is still alive
-  and is realized again. A restart therefore never gives a free boss and never loses a dead one's
+  cycle). If the generation ends first, the death was not committed, so the clock is still `ALIVE`
+  under the ended generation and the next owner realizes the boss again (above). A restart therefore never gives a free boss and never loses a dead one's
   timer.
 - `at_reset`: at reset activation the draw decides per (clock, epoch) whether the boss is `DUE`.
 
@@ -257,11 +266,17 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
   death identity is created.
 - **Contribution** is tracked for a `reward_boss` actor in owner memory, as D132: per
   CharacterId, damage dealt to the boss, damage taken from the boss and healing done to other
-  contributors, weighted by the formula BOSS-REWARD-1 captures (`PARITY_PENDING`). At most
-  `BOSSRAID0-RL-10` (50, D109) contributors; a later one fights normally and earns nothing, as
-  D132's overflow rule.
-- At the death commit, the credited set (score > 0) and each score are fixed in the death record
-  (§8.1).
+  contributors, weighted by the formula BOSS-REWARD-1 captures (`PARITY_PENDING`).
+- **Bounded top contributors (architect ruling, not D132's first-arrival overflow).** The tracking
+  set holds at most `BOSSRAID0-RL-10` (50, D109) entries, ordered by score descending, then
+  first-contribution tick ascending, then CharacterId ascending. A contribution by an untracked
+  character when the set is full enters only if the newcomer's score ranks above the lowest
+  entry under that order; the lowest entry is then evicted and its score discarded (it re-enters
+  from zero). Otherwise the contribution is not tracked; the character fights normally. Arrival
+  order alone never admits or excludes anyone, so low-contribution taggers cannot hold slots
+  against higher contributors.
+- At the death commit, the credited set is the tracked entries with score > 0 (at most 50, the
+  top contributors by the order above), and each score is fixed in the death record (§8.1).
 - Non-reward bosses keep D121 corpse loot with the D112 window and the party right (PARTY-PVP-0
   §5.3). Their Bosstiary credit uses CHARM-0's 5-minute damage rule, up to 50 principals.
 
@@ -273,9 +288,15 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
   the loot table ref and the Boosted Boss flag, written by the death composition (ruling R3:
   committed with the death; its draws and MINTs resume after a restart, keyed so they never
   duplicate).
+- **Bonus snapshot.** The same death composition writes, per credited character, whether the
+  dead boss was in one of its boss slots and the resolved boss slot bonus multiplier (from its
+  boss points), read from the character's committed state at the death commit. Later slot changes
+  or boss point gains never change a recorded death's bonus.
 - Each credited character gets its own draw from the boss loot table: at most
   `BOSSRAID0-RL-11` (16) entries, chances scaled by its share (`PARITY_PENDING`), plus the boss
-  slot and Boosted Boss bonuses (§10.3, §11). The RNG is seeded by (death key, CharacterId).
+  slot bonus from the snapshot and the Boosted Boss bonus from the recorded flag (§10.3, §11).
+  Every draw, including a resumed or retried one, reads only the death record, never live slot
+  or Bosstiary state. The RNG is seeded by (death key, CharacterId).
 - Each item is its own one-item DUR-03 MINT, cause `(death key, CharacterId, loot table ref,
   entry key, draw ordinal)`, in steps of `BOSSRAID0-RL-12` MINTs keyed by (death, step).
 
@@ -292,14 +313,21 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
 
 ## 9. Anti-hopping eligibility (BOSS-REWARD-1)
 
-- `game_character_boss_eligibility`: (CharacterId, boss key, eligibility ref) unique.
+- `game_character_boss_eligibility`: (CharacterId, boss key, eligibility ref) unique, for raid
+  firings and boss rooms.
 - **Raid firing:** the ref is the `firing_id`. A character is credited by at most one channel's
   copy of a firing's boss. A second copy's kill credits it with nothing (no reward, no
   Bosstiary).
 - **Boss room:** the cooldown already bounds it; the ref is the admission.
-- **Open-world boss spawn:** the ref is the window of `BOSSRAID0-RL-18` (ruling R2, §17).
-- The row is written in the death composition, before the reward draw, under the composition
-  rule 2 fence of the credited character. With it, a channel change gains nothing, so no extra
+- **Open-world boss spawn** (ruling R2, §17): no derived window ref.
+  `game_character_boss_open_world_eligibility` is one singleton row per (CharacterId, boss key)
+  with `next_eligible_at`. The death composition inserts it if absent and locks it FOR UPDATE; it
+  credits the character only if the death commit time is at or after `next_eligible_at`, and then
+  sets `next_eligible_at = death commit time + BOSSRAID0-RL-18` in the same transaction. Two
+  concurrent deaths on different channels serialize on that row: the second sees the advanced
+  time and credits nothing (no reward, no Bosstiary). No bucket boundary exists.
+- The row is written or claimed in the death composition, before the reward draw, under the
+  composition rule 2 fence of the credited character. With it, a channel change gains nothing, so no extra
   channel-change gate is needed beyond ADR-0001 §10.
 
 ## 10. Bosstiary (BOSSTIARY-1)
@@ -322,12 +350,16 @@ definition's `*_points`).
 
 ### 10.3 Boss slots
 
-- `game_character_boss_slots`: (CharacterId, slot) -> boss key, with the reset epoch of the last
-  change and the swaps in that epoch. Slot 1 is open from the start; slot 2 opens at 1,500 boss
-  points (`BOSSRAID0-RL-16`).
-- Equip needs Prowess on that boss. Commands: equip and clear. The first change per slot in a reset
-  epoch is free (`BOSSRAID0-RL-17`); a later one costs the swap fee (R4).
-- Effect: in the character's own reward draw of an equipped boss, the bonus chance of one extra
+- `game_character_boss_slots`: (CharacterId, slot) -> boss key. Slot 1 is open from the start;
+  slot 2 opens at 1,500 boss points (`BOSSRAID0-RL-16`).
+- `game_character_boss_slot_changes`: one row per CharacterId with the reset epoch of the last
+  change and the changes in that epoch; one character-wide counter across all slots, locked in
+  the change transaction.
+- Equip needs Prowess on that boss. Commands: equip and clear. The first change by a character in
+  a reset epoch, on any slot, is free (`BOSSRAID0-RL-17`); every later one in that epoch costs the
+  swap fee (R4), as the one free swap per server save (§2, §16).
+- Effect: in the character's own reward draw of a boss equipped at the death commit (the §8.1
+  snapshot), the bonus chance of one extra
   loot set, capped-drop items excluded; the curve by boss points up to 182% is captured before
   freeze (`PARITY_PENDING`).
 - Each change advances `CharacterRevision` on the sequencer; the fee, if any, burns in the same
@@ -384,15 +416,15 @@ definition's `*_points`).
 | `BOSSRAID0-RL-07` participants per lever admission | 15 (content sets up to it) |
 | `BOSSRAID0-RL-08` admission arrival window | 30 s |
 | `BOSSRAID0-RL-09` boss room time limit | content, at most 2 h |
-| `BOSSRAID0-RL-10` contributors per reward boss | 50 (D109) |
+| `BOSSRAID0-RL-10` contributors per reward boss | 50 (D109), the top contributors by score (§7) |
 | `BOSSRAID0-RL-11` reward entries per character per death | 16 (D77 per character) |
 | `BOSSRAID0-RL-12` reward MINTs per step | 100 |
 | `BOSSRAID0-RL-13` reward expiry | 7 days (`PARITY_PENDING`) |
 | `BOSSRAID0-RL-14` items in one reward chest | 1,000 (`PARITY_PENDING`) |
 | `BOSSRAID0-RL-15` Bosstiary increment | 1; 3 for the Boosted Boss; saturates at Mastery |
 | `BOSSRAID0-RL-16` boss slots | 2; slot 2 at 1,500 boss points |
-| `BOSSRAID0-RL-17` free slot changes | 1 per slot per reset epoch |
-| `BOSSRAID0-RL-18` open-world eligibility window | the spawn's `min_s` (R2 a) |
+| `BOSSRAID0-RL-17` free slot changes | 1 per character per reset epoch, all slots |
+| `BOSSRAID0-RL-18` open-world eligibility interval | the spawn's `min_s` (R2 a), from the last credited death commit (§9) |
 | `BOSSRAID0-RL-19` boss cooldown | content, at most 30 days |
 | Lever admission | 0 items, 0 value lines, 15 cooldown rows, 1 event |
 | Reward step | 100 items, 0 value lines, 1 event |
@@ -438,8 +470,8 @@ bosses on one random channel.
 
 **R2. Open-world bosses and channel hopping?** (blocks BOSS-REWARD-1) Each channel has its own
 boss spawn clock, so one character could kill the same rare boss on every channel. a) One reward
-and Bosstiary credit per (character, boss) per `BOSSRAID0-RL-18` across channels (recommended,
-ADR-0001 §12); b) no limit: every channel copy rewards fully.
+and Bosstiary credit per (character, boss) per `BOSSRAID0-RL-18` across channels, claimed on one
+locked (character, boss) row (§9) (recommended, ADR-0001 §12); b) no limit: every channel copy rewards fully.
 
 **R3. Boss rewards after a crash?** (blocks BOSS-REWARD-1) D52 drops a death's uncommitted rewards
 on a restart. a) Keep D52 for bosses too; b) a reward boss's death record (§8.1) is committed with
@@ -472,6 +504,8 @@ change per reset epoch.
 2. **Serialization:** §12's lock order; one claim per (firing, channel); one admission per lever
    use; World jobs lock before re-checking.
 3. **Restart:** firings, runs, clocks, cooldowns, eligibility and rewards are durable and keyed;
+   an `ALIVE` clock of an ended generation is realized again (§5); resumed draws read the §8.1
+   snapshot;
    raid runs and boss rooms are lost, never duplicated; R3 for rewards.
 4. **Typed references:** WorldId, ChannelId, InstanceId, CharacterId, raid, encounter and boss
    keys, `firing_id`, death key, reset epoch.

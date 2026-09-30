@@ -80,6 +80,9 @@ persistence review; BOSS-REWARD-1 economy and security review; BOSS-WIRE-1 proto
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 - `git diff --cached --check`: clean.
+- Codex round-1 repair: ALIVE clock owner generation (§5), death-record bonus snapshot (§8.1),
+  singleton open-world eligibility row (§9), top-50 contributors (§7), one free slot change per
+  character per reset epoch (§10.3).
 
 ## Closeout
 
