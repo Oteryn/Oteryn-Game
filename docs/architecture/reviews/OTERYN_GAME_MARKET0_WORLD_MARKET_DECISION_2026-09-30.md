@@ -99,6 +99,11 @@ How do players of one World buy and sell items through the Market, safely across
   no changed charges, duration, text or contents.
 - `trade_as` merging is deferred; each definition key is its own ware.
 
+**Amendment (pending on acceptance of IMBUE-FORGE-0;
+`reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md` §13).**
+The default state also means item tier 0 and no imbuement. An imbued instance is never a ware. A
+tiered instance is refused until MARKET-TIER-1 keys a ware by (definition, tier), as Global does.
+
 ### 3.2 Numbers
 
 - `amount` 1 to 64,000 (`MARKET0-RL-02`); `piece_price` 1 to 999,999,999,999; `total =
