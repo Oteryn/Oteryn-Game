@@ -6541,6 +6541,238 @@
       "unit": "microseconds"
     },
     {
+      "allocation_impact": "Checked on the input length before any header field is trusted; the u32 offsets need the file below 4 GiB.",
+      "boundary_tests": [
+        "a bundle of exactly 1 GiB is size-accepted",
+        "a bundle over 1 GiB is rejected before parsing"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1073741824,
+        "minimum": 1073741824
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 1073741824,
+      "id": "MAP01-BUNDLE-FILE-BYTES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Size of one server World Bundle file",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Checked from the header before the manifest is parsed.",
+      "boundary_tests": [
+        "a 16 MiB manifest is length-accepted",
+        "a manifest length over 16 MiB is rejected before parsing"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 16777216,
+        "minimum": 16777216
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 16777216,
+      "id": "MAP01-BUNDLE-MANIFEST-BYTES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Canonical JSON manifest of one bundle, palette included",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Checked from the header, and the table must fit inside the file before any row is read or the sector list is reserved.",
+      "boundary_tests": [
+        "1,048,576 rows are count-accepted",
+        "a count over 1,048,576 is rejected before the table is read"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1048576,
+        "minimum": 1048576
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 1048576,
+      "id": "MAP01-BUNDLE-SECTOR-COUNT",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Rows of the sector table of one bundle",
+      "unit": "sectors"
+    },
+    {
+      "allocation_impact": "raw_length is checked against 16 MiB and against 1,024 times compressed_length before decompression; decompression writes into exactly raw_length bytes and the output must be exactly that long. The compressed frame is bounded by the file size.",
+      "boundary_tests": [
+        "a 16 MiB payload is accepted",
+        "raw_length over 16 MiB is rejected before decompression",
+        "raw_length over 1,024 times the frame length is rejected before decompression",
+        "a frame that decompresses to a length other than raw_length is rejected"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 16777216,
+        "minimum": 16777216
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 16777216,
+      "id": "MAP01-BUNDLE-SECTOR-RAW-BYTES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Matches the B3 codec MAX_SECTOR_BYTES; ratio limit 1,024:1.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Decompressed payload of one sector, with its zstd frame as the compressed size",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Running total checked per row before that sector is decompressed.",
+      "boundary_tests": [
+        "a running total of 1 GiB is accepted",
+        "the row that takes the total over 1 GiB is rejected before decompression"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1073741824,
+        "minimum": 1073741824
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 1073741824,
+      "id": "MAP01-BUNDLE-TOTAL-RAW-BYTES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Aligned with MAP01-BASE-RSS-BYTES.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Sum of the decompressed sector payloads of one bundle",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "The compiler rejects a tile over the limit; the reader rejects such a bundle. It is the reach of the per-tile hidden-item bitmask and bounds the placement key ordinal.",
+      "boundary_tests": [
+        "a tile with 64 top-level entries compiles",
+        "a tile with 65 top-level entries fails compilation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 64,
+        "minimum": 64
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 64,
+      "id": "MAP01-TILE-BASE-ENTRIES",
+      "notes": "ADR-0021 \u00a74.4 (base map maximum 26); format document \u00a77 and \u00a79.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Top-level (depth 0) base entries on one tile",
+      "unit": "entries"
+    },
+    {
+      "allocation_impact": "Checked from the tile control word before the item list is reserved.",
+      "boundary_tests": [
+        "a tile with 4,096 entries decodes",
+        "a tile control word over 4,096 entries is rejected before allocation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 4096,
+        "minimum": 4096
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 4096,
+      "id": "MAP01-TILE-ENTRIES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Initial value; MAP-BUNDLE-1b confirms it on the real map.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Entries on one tile in a sector payload, container contents included",
+      "unit": "entries"
+    },
+    {
+      "allocation_impact": "Checked from the length varint before the text is copied.",
+      "boundary_tests": [
+        "a 4,096-byte text decodes",
+        "a text length over 4,096 bytes is rejected before allocation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 4096,
+        "minimum": 4096
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 4096,
+      "id": "MAP01-ITEM-TEXT-BYTES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Initial value; MAP-BUNDLE-1b confirms it on the real map.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "UTF-8 bytes of one item text or description attribute",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Charged per sector from the tile count and each tile's control word before the tile list or item list is reserved; bounds decoded memory, which the raw-byte limits do not (one raw byte can decode to a whole entry).",
+      "boundary_tests": [
+        "a bundle decoding to exactly the budget is accepted",
+        "the sector that takes the total over the budget is rejected before its tiles are reserved"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 33554432,
+        "minimum": 33554432
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 33554432,
+      "id": "MAP01-BUNDLE-TILES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Initial value; MAP-BUNDLE-1b confirms it on the real map. Source map about 19.37 M tiles.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Decoded tiles of one bundle, over all sectors",
+      "unit": "tiles"
+    },
+    {
+      "allocation_impact": "Charged per sector from the tile count and each tile's control word before the tile list or item list is reserved; bounds decoded memory, which the raw-byte limits do not (one raw byte can decode to a whole entry).",
+      "boundary_tests": [
+        "a bundle decoding to exactly the budget is accepted",
+        "the tile that takes the total over the budget is rejected before its items are reserved"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 67108864,
+        "minimum": 67108864
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 67108864,
+      "id": "MAP01-BUNDLE-ENTRIES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Initial value; MAP-BUNDLE-1b confirms it on the real map. Source map about 24.98 M items.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Decoded entries of one bundle, container contents included",
+      "unit": "entries"
+    },
+    {
       "id": "LCA-CHARACTERS",
       "owner_contract": "OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md",
       "resource": "CharacterSummary entries in one PublishAccountCharactersV1 snapshot",
