@@ -169,6 +169,13 @@ How do players of one World buy and sell items through the Market, safely across
   counter is above the ceiling the character's new offers and accepts are refused. This bounds a character's open buy offers to 100,000 units in all (a declared
   Reference difference, `PARITY_PENDING`).
 
+**Amendment (pending on acceptance of MAIL-0; `OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md` §7, §8).** Mail
+is a further delivery into the Inbox, but a refusable one: a posting that would raise the
+recipient's counter above `MAIL0-RL-05` (50,000) is refused, so mail cannot lock a Market. After
+BAGS-0, an Inbox entry may be a stamped parcel with at most 10 children without contents; the
+counter counts every item of the tree, and a third out-shape moves one child to a new main
+backpack entry. A parcel with contents never enters a depot box in this slice.
+
 ## 6. Escrow and fills (MARKET-1)
 
 - **Item escrow.** A new custody family `MarketOfferEscrow { offer_id, ordinal }`, World-scoped,
