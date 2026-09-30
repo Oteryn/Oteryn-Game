@@ -35,7 +35,11 @@
 //! D92 rule, so an item without a known stack class fails closed (D82).
 //!
 //! Like B3-2, this has no production caller yet: the client `USE` command (control-wire lane)
-//! and its network dispatch are a later stage. This is a top-level module
+//! and its network dispatch are a later stage. Note for that dispatch: a commit that did not
+//! finish (ambiguous, or rejected by a stale fence) leaves its reservation pending, and every
+//! other `CommandRef` for the claim is refused with `ClaimPending` until it is terminal. The
+//! dispatch must therefore replay the same `CommandRef` with the same request to reconcile it,
+//! never allocate a new one. This is a top-level module
 //! (`crate::interaction_chest_use`), not `interaction::chest_use`, because
 //! `tests/interaction_workflow.rs` recompiles `interaction/mod.rs` without Content or
 //! durability.

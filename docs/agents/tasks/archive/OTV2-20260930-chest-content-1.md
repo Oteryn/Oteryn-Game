@@ -4,12 +4,12 @@
 task_id: OTV2-20260930-chest-content-1
 title: CHEST-CONTENT part 1 - RewardClaim Content family and D39 reward from Content
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s  # allocation named claude/chest-content-1; this session may push only here (#162 5909327087)
 issue: 162
-pr: null
+pr: 1334
 allocation: "#162 comment 5909237761 (request 5908857336; ruling 5905746509)"
 base_sha: 58429a26
 head_sha: null
@@ -26,10 +26,7 @@ owned_paths:
   - apps/game-server/src/interaction/chest_use.rs
   - apps/game-server/tests/content_reference_playable.rs  # shared: RewardClaim cases appended
   - apps/game-server/tests/support/chest_use_postgres_cases.rs
-  - docs/agents/tasks/active/OTV2-20260930-chest-content-1.md
-  # after #1320 merges (LOW items of 5907886746):
-  - apps/game-server/src/durability/reward_claim_mint.rs
-  - apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs
+  - docs/agents/tasks/archive/OTV2-20260930-chest-content-1.md
 public_contracts:
   - GAME-INTERACTION-01 (chest USE slice, consumed)
   - reward chest decisions D39-D42 (consumed)
@@ -39,7 +36,7 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-## Outcome (so far)
+## Outcome
 
 - **RewardClaim family.** `DefinitionFamily::RewardClaim` and
   `ReferenceDefinitionKind::RewardClaim(ReferenceRewardClaimDefinition)` hold `placements[]`.
@@ -63,13 +60,15 @@ external_repositories: []
 - **Authoring vocabulary.** `ProjectV2Family::from_reference` maps RewardClaim to `Interaction`,
   its authoring home (`content/interactions/`). `parse_family` never yields it.
 
-## Pending in this task
+## LOW items of 5907886746
 
-- After #1320 merges: merge main and fold in the LOW items of 5907886746:
+- Done here: the dispatch note on replaying the same `CommandRef` (`chest_use.rs` module doc).
+- Deferred to a follow-up after #1320 merges, by owner decision on 2026-09-30 to finish this PR
+  now. All three touch `durability/reward_claim_mint.rs` or its PG cases, which #1320 edits, and
+  a two-reservation race needs that module's private candidate API:
   - the `admit` comment (EXCLUSIVE table locks);
   - a real state-3 session case;
-  - a commit-time race with two seeded reservations;
-  - a dispatch note on replaying the same `CommandRef`.
+  - a commit-time race with two seeded reservations.
 
 ## Excluded scope
 
@@ -78,9 +77,16 @@ external_repositories: []
   claims (#1320 owns the MINT side).
 - Runtime Content loading (ADR-0021 MAP lanes), the client `USE` dispatch and migrations.
 
-## Validation (so far)
+## Validation
 
 - `cargo fmt --all --check`, `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass.
 - `--lib`: 1129 passed. `content_reference_playable`: 45, including 5 RewardClaim cases.
   `interaction_workflow`: 15.
 - PostgreSQL 17.11 (local; CI pins 17.6): `chest_use_postgres` passes, 3 cases.
+
+## Closeout
+
+- merge commit/result: squash merge of #1334 (pending)
+- review: independent exact-head review after freeze (pending)
+- ownership release: at merge
+- follow-ups: the 3 deferred LOW items after #1320; CHEST-CONTENT part 2 (231 generated claims)
