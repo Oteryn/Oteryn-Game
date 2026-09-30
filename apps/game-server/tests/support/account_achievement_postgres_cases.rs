@@ -84,7 +84,7 @@ async fn switch_to_second_character(harness: &Harness) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_roots VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1')",
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Second Hero')",
     )
     .bind(id(SECOND_CHARACTER).as_slice())
     .bind(id(ACCOUNT).as_slice())

@@ -61,7 +61,7 @@ use tokio_rustls::{TlsConnector, rustls};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const SOURCE_AUTHORITY: &str = "platform";
-const PLATFORM_SOURCE: &str = "9147bfd3a771762a6646fd87b9172cdb3a6c9a01";
+const PLATFORM_SOURCE: &str = "5d4883acf7079e26fd51e03f460166730de1ada0";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
 const INTERPRETATION: [&str; 4] = [
     "s3b-profile-1",

@@ -41,6 +41,8 @@ pub const SERVER_BUILD_ID: &str = match option_env!("OTERYN_SERVER_BUILD_ID") {
 pub enum CharacterAuthorityError {
     Rejected,
     Conflict,
+    /// The requested name's comparison key is already reserved (CHAR-NAME-1).
+    NameUnavailable,
     Unavailable(DurabilityError),
 }
 
@@ -115,6 +117,8 @@ impl DurabilityRoot {
     /// must currently have an assigned Channel (#415) and the revisions must
     /// equal the current Game-owned interpretation, which is resolved from the
     /// durable configuration inside this transaction, never from the caller.
+    /// The requested name must be unreserved in the global namespace; the root
+    /// insert reserves its comparison key (migration 0022).
     /// An exact retry returns the committed result; changed reuse conflicts.
     pub async fn bootstrap_character(
         &self,
@@ -135,6 +139,8 @@ impl DurabilityRoot {
         let account = *intent.account_id().as_bytes();
         let world = *intent.target_world_id().as_bytes();
         let [profile, ruleset, content, starter] = intent.interpretation().map(str::to_owned);
+        let name = intent.requested_name().as_str().to_owned();
+        let name_key = intent.requested_name().comparison_key();
         let decision = intent.issuer_decision_id();
         let source_revision = intent.source_revision();
         let issued_at = intent.issued_at_source();
@@ -189,6 +195,14 @@ impl DurabilityRoot {
             if !current_account_security_allows(&mut tx, &account, now).await? {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             }
+            // Global name namespace: serialize on the comparison key, then a
+            // concurrent same-name bootstrap sees the committed reservation.
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-name:' || $1, 0))")
+                .bind(&name_key).execute(&mut *tx).await?;
+            if sqlx::query("SELECT 1 FROM game_character_name_reservations WHERE name_key = $1")
+                .bind(&name_key).fetch_optional(&mut *tx).await?.is_some() {
+                return Ok(Err(CharacterAuthorityError::NameUnavailable));
+            }
             // Retained issuer/variant source high-water: a lower revision is stale
             // and an equal one is another decision (no receipt matched this one).
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-bootstrap-intent-floor', 0))")
@@ -207,8 +221,8 @@ impl DurabilityRoot {
             let transaction = uuid_text(ids.try_get("transaction_id")?)?;
             let occurred_at: i64 = ids.try_get("occurred_at")?;
             let payload = encode_bootstrap(&account, &character, &world);
-            sqlx::query("INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 1, 1, $4, $5, $6, $7)")
-                .bind(character.as_slice()).bind(account.as_slice()).bind(world.as_slice()).bind(profile).bind(ruleset).bind(content).bind(starter).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, name) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 1, 1, $4, $5, $6, $7, $8)")
+                .bind(character.as_slice()).bind(account.as_slice()).bind(world.as_slice()).bind(profile).bind(ruleset).bind(content).bind(starter).bind(name).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_character_audit_outbox(event_id, transaction_id, transaction_ordinal, transaction_count, event_type_id, schema_revision, retention_profile_id, character_id, occurred_at, expires_at, payload, payload_sha256, server_build_id, publication_state) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, 1, $3, $4, $5, encode($6,'hex')::uuid, $9, $9 + 7776000000, $7, sha256($7), $8, 1)")
                 .bind(event.as_slice()).bind(transaction.as_slice()).bind(i64::from(EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED)).bind(i64::from(EVENT_SCHEMA_REVISION)).bind(RETENTION_PROFILE).bind(character.as_slice()).bind(&payload).bind(SERVER_BUILD_ID).bind(occurred_at).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_character_operation_receipts(operation_id, command_binding, account_id, character_id, world_id, character_revision, event_id, transaction_id, server_build_id, occurred_at, issuer_decision_id, intent_source_revision, issued_at_source, expires_at_source) VALUES (encode($1,'hex')::uuid, $2, encode($3,'hex')::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, 1, encode($6,'hex')::uuid, encode($7,'hex')::uuid, $8, $9, encode($10,'hex')::uuid, $11, $12, $13)")
@@ -731,7 +745,7 @@ async fn verify_character_integrity(
            LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id \
           WHERE o.character_id IS NULL OR o.account_id <> r.account_id OR o.world_id <> r.world_id \
              OR o.character_revision <> 1 \
-             OR o.command_binding <> decode('01', 'hex') || uuid_send(o.issuer_decision_id) \
+             OR o.command_binding <> decode('02', 'hex') || uuid_send(o.issuer_decision_id) \
                 || int8send(o.intent_source_revision) || uuid_send(o.operation_id) \
                 || uuid_send(r.account_id) || uuid_send(r.world_id) \
                 || int8send(o.issued_at_source) || int8send(o.expires_at_source) \
@@ -739,6 +753,7 @@ async fn verify_character_integrity(
                 || int2send(octet_length(r.ruleset_revision)::int2) || convert_to(r.ruleset_revision, 'UTF8') \
                 || int2send(octet_length(r.content_revision)::int2) || convert_to(r.content_revision, 'UTF8') \
                 || int2send(octet_length(r.starter_template_revision)::int2) || convert_to(r.starter_template_revision, 'UTF8') \
+                || int2send(octet_length(r.name)::int2) || convert_to(r.name, 'UTF8') \
              OR (a.event_id IS NOT NULL AND (a.character_id <> r.character_id \
                  OR a.transaction_id <> o.transaction_id OR a.server_build_id <> o.server_build_id \
                  OR a.occurred_at <> o.occurred_at \
@@ -751,6 +766,11 @@ async fn verify_character_integrity(
          SELECT 1 FROM game_character_operation_receipts o \
            LEFT JOIN game_character_roots r USING (character_id) \
           WHERE r.character_id IS NULL \
+         UNION ALL \
+         SELECT 1 FROM game_character_roots r \
+           LEFT JOIN game_character_name_reservations n \
+             ON n.name_key = r.name_key AND n.character_id = r.character_id \
+          WHERE n.name_key IS NULL \
          UNION ALL \
          SELECT 1 FROM game_character_audit_legal_holds h \
            LEFT JOIN game_character_audit_outbox a USING (event_id) \

@@ -222,6 +222,15 @@ struct Database {
 
 impl Database {
     async fn create(admin_url: String, test_name: &str) -> TestResult<Self> {
+        Self::create_at(admin_url, test_name, None).await
+    }
+
+    /// `through`: apply migrations only up to and including this version.
+    async fn create_at(
+        admin_url: String,
+        test_name: &str,
+        through: Option<i64>,
+    ) -> TestResult<Self> {
         if !admin_url.starts_with("postgresql://oteryn_test_admin:")
             || !admin_url.ends_with("@127.0.0.1:5432/postgres")
         {
@@ -250,7 +259,11 @@ impl Database {
             version, "170006",
             "canonical target requires PostgreSQL 17.6"
         );
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        let migrator = sqlx::migrate!("./migrations");
+        match through {
+            Some(version) => migrator.run_to(version, &mut connection).await?,
+            None => migrator.run(&mut connection).await?,
+        }
         connection.close().await?;
         Ok(Self {
             admin_url,
@@ -323,8 +336,18 @@ struct Wire {
     decision: i64,
     content: &'static str,
     variant: &'static str,
+    name: String,
     issued: i64,
     expires: i64,
+}
+
+/// A distinct valid name (naming policy revision 1) per operation seed.
+fn name_for(operation: u8) -> String {
+    format!(
+        "Hero {}{}",
+        char::from(b'A' + operation / 26),
+        char::from(b'a' + operation % 26)
+    )
 }
 
 impl Wire {
@@ -338,6 +361,7 @@ impl Wire {
             decision: revision,
             content: "content-1",
             variant: "OPERATOR_CONTROL_PLANE_BOOTSTRAP",
+            name: name_for(operation),
             issued: now - 1,
             expires: now + 120,
         })
@@ -345,13 +369,14 @@ impl Wire {
 
     fn json(&self) -> String {
         format!(
-            r#"{{"contract_version":1,"variant":"{}","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"3f0c5b7e-1d2a-4c3b-9a8f-{:012x}","source_revision":"{}","operation_id":"{}","operation":"INITIAL_CHARACTER_BOOTSTRAP","account_id":"{}","target_world_id":"{}","interpretation_context":{{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"{}","starter_template_revision":"starter-1"}},"issued_at_source":"{}","expires_at_source":"{}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
+            r#"{{"contract_version":2,"variant":"{}","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"3f0c5b7e-1d2a-4c3b-9a8f-{:012x}","source_revision":"{}","operation_id":"{}","operation":"INITIAL_CHARACTER_BOOTSTRAP","account_id":"{}","target_world_id":"{}","requested_name":"{}","interpretation_context":{{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"{}","starter_template_revision":"starter-1"}},"issued_at_source":"{}","expires_at_source":"{}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
             self.variant,
             self.decision,
             self.revision,
             uuid(id(self.operation)),
             uuid(id(self.account)),
             uuid(id(self.world)),
+            self.name,
             self.content,
             self.issued,
             self.expires
@@ -1764,6 +1789,275 @@ async fn intent_matrix(database: &Database) -> TestResult {
     drop(fence);
     pool.close().await;
     std::fs::remove_dir_all(retained)?;
+    Ok(())
+}
+
+#[test]
+fn name_reservation_is_global_case_and_space_folded_and_fail_closed() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let database = Database::create(admin, "names").await?;
+            let result = name_matrix(&database).await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+/// CHAR-NAME-1: one global namespace keyed by the ASCII lower-case name without
+/// spaces; a taken key refuses the bootstrap with zero authoritative writes.
+async fn name_matrix(database: &Database) -> TestResult {
+    let root = DurabilityRoot::connect_test_runtime(&database.url)?;
+    assert!(root.maintain_ready_once().await?);
+    let pool = sqlx::PgPool::connect(&database.url).await?;
+    let retained = fence_parent().join(format!("oteryn-character-names-{}", database.name));
+    let _ = std::fs::remove_dir_all(&retained);
+    std::fs::create_dir(&retained)?;
+    let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
+        .map_err(|e| format!("{e:?}"))?;
+    {
+        let fresh = recovery
+            .authorize_fresh_store(id(11), 100)
+            .map_err(|e| format!("{e:?}"))?;
+        root.admit_fresh_character_recovery(&fresh)
+            .await
+            .map_err(|e| format!("{e:?}"))?;
+    }
+    let fence = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    let authority = root
+        .open_character_authority(&fence)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let node = register(&root, 1, None).await?;
+    initialize_s2(&root, &node).await?;
+    assign_world(&pool, &root, &node, 90, 95).await?;
+    assign_world(&pool, &root, &node, 91, 96).await?;
+    configure(&pool, ["profile-1", "ruleset-1", "content-1", "starter-1"]).await?;
+    let named = |operation: u8, account: u8, revision: i64, name: &str| -> TestResult<_> {
+        let mut wire = Wire::new(operation, account, revision)?;
+        wire.name = name.to_owned();
+        wire.decode()
+    };
+    let unavailable = |result: Result<_, CharacterAuthorityError>| {
+        matches!(result, Err(CharacterAuthorityError::NameUnavailable))
+    };
+
+    // The committed root carries the name and its reservation.
+    allow(&root, &node, 81).await?;
+    let first_intent = named(80, 81, 1, "Al Dric")?;
+    let first = root
+        .bootstrap_character(&authority, &node, &first_intent)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let stored: (String, String, String) = sqlx::query_as(
+        "SELECT r.name, r.name_key, n.character_id::text FROM game_character_roots r \
+           JOIN game_character_name_reservations n USING (name_key)",
+    )
+    .fetch_one(&pool)
+    .await?;
+    assert_eq!(
+        stored,
+        (
+            "Al Dric".to_owned(),
+            "aldric".to_owned(),
+            uuid(*first.character_id.as_bytes())
+        )
+    );
+    // An exact retry reconciles its own reservation, never a conflict.
+    assert_eq!(
+        root.bootstrap_character(&authority, &node, &first_intent)
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        first
+    );
+
+    // Case and spaces fold, in the same World and in another one.
+    allow(&root, &node, 83).await?;
+    let before = totals(&pool).await?;
+    assert!(unavailable(
+        root.bootstrap_character(&authority, &node, &named(82, 83, 2, "ALDRIC")?)
+            .await
+    ));
+    let mut elsewhere = Wire::new(84, 83, 2)?;
+    elsewhere.name = "aldric".to_owned();
+    elsewhere.world = 91;
+    assert!(unavailable(
+        root.bootstrap_character(&authority, &node, &elsewhere.decode()?)
+            .await
+    ));
+    assert_eq!(totals(&pool).await?, before);
+    assert_eq!(floor(&pool).await?, 1);
+    // A different key commits.
+    root.bootstrap_character(&authority, &node, &named(85, 83, 2, "Aldrik")?)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+
+    // Same-name race: exactly one winner, the other sees the reservation.
+    allow(&root, &node, 87).await?;
+    allow(&root, &node, 88).await?;
+    let racing = [
+        named(86, 87, 3, "Race Winner")?,
+        named(89, 88, 4, "race winner")?,
+    ];
+    let outcomes = concurrently(&database.url, &fence, &node, &racing);
+    assert_eq!(
+        outcomes.iter().filter(|o| o.is_ok()).count(),
+        1,
+        "{outcomes:?}"
+    );
+    assert_eq!(
+        outcomes
+            .iter()
+            .filter(|o| matches!(o, Err(e) if e == "NameUnavailable"))
+            .count(),
+        1,
+        "{outcomes:?}"
+    );
+    assert_eq!(
+        count(
+            &pool,
+            "SELECT count(*) FROM game_character_name_reservations"
+        )
+        .await?,
+        3
+    );
+
+    // The database enforces the namespace and immutability for every writer.
+    let guarded = [
+        "UPDATE game_character_roots SET name = 'Other', character_revision = character_revision + 1",
+        "DELETE FROM game_character_name_reservations",
+        "UPDATE game_character_name_reservations SET name_key = 'other'",
+        "TRUNCATE game_character_name_reservations",
+        "INSERT INTO game_character_account_guards VALUES ('01890f4c-3b2a-7cc2-8d11-9a321b7c0001'); \
+         INSERT INTO game_character_roots VALUES ('01890f4c-3b2a-7cc2-8d11-9a321b7c0002','01890f4c-3b2a-7cc2-8d11-9a321b7c0001','01890f4c-3b2a-7cc2-8d11-9a321b7c0003',1,1,'p','r','c','s','Al dric')",
+        "INSERT INTO game_character_account_guards VALUES ('01890f4c-3b2a-7cc2-8d11-9a321b7c0001'); \
+         INSERT INTO game_character_roots VALUES ('01890f4c-3b2a-7cc2-8d11-9a321b7c0002','01890f4c-3b2a-7cc2-8d11-9a321b7c0001','01890f4c-3b2a-7cc2-8d11-9a321b7c0003',1,1,'p','r','c','s','Hero9')",
+    ];
+    for statement in guarded {
+        let mut tx = pool.begin().await?;
+        assert!(
+            tx.execute(sqlx::AssertSqlSafe(statement)).await.is_err(),
+            "{statement}"
+        );
+        tx.rollback().await?;
+    }
+    // The runtime role has no direct write on the reservations.
+    let runtime_insert: bool = sqlx::query_scalar(
+        "SELECT has_table_privilege('oteryn_game_runtime', 'game_character_name_reservations', 'INSERT')",
+    )
+    .fetch_one(&pool)
+    .await?;
+    assert!(!runtime_insert);
+
+    // A restored store whose root lost its reservation keeps authority closed.
+    drop(authority);
+    let mut tamper = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tamper)
+        .await?;
+    let kept: (String, i64) = sqlx::query_as(
+        "SELECT name_key, reserved_at FROM game_character_name_reservations WHERE name_key = 'aldric'",
+    )
+    .fetch_one(&mut *tamper)
+    .await?;
+    sqlx::query("DELETE FROM game_character_name_reservations WHERE name_key = 'aldric'")
+        .execute(&mut *tamper)
+        .await?;
+    tamper.commit().await?;
+    assert!(root.open_character_authority(&fence).await.is_err());
+    let mut repair = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *repair)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_name_reservations VALUES ($1, 1, encode($2,'hex')::uuid, $3)",
+    )
+    .bind(&kept.0)
+    .bind(first.character_id.as_bytes().as_slice())
+    .bind(kept.1)
+    .execute(&mut *repair)
+    .await?;
+    repair.commit().await?;
+    root.open_character_authority(&fence)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+
+    drop(fence);
+    pool.close().await;
+    std::fs::remove_dir_all(retained)?;
+    Ok(())
+}
+
+#[test]
+fn name_migration_refuses_a_store_that_already_holds_a_character() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let database = Database::create_at(admin, "name_preproduction", Some(21)).await?;
+            let result = name_migration_refusal(&database).await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+/// CHAR-NAME-1 preproduction-only assumption (§6.1): 0022 adds a NOT NULL name
+/// without a default, so on a store that already holds a Character root it
+/// refuses to apply and leaves the root and the migration history unchanged.
+async fn name_migration_refusal(database: &Database) -> TestResult {
+    let mut connection = sqlx::PgConnection::connect(&database.url).await?;
+    sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")
+        .bind(id(40).as_slice())
+        .execute(&mut connection)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_roots VALUES \
+         (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+          1,1,'profile-1','ruleset-1','content-1','starter-1')",
+    )
+    .bind(id(41).as_slice())
+    .bind(id(40).as_slice())
+    .bind(id(42).as_slice())
+    .execute(&mut connection)
+    .await?;
+
+    let refused = sqlx::migrate!("./migrations").run(&mut connection).await;
+    let Err(sqlx::migrate::MigrateError::ExecuteMigration(error, 22)) = refused else {
+        return Err(format!("0022 must refuse a store with a Character: {refused:?}").into());
+    };
+    assert_eq!(
+        error
+            .as_database_error()
+            .and_then(|error| error.code())
+            .as_deref(),
+        Some("23502")
+    );
+
+    let roots: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_roots")
+        .fetch_one(&mut connection)
+        .await?;
+    assert_eq!(roots, 1);
+    let latest: i64 = sqlx::query_scalar("SELECT max(version) FROM _sqlx_migrations")
+        .fetch_one(&mut connection)
+        .await?;
+    assert_eq!(latest, 21);
+    let named: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM information_schema.columns \
+         WHERE table_name = 'game_character_roots' AND column_name = 'name')",
+    )
+    .fetch_one(&mut connection)
+    .await?;
+    assert!(!named);
+    connection.close().await?;
     Ok(())
 }
 
