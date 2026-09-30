@@ -84,6 +84,8 @@ protocol review.
   guard deltas, capability ordering) and 5 others; fixed by cutting partial counts and slot
   pick-up to later decisions, a new capability, fixed row values, a complete delta list, the D87
   order amendment and the lock order.
+- Control-plane rule (#162 5912405163): the DUR-03, composition and MOVE-RL-11 edits read
+  "pending on acceptance of ITEM-MOVE-WIRE-1".
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

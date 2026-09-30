@@ -233,7 +233,8 @@ dispositions are unchanged.
 ## 10. Before-freeze checklist
 
 1. **Contract amendments:** ITEM-MOVE-WIRE-0 §3 and §5; DUR-03 §39.1 and §39.3 (§6.1, paragraph
-   after §33); composition §3.1 (§7.2); MOVE-RL-11 §4.3 (§7.3). The capability number is reserved
+   after §33); composition §3.1 (§7.2); MOVE-RL-11 §4.3 (§7.3). Each is written pending on
+   acceptance of ITEM-MOVE-WIRE-1 (#162 5912405163). The capability number is reserved
    at allocation.
 2. **Serialization:** one DUR-03 transaction per move, CommandRef as cause, rule 2 fence, §32 for
    Ground, the lock order of §7.2.

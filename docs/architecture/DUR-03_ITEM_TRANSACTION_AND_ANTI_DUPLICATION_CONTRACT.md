@@ -601,8 +601,9 @@ GAME-ITEM owns equip legality. DUR-03 requires all old location/claims, complete
 
 No half two-hand/mutually-exclusive claim.
 
-**Amendment (ITEM-MOVE-WIRE-1, 2026-09-30).** `reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md` §6 admits, each in its child and for
-those shapes only, superseding the §39.1 and §39.3 limits named there: TRANSFER of a whole item
+**Amendment (ITEM-MOVE-WIRE-1, 2026-09-30), pending on acceptance of ITEM-MOVE-WIRE-1.**
+`reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md` §6, once accepted, admits, each in its
+child and for those shapes only, superseding the §39.1 and §39.3 limits named there: TRANSFER of a whole item
 between the main backpack and the nine non-container `CharacterEquipment` slots, including a swap
 with the target slot's occupant (two items, four location lines, with its own resource rows); and
 TRANSFER of a whole item from a backpack entry or a slot to `Ground`, and from Ground back to the

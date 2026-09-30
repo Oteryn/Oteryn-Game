@@ -106,10 +106,12 @@ view, the 18 × 14 map area and the floor rule. The manual states only a charact
 - A delta carries at most 256 enter, leave or update entries; a larger change is sent as a new
   snapshot instead (the packet's "resync" disposition).
 
-**Amendment (ITEM-MOVE-WIRE-1, 2026-09-30).** The canonical order ranks actors (players and
+**Amendment (ITEM-MOVE-WIRE-1, 2026-09-30), pending on acceptance of ITEM-MOVE-WIRE-1.** The
+canonical order ranks actors (players and
 creatures) before items; within each group it is floor distance, Chebyshev distance, then entity
 identity, as above. So dropped items can never push an actor out of a snapshot. The ceiling and the
-degrade and resync dispositions are unchanged (`OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md` §7.3).
+degrade and resync dispositions are unchanged
+(`OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md` §7.3).
 
 ### 4.4 Resource rows
 
