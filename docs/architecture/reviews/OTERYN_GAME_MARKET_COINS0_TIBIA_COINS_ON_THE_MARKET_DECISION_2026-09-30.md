@@ -4,7 +4,8 @@
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (security,
   economy, persistence, protocol, privacy and cross-repository integration), protected
   integration here, and the matching Platform change accepted in `Oteryn/Oteryn-Platform`
-  (MKTCOIN-P). It extends MARKET-0 and integrates after it.
+  (MKTCOIN-P). It extends MARKET-0 and integrates after it. Owner questions C1-C3 (§12) are
+  answered: C1 a, C2 b, C3 a.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: MARKET-0 owner answer Q2b (Tibia Coins on the Market, "as in Tibia", #162 5913348961)
   and the owner direction of 2026-09-30 (build now, full Tibia Global parity)
@@ -26,14 +27,16 @@
 
 | Child | Repository, worker | Builds | Depends on |
 |---|---|---|---|
-| MKTCOIN-CONTRACT-1 | Game, control plane; security review | the consumer side of the coin custody contract, `docs/contracts/` (§5) | this decision; owner answers C1, C2 |
-| MKTCOIN-P | Oteryn-Platform (external) | the Wallet transferable balance and the market hold operations of §5; a test producer | Platform's own acceptance of §5; C1, C2 |
+| MKTCOIN-CONTRACT-1 | Game, control plane; security review | the consumer side of the coin custody contract, `docs/contracts/` (§5) | this decision |
+| MKTCOIN-P | Oteryn-Platform (external) | the Wallet transferable balance and the market hold operations of §5; a test producer | Platform's own acceptance of §5 |
 | MKTCOIN-1 | Game, hard; persistence, economy and security review | coin offer columns, operation states, the coin instruction outbox, deliverer and reconciler, every step of §6-§7 | MARKET-1; MKTCOIN-CONTRACT-1 |
 | MKTCOIN-WIRE-1 | Game, impl; protocol review | capability `MARKET_COINS_V1`, the coin ware, two results, the balance line (§8) | MARKET-WIRE-1; MKTCOIN-1 |
 | MKTCOIN-E2E-1 | Game and Platform; security and cross-repository review | one end-to-end test against the real producer, failure paths of §7 | MKTCOIN-1; MKTCOIN-P |
 
 MKTCOIN-1 and MKTCOIN-P run in parallel; MKTCOIN-1 tests against a test producer that serves §5
-exactly. Activation on any World follows owner answer C3. Later, each with its own decision:
+exactly. Activation (owner answer C3 a): test Worlds, with operator-granted coins, once
+MKTCOIN-E2E-1 passes; production Worlds only after Platform accepts its payment, refund and
+chargeback policy (an external dependency, §5). Later, each with its own decision:
 Store purchases with coins, coin gifts, the world transfer rule "no open coin offers", statistics.
 
 ## 1. Question
@@ -107,8 +110,10 @@ the Game database and the coins live in Platform, with no double spend and no co
   not evaluated and a coin fill needs only equal `coin_kind`. An unknown `ware_kind` or
   `coin_kind` read from storage or the wire fails closed (`REJECTED`, no write). Existing
   MARKET-1 rows, if any, migrate as `ITEM` with their key and revision unchanged.
-- Only **transferable** coins are held. Platform decides which coins are transferable (C2); Game
-  never sees non-transferable coins.
+- **Tibia Coins** are the Oteryn Coins of Platform's Wallet, one balance for the Store and the
+  Market, with a transferable part (owner answer C1 a). Only **transferable** coins are held;
+  every coin is transferable (owner answer C2 b), so the transferable part is the whole balance.
+  Game never decides transferability and never sees a non-transferable coin.
 - Coins are per Account on every World; gold is per (Account, World). One coin book per World
   keeps each trade inside one World's gold (DUR-03 §19); the coins themselves are not World
   value.
@@ -143,7 +148,7 @@ the Game database and the coins live in Platform, with no double spend and no co
   + coins_settled + coins_aborted`, and `coins_aborted > 0` only in an ended state, equal to its
   ABORT's `cancelled_amount` (§5).
 - **Delivery:** bought coins reach the buyer's Platform balance when Platform applies SETTLE, as
-  transferable coins (Canary; Global `PARITY_PENDING`; C2).
+  transferable coins (Canary; owner answer C2 b).
 
 ## 5. The coin custody contract (MKTCOIN-CONTRACT-1 and MKTCOIN-P)
 
@@ -227,9 +232,15 @@ key; the same key with other content is an integrity conflict.
 - **Platform-side coin history:** Platform writes "sold on Market" and "bought on Market" entries
   from SETTLE; Game sends AccountIds, amounts, the WorldId and the operation id, and no
   character name, CharacterId or counterparty name.
+- **Chargeback (stated assumption on owner answer C2 b, pending owner confirmation):** chargeback
+  handling stays with Platform, which acts on the paying Account; it never reverses an applied
+  SETTLE or any Market trade, so the other party is kept whole.
 - **External dependency (not edited here):** Platform's Wallet contract (its MODULE_CATALOG
-  Wallet section, DATA_OWNERSHIP and ADR 0016 §5) must add the transferable balance, the Game
-  service principal and these hold operations, and resolve C1. Platform accepts or amends §5.
+  Wallet section, DATA_OWNERSHIP and ADR 0016 §5) must add the transferable balance (every coin,
+  C2 b), the Game service principal and these hold operations; treat its Oteryn Coins as the
+  Tibia Coins of the Store and the Market (C1 a); handle chargebacks without reversing Market
+  trades; and accept its payment, refund and chargeback policy before production activation
+  (C3 a). These are contract requirements on Platform; Platform accepts or amends §5.
 
 ## 6. The steps (MKTCOIN-1)
 
@@ -345,8 +356,8 @@ refused CLAIM can only be `ACCOUNT_BLOCKED`, which ends the operation `FAILED`.
 ## 11. Owner-rule applications
 
 **Global parity kept:** coins for gold on the Market; free accounts may place coin offers; the
-same 2% fee; only transferable coins trade; bought coins land on the account balance, not the
-Inbox; anonymous offers; the 100 offer limit; coin trades in the coin history.
+same 2% fee; one coin balance with a transferable part (C1 a); bought coins land on the account
+balance, not the Inbox; anonymous offers; the 100 offer limit; coin trades in the coin history.
 
 **Declared differences:**
 - Placing and accepting coin offers are refused while Platform is down; bought coins may reach
@@ -354,6 +365,10 @@ Inbox; anonymous offers; the 100 offer limit; coin trades in the coin history.
 - The coin amount step is 1 until sourced (R2).
 - Junior characters cannot trade coins; same-Account offers are refused (from MARKET-0).
 - A coin book per World while coins are per Account.
+- Every coin is transferable, with no payment-risk lock; chargebacks never reverse a Market trade
+  (C2 b, the chargeback part a stated assumption).
+- Coin trading goes live on test Worlds first, on production Worlds only after Platform's payment
+  policy is accepted (C3 a).
 
 **Architect rulings (owner rule 5905825574):**
 
@@ -387,14 +402,23 @@ passes; production Worlds only after Platform's payment, refund and chargeback p
 accepted (recommended); b) production Worlds with operator-granted coins at once; c) not before
 paid coins exist anywhere.
 
+Owner answers (2026-09-30, #162, Q10-Q12):
+
+- C1 — Owner answer (2026-09-30, #162): a — the Tibia Coins are the current Oteryn Coins of the
+  Platform Wallet, with a transferable part.
+- C2 — Owner answer (2026-09-30, #162): b — every coin is transferable. Stated assumption pending
+  owner confirmation: chargeback handling stays with Platform and does not reverse Market trades.
+- C3 — Owner answer (2026-09-30, #162): a — test Worlds first; production Worlds once Platform
+  accepts the payment policy.
+
 ## 13. Decision test
 
 - **Must decide now:** YES. The owner asked for coin offers (Q2b) and full parity now.
 - **Minimum sufficient:** one virtual ware, one hold or claim per offer or accept, three
   instruction kinds, one outbox, one reconciler, one capability, two results; MARKET-0's book, fee, gold
   escrow, locks and jobs are reused, and Platform's existing Wallet reserve pattern is extended.
-- **Superseding evidence:** official Global coin amount steps, whether Market-bought coins stay
-  transferable, and any Global rule on coin offers of recently bought coins.
+- **Superseding evidence:** official Global coin amount steps; an owner correction of the C2
+  chargeback assumption.
 - **Deliberately not decided:** coin gifts, Store purchases, payments, prices, the world transfer
   rule, statistics, Tournament Coins.
 
@@ -403,7 +427,7 @@ paid coins exist anywhere.
 1. **Contract amendments:** MARKET-0 §3.1, §4, §7 and §10; the Store catalog owner decision follow-up 1;
    each written "pending on acceptance of MARKET-COINS-0". The Platform Wallet change is an
    external dependency (MKTCOIN-P), not edited here. The capability number is reserved at
-   allocation.
+   allocation. Owner answers C1 a, C2 b and C3 a are recorded on #162 (2026-09-30).
 2. **Serialization:** MARKET-0's book lock and lock order; the operation row lock decides commit
    or abort; one HOLD in flight per Account; Platform's settlement fence and ABORT ordering by
    settlement watermark (§5).

@@ -50,8 +50,10 @@ owner answer Q2b; owner direction, 2026-09-30).
   same-Account refused; coin offers count toward the 100-offer limit.
 - **Wire:** capability `MARKET_COINS_V1` (number reserved on #162 at allocation), two results,
   a display-only balance line.
-- **Owner questions C1-C3** (open): which coins are Tibia Coins; the transferable and chargeback
-  rule; when coin trading goes live.
+- **Owner questions C1-C3** (answered): C1 a, the Wallet's Oteryn Coins with a transferable part;
+  C2 b, every coin transferable (chargeback stays with Platform and never reverses a Market
+  trade: a stated assumption); C3 a, test Worlds first, production after Platform accepts its
+  payment policy.
 
 No code, migration, content or Platform change is made.
 
@@ -75,7 +77,7 @@ protocol review; the instruction payload privacy review.
 - [ ] Independent exact-head review (security, economy, persistence, protocol, privacy,
       cross-repository integration).
 - [ ] Protected Merge Queue integration.
-- [ ] Owner answers to C1-C3 recorded on #162 before MKTCOIN-CONTRACT-1 and before activation.
+- [x] Owner answers to C1-C3 recorded on #162 (2026-09-30).
 - [ ] Platform acceptance of §5 (MKTCOIN-P) before MKTCOIN-E2E-1.
 
 ## Excluded scope
@@ -95,6 +97,8 @@ protocol review; the instruction payload privacy review.
   settlement watermark, and Platform defers it behind that key's SETTLEs (`MKTCOIN0-ABORT-ORDER`);
   typed SETTLE sides `maker_offer_id` and `taker_operation_id` with PLACE/ACCEPT bindings
   (`MKTCOIN0-SETTLE-SIDES`); task record PR and closeout state.
+- Owner answers (2026-09-30, #162 Q10-Q12): C1 a, C2 b (chargeback stated assumption), C3 a;
+  Platform requirements kept as MKTCOIN-P contract dependencies; validators re-run PASS.
 
 ## Closeout
 
@@ -109,7 +113,7 @@ protocol review; the instruction payload privacy review.
 last_progress: PR oteryn/oteryn-game#1412 opened; in review (Codex round-2 repair authored)
 status: completed
 branch: claude/arch-market-coins-0
-owner_action_required: "C1-C3: coin identity, transferable and chargeback rule, activation"
+owner_action_required: "confirm the C2 chargeback assumption"
 blocker: null
-next_action: "#162 freezes the repaired head of #1412, validates it and routes independent review; C1-C3 go to the owner through the control plane"
+next_action: "#162 freezes the updated head of #1412, validates it and routes independent review"
 ```
