@@ -1,5 +1,9 @@
 # House authoring schema candidate v1
 
+Owner contract (candidate): [`OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1.md`](../../../docs/architecture/OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1.md),
+under the accepted housing architecture
+[`EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md`](../../../docs/architecture/EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md).
+
 Static House definitions for `content/houses/` (owner `House/Area` in
 [`OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md`](../../../docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md)).
 CANDIDATE only: not a WorldProject/v2 contract, not runtime activation, and
