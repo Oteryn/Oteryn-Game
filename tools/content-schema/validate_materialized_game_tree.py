@@ -10,7 +10,7 @@ CLOSURE=ROOT/"docs/agents/evidence/OTV2-20260925-world-successor-tree-closure-v1
 LEGACY_ROOT="content/world/"
 WORLD_STATES={"READY_UNPOPULATED","LEGACY_COMPAT_PRESENT"}
 # WO-2: the Terrain and WorldObject catalogues are populated beside the legacy package.
-POPULATED_WORLD_CATALOGUES={"content/world/terrain/","content/world/objects/"}
+POPULATED_WORLD_CATALOGUES={"content/world/terrain/","content/world/objects/","content/world/areas/cities/","content/world/areas/regions/"}
 class ValidationError(RuntimeError): pass
 def req(ok: bool, code: str)->None:
     if not ok: raise ValidationError(code)

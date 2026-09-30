@@ -22,7 +22,7 @@ themselves are world placements in `content/world/placements/`.
 | `identity` | derived | `oteryn:content.house.<slug of name>`, `definition-r1`; shared shape with `../monster-authoring/monster.schema.json` |
 | `name` | client staticdata f2 | whitespace-normalized; verbatim in `provenance.source_name` |
 | `kind` | client f8 / f10 | `private_house` \| `guildhall` \| `shop`; exclusive in all 995 houses |
-| `town` | client f9 | `Area` ref `oteryn:content.area.city.<slug>`; city Areas are not populated yet |
+| `town` | client f9 | `Area` ref `oteryn:content.area.city.<slug>`; every town is a city Area in `content/world/areas/cities/` (`../area-authoring/`) |
 | `entrance` | CrystalServer `entryx/y/z` | engine entry tile in front of the door (next to a House tile for 975 houses); the client does not ship it |
 | `map_marker` | client f6 | staged as `entrance` by HOUSES-1, but it sits at or next to the footprint centre (328 exact, rest ±1 tile), so it is not the door |
 | `size_sqm`, `beds`, `rent_gold` | client f7, f5, f4 | official values win over the engine |

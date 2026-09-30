@@ -230,7 +230,8 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
             'creatures named like the caster; includes_caster: the caster is affected when it stands in the area.'),
     'removed_items':obj({'items':array(use('ItemRef'),1,True),'selection':enum('first_listed_per_tile','top_item_first_tile')},
         ('items','selection'),description='D18: remove_items over the ability area. first_listed_per_tile removes on every tile the first '
-            'listed item present; top_item_first_tile removes the top item of the first tile where it is listed, then stops.'),
+            'listed item present; top_item_first_tile removes the top item of the first tile where it is listed, then stops. Tiles are '
+            'scanned column by column, west to east, each column north to south (Canary destroy_magic_walls.lua).'),
     'summon':obj({'creatures':array(use('CreatureRef'),1,True),'count_mode':enum('fill_to_limit','fixed'),'count':integer(1),
         'only_below_summons':integer(1),'owned':use('bool'),'max_offset_tiles':integer(0)},
         ('creatures','count_mode','count','only_below_summons','owned','max_offset_tiles'),
