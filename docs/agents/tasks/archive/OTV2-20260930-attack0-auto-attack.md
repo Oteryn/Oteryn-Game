@@ -32,9 +32,9 @@ external_repositories: []
 ATTACK-0 lets a player pick a creature target and fight it, and lets creatures hit back
 (architect programme plan, #162 5910870596, M1).
 
-- **Wire.** Capability `ATTACK_V1` and two command types at allocation (11 and 12 proposed), command types `ATTACK_TARGET_INTENT` and 11
-  `FIGHT_MODES_INTENT`, state domain 10 `ACTOR_COMBAT_STATE` (#162 reservations, re-checked at
-  allocation).
+- **Wire.** Capability `ATTACK_V1` and command types `ATTACK_TARGET_INTENT` and
+  `FIGHT_MODES_INTENT`, all reserved at allocation (11 and 12 proposed); state domain 10
+  `ACTOR_COMBAT_STATE` (confirmed, #162 5911720221).
 - **Runtime.** One target per actor; one swing occurrence per 2,000 ms deadline
   (`DEADLINE_STATE`), with a stable identity, RNG purposes and charm hooks, through
   GAME-ABILITY-01. Creature melee on the same rules. A 60 s in-fight deadline blocks logout.
