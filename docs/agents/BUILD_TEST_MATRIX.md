@@ -76,7 +76,9 @@ The canonical Merge Queue workflow is `.github/workflows/merge-group-gate.yml`; 
 | Exact queue classification | Selected jobs |
 |---|---|
 | Complete valid diff containing only Markdown under `docs/architecture/**` | candidate/governance, dependency review and CodeQL; heavy Rust/PostgreSQL/Windows/supply-chain may be unselected |
-| Everything else, including agent-governance/docs, mixed, special-mode, malformed or incomplete evidence | FULL Linux workspace, PostgreSQL 17.6, Windows client/input/SIM and supply chain plus always-required gates |
+| Unconsumed auxiliary inputs, proven by protected-base exact-consumer routing on the synthetic candidate | always-required gates; heavy Rust/PostgreSQL/Windows/supply-chain may be unselected |
+| Exact server-only consumer closure (`server` or `durability`), proven by that same classifier | Linux workspace, PostgreSQL 17.6 and supply chain plus always-required gates; Windows may be unselected |
+| Everything else, including client/shared/simulation, canonical routing controls, mixed, special-mode, malformed or incomplete evidence | FULL Linux workspace, PostgreSQL 17.6, Windows client/input/SIM and supply chain plus always-required gates |
 
 The physical server qualifications (`Merge Queue / Node boot against the real Platform`, `Merge Queue / Server Seam over TCP+TLS`) are selected separately on the exact queue diff. The selection uses the protected-base `server_qualification_required` classifier with the same path rules as the pull-request gate, so a batched candidate is re-qualified whenever any of its changes can reach the shipped server. It fails closed: anything but a proven-unrelated diff selects them.
 
