@@ -1042,6 +1042,118 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
     })
 }
 
+/// A login in the runtime group (0006): what a deployed GameNode connects as.
+async fn runtime_login(harness: &Harness, tag: &str) -> TestResult<(String, String)> {
+    let suffix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_nanos();
+    let role = format!("charm_runtime_{tag}_{suffix}");
+    let password = format!("{role}-secret");
+    for statement in [
+        format!("CREATE ROLE {role} LOGIN PASSWORD '{password}' IN ROLE oteryn_game_runtime"),
+        format!(
+            "GRANT CONNECT ON DATABASE {} TO {role}",
+            harness.database.name
+        ),
+    ] {
+        sqlx::query(sqlx::AssertSqlSafe(statement))
+            .execute(&harness.pool)
+            .await?;
+    }
+    let (_, address) = harness
+        .database
+        .url
+        .split_once('@')
+        .ok_or("database URL has no authority separator")?;
+    Ok((
+        role.clone(),
+        format!("postgresql://{role}:{password}@{address}"),
+    ))
+}
+
+/// Every statement of an unlock, a replay and an assign runs as the runtime group, never as the
+/// migration owner: the 0020 grants (tables and the CHECK key functions) must be sufficient.
+#[test]
+fn charm_commands_commit_under_the_runtime_role_grants() -> TestResult {
+    run(async |admin| {
+        let harness = Harness::create(admin, "runtime", true).await?;
+        let (role, runtime_url) = runtime_login(&harness, "grant").await?;
+        let result = async {
+            let runtime = DurabilityRoot::connect_test_runtime(&runtime_url)?;
+            assert!(runtime.maintain_ready_once().await?);
+            let seal = harness.recovery.seal_current().map_err(debug)?;
+            let authority = runtime
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("runtime authority: {error:?}"))?;
+            let facts = Facts::new(&[1000], &[("rat", 3)]);
+            let request = unlock(60, "wound");
+            let first = runtime
+                .commit_charm_command(
+                    &authority,
+                    &harness.node,
+                    fence(1)?,
+                    request.clone(),
+                    facts.clone(),
+                )
+                .await
+                .map_err(|error| format!("runtime unlock: {error:?}"))?;
+            let CharmCommandOutcome::Committed(first) = first else {
+                return Err(format!("runtime unlock was not new: {first:?}").into());
+            };
+            assert_eq!(
+                runtime
+                    .commit_charm_command(
+                        &authority,
+                        &harness.node,
+                        fence(1)?,
+                        request,
+                        facts.clone()
+                    )
+                    .await
+                    .map_err(|error| format!("runtime replay: {error:?}"))?,
+                CharmCommandOutcome::AlreadyCommitted(first)
+            );
+            let assigned = runtime
+                .commit_charm_command(
+                    &authority,
+                    &harness.node,
+                    fence(2)?,
+                    assign(61, "wound", "rat"),
+                    facts,
+                )
+                .await
+                .map_err(|error| format!("runtime assign: {error:?}"))?;
+            assert!(matches!(assigned, CharmCommandOutcome::Committed(_)));
+            let state = runtime
+                .read_character_charm_state(
+                    &authority,
+                    CharacterId::from_bytes(id(41)).map_err(debug)?,
+                )
+                .await
+                .map_err(|error| format!("runtime read: {error:?}"))?;
+            assert_eq!(
+                state.assignments,
+                BTreeMap::from([(charm("wound"), race("rat"))])
+            );
+            assert_eq!(revision(&harness.pool).await?, "3");
+            drop(authority);
+            drop(seal);
+            drop(runtime);
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }
+        .await;
+        let admin_url = harness.database.admin_url.clone();
+        harness.cleanup().await?;
+        let mut connection = sqlx::PgConnection::connect(&admin_url).await?;
+        sqlx::query(sqlx::AssertSqlSafe(format!("DROP ROLE IF EXISTS {role}")))
+            .execute(&mut connection)
+            .await?;
+        connection.close().await?;
+        result
+    })
+}
+
 #[test]
 fn every_charm_rule_fails_closed_without_a_write() -> TestResult {
     run(async |admin| {
@@ -1809,6 +1921,18 @@ fn the_database_binds_charm_rows_to_one_receipt_chain() -> TestResult {
         ] {
             expect_rejected(pool, table, &format!("TRUNCATE {table} CASCADE;"), "23514").await?;
         }
+        expect_rejected(
+            pool,
+            "major charm recorded as minor to pass the race bound",
+            &format!(
+                "{}{}{}",
+                advance(5),
+                receipt(64, 5, "poison", 2, None, Some("rat")),
+                assignment_row("poison", "rat", 2, 6, 64)
+            ),
+            "23514",
+        )
+        .await?;
         expect_committed(
             pool,
             "assign poison r6",
@@ -1870,6 +1994,21 @@ fn the_database_binds_charm_rows_to_one_receipt_chain() -> TestResult {
         .fetch_one(pool)
         .await?;
         assert_eq!(public_functions, 0);
+        // The key functions back CHECKs, which run as the writing role.
+        let runtime_functions: Vec<(String, bool)> = sqlx::query_as(
+            "SELECT f, has_function_privilege('oteryn_game_runtime', f, 'EXECUTE') \
+               FROM unnest(ARRAY['game_character_is_charm_key(text)', \
+                                 'game_character_is_bestiary_race_key(text)']) AS f ORDER BY f",
+        )
+        .fetch_all(pool)
+        .await?;
+        assert_eq!(
+            runtime_functions,
+            vec![
+                ("game_character_is_bestiary_race_key(text)".to_owned(), true),
+                ("game_character_is_charm_key(text)".to_owned(), true),
+            ]
+        );
         harness.cleanup().await
     })
 }

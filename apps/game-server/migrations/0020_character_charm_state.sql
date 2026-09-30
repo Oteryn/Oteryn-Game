@@ -20,6 +20,14 @@
 -- only the Game rule (`domain::charm::CharmSlotEntitlement`) enforces it.
 -- The 0009/0016/0017/0019 tables, their CHECKs and the state guard are unchanged: the state
 -- guard's stance direction (experience and level equal) already admits a charm successor.
+-- The slot limit on assigned charms (free 2, Premium 6, Charm Expansion unlimited) is a Canary
+-- assumption pending the owner's answer; it is Game code, not schema.
+--
+-- Rollback: applied migrations are immutable, so rollback is a new migration. Before any charm
+-- receipt exists it drops the three charm tables and the four charm functions and restores the
+-- 0019 guard body. After charm receipts exist they are part of the CharacterRevision chain and
+-- `verify_character_integrity` counts them: a rollback must keep the receipt table (and its
+-- chain arm) and may only stop new writes, e.g. by revoking the runtime INSERT grants.
 
 -- A charm key is `oteryn:charm.<name>`, a race key the Creature definition key
 -- `oteryn:creature.<name>`, both at most 128 bytes (`domain::charm`).
@@ -335,7 +343,9 @@ $$;
 --   * per charm, the unlock receipts step 0 -> 1 -> 2 -> 3 in revision order, and the unlock
 --     row equals the latest one (stage, revision, occurrence); no unlock row without a receipt;
 --   * each assign receipt has its assignment row and each row its receipt (race, category,
---     revision, occurrence), and the charm was unlocked at an earlier revision.
+--     revision, occurrence), and the charm was unlocked at an earlier revision;
+--   * every receipt of one charm has the same category, so an assign cannot record a major
+--     charm as minor to pass the one-major-and-one-minor race bound.
 -- The receipt chain itself (one receipt per revision, across kinds) is the 0019 guard's.
 CREATE FUNCTION game_character_charm_consistency_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
@@ -385,6 +395,11 @@ BEGIN
                          WHERE p.character_id = v_character AND p.command_kind = 1
                            AND p.charm_key = r.charm_key
                            AND p.committed_character_revision < r.committed_character_revision))
+            UNION ALL
+            SELECT 1 FROM game_character_charm_receipts r
+             WHERE r.character_id = v_character
+             GROUP BY r.charm_key
+            HAVING count(DISTINCT r.charm_category) <> 1
             UNION ALL
             SELECT 1 FROM game_character_charm_assignments a
              WHERE a.character_id = v_character
@@ -478,6 +493,9 @@ REVOKE ALL ON FUNCTION
 FROM PUBLIC;
 -- Runtime: the CHARM-3 writer inserts a receipt and inserts or advances the unlock row, or
 -- inserts the assignment row, in the same transaction; it never deletes either.
+-- The two key functions back CHECKs, which PostgreSQL evaluates as the writing role.
+GRANT EXECUTE ON FUNCTION game_character_is_charm_key(text),
+    game_character_is_bestiary_race_key(text) TO oteryn_game_runtime;
 GRANT SELECT, INSERT ON game_character_charm_receipts TO oteryn_game_runtime;
 GRANT SELECT, INSERT, UPDATE ON game_character_charm_unlocks TO oteryn_game_runtime;
 GRANT SELECT, INSERT ON game_character_charm_assignments TO oteryn_game_runtime;
