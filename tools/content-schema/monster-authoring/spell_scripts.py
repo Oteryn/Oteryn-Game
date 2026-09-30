@@ -191,11 +191,15 @@ def calls(obj):
 
 
 class SpellScripts:
-    def __init__(self, canary, player_chains=False):
+    def __init__(self, canary, player_chains=False, accepted_guards=None):
         """player_chains (player spells): a caster-may-hit chain picker adds no filter, and the chain value callback,
-        which reads the player caster and its Wheel, is not called; the caller supplies the chain parameters."""
+        which reads the player caster and its Wheel, is not called; the caller supplies the chain parameters.
+        accepted_guards (player spells): {spell name: {onCastSpell body}}. A script whose whitespace-collapsed body is
+        one of these exact texts and that declares exactly one Combat evaluates to that Combat (P2); the caller
+        expresses the guard with spell fields. Any other body stays P4."""
         self.canary = Path(canary)
         self.player_chains = player_chains
+        self.accepted_guards = accepted_guards or {}
         self.index = index_spells(self.canary)
         self.areas = area_constants(self.canary)
         self.enums = engine_enums(self.canary)
@@ -238,6 +242,11 @@ class SpellScripts:
             # Every chain picker of the script is the players-only template; any other picker keeps the script P4.
             callbacks.discard('CALLBACK_PARAM_CHAINPICKER')
         result['tier'], result['tier_reasons'] = body_tier(text, result['shared'], callbacks)
+        if result['tier'] == 'P4' and cast_body(text) in self.accepted_guards.get(key, ()) and len(combats) == 1:
+            result['tier'], result['tier_reasons'] = 'P2', ['accepted guard, expressed by the caller: ' + cast_body(text)[:120]]
+            result['variants'] = [0]
+            result['combats'] = {0: self._combat(lua, combats[0])}
+            return result
         if result['tier'] in ('P4', 'NOOP'):
             return result
 
