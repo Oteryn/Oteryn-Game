@@ -47,6 +47,12 @@ None of these is modelled here. Nothing is written to `content/`, `rulesets/` or
   (standard, knight, crossbow) is chosen per weapon binding (D197, D198, D200), so one definition can
   have more than one. A tree of n levels uses entries 1..n; Mastery is entry n + `mastery_offset` (2).
   This refines PROFICIENCY-0 §4.1 ("each level's threshold").
+- **Threshold class of a weapon (owner, 2026-09-30):** one rule, applied when content is built, not
+  hand-written per Item: bolt ammunition gives crossbow; a sword, axe or club that knights may use
+  gives knight; anything else gives standard (D197, D198, D200, as Canary does). The result is written
+  to the Item's `proficiency.client_binding.threshold_class`. CI checks that the written class matches
+  the rule. Missing Item facts give `unknown`, and an `unknown` weapon gets no proficiency. An
+  exception needs an explicit override with a cited source. PROF-CONTENT-1 implements this.
 - **Not modelled:** shaping (reshape, rank 0-10, refine, Lunar Ascension Orb) and its costs, deferred
   to PROFICIENCY-1; the point table; shared progress across weapons.
 
@@ -69,10 +75,13 @@ Canary `04b83b5` (`src/creatures/players/components/weapon_proficiency.*`) and C
   `(level, perk position)` pairs; Canary stores copies of the selected perks in KV. Storing the index
   (PROFICIENCY-0 §4.2, and the source order kept here) matches Crystal. Canary's perk copies would go
   stale when a definition changes.
-- **Point table** (ruleset, not content). Both give 1/30/70/100/165/240 by Bestiary stars and
-  500/5000/15000 for bane/archfoe/nemesis bosses. Crystal also applies ×1.1 influenced, ×2.5 fiendish
-  and 1500 for soulpit bosses. These values exceed the manual's 1-175 per kill and 1,000 per boss, so
-  the point table stays a PROFICIENCY-0 §4.5 parity gate.
+- **Point table** (ruleset, not content). TibiaWiki `Weapon_Proficiency` revid 1192598 (the revision
+  whose thresholds the owner accepted) gives, by Bestiary difficulty and influence stacks 0-5 / fiend:
+  harmless 1 (fiend 2), trivial 30, easy 70, medium 100, hard 165, challenging 240, each +10% per stack
+  (rounded down) and ×2.5 when fiendish. Bosses: bane 500, archfoe 5,000, nemesis 15,000, with no
+  influence bonus. Canary and Crystal have the same base values. Canary has no influence bonus. Crystal
+  gives a flat ×1.1 for any number of influence stacks and 1,500 for soulpit bosses, which the wiki does
+  not list. The manual's 1-175 per kill and 1,000 per boss predate that revision.
 - **Shaping** is in neither engine.
 
 ## Rules (`validate`)
