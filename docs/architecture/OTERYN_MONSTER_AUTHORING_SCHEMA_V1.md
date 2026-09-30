@@ -332,9 +332,9 @@ masterless and named monsters, tiles with and without the listed items, low and 
 and records what it does; the parameters are derived only when the recorded behaviour matches the
 data form exactly. Everything else stays unresolved with the reason: summons on fixed map
 coordinates or without a limit (`plagirath`, `razzagorn`, `tenebris`: Encounter work under D18), a
-value rolled once while the script loads (`minotaur cult prophet mass healing`), engine item
-constants the stubs do not model (`destroy magic walls`) and scripts that need more world API.
-This resolves 21 more monsters.
+value rolled once while the script loads (`minotaur cult prophet mass healing`) and scripts that
+need more world API. This resolves 21 more monsters. The stubs now model the engine magic wall and
+wild growth item constants, so `destroy magic walls` converts as section 10.2 describes (SW-2).
 
 `path_trail_missile` (`singlecloudchain`, `singledeathchain`, `singleicechain`) is one exact
 template: `Position:getPathTo(target, 0, 0, true, clearSight, 8)` must find a path or the cast

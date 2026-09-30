@@ -16,11 +16,11 @@ assert manifest["compatibility"] == {
 }
 assert lock["family_counts"] == {
     "Item": 33567, "Mount": 252,
-    "Creature": 1476, "Presentation": 2578, "Behavior": 2578, "Loot": 1029, "Ability": 5886, "Effect": 4489, "Formula": 4806,
+    "Creature": 1477, "Presentation": 2579, "Behavior": 2579, "Loot": 1030, "Ability": 5890, "Effect": 4492, "Formula": 4809,
     "NPC": 1102, "Dialogue": 715, "Service.Trade": 322, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
     "Proficiency": 443,
 }
-assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1476, "Encounter": 61, "NPC": 2352}
+assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1477, "Encounter": 61, "NPC": 2352}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
