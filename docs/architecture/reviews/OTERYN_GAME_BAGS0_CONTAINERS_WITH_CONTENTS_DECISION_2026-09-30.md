@@ -147,7 +147,8 @@ drop it whole, with every item still in exactly one location?
   locked and checked, not moved. Class TRANSFER only; no value lines.
 - **Checks before commit:** the destination container's free entry, the cycle walk, destination
   depth plus the moved subtree's height at most 8, the destination tree's size plus the moved
-  tree's size at most 500 (only when the move changes trees), and each family's own capacity
+  tree's size at most 500 (only when the move changes trees; the destination tree is read under the
+  locks, and moved plus destination items are at most 500 in all, so this stays inside the 502), and each family's own capacity
   (depot and Inbox count every item, §9).
 - **Tree binding.** The receipt records the moved tree's item count and a SHA-256 over its sorted
   ItemInstanceIds (the HOUSE-OWN-0 §7 idiom), read under the locks of §4.2. A trade binds more
@@ -315,7 +316,12 @@ Each item names the decision, its refusal today, the result and the child that b
   two-item rows for a swap in which at least one offer is a tree: at most 200 touched items (two
   trees of `BAGS0-RL-05`), 2 participants, 4 location lines (one removal and one placement per
   root), and work units the sum of both sides by the §4.3 formula, 3 per root plus 1 per
-  descendant, so at most 2 × (3 + 99) = 204. The receipt records both tree bindings (count and
+  descendant, so at most 2 × (3 + 99) = 204. Each side's destination main-backpack tree is also
+  validated under the swap locks (no cached subtree counts, §11): both main-backpack roots are
+  locked and every other item of both destination trees is read to prove the post-swap 500-item
+  limit and depth, at most 800 further reads (2 × 400, roots included), one work unit each, so at
+  most 204 + 800 = 1004 work units and 998 items locked or read in all. A destination that is not a
+  main-backpack tree adds its own family's bounded check (depot and Inbox counters, §4.3). The receipt records both tree bindings (count and
   SHA-256 per side, §9 trade binding); the trade event is the PLAYER-TRADE-0 two-line event plus,
   per side, one count and one 32 B binding digest, within the measured `DUR03-RL-07-TRADE` bound
   (above it the shape returns for a new decision). A swap of two items without contents keeps the
@@ -334,6 +340,7 @@ Each item names the decision, its refusal today, the result and the child that b
 | `BAGS0-RL-04` view commands per session per second | measured and registered by BAGS-WIRE-1 |
 | `BAGS0-RL-05` items in one traded tree | 100 |
 | `BAGS0-RL-06` tree move commit p99 at 500 items, depth 8 | at most 100 ms, measured by BAGS-1 |
+| `BAGS0-RL-06-TRADE` two-tree swap commit p99 with two 100-item trees and two full 500-item destination backpacks (1004 work units) | at most 100 ms, measured by BAGS-TRADE-1; above it the shape returns for a new decision |
 | `BAGS0-RL-07` items read by one hotkey search | 509 (runtime only) |
 | `GAMEITEM01-REACHABLE-ITEMS` | 509 per character |
 | `DUR03-RL-01-TREE-MOVE` touched items | 500 (1 moved, up to 499 locked and checked) |
@@ -341,9 +348,9 @@ Each item names the decision, its refusal today, the result and the child that b
 | `DUR03-RL-05-TREE` container levels expanded | 8 |
 | `DUR03-RL-06-TREE-MOVE` participants / work units | 1 / 502 |
 | `DUR03-RL-07-TREE-MOVE` envelope and payload | one-item caps; adds a count and a 32 B hash |
-| `DUR03-RL-01-TREE-TRADE` touched items in one two-tree trade swap | 200 (2 roots moved, up to 198 locked and checked) |
+| `DUR03-RL-01-TREE-TRADE` touched items in one two-tree trade swap | 200 offered (2 roots moved, up to 198 locked and checked), plus up to 800 destination-tree validation reads |
 | `DUR03-RL-02-TREE-TRADE` location lines | 4 |
-| `DUR03-RL-06-TREE-TRADE` participants / work units | 2 / sum of both sides at 3 per root plus 1 per descendant, at most 204 |
+| `DUR03-RL-06-TREE-TRADE` participants / work units | 2 / sum of both sides at 3 per root plus 1 per descendant (at most 204), plus 1 per destination-tree validation read (at most 800): at most 1004 |
 | `DUR03-RL-07-TREE-TRADE` envelope and payload | the `DUR03-RL-07-TRADE` event plus, per side, a count and a 32 B binding digest; within the measured `DUR03-RL-07-TRADE` bound (BAGS-TRADE-1) |
 | `DUR03-RL-01-TREE-RETIRE` one-item `DECAY_RETIRE` transactions per Ground tree at `WorldReset` | at most 500, post-order; each the one-item shape: 1 participant / 3 work units, one `OneItemTransactionV1` (BAGS-GROUND-1) |
 | `ITEMV0-RL-03` live handles per session | re-measured, at least 382 |
@@ -406,7 +413,9 @@ registers only a two-item swap. a) One swap transaction for both trees with its 
 rows: 200 touched items, 2 participants, 4 location lines, 204 work units, both tree bindings in
 the receipt and event (recommended: one atomic swap as Global, bounded by `BAGS0-RL-05` per side,
 the accepted §4.3 root shape reused per side); b) two separate tree moves, which breaks the
-all-or-nothing trade. **Ruled a).**
+all-or-nothing trade. Round 4 adds the destination main-backpack validation (2 root locks, at
+most 800 tree reads, 1004 work units in all) to these rows and to the `BAGS0-RL-06` trade
+qualification; a durable per-root count was rejected (§11, cached subtree counts). **Ruled a).**
 
 **R6. Ground counter with trees.** a) Count every item reachable from Ground roots, with atomic
 tree-count adjustments on drop, pickup and per-item retirement (recommended: keeps the 20,000
@@ -453,5 +462,5 @@ rule 5905825574 gives to the architect.
 4. **Typed references:** handles on the wire; `Container {parent, ordinal}` in storage; no owner
    stored on descendants.
 5. **Wire:** §5, capability `CONTAINER_TREE_V1`.
-6. **Split work:** one root per move (two per trade swap, at most 200 items); at most 500 items
+6. **Split work:** one root per move (two per trade swap, at most 200 offered items plus 800 destination validation reads); at most 500 items
    read and locked; at most 8 levels.
