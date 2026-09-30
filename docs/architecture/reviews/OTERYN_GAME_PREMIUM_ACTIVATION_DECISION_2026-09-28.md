@@ -81,6 +81,12 @@ account has it, and what happens when it expires during play?
 - The first grants (D69) are Platform-side operator or test grants. Game treats them like any other
   Premium entitlement.
 
+**Amendment (pending on acceptance of PREMIUM-DELIVERY-0, #1369; consumer contract §9).** The
+surface table is consumer policy revision `premium-surfaces-1`, bound to product
+`oteryn.premium_time` version 1 (PREMIUM-DELIVERY-0 §4). A class other than `CURRENT_AUTHORITY`
+reads as Free. The degraded (Free) behaviour of each benefit is owned by the child that builds it:
+PREM-2 (promotion benefits and soul), PREM-3 (areas), PREM-4 (spells), PREM-5 (NPC services).
+
 ### 4.2 Promotion (D70, D72, D73, D76)
 
 - Promotion is durable Character state: `promoted` plus provenance. It is bought once at a
@@ -120,6 +126,12 @@ account has it, and what happens when it expires during play?
 - At login, a character whose Premium is not current and who stands in a Premium area is placed at
   their home town's temple, or at the Thais temple if the home town is a Premium city (tibia.com
   manual). This is the gameplay transition that consumer contract §12 requires for a relocation.
+  **Amendment (pending on acceptance of PREMIUM-DELIVERY-0):** the relocation runs only when the
+  entitlement itself has ended: `premium_entitlement_ended(account, now)` (PREMIUM-DELIVERY-0 §6)
+  is true. A lapsed lease never relocates, although consumer §7 and §8.3 classify a passed
+  `authority_valid_until` as `EXPIRED`: when evidence is unavailable, stale or past its lease, the
+  character stays where it is, and Premium-area entry and other benefits are refused until evidence
+  is current again.
 - A character already inside when Premium expires mid-session is not moved until the next login.
 
 ### 4.6 Premium spells (D70, D73)
@@ -136,8 +148,8 @@ apply the Premium gate to cosmetics.
 
 | Child | Scope | Owner | Depends on |
 |---|---|---|---|
-| PREM-1 | Premium entitlement consumer fence and surface policies (§4.1) | Game | `PROD-ENTITLEMENTS-01` consumer contract; FND-04 admission |
-| PREM-P | Platform producer: Premium entitlement with operator or test grants, no payment | **Platform lane, separate repository and authority** | Platform producer contract |
+| PREM-1 | Premium entitlement consumer fence and surface policies (§4.1), and the snapshot client of PREMIUM-DELIVERY-0 | Game | `PROD-ENTITLEMENTS-01` consumer contract; FND-04 admission; PREMIUM-DELIVERY-0 (#1369) |
+| PREM-P | Platform producer: Premium entitlement with operator or test grants, no payment, and the snapshot endpoint of PREMIUM-DELIVERY-0 | **Platform lane, separate repository and authority** | Platform producer contract; PREMIUM-DELIVERY-0 |
 | PREM-2 | Promotion state, effective promotion at login, soul maxima (§4.2, §4.3) | Game | PREM-1; progression readiness; spell P3b-2 vitals |
 | PREM-3 | Premium-area flags, entry refusal, login relocation (§4.5) | Game (content, Movement) | PREM-1; content pipeline |
 | PREM-4 | Premium spell cast check (§4.6) | Game | PREM-1; spell P3b-2 |
