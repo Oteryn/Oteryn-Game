@@ -246,3 +246,13 @@ remaining_unknowns:
   - RewardClaim physical schema and cooldown identity
   - TRANSFER admission
 ```
+
+## Amendment (ITEM-MOVE-WIRE-1, 2026-09-30)
+
+§3.1 is extended from the equipment container slot to every `CharacterEquipment` slot (`OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md`
+§7.2). The Character-related effects are the character's own item locations; Ground and corpse
+entries are endpoints outside the Character, bound by rule 2 and by DUR-03 §32 for their scope.
+Such a transaction does not advance `CharacterRevision`. Rules 2-6 apply unchanged, and rule 4's
+lock order is extended after `character_root`: the items in ItemInstanceId order, the
+container-slot row taken by the deferred `0011` placement check, then the Ground tile row and the
+per-channel counter.
