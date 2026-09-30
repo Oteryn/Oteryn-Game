@@ -1307,8 +1307,12 @@ D178 requires. `reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-
 the `FeeBurnCause` variants `HousePrice {house, auction}` and `HouseRent {house, period}`, each one
 `BURN` value line on the owner's (Account, World) bank balance with no item line; bid escrow is
 §18 non-item value in custody, moved by `TRANSFER` value lines; house disposition moves items
-from `HouseInterior` to `CharacterInbox` as one-item `TRANSFER` lines. For those shapes only, it
-supersedes the §39.1 exclusion of non-item accounts and of burn combined with other lines.
+from `HouseInterior` to `CharacterInbox` as one-item `TRANSFER` lines, up to 100 items from one
+source to many destinations per step. For those shapes only, it supersedes the §39.1 exclusions of
+non-item accounts, multiple touched items and burn combined with other lines, and the §39.1 and
+§39.3 source and destination limits, within the HOUSE-OWN-0 §12 rows (100 touched items per step;
+`DUR03-RL-03-HOUSE`: at most 200 value lines, each ledger entry and each escrow change counting as
+one). Every other obligation is unchanged.
 
 **NPC service amendment (NPC-0).** `NPC0-NPC-RUNTIME-SERVICE-V1`
 (`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6) admits three shapes

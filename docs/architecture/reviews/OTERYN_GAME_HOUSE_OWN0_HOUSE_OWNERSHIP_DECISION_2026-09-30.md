@@ -61,7 +61,7 @@ How does a character get, keep and lose an ordinary physical house?
 - HOUSE-CUSTODY-0 (candidate): `HouseInterior` items each with a provenance naming the placing
   Character; no runtime grant on the house tables until the child that opens them; before any house
   becomes owned, the ownership child decides the Ground items on its tiles.
-- BANK-0 (candidate): roots are never deleted and their Account and World never change; credits
+- BANK-0 (merged, #1357): roots are never deleted and their Account and World never change; credits
   stop at `BANK0-RL-01`. MARKET-0 (candidate): `CharacterInbox`; Market credits and escrow returns
   may exceed `BANK0-RL-01` up to `MARKET0-RL-10`.
 - D178: every new fee source needs its own owner decision.
@@ -102,6 +102,9 @@ How does a character get, keep and lose an ordinary physical house?
   - a new house gets a `VACANT` row;
   - a retired house in `VACANT` becomes `RETIRED` and is never auctioned again; one in `AUCTION` has
     its auction cancelled with every escrow returned by release steps (§4), then becomes `RETIRED`;
+  - a house in `AUCTION` that is re-keyed or whose doors or tiles change has its auction cancelled
+    the same way; it then continues as `VACANT` under its (new) key, and a re-keyed old key becomes
+    `RETIRED`;
   - the reset preflight refuses a bundle that retires or re-keys a house in `OWNED`,
     `MOVE_OUT_PENDING` or `DISPOSITION`, or changes its tiles so that the HOUSE-CUSTODY-0 §3.6 check
     fails: an operator first runs a §7 disposition with cause `CATALOGUE_RETIREMENT` (no ban). Rent
@@ -188,7 +191,8 @@ How does a character get, keep and lose an ordinary physical house?
 This is the EXP-HOUSES-01 §12.3 and §14.7 ordering.
 
 1. **Fence.** One transaction leaves `OWNED` or `MOVE_OUT_PENDING` for `DISPOSITION`, creates the
-   disposition operation (`game_house_dispositions`: house, cause `MOVE_OUT` or `EVICTION`, the
+   disposition operation (`game_house_dispositions`: house, cause `MOVE_OUT`, `EVICTION` or
+   `CATALOGUE_RETIREMENT` (§3; no ban), the
    property revision) and sets `content_fence_operation`. A trigger on the `HouseInterior` table
    refuses every insert, delete or update of that house while the fence is set, except through the
    disposition functions: the fence does not rely on a runtime remembering to check it. The same
@@ -206,6 +210,11 @@ This is the EXP-HOUSES-01 §12.3 and §14.7 ordering.
 
 The steps run through SECURITY DEFINER functions; the runtime role gets EXECUTE on them and no
 direct grant on the house tables (HOUSE-CUSTODY-0 §3.5).
+
+**Storage budget** (EXP-HOUSES-01 §19). A house interior holds at most `HOUSEOWN0-RL-14` (2,000)
+items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refuses more with
+`HOUSE_STORAGE_FULL`. Tibia bounds a house only by its tiles; this is a declared Oteryn bound
+(`PARITY_PENDING`). It also bounds one disposition's Inbox deliveries (MARKET-0 §5).
 
 ## 8. Ground items on house tiles (the HOUSE-CUSTODY-0 §3.5 gate)
 
@@ -291,9 +300,13 @@ direct grant on the house tables (HOUSE-CUSTODY-0 §3.5).
 | `HOUSEOWN0-RL-11` houses per job pass | 100 |
 | `HOUSEOWN0-RL-12` entries per ACL list | 200 |
 | `HOUSEOWN0-RL-13` balance hard ceiling for escrow returns | 9,000,000,000,000,000 |
-| Bid | 0 items, 1 value line, 1 event |
-| Settlement first step | 0 items, 4 value lines (price, rent, return, escrow), 1 event |
-| Release or disposition step | 100 bids and 100 value lines, or 100 items and 200 location lines; 1 event |
+| `HOUSEOWN0-RL-14` items per house interior (containers' contents included) | 2,000 |
+| `DUR03-RL-03-HOUSE` value lines per transaction | 200; each ledger entry and each escrow change is one line (MARKET-0's rule) |
+| Bid, raise or lower | 0 items, 2 value lines (reserve or release, escrow change), 1 event |
+| Settlement first step | 0 items, 4 value lines (escrow fall, price, rent, return), 1 event |
+| Rent charge | 0 items, 1 value line (`HOUSE_RENT`, its own burn line), 1 event |
+| Release step | 100 bids, 200 value lines (escrow fall and return per bid), 1 event |
+| Disposition step | 100 items, 200 location lines, 0 value lines, 1 event |
 
 ## 13. Rejected options
 

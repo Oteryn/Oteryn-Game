@@ -96,6 +96,12 @@ protocol review.
   and gold fee §4.4 amendments in this PR, catalogue revisions (retirement, re-keying, doors, rent),
   the explicit session fence, one occurrence per raise or lower, the balance ceiling fallback, and
   this record's PR number.
+- Re-review of `a88b3029` (#1368 5914798819: 2 MEDIUM, 4 LOW), answered in one push: the DUR-03
+  house amendment also supersedes the multiple-touched-items rule and the source and destination
+  limits, with `DUR03-RL-03-HOUSE` (200); lines counted by MARKET-0's rule (bid 2, release step
+  200); `CATALOGUE_RETIREMENT` among the disposition causes; re-key and door or tile changes of a
+  house in `AUCTION`; BANK-0 marked merged; the storage budget `HOUSEOWN0-RL-14` (2,000), which
+  MARKET-0 cites.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
