@@ -91,6 +91,11 @@ No code, migration or content change is made.
   child CHAR-REV-SEQ-1, with XP and Bestiary mismatches failing closed; `WAITING_MIGRATION` instead
   of terminal refusal for `REVISION_MISMATCH`; `world_draw_key` outside the repository, its secret
   authority and rotation at resets; the double blank line.
+- Re-review of `b3d20d2e` (#1373 5915287036: 1 MEDIUM, 1 LOW), answered in one push: §5.2 lists
+  every `CharacterRevision` writer on `main` (XP, death, Bestiary, charm with its in-transaction fee
+  burn, monk state) and CHAR-REV-SEQ-1 moves all of them onto the sequencer; stance and quest are
+  built on it; the retry rule follows each writer's binding (Bestiary and quest retry once; XP,
+  death, charm and monk fail closed).
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

@@ -22,7 +22,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| CHAR-REV-SEQ-1 | hard, persistence and concurrency review | the per-Character revision sequencer of §5.2: one revision-advancing write in flight per Character, the revision cursor, and the existing XP, death, Bestiary and charm callers moved onto it | this decision |
+| CHAR-REV-SEQ-1 | hard, persistence and concurrency review | the per-Character revision sequencer of §5.2: one revision-advancing write in flight per Character, the revision cursor, and every `CharacterRevision` writer on `main` moved onto it (§5.2 list: XP, death, Bestiary, charm with its in-transaction fee burn, monk state); STANCE-1 and QUEST-STATE-1 are built on it | this decision |
 | QUEST-STATE-1 | hard, persistence review | the track, quest-state, receipt, obligation and account-completion tables; the sixth receipt kind in the consistency guard; a new migration extending the `0012` claim guards for obligation rows; the transition writer (§3-§6) | this decision; CHAR-REV-SEQ-1 |
 | QUEST-PRED-1 | impl | the read-only predicate API over the session's track copy (§7) | QUEST-STATE-1 |
 | QUEST-CONTENT-1 | content lane | `Quest` and `Interaction` as data-only families (ruling A2): track keys with owner quest, initial value and bounds; transitions with closed effect kinds; the 111 gap-free `reward_only` quests first | this decision |
@@ -117,21 +117,33 @@ Where does a character's quest progress live, and how does it change safely?
   advances `game_character_roots` and `game_character_progression_state` together, as the charm
   writer does. QUEST-STATE-1 replaces the `0020` consistency guard to admit a **sixth** receipt kind,
   exactly one receipt per revision.
-- **Expected revision, as its siblings.** Like the XP, death, Bestiary and charm writers
+- **Expected revision, as its siblings.** Like the XP, death, Bestiary, charm and monk writers
   (`character_progression.rs`, `death_reward.rs`), the quest writer checks the fence's
   `expected_character_revision` and returns `CharacterRevisionMismatch` otherwise.
 - **One write in flight per Character (new requirement, CHAR-REV-SEQ-1).** Nothing on `main` keeps
   a revision cursor in production today. The owning channel runtime gets one sequencer per
-  Character: every revision-advancing write (XP, death, Bestiary, charm, monk state save, quest) is
-  submitted to it, it runs one at a time, and it holds the revision cursor, advanced after each
-  committed receipt. A composition holds the slot for its whole chain: in a creature death, XP,
+  Character: every revision-advancing write is submitted to it. On `main` these are, each with its
+  root advance:
+  - XP (`character_progression.rs:293`);
+  - death (`character_death.rs:259`);
+  - Bestiary (`bestiary_progress.rs:260`);
+  - charm (`charm_state.rs:461`), including the gold fee burn it runs in the same transaction
+    (`item_fee_burn.rs:6,212`, which checks the source's expected revision and relies on the
+    source's advance);
+  - monk state save (`monk_state.rs:239`, called from `monk_save.rs`).
+
+  Later writers are built on the sequencer: stance (STANCE-1; `0017` has no writer yet) and quest.
+  A writer that advances the revision outside the sequencer is a defect. The sequencer runs them
+  one at a time and holds the revision cursor, advanced after each committed receipt. A composition holds the slot for its whole chain: in a creature death, XP,
   then Bestiary, then quest transitions, each taking the revision the previous one committed (the
   `bestiary_expected_revision` pattern). An NPC reply, a USE or an obligation waits for the slot, so
   it can never commit between XP and Bestiary.
-- **Mismatch.** With the sequencer, a mismatch means another writer bypassed it. A quest request's
-  binding excludes the revision, so the runtime reloads the cursor and retries it once (replay or
-  one commit). The XP binding includes the revision (`character_progression.rs:817`), so an XP or
-  Bestiary mismatch is not retried: it fails closed and is reported as a defect.
+- **Mismatch.** With the sequencer, a mismatch means another writer bypassed it. Where a request's
+  binding excludes the revision (quest; Bestiary, `bestiary_progress.rs:540-542`), the runtime
+  reloads the cursor and retries it once (replay or one commit). Where it includes the revision
+  (XP `character_progression.rs:817`, death `character_death.rs:478`, charm `charm_state.rs:720`,
+  monk `monk_state.rs:397`), a mismatch is not retried: it fails closed and is reported as a
+  defect.
 
 ### 5.3 Fence and locks
 
