@@ -118,9 +118,12 @@ fee and resource spent exactly once and the item's new state durable?
   manual as the authority for the tier names and the 20 h. Each record: category, tier, effect
   (§5), materials (definition and count), fee (§6), and the access predicate. Values not in the
   manual carry Canary provenance and `PARITY_PENDING`.
-- **Access.** Basic: any character. Intricate and Powerful: Premium. Direct shrine use of
-  Intricate and Powerful also needs the quest progress the content declares (the manual's quest;
-  Canary's per-type storages). Until that quest content lands, the predicate fails closed.
+- **Access.** Every direct shrine imbuement, Basic included, needs the Temple of the Forgotten
+  Knowledge quest progress the content declares (the manual, §2; Canary's per-type storages).
+  Intricate and Powerful also need Premium. The quest, Premium and the item's per-type maximum
+  tier are separate checks; any failure is `REQUIREMENT_NOT_MET` before the transaction. Until
+  the quest content lands, the quest predicate fails closed. Applying a completed scroll needs
+  none of them (§7).
 - **Slots.** Each item definition declares 0-3 slots and, per allowed type, a maximum tier. One
   imbuement per category per item. A slot must be empty to imbue (`PARITY_PENDING`: overwrite).
 - **Where.** The target item and the materials are main backpack direct entries in the first
@@ -161,7 +164,13 @@ fee and resource spent exactly once and the item's new state durable?
   under the non-caller cause `ImbueCause::Expire`.
 - **Crash:** the node loses at most one checkpoint interval of ticking per slot; the player gets
   that time back. Global's crash rollback returns more. No item or gold is created.
-- A failed checkpoint is retried by the next; after a fence loss the last committed value stands.
+- **Failed checkpoint (fail closed):** when a checkpoint write fails, the character's ticking
+  slots stop consuming time and their effects are suspended (§5 reads them as absent) until a
+  checkpoint of the unchanged in-memory values commits; the runtime retries it. Committed
+  `remaining_ms` is therefore never more than one interval behind consumed time, so a crash
+  still returns at most `IMBFORGE0-RL-05`. After a fence loss the last committed value stands.
+- A slot reaching 0 whose expiry write has not committed also has its effects suspended; §5.1
+  capacity follows the committed state.
 
 ## 5. Imbuement effects (IMBUE-RT-1)
 
@@ -181,9 +190,12 @@ Every effect is a GAME-ABILITY-01 input read from the equipped items at the stag
 ### 5.1 Capacity in the database
 
 Composition rule 5 checks capacity inside the PostgreSQL transaction. That check counts the
-Featherweight rows of the equipped backpack that exist. The row exists until its expiry write, so
-the database and the runtime agree within one checkpoint. Items already carried stay carried when
-capacity falls (Global).
+Featherweight rows of the equipped backpack that exist with committed `remaining_ms` above 0.
+The runtime's derived capacity uses the same committed state: a Featherweight slot whose effect
+is suspended (§4.3: failed checkpoint, or at 0 before its expiry write commits) grants no
+capacity in the runtime, and an admission that needs that capacity is refused until the
+checkpoint or the expiry write commits. The runtime never grants more capacity than the database
+counts. Items already carried stay carried when capacity falls (Global).
 
 ## 6. Imbuing in DUR-03 terms (IMBUE-1)
 
@@ -209,8 +221,13 @@ capacity falls (Global).
 - A blank scroll (NPC trade, D208; or loot) becomes an imbuement scroll at a shrine: BURN of the
   materials, fee BURN, and a `REPLACE_INSTANCE` TRANSFORM of one blank scroll unit into one scroll
   of that imbuement (`ImbueCause::ScrollCreate`). Scrolls are stackable item definitions.
+- **Producer eligibility (architect ruling, the manual §2: only worthy Premium characters
+  produce scrolls):** `ScrollCreate` of any tier needs Premium and the §3 quest predicate,
+  checked before the transaction; a failure is `REQUIREMENT_NOT_MET` and writes nothing. Holding
+  a blank scroll from loot or trade grants no eligibility.
 - Applying a scroll is a use-with on the target item: BURN of one scroll unit and the row insert
-  (`ImbueCause::ScrollApply`), with no fee and no access predicate beyond the item's slots.
+  (`ImbueCause::ScrollApply`), with no fee and no access predicate beyond the item's slots:
+  applying a completed scroll stays unrestricted (no quest, no Premium).
 - The etcher clears without a shrine; its charges are `PARITY_PENDING` until IMBUE-SCROLL-1.
 
 ## 8. Item tier (FORGE-1)
@@ -240,6 +257,15 @@ The forge is a world object; USE opens the forge window under `FORGE_V1`. Both i
 backpack direct entries, neither imbued. The roll is drawn from the simulation RNG under purpose
 `forge_fusion`, keyed by the operation occurrence and a server seed the client cannot derive; the
 outcome is stored in the receipt, so a replay or a new CommandId never rerolls a known outcome.
+
+- **Revision binding (SIM-DETERMINISM-01 §5):** when the forge occurrence is reserved it binds
+  its behavior-affecting revision set: the content revision (classification, tier caps, prices,
+  dust costs, bonus rates), the ruleset/formula revision (chances, outcome rules) and the
+  `SimulationDeterminismProfileRevision`. The set is part of the request binding and is stored in
+  the receipt. A retry of the same occurrence, including after a known non-committed abort,
+  evaluates only under that bound set; if the active set differs, the retry is refused
+  (`REVISION_CHANGED`, nothing written) and the player must start a new occurrence. The same
+  occurrence is never re-evaluated under a newer revision.
 
 | Operation | Lines (all in one transaction) | Outcomes |
 |---|---|---|
@@ -307,7 +333,7 @@ The chance per tier is content (Canary quadratic; `PARITY_PENDING`). Only equipp
   `OK`, `REQUIREMENT_NOT_MET`, `MATERIALS_MISSING`, `INSUFFICIENT_FUNDS`, `SLOT_OCCUPIED`,
   `NOT_ALLOWED`; the tracker (equipped imbuements and remaining time) as a state domain entry.
 - FORGE: fusion, transfer (with convergence and core flags), conversion kind; results with
-  success and bonus; history paged; the dust balance and limit in the resource balance.
+  success and bonus, or `REVISION_CHANGED` (§10); history paged; the dust balance and limit in the resource balance.
 - Item views gain tier and the imbuement summary. Each wire child measures its payloads.
 
 ## 15. Rows (registered by each child before implementation)
@@ -393,7 +419,8 @@ only, no sliver loot (cores come only from dust); c) none now: the forge waits.
 1. **Contract amendments:** MARKET-0 §3.1 and the gold fee §4.4 here; DUR-03 §15, §17, §18,
    §39.3 and composition rule 1 by IMBUE-1 and FORGE-1. Capability numbers at allocation.
 2. **Serialization:** one shrine or forge operation per actor; one transaction per operation;
-   rule 2 fence; rule 4 root lock, then the dust row; replay by occurrence.
+   rule 2 fence; rule 4 root lock, then the dust row; replay by occurrence under its bound
+   revision set (§10); a failed imbuement checkpoint suspends ticking and effects (§4.3).
 3. **Restart:** tier, imbuements and dust are durable; ticking, influenced and fiendish state
    are runtime; at most one checkpoint of time returns.
 4. **Typed references and wire:** item handles, definition and imbuement keys, `ProductionKey`

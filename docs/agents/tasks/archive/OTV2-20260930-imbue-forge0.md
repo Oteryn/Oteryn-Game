@@ -82,6 +82,9 @@ review.
 - `python3 tools/agents/validate_governance.py`: PASS on the draft authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the draft authoring tree.
 - `git diff --cached --check`: clean.
+- Codex round-1 repair (PR #1415, 4 findings): forge revision binding (§10), failed-checkpoint
+  suspension and committed Featherweight capacity (§4.3, §5.1), the quest predicate on every direct
+  shrine imbuement (§3), `ScrollCreate` producer eligibility (§7).
 
 ## Closeout
 
