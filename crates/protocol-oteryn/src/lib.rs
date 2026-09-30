@@ -2198,6 +2198,9 @@ pub fn decode_framed_envelope(
 }
 
 pub mod actor_spell;
+pub mod bestiary;
+pub mod charm;
+mod charm_wire;
 pub mod world_object;
 pub mod world_spatial;
 

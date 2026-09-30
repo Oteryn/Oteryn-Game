@@ -1,0 +1,86 @@
+# OTV2-20260930-prof-content-1
+
+```yaml
+task_id: OTV2-20260930-prof-content-1
+title: PROF-CONTENT-1 Proficiency definitions in content/ and Item profile_binding
+mode: IMPLEMENT
+status: implementing
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/prof-content-1d-item-schema
+issue: 162
+pr: 1342   # #1328 (1a) and #1339 (1b) merged; the task continues in #1341 (1c) and #1342 (1d)
+base_sha: 1852a69   # #1327 and #1328 merged; 1b-1d stacked
+head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
+owner: "owner-launched Claude Code session (session_012FuykcnY5errmsP3T1E4Nm)"
+created_at: 2026-09-30
+updated_at: 2026-09-30
+execution_policy: continuous_progress
+owned_paths:
+  - content/proficiencies/**
+  - content/project.json
+  - content/manifest.json
+  - content/content.lock.json
+  - tools/content-schema/proficiency-authoring/**   # except .github/workflows (unchanged here)
+  - tools/content-migration/world_project_v2_to_tree.py
+  - tools/content-migration/validate_world_project_v2_to_tree.py
+  - tools/content-migration/test_world_project_v2_to_tree.py
+  - docs/agents/tasks/active/OTV2-20260930-prof-content-1.md
+  # 1b: apps/game-server/src/content/project/v2.rs, apps/game-server/src/content/project/v2/proficiency.rs,
+  # apps/game-server/tests/content_world_project_v2.rs
+  # 1c: tools/content-schema/item-authoring/** (after #1326)
+public_contracts: []
+depends_on:
+  - "#1327 (proficiency authoring schema)"
+  - docs/architecture/reviews/OTERYN_GAME_PROFICIENCY0_WEAPON_PROFICIENCY_DECISION_2026-09-29.md
+blocks:
+  - PROF-2
+cross_repository_coordination_id: null
+external_repositories: []
+jira: null   # sync pending (coordinator batch)
+```
+
+## Outcome (target)
+
+- **1a (#1328, merged as `1852a69`):** `content/proficiencies/` holds the 443 definitions from the #1327 candidate
+  (index + 3 shards). Keys `oteryn:proficiency.tibia.p<id>` are minted here. `Proficiency` is registered
+  in project, manifest and lock, and `world_project_v2_to_tree.py` knows it, so its output stays
+  byte-identical. No runtime loading.
+- **1b (branch `claude/prof-content-1b-proficiency-rust`, PR #1339, stacked on #1328; owner answer `a`):**
+  - `v2.rs` + `v2/proficiency.rs`: family `Proficiency`, declaration `Proficiency {identity, levels,
+    fields}`, levels 1..7 of 1..3 typed perks (33 kinds, D199), values as exact ratios, perk order kept.
+  - Item `proficiency` is `{profile_binding: ProficiencyRef, threshold_class}`; the inline
+    `levels`/`shaping` (`ProjectV2PerkShaping`) are removed.
+  - Tests: the item round trip, one negative case per rule, and all 443 `content/proficiencies/`
+    definitions lowered to typed declarations and validated.
+- **1c (after #1326, which derives the threshold class per binding, merges):**
+  - Items carry `proficiency.profile_binding` and the threshold class. The inline `levels`/`shaping`
+    are removed from `item.schema.json` (`build_formal_schema.py`).
+  - The threshold class comes from the rule (owner decision 2 in the #1327 record).
+  - The crosswalk-rule amendment and the coverage report.
+
+## Decisions carried
+
+Owner, 2026-09-30 (recorded in `docs/agents/tasks/archive/OTV2-20260930-proficiency-authoring-schema.md`):
+- threshold tables per class at catalogue level;
+- the threshold class comes from a rule applied when content is built and checked in CI;
+- the TibiaWiki point table (revid 1192598) is admitted;
+- #1327 ships separately.
+
+Threshold tables and the point table are progression rules, so they are not written to `content/`.
+
+## Validation (1a, local)
+
+- `proficiency_authoring.py build --check`, `validate`, `content --check`: ok. Tests: 6 pass. Ruff: clean.
+- `world_project_v2_to_tree.py` regenerates project, manifest and lock byte-identically.
+- `validate_world_project_v2_to_tree.py`: PASS (`proficiency_records=443`).
+- `test_world_project_v2_to_tree.py`: PASS (160 managed files).
+- `validate_materialized_game_tree.py`: 97/97.
+- `test_classify_content_routing.py`: PASS.
+
+## Validation (1b, local)
+
+- `cargo test -p oteryn-game-server`: 13,765 passed, 0 failed (55 suites). `content_world_project_v2`: 18.
+- `cargo fmt --all -- --check`: clean. `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: clean.

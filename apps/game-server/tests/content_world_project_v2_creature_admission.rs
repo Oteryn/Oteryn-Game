@@ -306,6 +306,7 @@ fn profiles() -> Vec<ProjectV2AuthoringProfile> {
                     variants: vec![],
                     encounter: None,
                     path_requirement: None,
+                    windup: None,
                     chain: None,
                     cast_cue: None,
                     impact_cue: None,
@@ -351,6 +352,7 @@ fn profiles() -> Vec<ProjectV2AuthoringProfile> {
                     variants: vec![],
                     encounter: None,
                     path_requirement: None,
+                    windup: None,
                     chain: None,
                     cast_cue: None,
                     impact_cue: None,
@@ -811,4 +813,23 @@ fn players_only_affects_round_trips_and_needs_no_creatures() {
         serde_json::to_value(&affects).expect("affects")["kind"],
         json!("Players")
     );
+}
+
+#[test]
+fn windup_admits_only_on_a_single_target_ability() {
+    fn with_windup(key: &str, delay_ms: u32) -> Result<WorldProject, String> {
+        let mut draft = draft();
+        if let ProjectV2AuthoringProfileData::Ability(ability) = profile_mut(&mut draft, key) {
+            ability.details.as_mut().expect("details").windup = Some(ProjectV2Windup {
+                delay_ms,
+                caster_asset_binding: "canary.appearance:effect/ghost_smoke".into(),
+            });
+        }
+        admit(draft)
+    }
+    with_windup(MELEE, 2_000).expect("single-target windup admits");
+    for (key, delay_ms) in [(MELEE, 0), (WAVE, 2_000)] {
+        let error = with_windup(key, delay_ms).expect_err("windup must fail closed");
+        assert!(error.contains("v2 Ability windup"), "{error}");
+    }
 }

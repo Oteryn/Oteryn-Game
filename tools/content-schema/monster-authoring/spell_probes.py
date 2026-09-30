@@ -57,7 +57,8 @@ local function creature(kind, name, master, summons)
     return function(...) record('call', k); return nil end
   end})
 end
-local world = {top = nil, items = {}}
+-- items.top is the id of the top visible item; top_at = {x, y, z} limits it to that one tile (relative to the caster).
+local world = {top = nil, items = {}, top_at = nil}
 Tile = function(x, y, z)
   local p = position(x, y, z)
   record('tile', p.x - 1000, p.y - 1000, p.z - 7)
@@ -71,7 +72,8 @@ Tile = function(x, y, z)
       return nil
     end,
     getTopVisibleThing = function(self)
-      local id = world.items.top
+      local id, at = world.items.top, world.top_at
+      if at and (at[1] ~= p.x - 1000 or at[2] ~= p.y - 1000 or at[3] ~= p.z - 7) then id = nil end
       if id then return {getId = function() return id end, remove = function() record('removeItem', p.x - 1000, p.y - 1000, p.z - 7, id) end} end
       return nil
     end,

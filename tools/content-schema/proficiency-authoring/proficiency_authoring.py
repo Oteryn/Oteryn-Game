@@ -5,12 +5,15 @@
 into typed Oteryn definitions using the owner-accepted D199 perk code map, and rejects any
 unmapped code or key set. `build --check` diffs an in-memory build against the committed
 candidate. `validate` runs the schema and the semantic rules, including a lossless round trip
-of every perk back to its staged source record.
+of every perk back to its staged source record. `content` writes (`--check` verifies) the
+populated content/proficiencies/ family and its registration in content/project.json,
+content/manifest.json and content/content.lock.json.
 """
 
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import sys
@@ -37,6 +40,16 @@ PROFICIENCIES_SHA256 = (
 )
 REVISION = "definition-r1"
 EXPECTED_COUNT = 443
+FAMILY = "Proficiency"
+CONTENT_DIR = "content/proficiencies/"
+INDEX_PATH = CONTENT_DIR + "index.json"
+SHARD_SIZE = 150
+CATALOGUE_REL = (
+    "tools/content-schema/proficiency-authoring/samples/proficiencies-candidate.json"
+)
+CATALOGUE_SCHEMA = "OTERYN_PROFICIENCY_AUTHORING_CATALOGUE/v1"
+INDEX_SCHEMA = "OTERYN_FAMILY_INDEX/v1"
+SHARD_SCHEMA = "OTERYN_PROFICIENCY_SHARD/v1"
 
 # D199 (owner-accepted): source enum codes -> Oteryn enum names.
 SKILLS = {
@@ -338,6 +351,115 @@ def validate(catalogue: dict, source: list[dict] | None = None) -> list[str]:
     return errors or semantic_errors(catalogue, source)
 
 
+def compact(payload: object) -> str:
+    return (
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    )
+
+
+def content_files(catalogue: dict) -> dict[str, str]:
+    """The populated family: shards of definitions and the family index.
+
+    Threshold tables are progression rules (rulesets/progression/weapon-proficiency/), so only
+    the definitions enter content/.
+    """
+    records = [
+        {
+            "definition": {
+                **{k: v for k, v in d.items() if k != "identity"},
+                "identity": {
+                    "key": d["identity"]["key"],
+                    "revision": d["identity"]["revision"],
+                },
+            }
+        }
+        for d in catalogue["proficiencies"]
+    ]
+    files, shards = {}, []
+    for index, start in enumerate(range(0, len(records), SHARD_SIZE)):
+        chunk = records[start : start + SHARD_SIZE]
+        end = start + len(chunk) - 1
+        path = f"{CONTENT_DIR}proficiencies-{start:05d}-{end:05d}.json"
+        shards.append(path)
+        files[path] = compact(
+            {
+                "family": FAMILY,
+                "records": chunk,
+                "schema": SHARD_SCHEMA,
+                "shard": {
+                    "count": len(chunk),
+                    "end": end,
+                    "index": index,
+                    "start": start,
+                },
+            }
+        )
+    files[INDEX_PATH] = compact(
+        {
+            "authoring_source": {
+                "path": CATALOGUE_REL,
+                "schema": CATALOGUE_SCHEMA,
+                "sha256": sha256(dumps(catalogue).encode()),
+            },
+            "family": FAMILY,
+            "record_count": len(records),
+            "schema": INDEX_SCHEMA,
+            "shards": shards,
+        }
+    )
+    return files
+
+
+def registered(
+    project: dict, manifest: dict, lock: dict, count: int, paths: list[str]
+) -> tuple:
+    """The three registration documents with the Proficiency family registered."""
+    project, manifest, lock = map(copy.deepcopy, (project, manifest, lock))
+    if FAMILY not in project["migrated_families"]:
+        project["migrated_families"] = project["migrated_families"] + [FAMILY]
+    project["next_population_families"] = [
+        f for f in project["next_population_families"] if f != FAMILY
+    ]
+    manifest["families"][FAMILY] = {"records": count, "index": INDEX_PATH}
+    managed = {row["path"] for row in manifest["managed_files"]}
+    managed = {p for p in managed if not p.startswith(CONTENT_DIR)} | set(paths)
+    manifest["managed_files"] = [{"path": p} for p in sorted(managed)]
+    lock["family_counts"][FAMILY] = count
+    return project, manifest, lock
+
+
+def content_command(check: bool) -> int:
+    catalogue = load_json(CATALOGUE)
+    errors = validate(catalogue, staged_records()[1])
+    for error in errors:
+        print(error, file=sys.stderr)
+    if errors:
+        return 1
+    names = ("project", "manifest", "content.lock")
+    docs = [load_json(ROOT / f"content/{n}.json") for n in names]
+    outputs = content_files(catalogue)
+    count = len(catalogue["proficiencies"])
+    for name, doc in zip(names, registered(*docs, count, sorted(outputs)), strict=True):
+        outputs[f"content/{name}.json"] = compact(doc)
+    stale = []
+    for rel, text in sorted(outputs.items()):
+        path = ROOT / rel
+        if path.is_file() and path.read_text(encoding="utf-8") == text:
+            continue
+        stale.append(rel)
+        if not check:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8", newline="\n")
+    if check:
+        print(
+            "proficiency content check: " + (f"FAIL, stale {stale}" if stale else "ok")
+        )
+        return 1 if stale else 0
+    print(f"proficiency content: wrote {stale}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -347,7 +469,18 @@ def main() -> int:
     build_cmd.add_argument("--check", action="store_true")
     validate_cmd = sub.add_parser("validate", help="validate a catalogue file")
     validate_cmd.add_argument("path", type=Path)
+    content_cmd = sub.add_parser(
+        "content", help="write the content/proficiencies/ family and its registration"
+    )
+    content_cmd.add_argument(
+        "--check",
+        action="store_true",
+        help="fail if the committed content tree differs from the candidate catalogue",
+    )
     args = parser.parse_args()
+
+    if args.command == "content":
+        return content_command(args.check)
 
     if args.command == "build":
         text = dumps(build())

@@ -5,6 +5,7 @@ on:
     paths:
       - tools/content-schema/achievement-authoring/**
       - tools/content-schema/quest-authoring/ots_chests.py
+      - tools/content-schema/quest-authoring/samples/chests/claims.json
       - content/achievements/**
       - imports/cipsoft-staticdata/achievements/**
       - imports/tibiawiki/achievements/**
