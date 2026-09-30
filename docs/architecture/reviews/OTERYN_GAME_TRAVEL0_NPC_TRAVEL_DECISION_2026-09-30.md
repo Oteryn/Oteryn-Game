@@ -3,7 +3,9 @@
 - Decision: `TRAVEL0-NPC-TRAVEL-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence
   and content) and protected integration. T1 (§15) is an architect ruling applying the owner's
-  answers Q3a and H2a; no owner question is open.
+  answers Q3a and H2a. The ambiguous-commit ruling (§7.5: the traveller stays frozen until
+  reconciled, alert at 2 s) is owner-confirmed (#162 comment 5919525206); no owner question is
+  open.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner direction of 2026-09-30 (build travel now, full Tibia Global parity); what
   NPC-0 §6 left open: discounts, the full refusal list, the arrival step, channel scope, the
@@ -256,8 +258,14 @@ fail closed): the actor stays frozen, so its position revision cannot advance pa
 captured at the hold (§7.3) and a late commit can still place and consume the arrival. The hold
 is released only at a known outcome: a commit places the actor and consumes the arrival (§7.3,
 §7.4); an abort releases it and pays nothing. The 2,000 ms bound raises the ambiguity alert and
-the long-hold metric, it does not release the hold. Logout and channel
-transfer wait for the outcome and the consume, within the same bound.
+the long-hold metric, it does not release the hold. The 2,000 ms bound therefore never applies to
+logout or channel transfer: while the hold is unresolved, terminal release and channel transfer
+are deferred (the session and its generation stay alive, a transfer request waits or is refused
+as busy) and complete only after the known outcome and, on a commit, the consume (§7.4), within
+the normal logout and transfer bounds counted from that outcome. If the session ends anyway
+(process loss, forced termination), the late outcome stays session-generation fenced: its consume
+is stale and writes nothing, and the committed pending arrival is placed by admission (NPC-0).
+No late outcome is ever applied to a newer session or channel.
 
 ## 8. Channel and World
 
