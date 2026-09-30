@@ -17,7 +17,7 @@ owner: "GOLD-FEE-1b hard worker (claude-code-session-01KHBMhdyXg4ZtugYkB2FucZ)"
 created_at: 2026-09-30
 updated_at: 2026-09-30
 execution_policy: continuous_progress
-size_exception: "about 1,300 hand-written lines, one atomic unit (the 0031 guards, the writer, the audit shape and their PostgreSQL cases are only sound together); same exception as GOLD-FEE-1a"
+size_exception: "about 1,490 added lines (about 150 of them the verbatim 0012/0013 guard bodies 0031 must restate), one atomic unit (the 0031 guards, the writer, the audit shape and their PostgreSQL cases are only sound together); same exception as GOLD-FEE-1a"
 owned_paths:
   - apps/game-server/migrations/0031_character_gold_fee_change_mint.sql
   - apps/game-server/src/durability/item_fee_burn.rs
