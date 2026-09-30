@@ -92,6 +92,7 @@ fn heal_party() -> SpellDefinition {
 
 fn druid(mana: u32) -> CasterState {
     CasterState {
+        harmony_multiplier: super::harmony::HarmonyMultiplier::ONE,
         vocation: Vocation::ElderDruid,
         level: 100,
         magic_level: 50,
