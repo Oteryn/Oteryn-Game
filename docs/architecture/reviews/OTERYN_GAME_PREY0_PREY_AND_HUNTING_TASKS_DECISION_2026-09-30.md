@@ -3,7 +3,8 @@
 - Decision: `PREY0-PREY-AND-HUNTING-TASKS-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   economy, combat and protocol) and protected integration. R1-R4 (§14) are architect rulings;
-  owner questions Y1-Y3 (§15) are open and block only the parts they name.
+  owner questions Y1-Y3 (§15) are answered (Y1 a, Y2 c, Y3 a; owner, 2026-09-30, #162) and
+  binding.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner direction of 2026-09-30 (build Prey and Hunting Tasks now, full Tibia Global
   parity). It is the owning semantic gate DUR-02 names for "Hunting Task/Prey state" (persistence
@@ -11,7 +12,7 @@
 - Builds on: CHARM-0 (Bestiary facts, the 5-minute credit window, answers 2, 8-11) and CHARM-2
   (`0019`, `bestiary_progress.rs`); QUEST-STATE-0 §5.2 (CHAR-REV-SEQ-1, the death chain); the
   composition decision rules 1-6; the gold fee decision (D174-D178, §4.3 and §4.4) and BANK-FEE-0;
-  D208; PREMIUM-ACTIVATION-V1 §4.1 and PREMIUM-DELIVERY-0; HOUSE-OWN-0 H2a; the Store catalogue
+  D208; BANK-0 (the Account + World balance pattern, answer 1b); PREMIUM-ACTIVATION-V1 §4.1 and PREMIUM-DELIVERY-0; HOUSE-OWN-0 H2a; the Store catalogue
   owner decision and gap register §32; D47 and D49; D118 (XP and stamina); D109; D3 and the loot
   plan (`combat/loot_plan.rs`); GAME-ABILITY-01 (typed contribution stages); SIM-DETERMINISM-01
   §10-§11 (RNG purposes); ADR-0021 (reset epoch); BOSS-RAID-0 (branch `claude/arch-boss-raid-0`,
@@ -27,12 +28,12 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | PREY-CONTENT-1 | content lane | `rulesets/progression/prey/` and `rulesets/progression/task-board/`: bonus grade table, list bands, the `preyable` fact, task tiers and tables, shop catalogue (§3, §8) | this decision |
-| PREY-1 | hard, persistence review | prey slot state, the resource balance, prey commands and receipts, list and bonus draws, hunting-time checkpoints, expiry with auto reroll and lock (§4-§6) | CHAR-REV-SEQ-1; PREY-CONTENT-1 |
-| PREY-FEE-1 | hard, persistence and economy review | the gold list reroll as `FeeBurnCause::PreyListReroll` (§5.3) | PREY-1; GOLD-FEE-1b; owner answer Y1 |
+| PREY-1 | hard, persistence review | prey slot state, the resource balance, the Account wildcard balance, ledger, event and unlock facts, prey commands and receipts, list and bonus draws, hunting-time checkpoints, expiry with auto reroll and lock (§4-§6) | CHAR-REV-SEQ-1; PREY-CONTENT-1 |
+| PREY-FEE-1 | hard, persistence and economy review | the gold list reroll as `FeeBurnCause::PreyListReroll` (§5.3) | PREY-1; GOLD-FEE-1b |
 | PREY-EFFECT-1 | combat lane, combat review | damage and reduction contributions, the XP multiplier, the extra loot roll, the hunting clock (§7) | PREY-1; the XP lane (D118); SPELL-TARGET-1 (ATTACK-0) |
-| TASKBOARD-1 | hard, persistence review | Bounty and Weekly kill tasks, task kill receipts in the death chain, token and point balances, the weekly settlement (§8, §9) | PREY-1; CHAR-REV-SEQ-1; owner answer Y3 |
+| TASKBOARD-1 | hard, persistence review | Bounty and Weekly kill tasks, task kill receipts in the death chain, token and point balances, the weekly settlement (§8, §9) | PREY-1; CHAR-REV-SEQ-1 |
 | TASKBOARD-DELIVERY-1 | hard, persistence and economy review | Weekly delivery tasks: the `TaskDeliveryCause` BURN and its DUR-03 amendment (§8.3) | TASKBOARD-1; ITEM-USE-1 (item selection) |
-| TASKSHOP-1 | hard, persistence and economy review | the Hunting Task Shop: point debit with an item MINT, a D47 unlock or promotion points (§8.4) | TASKBOARD-1; owner answer Y3 |
+| TASKSHOP-1 | hard, persistence and economy review | the Hunting Task Shop: point debit with an item MINT, a D47 unlock or promotion points (§8.4) | TASKBOARD-1 |
 | PREY-WIRE-1 | impl, protocol review | capability `PREY_V1`: the Prey and Task Board domains and intents (§11) | PREY-1; TASKBOARD-1 |
 
 Later, each with its own decision: the Bounty Talisman upgrades and effects, the Soulpit (Soulseal
@@ -115,7 +116,7 @@ admitted as value sources only by the owner?
 
 - `rulesets/progression/prey/`: slots (3), list size (9), the level-band table, bonus types and the
   grade table (grades 1-10, value per type and grade), hunting time (7,200 s), free reroll interval
-  (20 h), wildcard costs (1, 5, 1, 5), the paid reroll price rule (Y1). All values not in the
+  (20 h), wildcard costs (1, 5, 1, 5), the paid reroll price rule (`level x 200` gp, Y1). All values not in the
   manual are captured against TibiaWiki before PREY-1 freezes (`PARITY_PENDING`).
 - **Preyable pool:** a Creature is preyable when it has a Bestiary block, positive XP, and no
   `prey: excluded` fact (new, boss and event exceptions). The pool is the active content
@@ -141,13 +142,22 @@ admitted as value sources only by the owner?
   `ACTIVE`), the drawn list (up to 9 Creature keys), selected Creature key, bonus type, grade,
   `hunting_s_left`, option (`NONE`, `AUTO_REROLL`, `LOCK`), `free_reroll_at`, `slot_epoch`
   (raised by each list draw and expiry). Keys, never wire indices (CHARM-0 answer 11).
-- `game_character_prey_resources`: CharacterId -> typed columns `prey_wildcards`,
-  `bounty_reroll_tokens`, `bounty_points`, `hunting_task_points`, `soulseals`, each non-negative
-  with its cap (§12). Typed columns, not a KV table (DUR-02 §13).
-- `game_character_prey_unlocks`: (CharacterId, unlock kind, target) for `PREY_SLOT_PERMANENT`
-  with target slot 2 or 3, and `WEEKLY_TASK_EXPANSION` with target `NONE`, with the source (Y2).
-  Each (kind, target) is a separate write-once fact, so one purchase unlocks exactly one slot.
-  Empty until the Store delivery contract exists.
+- `game_character_prey_resources`: CharacterId -> typed columns `bounty_reroll_tokens`,
+  `bounty_points`, `hunting_task_points`, `soulseals`, each non-negative with its cap (§12). Typed
+  columns, not a KV table (DUR-02 §13).
+- **Account wildcard balance (owner answer Y2 c, the BANK-0 pattern):**
+  `game_account_prey_wildcards`: one row per (`account_id`, `world_id`) with `balance` (0 to
+  `PREY0-RL-05`) and `last_entry_id`; no row means 0. `game_account_prey_wildcard_entries`: one
+  immutable row per balance change: `entry_id` (UUIDv7), account, world, kind (`STORE_CLAIM`,
+  `SPEND`, `TEST_GRANT`), amount (> 0), balance before and after, `acting_character_id` and the
+  occurrence of that character's receipt, unique per occurrence. Guards (deferred, as BANK-0 §3):
+  the row equals the after value and id of its latest entry; each entry's before equals the
+  previous after; the acting character is a live root of that Account and World.
+- `game_account_prey_unlocks`: (`account_id`, `world_id`, unlock kind, target) for
+  `PREY_SLOT_PERMANENT` with target slot 2 or 3, and `WEEKLY_TASK_EXPANSION` with target `NONE`,
+  with the source and the claiming character (Y2). Each (kind, target) is a separate write-once
+  Account entitlement, so one purchase unlocks exactly one slot for every character of the
+  Account on that World. Empty until the Store delivery contract exists.
 - `game_character_prey_receipts`: one per revision for Prey and Task Board writes, keyed by the
   occurrence, binding the command, its drawn outcome and each balance change with its cause (§10).
 
@@ -155,6 +165,11 @@ admitted as value sources only by the owner?
 
 - Prey and Task Board state is **Character** state: the same on every channel and World admission
   of that Character. The owning channel runtime keeps a copy for effects and ticks.
+- **Account scope (Y2 c).** The wildcard balance and the permanent unlocks are **Account + World**
+  state, shared by every character of the Account on that World, the same on every channel. Worlds
+  are separate economies (ADR-0010 §6), so another World has its own, as BANK-0 answer 1b is read.
+  Each character reads them at use; nothing is copied into Character rows. Platform never writes
+  them.
 - Every write advances `CharacterRevision` once on CHAR-REV-SEQ-1, with its receipt, as the charm
   writer does. PREY-1 and TASKBOARD-1 each admit their receipt kind by replacing the `0020`
   consistency guard in their own migration (as QUEST-STATE-1 does).
@@ -172,11 +187,12 @@ admitted as value sources only by the owner?
 - The Prey dialog opens only for a character with a vocation (it has left the starter island,
   A13; `PARITY_PENDING` for Dawnport specifics). Else `NOT_ELIGIBLE`.
 - Slot 1: every eligible character. Slot 2: Premium current at use, or `PREY_SLOT_PERMANENT
-  {slot 2}`; until PREM-1 is live, open to all (ruling R2). Slot 3: `PREY_SLOT_PERMANENT {slot 3}`
-  only (Y2).
+  {slot 2}` of the character's Account on its World; until PREM-1 is live, open to all (ruling
+  R2). Slot 3: `PREY_SLOT_PERMANENT {slot 3}` of the Account on that World only (Y2).
 - **Permanent slot claim (architect ruling, Global order):** a `PreyStoreClaim` for a permanent
   slot binds its target slot in the claim and the receipt: the lowest of slots 2 and 3 that has no
-  `PREY_SLOT_PERMANENT` fact, chosen at claim time and stored. A claim when both facts exist is
+  `PREY_SLOT_PERMANENT` fact for the Account on the claiming character's World, chosen at claim
+  time under the Account row lock (§10) and stored. A claim when both facts exist is
   refused `ALREADY_UNLOCKED` and writes nothing; the delivery stays unclaimed for Platform's refund
   path (gap register §32). A replay returns the stored target.
 - A slot that loses its unlock (Premium lapses) keeps its durable row, applies no bonus, spends no
@@ -199,18 +215,22 @@ different slot is a conflict, never a second write. Client focus never supplies 
 | `set_option {slot, option}` | 1 wildcard held for `AUTO_REROLL`, 5 for `LOCK` | stores the option; nothing is spent until expiry |
 
 - A creature selected or listed in another slot of the character cannot be picked (`DUPLICATE`).
-- Wildcards are debited in the same receipt. Too few: `NOT_ENOUGH_WILDCARDS`.
+- Wildcards are debited from the Account balance (§4.1) in the same transaction as the receipt:
+  the row is locked (§10), one `SPEND` entry keyed by the command occurrence, and one wildcard event
+  (§10). A replay returns the stored receipt and writes no second entry. Too few under the lock:
+  `NOT_ENOUGH_WILDCARDS`, nothing written. `set_option` checks the balance at use only.
 
 ### 5.3 The gold list reroll (PREY-FEE-1, Y1)
 
-- The price is `level x 200` gp (Canary; the manual says "scales with level";
-  `PARITY_PENDING`), frozen in the receipt binding.
+- The price is `level x 200` gp (owner answer Y1; Canary; the manual says "scales with level"),
+  frozen in the receipt binding.
 - Paid by the gold fee path: one transaction carries the prey change, the BURN lines of coins then
   bank, and one receipt, with a new closed variant `FeeBurnCause::PreyListReroll {slot,
-  occurrence}` (D177, D178, BANK-FEE-0). PREY-FEE-1 amends the gold fee decision §4.4 and DUR-03
+  occurrence}` (D177, D178 as admitted by owner answer Y1, BANK-FEE-0). PREY-FEE-1 amends the gold fee decision §4.4 and DUR-03
   §39.3 for this variant only.
-- Until Y1 is answered `a`, a list reroll before `free_reroll_at` is refused
-  `FREE_REROLL_NOT_READY`.
+- Until PREY-FEE-1 is live, a list reroll before `free_reroll_at` is refused
+  `FREE_REROLL_NOT_READY`; after, one that cannot pay the full price is refused
+  `INSUFFICIENT_FUNDS` and writes nothing.
 
 ## 6. Draws and time (PREY-1)
 
@@ -250,7 +270,8 @@ different slot is a conflict, never a second write. Client focus never supplies 
 ### 6.4 Expiry
 
 - When `hunting_s_left` reaches 0, one server-originated write keyed by (CharacterId, slot,
-  `slot_epoch`):
+  `slot_epoch`), deciding its branch on the Account wildcard balance read under the row lock (§10);
+  a debit writes one `SPEND` entry and one wildcard event:
   - `AUTO_REROLL` with at least 1 wildcard: debit 1, bonus draw (§6.2), time 7,200 s;
   - `LOCK` with at least 5 wildcards: debit 5, same creature and bonus, time 7,200 s;
   - otherwise (or too few wildcards): option cleared, bonus and creature erased, a new list drawn
@@ -324,8 +345,8 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 ### 8.2 Weekly kill tasks
 
 - `game_character_weekly_tasks`: (CharacterId, week) -> 6 kill and 6 delivery tasks (+3/+3 with
-  `WEEKLY_TASK_EXPANSION`), drawn with purpose `oteryn.taskboard.weekly.v1` seeded by
-  (CharacterId, week).
+  the Account's `WEEKLY_TASK_EXPANSION` on that World, read at the weekly initialization), drawn
+  with purpose `oteryn.taskboard.weekly.v1` seeded by (CharacterId, week).
 - **Weekly initialization (architect ruling).** The week's row is created by one server-originated
   write keyed by (CharacterId, week), under the session fence on CHAR-REV-SEQ-1 with its receipt
   (cause `WeeklyTaskInit {week}`), which stores the drawn tasks. It is written at the first
@@ -370,12 +391,12 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 
 | Write | Class | Cause | Revision |
 |---|---|---|---|
-| Prey command, wildcard debit | Character receipt | `PreyCommand {occurrence}` | +1 |
+| Prey command, wildcard debit | Character receipt; Account `SPEND` entry and event | `PreyCommand {occurrence}` | +1 |
 | Gold list reroll | receipt + BURN (+ change MINT) | `FeeBurnCause::PreyListReroll` (Y1) | +1 |
 | Hunting-time checkpoint | Character receipt | `PreyTimeCheckpoint {GameSessionId, checkpoint_seq}` | +1 |
-| Expiry, auto reroll, lock | Character receipt | `PreyExpiry {slot, slot_epoch}` | +1 |
+| Expiry, auto reroll, lock | Character receipt; Account `SPEND` entry and event | `PreyExpiry {slot, slot_epoch}` | +1 |
 | First-list initialization | Character receipt | `PreyInit {slot}` (§6.5) | +1 |
-| Wildcard credit, permanent unlock | Character receipt | `PreyStoreClaim {delivery}`, binding the target slot (Y2) | +1 |
+| Wildcard credit, permanent unlock | claiming character's receipt; Account `STORE_CLAIM` entry or unlock fact, and event | `PreyStoreClaim {delivery}`, binding the target slot (Y2) | +1 |
 | Bounty and weekly commands | Character receipt | `TaskBoardCommand {occurrence}` | +1 |
 | First Bounty offer set | Character receipt | `BountyInit` (§8.1) | +1 |
 | Daily free reroll token | Character receipt | `BountyTokenGrant {reset_day}` (§8.1) | +1 |
@@ -388,15 +409,22 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 - No gold is minted anywhere. The only gold change is the Y1 fee.
 - Test grants of resources exist only outside production (`PreyTestGrant`), refused by a
   production World's ruleset, as the D69 operator grants are for Premium.
+- **Wildcard event.** Every Account wildcard balance change or unlock fact writes one event, with
+  its entry, in the same transaction, in a prey outbox (as BANK-0 §5); its retention profile is
+  registered by PREY-1 before it ships.
 - Lock order: the occurrence; `character_root` with the expected revision; the prey and task rows;
-  then items by ItemInstanceId and the bank row, as the gold fee path.
+  then the Account wildcard row (upsert, then FOR UPDATE) and unlock rows by (`account_id`,
+  `world_id`), which serialize every character of the Account on that World; then items by
+  ItemInstanceId and the bank row, as the gold fee path.
 
 ## 11. Wire (PREY-WIRE-1)
 
 - **Capability `PREY_V1`**; its number, state domains and command types are reserved on #162 at
   allocation.
 - **`PREY` domain:** per slot state, list (Creature indices, SPELL-D1), bonus type and grade,
-  time left, option, `free_reroll_at`, the paid reroll price; the resource balances. **`TASK_BOARD`
+  time left, option, `free_reroll_at`, the paid reroll price; the character's resource balances;
+  the Account's wildcard balance and unlocks on this World (a change by another character of the
+  Account shows at the next snapshot; every command checks the locked row). **`TASK_BOARD`
   domain:** bounty offers and task, weekly tasks and progress, shop offers. Names come from the
   client content export (CHARM-0 answer 8).
 - **`PREY_INTENT`** (§5.2, each command with its `slot`) and **`TASK_BOARD_INTENT`** (§8).
@@ -411,7 +439,7 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 | `PREY0-RL-02` creatures per list | 9 |
 | `PREY0-RL-03` bonus hunting time | 7,200 s |
 | `PREY0-RL-04` free list reroll interval | 20 h per slot |
-| `PREY0-RL-05` wildcards held | 52 (`products.md`) |
+| `PREY0-RL-05` wildcards held | 52 per (Account, World) (`products.md`) |
 | `PREY0-RL-06` wildcard costs | bonus reroll 1, select any 5, auto reroll 1, lock 5 |
 | `PREY0-RL-07` hunting-time checkpoint | every 300 s of hunting at most, and at each boundary |
 | `PREY0-RL-08` grades | 1-10 |
@@ -423,7 +451,7 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 | `PREY0-RL-14` balances | u32 each, 0 floor; points 10,000,000 cap (`PARITY_PENDING`) |
 | `PREY0-RL-15` delivery lines | at most 20 input stacks per delivery |
 | `PREY0-RL-16` preyable Creature loot table | at most 7 entries, 14 RNG draws per roll; two rolls and the improved-loot trigger draw at most 29 of D77's 32 draws and 14 of its 16 entries |
-| Prey command | 0 items, 1 receipt, 1 event |
+| Prey command | 0 items, 1 receipt, 1 event; at most 1 wildcard entry |
 | Gold list reroll | at most 20 inputs and 2 change outputs (D178) |
 | Shop purchase | at most 1 MINT item, 1 receipt, 1 event |
 
@@ -433,8 +461,9 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 - **A revision per hunting minute.** It multiplies Character writes by the number of hunters; the
   checkpoint bounds both the write rate and the crash loss.
 - **Wildcards as items.** Global wildcards are an untradable character balance.
-- **Wildcards on the account.** Global binds them to the character; D47 is kept by the account
-  owning the purchase and the claim choosing the character (Y2).
+- **Wildcards and unlocks per character (Global).** The owner chose Account sharing (Y2 c); a
+  declared Reference difference, as BANK-0 answer 1b is for the bank.
+- **Wildcards and unlocks across Worlds.** Worlds are separate economies (ADR-0010 §6).
 - **Platform writing the balance.** Platform is commercial authority, not Game truth; Game credits
   a Platform delivery by an idempotent claim.
 - **Derived Hunting Task Points.** They are spent in a shop; a balance with receipts is simpler.
@@ -466,6 +495,8 @@ every entry's chance.
 **Y1. Admit the Prey list reroll as a gold sink?** (blocks PREY-FEE-1 only; D178) a) Yes:
 `FeeBurnCause::PreyListReroll`, `level x 200` gp until the Global price is captured, coins then
 bank (recommended, Global parity); b) no fee: one free reroll per slot every 20 hours only.
+Owner answer (2026-09-30, #162): a — Yes; the price is `level x 200` gp; the Prey list reroll is
+admitted as a new gold fee (D178).
 
 **Y2. How are Prey Wildcards and the permanent unlocks (slot 3, the Weekly Task Expansion)
 credited?** (blocks their sources only) Tibia Coins, the Store and delivery are Platform's and
@@ -475,21 +506,27 @@ the Store delivery contract exists; until then they have no production source, a
 that need them stay unused (recommended: no new Game value source, Global's character binding
 kept); b) as a), plus a free Game ration of wildcards (for example 5 a week) until the Store
 exists: a new value source; c) wildcards as an account balance shared by the account's characters.
+Owner answer (2026-09-30, #162): 14c — Prey Wildcards, the permanent Prey slot and the Weekly Task
+Expansion are shared across the Account; every character of the Account can use them. Until the
+Store delivery contract exists they still have no production source.
 
 **Y3. Admit the Task Board rewards as value sources?** (blocks TASKBOARD-1 rewards,
 TASKBOARD-DELIVERY-1 and TASKSHOP-1; D208) a) Yes, at Global parity: task XP, Bounty Points,
 tokens, Hunting Task Points and Soulseals as Character balances; delivery item burns; shop item
 MINTs, D47 unlocks and promotion points (recommended); b) the tasks and balances, with a shop of
 cosmetics only (no item MINT); c) defer the Task Board.
+Owner answer (2026-09-30, #162): a — Yes, as in Tibia: the Task Board rewards are admitted as
+value sources at Global parity (D208).
 
 ## 16. Decision test
 
 - **Must decide now:** YES. The owner asked for Prey and tasks now; DUR-02 requires a semantic
   gate before any Prey or task table.
-- **Minimum sufficient:** six Character tables, one balance row, the existing sequencer, gold fee
-  path, XP writer, loot plan and ability stages; one capability; no new location family.
-- **Superseding evidence:** owner answers Y1-Y3; captured Global values for grades, price, bands,
-  task tables and the shop; the Store delivery contract; the stamina lane's clock.
+- **Minimum sufficient:** five Character tables, one balance row, three Account tables (Y2), the
+  existing sequencer, gold fee path, XP writer, loot plan and ability stages; one capability; no
+  new location family.
+- **Superseding evidence:** captured Global values for grades, bands, task tables and the shop;
+  the Store delivery contract; the stamina lane's clock.
 - **Deliberately not decided:** the Bounty Talisman, the Soulpit, Daily Rewards, the Store
   delivery, party loot boosts, the Wheel promotion points.
 
@@ -502,8 +539,12 @@ cosmetics only (no item MINT); c) defer the Task Board.
    order; one receipt per occurrence.
 3. **Restart:** slots, balances, tasks and unlocks are durable; the runtime copy is rebuilt at
    admission; at most `PREY0-RL-07` of hunting time is lost.
-4. **Typed references:** CharacterId, Creature and item keys, slot, `slot_epoch`, week, death key,
-   CommandRef, the Store delivery id, GameSessionId with `checkpoint_seq`, reset day.
+4. **Typed references:** CharacterId, AccountId, WorldId, Creature and item keys, slot,
+   `slot_epoch`, week, death key, CommandRef, the Store delivery id, GameSessionId with
+   `checkpoint_seq`, reset day.
 5. **Wire:** §11, capability `PREY_V1`.
 6. **Determinism:** five named RNG purposes, each seeded by a durable occurrence; draws stored.
 7. **Content:** the prey loot budget (`PREY0-RL-16`) fails the content compile closed.
+8. **Account scope (Y2 c):** wildcards and unlocks per (AccountId, WorldId); row lock, one entry
+   per occurrence and one event per change; no production source until the Store delivery
+   contract exists.

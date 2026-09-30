@@ -331,7 +331,8 @@ Character:
 `reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md` §3 and §4).** The Prey
 rules gain the level bands, the grade table and the `preyable` fact. The Task Board (Bounty Tasks,
 Weekly Tasks, the Hunting Task Shop) lives in `rulesets/progression/task-board/`. Character Prey
-and Task Board state is held in typed Character tables, not in content.
+and Task Board state is held in typed Character tables, and the Prey wildcard balance and
+permanent unlocks in typed Account tables (Y2), not in content.
 
 ### Wheel of Destiny and Gem Atelier
 
