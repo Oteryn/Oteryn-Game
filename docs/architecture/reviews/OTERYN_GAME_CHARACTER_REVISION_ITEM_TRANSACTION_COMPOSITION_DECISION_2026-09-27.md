@@ -196,6 +196,13 @@ cause lock is the grant key (re-read after the `character_root` lock), and the f
 session's `CurrentCharacterItemFence` without a CommandRef, whose Character and World must equal the
 grant's; no synthetic CommandId is created. Rules 4-6 apply unchanged.
 
+**Amendment (pending on acceptance of BOSS-RAID-0; `OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` §12).** Rule 1 also
+covers boss cooldown and boss eligibility rows and the `CharacterRewardChest` location: they
+advance no `CharacterRevision`. A lever admission fences every participant by rule 2 and locks
+their `character_root` rows in `character_id` order; a death descendant uses the
+STARTER-BACKPACK-0 server-originated variant. Bosstiary receipts and boss slot changes advance the
+revision on CHAR-REV-SEQ-1.
+
 ## 4. Rejected options
 
 - **Put every item transaction into the `CharacterRevision` chain** with a closed union of typed

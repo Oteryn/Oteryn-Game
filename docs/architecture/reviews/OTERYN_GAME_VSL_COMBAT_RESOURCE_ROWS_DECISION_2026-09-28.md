@@ -26,6 +26,10 @@ unregistered. Which ceilings apply?
 | D78 | Per-scope concurrency ceilings for deaths, corpses and in-flight loot operations are 64, matching the D57 creature envelope. | "64, jak potwory" |
 | D79 | The D1 owner split exception: a test-only death key → runtime `ItemMintCause` → MINT chain with one fixture loot entry may be allocated before Character progression readiness; no XP, no activation. | "Zgoda" |
 
+**Amendment (pending on acceptance of BOSS-RAID-0; `OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` §7, §8).** D77's separate boss decision:
+a reward boss gives each credited character (at most 50, D109) its own draw of at most 16 entries
+into its reward chest, minted in steps of 100. Row 10 reads 50 for a reward boss.
+
 ## 3. Facts
 
 **PROVEN**

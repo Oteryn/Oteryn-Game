@@ -138,6 +138,9 @@ Each slice is playable-first on its own: CHARM-2 alone makes Bestiary progress v
 
 - Charm reset, Charm Upgrade potions, the Store "all charms" expansion, slot limits by premium status, and Bosstiary.
   These are later decisions.
+
+**Amendment (pending on acceptance of BOSS-RAID-0; `OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` §10, §11).** The Bosstiary, boss slots
+and the Boosted Boss are decided there on this packet's Bestiary pattern.
 - Any wire message numbers, DDL or code. Those follow in the accepted slice's own contract and PR.
 
 ## 7. Owner answers (2026-09-29, in session)

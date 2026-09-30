@@ -102,6 +102,13 @@ the Bank row becomes "Game bank ledger (BANK-0); Account + World (owner answer 1
 5912593702); strong durable, immutable ledger; the same balance on all channels of the World,
 another World has its own; shared".
 
+**Amendment (pending on acceptance of BOSS-RAID-0; `reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` §3).**
+The boss and raid rows are declared: a raid firing is one durable World occurrence, run as one
+claimed run per targeted channel; an open-world boss spawn is channel-local with a durable spawn
+clock; a boss room is one activity instance per admitted group; boss cooldowns, anti-hopping
+eligibility and the reward chest are strong durable per Character and World; Bosstiary progress
+is Character progression.
+
 ## Required identity envelope
 
 Every runtime command, event and timer that can mutate or address gameplay state must carry enough identity to resolve its owner without process-global lookup.
