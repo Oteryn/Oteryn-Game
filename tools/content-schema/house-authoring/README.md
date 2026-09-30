@@ -7,8 +7,9 @@ CANDIDATE only: not a WorldProject/v2 contract, not runtime activation, and
 
 Runtime House state (owner, rent payment, ACL/access lists, auction, custody) is
 World/persistence state by the tree contract and is **not** modeled here. Rent
-period, payment and eviction rules belong to `rulesets/economy/`. Tile membership,
-doors and bed placements belong to `content/world/placements/`.
+period, payment and eviction rules belong to `rulesets/economy/`. The House record
+holds its tile area (`tiles`) and door positions (`doors`); the door and bed items
+themselves are world placements in `content/world/placements/`.
 
 ## Record
 
@@ -44,8 +45,8 @@ orders against the House tiles of the pinned CrystalServer `world.otbm` (gzip,
 sha256 `dcb73554...d8d7`): the selected order matches 104,748 ground items, the next best
 96,981. Client tiles cover 108,034 of the 109,744 engine House tiles (98.4%) and 442
 houses have identical tile sets; the houses below 90% coverage are listed in
-`samples/otbm-tile-check.json` (engine map drift). Doors and beds on these tiles are world
-placement content (`content/world/placements/`), not modeled here.
+`samples/otbm-tile-check.json` (engine map drift). Door positions on these tiles are
+`doors` (see Doors); the door and bed items are world placements.
 
 ## TibiaWiki BR
 

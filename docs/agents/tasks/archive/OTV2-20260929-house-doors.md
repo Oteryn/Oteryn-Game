@@ -48,6 +48,10 @@ count; bed positions come with the world map placements.
   (`samples/otbm-tile-check.json`, pinned `world.otbm`).
 - DERIVED: door item ids from CrystalServer `items.xml` (`type="door"`, 745 ids, pinned
   sha256), because the client does not mark doors.
+- ASSUMPTION: CrystalServer item ids equal 15.30 client appearance ids, so the engine
+  `type="door"` ids can be matched against the client layout cells. Supported, not proven:
+  5,037 of 5,156 engine House doors fall on client cells holding one of those ids, and
+  834 houses have identical door sets.
 - CONFLICT (resolved): one door is in two layouts (East Lane 1a/1b); assigned to East Lane 1a
   from the engine map in `SHARED_DOOR_OWNERS`; any new shared door stops the conversion.
 - DERIVED: CrystalServer door numbers are unusable as identity (677 cover several distant
@@ -56,6 +60,9 @@ count; bed positions come with the world map placements.
 
 ## Validation (local)
 
+- Review (control plane, `548f1c91`): KEEP; its three non-blocking items are in this
+  PR: a stale `SHARED_DOOR_OWNERS` entry now stops the conversion, text that said doors are
+  not modeled is corrected, and the id-space assumption above is recorded.
 - `verify_formal_schema.py`: 28/28; `convert_houses.py convert --check`: 995 houses valid.
 - `extract-door-items --check`, `extract-crystal --check`, `otbm_tile_check.py --check`
   against the pinned checkout: ok. `wiki_br_houses.py self-test`: ok.

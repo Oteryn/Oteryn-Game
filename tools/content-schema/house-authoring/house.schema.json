@@ -121,7 +121,7 @@
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "description": "House layout area: every position of the footprint with a non-empty official staticmapdata cell, as [x, y, z], sorted. It includes the House walls, so neighbouring Houses can share wall tiles (2,534 in 15.30, all impassable except one door). Doors and beds on these tiles are world placement content.",
+          "description": "House layout area: every position of the footprint with a non-empty official staticmapdata cell, as [x, y, z], sorted. It includes the House walls, so neighbouring Houses can share wall tiles (2,534 in 15.30, all impassable except one door). Door positions are `doors`; the door and bed items themselves are world placement content.",
           "items": {
             "$ref": "#/$defs/Tile"
           }

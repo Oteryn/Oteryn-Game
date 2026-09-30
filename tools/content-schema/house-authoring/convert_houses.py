@@ -180,6 +180,16 @@ def convert(
         raise ValueError("duplicate engine clientid or unexpected house count")
     if set(engine) != {r["source_id"] for r in staged}:
         raise ValueError("client and engine house id sets differ")
+    layout_door_houses: dict[tuple, set[int]] = {}
+    for record in staged:
+        for door in layout_doors(record["layout"], door_items):
+            layout_door_houses.setdefault(tuple(door), set()).add(record["source_id"])
+    for door, owner in SHARED_DOOR_OWNERS.items():
+        in_layouts = layout_door_houses.get(door, set())
+        if len(in_layouts) < 2 or owner not in in_layouts:
+            raise ValueError(
+                f"stale SHARED_DOOR_OWNERS entry {door}: in layouts {sorted(in_layouts)}"
+            )
     houses, divergence, towns = [], Counter(), {}
     examples: dict[str, list] = {}
     for record in sorted(staged, key=lambda r: r["source_id"]):
