@@ -1,0 +1,45 @@
+{
+  "schema": "OTERYN_GAME_WEAPON_PROFICIENCY_PROGRESSION/v1",
+  "ruleset_key": "oteryn:ruleset.weapon-proficiency.progression",
+  "revision": "weapon-proficiency-progression-r1",
+  "owner": "Character progression/Item",
+  "contract": "docs/architecture/reviews/OTERYN_GAME_PROFICIENCY0_WEAPON_PROFICIENCY_DECISION_2026-09-29.md",
+  "source": {
+    "url": "https://tibia.fandom.com/wiki/Weapon_Proficiency",
+    "revid": 1192598,
+    "acceptance": "Thresholds: owner decision #162 5905899852. Points and credit: owner decision 2c (2026-09-30), admitted as Reference evidence; Canary and Crystal values are not used."
+  },
+  "track": "Progress is kept per (CharacterId, weapon Item key). A weapon has a track only when its Item carries a proficiency binding (content/proficiencies/bindings.json).",
+  "levels": {
+    "rule": "progress_thresholds[class][i] is the cumulative progress that reaches level i + 1. A definition with n perk levels (1..7) unlocks perk level k at threshold k. Mastery is level n + mastery_offset; it grants no perk. Progress saturates at the Mastery threshold.",
+    "perk_levels_max": 7,
+    "mastery_offset": 2,
+    "progress_thresholds": {
+      "standard": [1750, 25000, 100000, 400000, 2000000, 8000000, 30000000, 60000000, 90000000],
+      "knight": [1250, 20000, 80000, 300000, 1500000, 6000000, 20000000, 40000000, 60000000],
+      "crossbow": [600, 8000, 30000, 150000, 650000, 2500000, 10000000, 20000000, 30000000]
+    }
+  },
+  "credit": {
+    "rule": "Every character that contributed damage to the creature gains progress, as for Bestiary and Bosstiary progress. Only the weapon equipped at the creature's death gains it. A creature with no Bestiary or Bosstiary entry, and a summoned creature, give none.",
+    "multi_principal": "Waits for the multi-principal reward contract; until then the single reward principal of the death (COMBAT01-REWARD-PRINCIPALS) is credited, as Bestiary kill progress."
+  },
+  "points": {
+    "rule": "A Bestiary creature gives creature_points[difficulty][stacks], where stacks is its influence stack count 0..5, or index 6 when it is fiendish. A Bosstiary boss gives boss_points[category] with no influence bonus. The table is copied as published, not computed.",
+    "creature_columns": ["0", "1", "2", "3", "4", "5", "fiendish"],
+    "creature_points": {
+      "harmless": [1, 1, 1, 1, 1, 1, 2],
+      "trivial": [30, 33, 36, 39, 42, 45, 75],
+      "easy": [70, 77, 84, 91, 98, 105, 175],
+      "medium": [100, 110, 120, 130, 140, 150, 250],
+      "hard": [165, 181, 198, 214, 230, 247, 412],
+      "challenging": [240, 264, 288, 312, 336, 360, 600]
+    },
+    "boss_points": {
+      "bane": 500,
+      "archfoe": 5000,
+      "nemesis": 15000
+    },
+    "not_evidenced": "Soulpit bosses and proficiency catalysts give nothing until evidenced (PROFICIENCY-1)."
+  }
+}
