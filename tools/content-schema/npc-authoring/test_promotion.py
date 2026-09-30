@@ -871,6 +871,40 @@ class PromotionValidatorTests(unittest.TestCase):
         broken['directions'][0]['status'] = 'UNCONFIRMED'
         self.assertTrue(validate_promotion.arbiter_direction_errors('x', broken, broken['chosen']))
 
+    def test_arbiter_directions_match_the_pinned_wikis(self):
+        # owner 1c: the validator re-derives each direction's status from the pinned wikis, not only its shape
+        def pinned(fandom_sell):
+            snapshot = json.dumps({'npcs': [], 'trade': {'ahmet': [
+                {'item': 'Fishing Rod', 'buy_price': 150, 'sell_price': fandom_sell}]}}).encode()
+            tibiopedia = json.dumps({'pages': [{'title': 'NPC: Ahmet', 'name': 'Ahmet', 'trades': {
+                'SellToPlayer': {'Fishing Rod': [150]}, 'BuyFromPlayer': {'Fishing Rod': [40]}}}]}).encode()
+            return snapshot, json.dumps({'pages': []}).encode(), tibiopedia
+        names = {'oteryn:item.test.fishing_rod': 'fishing rod'}
+        confirmed = {'direction': 'SellToPlayer', 'price': 150, 'status': 'CONFIRMED', 'wikis': ['fandom', 'tibiopedia']}
+        unconfirmed = {'direction': 'BuyFromPlayer', 'price': 40, 'status': 'UNCONFIRMED', 'stated_by': 'crystal'}
+        def check(directions, fandom_sell=None):
+            snapshot, br_facts, tibiopedia = pinned(fandom_sell)
+            row = {'fact': 'trade.3483', 'rule': 'WIKI_MAJORITY_ARBITER', 'chosen': 'crystal',
+                   'wikis': ['fandom', 'tibiopedia'], 'item_name': 'fishing rod', 'directions': directions}
+            offers = [{'item': {'key': 'oteryn:item.test.fishing_rod'}, 'source_item_id': 3483, 'count': None,
+                       'sub_type': None, 'direction': d, 'unit_price': p}
+                      for d, p in (('SellToPlayer', 150), ('BuyFromPlayer', 40))]
+            report = {'snapshot_sha256': hashlib.sha256(snapshot).hexdigest(),
+                      'br_facts_sha256': hashlib.sha256(br_facts).hexdigest(),
+                      'tibiopedia_facts_sha256': hashlib.sha256(tibiopedia).hexdigest(),
+                      'candidates': [{'name': 'Ahmet', 'arbitration': [row], 'trade_service': {'offers': offers}}]}
+            return [e for e in validate_promotion.wiki_price_errors(report, snapshot, br_facts, names, tibiopedia)
+                    if 'WIKI_MAJORITY_ARBITER' in e]
+        self.assertEqual(check([confirmed, unconfirmed]), [])
+        # a flipped status in either direction, or confirming wikis that differ from the pinned ones
+        self.assertTrue(check([{**confirmed, 'status': 'UNCONFIRMED'}, unconfirmed]))
+        self.assertTrue(check([confirmed, {**unconfirmed, 'status': 'CONFIRMED', 'wikis': ['br', 'tibiopedia']}]))
+        self.assertTrue(check([{**confirmed, 'wikis': ['br', 'fandom']}, unconfirmed]))
+        # a later snapshot where two wikis agree on the sell price: only that direction's status changes
+        self.assertTrue(check([confirmed, unconfirmed], fandom_sell=40))
+        self.assertEqual(check([confirmed, {'direction': 'BuyFromPlayer', 'price': 40, 'status': 'CONFIRMED',
+                                            'wikis': ['fandom', 'tibiopedia']}], fandom_sell=40), [])
+
     def test_image_fit_scores_are_at_most_35(self):
         self.assertTrue(all(fit['score'] <= validate_promotion.WIKI_IMAGE_FIT_MAX_SCORE
                             for fit in promotion_candidates.WIKI_IMAGE_FIT.values()))
