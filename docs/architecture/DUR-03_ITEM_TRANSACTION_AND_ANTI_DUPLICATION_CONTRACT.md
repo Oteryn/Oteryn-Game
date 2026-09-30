@@ -344,8 +344,8 @@ Burn/destruction identifies affected item/quantity/asset, typed sink/cause, surv
 
 Silent row deletion, `quantity=0` live state or disappearance during recovery is not a valid sink.
 
-The first admitted burn sink is the closed `FeeBurnCause` of the gold fee amendment in §39.3
-(owner decisions D174-D178).
+Besides the D3 `DECAY_RETIRE` cause, the admitted burn sink is the closed `FeeBurnCause` of the
+gold fee amendment in §39.3 (owner decisions D174-D178).
 
 ## 16. Transform semantics
 

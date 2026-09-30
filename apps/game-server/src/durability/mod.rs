@@ -18,6 +18,8 @@ pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
+pub mod item_fee_burn;
+pub mod item_fee_burn_audit;
 pub mod item_mint;
 pub mod item_mint_audit;
 pub mod item_transfer;
@@ -231,6 +233,25 @@ mod item_decay_retire_linkage {
         let _ = DurabilityRoot::reconcile_decay_retire;
         let _ = DurabilityRoot::read_corpse_decay_schedule;
         let _ = DurabilityRoot::retire_decayed_corpse;
+    }
+}
+
+#[cfg(test)]
+mod item_fee_burn_linkage {
+    use super::item_fee_burn::{
+        BurnedCoinStack, CommittedFeeBurn, FeeBurnCause, FeeBurnError, FeeBurnOutcome,
+        FeeBurnRequest, burn_fee_in_transaction,
+    };
+
+    #[test]
+    fn item_fee_burn_api_is_linked() {
+        let _ = std::mem::size_of::<BurnedCoinStack>();
+        let _ = std::mem::size_of::<CommittedFeeBurn>();
+        let _ = std::mem::size_of::<FeeBurnCause>();
+        let _ = std::mem::size_of::<FeeBurnError>();
+        let _ = std::mem::size_of::<FeeBurnOutcome>();
+        let _ = std::mem::size_of::<FeeBurnRequest>();
+        let _ = burn_fee_in_transaction;
     }
 }
 

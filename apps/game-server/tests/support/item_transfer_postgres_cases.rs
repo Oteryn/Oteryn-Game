@@ -1552,7 +1552,8 @@ fn database_rejects_unproven_item_and_location_changes() -> TestResult {
         assert!(harness.on_ground(loose).await?);
         assert_eq!(harness.count("game_item_container_entries").await?, 1);
 
-        // Least privilege: the runtime role may only perform TRANSFER writes.
+        // Least privilege: the runtime role may only perform TRANSFER writes, and (0023) delete
+        // a backpack entry, which commits only as a proven fee whole burn.
         let grants: Vec<bool> = sqlx::query_scalar(
             "SELECT unnest(ARRAY[\
                has_table_privilege('oteryn_game_runtime','game_item_ground_locations','DELETE'),\
@@ -1565,7 +1566,7 @@ fn database_rejects_unproven_item_and_location_changes() -> TestResult {
                NOT has_table_privilege('oteryn_game_runtime','game_item_instances','DELETE'),\
                has_table_privilege('oteryn_game_runtime','game_item_container_slots','INSERT'),\
                has_table_privilege('oteryn_game_runtime','game_item_container_entries','INSERT'),\
-               NOT has_table_privilege('oteryn_game_runtime','game_item_container_entries','DELETE'),\
+               has_table_privilege('oteryn_game_runtime','game_item_container_entries','DELETE'),\
                NOT has_table_privilege('oteryn_game_runtime','game_item_container_entries','UPDATE'),\
                has_table_privilege('oteryn_game_runtime','game_item_transfer_receipts','INSERT'),\
                NOT has_table_privilege('oteryn_game_runtime','game_item_transfer_receipts','UPDATE'),\
