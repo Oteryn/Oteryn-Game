@@ -290,6 +290,16 @@ data is 3.25 GB as JSON sectors and about 22 MB in the format below.
   on floor 10). **Per item:** the palette index and, when present, count,
   charges, action id, unique id, text, description, teleport destination, depot id, house
   door id. Presence is exact, so a present zero or empty text stays present.
+- **Teleport attributes follow `Transition.Teleport`:** a teleport destination is carried
+  only where `convert_world_metadata.py` writes a Transition record with the same position,
+  item and destination. Every other one is excluded with its reason in
+  `excluded_teleports` of the capture summary (`unset_destination` for (0, 0, 0),
+  `destination_outside_map`, `destination_tile_absent`, `no_transition`); the item itself
+  stays. On the pinned sources that is 1,577 unset destinations (4 of them from the fill) and
+  6 real-destination orphans (1 outside the map, 5 on absent tiles), matching the 1,573 + 1 + 5
+  that #1160 does not import. A Transition whose teleport the map lacks fails the conversion.
+  Once the summary records `excluded_teleports`, `validate_world_base.py` requires the carried
+  teleports and the committed Transition records to match one to one.
 - **Item identity (palette):** a region file never names an item. It stores, per item, an
   index into `palette` in `index.json`. The palette holds the distinct server item
   ids the map uses (and any retired ones) as `{"key", "source_item_id", "provisional"}`. A fresh build orders it by

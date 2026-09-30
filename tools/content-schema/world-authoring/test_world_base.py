@@ -8,6 +8,7 @@ import struct
 import sys
 import tempfile
 import unittest
+from collections import Counter
 from pathlib import Path
 from unittest import mock
 
@@ -66,6 +67,28 @@ ITEMS_XML = (
     b'<items><item id="7" name="x"/><item fromid="100" toid="101" name="y"/></items>'
 )
 ITEMS_XML_WITH_TELEPORT = ITEMS_XML.replace(b"</items>", b'<item id="1949"/></items>')
+
+
+def write_transitions(root: Path, otbm: bytes) -> None:
+    """The Transition.Teleport shard `convert_world_metadata.py` writes for `otbm`,
+    reduced to the fields the base map validator reads."""
+    links, _reasons = convert.teleport_links(otbm)
+    records = [
+        {
+            "declaration": {
+                "from": {"floor": start[2], "x": start[0], "y": start[1]},
+                "to": {"floor": end[2], "x": end[0], "y": end[1]},
+            },
+            "source_bindings": [
+                {"external_id": f"{start[0]},{start[1]},{start[2]}:{item}"}
+            ],
+        }
+        for (start, item, end), count in sorted(links.items())
+        for _ in range(count)
+    ]
+    path = root / validate.TRANSITIONS / "teleports-00000-00499.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"records": records}), encoding="utf-8")
 
 
 def normalized(tiles):
@@ -207,6 +230,7 @@ class ConvertAndValidateTest(unittest.TestCase):
             (self.root / path).parent.mkdir(parents=True, exist_ok=True)
             (self.root / path).write_bytes(data)
         self.write_bindings(ITEMS_BY_SERVER_ID)
+        write_transitions(self.root, self.blobs[convert.OTBM])
         self.region = self.root / validate.DIRECTORY / "region-z07-x003-y003.b3"
 
     def tearDown(self):
@@ -266,7 +290,17 @@ class ConvertAndValidateTest(unittest.TestCase):
         summary = self.summary()
         self.assertEqual(summary["tiles_by_floor"], {"7": 4})
         self.assertEqual(summary["tiles_with_house"], 2)
-        self.assertEqual(summary["item_attributes"], {"door": 1, "teleport": 2})
+        self.assertEqual(summary["item_attributes"], {"door": 1, "teleport": 1})
+        self.assertEqual(
+            summary["excluded_teleports"],
+            {
+                "destination_outside_map": 0,
+                "destination_tile_absent": 0,
+                "no_transition": 0,
+                "rule": convert.TELEPORT_RULE,
+                "unset_destination": 1,
+            },
+        )
         self.assertEqual(summary["rejected_items"], {"unsupported_attributes": 0})
         self.assertEqual(
             summary["floor_changes"], {"by_kind": {}, "item_types": 0, "occurrences": 0}
@@ -302,7 +336,7 @@ class ConvertAndValidateTest(unittest.TestCase):
                     (),
                     [
                         (2, 0, {"teleport": (1002, 1002, 7)}),
-                        (2, 0, {"teleport": (0, 0, 0)}),
+                        (2, 0, None),
                     ],
                 ),
                 (1002, 1002): (0, 0, (), []),
@@ -406,6 +440,134 @@ class ConvertAndValidateTest(unittest.TestCase):
             [row["source_item_id"] for row in palette[len(previous) :]], [555]
         )
         self.assertEqual(palette[-1]["key"], DONOR + "555")
+
+    @classmethod
+    def teleport(cls, server_id, x, y, z):
+        return cls.item(server_id, 8, *struct.pack("<HHB", x, y, z))
+
+    def teleport_map(self):
+        """Base tiles around (1000, 1000) on floor 7: teleports with a Transition, with an
+        unset, outside-map or absent-tile destination, and a fill with an unset one."""
+        base = self.fill_map(
+            (
+                7,
+                [
+                    (1, 1, [self.item(100), self.teleport(1949, 1002, 1001, 7)]),
+                    (2, 1, [self.item(100), self.teleport(1949, 0, 0, 0)]),
+                    (3, 1, [self.teleport(1949, 3000, 10, 7)]),  # outside the map
+                    (4, 1, [self.teleport(1949, 1500, 1500, 7)]),  # no tile there
+                    # two teleports on one tile, both with a Transition
+                    (5, 1, [self.teleport(1949, 1001, 1001, 7)] * 2),
+                ],
+            ),
+        )
+        fragment = self.fill_map((7, [(9, 1, [self.teleport(1949, 0, 0, 0)])]))
+        blobs = {
+            convert.OTBM: base,
+            convert.ITEMS_XML: ITEMS_XML,
+            self.FILL_KEY: fragment,
+        }
+        return base, blobs
+
+    def test_teleports_without_a_transition_are_excluded_by_reason(self):
+        base, blobs = self.teleport_map()
+        links, reasons = convert.teleport_links(base)
+        self.assertEqual(
+            links,
+            {
+                ((1001, 1001, 7), 1949, (1002, 1001, 7)): 1,
+                ((1005, 1001, 7), 1949, (1001, 1001, 7)): 2,
+            },
+        )
+        self.assertEqual(
+            sorted(reasons.values()),
+            ["destination_outside_map", "destination_tile_absent", "unset_destination"],
+        )
+        out = convert.build(blobs, ITEMS_BY_SERVER_ID)
+        summary = self.summary(out)
+        self.assertEqual(
+            summary["excluded_teleports"],
+            {
+                "destination_outside_map": 1,
+                "destination_tile_absent": 1,
+                "no_transition": 0,
+                "rule": convert.TELEPORT_RULE,
+                "unset_destination": 2,
+            },
+        )
+        self.assertEqual(summary["item_attributes"], {"teleport": 3})
+        palette = [r["source_item_id"] for r in self.palette_of(out)]
+        _z, _rx, _ry, sectors = codec.decode_region(self.decode_path(out, 7))
+        tiles = {
+            (x, y): [(palette[i], a) for i, _d, a in items]
+            for _local, rows in sectors
+            for x, y, _f, _h, _z, items in rows
+        }
+        # every excluded teleport keeps its item and loses only the attribute
+        self.assertEqual(
+            tiles,
+            {
+                (1001, 1001): [(100, None), (1949, {"teleport": (1002, 1001, 7)})],
+                (1002, 1001): [(100, None), (1949, None)],
+                (1003, 1001): [(1949, None)],
+                (1004, 1001): [(1949, None)],
+                (1005, 1001): [(1949, {"teleport": (1001, 1001, 7)})] * 2,
+                (1009, 1001): [(1949, None)],
+            },
+        )
+        root = self.install(out, base)
+        self.assertEqual(validate.validate(root, workers=1), [])
+
+    def test_a_teleport_the_map_lacks_or_does_not_link_fails_closed(self):
+        base, blobs = self.teleport_map()
+        links, reasons = convert.teleport_links(base)
+        extra = ((1002, 1001, 7), 1949, (1001, 1001, 7))
+        with mock.patch.object(
+            convert,
+            "teleport_links",
+            return_value=(links + Counter({extra: 1}), reasons),
+        ):
+            with self.assertRaisesRegex(convert.ConvertError, "not on the base map"):
+                convert.build(blobs, ITEMS_BY_SERVER_ID)
+        # a teleport no rule names is excluded as no_transition
+        linked = +links
+        del linked[((1001, 1001, 7), 1949, (1002, 1001, 7))]
+        with mock.patch.object(
+            convert, "teleport_links", return_value=(linked, reasons)
+        ):
+            summary = self.summary(convert.build(blobs, ITEMS_BY_SERVER_ID))
+        self.assertEqual(summary["excluded_teleports"]["no_transition"], 1)
+
+    def test_the_validator_matches_teleports_and_transition_records(self):
+        base, blobs = self.teleport_map()
+        out = convert.build(blobs, ITEMS_BY_SERVER_ID)
+        root = self.install(out, base)
+        shard = root / validate.TRANSITIONS / "teleports-00000-00499.json"
+        document = json.loads(shard.read_text())
+        kept = document["records"]
+        document["records"] = kept[1:]
+        shard.write_text(json.dumps(document))
+        self.assertIn("have no Transition record", " ".join(validate.validate(root)))
+        extra = json.loads(json.dumps(kept[0]))
+        extra["declaration"]["to"]["x"] = 1003
+        document["records"] = [*kept, extra]
+        shard.write_text(json.dumps(document))
+        self.assertIn("are not on the base map", " ".join(validate.validate(root)))
+        document["records"] = kept
+        shard.write_text(json.dumps(document))
+        path = root / convert.SUMMARY.relative_to(convert.ROOT)
+        summary = json.loads(path.read_text())
+        summary["excluded_teleports"]["rule"] = "keep them all"
+        path.write_bytes(validate.canonical(summary))
+        self.assertEqual(
+            validate.validate(root),
+            [f"{validate.SUMMARY}: excluded_teleports is malformed"],
+        )
+        # a summary from before the rule carries no record and is not matched yet
+        del summary["excluded_teleports"]
+        path.write_bytes(validate.canonical(summary))
+        shard.unlink()
+        self.assertEqual(validate.validate(root), [])
 
     def test_fill_output_validates_and_pins_are_checked(self):
         out = self.build_with_fill(self.standard_fill())
@@ -590,7 +752,7 @@ class ConvertAndValidateTest(unittest.TestCase):
             ],
             [water],
         )
-        root = self.install(out)
+        root = self.install(out, base)
         self.assertEqual(validate.validate(root, workers=1), [])
         # the world.otbm totals stay checkable: 6 base tiles with 7 items in all
         self.assertEqual(validate.validate(root, {"items": 7, "tiles": 6}), [])
@@ -1049,8 +1211,9 @@ class ConvertAndValidateTest(unittest.TestCase):
         with self.assertRaises(convert.ConvertError):
             convert.terrain_keys(root)
 
-    def install(self, out):
-        """Write a build into a fresh temp root and return it."""
+    def install(self, out, otbm=None):
+        """Write a build of `otbm` (default: the fixture map) into a fresh temp root and
+        return it."""
         root = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, root)
         for path, data in out.items():
@@ -1059,6 +1222,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         (root / validate.ITEM_BINDINGS).parent.mkdir(parents=True, exist_ok=True)
         (root / validate.ITEM_BINDINGS).write_bytes(ITEMS_BY_SERVER_ID)
         write_definitions(root, ITEMS_BY_SERVER_ID)
+        write_transitions(root, otbm or self.blobs[convert.OTBM])
         return root
 
     @staticmethod

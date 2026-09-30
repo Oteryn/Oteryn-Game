@@ -16,6 +16,13 @@ follows `routed_to` later), else the committed Terrain catalogue key
 provisional donor key. The conversion fails closed on an item or tile attribute it does
 not carry.
 
+A teleport attribute is carried only where `convert_world_metadata.py` writes its
+Transition.Teleport record (same position, item and destination). Every other teleport
+attribute is excluded, by reason: `unset_destination` (0, 0, 0), `destination_outside_map`,
+`destination_tile_absent` (the six real-destination orphans) and `no_transition`. The item
+itself stays; the counts are recorded as `excluded_teleports` in the capture summary. A
+Transition whose teleport the map does not carry fails the conversion.
+
 After `world.otbm`, fragment maps of `maps.7z` (`FILL`, currently `blue_valley.otbm`) fill
 tiles the base map lacks: a tile is added only where the base map has no tile at its position,
 nothing existing is overwritten or merged. Reading the archive needs `py7zr`
@@ -160,12 +167,47 @@ CARRIED = {
 }
 DEST_KEY = "dest"
 UNSET_DEST = (0, 0, 0)
+TELEPORT_RULE = (
+    "a teleport attribute is carried only when a Transition.Teleport record has its "
+    "position, item and destination; the item stays"
+)
+TELEPORT_REASONS = (
+    "destination_outside_map",
+    "destination_tile_absent",
+    "no_transition",
+    "unset_destination",
+)
 _INDEX = list(range(codec.SECTOR_SIZE * codec.SECTOR_SIZE))
 
 
 def donor_key(server_id: int) -> str:
     """The provisional key of a server id that has no item binding."""
     return f"{DONOR_PREFIX}{server_id}"
+
+
+def teleport_links(otbm: bytes) -> tuple[Counter, dict]:
+    """The teleports `convert_world_metadata.py` turns into Transition records, as a
+    Counter of (position, item, destination), and the exclusion reason of every other
+    teleport of `world.otbm`, by the same rules."""
+    facts = otbm_reader.read(otbm)
+    reasons: dict[tuple, str] = {}
+    candidates, _rejected = metadata.teleport_candidates(facts)
+    kept = {id(tp) for tp in candidates}
+    present = otbm_reader.read(otbm, probe={tp["to"] for tp in candidates}).present
+    links: Counter = Counter()
+    for tp in facts.teleports:
+        link = (tp["from"], tp["item"], tp["to"])
+        if id(tp) not in kept:
+            reasons[link] = (
+                "unset_destination"
+                if tp["to"] == UNSET_DEST
+                else "destination_outside_map"
+            )
+        elif tp["to"] not in present:
+            reasons[link] = "destination_tile_absent"
+        else:
+            links[link] += 1
+    return links, reasons
 
 
 def defined_item_keys(root: Path = ROOT) -> set[str]:
@@ -326,7 +368,11 @@ class Collector:
     palette indexes once the palette is known (``remap``).
     """
 
-    def __init__(self):
+    def __init__(self, links: Counter | None = None, reasons: dict | None = None):
+        # teleports still to carry (Transition records) and why the others are excluded
+        self.links: Counter = Counter(links or {})
+        self.reasons = reasons or {}
+        self.excluded_teleports: Counter = Counter()
         self.sectors: dict[tuple[int, int, int], tuple[list, list]] = {}
         self.bodies: dict[bytes, bytes] = {}
         self.final: dict[bytes, bytes] = {}
@@ -345,13 +391,17 @@ class Collector:
             if attrs:
                 named = {}
                 for key, value in attrs.items():
+                    if key == DEST_KEY and not self.carry_teleport(
+                        (x, y, z), server_id, tuple(value)
+                    ):
+                        continue
                     name = CARRIED.get(8 if key == DEST_KEY else key)
                     if name is None:
                         self.unsupported[key] += 1
                     else:
                         named[name] = value
                         self.attributes[name] += 1
-            converted.append((server_id, depth, named))
+            converted.append((server_id, depth, named or None))
         if house == 0:
             raise ConvertError(f"house tile ({x}, {y}, {z}) has house id 0")
         body = codec.encode_tile(flags or 0, house or 0, zones or (), converted)
@@ -369,6 +419,19 @@ class Collector:
         self.items += len(items)
         self.house_tiles += house is not None
         self.zone_tiles += bool(zones)
+
+    def carry_teleport(self, position, server_id: int, destination) -> bool:
+        """True when a Transition record has this teleport; else count its reason."""
+        link = (position, server_id, destination)
+        if self.links[link] > 0:
+            self.links[link] -= 1
+            return True
+        if destination == UNSET_DEST:
+            reason = "unset_destination"
+        else:
+            reason = self.reasons.get(link, "no_transition")
+        self.excluded_teleports[reason] += 1
+        return False
 
     def check(self) -> None:
         if self.unsupported:
@@ -798,7 +861,7 @@ def build(
     if bindings is None:
         bindings = ITEM_BINDINGS.read_bytes()
     bound = bound_keys(bindings, defined)
-    collector = Collector()
+    collector = Collector(*teleport_links(blobs[OTBM]))
     replace_row = next(
         (r for r in FILL if "replace" in r and fill_key(r) in blobs), None
     )
@@ -888,6 +951,12 @@ def build(
     edron_items = apply_edron(collector, plan.add) if plan else 0
     draft_items = apply_edron(collector, draft_plan.add, "draft") if draft_plan else 0
     collector.check()
+    missing = sorted(+collector.links)
+    if missing:
+        raise ConvertError(
+            f"{len(missing)} Transition teleports are not on the base map, first "
+            f"(position, item, destination): {missing[0]}"
+        )
     source = {**SOURCE, "fill": applied}
     if plan:
         source["edron"] = edron.PIN
@@ -1009,6 +1078,13 @@ def build(
         },
         "rejected_items": {"unsupported_attributes": len(collector.unsupported)},
         "floor_changes": floor_change_summary(kinds, collector.occurrences),
+        "excluded_teleports": {
+            "rule": TELEPORT_RULE,
+            **{
+                reason: collector.excluded_teleports[reason]
+                for reason in TELEPORT_REASONS
+            },
+        },
         "edron": edron_summary(
             plan, tibiamaps, (blocking, kinds, yellow), overrider, edron_items
         ),

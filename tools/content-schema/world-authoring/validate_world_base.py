@@ -28,6 +28,8 @@ from convert_world_base import (
     ITEM_NAMESPACE,
     PINNED_TOTALS,
     REPLACE_RULE,
+    TELEPORT_REASONS,
+    TELEPORT_RULE,
     catalogue_keys,
     defined_item_keys,
     key_family,
@@ -38,6 +40,7 @@ HERE = Path(__file__).resolve().parent
 DIRECTORY = "content/world/placements"
 INDEX = f"{DIRECTORY}/index.json"
 SUMMARY = "tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
+TRANSITIONS = "content/world/transitions"
 ITEM_BINDINGS = "imports/crystalserver/bindings/items.json"
 REGION_PATH = re.compile(
     rf"^{re.escape(DIRECTORY)}/region-z(\d{{2}})-x(\d{{3}})-y(\d{{3}})\.b3$"
@@ -107,6 +110,7 @@ def check_region(row: dict) -> dict:
         "z": -1,
         "attributes": Counter(),
         "palette": Counter(),
+        "teleports": [],
     }
     errors = result["errors"]
     try:
@@ -163,6 +167,10 @@ def check_region(row: dict) -> dict:
                     attributes["depth"] += 1
                 if attrs:
                     attributes.update(attrs.keys())
+                    if "teleport" in attrs:
+                        result["teleports"].append(
+                            ((x, y, z), palette, tuple(attrs["teleport"]))
+                        )
         tiles += len(sector)
     if (tiles, items) != (row["tiles"], row["items"]):
         errors.append(
@@ -593,6 +601,62 @@ def edron_counts(rework: dict, summary: dict) -> list[str]:
     return problems
 
 
+def transition_links(root: Path) -> Counter:
+    """(position, item, destination) of every committed Transition.Teleport record."""
+    links: Counter = Counter()
+    for shard in sorted((root / TRANSITIONS).glob("teleports-*.json")):
+        for record in json.loads(shard.read_text(encoding="utf-8"))["records"]:
+            declaration = record["declaration"]
+            external = record["source_bindings"][0]["external_id"]
+            item = int(external.split(":", 1)[1].split("#", 1)[0])
+            start, end = declaration["from"], declaration["to"]
+            links[
+                (
+                    (start["x"], start["y"], start["floor"]),
+                    item,
+                    (end["x"], end["y"], end["floor"]),
+                )
+            ] += 1
+    return links
+
+
+def check_teleports(
+    summary: dict, decoded: Counter, root: Path, errors: list[str]
+) -> None:
+    """Every carried teleport has its Transition record and every record its teleport.
+
+    Enforced once the capture summary records `excluded_teleports`, that is from the first
+    regeneration with the exclusion rule on."""
+    excluded = summary.get("excluded_teleports")
+    if excluded is None:
+        return
+    if (
+        not isinstance(excluded, dict)
+        or set(excluded) != {"rule", *TELEPORT_REASONS}
+        or excluded["rule"] != TELEPORT_RULE
+        or not all(
+            isinstance(excluded[r], int)
+            and not isinstance(excluded[r], bool)
+            and excluded[r] >= 0
+            for r in TELEPORT_REASONS
+        )
+    ):
+        errors.append(f"{SUMMARY}: excluded_teleports is malformed")
+    expected = transition_links(root)
+    extra = sorted((decoded - expected).elements())
+    if extra:
+        errors.append(
+            f"{DIRECTORY}: {len(extra)} teleports have no Transition record, first "
+            f"(position, item, destination): {extra[0]}"
+        )
+    missing = sorted((expected - decoded).elements())
+    if missing:
+        errors.append(
+            f"{TRANSITIONS}: {len(missing)} Transition teleports are not on the base "
+            f"map, first (position, item, destination): {missing[0]}"
+        )
+
+
 def check_palette(
     palette,
     bound: dict[int, set[str]],
@@ -800,8 +864,13 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
     attributes: Counter = Counter()
     used: Counter = Counter()
     totals = Counter()
+    teleports: Counter = Counter()
     for result in results:
         errors.extend(result["errors"])
+        teleports.update(
+            (position, palette[index]["source_item_id"], destination)
+            for position, index, destination in result["teleports"]
+        )
         used.update(result["palette"])
         floors[result["z"]] += result["tiles"]
         attributes.update(result["attributes"])
@@ -820,6 +889,7 @@ def validate(root: Path, pinned: dict | None = None, workers: int = 1) -> list[s
             f"{INDEX}: totals {index['totals']} differ from the decoded {counted}"
         )
     check_palette_use(palette, used, summary, counted["items"], errors)
+    check_teleports(summary, teleports, root, errors)
     if summary.get("totals") != index["totals"]:
         errors.append(f"{SUMMARY}: totals differ from the index")
     if summary.get("bytes_on_disk") != totals["bytes"]:
