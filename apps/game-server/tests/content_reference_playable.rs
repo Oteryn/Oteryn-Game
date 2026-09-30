@@ -2077,3 +2077,51 @@ fn a_placement_cannot_place_a_reward_claim() -> Result<(), ContentError> {
     ));
     Ok(())
 }
+
+#[test]
+fn reward_claim_count_fits_the_items_known_stack() -> Result<(), ContentError> {
+    let set_count =
+        |source: &mut ReferencePlayableContentSource, count| -> Result<(), ContentError> {
+            for entry in &mut reward_claim_kind_mut(source)?.placements {
+                entry.items[0].count = count;
+            }
+            Ok(())
+        };
+    // NonStackable: exactly one.
+    let mut single = source_with_reward_claim()?;
+    typed_item_kind_mut(&mut single)?.stack_class = ReferenceItemStackClass::NonStackable;
+    let mut two = single.clone();
+    set_count(&mut single, 1)?;
+    link_reference_playable(single)?;
+    set_count(&mut two, 2)?;
+    assert!(matches!(
+        link_reference_playable(two),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim count exceeds the Item's stack"
+        ))
+    ));
+
+    // StackCapable with a known maximum: at most that maximum.
+    let mut capped = source_with_reward_claim()?;
+    typed_item_kind_mut(&mut capped)?.semantics.stack =
+        ReferenceItemField::Known(ReferenceItemStack {
+            stackable: ReferenceItemField::Known(true),
+            stack_max: ReferenceItemField::Known(5),
+        });
+    let mut over = capped.clone();
+    set_count(&mut capped, 5)?;
+    link_reference_playable(capped)?;
+    set_count(&mut over, 6)?;
+    assert!(matches!(
+        link_reference_playable(over),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim count exceeds the Item's stack"
+        ))
+    ));
+
+    // Unknown stack facts are left to the MINT admission (D82).
+    let mut unknown = source_with_reward_claim()?;
+    set_count(&mut unknown, 1_000)?;
+    link_reference_playable(unknown)?;
+    Ok(())
+}
