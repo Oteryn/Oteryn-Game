@@ -1,0 +1,220 @@
+{
+ "areas": 465,
+ "engine_towns_not_hometowns": [
+  "Blue Valley",
+  "Bounac",
+  "Candia",
+  "Cobra Bastion",
+  "Dawnport Tutorial",
+  "Feyrist",
+  "Gnomprona",
+  "Home",
+  "Island of Destiny",
+  "Krailos",
+  "Marapur",
+  "Moonfall",
+  "Newhaven",
+  "Salgadora",
+  "Silvertides",
+  "Targuna"
+ ],
+ "hometowns": {
+  "Ab'Dendriel": {
+   "owner_check": false,
+   "temple": {
+    "x": 32732,
+    "y": 31634,
+    "z": 7
+   },
+   "wiki_distance": 3,
+   "wiki_npc": "Maealil"
+  },
+  "Ankrahmun": {
+   "owner_check": true,
+   "temple": {
+    "x": 33194,
+    "y": 32853,
+    "z": 7
+   },
+   "wiki_distance": 5,
+   "wiki_npc": "Rahkem"
+  },
+  "Carlin": {
+   "owner_check": false,
+   "temple": {
+    "x": 32360,
+    "y": 31782,
+    "z": 7
+   },
+   "wiki_distance": 3,
+   "wiki_npc": "Alia"
+  },
+  "Darashia": {
+   "owner_check": false,
+   "temple": {
+    "x": 33213,
+    "y": 32454,
+    "z": 1
+   },
+   "wiki_distance": 2,
+   "wiki_npc": "Kasmir"
+  },
+  "Dawnport": {
+   "owner_check": false,
+   "temple": {
+    "x": 32064,
+    "y": 31894,
+    "z": 6
+   },
+   "wiki_distance": 2,
+   "wiki_npc": "Oressa"
+  },
+  "Edron": {
+   "owner_check": false,
+   "temple": {
+    "x": 33217,
+    "y": 31814,
+    "z": 8
+   },
+   "wiki_distance": 5,
+   "wiki_npc": "Amanda"
+  },
+  "Farmine": {
+   "owner_check": false,
+   "temple": {
+    "x": 33023,
+    "y": 31521,
+    "z": 11
+   },
+   "wiki_distance": null,
+   "wiki_npc": "Prezil"
+  },
+  "Gray Beach": {
+   "owner_check": false,
+   "temple": {
+    "x": 33447,
+    "y": 31323,
+    "z": 9
+   },
+   "wiki_distance": 3,
+   "wiki_npc": "Rock With A Soft Spot"
+  },
+  "Issavi": {
+   "owner_check": false,
+   "temple": {
+    "x": 33921,
+    "y": 31477,
+    "z": 5
+   },
+   "wiki_distance": 2,
+   "wiki_npc": "Iptar-Sin"
+  },
+  "Kazordoon": {
+   "owner_check": false,
+   "temple": {
+    "x": 32649,
+    "y": 31925,
+    "z": 11
+   },
+   "wiki_distance": 4,
+   "wiki_npc": "Isimov"
+  },
+  "Liberty Bay": {
+   "owner_check": false,
+   "temple": {
+    "x": 32317,
+    "y": 32826,
+    "z": 7
+   },
+   "wiki_distance": 3,
+   "wiki_npc": "Tyrias"
+  },
+  "Port Hope": {
+   "owner_check": false,
+   "temple": {
+    "x": 32594,
+    "y": 32745,
+    "z": 7
+   },
+   "wiki_distance": 1,
+   "wiki_npc": "Brewster"
+  },
+  "Rathleton": {
+   "owner_check": false,
+   "temple": {
+    "x": 33594,
+    "y": 31899,
+    "z": 6
+   },
+   "wiki_distance": 1,
+   "wiki_npc": "Azalea"
+  },
+  "Rookgaard": {
+   "owner_check": false,
+   "temple": {
+    "x": 32097,
+    "y": 32219,
+    "z": 7
+   },
+   "wiki_distance": 2,
+   "wiki_npc": "Cipfried"
+  },
+  "Roshamuul": {
+   "owner_check": false,
+   "temple": {
+    "x": 33513,
+    "y": 32363,
+    "z": 6
+   },
+   "wiki_distance": 0,
+   "wiki_npc": "Zedrulon the Fallen"
+  },
+  "Svargrond": {
+   "owner_check": false,
+   "temple": {
+    "x": 32212,
+    "y": 31132,
+    "z": 7
+   },
+   "wiki_distance": 4,
+   "wiki_npc": "Kjesse"
+  },
+  "Thais": {
+   "owner_check": false,
+   "temple": {
+    "x": 32369,
+    "y": 32241,
+    "z": 7
+   },
+   "wiki_distance": 2,
+   "wiki_npc": "Quentin"
+  },
+  "Venore": {
+   "owner_check": false,
+   "temple": {
+    "x": 32957,
+    "y": 32076,
+    "z": 7
+   },
+   "wiki_distance": 4,
+   "wiki_npc": "Yberius"
+  },
+  "Yalahar": {
+   "owner_check": false,
+   "temple": {
+    "x": 32787,
+    "y": 31276,
+    "z": 7
+   },
+   "wiki_distance": 1,
+   "wiki_npc": "Lorietta"
+  }
+ },
+ "house_towns": 19,
+ "kinds": {
+  "city": 22,
+  "region": 28,
+  "subregion": 415
+ },
+ "with_position": 158
+}
