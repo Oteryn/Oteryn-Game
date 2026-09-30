@@ -204,7 +204,7 @@ STARTER-BACKPACK-0 server-originated variant. A reward draw or MINT step, includ
 after a restart, is fenced by the credited character's own current admitted session
 (`CurrentCharacterItemFence`, Character and World equal to the death record's): an online
 character completes it in its live session, an offline one in its next admitted session, keyed by
-(death key, CharacterId) and (death, step) so it runs exactly once. No write is made under an
+(death key, CharacterId) and (death, CharacterId, step) so it runs exactly once. No write is made under an
 ended generation's or session's fence, or for a character without an admitted session. Bosstiary receipts and boss slot changes advance the
 revision on CHAR-REV-SEQ-1.
 

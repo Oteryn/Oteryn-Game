@@ -184,8 +184,10 @@ does not run.
   creatures). A channel that activates after the firing does not join it.
 - A firing is `DONE` only when a terminal run row exists for every channel in its durable target
   channel set (a channel with no row is not terminal, so an empty run table never completes a
-  firing), or when the firing's last wave plus `despawn_after_s` has passed; at that deadline a
-  target channel with no row is recorded `LOST` and the firing closes. A `WorldReset` cancels running firings; raid creatures go with the overlay.
+  firing), or at the close deadline: the last wave's time plus `despawn_after_s`, or the last
+  wave's time itself when `despawn_after_s` is omitted (architect ruling: creatures that persist
+  do not keep a firing open). At the deadline a target channel with no row is recorded `LOST` and
+  the firing closes, so `min_gap_s` (§4.2) can apply. A `WorldReset` cancels running firings; raid creatures go with the overlay.
 
 ## 5. Open-world boss spawns (BOSS-1)
 
@@ -291,10 +293,24 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
   dropped: a character loses a contribution only while its total ranks below 200 others, so
   low-contribution taggers cannot hold credit against a higher cumulative contributor unless
   more than 200 distinct characters contribute. The accumulator stays bounded in owner memory.
+- Each accumulator entry also keeps its **last qualifying damage time** (damage to the boss; for
+  the Bosstiary rule, other score components do not refresh it).
+- **Session at death (architect ruling, fail-closed).** Only a contributor with an admitted
+  session in the boss's World at the death commit can be credited: the death composition claims
+  its eligibility row (§9) and writes its receipt under that session's composition rule 2 fence. A
+  contributor with no admitted session at that moment is credited with nothing (no reward, no
+  Bosstiary) and is skipped without replacement by the next-ranked one. Crediting offline
+  contributors needs a session-independent pending-claim authority, a declared deferral outside
+  BOSS-REWARD-1/BOSSTIARY-1 v1; no pending claim exists, so cross-channel serialization (§9) is
+  never bypassed. Draws and MINTs of an already credited character still resume at its next
+  admission (§8.1).
 - At the death commit, the credited set is the top `BOSSRAID0-RL-10` (50, D109) accumulator
-  entries with score > 0 by the order above, and each score is fixed in the death record (§8.1).
+  entries with score > 0 by the order above that have an admitted session (previous bullet), and
+  each score is fixed in the death record (§8.1).
 - Non-reward bosses keep D121 corpse loot with the D112 window and the party right (PARTY-PVP-0
-  §5.3). Their Bosstiary credit uses CHARM-0's 5-minute damage rule, up to 50 principals, tracked by
+  §5.3). Their Bosstiary credit uses CHARM-0's 5-minute damage rule, up to 50 principals: at the death
+  commit an entry whose last qualifying damage is older than 5 minutes is excluded before the top
+  50 are chosen, so a fight longer than 5 minutes credits only recent damagers. Tracked by
   the same bounded accumulator (damage only): the 200-entry `BOSSRAID0-RL-10b` accumulator applies
   to every boss spawn actor, `reward_boss` or `bosstiary`, not to reward bosses alone.
 
@@ -303,7 +319,9 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
 ### 8.1 Death record and draw
 
 - `game_boss_reward_deaths`: one row per reward-boss death key, with the credited set and scores,
-  the loot table ref and the Boosted Boss flag, written by the death composition (ruling R3:
+  the loot table ref, a **snapshot of the resolved loot table** (entry key, item definition key,
+  count range and chance of each entry, taken from the active content generation at the death
+  commit) and the Boosted Boss flag, written by the death composition (ruling R3:
   committed with the death; its draws and MINTs resume after a restart, keyed so they never
   duplicate, in each credited character's own admitted session, below).
 - **Bonus snapshot.** The same death composition writes, per credited character, whether the
@@ -313,10 +331,12 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
 - Each credited character gets its own draw from the boss loot table: at most
   `BOSSRAID0-RL-11` (16) entries, chances scaled by its share (`PARITY_PENDING`), plus the boss
   slot bonus from the snapshot and the Boosted Boss bonus from the recorded flag (§10.3, §11).
-  Every draw, including a resumed or retried one, reads only the death record, never live slot
-  or Bosstiary state. The RNG is seeded by (death key, CharacterId).
+  Every draw, including a resumed or retried one, reads only the death record (the snapshotted
+  table, never the live content definition), never live slot or Bosstiary state. A snapshot
+  entry whose item definition is no longer mintable in the active generation is skipped and
+  recorded in its step, never replaced by other content. The RNG is seeded by (death key, CharacterId).
 - Each item is its own one-item DUR-03 MINT, cause `(death key, CharacterId, loot table ref,
-  entry key, draw ordinal)`, in steps of `BOSSRAID0-RL-12` MINTs keyed by (death, step).
+  entry key, draw ordinal)`, in steps of `BOSSRAID0-RL-12` MINTs keyed by (death, CharacterId, step).
 - **Session-fenced continuation (architect ruling).** The death record keeps, per (death key,
   CharacterId), a pending-draw marker that the step completing that character's draw clears. A
   draw or MINT step for a credited character is written only under that character's own current
@@ -325,7 +345,7 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
   character online in the World completes its steps in its live session. After a restart, or
   while the character is offline, its steps stay pending; its next admitted session in that World
   completes them under its own fence. Nothing is minted under an ended generation's or session's
-  authority, and no step runs for a character without an admitted session. The (death, step) and
+  authority, and no step runs for a character without an admitted session. The (death, CharacterId, step) and
   item cause keys make the continuation exactly-once: a step committed before a restart is found
   by its key and never repeated. The §8.2 expiry of an item counts from its MINT.
 
