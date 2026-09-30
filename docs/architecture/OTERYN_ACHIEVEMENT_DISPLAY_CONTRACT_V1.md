@@ -1,8 +1,8 @@
 # Achievement Display Contract V1
 
 - Status: Contract candidate. Owner direction 2026-09-30, recorded verbatim on #162 (owner decision record,
-  comment 5911933242); D-numbers to be assigned by the control plane. Needs exact-head independent review (wire
-  contract, D49 display amendment) before it is accepted.
+  comment 5911933242); the control plane assigned D223-D228 (display-1 to display-6). Needs exact-head
+  independent review (wire contract, D49 display amendment) before it is accepted.
 - Owner decision record: <https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5911933242>
 - Date: 2026-09-30
 - Issue: #162; lane `ACHIEVEMENT` (D126)
@@ -26,7 +26,7 @@ already writes.
 ## 2. Owner decisions (2026-09-30)
 
 Owner direction, recorded verbatim with the questions it answers in the owner decision record on #162 (see the
-header); the control plane assigns the D-numbers:
+header); the control plane assigned D223-D228 to display-1 to display-6, in order:
 
 1. Secret achievements not yet earned are not shown. A secret achievement is shown only once the account has
    earned it (Reference behaviour).
@@ -34,10 +34,10 @@ header); the control plane assigns the D-numbers:
 3. Delivery is fetch on request. The client asks when the player opens the achievements panel. Nothing is pushed
    on login, and there is no periodic refresh.
 4. The panel shows all facts the account has earned, and all of them count toward the points.
-5. The panel lists earned achievements only; not-earned records are not sent (record display-5).
-6. The reply is paged (record display-6).
+5. The panel lists earned achievements only; not-earned records are not sent (display-5, D227).
+6. The reply is paged (display-6, D228).
 
-### 2.1 D49 display amendment (decision 4)
+### 2.1 D49 display amendment (decision 4, D226)
 
 Decision 4 supersedes two display and points rules of D49 (§4.4, last bullet, and the third bullet's "compatible
 catalogue entry of the world evaluating it") and the matching text of the owner contract (§2.3 last sentence, §4).
@@ -137,7 +137,7 @@ secret or not, is never sent, so a client cannot learn a secret's name or descri
   (migration 0021), so every grant raises `fact_count`, including a grant of a zero-point (retired) record that
   leaves `total_points` unchanged but shifts rows; comparing `total_points` alone would miss it.
 
-The owner confirmed paging (record display-6): an empty query would need the reply without `description` and a
+The owner confirmed paging (display-6, D228): an empty query would need the reply without `description` and a
 client content contract, which is not chosen.
 
 ### 3.4 Order

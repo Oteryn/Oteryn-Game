@@ -26,6 +26,7 @@ members = [
     "tools/synthetic-asset-compiler",
     "tools/synthetic-client-harness",
     "tools/dev-client",
+    "tools/world-bundle-compiler",
 ]
 exclude = [
     "vendor/sqlx-core-0.9.0",
@@ -73,6 +74,7 @@ tokio-rustls = { version = "=0.26.5", default-features = false, features = ["aws
 rcgen = { version = "=0.14.10", default-features = false, features = ["crypto", "aws_lc_rs"] }
 wgpu = { version = "=30.0.0", default-features = false, features = ["std", "dx12", "wgsl"] }
 winit = { version = "=0.30.13", default-features = false, features = ["rwh_06"] }
+zstd = { version = "=0.13.3", default-features = false }
 
 [patch.crates-io]
 sqlx-core = { path = "vendor/sqlx-core-0.9.0" }

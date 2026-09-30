@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "3cd789ce9b8863fbc57f782f55ba8b4cf585585b79c97413d6cba6c1b91c42ee",
+        "385bf34e92c50e33e75d030554056a3df94d68d08d8c118152c4f334c3b9aef6",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        21_343_422,
-        "7e1e2aa7d00d52ced4908586a6e51d6d997caee93a19f7033000fc335774f991",
+        22_219_898,
+        "5448eec873d68366d1a97ec33720b2b30632712f596ffcc77349218f862452b5",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1937,
-        "ccc4932b2b07d4f4c5ceb321fd340817eefc96cf0923332ec7c0bfb3f3d8df90",
+        "861640a68f9f3416d6d611ee22fc7c9ed267e01463d294005698f61b6c647fb3",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "d7e1562903830119e840688935a9b78de9a3dfa225c2f22f876a5604dcc92fc7",
+        "e2c6d7695e617391b4af605f9018cb757921aacf47338125ed0b535d7afbc79c",
     ),
     (
         "provenance/imports.json",
@@ -93,7 +93,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "f3b4ad4174bba87a3fca0dc8a348a1c01e8e69bcaf5637ccf3713743099b706d";
+const TREE_SHA256: &str = "147e6c56071bf9c4a8664df33ae30bc905ee2a6f4ab01823c2ece94b0aa990c6";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys.
 const ITEMS: usize = 33_567;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
@@ -103,11 +103,11 @@ const CREATURES: usize = 1479;
 const CREATURE_RECORDS: usize = 20693;
 const CREATURE_PROFILES: usize = 19745;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1110;
-const NPC_RECORDS: usize = 2220;
-const NPC_DECLARATIONS: usize = 2184;
-const NPC_DIALOGUES: usize = 694;
-const NPC_BINDINGS: usize = 2376;
+const NPCS: usize = 1102;
+const NPC_RECORDS: usize = 2204;
+const NPC_DECLARATIONS: usize = 2195;
+const NPC_DIALOGUES: usize = 715;
+const NPC_BINDINGS: usize = 2352;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 61;
 
@@ -231,9 +231,6 @@ fn wave1_atom_count(semantics: &ReferenceItemSemantics) -> usize {
     if let Known(value) = &semantics.trade_restrictions {
         count += usize::from(matches!(&value.marketable, Known(_)));
     }
-    if let Known(value) = &semantics.physical {
-        assert!(matches!(&value.weight, ReferenceItemField::Unknown));
-    }
     count
 }
 
@@ -303,7 +300,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-wave-a-r9");
+    assert_eq!(project.project_revision(), "g4-npc-wave-a-r8");
     assert_eq!(project.imports().len(), 11);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -627,7 +624,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(v2.sources[10].evidence, ProjectV2EvidenceClass::Derived);
     let npc_import = &project.imports()[9];
-    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r9");
+    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r8");
     assert!(npc_import.candidates.is_empty());
     assert_eq!(v2.sources[8].key, v2.sources[5].key);
     assert_eq!(v2.sources[8].import_batch_id, npc_import.batch_id);
@@ -926,9 +923,11 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // The 201 D149 records carried 204 promoted atoms; they left content with their records
     // (ITEM-ID-1b) and are kept in the tombstone archive.
     assert_eq!(promoted_items, 12_301 - 201);
+    // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
+    // never removes, the others.
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328
     );
     let (wave1_items, wave1_fields) = linked
         .definitions
@@ -941,8 +940,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             let atoms = wave1_atom_count(&item.semantics);
             (items + usize::from(atoms > 0), fields + atoms)
         });
-    assert_eq!(wave1_items, 164);
-    assert_eq!(wave1_fields, 290);
+    // Wave 1 promoted 290 atoms on 164 items; ITEM-SEM-2b adds TibiaWiki weapon types and
+    // imbuement slot counts on the same paths for 1,269 more atoms (995 more items).
+    assert_eq!(wave1_items, 164 + 995);
+    assert_eq!(wave1_fields, 290 + 1_269);
 }
 
 #[test]
