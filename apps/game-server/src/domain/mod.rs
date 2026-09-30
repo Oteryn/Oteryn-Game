@@ -1,6 +1,7 @@
 //! Protocol- and persistence-neutral Character and Item semantic core.
 
 pub mod appearance;
+pub mod charm;
 pub mod death;
 pub mod equipment;
 pub mod premium;

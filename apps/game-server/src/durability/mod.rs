@@ -9,6 +9,7 @@ mod admission_journal;
 pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_progression;
+pub mod charm_state;
 pub mod content_activation;
 mod db;
 pub mod fresh_admission;
@@ -56,6 +57,70 @@ mod character_progression_linkage {
         let _ = std::mem::size_of::<ProgressionInitializationRequest<2>>();
         let _ = std::mem::size_of::<ProgressionInitializationOutcome>();
         let _ = DurabilityRoot::initialize_character_progression::<2>;
+    }
+}
+
+#[cfg(test)]
+mod charm_state_linkage {
+    use super::DurabilityRoot;
+    use super::charm_state::{
+        CharacterCharmState, CharmCommand, CharmCommandEffect, CharmCommandOccurrence,
+        CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError,
+        CommittedCharmCommand,
+    };
+
+    struct NoFacts;
+
+    impl CharmFacts for NoFacts {
+        async fn completed_stage(
+            &self,
+            _connection: &mut sqlx::postgres::PgConnection,
+            _character: crate::domain::CharacterId,
+            _race: &crate::domain::charm::BestiaryRaceKey,
+        ) -> Result<crate::domain::charm::BestiaryStage, super::DurabilityError> {
+            Ok(crate::domain::charm::BestiaryStage::NONE)
+        }
+
+        async fn completed_entry_charm_points(
+            &self,
+            _connection: &mut sqlx::postgres::PgConnection,
+            _character: crate::domain::CharacterId,
+        ) -> Result<Vec<u32>, super::DurabilityError> {
+            Ok(Vec::new())
+        }
+
+        async fn promoted(
+            &self,
+            _connection: &mut sqlx::postgres::PgConnection,
+            _character: crate::domain::CharacterId,
+        ) -> Result<bool, super::DurabilityError> {
+            Ok(false)
+        }
+
+        async fn slot_entitlement(
+            &self,
+            _connection: &mut sqlx::postgres::PgConnection,
+            _character: crate::domain::CharacterId,
+        ) -> Result<crate::domain::charm::CharmSlotEntitlement, super::DurabilityError> {
+            Ok(crate::domain::charm::CharmSlotEntitlement::Free)
+        }
+    }
+
+    #[test]
+    fn charm_state_api_is_linked() {
+        let _ = std::mem::size_of::<CharacterCharmState>();
+        let _ = std::mem::size_of::<CharmCommand>();
+        let _ = std::mem::size_of::<CharmCommandEffect>();
+        let _ = std::mem::size_of::<CharmCommandOutcome>();
+        let _ = std::mem::size_of::<CharmCommandRequest>();
+        let _ = std::mem::size_of::<CharmStateError>();
+        let _ = std::mem::size_of::<CommittedCharmCommand>();
+        let _ = CharmCommandOccurrence::from_bytes;
+        let _ = CharmCommandOccurrence::as_bytes;
+        let _ = CharmCommand::charm;
+        let _ = DurabilityRoot::commit_charm_command::<NoFacts>;
+        let _ = DurabilityRoot::reconcile_charm_command;
+        let _ = DurabilityRoot::read_character_charm_state;
     }
 }
 
