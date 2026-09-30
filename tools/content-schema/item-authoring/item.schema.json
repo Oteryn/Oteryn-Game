@@ -2090,7 +2090,8 @@
           "enum": [
             "standard",
             "knight",
-            "crossbow"
+            "crossbow",
+            "unknown"
           ]
         }
       },

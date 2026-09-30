@@ -10,9 +10,12 @@ manifest SHA-256 and the manifests against the pins below before any record is r
 Output (`samples/item-weapon-proficiency-15-30-7fea90ec.json`) is a normalized staging
 artifact: the 443 client profiles with their raw level/perk records, the 666 weapon bindings
 keyed `oteryn:item.tibia.i<client id>`, and the threshold class of each profile.
-Perk `Type`, `SkillId`, `AugmentType`, `ElementId` and `DamageType` stay raw enum values; the
-client file does not define them and no mapping is invented here. Nothing is an Oteryn
-gameplay definition. `--check` diffs an in-memory regeneration against the committed file.
+Perk `Type`, `SkillId`, `AugmentType`, `ElementId` and `DamageType` stay raw values in the
+profiles; the owner-accepted D199 meaning and unit table is emitted beside them as
+`perk_mapping`. The threshold class is keyed per binding (item), never per profile: bolt
+ammunition means crossbow (D198), Knight applies only to knight-restricted sword/axe/club
+weapons (D200), and any binding without in-repo evidence is `unknown`, never guessed.
+Nothing is an Oteryn gameplay definition. `--check` diffs an in-memory regeneration.
 """
 
 from __future__ import annotations
@@ -40,6 +43,19 @@ PROFICIENCIES_SHA256 = (
 APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 EXPECTED_PROFILES = 443
 EXPECTED_BINDINGS = 666
+
+# In-repo per-item evidence. Both files are digest-pinned before use.
+EVIDENCE = ROOT / "docs" / "agents" / "evidence"
+CRYSTAL_CATALOG = (
+    EVIDENCE / "OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
+)
+CRYSTAL_CATALOG_SHA256 = (
+    "7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7"
+)
+WIKI_SNAPSHOT = EVIDENCE / "OTV2-20260925-item-enrichment-wave1-source-snapshot.json"
+WIKI_SNAPSHOT_SHA256 = (
+    "5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5"
+)
 
 # Owner-accepted evidence: #162 comments 5905884086 (table) and 5905899852 (decision).
 THRESHOLD_SOURCE = {
@@ -85,8 +101,100 @@ THRESHOLDS = {
     ],
 }
 MASTERY_OFFSET = 2  # Mastery is reached at the weapon's top level + 2.
+THRESHOLD_DECISIONS = {
+    "D198": "bolt ammunition (Crystal ff7ede5 items.xml ammotype=bolt, in-repo catalog "
+    "OTV2-20260919 cw2-b1; TibiaWiki secondarytype=Crossbows) selects the Crossbow table "
+    "per binding, including shared bow/crossbow profiles",
+    "D200": "Knight table only for knight-restricted sword/axe/club weapons (Canary "
+    "getExperienceArray: weapon vocation includes knight); every other melee weapon, "
+    "including fist (D197), is standard",
+    "unknown": "no in-repo per-item evidence (no ammotype for a ranged-family profile, "
+    "no vocation evidence for a sword/axe/club): class stays unknown, never guessed",
+}
+CLASSES = ("crossbow", "knight", "standard", "unknown")
 KNIGHT_WORDS = {"Sword", "Axe", "Club"}
-CROSSBOW_WORD = "Crossbow"
+RANGED_WORDS = {"Bow", "Crossbow", "Distance", "Arbalest"}
+
+# D199 (owner, #162 2026-09-30): TibiaWiki Weapon_Proficiency_Tables revid 1206177
+# (cross-match 3671/3671) and Canary src/enums/weapon_proficiency.hpp.
+PERK_MAPPING_SOURCE = {
+    "decision": "D199",
+    "tibiawiki": "Weapon_Proficiency_Tables revid 1206177 (3671/3671 perks cross-matched)",
+    "canary": "opentibiabr/canary src/enums/weapon_proficiency.hpp",
+    "type_minus_1": "dropped (not present in the 15.30 file)",
+}
+PERK_TYPES = {
+    0: ("attack", "flat"),
+    1: ("defence", "flat"),
+    2: ("weapon shield defence modifier", "flat"),
+    3: ("combat skill (SkillId)", "flat"),
+    4: ("specialised magic level (DamageType)", "flat"),
+    5: ("spell augmentation (AugmentType, SpellId)", "fraction"),
+    6: ("damage against bestiary family (BestiaryId)", "fraction"),
+    7: ("damage against bosses and Sinister Embraced", "fraction"),
+    8: ("critical hit chance", "fraction"),
+    9: ("elemental critical hit chance (ElementId)", "fraction"),
+    10: ("offensive rune critical hit chance", "fraction"),
+    11: ("auto-attack critical hit chance", "fraction"),
+    12: ("critical extra damage", "fraction"),
+    13: ("elemental critical extra damage (ElementId)", "fraction"),
+    14: ("offensive rune critical extra damage", "fraction"),
+    15: ("auto-attack critical extra damage", "fraction"),
+    16: ("mana leech", "fraction"),
+    17: ("life leech", "fraction"),
+    18: ("mana on hit", "flat"),
+    19: ("hit points on hit", "flat"),
+    20: ("mana on kill", "flat"),
+    21: ("hit points on kill", "flat"),
+    22: ("damage at range (Value is a distance in tiles)", "flat_tiles"),
+    23: ("ranged hit chance", "fraction"),
+    24: ("attack range", "flat"),
+    25: ("skill-scaled extra damage for auto-attacks (SkillId)", "fraction"),
+    26: ("skill-scaled extra damage for spells (SkillId)", "fraction"),
+    27: ("skill-scaled extra healing (SkillId)", "fraction"),
+    28: ("Alpha Strike: extra damage against targets above 95% HP", "fraction"),
+    29: ("Omega Strike: extra damage against targets below 30% HP", "fraction"),
+    30: ("armor penetration (1.0 = +100%)", "fraction"),
+    31: ("elemental pierce (ElementId)", "fraction"),
+    32: (
+        "homing missile (ElementId, MissileId; Probability and Multiplier fractions)",
+        "fraction",
+    ),
+}
+PERK_UNIT_RULES = (
+    "Value unit: flat for Types 0-4, 18-22 and 24 (Type 22 in tiles); fraction (x100 = %) "
+    "for Types 6-17, 23 and 25-31, and for Type 5 except AugmentType 6 (negative seconds); "
+    "Type 32 carries Probability and Multiplier fractions"
+)
+SKILL_IDS = {
+    1: "Magic Level",
+    6: "Shielding",
+    7: "Distance",
+    8: "Sword",
+    9: "Club",
+    10: "Axe",
+    11: "Fist Fighting",
+    13: "Fishing",
+}
+AUGMENT_TYPES = {
+    2: "spell base damage",
+    3: "spell healing",
+    6: "spell cooldown (negative seconds)",
+    14: "spell life leech",
+    15: "spell mana leech",
+    16: "spell critical extra damage",
+    17: "spell critical hit chance",
+}
+COMBAT_TYPES = {
+    1: "physical",
+    8: "fire",
+    16: "earth",
+    32: "energy",
+    64: "ice",
+    128: "holy",
+    256: "death",
+    1048576: "healing",
+}
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -143,13 +251,75 @@ def verify_pins(proficiency_manifest: dict, binding_manifest: dict) -> None:
                 raise SystemExit(f"{path}: digest differs from its pin")
 
 
-def threshold_class(profile_name: str) -> str:
-    """Classify by the weapon word in the client profile name (never by an invented table)."""
+def read_pinned_json(path: Path, sha256: str):
+    raw = path.read_bytes()
+    if sha256_bytes(raw) != sha256:
+        raise SystemExit(f"{path}: digest differs from the pin {sha256}")
+    return json.loads(raw)
+
+
+def crystal_ammotypes() -> dict[int, str | None]:
+    """Crystal ff7ede5 items.xml ammotype per source item id (None = record without one)."""
+    catalog = read_pinned_json(CRYSTAL_CATALOG, CRYSTAL_CATALOG_SHA256)[
+        "semantic_catalog"
+    ]
+    nodes = {}
+    for node in catalog["semantic_candidate_node_records"]:
+        nodes[node["source_node_digest"]] = next(
+            (
+                f["source_value"]
+                for f in node["candidate_fields"]
+                if f["source_key"] == "ammotype"
+            ),
+            None,
+        )
+    return {
+        record["source_item_id"]: nodes.get(record["source_node_digest"])
+        for record in catalog["identity_records"]
+    }
+
+
+def wiki_vocations(client_names: dict[int, str]) -> dict[int, str | None]:
+    """TibiaWiki `vocrequired` per client id, joined by an unambiguous item name.
+
+    Only rows whose name matches exactly one binding are used; a row without a
+    `vocrequired` value carries no evidence (None).
+    """
+    rows = read_pinned_json(WIKI_SNAPSHOT, WIKI_SNAPSHOT_SHA256)["rows"]
+    by_name: dict[str, list[int]] = {}
+    for client_id, name in client_names.items():
+        by_name.setdefault(name.lower(), []).append(client_id)
+    out: dict[int, str | None] = {}
+    for row in rows:
+        fields = row["fields"]
+        name = fields.get("name", {}).get("value", "").lower()
+        matches = by_name.get(name, [])
+        if len(matches) == 1:
+            out[matches[0]] = fields.get("vocrequired", {}).get("value")
+    return out
+
+
+def threshold_class(
+    profile_name: str,
+    ammotype: str | None = None,
+    vocation: str | None = None,
+) -> str:
+    """Per-binding class: crossbow (bolt), knight (knight sword/axe/club), standard, unknown.
+
+    `ammotype` is the Crystal items.xml value, `vocation` the wiki `vocrequired` value;
+    both are per-item evidence and None means none is available.
+    """
     words = set(profile_name.replace("-", " ").split())
-    if CROSSBOW_WORD in words:
+    if ammotype == "bolt":
         return "crossbow"
+    if words & RANGED_WORDS:
+        # A bow/crossbow family profile can be shared; without ammunition evidence
+        # (replicas, items newer than the pinned catalog) the class is not guessed.
+        return "standard" if ammotype == "arrow" else "unknown"
     if words & KNIGHT_WORDS:
-        return "knight"
+        if vocation is None:
+            return "unknown"
+        return "knight" if "knight" in vocation.lower() else "standard"
     return "standard"
 
 
@@ -188,6 +358,25 @@ def perk_enum_inventory(profiles: list[dict]) -> dict:
     }
 
 
+def perk_mapping() -> dict:
+    """The owner-accepted D199 meaning and unit of each perk enum value."""
+    return {
+        "source": PERK_MAPPING_SOURCE,
+        "unit_rules": PERK_UNIT_RULES,
+        "Type": [
+            {"value": v, "meaning": m, "unit": u}
+            for v, (m, u) in sorted(PERK_TYPES.items())
+        ],
+        "SkillId": [{"value": v, "meaning": m} for v, m in sorted(SKILL_IDS.items())],
+        "AugmentType": [
+            {"value": v, "meaning": m} for v, m in sorted(AUGMENT_TYPES.items())
+        ],
+        "ElementId_DamageType": [
+            {"value": v, "meaning": m} for v, m in sorted(COMBAT_TYPES.items())
+        ],
+    }
+
+
 def build() -> dict:
     proficiency_manifest, definitions = load_family(
         STAGING / "proficiencies", "Proficiency", EXPECTED_PROFILES
@@ -199,6 +388,8 @@ def build() -> dict:
     )
     verify_pins(proficiency_manifest, binding_manifest)
     known_items = item_keys()
+    ammotypes = crystal_ammotypes()
+    vocations = wiki_vocations({b["source_id"]: b["name"] for b in bindings})
 
     profiles = []
     by_id = {}
@@ -208,7 +399,6 @@ def build() -> dict:
             "proficiency_id": definition["source_id"],
             "name": definition["name"],
             "version": definition["version"],
-            "threshold_class": threshold_class(definition["name"]),
             "top_level": level_count,
             "mastery_level": level_count + MASTERY_OFFSET,
             "levels": definition["levels"],
@@ -237,7 +427,15 @@ def build() -> dict:
                 "client_object_id": binding["source_id"],
                 "client_name": binding["name"],
                 "proficiency_id": binding["proficiency_id"],
-                "threshold_class": profile["threshold_class"],
+                "threshold_class": threshold_class(
+                    profile["name"],
+                    ammotypes.get(binding["source_id"]),
+                    vocations.get(binding["source_id"]),
+                ),
+                "threshold_evidence": {
+                    "ammotype": ammotypes.get(binding["source_id"]),
+                    "vocrequired": vocations.get(binding["source_id"]),
+                },
                 "item_defined": key in known_items,
             }
         )
@@ -245,7 +443,7 @@ def build() -> dict:
 
     return {
         "schema": SCHEMA,
-        "authority": "SOURCE_OBSERVATIONS_ONLY; no gameplay promotion; perk enum meanings undefined",
+        "authority": "SOURCE_OBSERVATIONS_ONLY; no gameplay promotion; perk meanings per owner decision D199",
         "client_version": "15.30",
         "inputs": {
             "proficiencies_sha256": PROFICIENCIES_SHA256,
@@ -256,6 +454,17 @@ def build() -> dict:
             ],
         },
         "threshold_source": THRESHOLD_SOURCE,
+        "threshold_decisions": THRESHOLD_DECISIONS,
+        "threshold_evidence_inputs": {
+            "crystal_catalog": {
+                "path": str(CRYSTAL_CATALOG.relative_to(ROOT)),
+                "sha256": CRYSTAL_CATALOG_SHA256,
+            },
+            "wiki_snapshot": {
+                "path": str(WIKI_SNAPSHOT.relative_to(ROOT)),
+                "sha256": WIKI_SNAPSHOT_SHA256,
+            },
+        },
         "thresholds": THRESHOLDS,
         "mastery_offset": MASTERY_OFFSET,
         "counts": {
@@ -268,10 +477,8 @@ def build() -> dict:
             "bindings_by_threshold_class": dict(
                 sorted(Counter(b["threshold_class"] for b in out_bindings).items())
             ),
-            "profiles_by_threshold_class": dict(
-                sorted(Counter(p["threshold_class"] for p in profiles).items())
-            ),
         },
+        "perk_mapping": perk_mapping(),
         "perk_raw_enums": perk_enum_inventory(profiles),
         "bindings": out_bindings,
         "profiles": profiles,

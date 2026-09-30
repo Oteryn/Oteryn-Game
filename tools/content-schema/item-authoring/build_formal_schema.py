@@ -878,7 +878,7 @@ def build_item_schema():
     d["proficiencyClientBinding"] = obj(
         {
             "client_proficiency_id": integer(1),
-            "threshold_class": enum("standard", "knight", "crossbow"),
+            "threshold_class": enum("standard", "knight", "crossbow", "unknown"),
         },
         ("client_proficiency_id", "threshold_class"),
     )
