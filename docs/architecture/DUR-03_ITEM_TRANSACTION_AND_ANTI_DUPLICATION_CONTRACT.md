@@ -176,6 +176,21 @@ presentation ownership
 
 remain separate. Possession, CharacterId equality, binding or custody does not grant mutation authority.
 
+**Amendment (DEPOT-0, 2026-09-30), pending on acceptance of DEPOT-0.**
+`reviews/OTERYN_GAME_DEPOT0_CHARACTER_DEPOT_DECISION_2026-09-30.md`, once accepted, admits the
+second custody family:
+
+```text
+CharacterDepot { character_id: CharacterId, box: 1..17, ordinal: NUMERIC(20) }
+```
+
+Character + World scope, no channel and no runtime scope; the 17 boxes are fixed compartments, not
+items. Its DEPOT-1 child admits two one-item TRANSFER shapes, superseding the §39.1 and §39.3
+source and destination limits for them only: a main backpack direct entry into a box, and a depot entry
+out to the main backpack's container slot or a new direct entry (no merge). Corpse and Ground
+sources are refused. The table joins the
+HOUSE-CUSTODY-0 item-level exclusivity guard.
+
 ## 6. Runtime simulation authority versus durable recoverability
 
 ChannelRuntime/InstanceRuntime may own immediate ground/corpse/transient-item simulation under FND-03. DUR-03 preserves that owner while requiring durable value safety.
@@ -367,7 +382,9 @@ Burn/destruction identifies affected item/quantity/asset, typed sink/cause, surv
 Silent row deletion, `quantity=0` live state or disappearance during recovery is not a valid sink.
 
 Besides the D3 `DECAY_RETIRE` cause, the admitted burn sink is the closed `FeeBurnCause` of the
-gold fee amendment in §39.3 (owner decisions D174-D178).
+gold fee amendment in §39.3 (owner decisions D174-D178), and, with the NPC service amendment in
+§39.3, the closed `NpcTradeCause` of a SELL. Pending on acceptance of ITEM-USE-0, the item use
+amendment in §39.3 admits the closed `ItemUseCause`.
 
 ## 16. Transform semantics
 
@@ -436,6 +453,20 @@ For each asset:
 - retry/ambiguous commit follows TransactionId/OperationId contract.
 
 Exact SQL scalar/business policy is deferred.
+
+**Amendment (BANK-0, 2026-09-30), pending on acceptance of BANK-0.**
+`reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md` §5, once accepted, names
+the first non-item asset: bank gold, an
+integer balance per (Account, World) with an immutable ledger, converted to and from coins by the
+gold fee worth table. Its BANK-1 child admits, for these shapes only: a deposit (coin inputs and up
+to two change outputs as `CONVERSION` lines, and one credit `CONVERSION` value line), a withdrawal
+(one debit `CONVERSION` value line and up to three coin `CONVERSION` outputs) and a transfer (two
+`TRANSFER` value lines between two accounts, no item), under the closed causes
+`BankConversionCause` and `BankTransferCause`. They supersede, for these shapes only, the §39.1
+exclusions of non-item accounts, multiple touched items, burn and MINT combined with other lines;
+they contain no BURN or MINT, so §15 is unchanged. Each is one transaction with one TransactionId,
+replayed by its operation occurrence, with one bank event carrying its item and value lines.
+`DUR03-RL-03` stays 0 for every existing shape.
 
 ## 19. World-scope conservation
 
@@ -601,6 +632,14 @@ GAME-ITEM owns equip legality. DUR-03 requires all old location/claims, complete
 
 No half two-hand/mutually-exclusive claim.
 
+**Amendment (ITEM-MOVE-WIRE-1, 2026-09-30), pending on acceptance of ITEM-MOVE-WIRE-1.**
+`reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md` §6, once accepted, admits, each in its
+child and for those shapes only, superseding the §39.1 and §39.3 limits named there: TRANSFER of a whole item
+between the main backpack and the nine non-container `CharacterEquipment` slots, including a swap
+with the target slot's occupant (two items, four location lines, with its own resource rows); and
+TRANSFER of a whole item from a backpack entry or a slot to `Ground`, and from Ground back to the
+main backpack, under §32. No new burn sink: dropped items are retired by `WorldReset` (D191).
+
 ## 34. Multi-transaction typed custody
 
 Future workflow may span transactions only when every committed step is safe:
@@ -731,7 +770,10 @@ non-item accounts, nested containers or additional custody families. (The B3
 amendment in §39.3 admits the two-item merge and top-up shapes and direct entries of
 the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`; the gold fee
 amendment in §39.3 admits typed BURN of up to 20 coin stacks with up to 2 change MINTs, composed
-with a Character change in one transaction.) Unsupported
+with a Character change in one transaction; the NPC service amendment in §39.3 admits the NPC BUY,
+SELL and travel shapes; pending on acceptance of ITEM-USE-0, the item use amendment in §39.3 admits
+a one-unit BURN, or a one-unit TRANSFORM into a flask stack or a fresh flask, under
+`ItemUseCause`.) Unsupported
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
 Content definition or a production quantity ceiling.
@@ -1234,7 +1276,12 @@ authority, conservation) is unchanged.
   which binds the cause, the fee and the change. The fence and lock order are the Character
   writer's (`CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1` §3 rules 2-4, with the expected
   `CharacterRevision`), then the backpack and its coin entries.
-- **Cause (D178).** Closed `FeeBurnCause`; the only variant is `CharmUnassign { charm, occurrence }`.
+  An item-only fee source (NPC BUY and NPC travel, NPC service amendment below) has no Character
+  change: its one record is its DUR-03 cause record, under the item writer's fence with the
+  `character_root` lock and no expected revision (gold fee decision §4.3 as amended).
+- **Cause (D178).** Closed `FeeBurnCause`. Variants: `CharmUnassign { charm, occurrence }`, and,
+  with the NPC service amendment below, `NpcTrade(NpcTradeCause)` and `NpcTravel { npc, route,
+  occurrence }`.
   No generic fee cause or reason code. A new fee source needs an amendment of this paragraph and
   the decision.
 - **Evidence and rows.** One event: each BURN line (quantity before and after; a whole burn ends
@@ -1243,6 +1290,64 @@ authority, conservation) is unchanged.
   `DUR03-RL-02` 22, `DUR03-RL-06` 22 participants / 64 work units, `DUR03-RL-07-EVENTS` 1, payload
   and envelope measured within the ANL ceilings, other rows unchanged. The rows, schema and field
   numbers are registered by GOLD-FEE-1, not here.
+
+
+**Bank fee amendment (BANK-FEE-0), pending on acceptance of BANK-FEE-0.**
+`reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`, once accepted, admits a bank part for the
+fee shapes above, for those shapes only: it supersedes the §39.1 exclusion of non-item accounts; the
+conservation becomes `burned - change + bank_debit = F`; a non-junior payer whose coins are worth
+less than `F` burns every eligible coin whole with no change and pays `F - T` from its bank balance
+(BANK-0) instead of being rejected; the bank part is one `FEE_DEBIT` value line of class BURN
+under the fee's own `FeeBurnCause` (§15, §18), counted by `DUR03-RL-03-FEE`; `DUR03-RL-03` stays 0
+for coin-only fees; a fee paid wholly from the bank has no burn line.
+
+**NPC service amendment (NPC-0).** `NPC0-NPC-RUNTIME-SERVICE-V1`
+(`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6) admits three shapes
+built on the gold fee amendment above. The owner admitted NPC buying, selling and travel as value
+sources on 2026-09-30 (D208; decision §9, Q1a; #162 5909366267), as D178 requires. For these shapes
+only, it supersedes:
+- the §39.3 statements that every MINT descends from a committed creature-death output and that a
+  MINT establishes typed Ground custody before a separate TRANSFER (the bought item and the SELL
+  coins are minted straight into new backpack entries);
+- the §39.1 exclusion of burn and of multiple touched items (the pointer list in §39.1 names this
+  amendment);
+- the gold fee decision's limit of change outputs to platinum and gold (a SELL mints crystal
+  coins too) and its §4.5 sentence that burn stays excluded outside `CorpseDecay` and the
+  `FeeBurnCause` variants (a SELL item burn is sunk by `NpcTradeCause`).
+
+Every other §39 obligation (fences, evidence, idempotency, current authority, conservation) is
+unchanged.
+
+- **BUY (item-only).** The gold fee plan with `F = unit price x quantity`, plus one MINT of the
+  bought item (one stack, or one non-stackable item) into a new direct entry of the main backpack.
+- **SELL (item-only).** One BURN from one live direct backpack entry of the offer's item (no
+  contents, default state apart from quantity): `quantity x count` units of a stackable item, or,
+  with `quantity` 1, one whole non-stackable item, whose charges or sub-type equal the offer's
+  `count` for a charged or fluid item; plus a MINT of
+  `unit price x quantity` gold as at most 3 fresh coin stacks (crystal, platinum, gold; each at most
+  100) in new backpack entries, counted after the burn.
+- **Cause.** One closed `NpcTradeCause {npc, offer, side, occurrence}` covers every line of a BUY
+  or SELL: the BUY coin burn as `FeeBurnCause::NpcTrade` (side always BUY), the SELL item burn as
+  its sink, and every MINT as its source. The occurrence is issued by the runtime, bound 1:1 to the
+  command's CommandRef. One audit event carries it.
+- **Records and revision.** BUY, SELL and travel fall under the composition decision §3 rule 1
+  and §3.1: no `CharacterRevision` advance. Each writes one DUR-03 cause record keyed by
+  (occurrence, character) under the item writer's fence (rules 2-5, with the `character_root`
+  lock); for BUY and travel this record, not a Character receipt, is the fee source record (gold
+  fee decision §4.3 as amended).
+- **Travel.** `F = route price` burned under `FeeBurnCause::NpcTravel {npc, route, occurrence}` (a
+  price of 0 writes no fee lines), plus one pending arrival row, an obligation outside the
+  revision chain like DEATH-0's pending respawn.
+- **Common.** The price is read from the trade or travel service at the bound content revision; a
+  mismatch with the client's expected price rejects. Insufficient funds, no free entry, a BUY stack
+  above the definition's `max_stack`, or a SELL coin stack above 100 rejects the whole transaction
+  and writes nothing.
+- **Rows.** BUY `DUR03-RL-01` 23, `DUR03-RL-02` 23, `DUR03-RL-06` 23 participants / 66 work
+  units; SELL 4, 4, 4 participants / 9 work units. The rows, schema, the `0023` widening (fee source kinds, the
+  root-advance requirement for an item-only source, and the entry-removal proof) and field numbers are registered by NPC-TRADE-1 and NPC-TRAVEL-1, not
+  here.
+
+This amendment grants no runtime or DDL authority.
 
 **Expected bindings versus current authority.** The immutable MINT/TRANSFER
 candidate binds expected item definition/state, source occurrence, WorldId,
@@ -1381,6 +1486,23 @@ unchanged.
   - the matching extension of the Ground-removal proof triggers.
 
   This amendment grants no runtime or DDL authority.
+
+**Item use amendment (ITEM-USE-0, 2026-09-30), pending on acceptance of ITEM-USE-0.**
+`reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md` §4, once accepted,
+admits, in its ITEM-USE-1 child and for these shapes only:
+
+- **Burn.** One BURN line (§17) of exactly one unit from the used stack, which keeps its identity
+  (§11.1) or retires at zero (§11.5), under the closed sink `ItemUseCause` (`Food`, `Potion`),
+  keyed by the using command's CommandRef.
+- **Flask.** For a potion whose content names an empty flask, one unit-level TRANSFORM line (§17)
+  instead: one unit of the used stack in, one flask unit out, either as a quantity adjustment of a
+  compatible flask stack in the main backpack (§11.1) or as a fresh flask item in a new entry,
+  planned in the reservation (§11.3). §16.1's instance policy does not apply, because no whole
+  instance changes type. At most two items. Nothing is minted.
+- **Supersession.** For these shapes only, the §39.1 exclusions of burn, transform, mint into an
+  existing stack and multiple touched items. Every other §39 obligation is unchanged. One audit
+  event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
+  use's effect, with its own suffixed resource rows.
 
 ## 40. Durable acknowledgement
 

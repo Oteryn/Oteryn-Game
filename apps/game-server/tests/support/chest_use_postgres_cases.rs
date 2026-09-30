@@ -6,6 +6,7 @@
 // Also covers the §17 intent binding of the chest, the §17.2 pending refusal and the
 // reconciliation of an ambiguous (frozen, uncommitted) claim.
 
+use crate::achievement_catalogue::AchievementCatalogue;
 use crate::combat::DurabilitySession;
 use crate::combat_pickup::{GroundPickupRequest, PickupContentError, settle_ground_pickup};
 use crate::content::{
@@ -28,7 +29,7 @@ use crate::durability::item_transfer::{
     CurrentCharacterItemFence, ItemTransferDestination, ItemTransferOutcome,
 };
 use crate::durability::reward_claim_mint::{
-    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimRefusal,
+    ACHIEVEMENT_SOURCE_KIND, RewardClaimMintError, RewardClaimMintOutcome, RewardClaimRefusal,
 };
 use crate::foundation::{
     CommandId, CommandRef, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration, WorldId,
@@ -39,7 +40,7 @@ use crate::interaction_chest_use::{
     resolve_chest, settle_chest_use,
 };
 use crate::item_transfer_postgres_cases::{
-    CHARACTER, Harness, SESSION, TestResult, configured_admin, debug, id, runtime, scope,
+    CHARACTER, Harness, SESSION, TestResult, configured_admin, debug, id, runtime, scope, uuid_text,
 };
 use ReferenceItemField::{Known, Unknown};
 use std::collections::BTreeMap;
@@ -59,6 +60,13 @@ const DOOR_PLACEMENT: &str = "oteryn:chestuse.pg.placement.door";
 const CLAIM: &str = "oteryn:chestuse.pg.claim.first";
 const OTHER_CLAIM: &str = "oteryn:chestuse.pg.claim.second";
 const THIRD_CLAIM: &str = "oteryn:chestuse.pg.claim.third";
+const FOURTH_CLAIM: &str = "oteryn:chestuse.pg.claim.fourth";
+/// An earnable record of the embedded catalogue (`content/achievements/`), at revision "1".
+const ANNIHILATOR: &str = "oteryn:achievement/annihilator";
+/// A key of the achievement grammar that the embedded catalogue lacks.
+const ABSENT_ACHIEVEMENT: &str = "oteryn:achievement/not_in_the_catalogue";
+/// The harness Character's account (`item_transfer_postgres_cases::seed_character`).
+const ACCOUNT: u8 = 40;
 
 fn item(key: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
@@ -202,6 +210,7 @@ fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
                         item: content_typed(DefinitionFamily::Item, COIN)?,
                         count: *count,
                     }],
+                    achievement: None,
                 })
             })
             .collect::<TestResult<Vec<_>>>()?;
@@ -263,6 +272,11 @@ fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
     Ok(content)
 }
 
+/// The runtime catalogue embedded from `content/achievements/`.
+fn catalogue() -> TestResult<AchievementCatalogue> {
+    Ok(AchievementCatalogue::embedded().map_err(debug)?)
+}
+
 /// `content` with the reward of `chest` under its claim replaced, as a later Content revision
 /// (or a corrupt one) would carry it.
 fn with_reward(
@@ -285,6 +299,30 @@ fn with_reward(
         })
         .ok_or("chest is not listed under a claim")?;
     entry.items = vec![RewardClaimItem { item, count }];
+    Ok(changed)
+}
+
+/// `content` with the achievement of `chest` under its claim set to `achievement`, as a later
+/// Content revision would carry it.
+fn with_achievement(
+    content: &CanonicalReferencePlayableContent,
+    chest: &str,
+    achievement: Option<&str>,
+) -> TestResult<CanonicalReferencePlayableContent> {
+    let mut changed = content.clone();
+    let chest = PlacementKey::new(chest)?;
+    let entry = changed
+        .definitions
+        .iter_mut()
+        .find_map(|definition| match &mut definition.kind {
+            ReferenceDefinitionKind::RewardClaim(claim) => claim
+                .placements
+                .iter_mut()
+                .find(|entry| entry.placement == chest),
+            _ => None,
+        })
+        .ok_or("chest is not listed under a claim")?;
+    entry.achievement = achievement.map(str::to_owned);
     Ok(changed)
 }
 
@@ -404,6 +442,7 @@ fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult
             .await
             .map_err(debug)?;
         let content = pg_content()?;
+        let achievements = catalogue()?;
         let session = DurabilitySession {
             root: &harness.root,
             authority: &authority,
@@ -412,7 +451,7 @@ fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult
         equip_backpack(&harness, &session, &content, &authority).await?;
 
         let request = use_request(command(1)?, CHEST_PLACEMENT)?;
-        let first = settle_chest_use(&session, &content, fence()?, request.clone())
+        let first = settle_chest_use(&session, &content, &achievements, fence()?, request.clone())
             .await
             .map_err(debug)?;
         assert!(matches!(first.mint, RewardClaimMintOutcome::Committed(_)));
@@ -426,7 +465,7 @@ fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult
         assert_eq!(claim_rows(&harness).await?, 1);
 
         // §17.1: the same CommandRef returns its first outcome and the same child.
-        let replay = settle_chest_use(&session, &content, fence()?, request.clone())
+        let replay = settle_chest_use(&session, &content, &achievements, fence()?, request.clone())
             .await
             .map_err(debug)?;
         assert!(matches!(
@@ -444,7 +483,8 @@ fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult
             content_typed(DefinitionFamily::Item, COIN)?,
             8,
         )?;
-        let conflict = settle_chest_use(&session, &eight, fence()?, request.clone()).await;
+        let conflict =
+            settle_chest_use(&session, &eight, &achievements, fence()?, request.clone()).await;
         assert!(matches!(
             conflict,
             Err(ChestUseError::Mint(RewardClaimMintError::ConflictingCause))
@@ -452,7 +492,8 @@ fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult
         // §17 / D40: the chest is part of the intent. The same CommandRef on another chest of
         // the same claim, with the same reward, conflicts; it never replays the first chest.
         let other_chest = use_request(command(1)?, SECOND_CHEST_PLACEMENT)?;
-        let conflict = settle_chest_use(&session, &content, fence()?, other_chest).await;
+        let conflict =
+            settle_chest_use(&session, &content, &achievements, fence()?, other_chest).await;
         assert!(
             matches!(
                 conflict,
@@ -468,14 +509,22 @@ fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult
         without_chest
             .placements
             .retain(|placement| placement.key.as_str() != CHEST_PLACEMENT);
-        let gone = settle_chest_use(&session, &without_chest, fence()?, request.clone()).await;
+        let gone = settle_chest_use(
+            &session,
+            &without_chest,
+            &achievements,
+            fence()?,
+            request.clone(),
+        )
+        .await;
         assert!(
             matches!(gone, Err(ChestUseError::ChestNotPlaced)),
             "{gone:?}"
         );
-        let restored = settle_chest_use(&session, &content, fence()?, request.clone())
-            .await
-            .map_err(debug)?;
+        let restored =
+            settle_chest_use(&session, &content, &achievements, fence()?, request.clone())
+                .await
+                .map_err(debug)?;
         assert_eq!(committed(&restored)?, committed(&first)?);
         assert_eq!(claim_rows(&harness).await?, 1);
         assert_eq!(backpack_entries(&harness, &authority).await?, 1);
@@ -486,6 +535,7 @@ fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult
             let again = settle_chest_use(
                 &session,
                 &content,
+                &achievements,
                 fence()?,
                 use_request(command(2)?, chest)?,
             )
@@ -500,6 +550,7 @@ fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult
         let other = settle_chest_use(
             &session,
             &content,
+            &achievements,
             fence()?,
             use_request(command(3)?, OTHER_CHEST_PLACEMENT)?,
         )
@@ -530,6 +581,7 @@ fn chest_use_is_refused_before_any_write() -> TestResult {
             .await
             .map_err(debug)?;
         let content = pg_content()?;
+        let achievements = catalogue()?;
         let session = DurabilitySession {
             root: &harness.root,
             authority: &authority,
@@ -540,6 +592,7 @@ fn chest_use_is_refused_before_any_write() -> TestResult {
         let no_backpack = settle_chest_use(
             &session,
             &content,
+            &achievements,
             fence()?,
             use_request(command(1)?, CHEST_PLACEMENT)?,
         )
@@ -606,7 +659,8 @@ fn chest_use_is_refused_before_any_write() -> TestResult {
             ),
         ];
         for (request, content, label) in refusals {
-            let outcome = settle_chest_use(&session, content, fence()?, request).await;
+            let outcome =
+                settle_chest_use(&session, content, &achievements, fence()?, request).await;
             let expected = match label {
                 "not placed" => matches!(outcome, Err(ChestUseError::ChestNotPlaced)),
                 "not an item" => matches!(outcome, Err(ChestUseError::ChestNotAnItem)),
@@ -640,6 +694,7 @@ fn chest_use_is_refused_before_any_write() -> TestResult {
         let later = settle_chest_use(
             &session,
             &content,
+            &achievements,
             fence()?,
             use_request(command(1)?, CHEST_PLACEMENT)?,
         )
@@ -667,6 +722,7 @@ fn a_pending_claim_blocks_a_new_command_and_the_same_command_reconciles_it() -> 
             .await
             .map_err(debug)?;
         let content = pg_content()?;
+        let achievements = catalogue()?;
         let session = DurabilitySession {
             root: &harness.root,
             authority: &authority,
@@ -678,7 +734,7 @@ fn a_pending_claim_blocks_a_new_command_and_the_same_command_reconciles_it() -> 
         // unknown to the caller.
         let request = use_request(command(1)?, CHEST_PLACEMENT)?;
         let (child, mint_request) =
-            prepare_chest_use(&session, &content, fence()?, request.clone())
+            prepare_chest_use(&session, &content, &achievements, fence()?, request.clone())
                 .await
                 .map_err(debug)?;
         let frozen = harness
@@ -697,6 +753,7 @@ fn a_pending_claim_blocks_a_new_command_and_the_same_command_reconciles_it() -> 
             let blocked = settle_chest_use(
                 &session,
                 &content,
+                &achievements,
                 fence()?,
                 use_request(command(2)?, chest)?,
             )
@@ -711,16 +768,17 @@ fn a_pending_claim_blocks_a_new_command_and_the_same_command_reconciles_it() -> 
 
         // The same request reconciles the ambiguous claim: it commits with the frozen
         // identities, then replays as AlreadyCommitted. Exactly one claim row.
-        let settled = settle_chest_use(&session, &content, fence()?, request.clone())
-            .await
-            .map_err(debug)?;
+        let settled =
+            settle_chest_use(&session, &content, &achievements, fence()?, request.clone())
+                .await
+                .map_err(debug)?;
         let RewardClaimMintOutcome::Committed(ref first) = settled.mint else {
             return Err(format!("expected Committed, got {:?}", settled.mint).into());
         };
         assert_eq!(first.transaction_id, frozen_transaction);
         assert_eq!(first.item_instance_id, frozen_item);
         assert_eq!(settled.child, child);
-        let replay = settle_chest_use(&session, &content, fence()?, request)
+        let replay = settle_chest_use(&session, &content, &achievements, fence()?, request)
             .await
             .map_err(debug)?;
         assert_eq!(
@@ -733,6 +791,7 @@ fn a_pending_claim_blocks_a_new_command_and_the_same_command_reconciles_it() -> 
         let claimed = settle_chest_use(
             &session,
             &content,
+            &achievements,
             fence()?,
             use_request(command(2)?, CHEST_PLACEMENT)?,
         )
@@ -747,6 +806,7 @@ fn a_pending_claim_blocks_a_new_command_and_the_same_command_reconciles_it() -> 
         let (_, other_request) = prepare_chest_use(
             &session,
             &content,
+            &achievements,
             fence()?,
             use_request(command(3)?, OTHER_CHEST_PLACEMENT)?,
         )
@@ -773,6 +833,7 @@ fn a_pending_claim_blocks_a_new_command_and_the_same_command_reconciles_it() -> 
         let after_spent = settle_chest_use(
             &session,
             &content,
+            &achievements,
             fence()?,
             use_request(command(4)?, OTHER_CHEST_PLACEMENT)?,
         )
@@ -807,6 +868,7 @@ fn a_pending_claim_blocks_a_new_command_and_the_same_command_reconciles_it() -> 
         let after_dead_session = settle_chest_use(
             &session,
             &content,
+            &achievements,
             fence()?,
             use_request(command(5)?, THIRD_CHEST_PLACEMENT)?,
         )
@@ -817,6 +879,187 @@ fn a_pending_claim_blocks_a_new_command_and_the_same_command_reconciles_it() -> 
             RewardClaimMintOutcome::Committed(_)
         ));
         assert_eq!(claim_rows(&harness).await?, 3);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// Every achievement grant request `(key, revision, source kind)` and every account fact
+/// `(account, key)`.
+async fn achievement_rows(harness: &Harness) -> TestResult<AchievementRows> {
+    let requests = sqlx::query_as(
+        "SELECT achievement_key, achievement_revision, source_kind \
+           FROM game_account_achievement_grant_requests ORDER BY achievement_key",
+    )
+    .fetch_all(&harness.pool)
+    .await?;
+    let facts = sqlx::query_as(
+        "SELECT account_id::text, achievement_key FROM game_account_achievements \
+          ORDER BY achievement_key",
+    )
+    .fetch_all(&harness.pool)
+    .await?;
+    Ok((requests, facts))
+}
+
+type AchievementRows = (Vec<(String, String, String)>, Vec<(String, String)>);
+
+#[test]
+fn a_chest_with_an_achievement_grants_it_and_a_chest_without_one_grants_none() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "chestuseachievement").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let content = pg_content()?;
+        let achievements = catalogue()?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+        equip_backpack(&harness, &session, &content, &authority).await?;
+
+        // A chest whose claim placement names no achievement: the claim commits and no
+        // achievement row is written.
+        let plain = settle_chest_use(
+            &session,
+            &content,
+            &achievements,
+            fence()?,
+            use_request(command(1)?, CHEST_PLACEMENT)?,
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(plain.mint, RewardClaimMintOutcome::Committed(_)));
+        assert_eq!(achievement_rows(&harness).await?, (vec![], vec![]));
+
+        // A chest whose claim placement names Annihilator in Content (the authoring ref
+        // `canary:achievement/annihilator`, bound by slug, contract §2.2). The caller names only
+        // the chest; the server takes the key from Content and its entry from the embedded
+        // catalogue (revision "1"), and the MINT grants it to the account with the claim.
+        let annihilator = with_achievement(&content, OTHER_CHEST_PLACEMENT, Some(ANNIHILATOR))?;
+        assert!(
+            achievements
+                .unbound_reward_claim_achievements(&annihilator)
+                .is_empty()
+        );
+        let request = use_request(command(2)?, OTHER_CHEST_PLACEMENT)?;
+        let granted = settle_chest_use(
+            &session,
+            &annihilator,
+            &achievements,
+            fence()?,
+            request.clone(),
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(granted.mint, RewardClaimMintOutcome::Committed(_)));
+        let granted_rows: AchievementRows = (
+            vec![(
+                ANNIHILATOR.to_owned(),
+                "1".to_owned(),
+                ACHIEVEMENT_SOURCE_KIND.to_owned(),
+            )],
+            vec![(uuid_text(id(ACCOUNT)), ANNIHILATOR.to_owned())],
+        );
+        assert_eq!(achievement_rows(&harness).await?, granted_rows);
+
+        // A replay returns the first outcome and grants nothing again. A later Content revision
+        // without the achievement is another intent for the same command and conflicts.
+        let replay = settle_chest_use(
+            &session,
+            &annihilator,
+            &achievements,
+            fence()?,
+            request.clone(),
+        )
+        .await
+        .map_err(debug)?;
+        assert_eq!(committed(&replay)?, committed(&granted)?);
+        let conflict = settle_chest_use(&session, &content, &achievements, fence()?, request).await;
+        assert!(
+            matches!(
+                conflict,
+                Err(ChestUseError::Mint(RewardClaimMintError::ConflictingCause))
+            ),
+            "{conflict:?}"
+        );
+        assert_eq!(achievement_rows(&harness).await?, granted_rows);
+
+        // A retired achievement: the claim commits and nothing is recorded for it.
+        let retired_content = with_achievement(
+            &content,
+            THIRD_CHEST_PLACEMENT,
+            Some("oteryn:achievement/the_more_the_merrier"),
+        )?;
+        assert!(
+            achievements
+                .unbound_reward_claim_achievements(&retired_content)
+                .is_empty()
+        );
+        let retired = settle_chest_use(
+            &session,
+            &retired_content,
+            &achievements,
+            fence()?,
+            use_request(command(3)?, THIRD_CHEST_PLACEMENT)?,
+        )
+        .await
+        .map_err(debug)?;
+        assert!(matches!(retired.mint, RewardClaimMintOutcome::Committed(_)));
+        assert_eq!(achievement_rows(&harness).await?, granted_rows);
+
+        // A key the catalogue lacks: Content validation reports it unbound (the server refuses
+        // such an activation), and the MINT still refuses the claim before any write.
+        let mut absent_content = content.clone();
+        absent_content.definitions.push(ReferenceDefinition {
+            definition: content_typed(DefinitionFamily::RewardClaim, FOURTH_CLAIM)?,
+            kind: ReferenceDefinitionKind::RewardClaim(ReferenceRewardClaimDefinition {
+                placements: vec![RewardClaimPlacement {
+                    placement: PlacementKey::new(UNCLAIMED_CHEST_PLACEMENT)?,
+                    items: vec![RewardClaimItem {
+                        item: content_typed(DefinitionFamily::Item, COIN)?,
+                        count: 1,
+                    }],
+                    achievement: Some(ABSENT_ACHIEVEMENT.into()),
+                }],
+            }),
+            client_projection: ClientProjectionClass::ServerOnly,
+        });
+        assert_eq!(
+            achievements.unbound_reward_claim_achievements(&absent_content),
+            [ABSENT_ACHIEVEMENT]
+        );
+        let absent = settle_chest_use(
+            &session,
+            &absent_content,
+            &achievements,
+            fence()?,
+            use_request(command(4)?, UNCLAIMED_CHEST_PLACEMENT)?,
+        )
+        .await;
+        assert!(
+            matches!(
+                absent,
+                Err(ChestUseError::Mint(
+                    RewardClaimMintError::UnknownAchievement
+                ))
+            ),
+            "{absent:?}"
+        );
+        assert_eq!(achievement_rows(&harness).await?, granted_rows);
+        assert_eq!(claim_rows(&harness).await?, 3);
+        assert_eq!(reservation_rows(&harness).await?, 3);
+        assert_eq!(backpack_entries(&harness, &authority).await?, 3);
 
         drop(authority);
         drop(seal);

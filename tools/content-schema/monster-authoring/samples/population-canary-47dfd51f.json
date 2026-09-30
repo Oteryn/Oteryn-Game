@@ -42,13 +42,13 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 90,
+    "blocked": 86,
     "crystal_blocked": 1,
     "crystal_fully_resolved": 48,
     "crystal_wiki_adopted_monsters": 25,
-    "fully_resolved": 1560,
+    "fully_resolved": 1564,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1191,
+    "wiki_adopted_monsters": 1195,
     "wiki_authored": 1
   },
   "wiki_adopted_rows": {
@@ -137,17 +137,6 @@
       ]
     },
     {
-      "blocker": "unresolved_semantics attacks[] -> remove_magic_walls",
-      "monsters": 5,
-      "examples": [
-        "the_monster",
-        "bony_sea_devil",
-        "brachiodemon",
-        "cloak_of_terror",
-        "many_faces"
-      ]
-    },
-    {
       "blocker": "unresolved_semantics defenses[] -> heal_self_conditional",
       "monsters": 5,
       "examples": [
@@ -156,16 +145,6 @@
         "omrafir",
         "the_welter",
         "tyrn"
-      ]
-    },
-    {
-      "blocker": "unresolved_semantics attacks[] -> fear",
-      "monsters": 4,
-      "examples": [
-        "goshnar_s_spite",
-        "bony_sea_devil",
-        "turbulent_elemental",
-        "hazardous_phantom"
       ]
     },
     {
@@ -939,6 +918,7 @@
     "gorgo",
     "gorzindel",
     "goshnar_s_hatred",
+    "goshnar_s_spite",
     "gozzler",
     "grand_canon_dominus",
     "grand_chaplain_gaunder",
@@ -978,6 +958,7 @@
     "haunted_dragon",
     "haunted_treeling",
     "haunter",
+    "hazardous_phantom",
     "headpecker",
     "hell_hole",
     "hellfire_fighter",
@@ -1735,6 +1716,7 @@
     "the_lord_of_the_lice",
     "the_many",
     "the_masked_marauder",
+    "the_monster",
     "the_moonsnow_magnolia",
     "the_mutated_pumpkin",
     "the_nightmare_beast",
@@ -1804,6 +1786,7 @@
     "truffle",
     "truffle_cook",
     "tunnel_tyrant",
+    "turbulent_elemental",
     "twisted_pooka",
     "twisted_shaper",
     "two_headed_turtle",

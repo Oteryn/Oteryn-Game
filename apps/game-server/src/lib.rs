@@ -56,6 +56,13 @@ mod combat_pickup;
 )]
 #[path = "interaction/chest_use.rs"]
 mod interaction_chest_use;
+// ACHIEVEMENT: the runtime Achievement catalogue, loaded with the Content activation. Its lookup
+// has no production caller until the client USE command reaches `interaction_chest_use`.
+#[allow(
+    dead_code,
+    reason = "the catalogue lookup's only caller is the D39 chest USE, which has no production caller yet"
+)]
+mod achievement_catalogue;
 
 pub mod character_bootstrap_intent;
 pub mod character_recovery_fence;

@@ -771,6 +771,14 @@ fn item_candidate() -> ProjectV2Draft {
             routes: vec![],
             fields: vec![],
         });
+    draft
+        .state
+        .declarations
+        .push(ProjectV2Declaration::Proficiency {
+            identity: identity("proficiency.item-alpha"),
+            levels: proficiency_levels(),
+            fields: vec![],
+        });
     draft.state.item_authoring.push(ProjectV2ItemAuthoring {
         item: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
         presentation: Some(reference(
@@ -788,57 +796,11 @@ fn item_candidate() -> ProjectV2Draft {
             max_tier: 10,
         }),
         proficiency: Some(ProjectV2WeaponProficiencyProfile {
-            levels: vec![
-                ProjectV2ProficiencyLevel {
-                    level: 2,
-                    perks: vec![ProjectV2AugmentBinding {
-                        key: "oteryn:augment.proficiency.second".into(),
-                        target: ProjectV2AugmentTarget::Ability {
-                            ability: reference(
-                                ProjectV2Family::Ability,
-                                "oteryn:reference.ability.item-alpha",
-                            ),
-                        },
-                        effect: Some(reference(
-                            ProjectV2Family::Effect,
-                            "oteryn:reference.effect.item-alpha",
-                        )),
-                        rank_values: vec![ProjectV2AugmentRankValue {
-                            rank: 1,
-                            value: ProjectV2AugmentValue::RationalPercent(ProjectV2ExactRatio {
-                                numerator: 3,
-                                denominator: 100,
-                            }),
-                        }],
-                        fields: vec![],
-                    }],
-                },
-                ProjectV2ProficiencyLevel {
-                    level: 1,
-                    perks: vec![ProjectV2AugmentBinding {
-                        key: "oteryn:augment.proficiency.first".into(),
-                        target: ProjectV2AugmentTarget::AutoAttack,
-                        effect: None,
-                        rank_values: vec![ProjectV2AugmentRankValue {
-                            rank: 1,
-                            value: ProjectV2AugmentValue::SignedPoints(2),
-                        }],
-                        fields: vec![],
-                    }],
-                },
-            ],
-            shaping: Some(ProjectV2PerkShaping {
-                max_rank: 10,
-                replace_slots: 2,
-                refine_enabled: true,
-                reshape_enabled: true,
-                clear_enabled: true,
-                lunar_ascension_enabled: true,
-                cost_service: Some(reference(
-                    ProjectV2Family::Service,
-                    "oteryn:content.service.item-alpha",
-                )),
-            }),
+            profile_binding: reference(
+                ProjectV2Family::Proficiency,
+                "oteryn:content.proficiency.item-alpha",
+            ),
+            threshold_class: ProjectV2ProficiencyThresholdClass::Knight,
         }),
         augments: vec![ProjectV2AugmentBinding {
             key: "oteryn:augment.base.item-alpha".into(),
@@ -894,6 +856,45 @@ fn item_candidate() -> ProjectV2Draft {
     draft
 }
 
+fn ratio(numerator: i64, denominator: u64) -> ProjectV2ExactRatio {
+    ProjectV2ExactRatio {
+        numerator,
+        denominator,
+    }
+}
+
+/// Two levels in deliberately non-alphabetical perk order.
+fn proficiency_levels() -> Vec<ProjectV2ProficiencyLevel> {
+    vec![
+        ProjectV2ProficiencyLevel {
+            level: 1,
+            perks: vec![ProjectV2ProficiencyPerk::SkillBonus {
+                skill: ProjectV2ProficiencySkill::Sword,
+                value: ratio(1, 1),
+            }],
+        },
+        ProjectV2ProficiencyLevel {
+            level: 2,
+            perks: vec![
+                ProjectV2ProficiencyPerk::SpellAugment {
+                    spell_client_id: 105,
+                    augment: ProjectV2ProficiencySpellAugment::Cooldown,
+                    value: ratio(-4, 1),
+                },
+                ProjectV2ProficiencyPerk::HomingMissile {
+                    element: ProjectV2ProficiencyElement::Earth,
+                    missile_client_id: 71,
+                    probability: ratio(1, 100),
+                    multiplier: ratio(2, 1),
+                },
+                ProjectV2ProficiencyPerk::AutoAttackCriticalExtraDamage {
+                    value: ratio(1, 10),
+                },
+            ],
+        },
+    ]
+}
+
 #[test]
 fn modern_item_authoring_and_shop_relations_round_trip_without_runtime_lowering() {
     let documents =
@@ -913,16 +914,25 @@ fn modern_item_authoring_and_shop_relations_round_trip_without_runtime_lowering(
             .and_then(|value| value.mana_cost),
         Some(13)
     );
+    let proficiency = item.proficiency.as_ref().expect("proficiency");
     assert_eq!(
-        item.proficiency
-            .as_ref()
-            .expect("proficiency")
-            .levels
-            .iter()
-            .map(|level| level.level)
-            .collect::<Vec<_>>(),
-        vec![1, 2]
+        proficiency.profile_binding.family,
+        ProjectV2Family::Proficiency
     );
+    assert_eq!(
+        proficiency.threshold_class,
+        ProjectV2ProficiencyThresholdClass::Knight
+    );
+    let levels = state
+        .declarations
+        .iter()
+        .find_map(|declaration| match declaration {
+            ProjectV2Declaration::Proficiency { levels, .. } => Some(levels),
+            _ => None,
+        })
+        .expect("Proficiency declaration");
+    // Perks keep source order: the selection index of a perk is its position.
+    assert_eq!(levels, &proficiency_levels());
     let service = state
         .declarations
         .iter()
@@ -1483,4 +1493,150 @@ fn wiki_area_hierarchy_rejects_parent_cycles() {
     });
 
     assert!(CanonicalProjectDocuments::from_v2_draft(candidate, limits()).is_err());
+}
+
+fn proficiency_levels_mut(draft: &mut ProjectV2Draft) -> &mut Vec<ProjectV2ProficiencyLevel> {
+    draft
+        .state
+        .declarations
+        .iter_mut()
+        .find_map(|declaration| match declaration {
+            ProjectV2Declaration::Proficiency { levels, .. } => Some(levels),
+            _ => None,
+        })
+        .expect("Proficiency declaration")
+}
+
+fn item_proficiency_mut(draft: &mut ProjectV2Draft) -> &mut ProjectV2WeaponProficiencyProfile {
+    draft.state.item_authoring[0]
+        .proficiency
+        .as_mut()
+        .expect("proficiency")
+}
+
+#[test]
+fn proficiency_declarations_and_item_bindings_fail_closed() {
+    let rejects = |change: &dyn Fn(&mut ProjectV2Draft)| {
+        let mut draft = item_candidate();
+        change(&mut draft);
+        CanonicalProjectDocuments::from_v2_draft(draft, limits()).is_err()
+    };
+    assert!(!rejects(&|_| {}));
+    assert!(rejects(&|draft| proficiency_levels_mut(draft).clear()));
+    assert!(rejects(&|draft| proficiency_levels_mut(draft)[1].level = 3));
+    assert!(rejects(&|draft| proficiency_levels_mut(draft)[0]
+        .perks
+        .clear()));
+    assert!(rejects(&|draft| {
+        let perks = &mut proficiency_levels_mut(draft)[1].perks;
+        perks.push(perks[0].clone());
+    }));
+    assert!(rejects(&|draft| {
+        proficiency_levels_mut(draft)[1].perks[0] = ProjectV2ProficiencyPerk::SpellAugment {
+            spell_client_id: 105,
+            augment: ProjectV2ProficiencySpellAugment::Cooldown,
+            value: ratio(4, 1),
+        };
+    }));
+    assert!(rejects(&|draft| {
+        proficiency_levels_mut(draft)[0].perks[0] = ProjectV2ProficiencyPerk::SkillBonus {
+            skill: ProjectV2ProficiencySkill::Sword,
+            value: ratio(0, 1),
+        };
+    }));
+    assert!(rejects(&|draft| {
+        proficiency_levels_mut(draft)[1].perks[2] =
+            ProjectV2ProficiencyPerk::AutoAttackCriticalExtraDamage {
+                value: ratio(2, 20),
+            };
+    }));
+    assert!(rejects(&|draft| {
+        proficiency_levels_mut(draft)[1].perks[1] = ProjectV2ProficiencyPerk::HomingMissile {
+            element: ProjectV2ProficiencyElement::Earth,
+            missile_client_id: 71,
+            probability: ratio(3, 2),
+            multiplier: ratio(2, 1),
+        };
+    }));
+    assert!(rejects(&|draft| {
+        item_proficiency_mut(draft).profile_binding.family = ProjectV2Family::Charm;
+    }));
+    assert!(rejects(&|draft| {
+        item_proficiency_mut(draft).profile_binding.key =
+            "oteryn:content.proficiency.missing".into();
+    }));
+}
+
+/// A JSON decimal (as written by the authoring tool) as an exact reduced ratio.
+fn decimal_ratio(number: &Value) -> Value {
+    let text = number.to_string();
+    assert!(!text.contains(['e', 'E']), "exponent form: {text}");
+    let (negative, digits) = match text.strip_prefix('-') {
+        Some(rest) => (true, rest),
+        None => (false, text.as_str()),
+    };
+    let (whole, fraction) = digits.split_once('.').unwrap_or((digits, ""));
+    let denominator = 10_u64.pow(u32::try_from(fraction.len()).expect("scale"));
+    let magnitude: u64 = format!("{whole}{fraction}")
+        .parse()
+        .expect("decimal digits");
+    let (mut a, mut b) = (magnitude, denominator);
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+    let gcd = a.max(1);
+    let numerator = i64::try_from(magnitude / gcd).expect("numerator");
+    json!({
+        "numerator": if negative { -numerator } else { numerator },
+        "denominator": denominator / gcd,
+    })
+}
+
+#[test]
+fn committed_proficiency_content_lowers_to_valid_v2_declarations() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/proficiencies");
+    let read = |path: &std::path::Path| -> Value {
+        serde_json::from_slice(&std::fs::read(path).expect("read")).expect("json")
+    };
+    let index = read(&root.join("index.json"));
+    assert_eq!(index["family"], "Proficiency");
+    let mut draft = item_candidate();
+    let (mut definitions, mut perks) = (0, 0);
+    for shard in index["shards"].as_array().expect("shards") {
+        let shard = read(&root.join("../..").join(shard.as_str().expect("path")));
+        for record in shard["records"].as_array().expect("records") {
+            let definition = &record["definition"];
+            let mut levels = definition["levels"].clone();
+            for level in levels.as_array_mut().expect("levels") {
+                for perk in level["perks"].as_array_mut().expect("perks") {
+                    for field in ["value", "probability", "multiplier"] {
+                        if let Some(number) = perk.get(field).cloned() {
+                            perk[field] = decimal_ratio(&number);
+                        }
+                    }
+                    perks += 1;
+                }
+            }
+            let declaration: ProjectV2Declaration = serde_json::from_value(json!({
+                "kind": "Proficiency",
+                "identity": definition["identity"],
+                "levels": levels,
+                "fields": [],
+            }))
+            .expect("typed Proficiency declaration");
+            draft.state.declarations.push(declaration);
+            definitions += 1;
+        }
+    }
+    assert_eq!((definitions, perks), (443, 3671));
+    let wide = ProjectEvidenceLimits {
+        max_documents: 12,
+        max_document_bytes: 8 << 20,
+        max_total_bytes: 16 << 20,
+        max_decoded_fields: 1 << 20,
+        max_string_bytes: 8 << 20,
+        max_reference_records: 1_024,
+        ..limits()
+    };
+    CanonicalProjectDocuments::from_v2_draft(draft, wide).expect("443 definitions validate");
 }
