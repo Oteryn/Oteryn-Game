@@ -4,9 +4,9 @@
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   protocol, security and privacy) and protected integration. It builds on DEPOT-0, MARKET-0
   (`CharacterInbox`), HOUSE-OWN-0, CHAT-0, ITEM-MOVE-WIRE-0 and -1 and MAP-WIRE-1, and integrates
-  after them. Owner questions Q1 and Q2 (§14) are answered (2026-09-30, #162): system letters are
-  delivered (Q1a); a junior sends and receives letters only, no parcels (Q2b). Q3 (§14), the
-  result a junior parcel recipient returns, is open; no child waits on it.
+  after them. Owner questions Q1 to Q3 (§14) are answered (2026-09-30, #162): system letters are
+  delivered (Q1a); a junior sends and receives letters only, no parcels (Q2b); a parcel addressed
+  to a junior returns `UNKNOWN_RECIPIENT` (Q3a).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to build the mail system now, with full Tibia Global parity
   (2026-09-30); HOUSE-OWN-0 §5's "shown on login until a mail system exists"
@@ -103,7 +103,9 @@ system messages reach a player?
 
 - Parcel and stamped parcel: containers of 10. Letter and label: `readable`, `writable`,
   `write_policy: rewrite`, `max_characters` 1,999 and 79 (`MAIL0-RL-01`, `-02`). Stamped letter:
-  `readable`, not writable. All four are pickupable and materializable.
+  `readable`, not writable. All five definitions (parcel, stamped parcel, letter, label, stamped
+  letter) are pickupable and materializable; MAIL-CONTENT-1 must list the stamped letter explicitly,
+  since MAIL-SYSTEM-1 MINTs it directly (§10).
 - **Stamp rule.** A versioned content rule maps parcel to stamped parcel and letter to stamped
   letter (DUR-03 §16.2, `PRESERVE_INSTANCE`). Only an unstamped parcel or letter can be posted, so a
   received parcel must be repacked, as in Tibia.
@@ -215,7 +217,8 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
 - **Juniors** (owner Q2b). A junior character (BANK-0 §4.4) neither posts nor receives a parcel.
   A junior sender's parcel is refused as `NOT_MAILABLE`; a parcel addressed to a junior recipient
   is refused, checked under §6's recipient root lock. Either refusal writes nothing and the parcel
-  stays in the backpack. The result the sender sees for a junior recipient is open (Q3, §14).
+  stays in the backpack. The sender of a parcel to a junior recipient sees `UNKNOWN_RECIPIENT`
+  (owner Q3a, §14), so the reply never reveals that the character is a junior.
   Juniors still receive letters and system letters.
 - **Shape.** One TRANSFER of the parcel root from the backpack entry to a new Inbox entry, and the
   stamp TRANSFORM of the root. The children keep their `Container {parent}` location (DUR-03 §10);
@@ -345,12 +348,15 @@ as in Tibia (recommended); b) letters only, no parcels; c) no mail until it leav
 Owner answer (2026-09-30, #162): b — a junior on the starting island sends and receives letters
 only, no parcels (§5, §7).
 
-**Q3 (open). What does the sender see when a parcel is addressed to a junior?** Q2b refuses it
+**Q3 (answered). What does the sender see when a parcel is addressed to a junior?** Q2b refuses it
 (§7). A distinct result tells any player that the named character is a junior; `UNKNOWN_RECIPIENT`
 hides it but tells the sender that the name does not exist, while a letter to the same name is
 delivered. a) `UNKNOWN_RECIPIENT`, as CHAT-0 hides where a name exists; b) a new result
 `RECIPIENT_CANNOT_RECEIVE_PARCELS`. The refusal itself does not wait on Q3; MAIL-WIRE-1 registers
 the answer.
+
+Owner answer (2026-09-30, #162): a — `UNKNOWN_RECIPIENT`; junior status stays hidden (§7). No new
+result is registered.
 
 ## 15. Decision test
 
@@ -358,7 +364,7 @@ the answer.
   rent warnings.
 - **Minimum sufficient:** one command destination, one text store for two definitions, one
   operation table, one transaction per posting, one stamp rule; parcels reuse bags.
-- **Superseding evidence:** official mail limits or junior rules; the owner answer to Q3.
+- **Superseding evidence:** official mail limits or junior rules.
 - **Deliberately not decided:** house mailboxes, posting from the ground, Store-bound items,
   nested bags in parcels, other writable items, delayed or returned mail.
 
