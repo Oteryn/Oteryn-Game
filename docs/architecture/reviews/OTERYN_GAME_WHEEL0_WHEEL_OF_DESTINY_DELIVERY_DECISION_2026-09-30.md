@@ -18,8 +18,9 @@
   §4.2 and D70-D76; PREMIUM-DELIVERY-0 (`premium_current`); the Tibia manual `characters.md` §5.1.7;
   owner rule 5905825574 (Global parity)
 - Amends, pending on acceptance of WHEEL-0, in this PR: the Wheel state contract candidate §3.5,
-  §5 and §6 (pointers); PREMIUM-ACTIVATION §4.2 and §5 (the PREM-2 and PREM-5 rows); PREMIUM-DELIVERY-0
-  implementation brief (the PREM-2..5 row) (§6.2).
+  §5 and §6 (pointers); PREMIUM-ACTIVATION §4.2, §4.6 (the revelation spells, WHEEL0-PS-1) and §5
+  (the PREM-2, PREM-4 and PREM-5 rows); PREMIUM-DELIVERY-0 implementation brief (the PREM-2..5 row)
+  (§6.2).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -27,7 +28,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| SPELL-WHEEL-GATE-1 | impl, spell review | the ready reader admits `wheel_unlock` and augment-bound spells; `CasterState` carries a `WheelStages` input, all 0 until W-1; roles B and C cast with their base behaviour, role A fails closed at cast (§3) | this decision |
+| SPELL-WHEEL-GATE-1 | impl, spell review | the ready reader admits `wheel_unlock` and augment-bound spells; `CasterState` carries a `WheelStages` input, all 0 until W-1; roles B and C cast with their base behaviour, role A fails closed at cast (§3); no cast Premium check for `wheel_unlock` spells until the Premium switch-over (WHEEL0-PS-1, §6.2) | this decision |
 | W-R | impl, content review | the Wheel ruleset: slots, capacities, adjacency, minimum points, perks per domain, vocation and slot, the dedication values, the conviction perks (spell and non-spell), revelation values; validator; revision migration rule (§5) | this decision |
 | W-1 | hard, persistence review | allocation tables, a new receipt kind, `commit_character_wheel` on CHAR-REV-SEQ-1, admission load, derivation into `WheelStages` (§4) | W-R; CHAR-REV-SEQ-1 |
 | W-2 | impl, protocol review | capability `WHEEL_V1`, `WHEEL_QUERY` and `WHEEL_INTENT` (§7) | W-1 |
@@ -91,6 +92,12 @@ what order is it built?
   - role B and C: the spell casts with its base behaviour and no augment;
   - role D: unchanged.
 - So the Wheel no longer blocks the level spells; only the 11 revelation spells wait for points.
+- **Premium check of the revelation spells (WHEEL0-PS-1, §6.2).** The 11 revelation spells are
+  authored `premium` (§A.1 parameters), and `spell/cast.rs` builds `CasterState` with
+  `premium: false` (SPELL-D5), so `spell/mod.rs` refuses them as `PremiumRequired`. Until the
+  switch-over of §6.2, SPELL-WHEEL-GATE-1 does not apply the cast Premium check to a spell with
+  `requirements.wheel_unlock`; every other cast check, and the Premium check of every other spell,
+  is unchanged.
 - The position gate named in the audit is not a Wheel matter; the spell lane routes it separately.
 
 ## 4. Allocation storage and writer (W-1)
@@ -143,9 +150,15 @@ The state candidate §3.2-§3.4 is binding; this section fixes its physical shap
   expected `wheel_revision`, not the CharacterRevision: a stale `wheel_revision` is
   `STALE_REVISION`; a CharacterRevision move by another writer retries once (QUEST-STATE-0's rule
   for writers whose binding excludes the revision).
-- **Validation** at commit, all against the stored ruleset: eligibility (§6), capacities, the sum
-  at most the available points, the adjacency and minimum-point rules for every non-zero slot, and
+- **Validation** at commit, all against the stored ruleset: eligibility (§6), capacities, the
+  points rule (WHEEL0-PT-1), the adjacency and minimum-point rules for every non-zero slot, and
   every decrease only at a temple (§7.3). A rejected change writes nothing.
+- **Points rule (WHEEL0-PT-1; state candidate §3.3, level loss).** A change that raises any slot
+  requires the new sum at most the available points. A strict decrease (no slot raised, at least one
+  slot lowered) is admitted whatever the available points, so a character over-allocated after a
+  level loss can reduce step by step (100 allocated, 90 available: 95 is admitted); its other rules
+  (eligibility, adjacency, minimum points, temple) still apply. A change that raises one slot and
+  lowers another is a raise. A rejection is `OVER_POINTS`.
 - **Load.** Admission loads the allocation into the runtime actor; a committed change refreshes the
   allocation after commit. No row means every slot 0. The actor caches the allocation only, never
   an eligibility result.
@@ -204,10 +217,21 @@ keeps the allocation.
   Premium as delivered. PREM-3, PREM-4 and the Premium blessing service of PREM-5 keep their PREM-1
   dependency. PREMIUM-ACTIVATION §5 and the PREMIUM-DELIVERY-0 implementation brief carry this as a
   pending amendment (§13).
+- **Revelation spells (WHEEL0-PS-1, architect ruling applying W1 a).** W1 a waives the Wheel's
+  Premium condition until delivery; a revelation spell is a Wheel benefit, so its cast Premium check
+  (PREMIUM-ACTIVATION §4.6, PREM-4) is waived for the same period and no longer: until PREM-1's
+  activation record names Premium as delivered, a spell with `requirements.wheel_unlock` casts
+  without the Premium check (§3). The switch-over is the same one as for promotion and the Wheel:
+  whichever of PREM-1 and PREM-4 lands later wires `premium_current` into the cast Premium check of
+  these spells, and that change is merged before the activation record names Premium as delivered;
+  from then on they cast only while Premium is current. PREM-4 keeps its PREM-1 dependency for
+  every other Premium spell, which stays refused until then. PREMIUM-ACTIVATION §4.6 carries this as
+  a pending amendment (§13).
 - **Premium** (owner answer W1 a, a supersession of D70's Premium condition until delivery): until PREM-1 delivers `premium_current`, the
   Premium requirement of promotion (D70) and of the Wheel is not applied; from then on both apply,
-  and a promotion bought before then is kept under the lapse rules of D73 and D76. This mirrors
-  H2a for houses and G1 for guilds.
+  and a promotion bought before then is kept under the lapse rules of D73 and D76. The same applies
+  to the cast Premium check of the revelation spells (WHEEL0-PS-1). This mirrors H2a for houses and
+  G1 for guilds.
 - Until PREM-2 and the promotion NPC (PREM-5) exist, no character is promoted, so no character is
   eligible: W-1 and W-2 can land first and store allocations that count from then on.
 
@@ -265,7 +289,8 @@ the town records' temple positions in the active bundle.
 
 Kept as in Tibia: unlock at 51 for promoted Premium characters, 1 point per level, 36 slices,
 adjacency, the three perk tiers, removal at a temple, suspension on lapse. Declared differences:
-unused points saturate at 0 on level loss (Canary underflows); the Premium rule waits until Premium is delivered (W1 a).
+unused points saturate at 0 on level loss (Canary underflows); the Premium rule of promotion, the
+Wheel and the revelation spells waits until Premium is delivered (W1 a, WHEEL0-PS-1).
 
 ## 11. Decision test
 
@@ -289,8 +314,8 @@ b) keep the requirement: revelation spells wait for Premium.
 ## 13. Before-freeze checklist
 
 1. **Contract amendments:** the Wheel state candidate §3.5, §5 and §6 pointers; PREMIUM-ACTIVATION
-   §4.2 and §5 (PREM-2 and PREM-5 rows); the PREMIUM-DELIVERY-0 implementation brief (PREM-2..5 row);
-   each written "pending on acceptance of WHEEL-0".
+   §4.2, §4.6 and §5 (PREM-2, PREM-4 and PREM-5 rows); the PREMIUM-DELIVERY-0 implementation brief
+   (PREM-2..5 row); each written "pending on acceptance of WHEEL-0".
 2. **Serialization:** W-1 on the CHAR-REV-SEQ-1 sequencer; composition rule 2 fence first; the
    Wheel receipt carries the common envelope and the full-chain and row-tip guards (§4).
 3. **Restart:** receipts keyed by occurrence; replays return the first outcome.
