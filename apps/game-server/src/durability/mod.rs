@@ -6,6 +6,7 @@
 
 pub mod admission_authority_guards;
 mod admission_journal;
+pub mod bestiary_progress;
 pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_death;
@@ -30,6 +31,29 @@ mod schema;
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+
+#[cfg(test)]
+mod bestiary_progress_linkage {
+    use super::DurabilityRoot;
+    use super::bestiary_progress::{
+        BestiaryKillOccurrence, BestiaryKillOutcome, BestiaryKillRequest, BestiaryProgressError,
+        BestiaryRaceProgress, CommittedBestiaryKill,
+    };
+
+    #[test]
+    fn bestiary_progress_api_is_linked() {
+        let _ = std::mem::size_of::<BestiaryKillOutcome>();
+        let _ = std::mem::size_of::<BestiaryKillRequest>();
+        let _ = std::mem::size_of::<BestiaryProgressError>();
+        let _ = std::mem::size_of::<BestiaryRaceProgress>();
+        let _ = std::mem::size_of::<CommittedBestiaryKill>();
+        let _ = BestiaryKillOccurrence::from_bytes;
+        let _ = BestiaryKillOccurrence::as_bytes;
+        let _ = DurabilityRoot::commit_bestiary_kill;
+        let _ = DurabilityRoot::reconcile_bestiary_kill;
+        let _ = DurabilityRoot::read_bestiary_progress;
+    }
+}
 
 #[cfg(test)]
 mod character_progression_linkage {
