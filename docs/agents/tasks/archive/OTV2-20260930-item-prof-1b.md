@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/item-prof-1b
 issue: 162
 lane_id: content-world
-pr: null
+pr: 1326
 base_sha: c145b7f
 head_sha: null   # a commit cannot hold its own SHA; exact head is in the FREEZE_SHA packet
 final_head_sha: null
