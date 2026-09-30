@@ -107,8 +107,11 @@ chain, with no cause and no replay.
 
 **Amendment (pending on acceptance of HOUSE-RUNTIME-0; `reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md` §6.3).** In a house scope the write is not skipped: the row records the
 `HouseId` and the tile inside, in two new nullable columns. At admission, a row naming a house
-admits the character into that house scope when its access and the property state still hold;
-otherwise it places the character at the house's `entrance`.
+admits the character into that house scope through that decision's serialized admission commit
+when its access and the property state still hold, at the saved tile if still valid or else the
+§3.3 fallback's nearest free walkable tile of the same house; otherwise it places the character at
+the house's `entrance`, and the admission transaction clears the house columns and writes the
+`entrance` tile.
 
 ### 3.3 Admission
 

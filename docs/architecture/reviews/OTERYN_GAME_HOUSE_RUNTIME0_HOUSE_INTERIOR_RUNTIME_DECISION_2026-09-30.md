@@ -106,10 +106,16 @@ and how do house items change?
   `HOUSE_CLOSED`); nothing is written.
 - The Channel check is a pre-check only. The admission commit (below) re-reads, in its own
   transaction and under a FOR SHARE lock on the property row, which every content-fence and ACL
-  write updates (HOUSE-OWN-0 §9, §10), the property state, the content fence, and the exact `acl_revision` and guild revisions
-  the pre-check used. Any difference refuses (`NO_ACCESS` or `HOUSE_CLOSED`) and the character
-  stays in its source session. So a revocation or disposition either commits first and the
-  admission refuses, or commits after and finds the character inside (§5.4, §7).
+  write updates (HOUSE-OWN-0 §9, §10), the property state, the content fence, and the exact
+  `acl_revision` the pre-check used. When the grant comes from a guild entry (GUILD-0 §10), the
+  same transaction also takes FOR SHARE on each guild row whose revision the grant depends on and
+  on the character's membership row, and re-reads that exact guild revision. Architect ruling: a
+  membership change that can end a guild entry's grant advances the guild revision under FOR
+  UPDATE on the guild row (§5.4), so it conflicts with these locks. Any difference refuses
+  (`NO_ACCESS` or `HOUSE_CLOSED`) and the character stays in its source session. So a
+  revocation, a membership change or a disposition either commits first and the admission
+  refuses, or commits after and finds the character inside (§5.4, §7). Every admission into a
+  house scope, including login (§6.3), uses this commit.
 - On success the transition runs ADR-0001 §10 (checkpoint, close the Channel session, fresh
   admission into the house scope, fresh `GameSessionId`) as a recoverable handoff:
   1. **Prepare.** One transaction records a handoff row (CharacterId, source `GameSessionId`,
@@ -188,7 +194,9 @@ Any character may leave at will: walking out, or `leave` in the House Management
 
 - The runtime reads the ACL at its `acl_revision`; a new revision triggers a re-check of every
   character inside; one that lost access is moved out (§4.2). A membership change that ends a guild
-  entry's grant counts the same way (GUILD-0 §10), checked when the guild's revision changes.
+  entry's grant counts the same way (GUILD-0 §10), checked when the guild's revision changes; that
+  change advances the guild revision in its own transaction under FOR UPDATE on the guild row, so
+  it serializes with admission (§4.1).
 - Every item write re-checks the role at the write (EXP-HOUSES-01 §16.5).
 
 ### 5.5 Kick
@@ -230,17 +238,29 @@ beds decision.
 - **Position.** In a house scope the last-position row (CHAR-POSITION-0) records the `HouseId` and
   the tile inside, in two new nullable columns, instead of skipping the write. Every exit clears
   them in its commit (§4.2).
-- **Login.** When the row names a house, admission re-checks access and the property state. If both
-  hold, the character is admitted into the house scope at that tile (activating it if needed), with
-  the Channel admission chooses recorded as origin. Otherwise it is placed at the house's `entrance`
-  on a Channel admission chooses. As in Tibia, a character logs in where it logged out when it
-  still may.
+- **Login.** When the row names a house, admission into the house scope runs the §4.1 admission
+  commit: access and the property state are revalidated under the same property row, ACL and guild
+  revision locks, so a concurrent revocation, membership change or disposition either commits
+  first and the login refuses, or commits after and finds the character inside (§5.4, §7). The
+  saved tile is revalidated under the active bundle and the current `HouseInterior` items: it must
+  be a tile of this house, walkable, not blocked by an item and not occupied. If it is not, the
+  CHAR-POSITION-0 §3.3 fallback applies inside the house (the nearest free walkable tile of the same
+  house within 3, in that fallback's order); if none, the house is refused as below. On success the
+  character is admitted into the house scope at the chosen tile (activating it if needed), with
+  the Channel admission chooses recorded as origin.
+- **Rejected house position.** If access, the property state or the tile fallback refuses, the
+  character is placed at the house's `entrance` on a Channel admission chooses, and that admission
+  transaction clears the house columns and writes the `entrance` tile under the new session's order
+  key, as every exit does (§4.2). A later change of access or owner never returns the character to
+  the stale interior tile. As in Tibia, a character logs in where it logged out when it still
+  may.
 
 ## 7. Disposition quiesce (HOUSE-RUNTIME-1)
 
 When HOUSE-OWN-0 §7 sets the content fence, the runtime moves every character out (§4.2) and
-refuses new entries (`HOUSE_CLOSED`). The disposition steps then run with no one inside. Release
-(the state `VACANT`) reopens entry for the next owner.
+refuses new entries (`HOUSE_CLOSED`). The disposition steps then run with no one inside; each step
+that changes `HouseInterior` advances the house content revision in its own transaction (§9).
+Release (the state `VACANT`) reopens entry for the next owner.
 
 ## 8. Rows (registered by the children before implementation)
 
@@ -257,7 +277,10 @@ refuses new entries (`HOUSE_CLOSED`). The disposition steps then run with no one
 - **Inside.** House scope snapshots and deltas use MAP-WIRE-1 unchanged: the house tiles, walls,
   doors and `HouseInterior` items as map items with their handles.
 - **Outside.** Channels project the `HouseInterior` items of houses in view, read-only, from a house
-  content revision the house runtime bumps on each item write. So furniture is seen through
+  content revision. Every authoritative `HouseInterior` mutation advances it in the same
+  transaction: the three shapes (§6.1), each HOUSE-OWN-0 disposition job step (§7), and any write
+  made while the house runtime is unloaded. A mutation that does not advance it is refused, so a
+  vacant house never keeps a stale projection. So furniture is seen through
   windows, as in Tibia. Characters inside a house are not seen from outside (declared difference:
   one presence per house cannot be shown in every Channel).
 
@@ -301,11 +324,14 @@ items; characters inside are not seen from outside; a bounded number of characte
 1. **Contract amendments:** ADR-0001 §11 pointer; HOUSE-CUSTODY-0 §3.4 and §4; CHAR-POSITION-0
    §3.2 and §3.3; HOUSE-OWN-0 §11, each written "pending on acceptance of HOUSE-RUNTIME-0".
 2. **Serialization:** one live generation per `HouseId`; item shapes under the house fence, the
-   acting character's session fence and its `character_root` lock; admission revalidates access
-   and property state under a lock on the property row.
+   acting character's session fence and its `character_root` lock; every admission, login
+   included, revalidates access and property state under a lock on the property row and on the
+   granting guild and membership rows; every `HouseInterior` mutation advances the content
+   revision in its transaction.
 3. **Restart:** items and positions are durable; a lost house scope sends characters to the
    entrance; transitions are fresh admissions through a durable handoff reconciled at restart;
-   every exit commits the outside position.
+   every exit, and every login that rejects a saved house position, commits the outside position;
+   a saved interior tile is revalidated with a deterministic fallback.
 4. **Typed references:** HouseId, WorldId, ChannelId (origin), CharacterId, GameSessionId, scope
    generation.
 5. **Wire:** MAP-WIRE-1 snapshots; HOUSE-WIRE-1 gains `kick` and `leave` (HOUSE-OWN-0 §11 pointer).

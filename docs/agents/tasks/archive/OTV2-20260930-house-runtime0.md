@@ -79,5 +79,9 @@ persistence review.
 - Codex round 1 (4 P1) repaired in one authoring write: recoverable durable handoff (§4.1, §4.3),
   admission-time ACL and disposition revalidation (§4.1), outside position committed on every exit
   (§4.2, §6.3), session fence on house item transfers (§6.1); validators re-run PASS.
+- Codex round 2 (2 P1, 3 P2) repaired in one authoring write: guild and membership row locks in
+  the admission commit (§4.1, §5.4), login through the serialized admission commit, saved-tile
+  revalidation with fallback and atomic clearing of a rejected house position (§6.3), content
+  revision advanced by every `HouseInterior` mutation (§7, §9); validators re-run PASS.
 
 This record was archived in the final authoring commit of its PR.
