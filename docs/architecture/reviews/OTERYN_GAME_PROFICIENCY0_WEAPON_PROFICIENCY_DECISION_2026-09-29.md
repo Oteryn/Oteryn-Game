@@ -31,12 +31,15 @@
     both schemas (§4.1).
   - Tests: every promoted definition resolves; an unmapped code is rejected; the coverage report
     lists the promoted and staged definitions and weapons.
-- **PROF-1** (durability lane, `oteryn-hard-worker`, persistence review). It comes after
-  CHAR-BUILD-1 and H-1, and carries every receipt kind. Owned paths: its migration,
+- **PROF-1** (durability lane, `oteryn-hard-worker`, persistence review). It takes the next free
+  migration number at allocation: after `0018` (DEATH-1a, #1278), the `0019`/`0020` CHARM
+  reservations, CHAR-BUILD-1 and H-1. It carries every receipt kind merged before it. Owned paths: its migration,
   `apps/game-server/src/durability/**`, and its `*_postgres` tests. It builds:
   - the track table, the receipt kind and its lines;
   - the per-track guard and the shared chain entry;
-  - the writer, reconcile, and the admission load (§4.2-§4.3).
+  - the writer, reconcile, and the admission load (§4.2-§4.3);
+  - the extension of `verify_character_integrity` (§4.2 "Integrity verifier");
+  - the grants (§4.2 "Grants").
   - Tests:
     - one revision per checkpoint, covering every changed track;
     - a row-only write fails, also at revision 1;
@@ -44,6 +47,7 @@
     - the track chain rejects a wrong before value;
     - the line count per cause is checked;
     - replay, conflict and a stale fence;
+    - admission of a Character with proficiency receipts passes the integrity verifier;
     - one red run per guard branch.
 - **PROF-2** (combat lane). Accrual at kill credit, level-up, perk selection and clearing with the
   protection-zone rule, the perk effects of mapped kinds, checkpoints, and measurement (§4.3).
@@ -180,8 +184,9 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
   - `training`: progress strictly increases; selections and definition are unchanged;
   - `perk_selection`: progress and definition are unchanged; exactly one level's entry changes
     (set, change or clear);
-  - `migration`: progress is unchanged, the definition revision changes, and the selections
-    follow the declared migration.
+  - `migration`: progress is unchanged and the definition revision changes. That the selections
+    follow the declared migration is a writer invariant, because the guard cannot read content.
+    PROF-1 tests it, and reconcile recomputes it from the two definition revisions.
 
   The receipt trigger checks the line count: 1 to N for `training` and `migration`, and exactly 1
   for `perk_selection`. N is bounded by the weapons with a proficiency in the active content.
@@ -200,8 +205,29 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
 
   The per-track check's cost does not depend on chain length. The shared chain check still reads
   the whole chain once per revision. PROF-2 measures it (§4.3), as A13 W2b does.
-- **Shared guard order.** PROF-1 comes after CHAR-BUILD-1 and H-1 in the guard-rewrite chain, and
-  carries every receipt kind so far. The state guard's equal-XP branch admits it.
+- **Shared guard.** The extended `game_character_progression_consistency_guard` keeps every arm it
+  has when PROF-1 starts:
+  - the count and distinct count;
+  - the root state match;
+  - the cross-kind before/after chain;
+  - the revision fields;
+  - the stance chain;
+  - the rule that the successor explains the state change.
+
+  Proficiency receipts join its chain CTE, so the state-match and cross-kind arms cover them.
+  The state guard's equal-XP branch admits them.
+- **Integrity verifier.** `verify_character_integrity`
+  (`apps/game-server/src/durability/character_authority.rs`) checks the chain at admission.
+  PROF-1 extends it from the latest merged version (XP ∪ death ∪ stance after #1278, plus every
+  later kind) to include proficiency receipts, and keeps every existing arm. Without that, every
+  trained Character would fail admission as `Unavailable`.
+- **Grants.** As in `0017`: REVOKE ALL on the new tables and guard functions from PUBLIC;
+  `oteryn_game_runtime` gets SELECT and INSERT on the receipts and lines, and SELECT, INSERT and
+  UPDATE on the track rows (never DELETE); `oteryn_game_control` gets SELECT on all three. The
+  guard functions get a fixed `search_path`.
+- **Order.** PROF-1 takes the next free migration number at allocation, after `0018` (DEATH-1a,
+  #1278), the `0019`/`0020` CHARM reservations, CHAR-BUILD-1 and H-1. It carries every receipt kind
+  merged before it.
 
 ### 4.3 Writer and checkpoints
 
@@ -246,7 +272,7 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
   shape: id, name, owner decision, and the message types it gates. A session that did not
   negotiate it receives neither the domain nor any command result, because it cannot send the
   command. An unnegotiated `PROFICIENCY_SELECT_PERK` is answered with `CAPABILITY_MISMATCH`
-  (1007). Capabilities are fixed for the session; a resume renegotiates them like a new session.
+  (1007), keeping its registry default `SESSION_FATAL`: only a faulty client sends it. Capabilities are fixed for the session; a resume renegotiates them like a new session.
   Progress accrues server-side regardless.
 - **State domain.** `ACTOR_PROFICIENCY` is an own-actor domain owned by the current ChannelRuntime:
   - a snapshot of every track with progress > 0: numeric Tibia item id (varint), definition
@@ -282,7 +308,7 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
 | Child | Scope | Depends on |
 |---|---|---|
 | PROF-CONTENT-1 | Definitions, perk map, `profile_binding` only, removal of the inline profile, the crosswalk-rule amendment, coverage report | this decision; ITEM-ID-1 keys |
-| PROF-1 | Migration, writer, reconcile, guards, admission load (§4.2-§4.3). Persistence review. | this decision; A13 accepted; CHAR-BUILD-1; H-1 |
+| PROF-1 | Migration, writer, reconcile, guards, integrity verifier, grants, admission load (§4.2-§4.3). Persistence review. | this decision; A13 accepted; `0018`-`0020`; CHAR-BUILD-1; H-1 |
 | PROF-2 | Accrual, level-up, selection and clearing, perk effects, checkpoints, measurement | PROF-CONTENT-1, PROF-1 |
 | PROF-WIRE-1 | Capability row shape, domain, command, `.proto`, client view | owner acceptance of §4.4; PROF-2 |
 | PROFICIENCY-1 | Modification, rank, catalysts (decision) | Reference evidence for costs |
@@ -348,6 +374,9 @@ next_action: "#162 validates this exact head, routes the independent review and 
    (§4.4).
 6. Split work: one checkpoint is one revision covering every changed track; the line count is
    checked at commit (§4.2).
-7. Self-review: `oteryn-hard-worker`, read-only, on the complete draft. Its material findings
+7. Independent review of `4d28da50` (#1294 5901976834): the integrity verifier, the kept guard
+   arms, the migration order, the grants, the 1007 disposition and the migration invariant are
+   fixed in §4.2, §4.4 and §5.
+8. Self-review: `oteryn-hard-worker`, read-only, on the complete draft. Its material findings
    (whole-chain cost per line, late lines, rule 6, derived-level corrections, line keys, owned paths,
    amendments) are fixed in §4.1-§4.4 and the brief.

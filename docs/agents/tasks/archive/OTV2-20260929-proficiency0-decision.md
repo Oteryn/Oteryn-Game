@@ -85,6 +85,14 @@ persistence review.
   - the amendments listed in §9;
   - wire gating, bounds and command;
   - the parity gates.
+- Independent review of `4d28da50` (#1294 5901976834), disposition FIX. Every finding is fixed
+  in one push:
+  - `verify_character_integrity` extension (material);
+  - the kept consistency-guard arms;
+  - the migration order after `0018`-`0020`, CHAR-BUILD-1 and H-1;
+  - the grants;
+  - the 1007 `SESSION_FATAL` disposition;
+  - the migration cause as a writer invariant.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ## Context checkpoint
