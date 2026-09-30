@@ -239,6 +239,11 @@ entry on another Account. They are DUR-03 value records keyed by the bank operat
 receipts, and advance no `CharacterRevision`. Rule 4's lock order is extended: after
 `character_root`, the main backpack, its coin entries, then the balance rows in `account_id` order.
 
+**Quest obligation amendment (pending on acceptance of QUEST-STATE-0, #1373;
+`OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md` §5.4).** Rule 1 also covers a
+`game_character_quest_obligations` row written by a reward-claim transaction: an obligation outside
+the revision chain, like the pending arrival; the claim still advances no `CharacterRevision`.
+
 ## 6. Handback
 
 ```yaml
