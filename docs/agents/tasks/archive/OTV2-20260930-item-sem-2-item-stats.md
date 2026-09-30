@@ -4,12 +4,12 @@
 task_id: OTV2-20260930-item-sem-2-item-stats
 title: ITEM-SEM-2 Item stats (requirements, elements, leech, skills, slots, classification, weight) into content
 mode: IMPLEMENT
-status: implementing
+status: completed   # 2a merged via #1324; 2b/2c are separate allocations
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/item-sem-2   # owner 1a (2026-09-30): own branch while #1319 waits for review
 issue: 162
-pr: null   # per part, recorded in the FREEZE_SHA packets on #162
+pr: 1324   # 2a, squash merge 9ca2bfd2
 base_sha: 54c9ca18
 owner: owner-directed Claude Code session, claim #162 comment 5907977795
 created_at: 2026-09-30
@@ -21,7 +21,7 @@ owned_paths:   # ITEM-SEM-2a
   - imports/tibiawiki/facts/items-stats.json
   - imports/tibiawiki/sources.json
   - imports/tibiawiki/batches.json
-  - docs/agents/tasks/active/OTV2-20260930-item-sem-2-item-stats.md
+  - docs/agents/tasks/archive/OTV2-20260930-item-sem-2-item-stats.md
   - .github/workflows/item-authoring-schema.yml   # owner 2a: self-test step and triggers
 public_contracts:
   - DUR04-REFERENCE-ITEM-PROFILE-V1 (re-derived in 2b)
@@ -51,16 +51,22 @@ silent and never where it disagrees.
 
 ## 2a facts
 
-- PROVEN (capture 2026-09-30T09:13:32Z): 9,980 `Infobox Object` pages, 9,354 with an item id; 13,878 item ids carry
-  at least one admitted stat (keyed by Tibia id; ids without an Item record stay evidence only). 185 ids are listed by more than one page (kept as
+- PROVEN (capture 2026-09-30T09:13:32Z): 9,980 `Infobox Object` pages, 9,354 with an item id; 13,826 item ids carry
+  at least one admitted stat; 12,560 of them are Items in content. 185 ids are listed by more than one page (kept as
   separate observations). 6 pages have a malformed `itemid` and are reported, not captured.
 - Coverage among content Items: weight 6,379; required level 1,269; upgrade classification 983; vocation 840;
   hands 737; defense 733; attack 643; imbuement slots 632; attributes 504; armor 470; resistances 417.
-- Only admitted infobox parameters (`STAT_PARAMS`, incl. pickupable and marketable) and page/revision identity are
-  stored; no article text.
+- Only admitted infobox parameters (`STAT_PARAMS`) and page/revision identity are stored; no article text.
 
 ## Owner decisions (2026-09-30, given directly to this writer)
 
 - 1a: ITEM-SEM-2 is pushed on its own branch, `claude/item-sem-2`, while #1319 waits for review.
 - 2a: the workflow edit is authorized: `item-authoring-schema.yml` runs `item_wiki_stats_capture_self_test.py` and
   triggers on the snapshot and the capture tool. The authorization covers that change only.
+
+## Closeout
+
+- 2a merged to `main` as the squash merge of #1324 (`9ca2bfd2`) before its independent review findings (#1324 comment
+  5908347499) were fixed; `item_key_references.py` then reported 991 `DANGLING_KEY` errors on `main`.
+- The findings are fixed by `OTV2-20260930-item-sem-2a-fixup` (key rule, attribution), which archives this record.
+- 2b (promotion lowering v2) and 2c (forge classification) are not started and need their own allocation.

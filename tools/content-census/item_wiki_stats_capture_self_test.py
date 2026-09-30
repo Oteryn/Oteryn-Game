@@ -2,8 +2,9 @@
 """No-network checks for `item_wiki_stats_capture.py` (ITEM-SEM-2a).
 
 Synthetic pages cover the parser (nested templates, one page listing several ids, a
-junk itemid, a page without an infobox) and the admitted parameter allowlist; the
-committed snapshot is checked for its own digest, key rule and allowlist.
+junk itemid, a page without an infobox), the key rule (an Item key only where it
+resolves, the bare id otherwise) and the admitted parameter allowlist; the committed
+snapshot is checked for its own digest, key rule, allowlist and attribution.
 """
 
 from __future__ import annotations
@@ -38,12 +39,15 @@ def page(content, page_id=1, revision_id=10):
     }
 
 
+KNOWN = {"oteryn:item.tibia.i34086", "oteryn:item.tibia.i100"}
+
+
 def test_parser_keeps_only_admitted_stats():
     fields = capture.infobox_fields(PAGE)
     assert fields["attrib"] == "club fighting +4, {{Link|magic level}} +1", fields
     assert fields["notes"].startswith("Part of"), fields
-    records, report = capture.build_records({"Soulcrusher": page(PAGE)})
-    record = records["34086"]
+    records, report = capture.build_records({"Soulcrusher": page(PAGE)}, KNOWN)
+    record = records["oteryn:item.tibia.i34086"]
     stats = record["observations"][0]["fields"]
     assert set(stats) <= set(capture.STAT_PARAMS), stats
     assert "notes" not in stats and "droppedby" not in stats and "name" not in stats
@@ -62,10 +66,12 @@ def test_multi_id_bad_id_and_no_infobox():
             "Other": page(shared, page_id=1),
             "Junk": page(junk, page_id=3),
             "Plain": page("no infobox here", page_id=4),
-        }
+        },
+        KNOWN,
     )
-    assert list(records) == ["100", "101"]
-    ids = [row["page_id"] for row in records["100"]["observations"]]
+    assert list(records) == ["oteryn:item.tibia.i100", "101"], list(records)
+    assert records["101"]["item_id"] == 101 and report["unbound_ids"] == 1, report
+    ids = [row["page_id"] for row in records["oteryn:item.tibia.i100"]["observations"]]
     assert ids == [1, 2], ids
     assert report["bad_itemid"] == ["Junk"] and report["no_infobox"] == 1, report
     assert report["multi_page_ids"] == 2, report
@@ -73,7 +79,7 @@ def test_multi_id_bad_id_and_no_infobox():
 
 def test_page_without_stats_is_skipped():
     records, _report = capture.build_records(
-        {"Bare": page("{{Infobox Object\n| itemid = 7\n| name = x\n}}")}
+        {"Bare": page("{{Infobox Object\n| itemid = 7\n| name = x\n}}")}, KNOWN
     )
     assert records == {}, records
 
@@ -85,17 +91,19 @@ def test_committed_snapshot_is_consistent():
         and document["batch_id"] == capture.BATCH_ID
     )
     assert document["source"]["stat_params"] == list(capture.STAT_PARAMS)
+    assert document["source"]["attribution"] == capture.ATTRIBUTION
+    known = capture.resolvable_item_keys()
     records = document["records"]
     digest = hashlib.sha256(capture.canonical_records_bytes(records)).hexdigest()
     assert digest == document["snapshot_sha256"], "snapshot digest"
     assert list(records) == sorted(records), "records are written in key order"
     for key, record in records.items():
-        assert key == str(record["item_id"]), key
+        assert key == capture.record_key(record["item_id"], known), key
         pages = [row["page_id"] for row in record["observations"]]
         assert pages == sorted(pages) and len(set(pages)) == len(pages), key
         for row in record["observations"]:
             assert row["fields"] and set(row["fields"]) <= set(capture.STAT_PARAMS), key
-    soulcrusher = records["34086"]["observations"][0]["fields"]
+    soulcrusher = records["oteryn:item.tibia.i34086"]["observations"][0]["fields"]
     assert soulcrusher["levelrequired"] == "400" and soulcrusher["hpleech_am"] == "2%"
     return len(records)
 

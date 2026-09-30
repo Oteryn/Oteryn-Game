@@ -7,7 +7,7 @@ revision of each, parses the infobox and keeps, for every integer in its `itemid
 the raw value of each admitted stat parameter (`STAT_PARAMS`: requirements, hands and
 slot, attack and elemental attacks, defense, armor, range, hit chance, imbuement slots,
 upgrade classification, leech and critical hit, the `attrib` and `resist` texts, weight,
-charges, duration, stackability, pickupability, marketability and similar). Nothing else is stored: no article text,
+charges, duration, stackability and similar). Nothing else is stored: no article text,
 notes, prices, drop lists or images, only page and revision identity, digests and the raw
 field observations.
 
@@ -15,14 +15,19 @@ Values stay the wiki's own strings (`"+3"`, `"2%"`, `"club fighting +4"`); typin
 the promotion lowering's job, which records both. Several pages may list the same id; each
 is kept as its own observation, ordered by page id, so disagreement stays visible.
 
-Records are keyed by the decimal Tibia item id, not by an Item key: many ids are map
-geometry, client-only or D149-removed and have no Item record, so the join to
-`oteryn:item.tibia.i<id>` (A12) is the lowering's job. `snapshot_sha256` digests the
+A record is keyed by the A12 Tibia Item key `oteryn:item.tibia.i<id>` only when that key
+resolves: an Item record in `content/items/definitions` or a target of the Crystal item
+bindings (the rule `item_key_references.py` enforces for `imports/`). Every other id is
+keyed by its bare decimal Tibia id (`"12345"`), so the evidence is kept without naming an
+Item key that does not exist. Records are ordered by item id. `snapshot_sha256` digests the
 canonical records, as in the family fallback snapshot.
 
 Usage:
     python item_wiki_stats_capture.py [--cache RAW.json] [--output PATH]
+    python item_wiki_stats_capture.py --rekey
 `--cache` reads or writes the raw page fetch, so a re-run can re-parse without the network.
+`--rekey` re-applies the key rule to the committed snapshot offline, keeping every
+observation and the capture time.
 """
 
 from __future__ import annotations
@@ -36,12 +41,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import item_wiki_family_capture as family_capture
+from item_key_references import CRYSTAL_BINDINGS, record_keys
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = ROOT / "imports" / "tibiawiki" / "facts" / "items-stats.json"
 SCHEMA = "OTERYN_ITEM_WIKI_STATS_SNAPSHOT/v1"
 BATCH_ID = "g5-item-stats-tibiawiki-r1"
 WIKI = "https://tibia.fandom.com/wiki/"
+ATTRIBUTION = {
+    "authors": "TibiaWiki contributors",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "page_history": "https://tibia.fandom.com/index.php?curid=<page_id>&oldid=<revision_id>",
+}
 FETCH_BATCH = 50
 
 # Admitted infobox parameters (English TibiaWiki `Template:Infobox Object`), each a stat
@@ -78,10 +90,8 @@ STAT_PARAMS = (
     "manaleech_am",
     "manaleech_ch",
     "mantra",
-    "marketable",
     "mlrequired",
     "objectclass",
-    "pickupable",
     "primarytype",
     "range",
     "resist",
@@ -163,8 +173,25 @@ def observation(title, page, fields):
     }
 
 
-def build_records(pages):
-    """Return ({item key: record}, report) from {title: raw page}."""
+def resolvable_item_keys():
+    """Item keys an `imports/` file may name: Item records and Crystal binding targets."""
+    bindings = json.loads((ROOT / CRYSTAL_BINDINGS).read_text(encoding="utf-8"))
+    return record_keys() | {row["target"]["key"] for row in bindings["bindings"]}
+
+
+def record_key(item_id, known):
+    key = f"oteryn:item.tibia.i{item_id}"
+    return key if key in known else str(item_id)
+
+
+def rekey(records, known):
+    """The records under the key rule, ordered by item id."""
+    rows = sorted(records.values(), key=lambda record: record["item_id"])
+    return {record_key(record["item_id"], known): record for record in rows}
+
+
+def build_records(pages, known):
+    """Return ({record key: record}, report) from {title: raw page}."""
     records = {}
     report = {"pages": len(pages), "no_infobox": 0, "no_itemid": 0, "bad_itemid": []}
     for title in sorted(pages):
@@ -186,16 +213,17 @@ def build_records(pages):
         if not seen["fields"]:
             continue
         for item_id in ids:
-            key = str(item_id)
-            records.setdefault(key, {"item_id": item_id, "observations": []})
-            records[key]["observations"].append(seen)
+            records.setdefault(item_id, {"item_id": item_id, "observations": []})
+            records[item_id]["observations"].append(seen)
     for record in records.values():
         record["observations"].sort(key=lambda row: row["page_id"])
+    records = rekey(records, known)
     report["records"] = len(records)
+    report["unbound_ids"] = sum(1 for key in records if not key.startswith("oteryn:"))
     report["multi_page_ids"] = sum(
         1 for record in records.values() if len(record["observations"]) > 1
     )
-    return dict(sorted(records.items(), key=lambda kv: kv[1]["item_id"])), report
+    return records, report
 
 
 def canonical_records_bytes(records):
@@ -212,6 +240,7 @@ def snapshot_document(records, captured_at):
         "snapshot_sha256": hashlib.sha256(canonical_records_bytes(records)).hexdigest(),
         "source": {
             "api": family_capture.API_URL,
+            "attribution": ATTRIBUTION,
             "provider": "tibia_fandom",
             "source_key": "oteryn:source.tibiawiki",
             "stat_params": list(STAT_PARAMS),
@@ -255,9 +284,23 @@ def main(argv=None):
     parser.add_argument(
         "--captured-at", help="UTC timestamp to record (default: now, or the cache's)"
     )
+    parser.add_argument(
+        "--rekey",
+        action="store_true",
+        help="re-key the committed snapshot offline instead of capturing",
+    )
     args = parser.parse_args(argv)
+    known = resolvable_item_keys()
 
-    if args.cache is not None and args.cache.is_file():
+    if args.rekey:
+        committed = json.loads(DEFAULT_OUTPUT.read_text(encoding="utf-8"))
+        records = rekey(committed["records"], known)
+        report = {
+            "records": len(records),
+            "unbound_ids": sum(1 for key in records if not key.startswith("oteryn:")),
+        }
+        captured_at = committed["captured_at"]
+    elif args.cache is not None and args.cache.is_file():
         cached = json.loads(args.cache.read_text(encoding="utf-8"))
         pages, captured_at = cached["pages"], cached["captured_at"]
     else:
@@ -269,7 +312,8 @@ def main(argv=None):
                 json.dumps({"captured_at": captured_at, "pages": pages}),
                 encoding="utf-8",
             )
-    records, report = build_records(pages)
+    if not args.rekey:
+        records, report = build_records(pages, known)
     document = snapshot_document(records, args.captured_at or captured_at)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
