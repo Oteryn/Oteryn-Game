@@ -1,0 +1,323 @@
+{
+ "engine": "crystalserver",
+ "otbm_sha256": "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7",
+ "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+ "source": "data-global/world/world.otbm",
+ "towns": [
+  {
+   "name": "Dawnport Tutorial",
+   "temple": {
+    "x": 31934,
+    "y": 31925,
+    "z": 7
+   },
+   "town_id": 1
+  },
+  {
+   "name": "Dawnport",
+   "temple": {
+    "x": 32064,
+    "y": 31894,
+    "z": 6
+   },
+   "town_id": 2
+  },
+  {
+   "name": "Rookgaard",
+   "temple": {
+    "x": 32097,
+    "y": 32219,
+    "z": 7
+   },
+   "town_id": 3
+  },
+  {
+   "name": "Island of Destiny",
+   "temple": {
+    "x": 32091,
+    "y": 32027,
+    "z": 7
+   },
+   "town_id": 4
+  },
+  {
+   "name": "Ab'Dendriel",
+   "temple": {
+    "x": 32732,
+    "y": 31634,
+    "z": 7
+   },
+   "town_id": 5
+  },
+  {
+   "name": "Carlin",
+   "temple": {
+    "x": 32360,
+    "y": 31782,
+    "z": 7
+   },
+   "town_id": 6
+  },
+  {
+   "name": "Kazordoon",
+   "temple": {
+    "x": 32649,
+    "y": 31925,
+    "z": 11
+   },
+   "town_id": 7
+  },
+  {
+   "name": "Thais",
+   "temple": {
+    "x": 32369,
+    "y": 32241,
+    "z": 7
+   },
+   "town_id": 8
+  },
+  {
+   "name": "Venore",
+   "temple": {
+    "x": 32957,
+    "y": 32076,
+    "z": 7
+   },
+   "town_id": 9
+  },
+  {
+   "name": "Ankrahmun",
+   "temple": {
+    "x": 33194,
+    "y": 32853,
+    "z": 8
+   },
+   "town_id": 10
+  },
+  {
+   "name": "Edron",
+   "temple": {
+    "x": 33217,
+    "y": 31814,
+    "z": 8
+   },
+   "town_id": 11
+  },
+  {
+   "name": "Farmine",
+   "temple": {
+    "x": 33023,
+    "y": 31521,
+    "z": 11
+   },
+   "town_id": 12
+  },
+  {
+   "name": "Darashia",
+   "temple": {
+    "x": 33213,
+    "y": 32454,
+    "z": 1
+   },
+   "town_id": 13
+  },
+  {
+   "name": "Liberty Bay",
+   "temple": {
+    "x": 32317,
+    "y": 32826,
+    "z": 7
+   },
+   "town_id": 14
+  },
+  {
+   "name": "Port Hope",
+   "temple": {
+    "x": 32594,
+    "y": 32745,
+    "z": 7
+   },
+   "town_id": 15
+  },
+  {
+   "name": "Svargrond",
+   "temple": {
+    "x": 32212,
+    "y": 31132,
+    "z": 7
+   },
+   "town_id": 16
+  },
+  {
+   "name": "Yalahar",
+   "temple": {
+    "x": 32787,
+    "y": 31276,
+    "z": 7
+   },
+   "town_id": 17
+  },
+  {
+   "name": "Gray Beach",
+   "temple": {
+    "x": 33447,
+    "y": 31323,
+    "z": 9
+   },
+   "town_id": 18
+  },
+  {
+   "name": "Krailos",
+   "temple": {
+    "x": 33657,
+    "y": 31665,
+    "z": 8
+   },
+   "town_id": 19
+  },
+  {
+   "name": "Rathleton",
+   "temple": {
+    "x": 33594,
+    "y": 31899,
+    "z": 6
+   },
+   "town_id": 20
+  },
+  {
+   "name": "Roshamuul",
+   "temple": {
+    "x": 33513,
+    "y": 32363,
+    "z": 6
+   },
+   "town_id": 21
+  },
+  {
+   "name": "Issavi",
+   "temple": {
+    "x": 33921,
+    "y": 31477,
+    "z": 5
+   },
+   "town_id": 22
+  },
+  {
+   "name": "Cobra Bastion",
+   "temple": {
+    "x": 33397,
+    "y": 32651,
+    "z": 7
+   },
+   "town_id": 24
+  },
+  {
+   "name": "Bounac",
+   "temple": {
+    "x": 32424,
+    "y": 32445,
+    "z": 7
+   },
+   "town_id": 25
+  },
+  {
+   "name": "Feyrist",
+   "temple": {
+    "x": 33490,
+    "y": 32221,
+    "z": 7
+   },
+   "town_id": 26
+  },
+  {
+   "name": "Gnomprona",
+   "temple": {
+    "x": 33517,
+    "y": 32856,
+    "z": 14
+   },
+   "town_id": 27
+  },
+  {
+   "name": "Marapur",
+   "temple": {
+    "x": 33842,
+    "y": 32853,
+    "z": 7
+   },
+   "town_id": 28
+  },
+  {
+   "name": "Candia",
+   "temple": {
+    "x": 33338,
+    "y": 32125,
+    "z": 7
+   },
+   "town_id": 29
+  },
+  {
+   "name": "Silvertides",
+   "temple": {
+    "x": 33776,
+    "y": 32842,
+    "z": 7
+   },
+   "town_id": 30
+  },
+  {
+   "name": "Moonfall",
+   "temple": {
+    "x": 33776,
+    "y": 32754,
+    "z": 3
+   },
+   "town_id": 31
+  },
+  {
+   "name": "Blue Valley",
+   "temple": {
+    "x": 33614,
+    "y": 31494,
+    "z": 7
+   },
+   "town_id": 32
+  },
+  {
+   "name": "Newhaven",
+   "temple": {
+    "x": 32536,
+    "y": 32514,
+    "z": 7
+   },
+   "town_id": 33
+  },
+  {
+   "name": "Targuna",
+   "temple": {
+    "x": 31934,
+    "y": 31925,
+    "z": 7
+   },
+   "town_id": 34
+  },
+  {
+   "name": "Salgadora",
+   "temple": {
+    "x": 34052,
+    "y": 32485,
+    "z": 7
+   },
+   "town_id": 35
+  },
+  {
+   "name": "Home",
+   "temple": {
+    "x": 32316,
+    "y": 31942,
+    "z": 7
+   },
+   "town_id": 36
+  }
+ ]
+}

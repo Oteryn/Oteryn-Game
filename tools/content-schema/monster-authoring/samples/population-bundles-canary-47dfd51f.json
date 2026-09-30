@@ -39,7 +39,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1609,
+  "bundles": 1610,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -1437,6 +1437,7 @@
     {"monster":"the_lord_of_the_lice","file":"quests/ferumbras_ascension/bosses/the_lord_of_the_lice","sha256":"eeb4eef8798cc3eb593c340a7e22671e635744bee88478ac5295e4b666618be3"},
     {"monster":"the_many","file":"quests/killing_in_the_name_of/the_many","sha256":"58afc1a78998fad2c532252935c1214dcef4fc6b51d735cdfea54fc0cdc70111"},
     {"monster":"the_masked_marauder","file":"quests/svargrond_arena/warlord/the_masked_marauder","sha256":"7c2bc7b64c42ca8d241ed75047142653a63e4152e8b20665276ef3e81cda6636"},
+    {"monster":"the_monster","file":"bosses/the_monster","sha256":"cc6098d2ac9c2ee686195b67d74493f2b1eb47de3ac406d77bca27c3970cfb86"},
     {"monster":"the_moonsnow_magnolia","file":"data-global/monster/summer_update_2026/bosses/the_moonsnow_magnolia","sha256":"da81d27c83c397897541afbddd3717254eb8f81f01612889037dfc7e9e3f658e","binding":{"source_key":"oteryn:source.crystalserver","source_revision":"00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"crystalserver/monster-file","external_id":"data-global/monster/summer_update_2026/bosses/the_moonsnow_magnolia.lua"}},
     {"monster":"the_mutated_pumpkin","file":"event_creatures/the_mutated_pumpkin","sha256":"cd99577c2aaa2879a5f83c795133db21ede466c0a0ce8763a42acfd09cffae45"},
     {"monster":"the_nightmare_beast","file":"quests/the_dream_courts/bosses/the_nightmare_beast","sha256":"22afab081ac21ad97cfff3257eb0cc8d885a398f81c6a116a3446c0f20080018"},

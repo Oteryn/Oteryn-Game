@@ -2689,7 +2689,7 @@
             "items",
             "selection"
           ],
-          "description": "D18: remove_items over the ability area. first_listed_per_tile removes on every tile the first listed item present; top_item_first_tile removes the top item of the first tile where it is listed, then stops."
+          "description": "D18: remove_items over the ability area. first_listed_per_tile removes on every tile the first listed item present; top_item_first_tile removes the top item of the first tile where it is listed, then stops. Tiles are scanned column by column, west to east, each column north to south (Canary destroy_magic_walls.lua)."
         },
         "summon": {
           "type": "object",
