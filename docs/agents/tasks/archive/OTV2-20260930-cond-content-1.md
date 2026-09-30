@@ -8,10 +8,10 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/cond-content-1
-pr: "exact PR in the #162 FREEZE_SHA entry"
+pr: 1400
 base_sha: a6a054e
-head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
-final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
+head_sha: "the last #162 FREEZE_SHA entry for PR #1400 (a commit cannot name its own SHA)"
+final_head_sha: "the last #162 FREEZE_SHA entry for PR #1400 (a commit cannot name its own SHA)"
 final_head_frozen_at: null
 owner: claude-code-session-01GSyX7KuFE9reL9gHbJ8if1 (content worker, #162 allocation)
 created_at: 2026-09-30
@@ -74,11 +74,13 @@ the control plane's content train runs `content` and registers the family.
 
 ## Closeout
 
-- PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- PR: #1400 (https://github.com/Oteryn/Oteryn-Game/pull/1400). Merge commit/result: its squash merge.
 - Owner and control-plane questions are on #162 (blocked coefficients, searing fire, Holy Flash,
   the CI workflow, the package size).
 - Codex review of `3def6299` (3 findings: P1 unpinned Canary capture, P2 geometric schedule
-  invariants, P2 obsolete shards): all fixed in the next candidate with tests.
+  invariants, P2 obsolete shards): all fixed in `7e46cd9f` with tests.
+- Codex review of `7e46cd9f` (1 finding: P2 placeholder PR in this record): fixed in the next
+  candidate.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
