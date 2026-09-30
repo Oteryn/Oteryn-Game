@@ -6881,6 +6881,117 @@
         "game server channel runtime"
       ],
       "notes": "CHAR-POSITION-0 \u00a73.2, pending on acceptance of CHAR-POSITION-0; the final write at logout does not depend on this interval."
+    },
+    {
+      "id": "CHARM5-RL-01",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Bestiary races in one BestiaryViewV1, and the largest race index",
+      "unit": "races per view",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses the 1025th entry or a race index above 1024 before allocating for it; the whole view is at most 21504 bytes (state domain 4). A server view over the bound is a server fault and is never truncated.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: a view of 1024 races at race index 1024 encodes and decodes",
+        "max+1=1025: a 1025th entry or race index 1025 is refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/bestiary.rs MAX_BESTIARY_VIEW_ENTRIES, MAX_BESTIARY_RACE",
+        "crates/protocol-oteryn/src/charm.rs CharmAssignIntentV1.race and CharmStateV1.assigned_race"
+      ],
+      "notes": "833 Bestiary races in the captured staticdata (CHARM-0 section 2). CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-02",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Largest Bestiary kill threshold in BestiaryRaceProgressV1",
+      "unit": "kills",
+      "hard_maximum": 100000,
+      "configurable_range": {
+        "minimum": 100000,
+        "maximum": 100000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A threshold or kill count above 100000 is refused in both directions; it bounds each varint to 3 bytes.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=100000: a final threshold of 100000 round-trips",
+        "max+1=100001: refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/bestiary.rs MAX_BESTIARY_KILL_THRESHOLD"
+      ],
+      "notes": "The captured definitions top out at 5000. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-03",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Charms in one CharmViewV1, the largest charm index, and the largest assignment slot limit",
+      "unit": "charms per view",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The decoder refuses the 33rd entry, a charm index above 32 or a slot limit above 32 before allocating for it; the whole view is at most 554 bytes (state domain 5).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=32: a view of 32 charms at charm index 32 with slot limit 32 is exactly 554 bytes and round-trips",
+        "max+1=33: a 33rd entry, charm index 33 or slot limit 33 is refused in both directions"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/charm.rs MAX_CHARMS, MAX_CHARM"
+      ],
+      "notes": "25 charms in the candidate catalogue. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-04",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Largest single charm stage cost in CharmStateV1.next_stage_cost",
+      "unit": "Charm Points or Minor Charm Echoes",
+      "hard_maximum": 100000,
+      "configurable_range": {
+        "minimum": 100000,
+        "maximum": 100000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A cost above 100000 is refused in both directions.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=100000: a next stage cost of 100000 round-trips",
+        "max+1=100001: refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/charm.rs MAX_CHARM_STAGE_COST"
+      ],
+      "notes": "CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+    },
+    {
+      "id": "CHARM5-RL-05",
+      "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+      "resource": "Largest available balance of Charm Points or Minor Charm Echoes in CharmViewV1",
+      "unit": "Charm Points or Minor Charm Echoes",
+      "hard_maximum": 1000000,
+      "configurable_range": {
+        "minimum": 1000000,
+        "maximum": 1000000
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "A balance above 1000000 is refused in both directions.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1000000: both balances at 1000000 round-trip",
+        "max+1=1000001: refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/charm.rs MAX_CHARM_BALANCE"
+      ],
+      "notes": "Earned Charm Points are at most 1024 x 100. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
     }
   ]
 }

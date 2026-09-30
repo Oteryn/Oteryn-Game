@@ -158,6 +158,7 @@ fn shield_bash() -> SpellDefinition {
 
 pub(super) fn caster(vocation: Vocation) -> CasterState {
     CasterState {
+        harmony_multiplier: super::harmony::HarmonyMultiplier::ONE,
         vocation,
         level: 100,
         magic_level: 50,

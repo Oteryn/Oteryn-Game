@@ -1,6 +1,8 @@
 """Derive and verify the staticmapdata cell order against CrystalServer map House tiles.
 
-Also compares the House doors (cells holding a `type="door"` item) with the engine map.
+Also compares the House doors (cells holding a `type="door"` item) with the engine map, and
+the official bed count with the engine map bed items (`type="bed"`, two per bed): the client
+layout carries no furniture, so bed items come with the base map, not the House catalogue.
 
 Local-only evidence tool (the pinned map is 53 MB and not fetched by CI). Reads the
 pinned gzip OTBM `data-global/world/world.otbm` of crystalserver@00ce02a5, collects
@@ -23,6 +25,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from convert_houses import (
+    BED_ITEMS,
     CRYSTAL_REVISION,
     CRYSTAL_SAMPLE,
     DOOR_ITEMS,
@@ -97,7 +100,13 @@ def candidate_cells(layout: dict, order: str, z_up: bool, skip_after: bool):
     return cells
 
 
-def check(staged: list[dict], crystal: dict, tiles: dict, door_items: set[int]) -> dict:
+def check(
+    staged: list[dict],
+    crystal: dict,
+    tiles: dict,
+    door_items: set[int],
+    bed_items: set[int],
+) -> dict:
     engine = {r["client_id"]: r["house_id"] for r in crystal["records"]}
     scores = {}
     for order, z_up, skip_after in itertools.product(
@@ -114,7 +123,7 @@ def check(staged: list[dict], crystal: dict, tiles: dict, door_items: set[int]) 
                 hit += bool(items) and engine_tiles.get(p, [None])[0] in items
         name = f"{order}|z_{'up' if z_up else 'down'}|skip_{'after' if skip_after else 'before'}"
         scores[name] = hit
-    totals, uncovered = Counter(), []
+    totals, uncovered, bed_divergence = Counter(), [], []
     for record in staged:
         engine_tiles = tiles.get(engine[record["source_id"]], {})
         client = {tuple(t) for t in layout_tiles(record["layout"])}
@@ -131,6 +140,13 @@ def check(staged: list[dict], crystal: dict, tiles: dict, door_items: set[int]) 
         totals["engine_doors"] += len(engine_doors)
         totals["engine_doors_on_client_doors"] += len(engine_doors & client_doors)
         totals["houses_identical_door_sets"] += client_doors == engine_doors
+        engine_beds = sum(
+            i in bed_items for items in engine_tiles.values() for i in items
+        )
+        if engine_beds == 2 * record["beds"]:
+            totals["houses_bed_items_twice_beds"] += 1
+        else:
+            bed_divergence.append([record["source_id"], record["beds"], engine_beds])
         if engine_tiles and covered / len(engine_tiles) < 0.9:
             uncovered.append(record["source_id"])
     best = max(scores, key=scores.get)
@@ -142,6 +158,7 @@ def check(staged: list[dict], crystal: dict, tiles: dict, door_items: set[int]) 
         "selected_order": best,
         "totals": dict(sorted(totals.items())),
         "houses_below_90_percent_engine_coverage": sorted(uncovered),
+        "bed_divergence_source_id_beds_engine_bed_items": sorted(bed_divergence),
     }
 
 
@@ -157,8 +174,13 @@ def main(argv=None) -> int:
     door_items = set(
         json.loads(DOOR_ITEMS.read_text(encoding="utf-8"))["door_item_ids"]
     )
+    bed_items = set(json.loads(BED_ITEMS.read_text(encoding="utf-8"))["bed_item_ids"])
     result = check(
-        load_staged(), crystal, house_tiles(gzip.decompress(packed)), door_items
+        load_staged(),
+        crystal,
+        house_tiles(gzip.decompress(packed)),
+        door_items,
+        bed_items,
     )
     if result["selected_order"] != "zxy|z_up|skip_after":
         raise ValueError(f"cell order changed: {result['selected_order']}")

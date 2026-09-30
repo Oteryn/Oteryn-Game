@@ -8,10 +8,11 @@
 //! fenced Character transaction. The port is bound to the one fenced character of the session,
 //! so no method here names a character.
 //!
-//! Nothing routes to this module until the protocol owner registers the proposed command types
-//! and state domains; composition then dispatches through [`dispatch_charm_command`].
+//! The command types and state domains are registered under capability 1 `BESTIARY_CHARMS_V1`,
+//! which the server does not offer before CHARM-6 (D170). Nothing routes to this module until
+//! composition (CHARM-5-COMP) dispatches through [`dispatch_charm_command`].
 
-// Composition waits for ID registration (proposal §8); until then only the tests reach this.
+// Composition is CHARM-5-COMP (proposal §8 step 3); until then only the tests reach this.
 #![cfg_attr(not(test), allow(dead_code))]
 
 use std::future::Future;
@@ -40,6 +41,8 @@ pub(crate) trait CharmProgressionPort {
         &self,
     ) -> impl Future<Output = Result<Vec<BestiaryRaceProgress>, CharmPortUnavailable>> + Send;
     /// The character's charms, derived available balances and slot limit (CHARM-3), in any order.
+    /// Each entry's `effect_active` is `CharmDefinition::effect_active` of that charm, derived from
+    /// CHARM-4's `CharmMissingSystem` and never stored (Sol ruling, #162 comment 5913269950).
     fn charms(&self) -> impl Future<Output = Result<CharmView, CharmPortUnavailable>> + Send;
     /// One CHARM-3 `commit_charm_command` of `UnlockNextStage` under `occurrence`. The port
     /// answers `STAGE_MISMATCH` when the charm's stored stage is not `intent.expected_stage`
@@ -443,6 +446,7 @@ mod tests {
             unlocked_stage,
             assigned_race: race.map(index),
             next_stage_cost: if unlocked_stage == 3 { 0 } else { 100 },
+            effect_active: charm.is_multiple_of(2),
         }
     }
 
