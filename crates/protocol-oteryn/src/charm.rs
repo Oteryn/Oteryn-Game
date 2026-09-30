@@ -2,8 +2,9 @@
 //!
 //! Wire proposal: `docs/contracts/protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md` §3.2 to
 //! §3.4, following CHARM-0 §4.2 and the owner answers of CHARM-0 §7: only unlocks and assignments
-//! are stored and the balances are derived (answer 2a); there is **no unassign command** in this
-//! version (answer 3c). The command-type, state-domain and payload-type IDs below are proposals
+//! are stored and the balances are derived (answer 2a). This proposal has **no unassign command**:
+//! D170 plans unassign and reset as CHARM-6, which proposes its own command types and gates the
+//! player-facing charm release. The command-type, state-domain and payload-type IDs below are proposals
 //! for the protocol owner. They are not in `PROTOCOL_OTERYN_V1_REGISTRY.json`, and no session or
 //! server sends or accepts them until that owner registers them.
 //!
@@ -14,8 +15,8 @@
 //! Decoding is strict, and encoding refuses the same values as a server fault before any byte is
 //! emitted: zero or unknown enum values, a charm or race index of zero or above its bound, charms
 //! out of ascending order or repeated, a stage above 3, an assignment on a locked charm, a next
-//! stage cost that is zero before the final stage or non-zero at it, a cost or balance above its
-//! bound, and an unlock that expects the final stage all fail closed.
+//! stage cost that is zero before the final stage or non-zero at it, a cost, balance or slot limit
+//! above its bound, and an unlock that expects the final stage all fail closed.
 
 use std::num::NonZeroU32;
 
@@ -46,8 +47,9 @@ pub const MAX_CHARM_STAGE_COST: u32 = 100_000;
 /// Proposed `CHARM5-RL-05`: the largest available balance of either currency.
 pub const MAX_CHARM_BALANCE: u32 = 1_000_000;
 /// Worst case per entry: charm 1 + 1, kind 1 + 1, stage 1 + 1, race 1 + 2, cost 1 + 3, plus the
-/// entry's own tag and length = 15 bytes; 32 entries = 480, and two balances of 1 + 3 = 488 bytes.
-pub const MAX_CHARM_VIEW_BYTES: usize = 488;
+/// entry's own tag and length = 15 bytes; 32 entries = 480, two balances of 1 + 3 and the slot
+/// limit of 1 + 1 = 490 bytes.
+pub const MAX_CHARM_VIEW_BYTES: usize = 490;
 /// Canonical worst case 4 bytes (charm 1 + 1, expected stage 1 + 1), with slack for explicit
 /// defaults.
 pub const MAX_CHARM_UNLOCK_STAGE_INTENT_BYTES: usize = 8;
@@ -108,12 +110,20 @@ pub struct CharmView {
     pub charm_points_available: u32,
     /// Derived: Minor Charm Echoes earned minus spent (CHARM-0 §4.2), never stored.
     pub minor_charm_echoes_available: u32,
+    /// How many charms the character may hold assigned (D169: 2 free, 6 Premium), at most
+    /// [`MAX_CHARMS`]; `None` (0 on the wire) is no limit (the Charm Expansion). The slots in use
+    /// are the charms with an assigned race and are not sent. A display hint; CHARM-3 enforces
+    /// the limit.
+    pub assignment_slot_limit: Option<NonZeroU32>,
 }
 
 fn check_view(view: &CharmView) -> WireResult<()> {
     if view.charms.len() > MAX_CHARMS
         || view.charm_points_available > MAX_CHARM_BALANCE
         || view.minor_charm_echoes_available > MAX_CHARM_BALANCE
+        || view
+            .assignment_slot_limit
+            .is_some_and(|limit| limit.get() > MAX_CHARM)
     {
         return Err(CyclopediaWireError::LimitExceeded);
     }
@@ -151,6 +161,11 @@ pub fn encode_charm_view(view: &CharmView) -> WireResult<Vec<u8>> {
     }
     push_nonzero_varint_field(&mut output, 2, u64::from(view.charm_points_available));
     push_nonzero_varint_field(&mut output, 3, u64::from(view.minor_charm_echoes_available));
+    push_nonzero_varint_field(
+        &mut output,
+        4,
+        u64::from(view.assignment_slot_limit.map_or(0, NonZeroU32::get)),
+    );
     Ok(output)
 }
 
@@ -177,7 +192,7 @@ pub fn decode_charm_view(payload: &[u8]) -> WireResult<CharmView> {
     }
     let mut cursor = 0;
     let mut charms = Vec::new();
-    let (mut points, mut echoes) = (None, None);
+    let (mut points, mut echoes, mut slot_limit) = (None, None, None);
     while cursor < payload.len() {
         match read_varint(payload, &mut cursor)? {
             0x0a => {
@@ -188,6 +203,7 @@ pub fn decode_charm_view(payload: &[u8]) -> WireResult<CharmView> {
             }
             0x10 => set_once(&mut points, read_uint32(payload, &mut cursor)?)?,
             0x18 => set_once(&mut echoes, read_uint32(payload, &mut cursor)?)?,
+            0x20 => set_once(&mut slot_limit, read_uint32(payload, &mut cursor)?)?,
             _ => return Err(CyclopediaWireError::Malformed),
         }
     }
@@ -195,6 +211,7 @@ pub fn decode_charm_view(payload: &[u8]) -> WireResult<CharmView> {
         charms,
         charm_points_available: points.unwrap_or(0),
         minor_charm_echoes_available: echoes.unwrap_or(0),
+        assignment_slot_limit: slot_limit.and_then(NonZeroU32::new),
     };
     check_view(&view)?;
     Ok(view)
@@ -209,8 +226,8 @@ pub struct CharmUnlockStageIntent {
     pub expected_stage: u8,
 }
 
-/// `CharmAssignIntentV1`: assign `charm` to the Bestiary `race`. There is no unassign command in
-/// this version (CHARM-0 §7 answer 3c).
+/// `CharmAssignIntentV1`: assign `charm` to the Bestiary `race`. Unassign is not part of this
+/// proposal; CHARM-6 proposes it (D170).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CharmAssignIntent {
     pub charm: NonZeroU32,
@@ -235,7 +252,7 @@ pub enum CharmAssignDisposition {
     Assigned = 1,
     /// The charm has no unlocked stage.
     CharmLocked = 2,
-    /// The charm already holds a race; without an unassign command it cannot be moved.
+    /// The charm already holds a race; it moves only through CHARM-6 unassign (D170).
     AlreadyAssigned = 3,
     /// The race's Bestiary stage is below what the charm kind needs (major: complete; minor:
     /// stage 2; CHARM-0 §4.2).
@@ -247,6 +264,8 @@ pub enum CharmAssignDisposition {
     UnknownRace = 7,
     /// Ineligible actor, lost Character fence, or the charm system is not available.
     Rejected = 8,
+    /// Every assignment slot of the character is in use (D169).
+    AssignmentSlotsFull = 9,
 }
 
 impl CharmUnlockStageIntent {
@@ -350,6 +369,7 @@ pub fn decode_charm_assign_result(payload: &[u8]) -> WireResult<CharmAssignDispo
         6 => CharmAssignDisposition::UnknownCharm,
         7 => CharmAssignDisposition::UnknownRace,
         8 => CharmAssignDisposition::Rejected,
+        9 => CharmAssignDisposition::AssignmentSlotsFull,
         _ => return Err(CyclopediaWireError::Malformed),
     })
 }
@@ -362,10 +382,7 @@ mod tests {
         MAX_BESTIARY_VIEW_BYTES, SNAPSHOT_TYPE_CHARACTER_BESTIARY_V1,
         STATE_DOMAIN_CHARACTER_BESTIARY,
     };
-    use serde_json::Value;
 
-    const PROTOCOL_REGISTRY: &str =
-        include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
     const PROPOSAL: &str = include_str!(
         "../../../docs/contracts/protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md"
     );
@@ -395,7 +412,13 @@ mod tests {
             charms,
             charm_points_available: points,
             minor_charm_echoes_available: echoes,
+            assignment_slot_limit: None,
         }
+    }
+
+    fn limited(mut value: CharmView, limit: u32) -> CharmView {
+        value.assignment_slot_limit = Some(index(limit));
+        value
     }
 
     /// One `charms` entry around hand-written inner bytes: 0a <len> <inner>.
@@ -413,16 +436,19 @@ mod tests {
             (view(vec![], 0, 100), vec![0x18, 0x64]),
             // A locked major charm costing 100 (stage and race omitted); a minor charm at stage 1
             // on race 5, next cost 150 = 96 01; charm 25 = 0x19 complete on race 300 = AC 02
-            // (cost omitted); 480 points = E0 03, no echoes.
+            // (cost omitted); 480 points = E0 03, no echoes; 6 slots (Premium) = 20 06.
             (
-                view(
-                    vec![
-                        state(1, CharmKind::Major, 0, None, 100),
-                        state(2, CharmKind::Minor, 1, Some(5), 150),
-                        state(25, CharmKind::Major, 3, Some(300), 0),
-                    ],
-                    480,
-                    0,
+                limited(
+                    view(
+                        vec![
+                            state(1, CharmKind::Major, 0, None, 100),
+                            state(2, CharmKind::Minor, 1, Some(5), 150),
+                            state(25, CharmKind::Major, 3, Some(300), 0),
+                        ],
+                        480,
+                        0,
+                    ),
+                    6,
                 ),
                 [
                     entry(&[0x08, 0x01, 0x10, 0x01, 0x28, 0x64]),
@@ -430,7 +456,7 @@ mod tests {
                         0x08, 0x02, 0x10, 0x02, 0x18, 0x01, 0x20, 0x05, 0x28, 0x96, 0x01,
                     ]),
                     entry(&[0x08, 0x19, 0x10, 0x01, 0x18, 0x03, 0x20, 0xac, 0x02]),
-                    vec![0x10, 0xe0, 0x03],
+                    vec![0x10, 0xe0, 0x03, 0x20, 0x06],
                 ]
                 .concat(),
             ),
@@ -443,10 +469,12 @@ mod tests {
             assert_eq!(encode_charm_view(&value), Ok(bytes.clone()), "{value:?}");
             assert_eq!(decode_charm_view(&bytes), Ok(value), "{bytes:02x?}");
         }
-        // Balances before entries and explicit defaults decode as the canonical form.
+        // Balances before entries and explicit defaults (an explicit 0 slot limit is no limit)
+        // decode as the canonical form.
         assert_eq!(
             decode_charm_view(&[
-                0x18, 0x00, 0x10, 0x05, 0x0a, 0x08, 0x28, 0x64, 0x18, 0x00, 0x10, 0x01, 0x08, 0x01
+                0x20, 0x00, 0x18, 0x00, 0x10, 0x05, 0x0a, 0x08, 0x28, 0x64, 0x18, 0x00, 0x10, 0x01,
+                0x08, 0x01
             ]),
             Ok(view(vec![state(1, CharmKind::Major, 0, None, 100)], 5, 0))
         );
@@ -458,16 +486,19 @@ mod tests {
             .map(|charm| state(charm, CharmKind::Minor, 2, Some(1024), MAX_CHARM_STAGE_COST))
             .collect();
         assert_eq!(charms.len(), MAX_CHARMS);
-        let value = view(charms, MAX_CHARM_BALANCE, MAX_CHARM_BALANCE);
+        let value = limited(
+            view(charms, MAX_CHARM_BALANCE, MAX_CHARM_BALANCE),
+            MAX_CHARM,
+        );
         let bytes = encode_charm_view(&value).expect("view at its bounds");
         assert_eq!(bytes.len(), MAX_CHARM_VIEW_BYTES);
-        // The last entry and the balances by hand: race 1024 = 80 08, 100000 = A0 8D 06,
-        // 1000000 = C0 84 3D.
+        // The last entry, the balances and the slot limit by hand: race 1024 = 80 08,
+        // 100000 = A0 8D 06, 1000000 = C0 84 3D, 32 slots = 20 20.
         assert_eq!(
-            bytes[bytes.len() - 23..],
+            bytes[bytes.len() - 25..],
             [
                 0x0a, 0x0d, 0x08, 0x20, 0x10, 0x02, 0x18, 0x02, 0x20, 0x80, 0x08, 0x28, 0xa0, 0x8d,
-                0x06, 0x10, 0xc0, 0x84, 0x3d, 0x18, 0xc0, 0x84, 0x3d
+                0x06, 0x10, 0xc0, 0x84, 0x3d, 0x18, 0xc0, 0x84, 0x3d, 0x20, 0x20
             ]
         );
         assert_eq!(decode_charm_view(&bytes), Ok(value));
@@ -478,7 +509,7 @@ mod tests {
         let one = |charm: CharmState| view(vec![charm], 0, 0);
         let valid = state(1, CharmKind::Major, 0, None, 100);
         let valid_bytes = [0x08, 0x01, 0x10, 0x01, 0x28, 0x64];
-        let cases: [(&str, CharmView, Vec<u8>, CyclopediaWireError); 11] = [
+        let cases: [(&str, CharmView, Vec<u8>, CyclopediaWireError); 12] = [
             (
                 "charm above its bound",
                 one(state(MAX_CHARM + 1, CharmKind::Major, 0, None, 100)),
@@ -559,6 +590,12 @@ mod tests {
                 vec![0x18, 0xc1, 0x84, 0x3d],
                 CyclopediaWireError::LimitExceeded,
             ),
+            (
+                "slot limit above its bound",
+                limited(view(vec![], 0, 0), MAX_CHARM + 1),
+                vec![0x20, 0x21],
+                CyclopediaWireError::LimitExceeded,
+            ),
         ];
         for (case, value, bytes, error) in cases {
             assert_eq!(encode_charm_view(&value), Err(error), "encode {case}");
@@ -602,7 +639,8 @@ mod tests {
             ),
             ("points repeated", &[0x10, 0x01, 0x10, 0x01]),
             ("echoes repeated", &[0x18, 0x01, 0x18, 0x01]),
-            ("unknown top-level field 4", &[0x20, 0x01]),
+            ("slot limit repeated", &[0x20, 0x02, 0x20, 0x02]),
+            ("unknown top-level field 5", &[0x28, 0x01]),
             ("points wrong wire type", &[0x12, 0x00]),
             ("entry length past end", &[0x0a, 0x05, 0x08, 0x01]),
             ("truncated varint", &[0x10, 0x81]),
@@ -793,6 +831,7 @@ mod tests {
             (CharmAssignDisposition::UnknownCharm, 6),
             (CharmAssignDisposition::UnknownRace, 7),
             (CharmAssignDisposition::Rejected, 8),
+            (CharmAssignDisposition::AssignmentSlotsFull, 9),
         ] {
             let bytes = [0x08, value];
             assert_eq!(encode_charm_assign_result(disposition), bytes);
@@ -801,7 +840,7 @@ mod tests {
         for bad in [
             &[][..],                       // missing disposition
             &[0x08, 0x00][..],             // zero enum
-            &[0x08, 0x09][..],             // unknown to both
+            &[0x08, 0x0a][..],             // unknown to both
             &[0x08, 0x01, 0x08, 0x01][..], // repeated field
             &[0x10, 0x01][..],             // unknown field
             &[0x0a, 0x00][..],             // wrong wire type
@@ -818,11 +857,13 @@ mod tests {
                 "{bad:02x?}"
             );
         }
-        // 7 is an assign disposition but not an unlock one.
-        assert_eq!(
-            decode_charm_unlock_stage_result(&[0x08, 0x07]),
-            Err(CyclopediaWireError::Malformed)
-        );
+        // 7 and 9 are assign dispositions but not unlock ones.
+        for assign_only in [0x07, 0x09] {
+            assert_eq!(
+                decode_charm_unlock_stage_result(&[0x08, assign_only]),
+                Err(CyclopediaWireError::Malformed)
+            );
+        }
         let oversized = [0x08, 0x81, 0x80, 0x80, 0x00];
         assert_eq!(
             decode_charm_unlock_stage_result(&oversized),
@@ -834,36 +875,19 @@ mod tests {
         );
     }
 
+    /// The proposal names every ID, message and byte bound the codecs implement. Whether the IDs
+    /// are free is the registry acceptance PR's check, not this proposal's (proposal §8).
     #[test]
-    fn proposed_ids_are_free_or_registered_as_proposed() {
-        let protocol: Value = serde_json::from_str(PROTOCOL_REGISTRY).expect("protocol registry");
-        let commands = protocol["command_types"].as_array().expect("command_types");
+    fn the_proposal_names_the_implemented_ids_messages_and_bounds() {
         for (id, name) in [
             (
                 COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
                 "CHARM_UNLOCK_STAGE_INTENT",
             ),
             (COMMAND_TYPE_CHARM_ASSIGN_INTENT, "CHARM_ASSIGN_INTENT"),
-        ] {
-            if let Some(command) = commands.iter().find(|command| command["id"] == id) {
-                assert_eq!(
-                    command["name"], name,
-                    "command type {id} taken by another writer"
-                );
-            }
-            assert!(PROPOSAL.contains(&format!("| {id} | `{name}` |")), "{name}");
-        }
-        let domains = protocol["state_domains"].as_array().expect("state_domains");
-        for (id, name) in [
             (STATE_DOMAIN_CHARACTER_BESTIARY, "CHARACTER_BESTIARY"),
             (STATE_DOMAIN_CHARACTER_CHARMS, "CHARACTER_CHARMS"),
         ] {
-            if let Some(domain) = domains.iter().find(|domain| domain["id"] == id) {
-                assert_eq!(
-                    domain["name"], name,
-                    "state domain {id} taken by another writer"
-                );
-            }
             assert!(PROPOSAL.contains(&format!("| {id} | `{name}` |")), "{name}");
         }
         assert_eq!(SNAPSHOT_TYPE_CHARACTER_BESTIARY_V1, 1);
@@ -896,7 +920,7 @@ mod tests {
                 "{bound}"
             );
         }
-        // No unassign command is proposed in this version (CHARM-0 §7 answer 3c).
+        // Unassign is CHARM-6's own proposal (D170), not this one's.
         assert!(!PROPOSAL.contains("message CharmUnassign"));
     }
 }

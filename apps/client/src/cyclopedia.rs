@@ -3,7 +3,7 @@
 //!
 //! Pure client state over the session crate's types: the last Bestiary and Charm views the server
 //! sent, the rows a panel draws from them, the two commands the player can send (unlock the next
-//! stage, assign a charm to a race; there is no unassign in this version), and one feedback line
+//! stage, assign a charm to a race; unassign and reset are CHARM-6, D170), and one feedback line
 //! per result. The server decides every command; the local checks only keep the client from
 //! sending a command it can already see will fail, and report it with the same disposition the
 //! server would return. The session routes neither the commands nor the views until the protocol
@@ -48,6 +48,7 @@ pub const fn assign_feedback_text(disposition: CharmAssignDisposition) -> &'stat
         CharmAssignDisposition::UnknownCharm => "Unknown charm",
         CharmAssignDisposition::UnknownRace => "Unknown creature",
         CharmAssignDisposition::Rejected => "Charms unavailable",
+        CharmAssignDisposition::AssignmentSlotsFull => "All charm slots are in use",
     }
 }
 
@@ -67,7 +68,7 @@ pub struct CharmRow {
     pub state: CharmState,
     /// The next stage exists and the balance of the charm's currency covers it.
     pub can_unlock: bool,
-    /// Unlocked and not yet assigned.
+    /// Unlocked, not yet assigned, and a charm slot is free.
     pub can_assign: bool,
 }
 
@@ -122,12 +123,29 @@ impl Cyclopedia {
         self.charms.minor_charm_echoes_available
     }
 
+    /// Charms with an assigned race: the slots in use (D169).
+    #[must_use]
+    pub fn assignment_slots_in_use(&self) -> usize {
+        self.charms
+            .charms
+            .iter()
+            .filter(|state| state.assigned_race.is_some())
+            .count()
+    }
+
+    /// The character's charm slot limit; `None` is no limit (the Charm Expansion).
+    #[must_use]
+    pub const fn assignment_slot_limit(&self) -> Option<NonZeroU32> {
+        self.charms.assignment_slot_limit
+    }
+
     /// Charms in the order the server sent them (ascending).
     pub fn charm_rows(&self) -> impl Iterator<Item = CharmRow> + '_ {
-        self.charms.charms.iter().map(|state| CharmRow {
+        let slot_free = !self.slots_full();
+        self.charms.charms.iter().map(move |state| CharmRow {
             state: *state,
             can_unlock: self.unlock_shortfall(state).is_none(),
-            can_assign: state.unlocked_stage > 0 && state.assigned_race.is_none(),
+            can_assign: state.unlocked_stage > 0 && state.assigned_race.is_none() && slot_free,
         })
     }
 
@@ -182,6 +200,9 @@ impl Cyclopedia {
         if stage < required_race_stage(state.kind) {
             return Err(CharmAssignDisposition::RaceStageTooLow);
         }
+        if self.slots_full() {
+            return Err(CharmAssignDisposition::AssignmentSlotsFull);
+        }
         Ok(CharmAssignIntent { charm, race })
     }
 
@@ -198,6 +219,12 @@ impl Cyclopedia {
     #[must_use]
     pub const fn feedback(&self) -> Option<&'static str> {
         self.feedback
+    }
+
+    fn slots_full(&self) -> bool {
+        self.charms.assignment_slot_limit.is_some_and(|limit| {
+            usize::try_from(limit.get()).is_ok_and(|limit| self.assignment_slots_in_use() >= limit)
+        })
     }
 
     fn charm(&self, charm: NonZeroU32) -> Option<&CharmState> {
@@ -257,7 +284,7 @@ mod tests {
     }
 
     /// Race 1 at stage 1, race 2 at stage 2, race 3 complete. Charm 1 major locked, 2 minor
-    /// unlocked, 3 major unlocked and assigned, 4 minor complete. 150 points, 50 echoes.
+    /// unlocked, 3 major unlocked and assigned, 4 minor complete. 150 points, 50 echoes, 2 slots.
     fn cyclopedia() -> Cyclopedia {
         let mut view = Cyclopedia::new();
         view.apply_bestiary_snapshot(vec![race(3, 25), race(1, 5), race(2, 10)]);
@@ -270,6 +297,7 @@ mod tests {
             ],
             charm_points_available: 150,
             minor_charm_echoes_available: 50,
+            assignment_slot_limit: Some(index(2)),
         });
         view
     }
@@ -315,6 +343,8 @@ mod tests {
         );
         assert_eq!(view.charm_points_available(), 150);
         assert_eq!(view.minor_charm_echoes_available(), 50);
+        assert_eq!(view.assignment_slots_in_use(), 1);
+        assert_eq!(view.assignment_slot_limit(), Some(index(2)));
     }
 
     #[test]
@@ -351,6 +381,7 @@ mod tests {
             charms: vec![charm(1, CharmKind::Major, 0, None)],
             charm_points_available: 99,
             minor_charm_echoes_available: 1000,
+            assignment_slot_limit: None,
         });
         assert_eq!(
             poor.unlock_request(index(1)),
@@ -384,7 +415,7 @@ mod tests {
             view.assign_request(index(2), index(50)),
             Err(CharmAssignDisposition::RaceStageTooLow)
         );
-        // Major charm 3 needs a complete entry, but it is already assigned: no unassign.
+        // Major charm 3 needs a complete entry, but it is already assigned (unassign is CHARM-6).
         assert_eq!(
             view.assign_request(index(3), index(3)),
             Err(CharmAssignDisposition::AlreadyAssigned)
@@ -398,6 +429,33 @@ mod tests {
             Err(CharmAssignDisposition::UnknownCharm)
         );
         assert_eq!(view.assignable_races(index(9)).count(), 0);
+    }
+
+    #[test]
+    fn a_full_slot_limit_blocks_assign_and_no_limit_never_does() {
+        let mut view = cyclopedia();
+        let mut charms = CharmView {
+            charms: view.charms.charms.clone(),
+            charm_points_available: 150,
+            minor_charm_echoes_available: 50,
+            assignment_slot_limit: Some(index(1)),
+        };
+        view.apply_charm_view(charms.clone());
+        assert_eq!(
+            view.assign_request(index(2), index(2)),
+            Err(CharmAssignDisposition::AssignmentSlotsFull)
+        );
+        assert!(view.charm_rows().all(|row| !row.can_assign));
+        // The Charm Expansion: no limit.
+        charms.assignment_slot_limit = None;
+        view.apply_charm_view(charms);
+        assert_eq!(
+            view.assign_request(index(2), index(2)),
+            Ok(CharmAssignIntent {
+                charm: index(2),
+                race: index(2)
+            })
+        );
     }
 
     #[test]
@@ -427,6 +485,7 @@ mod tests {
             CharmAssignDisposition::UnknownCharm,
             CharmAssignDisposition::UnknownRace,
             CharmAssignDisposition::Rejected,
+            CharmAssignDisposition::AssignmentSlotsFull,
         ] {
             assert!(!assign_feedback_text(disposition).is_empty());
         }

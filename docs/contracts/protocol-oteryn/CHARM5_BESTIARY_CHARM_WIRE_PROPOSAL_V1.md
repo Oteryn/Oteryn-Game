@@ -1,6 +1,7 @@
 # CHARM-5 Bestiary and Charm wire — protocol amendment proposal V1
 
-- Date: 2026-09-29
+- Date: 2026-09-29; revised 2026-09-30 after the independent protocol review of `a7ceccaa` (PR #1301) and owner
+  decisions D168 to D170
 - Status: **PROPOSAL**. It needs protocol-owner assignment of the IDs, owner acceptance and independent protocol
   review before any registry, proto file, session or server composition change.
 - Authority: none. This document changes no protocol or resource registry, proto file, DDL, content or production
@@ -27,17 +28,20 @@ The client needs to see and act on the Bestiary and Charm state that CHARM-2 and
   Echoes available;
 - two commands: unlock the next stage of a charm, and assign a charm to a race.
 
-There is **no unassign command** in this version (CHARM-0 §7 answer 3c). Unassign ships later, with its gold fee,
-after `GAME-ITEM-01`/`DUR-03` prove the Character and Item boundary.
+There is **no unassign or reset command in this proposal.** D170 supersedes the scope of CHARM-0 answer 3c: unassign
+(level × 100 gp, 25% refund with the Charm Expansion) and the full charm reset are planned as in Tibia, as task
+CHARM-6, which depends on `GAME-ITEM-01`/`DUR-03`. CHARM-6 proposes its own command types for them, and player-facing
+charm release is gated on CHARM-6 (§8).
 
-Out of scope: charm reset, Charm Upgrade, the Store expansion, Bosstiary, creature names or descriptions on the wire,
+Out of scope: unassign and reset (CHARM-6), Charm Upgrade, the Store expansion, Bosstiary, creature names or descriptions on the wire,
 and every rule decision (CHARM-2 and CHARM-3 own them).
 
 ## 2. Proposed IDs, identifiers and limits
 
 The protocol owner assigns IDs. On `main@4ea220fa` the next free ones are command types 4 and 5 and state domains 4
-and 5. The names below use those numbers only as proposals. A unit test fails if another writer registers one of
-them under a different name.
+and 5. The names below use those numbers only as proposals and reserve nothing: if PROF-WIRE-1 or another accepted
+wire takes them first, the acceptance PR renumbers this proposal and checks there that the IDs it registers are free
+(§8).
 
 | ID | Name | Kind | Payload | Result |
 |---|---|---|---|---|
@@ -45,6 +49,18 @@ them under a different name.
 | 5 | `CHARM_ASSIGN_INTENT` | command type | `CharmAssignIntentV1` | `CharmAssignResultV1` |
 | 4 | `CHARACTER_BESTIARY` | state domain; delta type 1, snapshot type 1 | `BestiaryViewV1` | — |
 | 5 | `CHARACTER_CHARMS` | state domain; delta type 1, snapshot type 1 | `CharmViewV1` | — |
+
+**Core or capability-gated (D168 precedent).** Recommendation: **capability-gated.** The protocol owner decides;
+this recommendation is pending that acceptance.
+
+- The reviewer and the control plane recommend one optional capability, proposed as `CYCLOPEDIA_CHARMS_V1` (ID
+  assigned by the protocol owner), that covers command types 4 and 5 and domains 4 and 5 together.
+- It is consistent with PROFICIENCY: D168 accepted the PROFICIENCY-0 wire as a capability-gated snapshot and delta.
+- It doubles as the D170 release gate. The server does not offer the capability until CHARM-6 ships, so no client
+  sees or sends charm traffic before unassign and reset exist, and no composition flag of its own is needed.
+- Without the capability selected, the server sends no snapshot or delta of domains 4 and 5, and command types 4 and 5
+  are unregistered for the session (FND-02 `Rejected`).
+- A core registration would reach every client at once and would need its own release switch to honour D170.
 
 Identifiers:
 
@@ -54,6 +70,10 @@ Identifiers:
   ordered by charm key.
 - Both follow SPELL-D1: an index, not a key string, so there is no free text on the wire and the server looks it up
   in O(1). The client resolves names from the same content generation (owner answer 8a, §7).
+- **The content generation is fixed per connection.** Both peers derive the indices once, from the content generation
+  bound at admission, and neither re-derives them while the connection lives. A change of content generation reaches
+  the client only through a new connection, whose snapshots of domains 4 and 5 are re-derived. Hot content reload
+  inside one connection is out of scope.
 
 Proposed resource limits (for `RESOURCE_LIMITS_REGISTRY.json` on acceptance):
 
@@ -61,7 +81,7 @@ Proposed resource limits (for `RESOURCE_LIMITS_REGISTRY.json` on acceptance):
 |---|---|---|---|
 | `CHARM5-RL-01` | Bestiary races in one view (and the largest race index) | 1024 | 833 Bestiary races in the captured staticdata (CHARM-0 §2) |
 | `CHARM5-RL-02` | Largest Bestiary kill threshold | 100000 | The captured definitions top out at 5000 |
-| `CHARM5-RL-03` | Charms in one view (and the largest charm index) | 32 | 25 charms in the candidate catalogue |
+| `CHARM5-RL-03` | Charms in one view (and the largest charm index and slot limit) | 32 | 25 charms in the candidate catalogue |
 | `CHARM5-RL-04` | Largest single charm stage cost | 100000 | Either currency |
 | `CHARM5-RL-05` | Largest available balance of either currency | 1000000 | Earned Charm Points are at most 1024 × 100 |
 
@@ -112,11 +132,13 @@ message CharmStateV1 {
 }
 
 // StateDelta.payload of domain 5 delta type 1 and StateDomainSnapshot.payload of snapshot type 1.
-// At most 488 bytes: 32 entries of at most 15 bytes and two balances of at most 4 bytes.
+// At most 490 bytes: 32 entries of at most 15 bytes, two balances of at most 4 bytes, and the slot
+// limit of at most 2 bytes.
 message CharmViewV1 {
   repeated CharmStateV1 charms = 1;      // strictly ascending by charm, at most 32
   uint32 charm_points_available = 2;     // derived, never stored; at most 1000000
   uint32 minor_charm_echoes_available = 3; // derived, never stored; at most 1000000
+  uint32 assignment_slot_limit = 4;      // D169: 2 free, 6 Premium; 0 = no limit (Charm Expansion); at most 32
 }
 ```
 
@@ -125,6 +147,12 @@ message CharmViewV1 {
   what is available, which is what the client can act on.
 - One race holds at most one major and one minor charm at a time. CHARM-3 enforces it (migration 0020, #1307); the view
   does not re-check it, so two charms may name the same race.
+- **Slots (D169).** `assignment_slot_limit` is the number of charms the character may hold assigned: 2 for a free
+  account, 6 with Premium, and no limit with the Charm Expansion, sent as 0. CHARM-3 derives the entitlement in the
+  command's transaction (`CharmSlotEntitlement`) and enforces the limit there; the view field is a display hint. The
+  slots in use are the charms with `assigned_race != 0`, so they are not sent; sending them too would only add a way
+  for the two to disagree. The view does not require the slots in use to be within the limit, because a lapsed
+  Premium can leave more charms assigned than the free limit.
 
 ### 3.3 Unlock the next stage
 
@@ -151,9 +179,16 @@ message CharmUnlockStageResultV1 {
 }
 ```
 
-`expected_stage` makes the command safe against a stale view: a player who pressed "unlock stage 2" never pays for
-stage 3. FND-02 command sequencing already de-duplicates a resent command; this guards the other case, two
-different commands sent from the same view.
+`expected_stage` lets the server refuse a command sent from a stale view. It is a check by the port before the
+commit, not a guarantee under the Character root lock: CHARM-3's `UnlockNextStage` carries no expected stage, and
+`commit_charm_command` unlocks whatever stage is next when it holds the lock. The port reads the stored stage,
+answers `STAGE_MISMATCH` if it differs from `expected_stage`, and otherwise commits. The check is exact while one
+session serializes its charm commands, which the session-generation fence and FND-02 ordered command ingress
+provide; this proposal claims nothing more. Moving the check under the root lock needs an expected stage on the
+CHARM-3 command, which is a CHARM-3 change outside this proposal.
+
+A resent command is not a second command: the port commits under a CHARM-3 occurrence derived from the FND-02
+command identity (§5), so CHARM-3 returns the retained `AlreadyCommitted` outcome instead of unlocking again.
 
 ### 3.4 Assign a charm to a race
 
@@ -174,6 +209,7 @@ enum CharmAssignDisposition {
   CHARM_ASSIGN_DISPOSITION_UNKNOWN_CHARM = 6;
   CHARM_ASSIGN_DISPOSITION_UNKNOWN_RACE = 7;
   CHARM_ASSIGN_DISPOSITION_REJECTED = 8;           // malformed intent, ineligible actor, lost fence, unavailable
+  CHARM_ASSIGN_DISPOSITION_ASSIGNMENT_SLOTS_FULL = 9; // every assignment slot is in use (D169)
 }
 
 // CommandResult.payload of command type 5: outcome only. At most 4 bytes.
@@ -182,8 +218,10 @@ message CharmAssignResultV1 {
 }
 ```
 
-- `ALREADY_ASSIGNED` covers re-assigning a charm to the same race too. Without an unassign command, an assignment
-  is final in this version; this is the listed, reversible deviation of answer 3c.
+- `ALREADY_ASSIGNED` covers re-assigning a charm to the same race too. Moving an assigned charm needs the CHARM-6
+  unassign (D170), which is not part of this proposal.
+- `ASSIGNMENT_SLOTS_FULL` is CHARM-3's `AssignmentSlotsFull`: the character already holds as many assigned charms as
+  its slot entitlement allows (D169). CHARM-3 checks it after the race's per-category limit.
 - The dispositions are stable and closed. A new reason needs a new enum value through this contract, never free
   text.
 
@@ -192,6 +230,29 @@ message CharmAssignResultV1 {
 - **Authority.** The client proposes; CHARM-3 decides. Each command is one Character transaction under the
   session-generation fence (`CurrentCharacterGameplayFence`), validated against the derived balance. A result is
   sent only after that transaction committed or was refused. The new state then arrives through domain 5.
+- **Domain revisions.** The revision of domains 4 and 5 is the **CharacterRevision**, not a per-domain counter:
+  - `StateDomainSnapshot.revision` is the CharacterRevision the view was read at, in the same transaction as the view.
+  - `StateDelta.base_revision` is the revision of the domain's last state sent in this GameSession, and
+    `new_revision` is the CharacterRevision the new view was read at.
+  - Why: every writer of this state advances the CharacterRevision under the Character root lock: CHARM-2 for kill
+    counters, and CHARM-3 exactly once for each command (#1307). It is therefore monotonic, durable and never reused, as
+    FND-02 §15 requires, with no new counter to store. The existing domains follow the same rule where the state has
+    a durable authority revision: `WORLD_OBJECT_OVERLAY` uses the committed entry's revision and `ACTOR_VITALS` the
+    actor state's revision. A per-domain counter would need its own durable column and a new migration.
+  - Other Character writes, such as an XP award, also advance the CharacterRevision. The domain revision then jumps.
+    FND-02 needs only monotonic revisions and `base_revision` equal to the client's applied revision, so the client
+    applies such a delta as usual. The server need not send a delta when only other Character state changed.
+  - Resume of the same GameSession: the client reports its applied revisions (`ResyncRequest`). If a domain's
+    revision equals the current CharacterRevision, nothing is sent. Otherwise the server sends one delta from the
+    client's revision to the current one, carrying the full view. That is exact for both domains: a domain-5 delta
+    replaces the view, and a domain-4 delta that lists every counted race is a complete upsert, because counters
+    never decrease.
+  - Transfer to another Channel or node, and any new connection, starts with fresh snapshots at the current
+    CharacterRevision. The server never sends a delta across a change of content generation.
+  - A client revision above the current CharacterRevision cannot occur without a rollback. The server answers it
+    with a snapshot, never a delta.
+  - The port reads each view and its CharacterRevision in one transaction. CHARM-3's `read_character_charm_state`
+    returns no revision today; the composition task adds that read.
 - **Malformed intents.** As for the other commands, a payload that does not decode gets the `REJECTED` disposition
   and changes nothing.
 - **Bounds.** The encoder refuses every value the decoder would refuse, as a server (or client) fault, before any
@@ -202,14 +263,33 @@ message CharmAssignResultV1 {
 `apps/game-server/src/gameplay_transport/charm.rs` is a thin adapter behind one narrow trait, `CharmProgressionPort`:
 the Bestiary and Charm views of the one fenced character the port is bound to, and the two commands. CHARM-2 and
 CHARM-3 implement the port; composition binds it to the session's character and routes command types 4 and 5 and
-domains 4 and 5. The adapter only decodes, calls the port, and encodes, with test doubles for the port. No command
-type or domain is dispatched until the IDs are registered.
+domains 4 and 5. The adapter only decodes, derives the occurrence, calls the port, and encodes, with test doubles for
+the port. No command type or domain is dispatched until the IDs are registered.
+
+- **Asynchronous.** Every port method is asynchronous, because CHARM-3's `commit_charm_command` and its reads run
+  through the durability root.
+- **Occurrence.** A command method takes `(occurrence, intent)`. The occurrence is CHARM-3's
+  `CharmCommandOccurrence`, derived from the FND-02 command identity `(GameSessionId, CommandId)`: CommandId is
+  strictly increasing within the GameSession and survives an eligible reconnect, so a resent command keeps it. The
+  derivation follows the spell-cast occurrence (`gameplay_transport/actor_spell.rs`):
+  `SHA-256("oteryn:charm-command-occurrence:v1" || GameSessionId (16 bytes) || CommandId (u64 big-endian))`,
+  truncated to 16 bytes, with the UUID version nibble set to 7 and the variant bits to `10`, which is the form
+  `CharmCommandOccurrence::from_bytes` requires. Its first 48 bits are hash bits, not a timestamp. A resent command
+  therefore returns CHARM-3's retained `AlreadyCommitted` outcome, and a reused CommandId with a different intent
+  gets `ConflictingOccurrence`, which the port reports as `REJECTED`.
+- **Unlock.** The port maps `UnlockNextStage` with the `expected_stage` pre-check of §3.3.
+- **Dispositions.** The port maps CHARM-3's `CharmRuleError` one to one: `InsufficientBalance` to the kind's
+  `NOT_ENOUGH_*`, `FinalStageReached` to `STAGE_MISMATCH`, `CharmLocked`, `CharmAlreadyAssigned`,
+  `BestiaryStageTooLow`, `RaceCapacityReached` and `AssignmentSlotsFull` to their assign dispositions, and
+  `UnknownCharm` to `UNKNOWN_CHARM`. An index with no charm or race in the connection's content generation is
+  `UNKNOWN_CHARM` or `UNKNOWN_RACE` before CHARM-3 is called. Every other refusal is `REJECTED`.
 
 ## 6. Client
 
 `apps/client/src/cyclopedia.rs` holds the pure client state: the Bestiary and Charm views with snapshot and delta
 application, the derived stage and progress, the local preconditions for the two commands, and one line of player
-feedback per disposition. Session wiring (sending the commands and routing domains 4 and 5) follows registration.
+feedback per disposition, including the slot limit and the slots in use (D169). Session wiring (sending the commands
+and routing domains 4 and 5) follows registration.
 
 ## 7. Owner answers (2026-09-30, in session)
 
@@ -225,9 +305,12 @@ Recorded in the CHARM-0 packet §8 (PR #1295); decision-register numbers are ass
 
 ## 8. On acceptance
 
-1. Register command types 4 and 5 and domains 4 and 5 in `PROTOCOL_OTERYN_V1_REGISTRY.json` with the byte bounds of
-   §3, and `CHARM5-RL-01` to `CHARM5-RL-05` in `RESOURCE_LIMITS_REGISTRY.json`.
+1. Register the command types and domains the protocol owner assigns in `PROTOCOL_OTERYN_V1_REGISTRY.json` with the
+   byte bounds of §3, the capability of §2 if the owner accepts it, and `CHARM5-RL-01` to `CHARM5-RL-05` in
+   `RESOURCE_LIMITS_REGISTRY.json`. That PR adds the test that the IDs are free or registered under these names.
 2. Move §3 into `docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto` and point the codec tests at the registry
    entries, as `actor_spell` does.
 3. Compose: route the commands in `gameplay_transport/connection.rs` through the adapter, bind the port to CHARM-2 and
-   CHARM-3, and add the session calls and domain routing for the client.
+   CHARM-3, and add the session calls and domain routing for the client. **Composition stays off until CHARM-6
+   ships (D170):** no server routes command types 4 and 5 or sends domains 4 and 5 to a player before unassign and
+   reset exist. With the recommended capability, that means the server does not offer it until then.

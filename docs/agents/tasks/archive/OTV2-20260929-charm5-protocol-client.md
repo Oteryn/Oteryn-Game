@@ -36,9 +36,10 @@ public_contracts:
 depends_on:
   - "#1295 CHARM-0 decision packet (slice CHARM-5, owner answers §7)"
   - "CHARM-2 Bestiary progress (claude/charm2-bestiary-progress) implements the port's Bestiary side"
-  - "CHARM-3 Charm state (claude/charm3-charm-state) implements the port's Charm side"
+  - "CHARM-3 Charm state (#1307, merged) implements the port's Charm side"
+  - "Owner decisions D168, D169, D170 (docs/architecture/reviews/OTERYN_GAME_OWNER_DECISION_BATCH_D165_D173_2026-09-30.md)"
 blocks:
-  - "CHARM-5 composition: ID registration, session wiring, connection dispatch"
+  - "CHARM-5 composition: ID registration, session wiring, connection dispatch (off until CHARM-6 ships, D170)"
 external_repositories: []
 jira: null   # sync pending (coordinator batch)
 ```
@@ -54,10 +55,11 @@ jira: null   # sync pending (coordinator batch)
 - **Codecs** `crates/protocol-oteryn/src/{bestiary,charm,charm_wire}.rs`: strict encode and decode for the Bestiary
   view, the Charm view, both intents and both results.
   - The Bestiary stage is derived, not sent.
-  - No unassign command exists (CHARM-0 §7 answer 3c).
-  - A test fails if another writer registers a proposed ID under another name.
+  - No unassign or reset command: CHARM-6 proposes its own (D170).
+  - A test checks that the proposal names every implemented ID, message and byte bound.
 - **Server adapter** `apps/game-server/src/gameplay_transport/charm.rs`:
-  - the narrow `CharmProgressionPort` trait, which CHARM-2 and CHARM-3 implement;
+  - the narrow, asynchronous `CharmProgressionPort` trait, which CHARM-2 and CHARM-3 implement; its commands take the
+    CHARM-3 `CharmCommandOccurrence` derived from the FND-02 `(GameSessionId, CommandId)`;
   - decode, port, encode, with test doubles;
   - not dispatched from `connection.rs` until the IDs are registered.
 - **Client** `apps/client/src/cyclopedia.rs`: pure Bestiary and Charm state, with:
@@ -83,13 +85,15 @@ around a trait. The fenced Character transactions belong to CHARM-2 and CHARM-3.
 
 ## Validation
 
+Repair round 1 (2026-09-30, after merging `origin/main` at `54c9ca18`):
+
 - `cargo fmt --all --check`: pass.
 - `cargo clippy --locked -p oteryn-protocol-oteryn -p oteryn-session -p oteryn-client -p oteryn-game-server
   --all-targets -- -D warnings`: pass.
 - `cargo test --locked`:
-  - `oteryn-protocol-oteryn`: 78 passed, 14 of them new;
-  - `oteryn-game-server --lib`: 1028 passed, 2 ignored, 7 of them new;
-  - `oteryn-client`: 26 passed, 5 of them new;
+  - `oteryn-protocol-oteryn`: 78 passed;
+  - `oteryn-game-server` (all targets): 0 failed; `--lib` 1114 passed, 2 ignored, 8 of them CHARM-5 adapter tests;
+  - `oteryn-client`: 27 passed;
   - `oteryn-session`: 3 passed.
 - `python tools/agents/validate_governance.py`, `python tools/repository/validate_repository_policy.py` and
   `git diff --check`: pass.
@@ -108,6 +112,23 @@ around a trait. The fenced Character transactions belong to CHARM-2 and CHARM-3.
 
 - Required: YES. It is a `protocol-oteryn` wire proposal (AGENTS.md; CHARM-0 §3, slice CHARM-5).
 - The owner or protocol owner must accept the proposal before registration.
+- Round 1 on `a7ceccaa` (PR comment 5907133076): FIX. Resolved in one repair push:
+  1. MATERIAL, D169 slots: added `CHARM_ASSIGN_DISPOSITION_ASSIGNMENT_SLOTS_FULL = 9` (codec, decoder, adapter,
+     client precondition and feedback, tests) and `CharmViewV1.assignment_slot_limit` (0 = no limit, at most 32).
+     The slots in use are derived from the assigned charms, not sent. View bound 488 -> 490 bytes.
+  2. MATERIAL, CHARM-3 port: the port is asynchronous and its commands take `(occurrence, intent)`. The occurrence
+     is derived from the FND-02 `(GameSessionId, CommandId)` as the spell-cast occurrence is, in UUIDv7 form, with an
+     independent known-answer test. CHARM-3 does not check an expected stage under the root lock, so the proposal
+     drops the "never pays for stage 3" claim; `expected_stage` stays as the port's pre-commit check.
+  3. MATERIAL, D170: answer 3c is no longer called final. CHARM-6 adds its own unassign and reset types. §8 step 3
+     keeps composition off until CHARM-6 ships.
+  4. EVIDENCE_GAP, D168: §2 recommends capability-gated (reviewer and control plane), consistent with PROFICIENCY
+     and doubling as the D170 release gate; the protocol owner decides.
+  5. EVIDENCE_GAP, revisions: domains 4 and 5 use the CharacterRevision as `revision`, `base_revision` and
+     `new_revision`, with the resume, transfer and rollback behaviour in §4.
+  6. HARDENING: removed the registry check that soft-reserved types and domains 4 and 5; it moves into the
+     acceptance PR (§8 step 1).
+  7. OUT_OF_SCOPE: §2 states that the content generation is fixed per connection.
 
 ## Closeout
 
