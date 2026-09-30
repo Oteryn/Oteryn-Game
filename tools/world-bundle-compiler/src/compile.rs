@@ -377,25 +377,29 @@ pub struct Equivalence {
     pub dropped_teleports: usize,
 }
 
-/// Proves `bundle` equal to its source `regions` tile by tile (ADR-0021 §4.6, §4.8), derived
-/// from the bundle's own manifest rather than the compiler state: every source tile is at its
+/// Proves `bundle` equal to its source `regions` tile by tile (ADR-0021 §4.6, §4.8), from the
+/// source authorities rather than the compiler state or the bundle's own claims: every manifest
+/// palette entry is the `(family, id)` that `resolver` gives its key; every source tile is at its
 /// native position with the same flags, house and zones, and every entry keeps its depth,
-/// attributes and palette key, except the rules of the format document: a subtree under a
-/// `skipped_provisional_keys` key is left out, a (0,0,0) teleport is dropped, and a teleport
-/// floor is native. The bundle holds no other tile.
+/// attributes and palette key, except the rules of the format document: a subtree under a key
+/// `resolver` calls provisional is left out, a (0,0,0) teleport is dropped, and a teleport floor
+/// is native. The bundle holds no other tile, and `skipped_provisional_keys` is exactly the set of
+/// provisional keys met.
 pub fn equivalence(
     regions: &[Vec<u8>],
     palette: &[String],
+    resolver: &dyn KeyResolver,
     bundle: &[u8],
 ) -> Result<Equivalence, Error> {
     let read = bundle::read(bundle)?;
     let differs = |what: String| Err(Error::Format(format!("equivalence: {what}")));
-    let skipped: BTreeSet<&str> = read
-        .manifest
-        .skipped_provisional_keys
-        .iter()
-        .map(String::as_str)
-        .collect();
+    for entry in &read.manifest.palette {
+        if resolver.resolve(&entry.key) != Resolution::Resolved(entry.family, entry.id) {
+            return differs(format!("palette entry {} is not its resolution", entry.key));
+        }
+    }
+    let resolved: Vec<Resolution> = palette.iter().map(|key| resolver.resolve(key)).collect();
+    let mut provisional = BTreeSet::new();
     let (mut report, mut budget) = (Equivalence::default(), bundle::BUNDLE_BUDGET);
     let mut seen = BTreeSet::new();
     for data in regions {
@@ -414,7 +418,11 @@ pub fn equivalence(
                 return differs(format!("sector {at:?} has another tile count"));
             }
             for (source, tile) in tiles.iter().zip(compiled) {
-                let expected = source_entries(source, palette, &skipped, &mut report)?;
+                let expected = source_entries(source, palette, &resolved, &mut report)?;
+                provisional.extend(source.items.iter().filter_map(|item| {
+                    let at = item.palette as usize;
+                    (resolved.get(at) == Some(&Resolution::Provisional)).then(|| &palette[at])
+                }));
                 let got: Vec<_> = tile
                     .items
                     .iter()
@@ -444,6 +452,12 @@ pub fn equivalence(
             total - report.tiles
         ));
     }
+    if !provisional
+        .into_iter()
+        .eq(read.manifest.skipped_provisional_keys.iter())
+    {
+        return differs("skipped_provisional_keys is not the set of provisional keys met".into());
+    }
     Ok(report)
 }
 
@@ -453,7 +467,7 @@ type Entry<'a> = (Option<&'a str>, u8, crate::sector::Attrs);
 fn source_entries<'a>(
     tile: &Tile,
     palette: &'a [String],
-    skipped: &BTreeSet<&str>,
+    resolved: &[Resolution],
     report: &mut Equivalence,
 ) -> Result<Vec<Entry<'a>>, Error> {
     let mut items = Vec::with_capacity(tile.items.len());
@@ -463,7 +477,8 @@ fn source_entries<'a>(
             skip_below = None;
         }
         let key = palette.get(item.palette as usize).map(String::as_str);
-        if skip_below.is_some() || key.is_some_and(|key| skipped.contains(key)) {
+        let own = resolved.get(item.palette as usize);
+        if skip_below.is_some() || own == Some(&Resolution::Provisional) {
             skip_below = skip_below.or(Some(item.depth));
             report.skipped_entries += 1;
             continue;

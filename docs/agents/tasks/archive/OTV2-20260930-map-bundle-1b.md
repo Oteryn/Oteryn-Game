@@ -47,6 +47,21 @@ external_repositories: []
   guard, now a mismatch, tested), the LOW format-doc wording of the six orphans, and the LOW
   `dropped_teleports` lookup (binary search by `(y, x)` in the sector).
 
+## Review round 1 (Codex review 5371325268 of `0d38d046`)
+
+Repair candidate after returning to AUTHORING; all four findings fixed:
+
+- P1 `compile.rs`: `equivalence` now checks every manifest palette entry against the resolver's
+  `(family, id)`, not only the key.
+- P1 `compile.rs`: the provisional skips come from the resolver (the placements index flags),
+  and the manifest's `skipped_provisional_keys` must equal the set met, never trusted.
+- P1 `resolve.rs`: an `item_pointer` must match the Item's whole typed reference, revision
+  included.
+- P2 `resolve.rs`: Terrain and WorldObject identities are unique across shards.
+
+Real-map rerun on #1170 `2ffba017` (scratch strip of the six orphans): same digest `fa65ffb1…`,
+19,373,519 tiles proven, 40 s.
+
 ## Stated assumptions (reversible; for the control plane)
 
 - An Item key that no catalogue record points at is a plain Item and resolves to `item`
@@ -72,7 +87,8 @@ external_repositories: []
 ## Validation
 
 - `cargo fmt --check`; `cargo clippy --locked -p oteryn-world-bundle-compiler --all-targets --
-  -D warnings`; `cargo test --locked -p oteryn-world-bundle-compiler` (18 tests).
+  -D warnings`; `cargo test --locked -p oteryn-world-bundle-compiler` (18 tests, round 1
+  assertions added).
 - `python3 tools/agents/validate_governance.py`; `python3
   tools/repository/validate_repository_policy.py`; `git diff --check`.
 

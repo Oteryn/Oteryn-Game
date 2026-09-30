@@ -199,9 +199,10 @@ contents of a provisional entry it skips, and stops on an unknown key, a positio
 destination outside the declared World, a legacy `z` above 15, a sector given twice, a
 provisional key in a production build, and any limit above. Key resolution fails closed as
 §10 OPEN-1 says: a key that is neither an Item key, a Terrain key without an Item record nor a
-flagged provisional key; a Terrain or WorldObject `item_pointer` that names no Item record or an
-Item another record already names; and an Item `routed_to` that no `item_pointer` confirms or
-that names another record. It also stops when a placement
+flagged provisional key; a Terrain or WorldObject identity given twice; an `item_pointer` whose
+whole typed reference (key and revision) names no Item record, or that names an Item another
+record already names; and an Item `routed_to` that no `item_pointer` confirms or that names
+another record. It also stops when a placement
 disagrees with a family (§10): a teleport with a real destination and no Transition.Teleport
 record from its tile, or a record to another destination (a (0,0,0) attribute included); a
 Transition.Teleport record whose
@@ -218,7 +219,8 @@ and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution)
   the id's canonical A12 key:
   - An Item key resolves to `family` `item` and its Item compact id. Its route to a Terrain or
     WorldObject record is the catalogue record whose `item_pointer` names it (ruling 5915258560
-    (b)). The pointers must be one-to-one and name existing Item records. When an Item carries
+    (b)). The pointers must be one-to-one and name existing Item records by their whole typed
+    reference, revision included. Catalogue identities are unique across shards. When an Item carries
     `routed_to` (WO-2b), it must name that same record; a disagreement, or a `routed_to` that no
     pointer confirms, fails compilation. WO-2b can add `routed_to` later without changing the
     compiled result. An Item that no record points at is a plain Item.
@@ -271,11 +273,14 @@ and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution)
   compiler change. No tile carries a house id missing from the House catalogue.
 - **Real-map compile and equivalence (1b-2).** `oteryn-world-bundle-compiler compile` reads the
   placements, the World, Transition.Teleport and House families and the content registry of a
-  repository root, compiles, then proves the bundle tile by tile against its source before it
-  writes it: every source tile at its native position with the same flags, house and zones,
-  and every entry with the same depth, attributes and palette key, except the rules above
-  (skipped provisional subtrees, dropped (0,0,0) teleports, native teleport floors), and no
-  other tile. The run on #1170 head `2ffba017` (with #1160 `ee19179e` merged in) stops, as it
+  repository root, compiles, then proves the bundle against its source authorities before it
+  writes it, never against the bundle's own claims. Each manifest palette entry must be the
+  `(family, id)` the resolver gives its key. Tile by tile, every source tile must be at its
+  native position with the same flags, house and zones, and every entry must keep its depth,
+  attributes and palette key. The only exceptions are the rules above: subtrees under keys the
+  resolver calls provisional are skipped, (0,0,0) teleports are dropped, and teleport floors are
+  native. The bundle holds no other tile, and `skipped_provisional_keys` is exactly the set of
+  provisional keys met. The run on #1170 head `2ffba017` (with #1160 `ee19179e` merged in) stops, as it
   must, at the first real-destination orphan. In a scratch copy with only those six
   attributes removed, as the content fix will do, it compiles a non-production bundle in 37 s
   with a peak RSS of 3.8 GB:

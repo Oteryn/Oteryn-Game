@@ -62,12 +62,14 @@ struct Provenance {
 /// The Item registry and the Terrain and WorldObject catalogues of one content revision.
 #[derive(Debug, Default)]
 pub struct Registry {
-    /// Item key to its `routed_to`, if any.
-    items: BTreeMap<String, Option<Reference>>,
+    /// Item key to its full identity and its `routed_to`, if any.
+    items: BTreeMap<String, (Reference, Option<Reference>)>,
     /// Terrain key to whether its record points at an Item.
     terrain: BTreeMap<String, bool>,
-    /// Item key to the catalogue record whose `item_pointer` names it.
-    routes: BTreeMap<String, Reference>,
+    /// Item key to the `item_pointer` naming it and the catalogue record that holds it.
+    routes: BTreeMap<String, (Reference, Reference)>,
+    /// Every Terrain and WorldObject identity, `(family, key)`.
+    catalogue: BTreeSet<(String, String)>,
     provisional: BTreeSet<String>,
     /// Compact ids, set by [`Registry::seal`]; nothing resolves before it.
     ids: BTreeMap<String, (Family, u32)>,
@@ -94,7 +96,9 @@ impl Registry {
                 identity,
                 routed_to,
             } = record.definition;
-            if identity.family != "Item" || self.items.insert(identity.key, routed_to).is_some() {
+            let key = identity.key.clone();
+            if identity.family != "Item" || self.items.insert(key, (identity, routed_to)).is_some()
+            {
                 return Err(format("Item record family, or an Item key given twice"));
             }
         }
@@ -111,23 +115,25 @@ impl Registry {
             if identity.family != family {
                 return Err(format(format!("{} is not a {family} record", identity.key)));
             }
-            let pointer = record.provenance.item_pointer;
-            if family == "Terrain"
-                && self
-                    .terrain
-                    .insert(identity.key.clone(), pointer.is_some())
-                    .is_some()
+            if !self
+                .catalogue
+                .insert((family.to_owned(), identity.key.clone()))
             {
-                return Err(format(format!("Terrain key {} given twice", identity.key)));
+                return Err(format(format!("{family} key {} given twice", identity.key)));
+            }
+            let pointer = record.provenance.item_pointer;
+            if family == "Terrain" {
+                self.terrain.insert(identity.key.clone(), pointer.is_some());
             }
             let Some(pointer) = pointer else { continue };
             if pointer.family != "Item" {
                 return Err(Error::Key(format!("{} points outside Item", identity.key)));
             }
-            if let Some(other) = self.routes.insert(pointer.key.clone(), identity) {
+            let item = pointer.key.clone();
+            if let Some((_, other)) = self.routes.insert(item.clone(), (pointer, identity)) {
                 return Err(Error::Key(format!(
-                    "{} is pointed at twice, by {} and another record",
-                    pointer.key, other.key
+                    "{item} is pointed at twice, by {} and another record",
+                    other.key
                 )));
             }
         }
@@ -143,18 +149,18 @@ impl Registry {
     /// `item_pointer` names an Item record, and each `routed_to` names the one record that
     /// points back at its Item.
     pub fn seal(&mut self) -> Result<(), Error> {
-        if let Some(item) = self
-            .routes
-            .keys()
-            .find(|key| !self.items.contains_key(*key))
-        {
-            return Err(Error::Key(format!(
-                "item_pointer names no Item record {item}"
-            )));
+        // A pointer names one Item definition by its whole typed reference, revision included.
+        for (item, (pointer, _)) in &self.routes {
+            if self.items.get(item).map(|(identity, _)| identity) != Some(pointer) {
+                return Err(Error::Key(format!(
+                    "item_pointer {item} ({}) names no Item record of that revision",
+                    pointer.revision
+                )));
+            }
         }
-        for (item, routed_to) in &self.items {
+        for (item, (_, routed_to)) in &self.items {
             let Some(routed_to) = routed_to else { continue };
-            if self.routes.get(item) != Some(routed_to) {
+            if self.routes.get(item).map(|(_, record)| record) != Some(routed_to) {
                 return Err(Error::Key(format!(
                     "{item} routed_to {} disagrees with the catalogue item_pointer",
                     routed_to.key
@@ -183,7 +189,7 @@ impl Registry {
 
     /// The catalogue record an Item key routes to, if any.
     pub fn route(&self, item: &str) -> Option<&Reference> {
-        self.routes.get(item)
+        self.routes.get(item).map(|(_, record)| record)
     }
 }
 

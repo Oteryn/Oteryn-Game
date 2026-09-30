@@ -135,6 +135,19 @@ fn routes_must_be_one_to_one_and_agree_with_routed_to() -> TestResult {
         &catalogue("WorldObject", &[("object:o7", Some("item:i7"))]),
     )?;
     assert!(key(missing.seal()));
+    // A pointer at the right Item key but another revision names no Item definition.
+    let mut stale = registry(None)?;
+    let other = String::from_utf8(catalogue("WorldObject", &[("object:o3", Some("item:i3"))]))?
+        .replace(
+            "item:i3\",\"revision\":\"definition-r1",
+            "item:i3\",\"revision\":\"definition-r0",
+        );
+    stale.add_catalogue("WorldObject", other.as_bytes())?;
+    assert!(key(stale.seal()));
+    // A WorldObject identity given twice fails, even pointing at two Items.
+    let mut duplicate = registry(None)?;
+    let again = catalogue("WorldObject", &[("object:o2", Some("item:i3"))]);
+    assert!(duplicate.add_catalogue("WorldObject", &again).is_err());
     // A key given twice, or a shard of another family, is malformed.
     let mut again = registry(None)?;
     assert!(again.add_items(&items(&[("item:i1", None)])).is_err());
