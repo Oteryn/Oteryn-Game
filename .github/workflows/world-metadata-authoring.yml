@@ -76,7 +76,6 @@ jobs:
           python test_edron_rework.py
           python test_minimap_draft.py
           python test_world_record.py
-          python test_floor_changes.py
           python test_islands.py
 
       - name: Ruff check and format
@@ -92,12 +91,12 @@ jobs:
         run: test -z "$(git status --short --untracked-files=all)"
 
   # `convert_world_metadata.py --check`, `convert_world_base.py --check`,
-  # `convert_floor_changes.py --check`, `convert_appearance_only_ids.py --check` and
+  # `convert_appearance_only_ids.py --check` and
   # `convert_islands.py --crystal-root` need the pinned
   # zimbadev/crystalserver checkout, which this repository's CI does not fetch; whoever
   # regenerates the families runs them locally and commits the output together with
   # samples/source-capture-v1.json, samples/world-base-capture-v1.json,
-  # samples/floor-change-ids-v1.json and samples/appearance-only-ids-v1.json.
+  # samples/appearance-only-ids-v1.json.
   # `convert_world_base.py` also reads
   # data-global/world/maps.7z (fill) and needs py7zr from requirements-regenerate.txt; the
   # Edron rework and the minimap draft also need Pillow (same file) and the pinned tibiamaps
