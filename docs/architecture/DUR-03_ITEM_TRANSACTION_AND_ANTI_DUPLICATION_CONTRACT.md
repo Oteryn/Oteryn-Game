@@ -1306,6 +1306,12 @@ authority, conservation) is unchanged.
   numbers are registered by GOLD-FEE-1, not here.
 
 
+**Market fee amendment (MARKET-0), pending on acceptance of MARKET-0 (#1367).** The owner admitted the Market
+placing fee as a sink paid from the bank (D238, #162 5913348961), as D178 requires. The
+`FeeBurnCause` variant `MarketFee {offer_id, occurrence}` is one `FEE_DEBIT` value line of class
+BURN on the placer's (Account, World) balance, with no item line
+(`reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md` §4).
+
 **Bank fee amendment (BANK-FEE-0), pending on acceptance of BANK-FEE-0.**
 `reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`, once accepted, admits a bank part for the
 fee shapes above, for those shapes only: it supersedes the §39.1 exclusion of non-item accounts; the

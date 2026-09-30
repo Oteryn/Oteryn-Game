@@ -152,6 +152,10 @@ How does a fee fall back to the bank when the carried coins are not enough?
 - **A funds field in the NPC trade window now.** The server decides; a later wire decision can add
   the two balances as the Tibia client shows them.
 
+**Amendment (pending on acceptance of MARKET-0 (#1367)).** The Market placing fee (owner decision D238) is taken from the bank
+only, as Tibia does: a declared exception to §3's coins-first rule. It is one `FEE_DEBIT` ledger
+entry that references a Market operation instead of a fee record (`OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md` §4, §8).
+
 ## 8. Decision test
 
 - **Must decide now:** YES. The owner asked for the second fee stage now, and NPC trade and travel

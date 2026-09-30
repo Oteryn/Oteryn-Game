@@ -14,11 +14,11 @@
   junior rule and Q1); BANK-FEE-0 (`FEE_DEBIT`); DEPOT-0 (`CharacterDepot`, `DEPOT_V1`, §6 deltas);
   the composition decision §3; FND-ID-01 (`MarketOfferId`); FND-02 §13.3; PROD-ENTITLEMENTS-01 §9;
   owner rule 5905825574 (Global parity)
-- Amends, each pending on acceptance of MARKET-0 (#162 5912405163): DUR-03 (the Market custody
-  families and shapes, a paragraph after the §38 table); the composition decision (a paragraph
-  before its §7). The BANK-0, BANK-FEE-0 and DEPOT-0 amendments of §8 are written into those
-  documents by MARKET-1 once they are on `main`. The DUR-03 §39.3 and gold fee §4.4 fee-source
-  amendment is admitted by the Q1 answer and written by MARKET-1.
+- Amends, each pending on acceptance of MARKET-0 (#162 5912405163), in this PR: DUR-03 (the
+  Market custody families and shapes after the §38 table; the Market fee source in §39.3); the
+  composition decision (before its §7); BANK-0 (§3 ledger, §4.1 credit ceiling, after §5); BANK-FEE-0
+  (the bank-only Market fee, before its §8); the gold fee decision §4.4 (the `MarketFee` variant,
+  owner decision D238); DEPOT-0 (the Inbox and the lock order, before its §7).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -162,7 +162,10 @@ How do players of one World buy and sell items through the Market, safely across
   may be single units; a sell offer reserves its escrowed entries). A new offer or an accept that
   would raise it above `MARKET0-RL-06` (100,000) is `INBOX_FULL`. The ceiling refuses only new
   offers and accepts: no delivery is ever refused, whether a reserved Market delivery or return, or
-  another decision's delivery (house disposition, HOUSE-OWN-0), which counts without a reservation. This bounds a character's open buy offers to 100,000 units in all (a declared
+  another decision's delivery (house disposition, HOUSE-OWN-0), which counts without a reservation.
+  Such deliveries can take the counter above `MARKET0-RL-06`; their only bound is their source's
+  own bound (the house storage budget of EXP-HOUSES-01 §19, set by its decision), and while the
+  counter is above the ceiling the character's new offers and accepts are refused. This bounds a character's open buy offers to 100,000 units in all (a declared
   Reference difference, `PARITY_PENDING`).
 
 ## 6. Escrow and fills (MARKET-1)
@@ -191,8 +194,10 @@ How do players of one World buy and sell items through the Market, safely across
   accepts, `PARITY_PENDING`); a book with a pending match (`BOOK_BUSY`, retryable, §7).
 - **Balance ceiling.** Market credits (sales and escrow returns) are value already owned and are
   not refused at `BANK0-RL-01`: they may raise a balance up to the hard ceiling `MARKET0-RL-10`
-  (9,000,000,000,000,000). Voluntary credits (deposit, transfer in) still stop at `BANK0-RL-01`.
-  A credit past the hard ceiling leaves the step pending with an operator alert: nothing is lost.
+  (9,000,000,000,000,000), checked before the write so no CHECK aborts. Voluntary credits (deposit,
+  transfer in) still stop at `BANK0-RL-01`. A credit that would pass the hard ceiling is not
+  written: the offer leaves the book as `CREDIT_HELD` (so the ware's book never stalls), keeps its
+  escrow, and the job retries it daily until the balance can take it; nothing is lost.
 - **Causes.** Closed `MarketCause {Place | Accept | Cancel | Expire | Match, offer_id,
   occurrence}`; the fee's BURN is under the Market variant of `FeeBurnCause` (Q1).
 
@@ -204,9 +209,9 @@ How do players of one World buy and sell items through the Market, safely across
   serialized across every channel process of the World.
 - **Lock order** (composition rule 4, extended): the recovery fence and admission relations; the
   operation occurrence; for a player command, the acting Character's fence (rule 2),
-  `character_root` and DEPOT-0's container-slot row; the book row; the offers by `offer_id`; the
-  escrow and depot entries by ItemInstanceId; the Inbox counters by CharacterId; the balance rows
-  by `account_id`.
+  `character_root`; the book row; the offers by `offer_id`; the escrow and depot entries by
+  ItemInstanceId; DEPOT-0's container-slot row (so DEPOT-0 rule 4's root, items, container-slot
+  order holds); the Inbox counters by CharacterId; the balance rows by `account_id`.
 - **Jobs.** Matching and expiry steps have no acting Character: they take the recovery fence and
   admission relations and no session fence. They pick candidates without a lock, lock the book
   (`FOR UPDATE SKIP LOCKED` on the book row), then lock the offer and check its state again. Any
@@ -262,12 +267,15 @@ Each keeps the previous function body and adds one clause, as DEPOT-0 §6 does:
 | `MARKET0-RL-08` job steps per pass | 100 |
 | `MARKET0-RL-09` offers per query page | 32 |
 | `MARKET0-RL-10` balance hard ceiling for Market credits | 9,000,000,000,000,000 |
-| Place sell | 100 items, 200 location lines, 1 split, 1 value line, 302 work units, 1 event |
-| Place buy | 0 items, 2 value lines (fee, escrow), 1 event |
-| Accept or match | 100 items, 200 location lines, 1 split, 3 value lines, 304 work units, 1 event |
-| Cancel or expire | 100 items, 200 location lines, 1 value line, 301 work units, 1 event |
+| Place sell | 100 items, 200 location lines, 1 split, 1 value line (fee), 302 work units, 1 event |
+| Place buy | 0 items, 3 value lines (fee, `MARKET_ESCROW` debit, `escrow_gold` rise), 1 event |
+| Accept a sell offer | 100 items, 200 location lines, 1 split, 2 value lines (purchase, sale), 303 work units, 1 event |
+| Accept a buy offer, or a sell taker matching | 100 items, 200 location lines, 1 split, 2 value lines (`escrow_gold` fall, sale), 303 work units, 1 event |
+| A buy taker matching a cheaper sell | 100 items, 200 location lines, 1 split, 3 value lines (`escrow_gold` fall, sale, refund), 304 work units, 1 event |
+| Cancel or expire a sell offer | 100 items, 200 location lines, 0 value lines, 300 work units, 1 event |
+| Cancel or expire a buy offer | 0 items, 2 value lines (`escrow_gold` fall, return), 1 event |
 | Inbox out | 1 item, 2 location lines, 3 work units, 1 event |
-| `DUR03-RL-03-MARKET` value lines | 3; each ledger entry and each `escrow_gold` change is one line |
+| `DUR03-RL-03-MARKET` value lines | 3; each ledger entry is one line (the fee's `FEE_DEBIT` is its BURN line, not a second one) and each `escrow_gold` change is one line |
 
 Participants per transaction: two Characters and two Accounts at most. The event payload ceiling
 is measured by MARKET-1 against the audit envelope before implementation.
@@ -284,7 +292,8 @@ is measured by MARKET-1 against the audit envelope before implementation.
   `INSUFFICIENT_FUNDS`, `NOT_ENOUGH_ITEMS`, `INBOX_FULL`, `OFFER_LIMIT`, `NOT_PREMIUM`, `JUNIOR`,
   `NOT_MARKETABLE`, `OFFER_GONE`, `SAME_ACCOUNT`, `TOO_MANY_ITEMS`, `BOOK_BUSY`, plus the common
   results.
-- **Inbox view.** The locker's box list gains the Inbox; USE field 7 `InboxTargetV1 {page}` opens
+- **Inbox view.** The locker's box list gains the Inbox; a USE field reserved at allocation
+  (proposed: 7) `InboxTargetV1 {page}` opens
   one page (32 entries) in domain 11, and command 9 takes an Inbox entry handle as source, with the
   main backpack or `DEPOT {box}` as destination.
 - The Market view closes with the depot view.
@@ -340,8 +349,8 @@ delivered, then Premium only (recommended); b) nobody places offers until then.
 ## 15. Before-freeze checklist
 
 1. **Contract amendments:** DUR-03 (after the §38 table) and the composition decision (before its
-   §7), each written "pending on acceptance of MARKET-0". The BANK-0, BANK-FEE-0, DEPOT-0, DUR-03
-   §39.3 and gold fee §4.4 edits follow as stated in the header.
+   §7), BANK-0, BANK-FEE-0, DEPOT-0, DUR-03 §39.3 and the gold fee decision §4.4, each written
+   "pending on acceptance of MARKET-0" in this PR.
 2. **Serialization:** the book lock and §7's lock order; jobs lock the book before the offer.
 3. **Restart:** operations, offers, escrow and Inbox are durable; steps resume idempotently.
 4. **Typed references:** `MarketOfferId`, AccountId, WorldId, CharacterId, definition key and

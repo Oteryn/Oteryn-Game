@@ -251,9 +251,9 @@ also covers Market escrow, Inbox and offer records: a market transaction advance
 counterparty's Inbox, escrow and bank balance change without its fence, because no runtime owns
 them, and its Inbox counter row lock takes the place of its `character_root` lock. Matching and
 expiry steps have no acting Character: they take the recovery fence and admission relations only.
-Rule 4's lock order gains, after `character_root` and the container-slot row: the ware's book row,
-the offers by `offer_id`, the items by ItemInstanceId, the Inbox counters by CharacterId, then the
-balance rows by `account_id`.
+Rule 4's lock order becomes: `character_root`, the ware's book row, the offers by `offer_id`, the
+items by ItemInstanceId, the container-slot row, the Inbox counters by CharacterId, then the balance
+rows by `account_id`.
 
 ## 7. Protected integration
 

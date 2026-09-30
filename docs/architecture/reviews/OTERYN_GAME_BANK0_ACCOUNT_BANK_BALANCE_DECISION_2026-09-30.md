@@ -189,6 +189,16 @@ Where does a bank balance live, and how do deposit, withdraw and transfer work?
   `DUR03-RL-03` stays 0 for every existing shape.
 - Existing fee records (`0023`) are unchanged.
 
+**Amendment (pending on acceptance of MARKET-0 (#1367); `OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md` §6, §8).** The ledger gains `MARKET_ESCROW`,
+`MARKET_ESCROW_RETURN`, `MARKET_PURCHASE`, `MARKET_SALE` and `FEE_DEBIT` entries that reference a
+Market operation; an entry references exactly one of a bank operation, a fee record or a Market
+operation (a house operation after HOUSE-OWN-0), and gains `counterparty_character_id`; the acting
+character is NULL for a job step. Market credits (sales and escrow returns) may exceed `BANK0-RL-01`
+up to 9,000,000,000,000,000; §4.1's typed refusal still holds, now at that ceiling, checked before
+the write, so no CHECK aborts. A deferred guard per Market operation sums ledger deltas, the change
+of `escrow_gold` and the fee burn to 0. The Market fee is a burn of a Market shape; the bank shapes
+still have none.
+
 ## 6. Banker NPCs (BANK-NPC-1)
 
 - The NPC authoring schema gains a `Bank` service; BANK-NPC-1 generates it for the banker NPCs,
