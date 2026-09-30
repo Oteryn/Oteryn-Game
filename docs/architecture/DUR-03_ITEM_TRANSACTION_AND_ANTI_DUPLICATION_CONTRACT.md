@@ -688,9 +688,11 @@ aggregate payload for each distinct logical transaction:
 - `DECAY_RETIRE` (D3 amendment, §39.3 below): one already-existing live
   ItemInstance moves from its live location (typed `Ground`, for a corpse
   ItemInstance, or a `Container` entry, for a loot ItemInstance) to `RETIRED`
-  with no location, under a named, non-caller `CorpseDecay` cause. This is not
-  `burn`: it exists only for the single corpse/loot-decay cause the D3
-  amendment names, admits no caller-chosen retire cause or reason code, and
+  with no location, under a named, non-caller `CorpseDecay` cause. The
+  ADR-0021 amendment in §39.3 admits a second named cause, `WorldReset`, for
+  Ground items only. This is not
+  `burn`: it exists only for the named causes these amendments give, admits no
+  caller-chosen retire cause or reason code, and
   every other retire path (a TRANSFER full-merge source retiring per §11.4/
   §11.5, DUR-03's ordinary stack-to-zero retirement) is unamended by it.
 
@@ -1237,6 +1239,33 @@ This section does not decide quantity, probability, stack maximum, inventory
 capacity, loot or XP formulas, HP/damage, XP values, protocol/event IDs, registry
 ceilings, SQL/runtime permission, production retention configuration, or
 physical implementation. Unknown or unsupported native input remains closed.
+
+**Map items and world reset (ADR-0021).** `ADR-0021-world-map-runtime-loading.md` §4.4 and §4.7
+(owner answer 4a, 2026-09-30) admit two named shapes. Every other §39 obligation (fences, cause,
+evidence, idempotency, current authority, conservation) is unchanged.
+
+- **Map-item materialization.** A map-authored item that a player picks up has no durable
+  identity. Its pickup is:
+  - a MINT into typed Ground at the item's current tile, under the existing §39.1 MINT-to-Ground
+    shape;
+  - followed by the existing Ground-to-`CharacterInventory` TRANSFER, as a separate transaction.
+
+  The MINT cause is `MapItemMaterialization {world_id, channel_id, base_bundle_digest,
+  origin_position, origin_base_stack_index, reset_epoch}`:
+  - `origin_*` names the item's authored base position, even if the overlay moved it before the
+    pickup;
+  - `reset_epoch` is the World's reset counter.
+
+  One cause mints at most once, so a map item materializes at most once per channel per reset
+  epoch. If the TRANSFER does not commit, the item stays an ordinary durable Ground item.
+- **World-reset retirement.** At a planned world reset (ADR-0021 §4.7), after every channel of the
+  World is quiescent and before the new base is activated, each live Ground ItemInstance of that
+  World outside house custody moves to `RETIRED`. Each move is a one-item `DECAY_RETIRE` under the
+  named cause `WorldReset {world_id, reset_epoch}`. The activation waits until all of them
+  commit. A retry of the same cause returns the first outcome. Items in containers on the ground
+  are retired with their parent, in the order the D3 amendment uses for corpses.
+- The MINT and retire proto and registry fields, and the reset-epoch storage, are registered by
+  the ADR-0021 MAP-OVERLAY-1 child. This amendment grants no runtime or DDL authority.
 
 ## 40. Durable acknowledgement
 
