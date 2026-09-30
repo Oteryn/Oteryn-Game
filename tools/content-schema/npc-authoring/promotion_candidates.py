@@ -130,7 +130,7 @@ DEFINITION_REVIEWED = {
     'Omrabas': {'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'crystal', 'date': '2026-09-30'}},
     'Storkus': {'outfit': {'rule': 'OWNER_REVIEW', 'chosen': 'crystal', 'date': '2026-09-30'}},
     'Gareth': {'outfit': {'rule': 'WIKI_IMAGE_FIT', 'chosen': 'canary', 'image': 'File:Gareth.gif',
-                          'sha1': '987161bfb6872869531d7d6a2e7b86383791d538', 'score': 29.88,
+                          'sha1': '987161bfb6872869531d7d6a2e7b86383791d538', 'score': 30.2,
                           'colours': {'head': 41, 'body': 0, 'legs': 58, 'feet': 20}}},
     'Grumpy Stone': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'crystal', 'image': 'File:Grumpy Stone.gif',
                                 'sha1': 'd2b356e031104e639ce29494f5e9b1862d12f5da'}},
@@ -180,12 +180,12 @@ SOURCE_UNCONFIRMED = {
 # 30 visible pixels never changes); only fits scoring 35 or better are kept, the rest stay source_unconfirmed outfits
 WIKI_IMAGE_FIT = {
     'Leonora': {'image': 'File:Leonora.gif', 'sha1': 'f8500a396c36de9fb4b36fa649c07df1fe5ecd6d', 'score': 18.99, 'colours': {'head': 95, 'body': 94, 'legs': 86, 'feet': 0}},
-    'Raubritter Battler': {'image': 'File:Raubritter Battler.gif', 'sha1': '322276869e799d5ec801d55f79434b94c965c286', 'score': 9.19, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
-    'Raubritter Chastigator': {'image': 'File:Raubritter Chastigator.gif', 'sha1': '363f336c02dd0793411309ba17a36a0b7e4b292b', 'score': 31.62, 'colours': {'head': 94, 'body': 2, 'legs': 21, 'feet': 0}},
-    'Raubritter Guard': {'image': 'File:Raubritter Guard.gif', 'sha1': '7d36cfbd9d8c2ddbceb2204c883edf14fe2d4340', 'score': 9.2, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
-    'Raubritter Post': {'image': 'File:Raubritter Post.gif', 'sha1': 'b20e850f6884bc37de61b91eff78a69b9f130707', 'score': 9.2, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
-    'Raubritter Purifier': {'image': 'File:Raubritter Purifier.gif', 'sha1': '0c6552c7b148397beabe10be8c5426f642e9fa12', 'score': 28.13, 'colours': {'head': 94, 'body': 70, 'legs': 33, 'feet': 52}},
-    'Raubritter Thug': {'image': 'File:Raubritter Thug.gif', 'sha1': '6ead53bc3e0af773ccb82882458ba66cfff884bb', 'score': 9.19, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
+    'Raubritter Battler': {'image': 'File:Raubritter Battler.gif', 'sha1': '322276869e799d5ec801d55f79434b94c965c286', 'score': 12.95, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
+    'Raubritter Chastigator': {'image': 'File:Raubritter Chastigator.gif', 'sha1': '363f336c02dd0793411309ba17a36a0b7e4b292b', 'score': 34.46, 'colours': {'head': 94, 'body': 2, 'legs': 21, 'feet': 0}},
+    'Raubritter Guard': {'image': 'File:Raubritter Guard.gif', 'sha1': '7d36cfbd9d8c2ddbceb2204c883edf14fe2d4340', 'score': 13.19, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
+    'Raubritter Post': {'image': 'File:Raubritter Post.gif', 'sha1': 'b20e850f6884bc37de61b91eff78a69b9f130707', 'score': 13.19, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
+    'Raubritter Purifier': {'image': 'File:Raubritter Purifier.gif', 'sha1': '0c6552c7b148397beabe10be8c5426f642e9fa12', 'score': 30.97, 'colours': {'head': 94, 'body': 70, 'legs': 33, 'feet': 52}},
+    'Raubritter Thug': {'image': 'File:Raubritter Thug.gif', 'sha1': '6ead53bc3e0af773ccb82882458ba66cfff884bb', 'score': 13.29, 'colours': {'head': 94, 'body': 2, 'legs': 3, 'feet': 19}},
 }
 # D16: the wikis' name of an Item whose registered name differs (folded wiki name -> folded registered name)
 WIKI_ITEM_NAMES = {'straw mat foot section': 'straw bed foot section'}

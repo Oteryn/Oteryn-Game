@@ -251,7 +251,8 @@ def arbitrate(look_type, addons, gif, source):
             out[r], why[r] = source[r], 'source'
         else:
             out[r], why[r] = best, 'wiki'
-    return out, why, f['score']
+    # the score of the colours actually returned, not of the fully fitted ones
+    return out, why, round(score(render(look_type, out['head'], out['body'], out['legs'], out['feet'], addons), gif), 2)
 
 def main(argv):
     if len(argv) >= 8 and argv[0] == 'arbitrate':  # D16: arbitrate <look_type> <addons> <gif> <head> <body> <legs> <feet>
