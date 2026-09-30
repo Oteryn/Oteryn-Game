@@ -65453,6 +65453,69 @@
   {
    "arbitration": [
     {
+     "chosen": "canary",
+     "date": "2026-09-30",
+     "fact": "definition.movement",
+     "rule": "OWNER_REVIEW"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.flickering_soul",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 0,
+    "walk_radius": 0
+   },
+   "name": "Flickering Soul",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 33621,
+      "y": 31419,
+      "z": 10
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 2
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 26,
+     "feet": 6,
+     "head": 6,
+     "legs": 26,
+     "look_type": 1219,
+     "mount": 0
+    },
+    "speech_bubble": "BANKER"
+   },
+   "profession": "banker",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/flickering_soul",
+     "sha256": "0c9485a596dfc281f64c098b0d1feb276eebef1f5fea8de6075e5ceeb064e5cb"
+    },
+    "crystal": {
+     "key": "crystal:npc/flickering_soul",
+     "sha256": "67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 91716,
+    "revid": 1071455
+   }
+  },
+  {
+   "arbitration": [
+    {
      "chosen": "crystal",
      "fact": "trade.50181",
      "rule": "WIKI_ARBITER"
@@ -143401,6 +143464,63 @@
    }
   },
   {
+   "arbitration": [
+    {
+     "chosen": "crystal",
+     "date": "2026-09-30",
+     "fact": "definition.movement",
+     "rule": "OWNER_REVIEW"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.omrabas",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 0,
+    "walk_radius": 2
+   },
+   "name": "Omrabas",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 33020,
+      "y": 32454,
+      "z": 9
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "item_look": 3114
+    },
+    "speech_bubble": "TRADE"
+   },
+   "profession": "trader",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/omrabas",
+     "sha256": "26b8b6c512d4049cfd6c5683da1b3840d0d447923c99d915d99895a271ff25ff"
+    },
+    "crystal": {
+     "key": "crystal:npc/omrabas",
+     "sha256": "a2666b8881321b77e4f23767c314f2a4bf60de132c7ae752199126024758e25b"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 64333,
+    "revid": 1116802
+   }
+  },
+  {
    "arbitration": [],
    "identity": {
     "family": "NPC",
@@ -186291,6 +186411,69 @@
    "wiki": {
     "pageid": 109678,
     "revid": 1177571
+   }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "crystal",
+     "date": "2026-09-30",
+     "fact": "definition.outfit",
+     "rule": "OWNER_REVIEW"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.storkus",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Storkus",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 32589,
+      "y": 31962,
+      "z": 7
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 59,
+     "feet": 114,
+     "head": 57,
+     "legs": 118,
+     "look_type": 69,
+     "mount": null
+    },
+    "speech_bubble": "TRADE"
+   },
+   "profession": "trader",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/storkus",
+     "sha256": "51bd89ef68d44a66d136a1b3b7592caf910e36aec288c60b7ad4c21db562b30d"
+    },
+    "crystal": {
+     "key": "crystal:npc/storkus",
+     "sha256": "8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 25931,
+    "revid": 1114622
    }
   },
   {
@@ -237772,33 +237955,6 @@
  "evidence": "OTS_HYPOTHESIS_ONLY",
  "held": [
   {
-   "detail": "movement",
-   "name": "Flickering Soul",
-   "reason": "DEFINITION_CONFLICT",
-   "sources": {
-    "canary": "canary:npc/flickering_soul",
-    "crystal": "crystal:npc/flickering_soul"
-   }
-  },
-  {
-   "detail": "movement",
-   "name": "Omrabas",
-   "reason": "DEFINITION_CONFLICT",
-   "sources": {
-    "canary": "canary:npc/omrabas",
-    "crystal": "crystal:npc/omrabas"
-   }
-  },
-  {
-   "detail": "outfit",
-   "name": "Storkus",
-   "reason": "DEFINITION_CONFLICT",
-   "sources": {
-    "canary": "canary:npc/storkus",
-    "crystal": "crystal:npc/storkus"
-   }
-  },
-  {
    "detail": "outfit",
    "name": "Testserver Assistant",
    "reason": "DEFINITION_CONFLICT",
@@ -238077,9 +238233,9 @@
  "snapshot_sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42",
  "tibiopedia_facts_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
  "totals": {
-  "arbitrated_facts": 1508,
-  "candidates": 1109,
-  "held:DEFINITION_CONFLICT": 4,
+  "arbitrated_facts": 1511,
+  "candidates": 1112,
+  "held:DEFINITION_CONFLICT": 1,
   "held:EMPTY_SLUG": 1,
   "held:KEY_COLLISION": 2,
   "held:NOT_LOADABLE": 3,
