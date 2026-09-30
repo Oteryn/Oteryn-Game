@@ -591,6 +591,33 @@ pub fn encode_command_result(
     ))
 }
 
+/// Server-sequenced `REJECTED` `CommandResult` carrying an `OPERATION_TERMINAL` registered error
+/// in `error_code` and no typed payload (FND-02 §18): the command ends, the session does not.
+/// Any other disposition is refused, since it is not the outcome of one command.
+pub fn encode_command_error_result(
+    connection_generation: u64,
+    server_sequence: u64,
+    command_id: u64,
+    error: FoundationProtocolError,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    if connection_generation == 0 || server_sequence == 0 || command_id == 0 {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if error.disposition() != ProtocolDisposition::OperationTerminal {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let mut body = Vec::with_capacity(16);
+    push_scalar(&mut body, 1, command_id);
+    push_scalar(&mut body, 2, CommandStatus::Rejected as u64);
+    push_scalar(&mut body, 3, u64::from(error.code()));
+    Ok(server_frame(
+        MessageType::CommandResult,
+        connection_generation,
+        server_sequence,
+        &body,
+    ))
+}
+
 /// Server-sequenced `StateDelta` from `base_revision` to `new_revision` of one domain.
 #[allow(clippy::too_many_arguments)]
 pub fn encode_state_delta(
@@ -2199,6 +2226,7 @@ pub fn decode_framed_envelope(
     decode_wire_envelope(body)
 }
 
+pub mod account_achievements;
 pub mod actor_spell;
 pub mod bestiary;
 pub mod charm;
@@ -3792,6 +3820,50 @@ mod tests {
                 }
             );
         }
+        Ok(())
+    }
+
+    /// An operation-terminal command error: `REJECTED`, the registered code in `error_code` and no
+    /// payload, in hand-computed canonical bytes. Other dispositions are refused.
+    #[test]
+    fn command_error_result_carries_only_an_operation_terminal_code()
+    -> Result<(), FoundationProtocolError> {
+        let wire =
+            encode_command_error_result(4, 9, 300, FoundationProtocolError::PayloadLimitExceeded)?;
+        // CommandResult (8), generation 4, sequence 9, body: command 300 = ac 02, status 2,
+        // error_code 1009 = f1 07.
+        assert_eq!(
+            wire,
+            [
+                0x08, 0x08, 0x10, 0x04, 0x18, 0x09, 0x22, 0x08, 0x08, 0xac, 0x02, 0x10, 0x02, 0x18,
+                0xf1, 0x07
+            ]
+        );
+        let envelope = decode_wire_envelope(&wire)?;
+        assert_eq!(envelope.validate(Direction::ServerToClient, true), Ok(()));
+        assert_eq!(
+            decode_command_result(envelope.payload())?,
+            CommandResultView {
+                command_id: 300,
+                status: CommandStatus::Rejected,
+                error_code: 1009,
+                payload: &[],
+            }
+        );
+        for error in [
+            FoundationProtocolError::MalformedFrame,
+            FoundationProtocolError::UnknownMessageType,
+            FoundationProtocolError::CommandSequenceGap,
+        ] {
+            assert_eq!(
+                encode_command_error_result(4, 9, 300, error),
+                Err(FoundationProtocolError::MalformedEnvelope)
+            );
+        }
+        assert_eq!(
+            encode_command_error_result(0, 9, 300, FoundationProtocolError::PayloadLimitExceeded),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
         Ok(())
     }
 
