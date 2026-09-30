@@ -53,7 +53,8 @@ external_repositories: []
 
 ## Outcome
 
-Owner decisions 2026-09-30 ("2 oraz 3 i 4", "tak" on the image-fit rule, "ok" on generated replies), rule D16:
+Owner decisions 2026-09-30 ("2 oraz 3 i 4", "tak" on the image-fit rule, "ok" on generated replies; recorded verbatim
+with the owner's observations on #162, 5915795451), rule D16:
 
 - 42 left-out offers are admitted where two of three wikis state the source price (`WIKI_MAJORITY_ARBITER`).
 - Straw Mat Foot Section maps to its registered Item name (`WIKI_ITEM_NAMES`).
