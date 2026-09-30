@@ -2,7 +2,7 @@
 
 Builds one Terrain or WorldObject catalog record per routed engine id, validates it and
 writes a deterministic census. It mints no identity: a family key is a pure function of
-the frozen CW2-B1 Item key and the converter route (D93), and it writes nothing under
+the Tibia Item key (A12 §4.6) and the converter route (D93), and it writes nothing under
 `content/` (population is WO-2).
 
 - Routing is `engine_items.convert_item`'s own `routed_non_item` decision, unchanged.
@@ -39,13 +39,13 @@ import engine_items
 
 DEFAULT_SAMPLE = ROOT / "samples" / "census-crystal-ff7ede5.json"
 DEFINITION_REVISION = "definition-r1"
-ITEM_KEY = re.compile(r"^oteryn:item\.registry\.i([0-9]{8})$")
+ITEM_KEY = re.compile(r"^oteryn:item\.tibia\.i([1-9][0-9]*)$")
 FAMILY_PREFIX = {
-    "Terrain": "oteryn:terrain.registry.i",
-    "WorldObject": "oteryn:world-object.registry.i",
+    "Terrain": "oteryn:terrain.tibia.i",
+    "WorldObject": "oteryn:world-object.tibia.i",
 }
 FAMILY_KEY = {
-    family: re.compile("^" + re.escape(prefix) + "([0-9]{8})$")
+    family: re.compile("^" + re.escape(prefix) + "([1-9][0-9]*)$")
     for family, prefix in FAMILY_PREFIX.items()
 }
 # D94: no family key for these routes (the Fluid kinds stay Item fluid).
@@ -89,12 +89,12 @@ SCHEMA_FILES = {
 
 
 def family_key(item_key, family):
-    """Return the D93 family key for a frozen CW2-B1 Item key; raise on anything else."""
+    """Return the D93 family key for a Tibia Item key (A12 §4.6); raise on anything else."""
     if family not in FAMILY_PREFIX:
         raise ValueError(f"no family key for family {family!r}")
     match = ITEM_KEY.match(item_key or "")
     if match is None:
-        raise ValueError(f"not a CW2-B1 Item registry key: {item_key!r}")
+        raise ValueError(f"not a Tibia Item key: {item_key!r}")
     return FAMILY_PREFIX[family] + match.group(1)
 
 

@@ -3,7 +3,7 @@
 // same path-loaded crate root.
 //
 // Content has no definition with a known `container`-slot equip pattern yet
-// (the backpack oteryn:item.registry.i00002752 declares capacity 20 but its
+// (the backpack oteryn:item.tibia.i2854 declares capacity 20 but its
 // equipment semantics are UNKNOWN), so the backpack below is a test-only
 // fixture definition, like the D1 CombatDeathFixture.
 

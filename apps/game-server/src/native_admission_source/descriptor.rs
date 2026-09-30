@@ -22,6 +22,8 @@ pub enum Operation {
     ReadRecoverySigningTrustV2,
     /// Separate private Character bootstrap-intent reconciliation read.
     ReadCharacterBootstrapIntentV1,
+    /// Node runtime-status report (`oteryn-game-native-runtime-status-v1` §3).
+    ReportRuntimeStatusV1,
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
@@ -35,6 +37,19 @@ impl Operation {
             Self::ReadCharacterBootstrapIntentV1 => {
                 "/internal/v1/game-auth/character-bootstrap-intents/read"
             }
+            Self::ReportRuntimeStatusV1 => "/internal/v1/game-auth/native-runtime-status",
+        }
+    }
+    /// Request body cap: `NSRC-HTTP-REQUEST-BODY-BYTES`, or `NRS-REPORT-BYTES`
+    /// for the runtime-status report.
+    pub const fn request_bytes_max(self) -> usize {
+        match self {
+            Self::ReportRuntimeStatusV1 => super::runtime_status::REPORT_BYTES,
+            Self::ReadAccountSecurityV1
+            | Self::ReadFreshSigningTrustV1
+            | Self::ReadRecoveryAccountSecurityV2
+            | Self::ReadRecoverySigningTrustV2
+            | Self::ReadCharacterBootstrapIntentV1 => 1024,
         }
     }
 }

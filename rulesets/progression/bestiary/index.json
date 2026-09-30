@@ -4,7 +4,7 @@
   "kind": "ruleset",
   "owner": "Character progression",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Bestiary unlock/progression rules; creature thresholds live with content profile."
+  "notes": "Bestiary unlock/progression rules (kill-progress.json: kill credit, counter and derived stages); creature thresholds live with content profile."
 }

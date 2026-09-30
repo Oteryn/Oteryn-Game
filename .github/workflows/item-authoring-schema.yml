@@ -14,6 +14,7 @@ on:
       - imports/tibiawiki/sources.json
       - tools/content-census/item_wiki_family_capture.py
       - content/assets/files/appearances-*.dat
+      - imports/official/appearance-membership/**
       - .github/workflows/item-authoring-schema.yml
   workflow_dispatch:
 
@@ -94,6 +95,32 @@ jobs:
           fetch canary "$CANARY_REPO" "$CANARY_REV"
           python client_appearance_census.py --check \
             --crystal-source "$SRC/crystal" --donor-source "$SRC/donor" --canary-source "$SRC/canary"
+
+      - name: Appearance membership manifests (A12 §4.1) from the pinned appearance files
+        run: |
+          set -euo pipefail
+          python test_appearance_membership.py
+          SRC="$RUNNER_TEMP/appearance-membership"
+          mkdir -p "$SRC"
+          fetch() {
+            curl -fsSL --retry 5 --retry-delay 2 \
+              "https://raw.githubusercontent.com/$2/$3/data/items/appearances.dat" -o "$SRC/$1.dat"
+          }
+          # Revisions come from the tool's own pins (`pinned_by`); --check verifies every
+          # file's size and digest before it regenerates that file's manifest.
+          SOURCES=()
+          while read -r LABEL REPO REV; do
+            fetch "$LABEL" "$REPO" "$REV"
+            SOURCES+=(--source "$LABEL=$SRC/$LABEL.dat")
+          done < <(python -c '
+          from appearance_membership import ADMITTED
+          for spec in ADMITTED:
+              pin = spec["pinned_by"]
+              if ":data/items/appearances.dat" in pin:
+                  repo, rev = pin.split(":", 1)[0].split("@")
+                  print(spec["label"], repo, rev)')
+          test "${#SOURCES[@]}" -eq 6
+          python appearance_membership.py --check "${SOURCES[@]}"
 
       - name: WorldObject and Terrain authoring tests
         working-directory: tools/content-schema/world-object-authoring

@@ -338,3 +338,18 @@ fn every_core_rejection_maps_to_the_section_3_disposition() {
         assert_eq!(disposition(&rejection), expected, "{rejection:?}");
     }
 }
+
+#[test]
+fn a_book_that_does_not_load_fails_closed_and_nothing_is_skipped() {
+    let good = V1_BUNDLES[0];
+    let book = book_from_bundles(&V1_BUNDLES).expect("book");
+    assert!(book.indexed(index(3)).is_some() && book.indexed(index(4)).is_none());
+    // Unparseable spell, unparseable dependencies, and a bundle that parses but is no spell.
+    assert!(book_from_bundles(&[("not json", good.1)]).is_err());
+    assert!(book_from_bundles(&[(good.0, "not json")]).is_err());
+    assert!(book_from_bundles(&[("{}", "{}")]).is_err());
+    // One bad bundle among good ones refuses the whole book: no index shifts silently.
+    assert!(book_from_bundles(&[good, ("{}", "{}"), V1_BUNDLES[1]]).is_err());
+    // A duplicated spell (two bundles, one key) is refused by the book itself.
+    assert!(book_from_bundles(&[good, good]).is_err());
+}

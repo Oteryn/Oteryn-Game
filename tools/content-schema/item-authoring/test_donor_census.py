@@ -220,7 +220,7 @@ def test_classify_wiki_and_owner_table_never_match_a_provisional_key():
 def test_minted_donor_id_joins_wiki_evidence_under_its_epoch_2_key():
     # Task B2: once B1b binds a donor id, the wiki-evidence join runs under that
     # committed registry key; an unbound (held) id keeps the provisional key.
-    key = "oteryn:item.registry.i00038100"
+    key = "oteryn:item.tibia.i43675"
     index = {610: (key, "crystal_exact_binding")}
     check(donor_census.registry_key(610, index) == key, "minted id uses its key")
     check(
