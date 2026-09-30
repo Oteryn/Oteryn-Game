@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/tender-mendel-06tjg2
 issue: 162
 lane_id: HOUSES
-pr: null   # recorded in the FREEZE_SHA packet
+pr: 1366
 base_sha: ff09445f
 head_sha: null
 final_head_sha: null
@@ -60,4 +60,7 @@ Verbatim: "mozemy te domy finalnie domknac?", then `1tak, 2 tak, 3 trak` to:
 - `convert_houses.py convert --check`, `extract-door-items --check`, `extract-bed-items --check`,
   `otbm_tile_check.py --check` (pinned map), `build_catalogue.py --check` (unchanged catalogue),
   `verify_formal_schema.py`, `wiki_br_houses.py self-test`: ok.
-- ruff 0.16.1; governance, repository policy, semantic audit: see the FREEZE_SHA packet.
+- ruff 0.16.1, governance, repository policy: pass; architecture semantic audit: NOT_APPLICABLE.
+- CI green on `416e45ba`. Review: independent review of `416e45ba` FIX (issuecomment-5913729459): contract §5
+  counted step 1 as done while the contract is still a candidate, and this record lacked the PR number and review
+  state; both fixed in the next head, which is re-frozen on #162.

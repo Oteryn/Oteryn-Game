@@ -121,8 +121,9 @@ any other Ground item (D196; HOUSE-CUSTODY-0 §3.5).
    then no House may become ownable or auctionable, and Ground items on House tiles are retired at every planned
    reset (D196).
 
-Steps 1-3 are done: the static House catalogue is complete (owner direction 3a, 2026-09-30). A later catalogue
-change is a revision under §4.
+Steps 2 and 3 are done, so the static House catalogue is complete (owner direction 3a, 2026-09-30); step 1, the
+acceptance of this contract, is pending its independent review (header). A later catalogue change is a revision
+under §4.
 
 ## 6. Not decided
 
