@@ -432,18 +432,26 @@ def main() -> int:
             "PROFICIENCY_INDEX")
     require(proficiency_index["record_count"] == PROFICIENCY_COUNT, "PROFICIENCY_INDEX_COUNT")
     proficiency_keys = set()
+    proficiency_refs = set()
     for shard_path in proficiency_index["shards"]:
         shard = load(ROOT / shard_path)
         require(shard["family"] == "Proficiency" and shard["shard"]["count"] == len(shard["records"]), "PROFICIENCY_SHARD")
         proficiency_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
+        proficiency_refs |= {("Proficiency", row["definition"]["identity"]["key"],
+                              row["definition"]["identity"]["revision"]) for row in shard["records"]}
     require(len(proficiency_keys) == PROFICIENCY_COUNT, "PROFICIENCY_IDENTITY_UNIQUENESS")
     proficiency_bindings = load(ROOT / "content" / "proficiencies" / "bindings.json")
     binding_rows = proficiency_bindings["records"]
     require(proficiency_bindings["record_count"] == len(binding_rows) == PROFICIENCY_BINDING_COUNT,
             "PROFICIENCY_BINDING_COUNT")
-    item_keys = {definition["identity"]["key"] for definition in migrated_items}
+    item_refs = {("Item", definition["identity"]["key"], definition["identity"]["revision"])
+                 for definition in migrated_items}
+
+    def ref(value):
+        return (value["family"], value["key"], value["revision"])
+
     require(len({row["item"]["key"] for row in binding_rows}) == len(binding_rows), "PROFICIENCY_BINDING_UNIQUENESS")
-    require(all(row["item"]["key"] in item_keys and row["profile_binding"]["key"] in proficiency_keys
+    require(all(ref(row["item"]) in item_refs and ref(row["profile_binding"]) in proficiency_refs
                 and row["threshold_class"] in {"standard", "knight", "crossbow"} for row in binding_rows),
             "PROFICIENCY_BINDING_REFERENCES")
     reward_claim_index = load(ROOT / "content" / "interactions" / "reward_claims" / "index.json")
