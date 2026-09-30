@@ -1,7 +1,9 @@
 # Achievement Display Contract V1
 
-- Status: Contract candidate. Owner direction given 2026-09-30 in session; needs exact-head independent review
-  (wire contract, D49 display amendment) before it is accepted.
+- Status: Contract candidate. Owner direction 2026-09-30, recorded verbatim on #162 (owner decision record,
+  comment 5911933242); D-numbers to be assigned by the control plane. Needs exact-head independent review (wire
+  contract, D49 display amendment) before it is accepted.
+- Owner decision record: <https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5911933242>
 - Date: 2026-09-30
 - Issue: #162; lane `ACHIEVEMENT` (D126)
 - Implements: display of account achievements, the "not decided" display item of
@@ -23,7 +25,8 @@ already writes.
 
 ## 2. Owner decisions (2026-09-30)
 
-Recorded as owner direction, as given in session:
+Owner direction, recorded verbatim with the questions it answers in the owner decision record on #162 (see the
+header); the control plane assigns the D-numbers:
 
 1. Secret achievements not yet earned are not shown. A secret achievement is shown only once the account has
    earned it (Reference behaviour).
@@ -31,8 +34,8 @@ Recorded as owner direction, as given in session:
 3. Delivery is fetch on request. The client asks when the player opens the achievements panel. Nothing is pushed
    on login, and there is no periodic refresh.
 4. The panel shows all facts the account has earned, and all of them count toward the points.
-5. The panel lists earned achievements only; not-earned records are not sent (owner answer 2b, 2026-09-30).
-6. The reply is paged (owner answer 1a, 2026-09-30).
+5. The panel lists earned achievements only; not-earned records are not sent (record display-5).
+6. The reply is paged (record display-6).
 
 ### 2.1 D49 display amendment (decision 4)
 
@@ -72,8 +75,8 @@ fixtures come in the implementation PR (§7).
 FND-02 §8 says later contracts register typed command payloads carried by `ClientCommand` and `CommandResult`;
 `PROTOCOL_OTERYN_V1_REGISTRY.json` `command_types` 1-3 are the existing pattern (id, `owner_decision`,
 `payload_schema`, `result_schema`, `max_payload_bytes`, `max_result_payload_bytes`). So the pair is one new
-`command_types` entry, `ACCOUNT_ACHIEVEMENTS_QUERY`, with the next free id at the implementation PR, not a new
-`message_types` entry (`message_type` 256+ is for future extension and this feature needs none).
+`command_types` entry, `ACCOUNT_ACHIEVEMENTS_QUERY`, with id 10 (reserved on #162 in the owner decision record),
+not a new `message_types` entry (`message_type` 256+ is for future extension and this feature needs none).
 
 | Part | Registry message | Direction | Phase | Sequencing class |
 |---|---|---|---|---|
@@ -93,6 +96,7 @@ empty. The account is never in the payload.
 `AccountAchievementsResult`:
 
 - `total_points` (`uint32`): the account total of §2.1, the same in every page of one read;
+- `fact_count` (`uint32`): the number of facts of the account at the time of the read (watermark, §3.3);
 - `page` (`uint32`) and `has_more` (`bool`);
 - `rows`, repeated `AccountAchievementRow`:
 
@@ -118,8 +122,8 @@ secret or not, is never sent, so a client cannot learn a secret's name or descri
 - Today the catalogue has 571 records. At the text limits above a row is at most about 500 bytes, so one reply
   of all rows (up to about 285 KiB) does not fit the 64 KiB result bound, and per-row limits small enough to fit
   it (about 110 bytes) cannot hold the descriptions. The reply is therefore paged: a fixed server-side page size
-  of 64 rows (at most about 32 KiB), at most 9 pages for the current catalogue (an account earning every record), `has_more` telling the client to ask for
-  `page + 1`.
+  of 64 rows (at most about 32 KiB), at most 9 pages for the current catalogue (an account earning every
+  record), `has_more` telling the client to ask for `page + 1`.
 - The cap is a rule, not a silent truncation: the server never drops rows to fit; a page holds
   `min(64, remaining)` rows. A catalogue text longer than the per-field limits is a catalogue error caught by
   content validation; a reply that would still exceed the result bound fails closed with a registered
@@ -129,17 +133,18 @@ secret or not, is never sent, so a client cannot learn a secret's name or descri
 - A `page` beyond the last page returns no rows and `has_more` false. The query carries no other
   client-chosen size, filter or key, so no peer-controlled size drives work (FND-02 §7, §19).
 - Pages are not one snapshot across grants. The client fetches from page 0 each time the panel opens and, if
-  `total_points` differs between pages of one open, discards its list and fetches again.
+  `fact_count` differs between pages of one open, discards its list and fetches again. Facts are append-only
+  (migration 0021), so every grant raises `fact_count`, including a grant of a zero-point (retired) record that
+  leaves `total_points` unchanged but shifts rows; comparing `total_points` alone would miss it.
 
-Assumption for the owner (task report `owner_questions`): the owner said the query has no payload beyond the
-envelope. A single unpaged reply cannot meet FND-02 §19 with descriptions included, so this contract adds the one
-`page` field. If the owner prefers an empty query, the alternative is to drop `description` from the reply and
-have the client read it from a content pack; that needs a client content contract and is not chosen here.
+The owner confirmed paging (record display-6): an empty query would need the reply without `description` and a
+client content contract, which is not chosen.
 
 ### 3.4 Order
 
 Rows are sorted by `grade` ascending (1 to 4), then `name` by Unicode code point order, then `key` as tie-break,
-so paging is deterministic. The client may regroup what it has fetched. A retired earned fact appears in its grade position.
+so paging is deterministic. The client may regroup what it has fetched. A retired earned fact appears in its grade
+position.
 
 ## 4. Server read path
 

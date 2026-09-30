@@ -23,6 +23,7 @@ owned_paths:
   - docs/architecture/OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1.md
   - docs/architecture/OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1.md
   - docs/agents/tasks/archive/OTV2-20260930-achievement-display-contract.md
+  - docs/architecture/reviews/OTERYN_GAME_ACCOUNT_PROGRESS_AND_QUEST_707_DISPOSITION_DECISION_2026-09-28.md   # pending-amendment pointer only
 public_contracts:
   - docs/architecture/OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1.md
 depends_on:
@@ -66,3 +67,18 @@ Docs and contract only: no code, no `.proto`, no registry change.
 - Review: independent exact-head review routed by the lead on the frozen head. The worker triggered no
   owner-funded review.
 - Merge commit/result: squash merge of the PR (resolve with `git log --grep`).
+
+## Review round 1 (FIX on f497ecb1, repeated on 8fdb464f)
+
+- HIGH: the owner contract §2.3 and §4 kept their accepted text; the display-contract change is a pending
+  amendment that applies on its acceptance. The header says "Pending amendment" instead of "Amended by".
+- MEDIUM: the owner's words are recorded verbatim with their questions on #162 (comment 5911933242); the display
+  contract cites that record, and the control plane assigns the D-numbers. The D49 source
+  (account-progress decision §4.4) gains a pending-amendment back-pointer.
+- LOW: pages carry `fact_count` (append-only facts, so every grant raises it, including a zero-point one); the
+  client refetches on a `fact_count` mismatch instead of `total_points`.
+- LOW: command type 10 reserved on #162 in the same record and cited.
+- Nits: lines over 120 characters in the display contract reflowed. The stale owner-assumption paragraph on
+  paging is replaced by the owner's answer (record display-6).
+- Owned paths add `docs/architecture/reviews/OTERYN_GAME_ACCOUNT_PROGRESS_AND_QUEST_707_DISPOSITION_DECISION_2026-09-28.md`
+  (pending-amendment pointer only).
