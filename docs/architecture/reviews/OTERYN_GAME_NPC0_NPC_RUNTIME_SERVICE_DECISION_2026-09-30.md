@@ -119,6 +119,9 @@ shapes are new?
   offers stay. The rule holds nothing today.
 - A travel route loads when it has no gate or only a level and Premium gate. Quest-gated routes
   are held. A route price of 0 is free.
+  **Amendment (pending on acceptance of QUEST-GATE-0; `OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §3.4).** A
+  quest-gated route loads; the talk runtime checks its gate before the confirmation, and the travel
+  transaction re-reads the gate's tracks under the `character_root` lock.
 
 ## 4. Wire (NPC-WIRE-1)
 
@@ -320,6 +323,9 @@ satisfied).
   localization.
   *Amendment (BANK-FEE-0, pending on acceptance):* bank payment of BUY and travel fees is now decided
   (`OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`); banker services are BANK-0.
+  **Amendment (pending on acceptance of QUEST-GATE-0; `OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5).**
+  Quest-conditioned dialogue is now decided: typed quest conditions and outcomes on Dialogue nodes,
+  built by NPC-QUEST-1; dialogue still commits no value.
 
 ## 12. Before-freeze checklist
 

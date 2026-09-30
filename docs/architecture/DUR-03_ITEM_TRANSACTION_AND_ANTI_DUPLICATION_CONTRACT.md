@@ -386,6 +386,9 @@ gold fee amendment in §39.3 (owner decisions D174-D178), and, with the NPC serv
 §39.3, the closed `NpcTradeCause` of a SELL. Pending on acceptance of ITEM-USE-0, the item use
 amendment in §39.3 admits the closed `ItemUseCause`.
 
+**Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
+The quest exchange amendment in §39.3 admits the closed `QuestExchangeCause`.
+
 ## 16. Transform semantics
 
 ### 16.1 Explicit internal Oteryn identity policy
@@ -1562,6 +1565,18 @@ admits, in its ITEM-USE-1 child and for these shapes only:
   existing stack and multiple touched items. Every other §39 obligation is unchanged. One audit
   event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
   use's effect, with its own suffixed resource rows.
+
+**Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §5.4).**
+Once accepted, in its NPC-QUEST-1 child:
+
+- **Dialogue claim.** A `RewardClaim` MINT whose source cause is the confirming NPC talk occurrence
+  and the claim, beside the D40 `USE` child, with the same claim rules (D40-D42).
+- **Exchange.** One item-only transaction under the closed cause `QuestExchangeCause {npc, node,
+  exchange_key, occurrence}`: at most 8 BURN lines (§17) from direct entries of the main backpack
+  (§11.1, §11.5), the claim's MINT lines when the node rewards, and one quest obligation row. It is
+  refused with nothing written when an item is missing or the transition's `from` does not hold.
+- **Supersession.** For these shapes only, the §39.1 exclusions of burn and multiple touched items.
+  Every other §39 obligation is unchanged; its rows are suffixed `-QUEST-EXCHANGE`.
 
 ## 40. Durable acknowledgement
 
