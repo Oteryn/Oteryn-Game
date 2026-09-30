@@ -1,9 +1,9 @@
 # MAP-WIRE-1 Map state on the wire
 
 - Contract: `MAP-WIRE1-MAP-STATE-V1`
-- Status: **CONTRACT CANDIDATE, OWNER ACCEPTANCE REQUIRED** (ADR-0021 §5). Acceptance also needs
-  exact-head validation, independent protocol and security review and protected integration. The
-  design is the Tibia one: the server streams the map (owner question M1, §10, recommended b).
+- Status: **CONTRACT CANDIDATE** (ADR-0021 §5). The owner answered M1 with b (2026-09-30, §10), the
+  design written here: the server streams the map as in Tibia. Acceptance needs exact-head
+  validation, independent protocol and security review and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the control plane's map lane scheduling (#162 5914289140: MAP-WIRE-1 after CONDITIONS-0;
   DEPOT-WIRE-1 and the house views depend on it) and ADR-0021 §5's wire child
@@ -176,9 +176,9 @@ positions are implicit in the per-floor lists) and per tile 10 items; the larges
   today's placeholder; it is not refused. Numbers, the domain id and delta types are reserved on
   #162 at allocation.
 
-## 10. Owner question
+## 10. Owner question (answered: b)
 
-**M1. Where does the base map come from?**
+**M1. Where does the base map come from?** The owner chose b on 2026-09-30.
 - **b (recommended):** streamed by the server as in Tibia (§3-§8): nothing to download when the
   map changes, only visited areas reach the client, ADR-0021 measured the server read at 13-40 µs
   per view.
@@ -187,7 +187,7 @@ positions are implicit in the per-floor lists) and per tile 10 items; the larges
   forces a client update through an updater and signing that are not yet decided (ALPHA-CLIENT-01
   §17); it needs a new admission check and a digest in `ClientBootstrap`.
 
-Under the Global-parity rule, b applies unless the owner chooses a.
+Option a is not taken.
 
 ## 11. Rejected options
 
