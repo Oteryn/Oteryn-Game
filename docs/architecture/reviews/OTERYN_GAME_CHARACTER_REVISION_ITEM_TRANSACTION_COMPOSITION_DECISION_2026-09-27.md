@@ -171,6 +171,13 @@ row (`game_character_pending_arrivals`), an obligation outside the revision chai
 pending respawn (DEATH-0 §3.4). NPC BUY, SELL and travel are item-only transactions under rules
 1-6 (`OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6).
 
+**Amendment (PLAYER-TRADE-0, 2026-09-30), pending on acceptance of PLAYER-TRADE-0.** Once
+PLAYER-TRADE-0 is accepted (`OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md` §5), one item-only transaction may fence two
+Characters for a trade swap: the second accepter by rule 2 with its pending CommandRef, the first
+accepter by its terminal accept recorded in the cause, with its GameSessionId, lease and scope
+generations pinned at that accept. Both `character_root` rows are locked in `character_id` order,
+then the items in ItemInstanceId order. No `CharacterRevision` advances.
+
 ## 4. Rejected options
 
 - **Put every item transaction into the `CharacterRevision` chain** with a closed union of typed

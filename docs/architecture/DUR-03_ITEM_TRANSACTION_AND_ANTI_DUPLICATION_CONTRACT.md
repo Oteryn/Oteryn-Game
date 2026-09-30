@@ -617,6 +617,13 @@ After custody commit, value is not spendable from prior location. Each step has 
 
 Owning domain defines business lifecycle/eligibility.
 
+**Amendment (PLAYER-TRADE-0, 2026-09-30), pending on acceptance of PLAYER-TRADE-0.**
+`reviews/OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md` §5-§6, once accepted, admits one trade swap: two whole items
+of two Characters on one channel, each into a new direct entry of the other's main backpack, in
+one transaction keyed by the trade occurrence, with both Characters fenced. It supersedes the §39.1
+one-item and one-Character limits for that cause only. Offered items stay in place until the swap,
+so no custody family is used.
+
 ## 35. Current database authority boundary
 
 Current atomic durable DUR-03 mutation uses one game-owned PostgreSQL transaction inside `oteryn_game` under ADR-0004/DUR-02.
