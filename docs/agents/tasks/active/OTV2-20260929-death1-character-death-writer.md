@@ -4,19 +4,19 @@
 task_id: OTV2-20260929-death1-character-death-writer
 title: DEATH-1 - Character death writer, D58 calculator, pending-respawn consumption
 mode: IMPLEMENT
-status: blocked
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/death1-character-death-writer
 issue: 162
 lane_id: GAME-CHAR durability / death
-pr: null   # recorded in the FREEZE_SHA packet on #162
+pr: 1278
 base_sha: cf025b7
 head_sha: null   # a commit cannot hold its own SHA; exact head is in the FREEZE_SHA packet
 owner: "DEATH-1 hard worker (claude-code-session-01Y1aRVstBEF8u4Sq4MGNhSd)"
 control_plane: session_01MnSvpbKjAZEdzEaFrwiu7D
 created_at: 2026-09-29
-updated_at: 2026-09-29
+updated_at: 2026-09-30
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_death.rs
@@ -27,9 +27,10 @@ owned_paths:
   - apps/game-server/tests/reference_character_progression_calc.rs
   - apps/game-server/tests/support/character_progression_postgres_cases.rs   # one #[path] child include
   - apps/game-server/tests/support/character_death_writer_postgres_cases.rs
+  - apps/game-server/migrations/0018_character_death_runtime_grant.sql   # control-plane decision on #162
   - docs/agents/tasks/active/OTV2-20260929-death1-character-death-writer.md
 public_contracts: []
-depends_on: [DEATH0-CHARACTER-DEATH-RECEIPT-V1, REFERENCE-FIRST-PLAYER-DEATH-V1, "0016 (#1264)", "0017 (#1270)"]
+depends_on: [DEATH0-CHARACTER-DEATH-RECEIPT-V1, REFERENCE-FIRST-PLAYER-DEATH-V1, "0016 (#1264)", "0017 (#1270)", "0018 (this PR)"]
 blocks: [DEATH-1 respawn consumption, DEATH-2]
 external_repositories: []
 jira: null   # sync pending (coordinator batch)
@@ -127,15 +128,24 @@ game_character_interpretations`); the concurrent same-occurrence case fails when
 is disabled (`CharacterRevisionMismatch`); the ratio/rounding pin case fails when the pin is
 disabled.
 
-## Blocker (LANE_BLOCKED)
+## Blocker resolved: migration 0018
 
-The runtime-role case fails on this head: `permission denied for function
-game_character_is_blessing_set` on the death receipt INSERT. 0016 revokes EXECUTE on that function
-(used by the `blessings_before`/`blessings_after` CHECKs) from PUBLIC and grants it to no role, and
-a CHECK function runs with the inserting role's privileges, so no `oteryn_game_runtime` login can
-commit a death (the owner-run cases never saw it). Fix, outside this packet's scope (migrations
-excluded): an additive migration
-`GRANT EXECUTE ON FUNCTION game_character_is_blessing_set(text[]) TO oteryn_game_runtime;`
-(0016 cannot change after merge). With that grant applied in the test setup, the runtime-role case
-passes and `cargo test -p oteryn-game-server` against PostgreSQL 17.6 passes (48 targets, 9484
-tests, 0 failed); without it exactly that case fails. The case is not weakened to pass.
+The runtime-role case failed with `permission denied for function game_character_is_blessing_set`
+on the death receipt INSERT. 0016 revokes EXECUTE on that function (used by the
+`blessings_before`/`blessings_after` CHECKs) from PUBLIC and grants it to no role, and PostgreSQL
+checks EXECUTE on a CHECK's functions as the inserting role, so no `oteryn_game_runtime` login could
+commit a death (the owner-run cases never saw it). By the control-plane decision on #162 this PR
+adds the forward-only migration `0018_character_death_runtime_grant.sql` with exactly
+`GRANT EXECUTE ON FUNCTION game_character_is_blessing_set(text[]) TO oteryn_game_runtime;`. 0016 is
+unchanged. No other 0016 gap exists: its trigger functions are not EXECUTE-checked at fire time and
+call no revoked helper, the other CHECK helper (`game_character_is_uuid_v7`) is granted to the
+runtime by 0006, and `oteryn_game_control` only reads the 0016 tables. The runtime-role case is not
+weakened; it now passes against the migrated schema.
+
+Validation with 0018 (main merged in at `f8273fd8`), PostgreSQL 17.6 (`postgres:17.6-bookworm@sha256:f3bd19c6…`):
+`cargo test --locked -p oteryn-game-server` run target by target (disk-bound session) — lib, bins,
+examples, all 41 test targets and doctests: 9561 passed, 0 failed, 7 ignored, including
+`character_death_receipts_postgres` (6) and `character_progression_postgres` (608, with
+`death_commits_and_replays_under_the_runtime_role_grants`). RED: with 0018 removed that case fails.
+`cargo fmt --all --check`, `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`,
+`git diff --check` and `validate_governance.py`: pass.
