@@ -39,9 +39,9 @@ kept in `provenance.hometown` and `samples/area-report.json`.
 - 18 of 19 temples have the temple NPC 0-5 tiles away on the same floor.
 - Ankrahmun: the engine has z 8; the owner checked in game (2026-09-30) that the temple
   is on client level 0, so the temple is z 7 (`OWNER_CHECKS`). Rahkem is 5 tiles away.
-- Farmine: the engine has z 11 (client level -4). The nearest NPC, Prezil, is recorded
-  on z 15 by its page but on z 11 two tiles away by the wiki `Temple` table; not yet
-  checked in game.
+- Farmine: the engine has z 11 (client level -4), which the owner confirmed in game
+  (2026-09-30, recorded in `OWNER_CHECKS`). The nearest NPC, Prezil, is recorded on z 15
+  by its page but on z 11 two tiles away by the wiki `Temple` table.
 - The 16 engine towns that are not hometowns (for example `Home`, `Targuna`, `Krailos`,
   `Moonfall`) are listed in the report and not used.
 

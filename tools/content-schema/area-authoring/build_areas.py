@@ -78,6 +78,13 @@ OWNER_CHECKS = {
             "the engine has z 8"
         ),
     ),
+    "Farmine": (
+        {},
+        (
+            "2026-09-30 owner in game: the Farmine temple is on client level -4 (z 11), "
+            "as the engine has it"
+        ),
+    ),
 }
 
 

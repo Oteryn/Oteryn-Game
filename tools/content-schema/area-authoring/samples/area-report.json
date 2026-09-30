@@ -80,7 +80,7 @@
    "wiki_npc": "Amanda"
   },
   "Farmine": {
-   "owner_check": false,
+   "owner_check": true,
    "temple": {
     "x": 33023,
     "y": 31521,

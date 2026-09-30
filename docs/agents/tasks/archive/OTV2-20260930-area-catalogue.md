@@ -56,7 +56,8 @@ Every House `town` reference now resolves. No runtime, migration or protocol cha
 - PROVEN: all 19 House towns are a client area named the town or the town plus " City".
 - DERIVED: temple = CrystalServer `world.otbm` town temple; 18 of 19 have the TibiaWiki temple Cleric/Healer NPC
   0-5 tiles away on the same floor; Ankrahmun is z 7 by the owner's in-game check (engine z 8).
-- UNKNOWN: Farmine temple floor (engine and wiki `Temple` table z 11, Prezil's page z 15); not checked in game.
+- PROVEN: Farmine temple is z 11 (client level -4): engine and wiki `Temple` table, confirmed by the owner in game
+  ("3 jest", 2026-09-30); Prezil's page says z 15.
 - ASSUMPTION: Dawnport's city area is "Dawnport Centre" (its client position is next to the temple).
 - ASSUMPTION: Area keys follow the House catalogue identity rules (§2.1); no separate Area contract yet.
 
@@ -65,7 +66,8 @@ Every House `town` reference now resolves. No runtime, migration or protocol cha
 - `validate_materialized_game_tree.py` and `content_world_project_repository.rs` accept `POPULATED` for the
   `areas/cities/` and `areas/regions/` markers, and the inventory test keeps their shards out of the legacy package,
   as #1319 did for Terrain and WorldObject.
-- The G4 package comparison removes the area shards, as it removes the WO-2 shards (workflow edit: owner question).
+- The G4 package comparison removes the area shards, as it removes the WO-2 shards. Owner authorized the new
+  `area-authoring-schema.yml` and this G4 edit (1a, 2026-09-30) and asked for the PR (2a).
 
 ## Validation (local)
 
