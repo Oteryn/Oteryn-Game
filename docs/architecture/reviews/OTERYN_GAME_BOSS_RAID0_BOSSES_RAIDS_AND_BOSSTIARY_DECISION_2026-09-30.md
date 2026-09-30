@@ -267,16 +267,23 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
 - **Contribution** is tracked for a `reward_boss` actor in owner memory, as D132: per
   CharacterId, damage dealt to the boss, damage taken from the boss and healing done to other
   contributors, weighted by the formula BOSS-REWARD-1 captures (`PARITY_PENDING`).
-- **Bounded top contributors (architect ruling, not D132's first-arrival overflow).** The tracking
-  set holds at most `BOSSRAID0-RL-10` (50, D109) entries, ordered by score descending, then
-  first-contribution tick ascending, then CharacterId ascending. A contribution by an untracked
-  character when the set is full enters only if the newcomer's score ranks above the lowest
-  entry under that order; the lowest entry is then evicted and its score discarded (it re-enters
-  from zero). Otherwise the contribution is not tracked; the character fights normally. Arrival
-  order alone never admits or excludes anyone, so low-contribution taggers cannot hold slots
-  against higher contributors.
-- At the death commit, the credited set is the tracked entries with score > 0 (at most 50, the
-  top contributors by the order above), and each score is fixed in the death record (§8.1).
+- **Bounded top contributors (architect ruling, not D132's first-arrival overflow).** Scores
+  accumulate first and are selected only at death. The accumulator holds the cumulative score of
+  at most `BOSSRAID0-RL-10b` (200) distinct characters, four times the credited bound; every
+  contribution by a tracked character adds to its total. Entries are ordered by cumulative score
+  descending, then first-contribution tick ascending, then CharacterId ascending. A contribution
+  by an untracked character enters a free entry; when all 200 are taken, it enters only if its
+  score ranks above the lowest entry under that order, and the lowest entry is then evicted with
+  its total discarded (a later contribution re-enters from zero). Otherwise that one contribution
+  is not counted; the character fights normally, and its later contributions accumulate once it
+  is admitted. Arrival order alone never admits or excludes anyone.
+- **Residual (stated precisely).** With at most 200 distinct contributors in one boss life, every
+  total is exact and the selection below is the true top 50. Only above 200 can a contribution be
+  dropped: a character loses a contribution only while its total ranks below 200 others, so
+  low-contribution taggers cannot hold credit against a higher cumulative contributor unless
+  more than 200 distinct characters contribute. The accumulator stays bounded in owner memory.
+- At the death commit, the credited set is the top `BOSSRAID0-RL-10` (50, D109) accumulator
+  entries with score > 0 by the order above, and each score is fixed in the death record (§8.1).
 - Non-reward bosses keep D121 corpse loot with the D112 window and the party right (PARTY-PVP-0
   §5.3). Their Bosstiary credit uses CHARM-0's 5-minute damage rule, up to 50 principals.
 
@@ -287,7 +294,7 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
 - `game_boss_reward_deaths`: one row per reward-boss death key, with the credited set and scores,
   the loot table ref and the Boosted Boss flag, written by the death composition (ruling R3:
   committed with the death; its draws and MINTs resume after a restart, keyed so they never
-  duplicate).
+  duplicate, in each credited character's own admitted session, below).
 - **Bonus snapshot.** The same death composition writes, per credited character, whether the
   dead boss was in one of its boss slots and the resolved boss slot bonus multiplier (from its
   boss points), read from the character's committed state at the death commit. Later slot changes
@@ -299,6 +306,17 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
   or Bosstiary state. The RNG is seeded by (death key, CharacterId).
 - Each item is its own one-item DUR-03 MINT, cause `(death key, CharacterId, loot table ref,
   entry key, draw ordinal)`, in steps of `BOSSRAID0-RL-12` MINTs keyed by (death, step).
+- **Session-fenced continuation (architect ruling).** The death record keeps, per (death key,
+  CharacterId), a pending-draw marker that the step completing that character's draw clears. A
+  draw or MINT step for a credited character is written only under that character's own current
+  admitted session: the STARTER-BACKPACK-0 server-originated variant, with that session's
+  `CurrentCharacterItemFence`, whose Character and World must equal the death record's. A
+  character online in the World completes its steps in its live session. After a restart, or
+  while the character is offline, its steps stay pending; its next admitted session in that World
+  completes them under its own fence. Nothing is minted under an ended generation's or session's
+  authority, and no step runs for a character without an admitted session. The (death, step) and
+  item cause keys make the continuation exactly-once: a step committed before a restart is found
+  by its key and never repeated. The §8.2 expiry of an item counts from its MINT.
 
 ### 8.2 Location, claim and expiry
 
@@ -381,7 +399,8 @@ definition's `*_points`).
   revision the previous one committed.
 - **No advance** for cooldown, eligibility and reward chest rows: composition rule 1 covers them
   (amendment in this PR). They take rule 2's fence; a server-originated death descendant takes the
-  STARTER-BACKPACK-0 variant (the admitted session's fence, no CommandRef).
+  STARTER-BACKPACK-0 variant (the admitted session's fence, no CommandRef). A reward draw or MINT
+  step takes the credited character's own current session fence (§8.1), never a dead generation's.
 - **Lock order:** the occurrence (admission, death step, firing); the Character roots in
   CharacterId order; cooldown and eligibility rows by (CharacterId, key); items by
   ItemInstanceId; the World rows (schedule, firing, run) by key.
@@ -417,6 +436,7 @@ definition's `*_points`).
 | `BOSSRAID0-RL-08` admission arrival window | 30 s |
 | `BOSSRAID0-RL-09` boss room time limit | content, at most 2 h |
 | `BOSSRAID0-RL-10` contributors per reward boss | 50 (D109), the top contributors by score (§7) |
+| `BOSSRAID0-RL-10b` contribution accumulator per reward boss life | 200 distinct characters; lowest cumulative total evicted when full (§7) |
 | `BOSSRAID0-RL-11` reward entries per character per death | 16 (D77 per character) |
 | `BOSSRAID0-RL-12` reward MINTs per step | 100 |
 | `BOSSRAID0-RL-13` reward expiry | 7 days (`PARITY_PENDING`) |
@@ -505,7 +525,7 @@ change per reset epoch.
    use; World jobs lock before re-checking.
 3. **Restart:** firings, runs, clocks, cooldowns, eligibility and rewards are durable and keyed;
    an `ALIVE` clock of an ended generation is realized again (§5); resumed draws read the §8.1
-   snapshot;
+   snapshot and complete in the credited character's next admitted session under its own fence;
    raid runs and boss rooms are lost, never duplicated; R3 for rewards.
 4. **Typed references:** WorldId, ChannelId, InstanceId, CharacterId, raid, encounter and boss
    keys, `firing_id`, death key, reset epoch.

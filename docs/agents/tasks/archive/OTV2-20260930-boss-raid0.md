@@ -83,6 +83,9 @@ persistence review; BOSS-REWARD-1 economy and security review; BOSS-WIRE-1 proto
 - Codex round-1 repair: ALIVE clock owner generation (§5), death-record bonus snapshot (§8.1),
   singleton open-world eligibility row (§9), top-50 contributors (§7), one free slot change per
   character per reset epoch (§10.3).
+- Codex round-2 repair: 200-entry contribution accumulator before top-50 selection (§7,
+  `BOSSRAID0-RL-10b`); session-fenced reward continuation in the credited character's own admitted
+  session (§8.1, §12, composition amendment).
 
 ## Closeout
 
