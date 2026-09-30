@@ -16,7 +16,7 @@
   PREMIUM-ACTIVATION-V1 §4.5 (D70, D73), PREMIUM-DELIVERY-0 §6, BANK-FEE-0 §5, the gold fee
   boundary (D174-D178), DUR-03 §7, §15 and §39.3 (the NPC service amendment), the composition
   decision §3 rules 1-5, the relocation and world object owners proposal §3 (D37 R1-R3),
-  VSL-MOVE-01, ADR-0001 §7, the NPC admission v2 decision §6, ITEM-USE-0 and RUNE-USE-0 §5.2
+  VSL-MOVE-01, FND-03 §4.2 and §9 (scope ownership generation), ADR-0001 §7, the NPC admission v2 decision §6, ITEM-USE-0 and RUNE-USE-0 §5.2
   (burn before effect), owner rule 5905825574 (Global parity)
 - Amends, each pending on acceptance of TRAVEL-0, in this PR: NPC-0 §6 (refusals, arrival,
   discounts); CHAR-POSITION-0 §3.2 (terminal release consumes an arrived obligation); the NPC
@@ -234,8 +234,18 @@ A known abort releases the hold: nothing paid, refusal reply.
 On the known commit, in the owner's tick, the channel runtime relocates the actor within its
 scope (D37 R1 shape, owner VSL-MOVE-01):
 
-- **Fences:** WorldId, ChannelId, session generation, content generation, and the position
-  revision observed at the hold. A mismatch leaves the obligation for admission.
+- **Fences:** WorldId, ChannelId, the scope ownership generation (FND-03 §4.2), session
+  generation, content generation, and the position revision, all captured at the hold. The
+  relocation is applied only by the owner incarnation whose ownership generation is still current:
+  a result reaching an older generation (GameNode restart, channel relocation to a new owner) is
+  stale work (FND-03 §9) and applies nothing, even with the same ChannelId and session. A mismatch
+  of any fence moves nothing and leaves the obligation for admission or recovery (NPC-0 §6).
+- **Death cancels the invocation.** When the actor dies (DEATH-0; the death occurrence in the
+  owner's tick, before the death transaction), the runtime cancels its pending travel invocation
+  and drops the hold. A cancelled invocation starts no relocation or consume, whatever the fee
+  outcome: the death transaction deletes the pending arrival (NPC-0 §6, death supersedes arrival),
+  and the fee stays spent. The relocation therefore also requires that the invocation is not
+  cancelled and the actor is alive with no death in progress; otherwise it moves nothing.
 - **Tile:** the pending arrival; if not free, the NPC-0 §6.1 spiral, then the home temple
   (ruling R1).
 - **Effects of the move:** summons and convinced creatures are removed (R3); the attack target
@@ -249,6 +259,19 @@ and upserts the last position with the placed tile, the same shape as admission
 (CHAR-POSITION-0 §3.3). A stale session writes nothing and admission consumes the row. Terminal
 release consumes an arrival whose actor has arrived, before its last-position write
 (CHAR-POSITION-0 §3.2 as amended). Admission of a row whose actor never arrived places it (NPC-0).
+
+- **Replayable identity.** The consume is keyed by the travel occurrence (§9): it deletes the
+  row only where `character_id` and the stored occurrence both match, and upserts the last
+  position only when that delete removed the row, in the same transaction. Re-running it is
+  idempotent: a row already consumed, or deleted by a death, makes it write nothing.
+- **Outcome classification.** A known commit or known no-op completes the consume. An ambiguous
+  outcome (lost response, timeout) is classified by re-reading the row by (`character_id`,
+  occurrence) under the same session fence: row present, the consume did not commit and is
+  re-run; row absent, it committed or a death superseded it, and nothing is re-run.
+- **Hold.** The hold stays until the consume outcome is classified, so the actor cannot walk
+  while its row may still exist (admission would place it again). An unclassified consume raises
+  the `TRAVEL0-RL-02` alert like §7.5 and keeps the hold; logout and transfer wait as in §7.5,
+  and a lost session leaves the row to admission.
 
 ### 7.5 Ambiguous commit
 
@@ -265,7 +288,11 @@ as busy) and complete only after the known outcome and, on a commit, the consume
 the normal logout and transfer bounds counted from that outcome. If the session ends anyway
 (process loss, forced termination), the late outcome stays session-generation fenced: its consume
 is stale and writes nothing, and the committed pending arrival is placed by admission (NPC-0).
-No late outcome is ever applied to a newer session or channel.
+No late outcome is ever applied to a newer session or channel, or by an older scope ownership
+generation (§7.3). A death during the hold is the one exception to "released only at a known
+outcome": it cancels the invocation and drops the hold at once (§7.3), because a late commit can
+no longer place the actor (the death transaction deletes the arrival, or the transaction's step 8
+re-check sees the pending respawn and aborts).
 
 ## 8. Channel and World
 
@@ -280,7 +307,8 @@ No late outcome is ever applied to a newer session or channel.
 - The occurrence comes from the confirming `NPC_TALK_INTENT` CommandRef (NPC-0 §5.1). A replay
   of that command returns the first outcome while FND-02 retains it; it never burns or relocates
   twice. The TransactionId and cause record key come from the occurrence.
-- The arrival is keyed by the pending arrival row: once consumed, nothing moves again.
+- The arrival is keyed by the pending arrival row and its occurrence: once consumed, nothing moves
+  again, and the consume itself is replayable by that occurrence (§7.4).
 - A later `yes` is a new command with no open confirmation: nothing happens.
 
 ## 10. Wire
@@ -325,7 +353,7 @@ shape; a trip that never changes World.
 **Declared differences:**
 - No stacking on the arrival tile; the spiral fallback instead (R1).
 - The travel hold freezes walking for about one commit (`TRAVEL0-RL-02`); an ambiguous commit
-  keeps it until reconciliation.
+  or consume keeps it until reconciliation.
 - Cooldown value, Postman rank and the teleport effect are `PARITY_PENDING`.
 - `kick`, the ore-wagon ticket and Travora are not built (§14 R1, §16).
 
@@ -375,7 +403,8 @@ D178 needs no question: D208 already admits travel fees, and discounts only lowe
 1. **Contract amendments:** NPC-0 §6, CHAR-POSITION-0 §3.2, the NPC admission v2 decision §6,
    each written "pending on acceptance of TRAVEL-0". DUR-03 is unchanged.
 2. **Serialization:** the item writer's fence with the `character_root` lock; one travel hold per
-   actor; the consume under the rule 2 session fence.
+   actor; the relocation fenced on the scope ownership generation and cancelled by death (§7.3);
+   the consume under the rule 2 session fence, keyed by the occurrence (§7.4).
 3. **Restart:** conversation and hold are runtime; the fee, cause record and pending arrival are
    durable; admission consumes a pending arrival.
 4. **Typed references:** NPC, route key, discount keys, occurrence, World and tile position.
