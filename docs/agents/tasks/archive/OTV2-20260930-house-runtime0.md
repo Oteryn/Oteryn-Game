@@ -86,5 +86,8 @@ persistence review.
 - Codex round 3 (#1399, 1 P1, 1 P2): item transactions lock and revalidate the ACL and guild
   revisions like the admission commit (§5.4); the failed-scope recovery admission clears the house
   columns and writes the entrance position atomically (§4.3); validators re-run PASS.
+- Codex round 4 (#1399, 0 P1, 2 P2): saved-tile selection reserved by the house runtime and
+  revalidated at the placement commit (§6.3); exits place the entrance with the CHAR-POSITION-0
+  fallback and persist the tile actually chosen (§4.2); validators re-run PASS.
 
 This record was archived in the final authoring commit of its PR.

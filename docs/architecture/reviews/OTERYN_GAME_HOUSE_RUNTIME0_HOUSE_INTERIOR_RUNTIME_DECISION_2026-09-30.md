@@ -144,8 +144,11 @@ and how do house items change?
   transfer, a disposition (§7) or a house scope shutdown moves the character to the house's
   `entrance` tile on the recorded origin Channel, through the same transition (§4.1) in reverse.
 - Every exit's commit transaction also writes the last-position row (CHAR-POSITION-0 §3.2): it
-  clears the house columns (§6.3) and records the `entrance` tile under the destination session's
-  order key. A disconnect right after any exit therefore never returns the character inside.
+  clears the house columns (§6.3) and records the tile actually placed under the destination
+  session's order key. The destination Channel resolves that tile at the commit: the `entrance`
+  if it is free and walkable, otherwise the CHAR-POSITION-0 §3.3 fallback (the nearest free
+  walkable tile within 3, in that order). An exit is never refused for an occupied or blocked
+  entrance. A disconnect right after any exit therefore never returns the character inside.
 - If the origin Channel is draining or unavailable, admission picks another Channel of the World
   under its normal rules (EXP-HOUSES-01 §5.3 fallback). A house is never a way to change channel
   by choice: the exit always targets the origin first (ADR-0001 §12).
@@ -250,15 +253,18 @@ beds decision.
   revision locks, so a concurrent revocation, membership change or disposition either commits
   first and the login refuses, or commits after and finds the character inside (§5.4, §7). The
   saved tile is revalidated under the active bundle and the current `HouseInterior` items: it must
-  be a tile of this house, walkable, not blocked by an item and not occupied. If it is not, the
+  be a tile of this house, walkable, not blocked by an item and not occupied. The house runtime,
+  the single writer per `HouseId`, selects and reserves the tile, so item commands and other
+  actor placements serialize with it; the placement commit revalidates the reserved tile and, if
+  it was taken, repeats the selection. If it is not valid, the
   CHAR-POSITION-0 §3.3 fallback applies inside the house (the nearest free walkable tile of the same
   house within 3, in that fallback's order); if none, the house is refused as below. On success the
   character is admitted into the house scope at the chosen tile (activating it if needed), with
   the Channel admission chooses recorded as origin.
 - **Rejected house position.** If access, the property state or the tile fallback refuses, the
-  character is placed at the house's `entrance` on a Channel admission chooses, and that admission
-  transaction clears the house columns and writes the `entrance` tile under the new session's order
-  key, as every exit does (§4.2). A later change of access or owner never returns the character to
+  character is placed at the house's `entrance` (or its §4.2 fallback tile) on a Channel admission
+  chooses, and that admission transaction clears the house columns and writes the tile actually
+  chosen under the new session's order key, as every exit does (§4.2). A later change of access or owner never returns the character to
   the stale interior tile. As in Tibia, a character logs in where it logged out when it still
   may.
 
@@ -337,8 +343,10 @@ items; characters inside are not seen from outside; a bounded number of characte
    revision in its transaction.
 3. **Restart:** items and positions are durable; a lost house scope sends characters to the
    entrance; transitions are fresh admissions through a durable handoff reconciled at restart;
-   every exit, and every login that rejects a saved house position, commits the outside position;
-   a saved interior tile is revalidated with a deterministic fallback.
+   every exit, and every login that rejects a saved house position, commits the outside position
+   actually placed (entrance with the §3.3 fallback, never refused); a saved interior tile is
+   reserved by the house runtime and revalidated at the placement commit with a deterministic
+   fallback.
 4. **Typed references:** HouseId, WorldId, ChannelId (origin), CharacterId, GameSessionId, scope
    generation.
 5. **Wire:** MAP-WIRE-1 snapshots; HOUSE-WIRE-1 gains `kick` and `leave` (HOUSE-OWN-0 §11 pointer).
