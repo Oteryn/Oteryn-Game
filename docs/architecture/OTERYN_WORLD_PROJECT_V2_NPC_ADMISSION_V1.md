@@ -217,6 +217,14 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    `SUPPLEMENT_HELD` (a placeholder outfit, dialogue Crystal wrote itself, or a boss rather than an NPC on the wikis). Wave A
    becomes 1,094 NPCs with 707 Dialogues, 322 trade and 56 travel Services and 2,344 bindings. The supplement is
    its own Crystal import (`g4-npc-crystal-summer-supplement-r1`).
+4h. Fan-wiki confirmation and pending prices (D15): `OTV2-20260930-npc-fan-wiki-parity`. The nine single-source
+   Crystal NPCs Fandom does not know are all confirmed by Tibiopedia (S'Zallar M'Andar and The Silent Oarsman by
+   TibiaWiki BR too). Eight are admitted (six Lion knights and archers, Raubritter Chastener and The
+   Silent Oarsman have no Crystal spawn and are admitted with no placements); S'Zallar M'Andar stays deferred
+   `MOVEMENT_UNDECLARED`. 77 admitted offers whose price no two wikis settle keep the source price with
+   `parity_pending: true`. Wave A becomes 1,102 NPCs with 715 Dialogues, 322 trade and 56 travel Services and 2,352
+   bindings. The slice also restores the D13 offer rule after ITEM-ID-1b: a wiki item name counts only the keys of
+   the pinned item map, and the admission stage accepts a retired Item key that aliases to a registered one.
 5. Later:
    - placements after World admission;
    - conditional dialogue and dialogue conflicts;

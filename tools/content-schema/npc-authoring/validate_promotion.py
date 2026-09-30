@@ -9,6 +9,12 @@ Semantic rules:
   snapshot_sha256, item_map_sha256, br_facts_sha256 and tibiopedia_facts_sha256 are 64 hex chars;
 - D14: 'D14' exactly when crystal_supplement (the pinned supplement revision and a bundles digest) is present;
   a provenance entry carries a revision only as a crystal entry of a SUPPLEMENT_ADMITTED file at that revision;
+- D15: 'D15' exactly when tibiopedia_facts_sha256 is present; rule 'FAN_WIKI_CONFIRMED' has `fact` == 'identity',
+  a single-source candidate with a null `wiki`, `wikis` one or two sorted names from br/tibiopedia, `chosen` the
+  first of them and `pages` one page per wiki (BR page id and revision, Tibiopedia url and SHA-256); such a
+  candidate may have no placements. An offer's `parity_pending`, where present, maps one to three wikis to their
+  stated non-negative integer prices, no two equal, at least one other than the offer's unit_price, and only on a
+  plain source offer;
 - each candidate identity is family NPC, key `oteryn:npc.<slug>` (D4) and revision 'definition-r1';
   the key suffix equals the slug of `name` (same slug() as promotion_candidates.py);
 - candidate keys are unique and the candidates list is sorted by key;
@@ -159,7 +165,7 @@ def candidate_errors(candidate, index):
     errs += identity_errors(candidate.get('identity'), label, 'NPC', KEY_RE, expected_key)
 
     arbitration_rows = candidate.get('arbitration') or []
-    wiki_confirmed = any(row.get('rule') == 'WIKI_CONFIRMED' for row in arbitration_rows)
+    wiki_confirmed = any(row.get('rule') in ('WIKI_CONFIRMED', 'FAN_WIKI_CONFIRMED') for row in arbitration_rows)
 
     placements = candidate.get('placements') or []
     if not placements and not wiki_confirmed:
@@ -210,7 +216,8 @@ def candidate_errors(candidate, index):
         if 'revision' in entry and (source != 'crystal' or key not in promotion_candidates.SUPPLEMENT_ADMITTED
                                     or entry['revision'] != promotion_candidates.CRYSTAL_SUPPLEMENT_REVISION):
             errs.append(f"{plabel}: revision {entry['revision']!r} is not the D14 supplement revision of a listed file")
-    if len(provenance) == 1 and candidate.get('wiki') is None:
+    fan_confirmed = any(row.get('rule') == 'FAN_WIKI_CONFIRMED' for row in candidate.get('arbitration') or [])
+    if len(provenance) == 1 and candidate.get('wiki') is None and not fan_confirmed:
         errs.append(f'{label}: single-source candidate has no wiki confirmation (D6)')
 
     route_keywords = set()
@@ -262,6 +269,16 @@ def candidate_errors(candidate, index):
             count = offer.get('count')
             if count is not None and (not _is_int(count) or count < 1):
                 errs.append(f'{olabel}: count {count!r} is not None or an int >= 1')
+            pending = offer.get('parity_pending')
+            if pending is not None and (
+                    not isinstance(pending, dict) or not pending or not set(pending) <= WIKIS
+                    or list(pending) != sorted(pending)
+                    or not all(_is_int(price) and price >= 0 for price in pending.values())
+                    or len(set(pending.values())) != len(pending)
+                    or all(price == unit_price for price in pending.values())
+                    or offer.get('origin') is not None or count is not None or offer.get('sub_type') is not None):
+                errs.append(f'{olabel}: parity_pending {pending!r} is not the disputed wiki prices of a plain '
+                            f'source offer (D15)')
             if offer.get('origin', None) not in (None, 'wiki'):
                 errs.append(f"{olabel}: origin {offer.get('origin')!r} is neither absent nor 'wiki'")
             sub_type = offer.get('sub_type')
@@ -312,6 +329,26 @@ def candidate_errors(candidate, index):
                              f"provenance has {sorted(provenance)}")
             if candidate.get('wiki') is None:
                 errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
+        elif rule == 'FAN_WIKI_CONFIRMED':
+            wikis, pages = row.get('wikis'), row.get('pages')
+            if fact != 'identity':
+                errs.append(f"{alabel}: fact {fact!r} != 'identity' for rule {rule!r}")
+            if len(provenance) != 1:
+                errs.append(f"{alabel}: rule {rule!r} requires a single-source candidate, "
+                            f"provenance has {sorted(provenance)}")
+            if candidate.get('wiki') is not None:
+                errs.append(f"{alabel}: rule {rule!r} is for an NPC Fandom does not know, candidate.wiki is set")
+            if (not isinstance(wikis, list) or not wikis or wikis != sorted(set(wikis))
+                    or not set(wikis) <= {'br', 'tibiopedia'} or chosen != wikis[0]):
+                errs.append(f"{alabel}: wikis {wikis!r} / chosen {chosen!r} are not sorted br/tibiopedia "
+                            f"with chosen the first")
+            elif not isinstance(pages, dict) or sorted(pages) != wikis or not all(
+                    (set(pages[w]) == {'pageid', 'revid'} and all(_is_int(v) for v in pages[w].values()))
+                    if w == 'br' else (set(pages[w]) == {'url', 'sha256'} and SHA256_RE.match(str(pages[w]['sha256']))
+                                       and str(pages[w]['url']).startswith('https://tibiopedia.pl/npcs/'))
+                    for w in wikis if isinstance(pages.get(w), dict)) or not all(
+                    isinstance(pages.get(w), dict) for w in wikis):
+                errs.append(f"{alabel}: pages {pages!r} are not one BR/Tibiopedia page per wiki")
         elif rule in ITEM_RULES:
             wikis = row.get('wikis')
             if rule == 'WIKI_MAJORITY_PRICE' and (
@@ -351,7 +388,7 @@ def candidate_errors(candidate, index):
         else:
             errs.append(f"{alabel}: rule {rule!r} not in "
                          f"['WIKI_ARBITER', 'WIKI_BASE_NAME', 'WIKI_CONFIRMED', 'WIKI_MAJORITY_PRICE', "
-                         f"'WIKI_POSITION', 'WIKI_PRICE', 'WIKI_SPELLING']")
+                         f"'WIKI_POSITION', 'WIKI_PRICE', 'WIKI_SPELLING', 'FAN_WIKI_CONFIRMED']")
 
     # D13 offers: a wiki-origin offer and its WIKI_OFFER row come together, one row per offer
     wiki_offer_facts = sorted(f"trade.{offer.get('source_item_id')}.{offer.get('direction')}"
@@ -403,7 +440,8 @@ def errors(report):
     if report.get('evidence') != EVIDENCE:
         errs.append(f"evidence {report.get('evidence')!r} != {EVIDENCE!r}")
     expected = DECISIONS + (['D12'] if 'br_facts_sha256' in report else []) + (
-        ['D13'] if 'tibiopedia_facts_sha256' in report else []) + (['D14'] if 'crystal_supplement' in report else [])
+        ['D13'] if 'tibiopedia_facts_sha256' in report else []) + (['D14'] if 'crystal_supplement' in report else []) + (
+        ['D15'] if 'tibiopedia_facts_sha256' in report else [])
     if report.get('decisions') != expected:
         errs.append(f"decisions {report.get('decisions')!r} != {expected!r}")
     for field in ('br_facts_sha256', 'tibiopedia_facts_sha256'):
@@ -421,7 +459,7 @@ def errors(report):
     if supplement is None and any('revision' in (entry or {}) for candidate in report.get('candidates') or []
                                   for entry in (candidate.get('provenance') or {}).values()):
         errs.append('a provenance revision without crystal_supplement (D14)')
-    for d13_rule in ('WIKI_MAJORITY_PRICE', 'WIKI_OFFER'):
+    for d13_rule in ('WIKI_MAJORITY_PRICE', 'WIKI_OFFER', 'FAN_WIKI_CONFIRMED'):
         if 'tibiopedia_facts_sha256' not in report and any(
                 row.get('rule') == d13_rule for candidate in report.get('candidates') or []
                 for row in candidate.get('arbitration') or []):
