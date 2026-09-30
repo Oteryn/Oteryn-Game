@@ -74,4 +74,5 @@ Owner decisions 2026-09-30 ("2 oraz 3 i 4", "tak" on the image-fit rule, "ok" on
 
 ## PR and closeout
 
-- PR #1358; merge recorded as squash merge of #1358; the frozen head and review are in the PR's FREEZE_SHA entry.
+- PR #1358, open and under review when this record was written. When it merges, the merge result is
+  squash merge of #1358 (archive README); the frozen head and its review are in the PR's FREEZE_SHA entry.

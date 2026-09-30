@@ -7000,7 +7000,7 @@
      "fact": "definition.outfit",
      "image": "File:Ambassador Manop.gif",
      "rule": "WIKI_IMAGE_FIT",
-     "score": 3.33,
+     "score": 3.29,
      "sha1": "d1687add015f0258ef76549b74ae23a53e60e7d3"
     },
     {
@@ -57339,8 +57339,8 @@
      "image": "File:Enpa-Deia Pema.gif",
      "rule": "WIKI_IMAGE",
      "scores": {
-      "canary": 62.57,
-      "crystal": 71.8
+      "canary": 62.56,
+      "crystal": 71.82
      },
      "sha1": "f3b2891090a2faf249a40a378ff87b3b65d5e9cc"
     },
@@ -57659,7 +57659,7 @@
      "fact": "definition.outfit",
      "image": "File:Enpa Rudra.gif",
      "rule": "WIKI_IMAGE_FIT",
-     "score": 31.64,
+     "score": 31.63,
      "sha1": "82a635859c0aa2e635492ab2fecbf11ff962f80b"
     },
     {
@@ -74141,7 +74141,7 @@
      "fact": "definition.outfit",
      "image": "File:Gareth.gif",
      "rule": "WIKI_IMAGE_FIT",
-     "score": 30.2,
+     "score": 30.15,
      "sha1": "987161bfb6872869531d7d6a2e7b86383791d538"
     }
    ],
@@ -116892,7 +116892,7 @@
      "fact": "definition.outfit",
      "image": "File:Leonora.gif",
      "rule": "WIKI_IMAGE_FIT",
-     "score": 18.99,
+     "score": 19.06,
      "sha1": "f8500a396c36de9fb4b36fa649c07df1fe5ecd6d"
     }
    ],
@@ -158556,7 +158556,7 @@
      "fact": "definition.outfit",
      "image": "File:Raubritter Battler.gif",
      "rule": "WIKI_IMAGE_FIT",
-     "score": 12.95,
+     "score": 12.76,
      "sha1": "322276869e799d5ec801d55f79434b94c965c286"
     },
     {
@@ -158689,7 +158689,7 @@
      "fact": "definition.outfit",
      "image": "File:Raubritter Chastigator.gif",
      "rule": "WIKI_IMAGE_FIT",
-     "score": 34.46,
+     "score": 34.4,
      "sha1": "363f336c02dd0793411309ba17a36a0b7e4b292b"
     },
     {
@@ -158765,7 +158765,7 @@
      "fact": "definition.outfit",
      "image": "File:Raubritter Guard.gif",
      "rule": "WIKI_IMAGE_FIT",
-     "score": 13.19,
+     "score": 13.01,
      "sha1": "7d36cfbd9d8c2ddbceb2204c883edf14fe2d4340"
     },
     {
@@ -159031,7 +159031,7 @@
      "fact": "definition.outfit",
      "image": "File:Raubritter Post.gif",
      "rule": "WIKI_IMAGE_FIT",
-     "score": 13.19,
+     "score": 13.01,
      "sha1": "b20e850f6884bc37de61b91eff78a69b9f130707"
     },
     {
@@ -159107,7 +159107,7 @@
      "fact": "definition.outfit",
      "image": "File:Raubritter Purifier.gif",
      "rule": "WIKI_IMAGE_FIT",
-     "score": 30.97,
+     "score": 30.95,
      "sha1": "0c6552c7b148397beabe10be8c5426f642e9fa12"
     },
     {
@@ -159309,7 +159309,7 @@
      "fact": "definition.outfit",
      "image": "File:Raubritter Thug.gif",
      "rule": "WIKI_IMAGE_FIT",
-     "score": 13.29,
+     "score": 13.11,
      "sha1": "6ead53bc3e0af773ccb82882458ba66cfff884bb"
     },
     {

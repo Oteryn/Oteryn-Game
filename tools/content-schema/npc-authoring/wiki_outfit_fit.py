@@ -21,29 +21,8 @@ REGIONS = ('head', 'body', 'legs', 'feet')
 MISS_PENALTY = 255.0  # render-opaque pixel landing on a transparent wiki pixel
 
 
-def palette(color):
-    """Tibia outfit colour (0..132) -> RGB, OTClient HSI formula."""
-    H, SI = 19, 7
-    if color >= H * SI:
-        color = 0
-    if color % H:
-        l1 = color % H / 18.0
-        l2, l3 = [(0.25, 1.0), (0.25, 0.75), (0.5, 0.75), (0.667, 0.75), (1.0, 1.0), (1.0, 0.75), (1.0, 0.5)][color // H]
-    else:
-        l1, l2, l3 = 0.0, 0.0, 1 - color / H / SI
-    if l3 == 0:
-        return (0, 0, 0)
-    if l2 == 0:
-        v = int(l3 * 255); return (v, v, v)
-    if l1 < 1/6: r = l3; b = l3 * (1 - l2); g = b + (l3 - b) * 6 * l1
-    elif l1 < 2/6: g = l3; b = l3 * (1 - l2); r = g - (l3 - b) * (6 * l1 - 1)
-    elif l1 < 3/6: g = l3; r = l3 * (1 - l2); b = r + (l3 - r) * (6 * l1 - 2)
-    elif l1 < 4/6: b = l3; r = l3 * (1 - l2); g = b - (l3 - r) * (6 * l1 - 3)
-    elif l1 < 5/6: b = l3; g = l3 * (1 - l2); r = g + (l3 - g) * (6 * l1 - 4)
-    else: r = l3; g = l3 * (1 - l2); b = r - (l3 - g) * (6 * l1 - 5)
-    return (int(r * 255), int(g * 255), int(b * 255))
-
-PAL = np.array([palette(i) for i in range(133)], dtype=np.float32)  # (133,3)
+# the canonical outfit palette (tools/game-atlas-appearances/export.py outfit_color, rounded HSI)
+PAL = np.array([AX.outfit_color(i) for i in range(133)], dtype=np.float32)  # (133,3)
 
 # ---------------- assets ----------------
 
