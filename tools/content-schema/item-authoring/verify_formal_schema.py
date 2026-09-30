@@ -690,6 +690,59 @@ def main():
         expected_error="dependencies/proficiency_crosswalks: unused crosswalks",
     )
     case(
+        "client proficiency binding with a threshold class validates",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "proficiency",
+            {
+                "client_binding": {
+                    "client_proficiency_id": 239,
+                    "threshold_class": "knight",
+                }
+            },
+        ),
+        True,
+    )
+    case(
+        "reject unknown proficiency threshold class",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "proficiency",
+            {
+                "client_binding": {
+                    "client_proficiency_id": 239,
+                    "threshold_class": "heavy",
+                }
+            },
+        ),
+        expected_error="'heavy' is not one of",
+    )
+    case(
+        "reject zero client proficiency id",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "proficiency",
+            {
+                "client_binding": {
+                    "client_proficiency_id": 0,
+                    "threshold_class": "standard",
+                }
+            },
+        ),
+        expected_error="0 is less than the minimum of 1",
+    )
+    case(
+        "reject client proficiency binding with an unknown key",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "proficiency",
+            {
+                "client_binding": {
+                    "client_proficiency_id": 239,
+                    "threshold_class": "knight",
+                    "xp": 1,
+                }
+            },
+        ),
+        expected_error="'xp' was unexpected",
+    )
+    case(
         "admitted Canary and Crystal proficiency 238/3 validates",
         lambda item, dependencies, manifest: bind_magic_sword_proficiency(
             item, dependencies

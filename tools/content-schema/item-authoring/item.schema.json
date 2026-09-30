@@ -2078,10 +2078,34 @@
         "lunar_ascension_enabled"
       ]
     },
+    "proficiencyClientBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "client_proficiency_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "threshold_class": {
+          "enum": [
+            "standard",
+            "knight",
+            "crossbow"
+          ]
+        }
+      },
+      "required": [
+        "client_proficiency_id",
+        "threshold_class"
+      ]
+    },
     "proficiency": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "client_binding": {
+          "$ref": "#/$defs/proficiencyClientBinding"
+        },
         "profile_binding": {
           "$ref": "#/$defs/ProficiencyRef"
         },
@@ -2105,6 +2129,11 @@
       },
       "required": [],
       "anyOf": [
+        {
+          "required": [
+            "client_binding"
+          ]
+        },
         {
           "required": [
             "profile_binding"
