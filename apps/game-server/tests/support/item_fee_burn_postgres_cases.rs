@@ -746,6 +746,28 @@ fn the_database_binds_every_burn_to_its_plan_evidence_and_character_change() -> 
             quantities(&harness.pool).await?,
             vec![(30, 1, true), (20, 1, true), (5, 1, true)]
         );
+        // A line appended in a later transaction to the committed record never proves an item
+        // change (the duplication path: gold 30 -> 100 under the committed TransactionId), and
+        // is refused even alone.
+        let append = format!(
+            "INSERT INTO game_item_fee_burn_lines(transaction_id, line_ordinal, \
+               item_instance_id, placement_ordinal, coin_worth, quantity_before, quantity_after) \
+             VALUES ({transaction}, 2, {item}, 1, 1, 30, 29);",
+            transaction = uuid(168),
+            item = uuid(100),
+        );
+        expect_rejected(
+            &harness,
+            "an item change proven by a line appended to a committed record",
+            &format!(
+                "{append} UPDATE game_item_instances SET quantity = 100, \
+                   last_transaction_id = {} WHERE item_instance_id = {};",
+                uuid(168),
+                uuid(100)
+            ),
+        )
+        .await?;
+        expect_rejected(&harness, "a line appended to a committed record", &append).await?;
         // Fee records and lines are immutable, even for the migration owner; the runtime role
         // has no UPDATE or DELETE grant on them at all.
         for statement in [

@@ -157,7 +157,8 @@ and not a bank exchange.
 
 D176 is the typed stack maximum of those three definitions (GAME-ITEM-01 §4.1, within
 `GAMEITEM01-STACK-QUANTITY-MAX`). The content write (`semantics.stack` known, 100) goes through
-the item-authoring route in GOLD-FEE-1a, citing this decision.
+the item-authoring route in GOLD-FEE-1b, citing this decision (§6: GOLD-FEE-1a admits only gold
+coins, whose stack maximum is not raised by it, so no change output exists there).
 
 ### 4.3 One atomic transaction (D177)
 
@@ -283,9 +284,9 @@ advances the revision once, as for any Character semantic transaction.
 
 | Child | Scope | Depends on |
 |---|---|---|
-| GOLD-FEE-1a | Stack maximum 100 for the three coins (item authoring); the pure payment planner of §4.2 with its tests; the resource rows of §4.6 and the audit schema/registry | this decision accepted |
-| GOLD-FEE-1b | Migration 0023+ (or the next free number, D173): the in-transaction burn/change function composed by a fee source inside its fenced Character transaction; guards against a burn without a `FeeBurnCause` receipt; PostgreSQL tests | 1a |
-| CHARM-6 | Charm unassign (and later reset, by amendment) composing GOLD-FEE-1b | 1b, D170 |
+| GOLD-FEE-1a | Gold coins (`i3031`, worth 1) only: migration 0023 (D173) with the fee record, BURN lines and their composition guards; the in-transaction burn composed by a fee source inside its fenced Character transaction (change always 0, no MINT); the pure payment planner of §4.2 with its tests; the resource rows of §4.6 and the audit schema/registry; PostgreSQL tests | this decision accepted |
+| GOLD-FEE-1b | Stack maximum 100 for the three coins (`i3031`, `i3035`, `i3043`; the item-authoring content write of §4.2); platinum and crystal inputs; the change MINT of §4.2 step 4 with its guards and PostgreSQL tests | 1a; must land before CHARM-6 |
+| CHARM-6 | Charm unassign (and later reset, by amendment) composing the fee burn. Its migration replaces `game_item_fee_burn_consistency_guard` so a fee record requires the CharmUnassign receipt of the same occurrence, at the committed revision, bound to the record's TransactionId and fee `F` (1a accepts any Character receipt of that revision). CHARM-6 verifies the session-generation fence of the composed transaction | 1a, 1b, D170 |
 | Later | Bank ledger stage 2 (D174); nested bags as sources | own decisions |
 
 ## 7. Rejected options

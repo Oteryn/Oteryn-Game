@@ -17,6 +17,7 @@ created_at: 2026-09-30
 updated_at: 2026-09-30
 execution_policy: continuous_progress
 split: "1a = gold-coin-only burn (change is always 0); 1b = platinum/crystal inputs with the change MINT"
+size_exception: "accepted: about 2,300 hand-written lines, one atomic unit (migration, writer, audit, guards and their PostgreSQL cases are only sound together); the split did not reduce it"
 owned_paths:
   - apps/game-server/migrations/0023_character_gold_fee_burn.sql
   - apps/game-server/src/durability/item_fee_burn.rs
@@ -79,6 +80,18 @@ one-item rows are unchanged.
   `item_fee_burn_postgres` plus the item, corpse, pickup, charm, authority and privilege targets.
   Six guard mutations of 0023 (plan order, same-transaction Character change, before-quantity
   evidence, removal ordinal, gold key, envelope size) each turn a case red.
-- Follow-up: the content write of `semantics.stack` = 100 for i3031/i3035/i3043 (decision §4.2)
-  is not in this task's paths; GOLD-FEE-1b or an item-authoring task carries it.
+- Follow-up: GOLD-FEE-1b carries the content write of `semantics.stack` = 100 for
+  i3031/i3035/i3043, platinum and crystal inputs and the change MINT, and lands before CHARM-6
+  (decision §4.2/§6 amended to this split). CHARM-6's migration replaces
+  `game_item_fee_burn_consistency_guard` to require its CharmUnassign receipt (same occurrence,
+  committed revision, bound TransactionId and fee), and CHARM-6 verifies the session-generation
+  fence (decision §6).
+- Size: about 2,300 hand-written lines, above the batch guidance. Recorded as an accepted
+  exception: the migration, writer, audit event and their PostgreSQL cases are one atomic unit.
+- Repair generation (independent review #1318 5907337686): a BURN line appended in a later
+  transaction to an already-committed fee record proved an item change (duplication path). The
+  item-change fee arm now also requires the line's fee record to be of the same physical
+  transaction, and a deferred constraint trigger refuses any line whose fee record is not. The
+  other 0023 arms (entry removal, envelope size) already bound the record to the same
+  transaction. Two runtime-role PostgreSQL cases prove the refusal (red before the fix).
 - Review: required independent exact-head review, triggered by the control plane on the frozen head.

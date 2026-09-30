@@ -218,6 +218,22 @@ BEGIN
 END;
 $$;
 
+-- A fee BURN line belongs to a fee record of this same physical transaction: a line appended
+-- later to a committed record is refused (the record's consistency guard ran at its own commit).
+CREATE FUNCTION game_item_fee_burn_line_record_proven() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM game_item_fee_burns f
+         WHERE f.transaction_id = NEW.transaction_id
+           AND f.created_xact_id = pg_current_xact_id()) THEN
+        RAISE EXCEPTION 'fee BURN line must commit with its fee record'
+            USING ERRCODE = '23514';
+    END IF;
+    RETURN NULL;
+END;
+$$;
+
 -- An audit envelope above the one-item 9,216 B belongs to a fee event of this transaction.
 CREATE FUNCTION game_item_audit_envelope_size_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
@@ -235,8 +251,8 @@ END;
 $$;
 
 -- 0015: a live item changes only with a TRANSFER or its own DECAY_RETIRE receipt of the same
--- physical transaction. Same body, plus: or with its fee BURN line of the same physical
--- transaction.
+-- physical transaction. Same body, plus: or with its fee BURN line and fee record of the same
+-- physical transaction.
 CREATE OR REPLACE FUNCTION game_item_instance_change_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -257,6 +273,10 @@ BEGIN
            AND d.created_xact_id = pg_current_xact_id())
        AND NOT EXISTS (
         SELECT 1 FROM game_item_fee_burn_lines l
+          -- The line's fee record is this same physical transaction's own record, never a
+          -- committed one a later line is appended to.
+          JOIN game_item_fee_burns f ON f.transaction_id = l.transaction_id
+                                    AND f.created_xact_id = pg_current_xact_id()
          WHERE l.transaction_id = NEW.last_transaction_id
            AND l.item_instance_id = NEW.item_instance_id
            AND l.created_xact_id = pg_current_xact_id()) THEN
@@ -278,6 +298,10 @@ CREATE CONSTRAINT TRIGGER game_item_fee_burn_consistent
     AFTER INSERT ON game_item_fee_burns
     DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
     EXECUTE FUNCTION game_item_fee_burn_consistency_guard();
+CREATE CONSTRAINT TRIGGER game_item_fee_burn_line_record_proven
+    AFTER INSERT ON game_item_fee_burn_lines
+    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+    EXECUTE FUNCTION game_item_fee_burn_line_record_proven();
 CREATE CONSTRAINT TRIGGER game_item_audit_envelope_size_proven
     AFTER INSERT ON game_item_audit_outbox
     DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
@@ -307,6 +331,7 @@ CREATE TRIGGER game_item_fee_burn_lines_stamp_xact BEFORE INSERT
 
 DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_item_fee_burn_consistency_guard() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_item_fee_burn_line_record_proven() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_container_entry_removal_proven() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_audit_envelope_size_proven() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_instance_change_proven() SET search_path = %I, pg_temp', current_schema());
@@ -315,6 +340,7 @@ END $$;
 REVOKE ALL ON game_item_fee_burns, game_item_fee_burn_lines FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_item_fee_burn_consistency_guard(),
+    game_item_fee_burn_line_record_proven(),
     game_item_container_entry_removal_proven(),
     game_item_audit_envelope_size_proven()
 FROM PUBLIC;
