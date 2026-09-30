@@ -121,10 +121,12 @@ admitted as value sources only by the owner?
   `prey: excluded` fact (new, boss and event exceptions). The pool is the active content
   generation's preyable Creatures in key order. Bosses have no Bestiary block, so they are out.
 - **Prey loot budget (ruling R4):** a preyable Creature's loot table has at most `PREY0-RL-16`
-  entries (8), so it plans in at most 16 RNG draws: half of `COMBAT01-LOOT-PLAN-ENTRIES` (16) and
-  `COMBAT01-LOOT-RNG-DRAWS` (32). The base roll and the improved-loot roll of §7 together fit the
-  existing D77 ceilings (16 entries, 16 items, 32 draws, `COMBAT01-LOOT-PLAN-BYTES`) with no
-  amendment. The content compiler checks it for every Creature that would be preyable and **fails
+  entries (7), so one roll plans in at most 14 RNG draws (a chance and a quantity draw per entry,
+  `loot_plan.rs`). The worst case of one death is the base roll, the improved-loot trigger draw
+  and the improved-loot roll of §7: 14 + 1 + 14 = 29 draws, at most 14 entries and 14 items, so it
+  fits the existing D77 ceilings (`COMBAT01-LOOT-PLAN-ENTRIES` 16, `COMBAT01-LOOT-PLAN-ITEMS` 16,
+  `COMBAT01-LOOT-RNG-DRAWS` 32, `COMBAT01-LOOT-PLAN-BYTES`) with no amendment. The trigger draw
+  counts against the same 32-draw ceiling. The content compiler checks it for every Creature that would be preyable and **fails
   the compile closed** (`PREY_LOOT_TABLE_TOO_LARGE`, naming the Creature); it never drops the
   Creature from the pool silently. Content that needs a larger table marks it `prey: excluded`.
 - `rulesets/progression/task-board/`: Bounty tiers (Bestiary difficulty per tier), kill counts,
@@ -159,8 +161,9 @@ admitted as value sources only by the owner?
 - Expected revision: a player command's binding excludes the revision, so a mismatch reloads the
   cursor and retries once (the quest and Bestiary rule, QUEST-STATE-0 §5.2).
 - Fence: the composition rule 2 fence for commands; the STARTER-BACKPACK-0 variant (the admitted
-  session's fence, no CommandRef) for server-originated writes (initialization, checkpoints,
-  expiry, settlement).
+  session's fence, no CommandRef) for server-originated writes (Prey slot initialization,
+  checkpoints, expiry, Bounty initialization, the daily token grant, weekly task initialization,
+  settlement).
 
 ## 5. Prey commands (PREY-1)
 
@@ -278,8 +281,9 @@ different slot is a conflict, never a second write. Client focus never supplies 
   stays the pre-bonus value.
 - **Improved loot:** for the loot owner (D121) with the bonus on that Creature, a chance equal
   to the bonus percentage of one extra roll of the Creature's loot table into the same corpse,
-  purpose `oteryn.prey.loot.v1` from the death key (ruling R4). The §3 prey loot budget makes the
-  two-roll worst case (16 entries, 32 draws) fit the existing D77 ceilings; the planner still
+  purpose `oteryn.prey.loot.v1` from the death key (ruling R4). The trigger is one draw of that
+  death's plan. The §3 prey loot budget makes the worst case (the trigger draw and two rolls: 14
+  entries, 29 draws) fit the existing D77 ceilings; the planner still
   checks them and refuses the whole plan closed on a breach, which is unreachable for compiled
   content.
 
@@ -295,15 +299,40 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 - Offers are drawn with purpose `oteryn.taskboard.bounty.v1` from Bestiary Creatures of the tier's
   difficulties, weighted to the preferred list (`PARITY_PENDING`), seeded by the occurrence.
 - Commands: `set_tier` (applies at the next pick), `pick {offer}`, `reroll_offers` (1 token),
-  `set_preferred`, `claim`. One free token per reset epoch day, at most 10 held.
+  `set_preferred`, `claim`. One free token per reset day, at most 10 held (below).
+- **First offer set (architect ruling, as §6.5).** The row does not exist until initialized. At
+  the first admission of the Character at which it is Prey-eligible (§5.1) and it has no
+  `game_character_bounty_tasks` row, one server-originated write keyed by (CharacterId,
+  `BOUNTY_INIT`) creates it: the lowest tier (Beginner, `PARITY_PENDING`), 3 offers drawn with
+  `oteryn.taskboard.bounty.v1` seeded by (CharacterId, `BOUNTY_INIT`), no active task and an empty
+  preferred list. The receipt stores the seed binding and the drawn offers. A replay returns the
+  stored row and offers; an existing row is never re-initialized. There is no migration backfill
+  and no first-read side effect; until initialized, the `TASK_BOARD` snapshot shows no offers and
+  every Bounty command is refused `NOT_ELIGIBLE`.
+- **Daily free token (architect ruling, fail-closed, Global-like).** The reset day is the day that
+  a World reset epoch (ADR-0021) starts, in the World's reset time zone. One server-originated
+  grant occurrence per (CharacterId, reset day), after `BOUNTY_INIT` exists, is written at the
+  first admission after that reset or, for a session online across it, before the first
+  `TASK_BOARD` read or command after it; it is a sequencer write under the session fence, never a
+  side effect outside the sequencer. Its receipt credits min(1, 10 - held) tokens (0 at the cap,
+  still recorded, so the day is consumed). A replay returns the stored receipt; a second grant for
+  the same reset day is never written. **Offline catch-up grants at most one token**: only the
+  current reset day's occurrence is written, and missed days never accumulate.
 - `claim` on completion credits Bounty Points and tokens in its receipt; its XP is an XP award
   descendant with the XP source `TaskReward`, keyed by the claim.
 
 ### 8.2 Weekly kill tasks
 
 - `game_character_weekly_tasks`: (CharacterId, week) -> 6 kill and 6 delivery tasks (+3/+3 with
-  `WEEKLY_TASK_EXPANSION`), drawn lazily at the first Task Board read after the weekly reset with
-  purpose `oteryn.taskboard.weekly.v1` seeded by (CharacterId, week).
+  `WEEKLY_TASK_EXPANSION`), drawn with purpose `oteryn.taskboard.weekly.v1` seeded by
+  (CharacterId, week).
+- **Weekly initialization (architect ruling).** The week's row is created by one server-originated
+  write keyed by (CharacterId, week), under the session fence on CHAR-REV-SEQ-1 with its receipt
+  (cause `WeeklyTaskInit {week}`), which stores the drawn tasks. It is written at the first
+  admission of a Prey-eligible Character (§5.1) after the weekly reset, after the previous week's
+  settlement (§8.4), or, for a session online across the reset, before the first `TASK_BOARD` read
+  or command after it. A read never writes. A replay returns the stored tasks; an existing week's
+  row is never redrawn; a week with no admission is never created.
 - The week starts at the first World reset epoch (ADR-0021) on or after Monday 00:00 in the World's
   reset time zone.
 
@@ -348,6 +377,9 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 | First-list initialization | Character receipt | `PreyInit {slot}` (§6.5) | +1 |
 | Wildcard credit, permanent unlock | Character receipt | `PreyStoreClaim {delivery}`, binding the target slot (Y2) | +1 |
 | Bounty and weekly commands | Character receipt | `TaskBoardCommand {occurrence}` | +1 |
+| First Bounty offer set | Character receipt | `BountyInit` (§8.1) | +1 |
+| Daily free reroll token | Character receipt | `BountyTokenGrant {reset_day}` (§8.1) | +1 |
+| Weekly task initialization | Character receipt | `WeeklyTaskInit {week}` (§8.2) | +1 |
 | Task kill credit | Character receipt | `TaskKill {death key}` | +1 |
 | Delivery | receipt + BURN | `TaskDeliveryCause` (Y3) | +1 |
 | Settlement, bounty XP | receipt, then XP award | `TaskSettlement {week}`, `TaskReward` | +1 each |
@@ -390,7 +422,7 @@ Global's current Task Board replaces the 12.x Hunting Task slots (ruling R1).
 | `PREY0-RL-13` preferred list | 32 Creatures (`PARITY_PENDING`) |
 | `PREY0-RL-14` balances | u32 each, 0 floor; points 10,000,000 cap (`PARITY_PENDING`) |
 | `PREY0-RL-15` delivery lines | at most 20 input stacks per delivery |
-| `PREY0-RL-16` preyable Creature loot table | at most 8 entries, 16 RNG draws per roll (half of D77's 16 and 32) |
+| `PREY0-RL-16` preyable Creature loot table | at most 7 entries, 14 RNG draws per roll; two rolls and the improved-loot trigger draw at most 29 of D77's 32 draws and 14 of its 16 entries |
 | Prey command | 0 items, 1 receipt, 1 event |
 | Gold list reroll | at most 20 inputs and 2 change outputs (D178) |
 | Shop purchase | at most 1 MINT item, 1 receipt, 1 event |
@@ -424,7 +456,8 @@ much bonus time (recommended: bounded, in the player's favour, as Tibia's rollba
 save); b) a write per hunting minute.
 
 **R4. Improved loot.** a) One extra loot roll at the bonus percentage chance, for the loot owner
-only, within D77 by a compile-time budget of 8 entries per preyable table (recommended: the only
+only, within D77 by a compile-time budget of 7 entries per preyable table (two rolls and the
+trigger draw, 29 of 32 draws) (recommended: the only
 sourced reading, no ceiling amendment; party loot boosts wait for their own decision); b) scale
 every entry's chance.
 
@@ -470,7 +503,7 @@ cosmetics only (no item MINT); c) defer the Task Board.
 3. **Restart:** slots, balances, tasks and unlocks are durable; the runtime copy is rebuilt at
    admission; at most `PREY0-RL-07` of hunting time is lost.
 4. **Typed references:** CharacterId, Creature and item keys, slot, `slot_epoch`, week, death key,
-   CommandRef, the Store delivery id, GameSessionId with `checkpoint_seq`.
+   CommandRef, the Store delivery id, GameSessionId with `checkpoint_seq`, reset day.
 5. **Wire:** §11, capability `PREY_V1`.
 6. **Determinism:** five named RNG purposes, each seeded by a durable occurrence; draws stored.
 7. **Content:** the prey loot budget (`PREY0-RL-16`) fails the content compile closed.
