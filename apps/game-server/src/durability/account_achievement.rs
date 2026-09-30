@@ -13,8 +13,9 @@
 //!
 //! The catalogue check is an input: the granter resolves the key against the
 //! world's current compatible catalogue and passes the result
-//! ([`AchievementCatalogueLookup`]). No runtime catalogue loader exists yet;
-//! the reward-claim MINT (step 4) takes the lookup from its caller. A key the
+//! ([`AchievementCatalogueLookup`]), from the runtime catalogue
+//! (`crate::achievement_catalogue`); the reward-claim MINT (step 4) takes the
+//! lookup from its caller, the chest `USE`. A key the
 //! catalogue lacks fails the granting transaction closed; a retired key is a
 //! no-op and the granting transaction continues.
 //!
@@ -298,6 +299,16 @@ pub(super) fn valid_key(key: &str) -> bool {
                         .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
             })
         })
+}
+
+/// A catalogue record's key and revision are ones a grant request can carry
+/// (the runtime catalogue loader, `crate::achievement_catalogue`).
+#[allow(
+    dead_code,
+    reason = "PG test binaries that recompile durability without the catalogue loader"
+)]
+pub(crate) fn valid_catalogue_entry(key: &str, revision: &str) -> bool {
+    valid_key(key) && valid_revision(revision)
 }
 
 fn valid_request(request: &AchievementGrantRequest) -> bool {

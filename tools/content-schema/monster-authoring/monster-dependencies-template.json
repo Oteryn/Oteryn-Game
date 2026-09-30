@@ -44,6 +44,10 @@
         "max_search_tiles": null,
         "clear_sight": null
       },
+      "windup": {
+        "delay_ms": null,
+        "caster_asset_binding": null
+      },
       "chain": {
         "max_targets": null,
         "range_tiles": null,

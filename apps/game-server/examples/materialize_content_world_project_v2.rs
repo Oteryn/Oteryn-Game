@@ -70,9 +70,9 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "fbddcdb87ed36890bb59a93ca0170cbcd7a2553e713c9bded6f15f181bb290e6";
+    "f97b19b4afbb3fbdbd782a2e64e19a8c3f5edeb842dcc3b71f046ec20e246575";
 const CREATURE_STAGE_TOOL_SHA256: &str =
-    "0fc3154a417b522fd8f3886822bf44fed804c7217f80483acf0341f601efd8fd";
+    "5a03273ab74f22bc175ad78d1efa3000c87f674248ee11c2196051e86c444322";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 /// D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki (`wiki_authored.py`).
 const CREATURE_WIKI_SAMPLE_SHA256: &str =
@@ -90,7 +90,7 @@ const CREATURE_CRYSTAL_SOURCE_REVISION: &str =
     "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f";
 const CREATURE_CRYSTAL_COUNT: usize = 13;
 const CANARY_BUNDLE_INDEX_SHA256: &str =
-    "6b5d9bc4a2d57e71d9f2cc4e15993576c3e348ee4f740970b85fc6dce4c0dec0";
+    "b4ff5819e8f60cc0ca525074544e9b3413eca70dc4f03b68332825704cd3b36b";
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
@@ -128,9 +128,9 @@ const NPC_DIALOGUE_STAGED_SHA256: &str =
 const NPC_DIALOGUES: usize = 715;
 const NPC_DIALOGUE_NODES: usize = 6377;
 const NPC_BINDINGS: usize = 2352;
-const CREATURE_COUNT: usize = 1476;
-const CREATURE_RECORDS: usize = 20638;
-const CREATURE_PROFILES: usize = 19693;
+const CREATURE_COUNT: usize = 1479;
+const CREATURE_RECORDS: usize = 20693;
+const CREATURE_PROFILES: usize = 19745;
 /// Encounter admission E1-E5: encounters admitted with the creatures they cover.
 const ENCOUNTER_COUNT: usize = 61;
 

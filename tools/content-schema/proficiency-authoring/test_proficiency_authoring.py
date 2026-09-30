@@ -167,6 +167,46 @@ def test_validator_rules() -> None:
     expect_invalid(bad, "differ from the staged definitions")
 
 
+def test_content_tree_is_current_and_registered() -> None:
+    files = pa.content_files(committed())
+    for rel, text in files.items():
+        assert (pa.ROOT / rel).read_text(encoding="utf-8") == text, rel
+    index = json.loads(files[pa.INDEX_PATH])
+    assert index["record_count"] == pa.EXPECTED_COUNT and len(index["shards"]) == 3
+    keys = []
+    for path in index["shards"]:
+        shard = json.loads(files[path])
+        assert shard["family"] == "Proficiency"
+        assert shard["shard"]["count"] == len(shard["records"])
+        for row in shard["records"]:
+            assert set(row["definition"]["identity"]) == {"key", "revision"}
+            keys.append(row["definition"]["identity"]["key"])
+    assert len(keys) == len(set(keys)) == pa.EXPECTED_COUNT
+    assert "threshold_tables" not in files[pa.INDEX_PATH]
+    assert pa.content_command(check=True) == 0
+
+
+def test_registration_is_idempotent() -> None:
+    docs = [
+        json.loads((pa.ROOT / f"content/{n}.json").read_text(encoding="utf-8"))
+        for n in ("project", "manifest", "content.lock")
+    ]
+    paths = sorted(pa.content_files(committed()))
+    project, manifest, lock = pa.registered(*docs, pa.EXPECTED_COUNT, paths)
+    assert pa.registered(project, manifest, lock, pa.EXPECTED_COUNT, paths) == (
+        project,
+        manifest,
+        lock,
+    )
+    assert "Proficiency" in project["migrated_families"]
+    assert "Proficiency" not in project["next_population_families"]
+    assert manifest["families"]["Proficiency"] == {
+        "records": pa.EXPECTED_COUNT,
+        "index": "content/proficiencies/index.json",
+    }
+    assert lock["family_counts"]["Proficiency"] == pa.EXPECTED_COUNT
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):

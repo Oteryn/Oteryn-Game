@@ -236,12 +236,24 @@ if __name__=='__main__':
     case('only summon_creature carries summon',extra_effect({'operation':'presentation_only','presentation':{'impact_asset_binding':'oteryn:body_sprite'},'summon':summon}))
     removal={'items':[ref('Item','coin')],'selection':'first_listed_per_tile'}
     case('remove items accepted (D18)',extra_effect({'operation':'remove_items','removed_items':removal}),True)
+    case('remove items top item of the first tile accepted (SW-2)',extra_effect({'operation':'remove_items','removed_items':{**removal,'selection':'top_item_first_tile'}}),True)
+    case('remove items needs an item',extra_effect({'operation':'remove_items','removed_items':{**removal,'items':[],'selection':'top_item_first_tile'}}))
     case('remove items selection is closed',extra_effect({'operation':'remove_items','removed_items':{**removal,'selection':'all'}}))
     affects={'kind':'masterless_monsters','top_creature_only':False,'excludes_caster_name':False,'includes_caster':True}
     case('heal affects allies accepted (D18)',set_value(('d','effects',0,'affects'),affects),True)
     case('named affects need creatures',set_value(('d','effects',0,'affects'),{**affects,'kind':'named_creatures'}))
     case('named affects accepted',set_value(('d','effects',0,'affects'),{**affects,'kind':'named_creatures','creatures':[ref('Creature','creature')]}),True)
     case('group affects forbid creatures',set_value(('d','effects',0,'affects'),{**affects,'creatures':[ref('Creature','creature')]}))
+    windup={'delay_ms':2000,'caster_asset_binding':'oteryn:body_sprite'}
+    def targeted(extra):
+        def mutate(m,d,c):
+            d['abilities'][0].update({'needs_target':True,'windup':windup,**extra})
+        return mutate
+    case('windup accepted on a single-target ability (SW-1)',targeted({}),True)
+    case('windup delay must be positive',targeted({'windup':{**windup,'delay_ms':0}}))
+    case('windup needs a caster binding',targeted({'windup':{'delay_ms':2000}}))
+    case('windup needs a target',targeted({'needs_target':False}))
+    case('windup rejected with an area',targeted({'area':{'radius_tiles':1}}))
     case('path requirement accepted (D18)',set_value(('d','abilities',0,'path_requirement'),{'max_search_tiles':8,'clear_sight':True}),True)
     case('path requirement needs its search distance',set_value(('d','abilities',0,'path_requirement'),{'clear_sight':True}))
     case('path trail presentation accepted',set_value(('d','effects',0,'presentation'),{'path_asset_binding':'oteryn:body_sprite'}),True)

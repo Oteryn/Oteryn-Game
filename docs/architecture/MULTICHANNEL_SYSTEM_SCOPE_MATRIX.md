@@ -97,6 +97,11 @@ row gains a durable last position, a Character projection per World written unde
 fence and at most 5 minutes stale, shared by every channel of the World; runtime position stays
 Channel-local.
 
+**Pending on acceptance of BANK-0** (`reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md`):
+the Bank row becomes "Game bank ledger (BANK-0); Account + World (owner answer 1b, #162
+5912593702); strong durable, immutable ledger; the same balance on all channels of the World,
+another World has its own; shared".
+
 ## Required identity envelope
 
 Every runtime command, event and timer that can mutate or address gameplay state must carry enough identity to resolve its owner without process-global lookup.
