@@ -13,6 +13,7 @@ from validate_houses import validate
 
 ROOT = Path(__file__).resolve().parent
 SHA = "0" * 64
+TILES = [[1000, 1000, 7], [1000, 1001, 7], [1001, 1000, 7], [1001, 1001, 7]]
 
 
 def house(slug, name, source_id, engine_id, kind="private_house", restriction=""):
@@ -36,7 +37,8 @@ def house(slug, name, source_id, engine_id, kind="private_house", restriction=""
             "height": 4,
             "floors": 2,
         },
-        "tiles": [[1000, 1000, 7], [1000, 1001, 7], [1001, 1000, 7], [1001, 1001, 7]],
+        "tiles": TILES,
+        "doors": [TILES[source_id - 1]],
         "provenance": {
             "source": "cipsoft/staticdata/house_id",
             "client_version": "15.30",
@@ -146,6 +148,19 @@ NEGATIVE = {
         "tiles: a tile is outside",
     ),
     "unsorted tiles": (lambda d: h0(d)["tiles"].reverse(), "tiles: not sorted"),
+    "no doors": (lambda d: h0(d).update(doors=[]), "should be non-empty"),
+    "door off the tiles": (
+        lambda d: h0(d).update(doors=[[1002, 1000, 7]]),
+        "doors: a door is not on a House tile",
+    ),
+    "unsorted doors": (
+        lambda d: h0(d).update(doors=[[1001, 1001, 7], [1000, 1000, 7]]),
+        "doors: not sorted",
+    ),
+    "door in two houses": (
+        lambda d: d["houses"][1].update(doors=[[1000, 1000, 7]]),
+        "also belongs to /houses/0",
+    ),
 }
 
 

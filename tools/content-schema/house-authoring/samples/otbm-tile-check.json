@@ -48,9 +48,13 @@
  "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
  "selected_order": "zxy|z_up|skip_after",
  "totals": {
+  "client_doors": 5373,
   "client_house_tiles": 117226,
+  "engine_doors": 5156,
+  "engine_doors_on_client_doors": 5037,
   "engine_house_tiles": 109744,
   "engine_tiles_on_client_tiles": 108034,
+  "houses_identical_door_sets": 834,
   "houses_identical_tile_sets": 442
  }
 }

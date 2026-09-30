@@ -1,5 +1,7 @@
 """Derive and verify the staticmapdata cell order against CrystalServer map House tiles.
 
+Also compares the House doors (cells holding a `type="door"` item) with the engine map.
+
 Local-only evidence tool (the pinned map is 53 MB and not fetched by CI). Reads the
 pinned gzip OTBM `data-global/world/world.otbm` of crystalserver@00ce02a5, collects
 every House tile (OTBM node 14: position, engine House id, ground and item ids),
@@ -23,8 +25,10 @@ from pathlib import Path
 from convert_houses import (
     CRYSTAL_REVISION,
     CRYSTAL_SAMPLE,
+    DOOR_ITEMS,
     ROOT,
     dump,
+    layout_doors,
     layout_tiles,
     load_staged,
     sha256,
@@ -93,7 +97,7 @@ def candidate_cells(layout: dict, order: str, z_up: bool, skip_after: bool):
     return cells
 
 
-def check(staged: list[dict], crystal: dict, tiles: dict) -> dict:
+def check(staged: list[dict], crystal: dict, tiles: dict, door_items: set[int]) -> dict:
     engine = {r["client_id"]: r["house_id"] for r in crystal["records"]}
     scores = {}
     for order, z_up, skip_after in itertools.product(
@@ -119,6 +123,14 @@ def check(staged: list[dict], crystal: dict, tiles: dict) -> dict:
         totals["client_house_tiles"] += len(client)
         totals["engine_tiles_on_client_tiles"] += covered
         totals["houses_identical_tile_sets"] += client == set(engine_tiles)
+        client_doors = {tuple(d) for d in layout_doors(record["layout"], door_items)}
+        engine_doors = {
+            p for p, items in engine_tiles.items() if door_items & set(items)
+        }
+        totals["client_doors"] += len(client_doors)
+        totals["engine_doors"] += len(engine_doors)
+        totals["engine_doors_on_client_doors"] += len(engine_doors & client_doors)
+        totals["houses_identical_door_sets"] += client_doors == engine_doors
         if engine_tiles and covered / len(engine_tiles) < 0.9:
             uncovered.append(record["source_id"])
     best = max(scores, key=scores.get)
@@ -142,7 +154,12 @@ def main(argv=None) -> int:
     if sha256(packed) != OTBM_SHA256:
         raise ValueError("world.otbm digest mismatch")
     crystal = json.loads(CRYSTAL_SAMPLE.read_text(encoding="utf-8"))
-    result = check(load_staged(), crystal, house_tiles(gzip.decompress(packed)))
+    door_items = set(
+        json.loads(DOOR_ITEMS.read_text(encoding="utf-8"))["door_item_ids"]
+    )
+    result = check(
+        load_staged(), crystal, house_tiles(gzip.decompress(packed)), door_items
+    )
     if result["selected_order"] != "zxy|z_up|skip_after":
         raise ValueError(f"cell order changed: {result['selected_order']}")
     text = dump(result)
