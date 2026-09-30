@@ -152,6 +152,10 @@ d['ability']=obj({'identity':use('identity'),'kind':enum('melee','spell'),'range
     'path_requirement':obj({'max_search_tiles':integer(1),'clear_sight':use('bool')},('max_search_tiles','clear_sight'),
         description='D18: the cast needs a walking path to its target found within max_search_tiles (and a clear line of sight '
             'when clear_sight); without one the cast fails and nothing happens.'),
+    'windup':obj({'delay_ms':integer(1),'caster_asset_binding':use('assetBinding')},('delay_ms','caster_asset_binding'),
+        description='SW-1: at the cast the caster binding shows on the caster tile; after delay_ms the effects run, if the caster '
+            'still exists, on its target at that moment (none: nothing happens). Only with needs_target and without area, '
+            'variants, chain and encounter.'),
     'chain':obj({'max_targets':integer(1),'range_tiles':integer(1),'backtracking':use('bool'),'chain_asset_binding':use('assetBinding'),
                  'target_filter':enum('players','ranged_monsters'),
                  'shape':{**enum('sequential','fork'),'description':'sequential (default): each jump starts at the last creature '
