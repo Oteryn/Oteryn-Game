@@ -52,11 +52,12 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 | `format` | `"OTERYN_WORLD_BUNDLE/v1"` |
 | `min_reader_version` | lowest reader `format_version` able to read the file; `1` |
 | `projection_class` | `"server"` (ADR-0021 §4.2). A client projection is not part of v1. |
+| `compiler_version` | set by the compiler, never by its caller: `oteryn-world-bundle-compiler/<crate version> zstd/<library version>` (§6) |
 | `build_class` | `"production"` or `"non-production"`, §8 |
-| `identity` | the compiler inputs copied unchanged: `project_format_version`, `world_schema_version`, `content_revision`, `content_lock_digest`, `compiler_version`, `min_runtime_version`, `required_capabilities` (list), `ruleset_compatibility` (list), `provenance_summary` (ADR-0005 §3, DUR-04 §9) |
+| `identity` | the compiler inputs copied unchanged: `project_format_version`, `world_schema_version`, `content_revision`, `content_lock_digest`, `min_runtime_version`, `required_capabilities` (list), `ruleset_compatibility` (list), `provenance_summary` (ADR-0005 §3, DUR-04 §9) |
 | `world` | `min_x`, `min_y`, `max_x`, `max_y` (native, half-open) and `floors`: native floors strictly ascending within `-15..0` (ADR-0021 §4.3) |
 | `palette` | list of `{key, family, id}`; the list index is the bundle palette index used by the payloads |
-| `draft_areas` | keys of the draft areas compiled in; empty in a production bundle |
+| `draft_areas` | keys of the draft areas compiled in, sorted and unique; empty in a production bundle |
 | `skipped_provisional_keys` | provisional keys skipped in this build, sorted and unique; empty in a production bundle |
 
 `palette[i].key` is the stable World Project key, `family` is `item` or `terrain` (OPEN-1),
@@ -66,7 +67,8 @@ two builds of the same input produce the same palette.
 
 ## 4. Sector table
 
-One 50-byte row per non-empty sector, strictly ascending by `(floor, sy, sx)`:
+One 50-byte row per non-empty sector (at least one tile), strictly ascending by
+`(floor, sy, sx)`. The row's floor must be one of the manifest's `world.floors`:
 
 | Offset | Size | Field |
 |---|---|---|
@@ -84,8 +86,9 @@ sector coordinate is absolute.
 
 ## 5. Sector payload
 
-Each frame is one zstd frame at level 3 with the content checksum and content size flags set.
-It decompresses to exactly `raw_length` bytes of the B3 sector grammar
+Each frame is exactly one zstd frame at level 3: no skippable or second frame, the content
+checksum flag set, and a declared content size equal to `raw_length`. It decompresses to exactly
+`raw_length` bytes of the B3 sector grammar
 (`world_region_codec.py`, `OTERYN_WORLD_REGION_B3/v1`), unchanged except for two meanings:
 
 - the item palette index points into the bundle `palette` (§3), not the World Project
@@ -99,6 +102,12 @@ fields, and the items. An item is `palette << 1 | has_mask`, then the attribute 
 and the present values in bit order. Container contents follow their container one depth
 deeper. A present attribute with value 0 or an empty text stays present.
 
+Varints must be canonical: no redundant zero high group and no bits past 64. With the frame
+rules above, one content has exactly one byte encoding. The writer decodes every payload it
+produced and writes it only if it reads back to the same tiles within the same limits, so it
+never writes what a reader rejects. The B3 reader applies the same varint rule; the B3 encoder
+already writes canonical varints.
+
 ## 6. Checksums and digest
 
 - **Per sector.** The table row holds the SHA-256 of the stored frame. A reader checks it before
@@ -108,8 +117,8 @@ deeper. A present attribute with value 0 or an empty text stays present.
   content revision), the table and every frame. It is the bundle identity used for pinning
   (ADR-0021 §4.2), the Ground `map_revision` (§4.4) and `MapItemMaterialization`.
 - **Byte identity.** The same inputs and the same `compiler_version` produce the same bytes. The
-  zstd library version is part of `compiler_version`, because a different zstd may compress the
-  same payload into different bytes.
+  compiler derives `compiler_version` from its own crate version and the linked zstd library
+  version, because a different zstd may compress the same payload into different bytes.
 
 ## 7. Placement key
 
@@ -120,7 +129,8 @@ placement_key = x << 32 | y << 16 | (−floor) << 8 | ordinal        (u64)
 ```
 
 `ordinal` is the index of the entry among the top-level entries (depth 0) of its tile in
-stacking order, below 64 (`MAP01-TILE-BASE-ENTRIES`). Contents of a container have no key of
+stacking order, below 64 (`MAP01-TILE-BASE-ENTRIES`). A floor outside `-15..0` or an ordinal of
+64 or more has no key. Contents of a container have no key of
 their own; they belong to their top-level entry.
 
 The key is not stored. The compiler emits it by fixing the tile order and the ordinal, and
@@ -135,7 +145,8 @@ carry both. It is not a canonical identity and is not stable across bundles (imp
   writer refuses such a manifest otherwise, and the reader rejects it.
 - `non-production`: may carry draft areas and skipped provisional keys, each listed in the
   manifest.
-- A missing `build_class` and any other value read as `non-production`. A World deployed as
+- A missing `build_class` and any other string value read as `non-production`. A value that is
+  not a string (for example `null`) makes the manifest malformed, and the bundle is rejected. A World deployed as
   production refuses every bundle that is not `production` (ADR-0021 §4.2, §4.6). That check
   belongs to the loader (MAP-LOAD-1).
 
@@ -143,10 +154,12 @@ carry both. It is not a canonical identity and is not stable across bundles (imp
 
 A reader rejects the whole bundle on the first failure; there is no partial load. In order:
 file size, header, digest, manifest length and sector count, manifest, then per row the
-reserved byte, contiguity, the raw and ratio limits, the running raw total, the sector
-coordinate range, ascending order, the frame checksum, decompression into exactly `raw_length`
-bytes, the payload grammar, palette indices, tile positions and teleport destinations inside the
-World extent, and the top-level entry limit. Every size is checked before memory is reserved for it.
+reserved byte, contiguity, the raw and ratio limits, the running raw total, the row floor
+against `world.floors`, ascending order, the frame checksum, the single canonical frame,
+decompression into exactly `raw_length` bytes, the sector coordinate range, the payload grammar
+with the per-bundle tile and entry budget, a non-empty sector, palette indices, tile positions
+and teleport destinations inside the World extent, and the top-level entry limit. Every size is
+checked before memory is reserved for it.
 
 | Limit | Hard maximum |
 |---|---|
@@ -155,16 +168,20 @@ World extent, and the top-level entry limit. Every size is checked before memory
 | `MAP01-BUNDLE-SECTOR-COUNT` | 1,048,576 sectors |
 | `MAP01-BUNDLE-SECTOR-RAW-BYTES` | 16 MiB per sector payload, at most 1,024 times its frame |
 | `MAP01-BUNDLE-TOTAL-RAW-BYTES` | 1 GiB of payloads per bundle |
+| `MAP01-BUNDLE-TILES` | 33,554,432 decoded tiles per bundle |
+| `MAP01-BUNDLE-ENTRIES` | 67,108,864 decoded entries per bundle, container contents included |
 | `MAP01-TILE-BASE-ENTRIES` | 64 top-level entries per tile (ADR-0021 §4.4) |
 | `MAP01-TILE-ENTRIES` | 4,096 entries per tile, container contents included |
 | `MAP01-ITEM-TEXT-BYTES` | 4,096 bytes per `text` or `description` |
 
-The rows are in `RESOURCE_LIMITS_REGISTRY.json`. The per-tile and text limits are initial
-values; MAP-BUNDLE-1b confirms them on the real map before the format is accepted.
+The rows are in `RESOURCE_LIMITS_REGISTRY.json`. The per-tile, text and per-bundle tile and entry
+limits are initial values (the source map has about 19.37 M tiles and 24.98 M items).
+MAP-BUNDLE-1b confirms them on the real map before the format is accepted.
 
-The compiler fails closed as well (ADR-0021 §4.3, §4.5): an unknown key, a position or teleport
+The compiler fails closed as well (ADR-0021 §4.3, §4.5). It resolves every entry, including the
+contents of a provisional entry it skips, and stops on an unknown key, a position or teleport
 destination outside the declared World, a legacy `z` above 15, a sector given twice, a
-provisional key in a production build and any limit above all stop compilation.
+provisional key in a production build, and any limit above.
 
 ## 10. Open items
 

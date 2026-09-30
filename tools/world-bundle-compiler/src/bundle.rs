@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::Error;
-use crate::sector::{self, Tile, TileLimits};
+use crate::sector::{self, Budget, Tile, TileLimits};
 
 pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v1";
 pub const VERSION: u16 = 1;
@@ -30,6 +30,24 @@ pub const TILE_LIMITS: TileLimits = TileLimits {
     max_entries: 4096,
     max_text_bytes: 4096,
 };
+/// `MAP01-BUNDLE-TILES` and `MAP01-BUNDLE-ENTRIES`: decoded totals of one bundle.
+pub const BUNDLE_BUDGET: Budget = Budget {
+    tiles: 1 << 25,
+    entries: 1 << 26,
+};
+
+/// The `compiler_version` this build writes: the crate version and the zstd library version,
+/// because both decide the output bytes (format document §6).
+pub fn compiler_version() -> String {
+    let zstd = zstd::zstd_safe::version_number();
+    format!(
+        "oteryn-world-bundle-compiler/{} zstd/{}.{}.{}",
+        env!("CARGO_PKG_VERSION"),
+        zstd / 10000,
+        zstd / 100 % 100,
+        zstd % 100
+    )
+}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -86,7 +104,6 @@ pub struct Identity {
     pub world_schema_version: String,
     pub content_revision: String,
     pub content_lock_digest: String,
-    pub compiler_version: String,
     pub min_runtime_version: String,
     pub required_capabilities: Vec<String>,
     pub ruleset_compatibility: Vec<String>,
@@ -99,6 +116,7 @@ pub struct Manifest {
     pub format: String,
     pub min_reader_version: u16,
     pub projection_class: String,
+    pub compiler_version: String,
     #[serde(default)]
     pub build_class: BuildClass,
     pub identity: Identity,
@@ -130,12 +148,18 @@ pub struct Bundle {
 }
 
 /// The placement key of the `ordinal`-th top-level entry of a tile (format document §7).
-/// It names an entry only together with the digest of the bundle it was read from.
-pub fn placement_key(floor: i8, x: u16, y: u16, ordinal: u8) -> u64 {
-    u64::from(x) << 32
-        | u64::from(y) << 16
-        | u64::from(floor.unsigned_abs()) << 8
-        | u64::from(ordinal)
+/// It names an entry only together with the digest of the bundle it was read from. `None`
+/// for a floor outside `-15..0` or an ordinal of 64 or more.
+pub fn placement_key(floor: i8, x: u16, y: u16, ordinal: u8) -> Option<u64> {
+    if !(-15..=0).contains(&floor) || usize::from(ordinal) >= MAX_TILE_BASE_ENTRIES {
+        return None;
+    }
+    Some(
+        u64::from(x) << 32
+            | u64::from(y) << 16
+            | u64::from(floor.unsigned_abs()) << 8
+            | u64::from(ordinal),
+    )
 }
 
 fn limit(ok: bool, what: &str) -> Result<(), Error> {
@@ -181,6 +205,12 @@ fn validate_manifest(m: &Manifest) -> Result<(), Error> {
         w.floors.iter().all(|f| (-15..=0).contains(f)),
         "floor outside -15..0",
     )?;
+    for list in [&m.draft_areas, &m.skipped_provisional_keys] {
+        check(
+            list.windows(2).all(|p| p[0] < p[1]),
+            "manifest key list is not sorted and unique",
+        )?;
+    }
     if m.is_production() {
         check(
             m.draft_areas.is_empty(),
@@ -195,6 +225,11 @@ fn validate_manifest(m: &Manifest) -> Result<(), Error> {
 }
 
 fn validate_sector(m: &Manifest, s: &Sector) -> Result<(), Error> {
+    check(!s.tiles.is_empty(), "empty sector")?;
+    check(
+        m.world.floors.binary_search(&s.floor).is_ok(),
+        "sector floor outside the World",
+    )?;
     for tile in &s.tiles {
         check(
             m.world.contains(tile.x, tile.y, s.floor),
@@ -239,9 +274,13 @@ pub fn write(manifest: &Manifest, sectors: &[Sector]) -> Result<Vec<u8>, Error> 
     compressor.include_checksum(true).map_err(zstd_error)?;
     compressor.include_contentsize(true).map_err(zstd_error)?;
     let (mut frames, mut total_raw) = (Vec::with_capacity(sectors.len()), 0usize);
+    let mut budget = BUNDLE_BUDGET;
     for sector in sectors {
         validate_sector(manifest, sector)?;
         let raw = sector::encode(&sector.tiles)?;
+        // Write only what the reader reads back identically, within the same limits.
+        let decoded = sector::decode(&raw, (sector.sx, sector.sy), TILE_LIMITS, &mut budget)?;
+        check(decoded == sector.tiles, "sector does not round-trip")?;
         limit(
             raw.len() <= MAX_SECTOR_RAW_BYTES,
             "sector payload too large",
@@ -280,6 +319,16 @@ pub fn write(manifest: &Manifest, sectors: &[Sector]) -> Result<Vec<u8>, Error> 
     out.extend_from_slice(&digest);
     limit(out.len() <= MAX_FILE_BYTES, "bundle file too large")?;
     Ok(out)
+}
+
+/// Exactly one zstd frame (no skippable frame), with the content checksum flag and a declared
+/// content size equal to the table's `raw_length` (format document §5).
+fn canonical_frame(frame: &[u8], raw_length: usize) -> bool {
+    frame.len() > 4
+        && frame[..4] == [0x28, 0xB5, 0x2F, 0xFD]
+        && frame[4] & 0x04 != 0
+        && zstd::zstd_safe::find_frame_compressed_size(frame) == Ok(frame.len())
+        && matches!(zstd::zstd_safe::get_frame_content_size(frame), Ok(Some(n)) if n == raw_length as u64)
 }
 
 fn order(s: &Sector) -> (i8, u16, u16) {
@@ -326,6 +375,7 @@ pub fn read(data: &[u8]) -> Result<Bundle, Error> {
         .map_err(|e| Error::Format(format!("manifest: {e}")))?;
     validate_manifest(&manifest)?;
     let (mut sectors, mut total_raw) = (Vec::with_capacity(count), 0usize);
+    let mut budget = BUNDLE_BUDGET;
     for row in 0..count {
         let at = table + ENTRY * row;
         let (floor, sx, sy) = (data[at] as i8, le16(data, at + 2), le16(data, at + 4));
@@ -351,8 +401,8 @@ pub fn read(data: &[u8]) -> Result<Bundle, Error> {
         total_raw += raw_length;
         limit(total_raw <= MAX_TOTAL_RAW_BYTES, "bundle payload too large")?;
         check(
-            sx < 2048 && sy < 2048,
-            "sector outside the u16 coordinate plane",
+            manifest.world.floors.binary_search(&floor).is_ok(),
+            "sector floor outside the World",
         )?;
         if let Some(previous) = sectors.last() {
             check(
@@ -365,6 +415,10 @@ pub fn read(data: &[u8]) -> Result<Bundle, Error> {
             Sha256::digest(frame).as_slice() == &data[at + 18..at + 50],
             "sector checksum",
         )?;
+        check(
+            canonical_frame(frame, raw_length),
+            "sector is not one canonical zstd frame",
+        )?;
         let raw = zstd::bulk::decompress(frame, raw_length).map_err(zstd_error)?;
         check(
             raw.len() == raw_length,
@@ -374,7 +428,7 @@ pub fn read(data: &[u8]) -> Result<Bundle, Error> {
             floor,
             sx,
             sy,
-            tiles: sector::decode(&raw, sx, sy, TILE_LIMITS)?,
+            tiles: sector::decode(&raw, (sx, sy), TILE_LIMITS, &mut budget)?,
         };
         validate_sector(&manifest, &sector)?;
         sectors.push(sector);

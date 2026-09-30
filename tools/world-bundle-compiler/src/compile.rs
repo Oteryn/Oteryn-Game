@@ -66,13 +66,14 @@ struct State<'a> {
 }
 
 impl State<'_> {
+    /// Resolves every entry of a tile, including the contents of a skipped provisional entry,
+    /// so an unknown key or a bad teleport never hides inside a skipped container.
     fn items(&mut self, tile: &Tile, floor: i8) -> Result<Vec<Item>, Error> {
         let mut kept = Vec::with_capacity(tile.items.len());
         let mut skip_below: Option<u8> = None;
         for item in &tile.items {
-            match skip_below {
-                Some(depth) if item.depth > depth => continue,
-                _ => skip_below = None,
+            if skip_below.is_some_and(|depth| item.depth <= depth) {
+                skip_below = None;
             }
             let key = self
                 .input
@@ -84,20 +85,25 @@ impl State<'_> {
                         item.palette
                     ))
                 })?;
+            let mut item = item.clone();
+            if let Some((x, y, z)) = item.attrs.teleport {
+                item.attrs.teleport = Some((x, y, native_floor(z)? as u8));
+            }
             match self.resolver.resolve(key) {
-                Resolution::Resolved(family, id) => {
+                Resolution::Resolved(family, id) if skip_below.is_none() => {
                     let entry = PaletteEntry {
                         key: key.clone(),
                         family,
                         id,
                     };
                     self.used.entry(item.palette).or_insert(entry);
+                    kept.push(item);
                 }
+                Resolution::Resolved(..) => {}
                 Resolution::Provisional if self.input.build_class != BuildClass::Production => {
                     let (x, y, key) = (tile.x, tile.y, key.clone());
                     self.diagnostics.push(Diagnostic { x, y, floor, key });
-                    skip_below = Some(item.depth);
-                    continue;
+                    skip_below = skip_below.or(Some(item.depth));
                 }
                 Resolution::Provisional => {
                     return Err(Error::Key(format!(
@@ -106,11 +112,6 @@ impl State<'_> {
                 }
                 Resolution::Unknown => return Err(Error::Key(format!("unknown key {key}"))),
             }
-            let mut item = item.clone();
-            if let Some((x, y, z)) = item.attrs.teleport {
-                item.attrs.teleport = Some((x, y, native_floor(z)? as u8));
-            }
-            kept.push(item);
         }
         Ok(kept)
     }
@@ -133,6 +134,9 @@ impl State<'_> {
                 let items = self.items(&tile, floor)?;
                 mapped.push(Tile { items, ..tile });
             }
+            if mapped.is_empty() {
+                continue;
+            }
             if out.insert((floor, sy, sx), mapped).is_some() {
                 return Err(Error::Format(format!(
                     "sector ({sx}, {sy}, {floor}) given twice"
@@ -151,9 +155,10 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
         used: BTreeMap::new(),
         diagnostics: Vec::new(),
     };
-    let mut sectors = BTreeMap::new();
+    let (mut sectors, mut budget) = (BTreeMap::new(), bundle::BUNDLE_BUDGET);
     for data in input.regions {
-        state.region(b3::decode_region(data, bundle::TILE_LIMITS)?, &mut sectors)?;
+        let region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
+        state.region(region, &mut sectors)?;
     }
     let remap: BTreeMap<u32, u32> = state
         .used
@@ -180,11 +185,14 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
         format: bundle::FORMAT.into(),
         min_reader_version: bundle::VERSION,
         projection_class: "server".into(),
+        compiler_version: bundle::compiler_version(),
         build_class: input.build_class,
         identity: input.identity.clone(),
         world: input.world.clone(),
         palette: state.used.into_values().collect(),
-        draft_areas: input.draft_areas.clone(),
+        draft_areas: BTreeSet::from_iter(input.draft_areas.iter().cloned())
+            .into_iter()
+            .collect(),
         skipped_provisional_keys: skipped.into_iter().collect(),
     };
     let bytes = bundle::write(&manifest, &sectors)?;

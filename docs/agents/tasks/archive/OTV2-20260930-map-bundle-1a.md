@@ -53,7 +53,7 @@ waiver of the "#1160 and #1170 merged" dependency for the parts that need no rea
 - **Dependency.** `zstd =0.13.3` (default features off; bundled libzstd 1.5.7) is added to the
   workspace: the B3 source and the bundle both use zstd frames (ADR-0021 §4.2). Lockfile adds
   `zstd`, `zstd-safe`, `zstd-sys` only; `cc` and `pkg-config` were already locked.
-- **Registry.** Eight rows `MAP01-BUNDLE-*`, `MAP01-TILE-*` and `MAP01-ITEM-TEXT-BYTES`, appended
+- **Registry.** Ten rows `MAP01-BUNDLE-*`, `MAP01-TILE-*` and `MAP01-ITEM-TEXT-BYTES`, appended
   without changing existing rows.
 
 ## Architecture and source of truth
@@ -74,6 +74,7 @@ production path. The ADR-0021 §4.8 security review of the bundle reader applies
 - [x] Compiler skeleton writing and reading the bundle with manifest, checksums, digest and
   limits, tested with synthetic fixtures.
 - [x] Registry rows added without widening existing rows.
+- [x] Read-only self-review findings fixed before freeze.
 - [ ] Independent exact-head review.
 - [ ] Protected Merge Queue integration.
 
@@ -88,7 +89,7 @@ production path. The ADR-0021 §4.8 security review of the bundle reader applies
 
 - `cargo fmt --all --check`: PASS.
 - `cargo clippy --locked -p oteryn-world-bundle-compiler --all-targets --quiet -- -D warnings`: PASS.
-- `cargo test --locked -p oteryn-world-bundle-compiler --quiet`: 7 passed.
+- `cargo test --locked -p oteryn-world-bundle-compiler --quiet`: 8 passed.
 - `cargo run --locked -p oteryn-architecture-check -- workspace .`: PASS.
 - `python3 tools/agents/validate_governance.py` and the `tools/agents/tests` suite: PASS.
 - `git diff --check`: clean.
@@ -96,6 +97,17 @@ production path. The ADR-0021 §4.8 security review of the bundle reader applies
 ## Closeout
 
 - PR: the one named in the #162 READY_FOR_REVIEW handback. Merge commit/result: its squash merge.
+- Self-review (`oteryn-hard-worker`, read-only) on the first authoring head `bb5b9309`: 6
+  material and 2 minor findings, all fixed in the final authoring commit:
+  - a per-bundle decoded tile and entry budget (`MAP01-BUNDLE-TILES`, `MAP01-BUNDLE-ENTRIES`), because
+    raw-byte limits alone let a small file decode to far more memory;
+  - no empty sectors, and every row floor checked against the World;
+  - the writer decodes what it wrote and requires identical tiles;
+  - skipped provisional containers still resolve their contents;
+  - `compiler_version` derived from the crate and zstd versions;
+  - canonical varints and exactly one checksummed, size-declaring zstd frame per sector;
+  - sorted manifest key lists;
+  - bounded B3 decompression capacity and a checked `placement_key`.
 - Hand-written code is about 1,000 lines of Rust plus tests, above the ~500-line guide: the
   format writer, the fail-closed reader and the B3 reader are one reviewable unit with the format
   document (ADR-0021 §5 reviews the format with the compiler).

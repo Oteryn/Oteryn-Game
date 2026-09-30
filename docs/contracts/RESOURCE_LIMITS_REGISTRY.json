@@ -6725,6 +6725,52 @@
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "UTF-8 bytes of one item text or description attribute",
       "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Charged per sector from the tile count and each tile's control word before the tile list or item list is reserved; bounds decoded memory, which the raw-byte limits do not (one raw byte can decode to a whole entry).",
+      "boundary_tests": [
+        "a bundle decoding to exactly the budget is accepted",
+        "the sector that takes the total over the budget is rejected before its tiles are reserved"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 33554432,
+        "minimum": 33554432
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 33554432,
+      "id": "MAP01-BUNDLE-TILES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Initial value; MAP-BUNDLE-1b confirms it on the real map. Source map about 19.37 M tiles.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Decoded tiles of one bundle, over all sectors",
+      "unit": "tiles"
+    },
+    {
+      "allocation_impact": "Charged per sector from the tile count and each tile's control word before the tile list or item list is reserved; bounds decoded memory, which the raw-byte limits do not (one raw byte can decode to a whole entry).",
+      "boundary_tests": [
+        "a bundle decoding to exactly the budget is accepted",
+        "the tile that takes the total over the budget is rejected before its items are reserved"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 67108864,
+        "minimum": 67108864
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 67108864,
+      "id": "MAP01-BUNDLE-ENTRIES",
+      "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Initial value; MAP-BUNDLE-1b confirms it on the real map. Source map about 24.98 M items.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Decoded entries of one bundle, container contents included",
+      "unit": "entries"
     }
   ]
 }

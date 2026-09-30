@@ -5,7 +5,7 @@
 //! a table of `local u8 | offset u32 | length u32` rows, then one zstd frame per sector.
 
 use crate::Error;
-use crate::sector::{self, Tile, TileLimits};
+use crate::sector::{self, Budget, Tile, TileLimits};
 
 const HEADER: usize = 12;
 const ENTRY: usize = 9;
@@ -33,7 +33,11 @@ fn le32(data: &[u8], at: usize) -> usize {
 }
 
 /// Decodes a whole region file, checking its layout the way the B3 codec does.
-pub fn decode_region(data: &[u8], limits: TileLimits) -> Result<Region, Error> {
+pub fn decode_region(
+    data: &[u8],
+    limits: TileLimits,
+    budget: &mut Budget,
+) -> Result<Region, Error> {
     let bad = |what: &str| Err(Error::Format(format!("B3: {what}")));
     if data.len() < HEADER {
         return bad("region file shorter than its header");
@@ -71,11 +75,18 @@ pub fn decode_region(data: &[u8], limits: TileLimits) -> Result<Region, Error> {
         }
         previous = i32::from(local);
         expected += length;
-        let payload = zstd::bulk::decompress(&data[offset..offset + length], MAX_SECTOR_BYTES)
+        let frame = &data[offset..offset + length];
+        // Reserve the frame's declared content size when it has one, never more than the cap.
+        let capacity = match zstd::zstd_safe::get_frame_content_size(frame) {
+            Ok(Some(size)) if size <= MAX_SECTOR_BYTES as u64 => size as usize,
+            Ok(Some(_)) => return bad("sector payload over MAX_SECTOR_BYTES"),
+            _ => MAX_SECTOR_BYTES,
+        };
+        let payload = zstd::bulk::decompress(frame, capacity)
             .map_err(|error| Error::Format(format!("B3: sector {local}: {error}")))?;
         let sx = rx * SECTORS_PER_SIDE + u16::from(local) % SECTORS_PER_SIDE;
         let sy = ry * SECTORS_PER_SIDE + u16::from(local) / SECTORS_PER_SIDE;
-        sectors.push((sx, sy, sector::decode(&payload, sx, sy, limits)?));
+        sectors.push((sx, sy, sector::decode(&payload, (sx, sy), limits, budget)?));
     }
     if expected != data.len() {
         return bad("bytes after the last sector payload");

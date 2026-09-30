@@ -9,6 +9,10 @@ use oteryn_world_bundle_compiler::sector::{self, Attrs, Item, Tile};
 
 type TestResult = Result<(), Box<dyn StdError>>;
 
+fn budget() -> sector::Budget {
+    bundle::BUNDLE_BUDGET
+}
+
 struct Resolver;
 
 impl KeyResolver for Resolver {
@@ -157,7 +161,11 @@ fn compilation_is_byte_identical_and_equivalent_to_the_source() -> TestResult {
     let (regions, palette) = (fixture()?, palette());
     let mut source = Vec::new();
     for data in &regions {
-        let region = oteryn_world_bundle_compiler::b3::decode_region(data, bundle::TILE_LIMITS)?;
+        let region = oteryn_world_bundle_compiler::b3::decode_region(
+            data,
+            bundle::TILE_LIMITS,
+            &mut budget(),
+        )?;
         for (_, _, tiles) in region.sectors {
             source.extend(tiles.into_iter().map(|t| (-(region.z as i8), t)));
         }
@@ -285,12 +293,15 @@ fn build_class_fails_closed_and_placement_keys_are_positional() -> TestResult {
     assert!(!serde_json::from_value::<Manifest>(json)?.is_production());
     assert_eq!(
         bundle::placement_key(-7, 1, 2, 1),
-        1 << 32 | 2 << 16 | 7 << 8 | 1
+        Some(1 << 32 | 2 << 16 | 7 << 8 | 1)
     );
     assert_ne!(
         bundle::placement_key(-6, 1, 2, 1),
         bundle::placement_key(-7, 1, 2, 1)
     );
+    assert_eq!(bundle::placement_key(5, 1, 2, 1), None);
+    assert_eq!(bundle::placement_key(-5, 1, 2, 64), None);
+    assert!(manifest.compiler_version.contains(" zstd/1."));
     Ok(())
 }
 
@@ -299,7 +310,8 @@ fn build_class_fails_closed_and_placement_keys_are_positional() -> TestResult {
 #[test]
 fn reader_matches_the_python_b3_codec() -> TestResult {
     let data = include_bytes!("fixtures/codec-region-z07-x000-y000.b3");
-    let region = oteryn_world_bundle_compiler::b3::decode_region(data, bundle::TILE_LIMITS)?;
+    let region =
+        oteryn_world_bundle_compiler::b3::decode_region(data, bundle::TILE_LIMITS, &mut budget())?;
     assert_eq!(
         (region.z, region.rx, region.ry, region.sectors.len()),
         (7, 0, 0, 2)
@@ -414,18 +426,74 @@ fn registered_limits_are_checked_before_allocation() -> TestResult {
     // Per tile: 4,097 entries, and a 4,097-byte text, are refused from their length fields.
     let crowded = [1, 0, 0x88, 0x80, 0x02];
     assert!(matches!(
-        sector::decode(&crowded, 0, 0, bundle::TILE_LIMITS),
+        sector::decode(&crowded, (0, 0), bundle::TILE_LIMITS, &mut budget()),
         Err(Error::Limit(_))
     ));
     let text = [1, 0, 1 << 3, 1, 1 << 5, 0x81, 0x20];
     assert!(matches!(
-        sector::decode(&text, 0, 0, bundle::TILE_LIMITS),
+        sector::decode(&text, (0, 0), bundle::TILE_LIMITS, &mut budget()),
         Err(Error::Limit(_))
     ));
     let ok = [1, 0, 1 << 3, 1, 1 << 5, 0x80, 0x20];
     assert!(matches!(
-        sector::decode(&ok, 0, 0, bundle::TILE_LIMITS),
+        sector::decode(&ok, (0, 0), bundle::TILE_LIMITS, &mut budget()),
         Err(Error::Format(_))
+    ));
+    Ok(())
+}
+
+#[test]
+fn skipped_containers_still_resolve_and_the_writer_round_trips() -> TestResult {
+    let palette = palette();
+    // A provisional container (3) holding an unknown key (4) fails even outside production.
+    let hidden = vec![region(
+        7,
+        0,
+        0,
+        &[(0, vec![tile(1, 1, vec![item(3, 0), item(4, 1)])])],
+    )?];
+    let result = compile(
+        &input(&hidden, &palette, BuildClass::NonProduction),
+        &Resolver,
+    );
+    assert!(matches!(result, Err(Error::Key(_))));
+    // A tile outside the sector it is written in never reaches the file.
+    let manifest = bundle::read(&build(BuildClass::NonProduction)?.bytes)?.manifest;
+    let stray = bundle::Sector {
+        floor: -7,
+        sx: 0,
+        sy: 0,
+        tiles: vec![tile(40, 1, vec![item(0, 0)])],
+    };
+    assert!(bundle::write(&manifest, &[stray]).is_err());
+    let empty = bundle::Sector {
+        floor: -7,
+        sx: 0,
+        sy: 0,
+        tiles: Vec::new(),
+    };
+    assert!(bundle::write(&manifest, &[empty]).is_err());
+    let mut unsorted = manifest.clone();
+    unsorted.skipped_provisional_keys = vec!["b".into(), "a".into()];
+    assert!(bundle::write(&unsorted, &[]).is_err());
+    // Non-canonical varints: a redundant zero group, and bits past 64.
+    for payload in [
+        &[0x81, 0x00, 0][..],
+        &[
+            1, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02, 0,
+        ],
+    ] {
+        assert!(sector::decode(payload, (0, 0), bundle::TILE_LIMITS, &mut budget()).is_err());
+    }
+    // The per-bundle entry budget is charged before a tile's items are reserved.
+    let mut small = sector::Budget {
+        tiles: 10,
+        entries: 1,
+    };
+    let two = sector::encode(&[tile(1, 1, vec![item(0, 0), item(0, 0)])])?;
+    assert!(matches!(
+        sector::decode(&two, (0, 0), bundle::TILE_LIMITS, &mut small),
+        Err(Error::Limit(_))
     ));
     Ok(())
 }

@@ -60,6 +60,30 @@ pub struct TileLimits {
     pub max_text_bytes: usize,
 }
 
+/// What one whole decode (all sectors of a bundle or of a source) may still produce.
+#[derive(Clone, Copy, Debug)]
+pub struct Budget {
+    pub tiles: usize,
+    pub entries: usize,
+}
+
+impl Budget {
+    fn take(&mut self, tiles: usize, entries: usize) -> Result<(), Error> {
+        match (
+            self.tiles.checked_sub(tiles),
+            self.entries.checked_sub(entries),
+        ) {
+            (Some(t), Some(e)) => {
+                (self.tiles, self.entries) = (t, e);
+                Ok(())
+            }
+            _ => Err(Error::Limit(
+                "decoded tiles or entries over the bundle total".into(),
+            )),
+        }
+    }
+}
+
 fn put(out: &mut Vec<u8>, mut value: u64) {
     while value >= 0x80 {
         out.push((value & 0x7F) as u8 | 0x80);
@@ -171,14 +195,15 @@ impl Reader<'_> {
         let (mut value, mut shift) = (0u64, 0u32);
         loop {
             let byte = self.byte()?;
+            // Canonical LEB128 only: no bits past 64 and no redundant zero high group.
+            if (shift == 63 && byte > 1) || (shift > 0 && byte == 0) {
+                return Err(Error::Format("varint is not canonical".into()));
+            }
             value |= u64::from(byte & 0x7F) << shift;
             if byte < 0x80 {
                 return Ok(value);
             }
             shift += 7;
-            if shift > 63 {
-                return Err(Error::Format("varint too long".into()));
-            }
         }
     }
 
@@ -217,13 +242,25 @@ fn truncated() -> Error {
     Error::Format("sector payload is truncated".into())
 }
 
-/// Decodes one payload of sector `(sx, sy)`; rejects trailing bytes and unknown attribute bits.
-pub fn decode(payload: &[u8], sx: u16, sy: u16, limits: TileLimits) -> Result<Vec<Tile>, Error> {
+/// Decodes one payload of sector `(sx, sy)`, charging `budget` before anything is reserved.
+/// Rejects trailing bytes and unknown attribute bits.
+pub fn decode(
+    payload: &[u8],
+    (sx, sy): (u16, u16),
+    limits: TileLimits,
+    budget: &mut Budget,
+) -> Result<Vec<Tile>, Error> {
+    if sx >= 2048 || sy >= 2048 {
+        return Err(Error::Format(
+            "sector outside the u16 coordinate plane".into(),
+        ));
+    }
     let mut r = Reader {
         buf: payload,
         pos: 0,
     };
     let count = r.bounded(SECTOR_TILES as u64, "sector tile count")? as usize;
+    budget.take(count, 0)?;
     let mut tiles = Vec::with_capacity(count);
     let mut previous: i64 = -1;
     for _ in 0..count {
@@ -237,6 +274,7 @@ pub fn decode(payload: &[u8], sx: u16, sy: u16, limits: TileLimits) -> Result<Ve
         if entries > limits.max_entries {
             return Err(Error::Limit(format!("tile holds {entries} entries")));
         }
+        budget.take(0, entries)?;
         let mut tile = Tile {
             x: sx * SECTOR_SIZE + (index & 31) as u16,
             y: sy * SECTOR_SIZE + (index >> 5) as u16,
