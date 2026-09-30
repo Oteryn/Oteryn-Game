@@ -3,7 +3,8 @@
 - Decision: `WHEEL0-WHEEL-OF-DESTINY-DELIVERY-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (Character
   state, persistence, protocol) and protected integration. Owner question W1 (§12) is answered a
-  (verbatim record on #162 5917665342); §6 applies it.
+  (verbatim record on #162 5917665342); §6 applies it. Owner decision W2 (#162, 2026-09-30,
+  Wheel reset) is recorded in §12; §4 and §5.1 apply it (WHEEL0-RST-1).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction (2026-09-30, verbatim: "tak samo whel of destiny blokuje mi reszte
   spelli bo go nie ma"); the spell lane's audit (#162 5916978013: "4 ready reader refusals
@@ -17,8 +18,8 @@
   and 19; QUEST-STATE-0 §5.2 (CHAR-REV-SEQ-1); the composition decision rules 1-2; PREMIUM-ACTIVATION
   §4.2 and D70-D76; PREMIUM-DELIVERY-0 (`premium_current`); the Tibia manual `characters.md` §5.1.7;
   owner rule 5905825574 (Global parity)
-- Amends, pending on acceptance of WHEEL-0, in this PR: the Wheel state contract candidate §3.5,
-  §5 and §6 (pointers); PREMIUM-ACTIVATION §4.2, §4.6 (the revelation spells, WHEEL0-PS-1) and §5
+- Amends, pending on acceptance of WHEEL-0, in this PR: the Wheel state contract candidate §3.2.1,
+  §3.5, §5 and §6 (pointers); PREMIUM-ACTIVATION §4.2, §4.6 (the revelation spells, WHEEL0-PS-1) and §5
   (the PREM-2, PREM-4 and PREM-5 rows); PREMIUM-DELIVERY-0 implementation brief (the PREM-2..5 row)
   (§6.2).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
@@ -29,8 +30,8 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | SPELL-WHEEL-GATE-1 | impl, spell review | the ready reader admits `wheel_unlock` and augment-bound spells; `CasterState` carries a `WheelStages` input, all 0 until W-1; roles B and C cast with their base behaviour, role A fails closed at cast (§3); no cast Premium check for `wheel_unlock` spells until the Premium switch-over (WHEEL0-PS-1, §6.2) | this decision |
-| W-R | impl, content review | the Wheel ruleset: slots, capacities, adjacency, minimum points, perks per domain, vocation and slot, the dedication values, the conviction perks (spell and non-spell), revelation values; validator; revision migration rule (§5) | this decision |
-| W-1 | hard, persistence review | allocation tables, a new receipt kind, `commit_character_wheel` on CHAR-REV-SEQ-1, admission load, derivation into `WheelStages` (§4) | W-R; CHAR-REV-SEQ-1 |
+| W-R | impl, content review | the Wheel ruleset: slots, capacities, adjacency, minimum points, perks per domain, vocation and slot, the dedication values, the conviction perks (spell and non-spell), revelation values; validator; each later revision declared value-only or Wheel reset (WHEEL0-RST-1, §5.1) | this decision |
+| W-1 | hard, persistence review | allocation tables, a new receipt kind, `commit_character_wheel` on CHAR-REV-SEQ-1, the admission Wheel reset (WHEEL0-RST-1), admission load, derivation into `WheelStages` (§4) | W-R; CHAR-REV-SEQ-1 |
 | W-2 | impl, protocol review | capability `WHEEL_V1`, `WHEEL_QUERY` and `WHEEL_INTENT` (§7) | W-1 |
 | W-FX-1 | hard, combat review | dedication perks (max health, max mana, capacity), non-spell conviction perks, passive revelation effects (§5.2) as stat and effect contributions | W-1; the vitals owner; CONDITIONS-0 for timed effects |
 | PREM-2 | as allocated (PREMIUM-ACTIVATION) | promotion state; its "progression readiness" dependency is satisfied (§6.2) | #1143 (completed); spell P3b-2 vitals (merged); not PREM-1 (W1 a, §6.2) |
@@ -119,14 +120,16 @@ The state candidate §3.2-§3.4 is binding; this section fixes its physical shap
       (`profile_revision`, `ruleset_revision`, `content_revision`, `simulation_revision`,
       `evidence_revision`, `declaration_revision`, `policy_revision`, `reward_revision`) and
       `committed_at`;
-    - **the Wheel columns:** occurrence, SHA-256 binding of the request only, `before_wheel_revision`,
-      `after_wheel_revision` (= before + 1), the before and after slot vectors (36 small integers
-      each), and `wheel_ruleset_revision`. The Wheel ruleset revision is its own column and is never
-      written into the envelope's `ruleset_revision`, which stays the progression interpretation
-      revision.
-  - `wheel_ruleset_revision` is the physical column of the state candidate's `ruleset_revision`. A
-    migration of an allocation to a new Wheel ruleset revision (state candidate §3.2.1) is itself a
-    change on the CHAR-REV-SEQ-1 sequencer with one Wheel receipt, so the row tip below always holds.
+    - **the Wheel columns:** occurrence, `kind` (`ALLOCATION` or `RULESET_RESET`), SHA-256 binding
+      of the request only, `before_wheel_revision`, `after_wheel_revision` (= before + 1), the before
+      and after slot vectors (36 small integers each), `before_wheel_ruleset_revision` and
+      `wheel_ruleset_revision` (the after revision). The Wheel ruleset revisions are their own
+      columns and are never written into the envelope's `ruleset_revision`, which stays the
+      progression interpretation revision.
+  - `wheel_ruleset_revision` is the physical column of the state candidate's `ruleset_revision`.
+    The only write that moves it is the Wheel reset (WHEEL0-RST-1), itself a change on the
+    CHAR-REV-SEQ-1 sequencer with one `RULESET_RESET` receipt, so the row tip below always holds.
+    There is no ruleset migration writer.
 - **Guards** (deferred), on the model of the stance and Bestiary arms of `0020`:
   - `allocated_total` equals the sum of the slots; each slot is within its capacity under
     `wheel_ruleset_revision` (a ruleset table the W-R child loads);
@@ -134,6 +137,13 @@ The state candidate §3.2-§3.4 is binding; this section fixes its physical shap
     `before_wheel_revision` 0 and an all-zero before vector, and every later receipt's
     `before_wheel_revision` and before vector equal its predecessor's `after_wheel_revision` and after
     vector; every receipt has `after_wheel_revision = before_wheel_revision + 1`;
+  - **ruleset chain:** the first receipt has `before_wheel_ruleset_revision` equal to its
+    `wheel_ruleset_revision`, and every later receipt's `before_wheel_ruleset_revision` equals its
+    predecessor's `wheel_ruleset_revision`. An `ALLOCATION` receipt has equal before and after
+    ruleset revisions. A `RULESET_RESET` receipt has an all-zero after vector and an after ruleset
+    revision newer than its before revision, with at least one reset revision (§5.1) after the
+    before revision up to and including the after revision, per the ruleset revision table the W-R
+    child loads. A skipped, reversed or undeclared transition therefore fails the guard;
   - **row tip:** the state row's `wheel_revision`, `wheel_ruleset_revision`,
     `committed_character_revision` and `last_wheel_occurrence_id` equal the latest receipt's
     `after_wheel_revision`, `wheel_ruleset_revision`, `committed_character_revision` and occurrence,
@@ -157,21 +167,26 @@ The state candidate §3.2-§3.4 is binding; this section fixes its physical shap
   rejected as `NO_CHANGE` before any write: no receipt, no `wheel_revision` or CharacterRevision
   advance, and the occurrence is not consumed. Every receipt therefore records a real change, which
   bounds receipt growth to actual allocation changes.
-- **Ruleset migration writer (WHEEL0-MIG-1; architect ruling, see the report's owner question).**
-  Activating a destination Wheel ruleset revision needs every stored allocation moved off the source
-  revision, including offline, ineligible and non-current characters, which the session-fenced
-  `commit_character_wheel` cannot serve. The W-R child therefore defines `migrate_character_wheel`,
-  a second writer on the same CHAR-REV-SEQ-1 sequencer (`character_root` FOR UPDATE, one Wheel
-  receipt, the same envelope, chain and row-tip guards), run only by the administrative migration
-  authority and only while the character has no live session (otherwise it retries later; it never
-  fences out a live session). Its validation is migration-specific: the stored
-  `wheel_ruleset_revision` must be the declared source, the destination must be the activating
-  revision, and the transformed vector must satisfy the destination capacities, adjacency and
-  minimum-point rules. It does not apply eligibility, the points rule or the temple rule, because a
-  migration is not a player change. A character whose transform is invalid under the destination is
-  not migrated and blocks activation, so a ruleset whose transform is not total over stored
-  allocations cannot activate (fail closed). `NO_CHANGE` does not apply: a migration always
-  advances `wheel_ruleset_revision`.
+- **Wheel reset (WHEEL0-RST-1; owner decision W2, #162 2026-09-30).** There is no ruleset
+  migration writer and no offline or administrative Wheel writer. A stored allocation is current
+  when its `wheel_ruleset_revision` is the active revision or every later revision up to the active
+  one is value-only (§5.1); it is then kept as stored, pinned to its revision, and read and validated
+  with the active revision's tables. When a reset revision lies after the stored revision, the
+  allocation is cleared at the character's next admitted session: after the admission's own session
+  fence and `character_root` FOR UPDATE (composition rule 2), before the allocation is loaded into
+  the actor, one commit on the CHAR-REV-SEQ-1 sequencer writes one `RULESET_RESET` receipt (the same
+  envelope, chain, ruleset-chain and row-tip guards) with the stored vector as before vector, an
+  all-zero after vector, the stored revision as `before_wheel_ruleset_revision` and the active
+  revision as `wheel_ruleset_revision`, deletes the slot rows and sets `allocated_total` to 0 and
+  `wheel_revision` to before + 1. Every promotion point returns unallocated for the player to
+  redistribute; the reset is free and applies no eligibility, points or temple rule. Its occurrence
+  is derived from (`character_id`, source revision, destination revision), so a replay finds it
+  already applied (the stored revision is the active one) and writes nothing; `NO_CHANGE` does not
+  apply, because a reset always advances `wheel_ruleset_revision`. Until the reset commits (for
+  example when a reset revision activates during a live session), the old allocation grants
+  nothing under the new revision: every stage and contribution derives as 0 and
+  `commit_character_wheel` rejects changes as `RULESET_NOT_CURRENT` (fail closed, state candidate
+  §3.2.1). A character with no row has nothing to reset.
 - **Points rule (WHEEL0-PT-1; state candidate §3.3, level loss).** A change that raises any slot
   requires the new sum at most the available points. A strict decrease (no slot raised, at least one
   slot lowered) is admitted whatever the available points, so a character over-allocated after a
@@ -201,7 +216,19 @@ domain, capacity (50, 75, 100, 150, 200), adjacency and minimum points; per slot
 effect and value per point and its conviction perk; per domain and vocation the revelation perk and
 its stage values; the augment table already in `wheel-augments.json`. Source order: official
 statements win (S24), then Canary `io_wheel.cpp` and `player_wheel.cpp` (S21). The first revision
-has no migration; later ones follow the state candidate §3.2.1.
+has no predecessor. Each later revision is declared in its release as one of two kinds
+(WHEEL0-RST-1, owner decision W2, #162 2026-09-30):
+
+- **value-only:** it changes only numeric values (dedication values per point, conviction and
+  revelation values) and leaves slot identities, domains, capacities, adjacency, minimum points and
+  the perk placed in each slot and domain unchanged; stored allocations are kept as they are, pinned
+  to their revision (§4);
+- **Wheel reset:** any other change, which could invalidate a stored allocation; each allocation
+  under an earlier revision is cleared at its character's next admitted session (§4).
+
+Of the state candidate §3.2.1 options, WHEEL-0 uses the declared-compatible mapping (value-only,
+without a re-stamp write) and reset-with-refund (at the next admitted session); the explicit
+source-to-destination migration is not used.
 
 ### 5.2 Effects (W-FX-1)
 
@@ -295,6 +322,7 @@ the town records' temple positions in the active bundle.
 | `WHEEL0-RL-05` removal radius | protection zone within 10 tiles of a temple |
 | `WHEEL0-RL-06` receipt size | 2 × 36 small integers plus fixed fields |
 | Allocation change | 0 items, 0 value lines, 1 CharacterRevision, 1 receipt |
+| Wheel reset (WHEEL0-RST-1) | 0 items, 0 value lines, 1 CharacterRevision, 1 receipt, once per character per reset revision |
 
 ## 9. Rejected options
 
@@ -309,7 +337,8 @@ the town records' temple positions in the active bundle.
 Kept as in Tibia: unlock at 51 for promoted Premium characters, 1 point per level, 36 slices,
 adjacency, the three perk tiers, removal at a temple, suspension on lapse. Declared differences:
 unused points saturate at 0 on level loss (Canary underflows); the Premium rule of promotion, the
-Wheel and the revelation spells waits until Premium is delivered (W1 a, WHEEL0-PS-1).
+Wheel and the revelation spells waits until Premium is delivered (W1 a, WHEEL0-PS-1); a Wheel
+ruleset change that could invalidate an allocation resets it at the next login (W2, WHEEL0-RST-1).
 
 ## 11. Decision test
 
@@ -319,10 +348,20 @@ Wheel and the revelation spells waits until Premium is delivered (W1 a, WHEEL0-P
 - **Superseding evidence:** WHEEL-GEM-0 adds gem bonuses to the domain sums.
 - **Deliberately not decided:** gems, vessels, fragments, mod grades, presets, scrolls, the client
   window.
+- **Presets (owner note with W2: players keep saved Wheel profiles):** when a Wheel reset happens,
+  the later presets child must drop or mark invalid every preset that is invalid under the active
+  ruleset.
 
-## 12. Owner question (answered)
+## 12. Owner questions (answered)
 
 Owner answer, verbatim record on #162 5917665342: "3a" (W1 a).
+
+**W2. Wheel ruleset changes (owner decision, #162, 2026-09-30).** The ruleset migration writer
+(former WHEEL0-MIG-1, `migrate_character_wheel`) is dropped. A value-only ruleset change keeps
+allocations, pinned to their revision; a change that could invalidate an allocation is activated as
+a Wheel reset, applied at the character's next admitted session under its own session fence, free,
+idempotent, fail-closed until it commits, and recorded by one receipt naming the old and new
+ruleset revisions (WHEEL0-RST-1, §4, §5.1).
 
 **W1. Promotion and the Wheel before Premium exists?** Tibia requires Premium for promotion and
 for the Wheel, and the Game has no Premium yet (PREM-1 is in review). a) Not required until Premium
@@ -332,11 +371,12 @@ b) keep the requirement: revelation spells wait for Premium.
 
 ## 13. Before-freeze checklist
 
-1. **Contract amendments:** the Wheel state candidate §3.5, §5 and §6 pointers; PREMIUM-ACTIVATION
+1. **Contract amendments:** the Wheel state candidate §3.2.1, §3.5, §5 and §6 pointers; PREMIUM-ACTIVATION
    §4.2, §4.6 and §5 (PREM-2, PREM-4 and PREM-5 rows); the PREMIUM-DELIVERY-0 implementation brief
    (PREM-2..5 row); each written "pending on acceptance of WHEEL-0".
 2. **Serialization:** W-1 on the CHAR-REV-SEQ-1 sequencer; composition rule 2 fence first; the
    Wheel receipt carries the common envelope and the full-chain and row-tip guards (§4).
-3. **Restart:** receipts keyed by occurrence; replays return the first outcome.
+3. **Restart:** receipts keyed by occurrence; replays return the first outcome; a Wheel reset's
+   occurrence is derived from the character and the source and destination revisions.
 4. **Typed references:** CharacterId, slot index, ruleset revision, occurrence.
 5. **Wire:** §7, capability `WHEEL_V1`.

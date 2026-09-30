@@ -115,6 +115,12 @@ reinterpreting existing data under another ruleset.
   current for a world that holds allocations under an older revision.
 - V1 has one revision, so no migration exists yet. The first one lands with the first ruleset change.
 
+**Pointer (pending on acceptance of WHEEL-0 (`reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md` §4, §5.1, WHEEL0-RST-1; owner decision W2, #162 2026-09-30).** Each later revision is
+value-only (option 2 without a re-stamp write: allocations are kept, pinned to their revision, and
+count as current) or a Wheel reset (option 3, applied at the character's next admitted session under
+its own session fence, with one receipt naming the old and new revisions; until then the allocation
+fails closed as above). Option 1 and any offline migration writer are not used.
+
 ### 3.3 Change
 
 - One allocation change is one fenced Character event. It commits at once, as Crystal does on save.
