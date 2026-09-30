@@ -158,7 +158,10 @@ and how do house items change?
   admitted or resumed anywhere: committed, the destination holds; not committed, the source holds
   and the reservation is released.
 - A character whose house scope cannot be recovered is placed at the `entrance` on its origin
-  Channel at the next admission.
+  Channel at the next admission, and that admission transaction clears the house columns of the
+  last-position row and writes the entrance position, exactly as for an exit (§4.2, §6.3), so a
+  disconnect before the next periodic or terminal write cannot leave the stale house position
+  authoritative.
 
 ## 5. Access inside (HOUSE-RUNTIME-1)
 
@@ -197,7 +200,11 @@ Any character may leave at will: walking out, or `leave` in the House Management
   entry's grant counts the same way (GUILD-0 §10), checked when the guild's revision changes; that
   change advances the guild revision in its own transaction under FOR UPDATE on the guild row, so
   it serializes with admission (§4.1).
-- Every item write re-checks the role at the write (EXP-HOUSES-01 §16.5).
+- Every item write re-checks the role at the write (EXP-HOUSES-01 §16.5). Architect ruling: the item
+  transaction takes FOR SHARE on the property row and, for a role derived from a guild entry, on the
+  granting guild and membership rows (the §4.1 admission locks), and re-reads the exact `acl_revision`
+  and guild revisions the authorization used; any change refuses the write with a typed reason
+  and nothing is moved, so a revocation cannot commit between the role check and the item commit.
 
 ### 5.5 Kick
 

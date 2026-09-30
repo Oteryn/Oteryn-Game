@@ -83,5 +83,8 @@ persistence review.
   the admission commit (§4.1, §5.4), login through the serialized admission commit, saved-tile
   revalidation with fallback and atomic clearing of a rejected house position (§6.3), content
   revision advanced by every `HouseInterior` mutation (§7, §9); validators re-run PASS.
+- Codex round 3 (#1399, 1 P1, 1 P2): item transactions lock and revalidate the ACL and guild
+  revisions like the admission commit (§5.4); the failed-scope recovery admission clears the house
+  columns and writes the entrance position atomically (§4.3); validators re-run PASS.
 
 This record was archived in the final authoring commit of its PR.
