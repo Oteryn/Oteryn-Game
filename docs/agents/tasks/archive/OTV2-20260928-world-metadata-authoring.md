@@ -4,17 +4,17 @@
 task_id: OTV2-20260928-world-metadata-authoring
 title: Populate world metadata families (City, HuntingPlace and Region Area, House, teleport Transition)
 mode: MIGRATE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/blissful-turing-oca168
 issue: 162
 pr: 1160
 base_sha: 7d1134f
-head_sha: null
+head_sha: null   # a commit cannot hold its own SHA; the exact frozen head is the PR head at merge
 owner: owner-launched Claude Code session
 created_at: 2026-09-28T00:00:00Z
-updated_at: 2026-09-28T00:00:00Z
+updated_at: 2026-09-30T00:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/world-authoring/
@@ -28,7 +28,7 @@ owned_paths:
   - apps/game-server/tests/content_world_project_repository.rs
   - .github/workflows/g4-canonical-worldproject-package-seed.yml
   - .github/workflows/world-metadata-authoring.yml
-  - docs/agents/tasks/active/OTV2-20260928-world-metadata-authoring.md
+  - docs/agents/tasks/archive/OTV2-20260928-world-metadata-authoring.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -143,7 +143,7 @@ reason (3 without a page, 2 hunting-place pages, `Targuna` ambiguous). NPC names
       bindings, NPC keys, counts) and fixture tests with negatives; the workflow runs them.
 - [x] The legacy package guards accept the successor shards: the materialized-tree
       validator, the seed workflow and the Rust inventory test.
-- [ ] Required checks pass on the frozen PR head.
+- [x] Required checks pass on the PR head (CI green before archiving; merge commit: squash merge of #1160).
 
 ## Excluded scope
 
