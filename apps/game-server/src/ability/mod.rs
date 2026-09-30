@@ -9,6 +9,7 @@
 #![allow(unused_imports)]
 
 pub(crate) mod commit;
+pub(crate) mod creature_bite;
 mod effects;
 #[allow(dead_code)]
 pub(crate) mod exact_actor_resolution;
