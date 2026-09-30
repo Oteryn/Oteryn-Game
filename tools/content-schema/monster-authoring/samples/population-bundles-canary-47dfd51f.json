@@ -39,7 +39,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1610,
+  "bundles": 1613,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -641,6 +641,7 @@
     {"monster":"gorgo","file":"quests/killing_in_the_name_of/gorgo","sha256":"24f36fcffe209edc88addfa6ff850614f66cb9e9a58a04300b10658f42df7f92"},
     {"monster":"gorzindel","file":"quests/the_secret_library/bosses/gorzindel","sha256":"0d07385de613b786887a0aec369f5568fc7ca72fbdfbe5da8445d5c914dd5751"},
     {"monster":"goshnar_s_hatred","file":"quests/soul_war/goshnars_hatred","sha256":"b101a06b42e52701c656b383ab7a7625112fdd9ca75ef72325faae99797ed4ff"},
+    {"monster":"goshnar_s_spite","file":"quests/soul_war/goshnars_spite","sha256":"c4c442f6981a22907b7a6c1f45df04f038407d62c7cce1f78fc87007ba8e7e12"},
     {"monster":"gozzler","file":"demons/gozzler","sha256":"80a111273b25a5efe8d205db3124d58c63f326fde617af5687549d9a97c267a3"},
     {"monster":"grand_canon_dominus","file":"quests/the_secret_library/bosses/grand_canon_dominus","sha256":"06fb7ba0dd8efc1b3a8b9d20145d032150374f8aa306ddefffa689b707a6f57d"},
     {"monster":"grand_chaplain_gaunder","file":"quests/the_secret_library/bosses/grand_chaplain_gaunder","sha256":"da147e24629d18cf0066c008095305e335140175770ad0cb26c7d84f433280fb"},
@@ -680,6 +681,7 @@
     {"monster":"haunted_dragon","file":"quests/the_first_dragon/haunted_dragon","sha256":"b54f67c5faf69bc0c87407f978057806778352f051b0fe7ac92fa8e57db892ce"},
     {"monster":"haunted_treeling","file":"plants/haunted_treeling","sha256":"cc34ea7ec746e3cc3f893973c719f37f4a612aef0adef60cf86c958bb4dbb575"},
     {"monster":"haunter","file":"quests/the_new_frontier/haunter","sha256":"21c72f7776ac4fca1e1cf8ad73382c1d40c2563386f6ee46b8f41489b31a4a58"},
+    {"monster":"hazardous_phantom","file":"undeads/hazardous_phantom","sha256":"507a7b76b3ee405299682fa50fe0e1c751c5385b3fe86e6a715d8919dae6b580"},
     {"monster":"headpecker","file":"birds/headpecker","sha256":"23d4b340ef86218dc9332c8217c8242cacecd32ac21f0fddc4d2523c5ba4b54f"},
     {"monster":"hell_hole","file":"traps/hell_hole","sha256":"4cd3b4d28bf71f5338bfbeb470f63d9e9da509e1bacfe83aecdce92427db3e05"},
     {"monster":"hellfire_fighter","file":"demons/hellfire_fighter","sha256":"d88b43418a18a3655675ba826b5fd4c4a452fb60e2840dcc274a9088d5855041"},
@@ -1507,6 +1509,7 @@
     {"monster":"truffle","file":"fey/truffle","sha256":"64d143c95d151f14712084b78473f8337d4cf394e98ea6e0a9db04c4ba91aa63"},
     {"monster":"truffle_cook","file":"fey/truffle_cook","sha256":"88b51fff149804ea48d9382178bc287f3a33f0743f451b25f67a4d008f335530"},
     {"monster":"tunnel_tyrant","file":"vermins/tunnel_tyrant","sha256":"b03f330338151b39d4b33b0b427d1b00f3f8553380e3b3473cc572bcea34840e"},
+    {"monster":"turbulent_elemental","file":"quests/soul_war/normal_monsters/turbulent_elemental","sha256":"e51d4a0e3e2435ee119e9b96d1bcf436b584cbd34e499dac5c78b9ca828b5ffb"},
     {"monster":"twisted_pooka","file":"fey/twisted_pooka","sha256":"01797a46482b3a534c2e71490cbb2d1d37cd4bb61f1682f19f18c53ea1534250"},
     {"monster":"twisted_shaper","file":"humanoids/twisted_shaper","sha256":"44ea4448003b9594130f82e7075893997b8975d3bac19f41388dbf495f451362"},
     {"monster":"two_headed_turtle","file":"reptiles/two-headed_turtle","sha256":"9018c0f0b1ac019175523173217fd828eb18b3c102fb1c6aaaf02bf5a3f5531b"},

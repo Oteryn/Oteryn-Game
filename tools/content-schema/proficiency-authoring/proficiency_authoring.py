@@ -482,9 +482,8 @@ def registered(
 ) -> tuple:
     """The three registration documents with the Proficiency family registered."""
     project, manifest, lock = map(copy.deepcopy, (project, manifest, lock))
-    project["migrated_families"] = [
-        f for f in project["migrated_families"] if f != FAMILY
-    ] + [FAMILY]
+    if FAMILY not in project["migrated_families"]:
+        project["migrated_families"] = project["migrated_families"] + [FAMILY]
     project["next_population_families"] = [
         f for f in project["next_population_families"] if f != FAMILY
     ]
