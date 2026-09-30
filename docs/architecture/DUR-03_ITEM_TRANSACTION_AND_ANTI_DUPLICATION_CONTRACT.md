@@ -750,7 +750,9 @@ aggregate payload for each distinct logical transaction:
   live after, established in typed `Ground` custody with applicable corpse
   association/provenance. (The reward-chest and D3 amendments in §39.3 each admit
   one named shape whose only location is a `Container` entry instead — no Ground
-  custody, no separate TRANSFER for that placement.)
+  custody, no separate TRANSFER for that placement. The starter grant amendment, pending on
+  acceptance of STARTER-BACKPACK-0, admits one whose only location is the empty
+  `CharacterEquipment` container slot.)
 - `TRANSFER`: that already-existing live ItemInstance moves from typed `Ground`
   custody to direct-root `CharacterInventory`, preserving identity, type and
   quantity and leaving exactly one authoritative immediate location. (The D3
@@ -1038,6 +1040,22 @@ that a MINT establishes typed Ground custody before a separate TRANSFER. For thi
   rule; no Ground custody and no TRANSFER;
 - the audit evidence is: before, explicit nonexistence of the item and the claim state; after, the
   live item in its `Container` entry, its type and quantity, and the committed `RewardClaim` row;
+- mint into an existing stack stays excluded (§39.1).
+Every other §39 obligation is unchanged.
+
+**Starter grant amendment (STARTER-BACKPACK-0), pending on acceptance of STARTER-BACKPACK-0.**
+`reviews/OTERYN_GAME_STARTER_BACKPACK0_STARTER_GRANT_DECISION_2026-09-30.md` §5-§6 admits, in the
+`STARTER-1` child, one bounded MINT shape and for it supersedes the same §39.1-§39.3 statements as
+the reward chest amendment above. For this shape:
+- the source cause is `StarterGrant {character_id, template_key}`, server-originated with no
+  CommandRef, whose occurrence identity is the `game_character_starter_grants` key: once per
+  Character and template, forever; the template is the one named by the root's
+  `starter_template_revision`;
+- the first and only location is the Character's empty `CharacterEquipment` container slot (D80);
+  no Ground custody and no TRANSFER; an occupied slot mints nothing;
+- the audit evidence is a `OneItemTransactionV1` `starter_grant` operation: before, the nonexistence
+  of the grant row and of the slot item; after, the live item in the slot, its type and quantity 1,
+  and the committed grant row, all from one physical transaction;
 - mint into an existing stack stays excluded (§39.1).
 Every other §39 obligation is unchanged.
 
