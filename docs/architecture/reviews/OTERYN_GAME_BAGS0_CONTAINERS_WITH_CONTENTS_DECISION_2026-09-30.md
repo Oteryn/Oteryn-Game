@@ -93,8 +93,10 @@ drop it whole, with every item still in exactly one location?
 
 - A **tree** is a root item and every item below it. A root lives in any location family: the
   container slot, a main backpack entry, a depot box, the Inbox, Ground, later a house tile.
-- **Depth.** An item's depth is its number of container ancestors below the root. Every item in a
-  character's main backpack tree has depth at most `BAGS0-RL-01` = **8**, which replaces
+- **Depth.** An item's depth is the number of parent edges from it up to its tree's root: the root
+  has depth 0 and a direct entry of the root depth 1. A subtree's **height** is the depth of its
+  deepest item below its own root, counted the same way (0 for an item without contents). Every
+  item in a character's main backpack tree has depth at most `BAGS0-RL-01` = **8**, which replaces
   `GAMEITEM01-PLACEMENT-DEPTH` 1. Any other tree has the same bound.
 - **Size.** A tree holds at most `BAGS0-RL-02` = **500** items, root included. Both bounds hold
   after every commit; a move that would break one is refused.
@@ -145,9 +147,11 @@ drop it whole, with every item still in exactly one location?
 
 - **Shape.** One TRANSFER of the root (one removal and one placement line). The descendants are
   locked and checked, not moved. Class TRANSFER only; no value lines.
-- **Checks before commit:** the destination container's free entry, the cycle walk, destination
-  depth plus the moved subtree's height at most 8, the destination tree's size plus the moved
-  tree's size at most 500 (only when the move changes trees; the destination tree is read under the
+- **Checks before commit:** the destination container's free entry, the cycle walk, the depth
+  bound counting the insertion edge (the moved root lands at the destination container's depth
+  plus 1, so the destination container's depth + 1 + the moved subtree's height must be at most 8;
+  a root placed as a tree's own root, such as into the container slot or on Ground, needs its
+  height at most 8), the destination tree's size plus the moved tree's size at most 500 (only when the move changes trees; the destination tree is read under the
   locks, and moved plus destination items are at most 500 in all, so this stays inside the 502), and each family's own capacity
   (depot and Inbox count every item, §9).
 - **Tree binding.** The receipt records the moved tree's item count and a SHA-256 over its sorted
@@ -258,13 +262,16 @@ Each item names the decision, its refusal today, the result and the child that b
   counter count every item reachable from a Ground root: the counter equals the number of live
   Ground roots plus all their live descendants, and the rebuild invariant is stated on that basis
   (a rebuild walks each Ground root's tree). A drop adds the tree's item count, a pickup subtracts
-  it, and a per-item `WorldReset` retirement subtracts one, each in the same transaction and under
-  the same tile and counter row lock as the move or retirement (§4.2 order). A drop that would
-  exceed the ceiling is refused whole (`GROUND_FULL`); a counter is never adjusted by the root
-  alone. `WorldReset` keeps
-  DUR-03 §39.3 step 3 unchanged in shape: each item of a Ground tree is retired by its own one-item
-  `DECAY_RETIRE` transaction (one participant, three work units, one `OneItemTransactionV1` event,
-  cause `WorldReset {world_id, reset_epoch, item_instance_id}`), in post-order: every descendant
+  it, a move of an entry out of a Ground tree into the character's own trees (§5 Reach) subtracts
+  the extracted subtree's item count (1 for an item without contents), and a per-item `WorldReset`
+  retirement subtracts one, each in the same transaction and under the same tile and counter row
+  lock as the move or retirement (§4.2 order; for an extraction, the tile of the Ground root found
+  by the parent walk). In general every commit that changes the number of items reachable from
+  Ground roots adjusts the counter by exactly that change, in that commit. A drop that would
+  exceed the ceiling is refused whole (`GROUND_FULL`); a tree drop or pickup never adjusts the
+  counter by its root alone. `WorldReset` keeps DUR-03 §39.3 step 3 unchanged in shape: each item
+  of a Ground tree is retired by its own one-item `DECAY_RETIRE` transaction (one participant,
+  three work units, one `OneItemTransactionV1` event, cause `WorldReset {world_id, reset_epoch, item_instance_id}`), in post-order: every descendant
   before its parent, the root last. This generalizes the D3 order (entries first, then the root) to
   depth 8; a container is never retired while it has a live entry (DUR-03 §10). At most 500 such
   transactions per tree (`DUR03-RL-01-TREE-RETIRE`); a crash resumes by the per-item retirement
@@ -319,10 +326,11 @@ Each item names the decision, its refusal today, the result and the child that b
   descendant, so at most 2 × (3 + 99) = 204. Each side's destination main-backpack tree is also
   validated under the swap locks (no cached subtree counts, §11): both main-backpack roots are
   locked and every other item of both destination trees is read to prove the post-swap 500-item
-  limit and depth, at most 800 further reads (2 × 400, roots included), one work unit each, so at
-  most 204 + 800 = 1004 work units and 998 items locked or read in all. A destination that is not a
-  main-backpack tree adds its own family's bounded check (depot and Inbox counters, §4.3). The receipt records both tree bindings (count and
-  SHA-256 per side, §9 trade binding); the trade event is the PLAYER-TRADE-0 two-line event plus,
+  limit and the §4.3 depth check (insertion edge counted), at most 800 further reads (2 × 400,
+  roots included), one work unit each, so at most 204 + 800 = 1004 work units and
+  200 + 800 = 1000 items locked or read in all. A destination that is not a main-backpack tree
+  adds its own family's bounded check (depot and Inbox counters, §4.3). The receipt records both
+  tree bindings (count and SHA-256 per side, §9 trade binding); the trade event is the PLAYER-TRADE-0 two-line event plus,
   per side, one count and one 32 B binding digest, within the measured `DUR03-RL-07-TRADE` bound
   (above it the shape returns for a new decision). A swap of two items without contents keeps the
   PLAYER-TRADE-0 `2 / 6` shape.
@@ -418,7 +426,8 @@ most 800 tree reads, 1004 work units in all) to these rows and to the `BAGS0-RL-
 qualification; a durable per-root count was rejected (§11, cached subtree counts). **Ruled a).**
 
 **R6. Ground counter with trees.** a) Count every item reachable from Ground roots, with atomic
-tree-count adjustments on drop, pickup and per-item retirement (recommended: keeps the 20,000
+tree-count adjustments on drop, pickup, extraction of an entry from a Ground tree and per-item
+retirement (recommended: keeps the 20,000
 ceiling meaningful and the counter/rebuild invariant exact); b) count roots only, which lets 500-item
 trees bypass the ceiling. **Ruled a).**
 
