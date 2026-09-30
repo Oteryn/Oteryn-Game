@@ -875,8 +875,8 @@ their answers are recorded in §12.6.
 
 ## 13. Soul War group (SW)
 
-- Status: **ACCEPTED** 2026-09-30 (owner answers in §13.6, given in the task session and recorded on #162). Nothing
-  here is implemented yet; the implementation order is §13.5.
+- Status: **ACCEPTED** by the owner 2026-09-30 (answers in §13.6, given in the task session and posted verbatim on
+  #162; the control plane assigns their D-numbers). Nothing here is implemented yet; the order is §13.5.
 - Task: design only, task C of the monster-unblocking plan (KAN-16, #162).
 - Scope: the 15 participants of `soul_war_taint_zones`. Eight wait only for the encounter: Capricious, Distorted,
   Infernal, Mould and Vibrant Phantom, Courage Leech, Infernal Demon and Rotten Golem. Seven are blocked in the
@@ -905,7 +905,7 @@ their answers are recorded in §12.6.
 | Bony Sea Devil | `soulwars fear`, `destroy magic walls`, `onThink` | SW-1, SW-2, SW-3 |
 | Brachiodemon | `destroy magic walls`, `onThink` | SW-2, SW-3 |
 | Branchy Crawler | `onThink` | SW-3 |
-| Cloak of Terror | `destroy magic walls`, `onThink`, event `CloakOfTerrorHealthLoss` | SW-2, SW-3, Q6 |
+| Cloak of Terror | `destroy magic walls`, `onThink`, event `CloakOfTerrorHealthLoss` | SW-2, SW-3, SW-6 |
 | Many Faces | `destroy magic walls`, `onThink` | SW-2, SW-3 |
 | Turbulent Elemental | `soulwars fear` | SW-1 |
 | Mirror Image | `onPlayerAttack`, event `MirrorImageTransform` | SW-4 |
@@ -918,7 +918,7 @@ their answers are recorded in §12.6.
 | taint teleport (`onThink`) | encounter | SW-3: `timer_elapsed` `each`, a picked player in `creature_present`, and a delayed `teleport` to that player |
 | Mirror Image (`onPlayerAttack`) | encounter | SW-4: `damage_taken` gains `base_vocation` |
 | zones with safe areas | encounter | SW-5: an area location gains `minus` boxes |
-| Cloak of Terror blood | encounter | SW-6 (only under Q6 a or b): `map_item` at `subject_position`, `unless_present` |
+| Cloak of Terror blood | encounter | SW-6 (Q6 a): `map_item` at `subject_position`, `unless_present` |
 
 Every encounter extension widens a parameter of an existing term. No trigger, condition or action kind is added, so
 the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
@@ -951,7 +951,7 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
    - Wiki (`Goshnar's Taints`, First Taint): only players with the taint; the check runs every 2 s; the 10 s cooldown;
      the 2 s warning with the death effect in hunting grounds and a purple electricity effect in boss rooms; a magic
      wall on the tile cancels the move; the creature lands only where it could walk to. It also names Dreadful
-     Harvester as a teleporter in the boss rooms, which Canary does not implement (out of scope). The Spoiler and
+     Harvester as a teleporter in the boss rooms, which Canary does not implement; Q1 a adds it (below). The Spoiler and
      Tibiopedia repeat the 10% chance.
 3. **Extension SW-3.** Three widenings:
    - `timer_elapsed` takes an optional `each: <role>`. The rule then runs once for each creature of the role present
@@ -972,15 +972,17 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
      - `warning_effect`: shown on the creature and on that tile when the action runs.
      - `say` and `arrival_effect`: the creature says the text just before it moves, and the effect shows before and
        after the move.
-     - `picked_cooldown_ms`: the action does nothing while a teleport of this encounter to the same player started less
-       than this long ago; otherwise it starts one. The cooldown always ends on time.
+     - `picked_cooldown_ms`: the action does nothing while a teleport of this encounter to the same player is pending
+       or happened less than this long ago. The cooldown starts when the move happens and always ends on time; a move
+       that is dropped (the creature or player gone, or the landing tile blocked when it fires) starts no cooldown
+       (Q1 a: the wiki's "trapped before the indication", Gudii 5/6).
    - Declined:
      - a native monster behaviour (D13), because the check reads quest progress and the zones, which D9 and D18 keep in
        encounters;
      - generic `after` and `effect` actions, which would open delayed action lists in every rule, not only here;
-     - a reachability check, which needs a path term. It is only needed if the owner picks Q1 c.
-4. **Authored JSON** (one of the five roles; the repeating `taint_check` timer is 2,000 ms under Q1 a and 1,000 ms
-   under Q1 b; `in_anchor` under `where` is the zone test, and `killer_progress` is dropped under Q1 b):
+     - a reachability check, which needs a path term (Q1 c, not chosen).
+4. **Authored JSON** (one of the roles; the repeating `taint_check` timer is 2,000 ms (Q1 a); `killer_progress` under
+   `where` is the first-taint test and `in_anchor` the zone test):
    ```json
    [{"key": "taint_check_runs", "trigger": {"kind": "encounter_started"}, "conditions": [],
      "actions": [{"kind": "timer", "timer": "taint_check", "operation": "start"}]},
@@ -1000,7 +1002,10 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
    ```
    The roles `bony_sea_devil`, `brachiodemon`, `branchy_crawler`, `cloak_of_terror` and `many_faces` each hold one
    creature, which also stays in `hunting_monster`: role names are unique, but a creature may be in several roles.
-   Spiteful Spitter can join as a sixth role in the same encounter, since the anchor includes the boss rooms.
+   Spiteful Spitter and Dreadful Harvester join as the boss-room roles in the same encounter, since the anchor includes
+   the boss rooms (Q1 a). Dreadful Harvester's text is its wiki voice line "You have been chosen for a harvest!"
+   (DERIVED: Canary gives that line to Spiteful Spitter's teleport, `spiteful_spitter.lua:103`, and to Dreadful
+   Harvester only as a voice line, `dreadful_harvester.lua:64`); its effects are those of the other roles.
 5. **Validation and tests.**
    - Schema: `each` on `timer_elapsed`; the `players`, `triggering` centre, `where` and `pick` forms of
      `creature_present`; `subject` on `killer_progress`; the `picked_position` target and the four `teleport` fields.
@@ -1013,9 +1018,10 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
      existing sample validates unchanged.
    - Rust (E1): the typed trigger, condition and `teleport` mirrors gain the same variants and checks, with focused
      tests.
-   - Transcription: `soul_war.lua` 1241-1298 and the five (six) `onThink` lines mapped; the defect lines per Q1.
+   - Transcription: `soul_war.lua` 1241-1298 and the six `onThink` lines mapped; the skipped taint check and the
+     logout cooldown are recorded as deviations under Q1 a; Dreadful Harvester's rule cites the wiki.
 6. **Out of scope.** Taints 2, 3 and 5 (player-side, `eventcallback_on_combat_taint.lua`); the quest domain that
-   publishes the taint progress (D27); Dreadful Harvester's missing teleport.
+   publishes the taint progress (D27).
 
 ### 13.2 Mirror Image: SW-4, `damage_taken` with `base_vocation`
 
@@ -1065,13 +1071,15 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
       {"weight": 3, "actions": [{"kind": "transform", "role": "mirror_image", "health": "full",
         "into": {"family": "Creature", "key": "canary:creature/monk_s_apparition", "revision": "canary-47dfd51f"}}]}]}]}
    ```
-   The five apparitions already convert with no open row. Under Q5 b a sixth rule adds
-   `lethal_damage(mirror_image)` → `prevent_death`, both existing terms.
+   The five apparitions already convert with no open row. A sixth rule (Q5 b) adds `lethal_damage(mirror_image)` →
+   `prevent_death` when the lethal damage is not a player's own (for example a familiar's). That needs
+   `killer_is_player` to take an optional `value: false`, a widening of an existing condition that SW-4 includes.
 5. **Validation and tests.**
    - Schema: optional `base_vocation` on `damage_taken`. Semantic: only with `source: player`.
    - `verify_encounter_schema.py`: one positive check and a negative check for `base_vocation` with `source: any`.
    - Rust (E1): the `DamageTaken` mirror gains the field and the check.
-   - Transcription: `mirror_image.lua` 109-143 and `mirror_image_transform.lua` 1-22 mapped or omitted per Q5; the
+   - Transcription: `mirror_image.lua` 109-143 and `mirror_image_transform.lua` 1-22 mapped, or omitted as deviations
+     under Q5 b (the over-time path, the no-vocation removal); the
      `registrants()` fix; Mirror Image leaves `hunting_monster` for its own role.
 6. **Out of scope.** The apparition kill counter `MirroredNightmareBossAccess` (quest domain, already an approved
    omission); the wall mirrors that spawn apparitions (Tibiopedia; interaction domain).
@@ -1110,8 +1118,6 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
                  "minus": [{"x": [34002, 34019], "y": [31008, 31019], "floor": 9},
                            {"x": [33967, 33977], "y": [31037, 31051], "floor": 11}]}}
    ```
-   Under Q2 b the Rotten Wasteland boxes are the column x [33980, 33980], and its `minus` box is left out because it
-   removes nothing.
 5. **Validation and tests.**
    - Schema: optional `minus` on the area form, at least one box when present.
    - Semantic: each `minus` box must overlap a box on its floor, and at least one tile must remain. A point anchor
@@ -1121,7 +1127,7 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
    - Rust (E2): `ProjectV2AnchorLocation::Area` gains `minus` (default empty) with the same checks.
 6. **Out of scope.** Map binding; the Ebb and Flow flooding and the raid zones, which are other `Zone`s.
 
-### 13.4 Cloak of Terror blood: SW-6, only if the owner wants the pool (Q6)
+### 13.4 Cloak of Terror blood: SW-6 (Q6 a)
 
 1. **Mechanic.** A hit on a Cloak of Terror leaves a blood pool that hurts players and heals Cloaks.
 2. **Canary behaviour.**
@@ -1136,7 +1142,7 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
    - Wiki (`Soul War Quest/Spoiler`, Furious Crater) and Tibiopedia: the pool appears when a Cloak is hit, hurts by
      pool size up to about 20% of maximum health, and heals Cloaks by 1,500-2,000. That matches the Canary data, not
      the Canary test.
-3. **Extension SW-6** (for Q6 a or b). `map_item` `create` takes `at: "subject_position"` (the creature that fired a
+3. **Extension SW-6** (Q6 a). `map_item` `create` takes `at: "subject_position"` (the creature that fired a
    one-creature rule, as `spawn` has it) and `unless_present: true` (nothing happens if the tile already holds the
    item). The step-in is registered on the item ids for any creature, so it is interaction-domain content through the
    existing `interaction` key (D29), like the Gorzindel step-in exits (§12.2).
@@ -1148,8 +1154,8 @@ the E1 counts (17 triggers, 14 conditions, 25 actions) stay the same.
                  "item": {"family": "Item", "key": "canary:item/33854", "revision": "canary-47dfd51f"},
                  "interaction": "canary:interaction/blood_of_cloak_of_terror"}]}
    ```
-   Under Q6 b the trigger is `heal_received` with `source: player`. Under Q6 c there is no rule, and the event is an
-   `approved_omission`.
+   `unless_present` is provisional: whether repeated hits enlarge one pool or stack pools on a tile is checked before
+   SW-6 is implemented (Q6 answer), and the field follows that check.
 5. **Validation and tests.** `subject_position` only in a one-creature rule; `unless_present` only with `create`. One
    positive and two negative checks; the Rust `map_item` mirror gains both. E4 needs item 33854 admitted.
 6. **Out of scope.** The interaction content of the pool; the Pulsating Energy access drops (quest domain).
@@ -1200,11 +1206,24 @@ Further owner answers of the same batch, outside SW-1..6:
 
 - **Infernal Demon targeting: follow the wiki.** It retargets very often, usually to the character with the lowest
   maximum health in view (`Infernal Demon` rev 1191682; Gudii 1/6). Canary uses `nearest` 70 and `changeTarget`
-  chance 0. This is a monster targeting value, adopted under D15/D25 in the implementation slice.
+  chance 0. The direction is decided; the values are not: no source gives a retarget interval or chance, and the
+  wiki's "lowest maximum health" is not Canary's `health` strategy (current health). The implementation does not
+  pick them: they stay UNKNOWN, an evidence item to source or an owner question in the implementation slice.
 - **Many Faces critical hits: keep Canary.** The wiki and Gudii 2/6 say it can hit critically, but no source gives a
   chance or a multiplier; D18 keeps Canary until one does.
 - **TibiaWiki BR is not fetched for the quest page.** The 2026-09-27 BR capture of the creature pages holds only
   placeholder ability lists for these monsters, so a quest-page capture is not expected to add anything.
+
+Evidence status of the key claims:
+
+- PROVEN (Canary source read at `47dfd51f`): the taint teleport code path and its two defects; the fear windup of
+  2 s and 3 s fear; the magic wall ids and scan; Mirror Image's 70% and its two paths; the Cloak blood test.
+- PROVEN (multiple independent sources): the five taints and their numbers (wiki, Tibiopedia, Gudii); the Cloak pool
+  on hit (wiki, Tibiopedia, Gudii 4/6); Dreadful Harvester teleporting in boss rooms (wiki, Gudii 2/6 and 6/6).
+- DERIVED: the 2 s check (wiki only, since 2023); fear hitting the current target (wiki only, since 2023); the
+  Rotten Wasteland rectangle (the script's named corners); the familiar 1 hit point floor (wiki only).
+- UNKNOWN: Mirror Image's true share (Canary 70%, TibiaQA about 60%); Infernal Demon's retarget values; Many Faces'
+  critical numbers; blood pool stacking.
 
 Second source check (2026-09-30), used for the answers above:
 
@@ -1235,8 +1254,8 @@ The test covers SW-1..6 together. SW-2 needs no schema change and is included fo
 2. **What concrete downstream work is blocked?**
    - The converter changes (the SW-1 template, the SW-2 constants and probe).
    - The schema, validator and `verify_*` additions for SW-1 and SW-3..6.
-   - The Soul War transcription in `canary_encounters.py`: the anchor, the teleport rules, Mirror Image and, per Q6,
-     the Cloak rule.
+   - The Soul War transcription in `canary_encounters.py`: the anchor, the teleport rules, Mirror Image and the Cloak
+     rule (Q6 a).
    - The typed Rust mirrors (E1, E2), and the E4 restage that admits the encounter with its creatures.
 3. **What becomes harder or impossible later?**
    - Every addition is optional, so every existing sample and admitted record keeps its meaning. Older readers reject
@@ -1261,7 +1280,7 @@ The test covers SW-1..6 together. SW-2 needs no schema change and is included fo
    - `windup` over an area.
    - `pick` other than `farthest`, or over creatures.
    - `minus` for anything but area anchors.
-   - Taints 2, 3 and 5, and Dreadful Harvester's teleport.
+   - Taints 2, 3 and 5.
    - The fear runtime and its party rule.
    - The Encounter runtime, instancing and map binding.
    - The Rust type names.

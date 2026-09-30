@@ -530,7 +530,8 @@ they are review evidence for a later owner decision, not an automatic D15 adopti
 
 ## 10. Soul War group: monster-side extensions (SW-1, SW-2)
 
-- Status: **ACCEPTED** 2026-09-30 (owner answers in §13.6 of the encounter format). Nothing here is implemented yet.
+- Status: **ACCEPTED** by the owner 2026-09-30 (answers in §13.6 of the encounter format, posted verbatim on #162;
+  the control plane assigns their D-numbers). Nothing here is implemented yet.
 - Companion: §13 of `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` holds the encounter-side mechanics of the same group
   (SW-3..5), the owner questions (Q1-Q6) and the decision test for all five extensions.
 - Scope: the two registered spells that block Soul War hunting monsters, `soulwars fear` and `destroy magic walls`.
@@ -564,13 +565,12 @@ Effect. So the condition itself exists; only the windup is missing.
      do not convert (quest configuration at load, §9).
    - The reference-date wiki confirms the two effects and the delay: `Feared` (revision 1149698) says 2-3 s, and
      `Soul War Quest/Spoiler` (revision 1134584, Ebb and Flow section) says 2 s. `Feared` adds: "If the creature
-     changes targets between these two effects, the new target will be feared." That differs from Canary (Q3 of
-     §13.6).
+     changes targets between these two effects, the new target will be feared." That differs from Canary; Q3 a of
+     §13.6 follows the wiki.
 3. **Extension SW-1.** An Ability may carry `windup: {delay_ms, caster_asset_binding}`.
    - At the cast the usual checks run and the caster binding is shown on the caster's tile. After `delay_ms` the
-     Ability's effects run if the caster still exists. Which creature they hit follows the owner answer to Q3: the
-     target taken at the cast (Canary) or the caster's target at that moment (wiki); with no such target nothing
-     happens.
+     Ability's effects run if the caster still exists. They hit the caster's target at that moment (Q3 a, the wiki),
+     not the target taken at the cast (Canary); with no target then, nothing happens.
    - Allowed only on a single-target Ability (`needs_target: true`, no `area`, `variants`, `chain` or `encounter`).
      That is all `soulwars fear` needs; a windup over an area is not decided here.
    - The converter matches the script as one exact template, like `path_trail_missile` (§8.6): a caster
@@ -596,7 +596,7 @@ Effect. So the condition itself exists; only the windup is missing.
    - `canary_batch.py`: the template match, and a negative check that a changed body stays unresolved.
    - Rust: the Ability profile mirrors `windup`, with a focused positive and negative admission test.
 6. **Out of scope.** The fear runtime and the party rule (a world combat rule for every `feared` condition); which
-   monsters cast fear at all (Q4 of §13.6).
+   monsters cast fear at all (Q4 a of §13.6: Canary's lists).
 
 ### 10.2 `destroy magic walls`: SW-2, no schema extension
 
@@ -613,7 +613,7 @@ Effect. So the condition itself exists; only the windup is missing.
      player casters only; a monster casts it by its own entry (interval 1 s, chance 30 for all four Soul War users;
      `the_monster.lua:91`, chance 50).
    - The wiki lists the wall breaker for Brachiodemon, Branchy Crawler, Cloak of Terror and Many Faces (Many Faces in
-     its behaviour text). Canary gives it to Bony Sea Devil, not to Branchy Crawler (Q4).
+     its behaviour text). Canary gives it to Bony Sea Devil, not to Branchy Crawler; Q4 a keeps Canary's lists.
 3. **Extension.** None. D18 already has the data form: `remove_items` with `selection: top_item_first_tile`, and the
    Rust profile has `TopItemFirstTile` (`apps/game-server/src/content/project/v2/creature.rs`). No admitted Ability
    uses that selection yet. Two converter gaps keep the spell unresolved today (§8.6: "engine item constants the stubs
@@ -638,7 +638,7 @@ Effect. So the condition itself exists; only the windup is missing.
    ```
    The Ability has `area.matrix.north` of five rows `xxxxx` with the centre `C`, `range_tiles` 0 and no target. By the
    existing convention (`anomaly break`) the impact binding shows on the removed wall's tile; Canary shows it on the
-   caster's. That is presentation only, and Q4 covers it.
+   caster's. That is presentation only; Q4 a keeps the convention.
 5. **Validation and tests.** No schema change. `canary_batch.py` gains the constants and the probe branch, with a
    negative probe (a script that removes more than one item) that stays unresolved. The schema description of
    `top_item_first_tile` gains the scan order. The census must show the five monsters losing this row and no other
@@ -654,4 +654,7 @@ Effect. So the condition itself exists; only the windup is missing.
   `crystal_batch.py`, with the reference-date wiki applied over the Crystal values as for every Canary monster
   (answer c).** The remaining 14 are authored from the wiki (D44), which needs `wiki_authored.py` to take a table of
   creatures instead of one.
-- **Ordinary monsters first (answer a).** The 23 quest, event and raid creatures wait for their encounters.
+- **Ordinary monsters first (answer a).** By the preparation heuristic 37 are ordinary monsters; 26 quest, event
+  or raid creatures and 1 summon-like creature wait for their encounters. The kinds are confirmed at admission.
+- `wiki_only_candidates.py --check` reproduces the names and Crystal files from the staticdata and both pinned commit
+  trees; the sample records the staticdata digest and both commits.
