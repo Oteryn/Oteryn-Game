@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -18,7 +20,7 @@ assert lock["family_counts"] == {
     "Item": 33567, "Mount": 252,
     "Creature": 1477, "Presentation": 2579, "Behavior": 2579, "Loot": 1030, "Ability": 5890, "Effect": 4492, "Formula": 4809,
     "NPC": 1102, "Dialogue": 715, "Service.Trade": 322, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
-    "Proficiency": 443,
+    "Proficiency": 443, "RewardClaim": 231,
 }
 assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1477, "Encounter": 61, "NPC": 2352}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
@@ -53,7 +55,16 @@ assert manifest["families"]["Proficiency"] == {"records": 443, "index": "content
 assert "Proficiency" in project["migrated_families"] and "Proficiency" not in project["next_population_families"]
 assert sum(path.startswith("content/proficiencies/proficiencies-") for path in paths) == 3
 assert "content/proficiencies/index.json" in paths
+assert manifest["families"]["RewardClaim"] == {"records": 231, "index": "content/interactions/reward_claims/index.json"}
+assert "RewardClaim" in project["migrated_families"]
+assert sum(path.startswith("content/interactions/reward_claims/reward-claims-") for path in paths) == 3
+assert "content/interactions/reward_claims/index.json" in paths
 assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated_families"] and "Service" in project["migrated_families"]
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
+
+# The RewardClaim family has no legacy source: its own authoring tool must reproduce it exactly.
+reward_claim_tool = ROOT / "tools" / "content-schema" / "reward-claim-authoring"
+for script in ("test_reward_claim_authoring.py",):
+    subprocess.run([sys.executable, script], cwd=reward_claim_tool, check=True)
 
 print(f"PASS managed_files={len(paths)} item_shards=68")
