@@ -7,7 +7,7 @@ mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: claude/compassionate-albattani-s29syw   # after #1319; one writer branch
+branch: claude/item-sem-2   # owner 1a (2026-09-30): own branch while #1319 waits for review
 issue: 162
 pr: null   # per part, recorded in the FREEZE_SHA packets on #162
 base_sha: 54c9ca18
@@ -22,6 +22,7 @@ owned_paths:   # ITEM-SEM-2a
   - imports/tibiawiki/sources.json
   - imports/tibiawiki/batches.json
   - docs/agents/tasks/active/OTV2-20260930-item-sem-2-item-stats.md
+  - .github/workflows/item-authoring-schema.yml   # owner 2a: self-test step and triggers
 public_contracts:
   - DUR04-REFERENCE-ITEM-PROFILE-V1 (re-derived in 2b)
 jira: null   # sync pending (coordinator batch)
@@ -57,7 +58,8 @@ silent and never where it disagrees.
   hands 737; defense 733; attack 643; imbuement slots 632; attributes 504; armor 470; resistances 417.
 - Only admitted infobox parameters (`STAT_PARAMS`) and page/revision identity are stored; no article text.
 
-## Owner questions (batched)
+## Owner decisions (2026-09-30, given directly to this writer)
 
-- Workflow authorization to run `item_wiki_stats_capture_self_test.py` in CI (item-authoring-schema), as for D179.
-- Permission to push ITEM-SEM-2 on its own branch while #1319 waits for review (one writer branch otherwise).
+- 1a: ITEM-SEM-2 is pushed on its own branch, `claude/item-sem-2`, while #1319 waits for review.
+- 2a: the workflow edit is authorized: `item-authoring-schema.yml` runs `item_wiki_stats_capture_self_test.py` and
+  triggers on the snapshot and the capture tool. The authorization covers that change only.
