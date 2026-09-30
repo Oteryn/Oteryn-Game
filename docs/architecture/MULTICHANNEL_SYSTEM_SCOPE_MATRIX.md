@@ -102,6 +102,14 @@ the Bank row becomes "Game bank ledger (BANK-0); Account + World (owner answer 1
 5912593702); strong durable, immutable ledger; the same balance on all channels of the World,
 another World has its own; shared".
 
+**Amendment (pending on acceptance of PARTY-PVP-0;
+`reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md` §3-§9).** Party membership
+lives in Game tables per World (UUIDv7 PartyId), ordered by the party row, and survives a channel
+switch; shared experience, party loot and party buffs count only members on the same channel. Combat
+lock is ATTACK-0's logout block, the runtime PZ block and a durable 15-minute kill block; skull and
+frag state are the PvP state, unjustified point and revenge mark tables. The World PvP type is a
+ruleset field.
+
 ## Required identity envelope
 
 Every runtime command, event and timer that can mutate or address gameplay state must carry enough identity to resolve its owner without process-global lookup.
