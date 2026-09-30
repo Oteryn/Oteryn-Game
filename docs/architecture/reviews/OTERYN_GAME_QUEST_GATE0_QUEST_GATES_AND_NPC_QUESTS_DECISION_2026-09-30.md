@@ -138,8 +138,10 @@ How do world objects and NPCs read quest progress and move it, and how does the 
 
 The door stays sealed, and a step is pushed back, when: the gate is held or its semantics are
 unresolved (format §3.1); the track copy is not loaded; a predicate names an unknown track or
-quest; the handle is `STALE`; the content generation of the gate differs from the channel's. An
-unknown or unset track reads as its declared initial value (QUEST-STATE-0 §3), never as a pass.
+quest; the handle is `STALE`; the content generation of the gate differs from the channel's. A
+track or quest the active content does not declare always seals the gate; it never reads as an
+initial value. Only a known track declared by content whose character row is absent reads as its
+declared initial value (QUEST-STATE-0 §3), and the predicate is then evaluated on that value.
 
 ### 3.4 Tiles, teleports and routes
 
@@ -156,7 +158,11 @@ unknown or unset track reads as its declared initial value (QUEST-STATE-0 §3), 
   tile or placed object, as D36 interaction definitions with read-only conditions and children.
 - **Accepted successor sections.** For these edges, with quest, D37 relocation, D38 overlay and
   presentation children only, this decision accepts successor §4.1, §4.3, §5.1, §5.3-§5.7,
-  §17, §18 and §19.1, as D39 did for the chest. Nested cascades and every other child kind stay
+  §6.1 (canonical order), §6.2 (partial-progress recovery), §7 (child lifecycle and exactly-once
+  rule), §17, §18 and §19.1 (D39's chest set plus §6.1, §6.2, §7 and §18). Each child of a
+  firing, `after_quest` children included, is part of the root's plan: after a crash, recovery
+  reproduces the same child set and order and runs each `UNSTARTED` child once if its fences
+  still authorize it (§7), else it is `REJECTED`. Nested cascades and every other child kind stay
   `PROPOSED / NONCANONICAL`.
 - **Roots.** `USE`: the `USE_INTENT` CommandRef. `ON_ENTER` and `ON_LEAVE`: the occurrence that
   moved the character, which is its own move command, another player's push command or a D37
@@ -213,13 +219,21 @@ QUEST-STATE-0 §4 codes) selects the node's refusal reply and writes nothing.
   `QuestExchangeCause {npc, node, exchange_key, occurrence}`:
   - BURN lines (§17) of the declared items and counts from direct entries of the main backpack,
     at most `QUESTGATE0-RL-04` (8), a stack in part or whole (§11.1, §11.5);
-  - the claim's MINT lines when the node also rewards;
+  - when the node also rewards, the claim's MINT lines and its `RewardClaim` row (D42: inserted,
+    or updated for a cooldown claim, on `(character_id, claim_key)`), so the claim, its items and
+    the burn commit together or not at all; a claim that is already taken (`once`) or not yet
+    allowed (cooldown) refuses the whole exchange;
   - the quest obligation row for its transition.
-  Under the `character_root` lock it re-reads the transition's `from` on the tracks without writing
-  them, and refuses with nothing written on `STAGE_MISMATCH` or missing items. The runtime holds the
-  sequencer slot from the exchange through its transition, so nothing interleaves; only
-  `REVISION_MISMATCH` can then refuse the step, and the obligation waits for migration
-  (QUEST-STATE-0 §5.4). A crash leaves the obligation, requested again at admission.
+  All checks precede every write in the one transaction. Under the `character_root` lock it
+  validates, without writing the tracks, every QUEST-STATE-0 §4 condition of the transition on the
+  locked values: each `from` (`STAGE_MISMATCH`), the quest state's definition hash
+  (`REVISION_MISMATCH`), every result within the track's bounds (`OUT_OF_RANGE`) and every effect
+  kind supported (`NOT_SUPPORTED`); then the claim and the declared items. Any refusal writes
+  nothing: no BURN, no MINT, no claim, no obligation, and the inventory is untouched. The runtime
+  holds the sequencer slot from the exchange through its transition, so nothing interleaves and
+  the step commits as validated; a refusal of the obligation's transition is then a defect,
+  reported, and the row follows QUEST-STATE-0 §5.4 (`REFUSED`, or `WAITING_MIGRATION` on
+  `REVISION_MISMATCH`). A crash leaves the obligation, requested again at admission.
 - **Gold hand-ins** (a quest that asks for coins) are a `FeeBurnCause` and wait for owner Q1.
 - Composition rule 1 covers the exchange and its obligation row (amended in this PR).
 

@@ -80,6 +80,9 @@ No code, migration or content change is made.
 - `python3 tools/agents/validate_governance.py`: PASS on the final authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the final authoring tree.
 - `git diff --check`: clean.
+- Codex round-1 repair (four P1): fail-closed unknown tracks (§3.3); successor §6.1, §6.2 and §7
+  accepted (§4); every transition refusal checked before any burn and the D42 `RewardClaim` row
+  in the exchange transaction (§5.4). Validators re-run PASS on the repaired tree.
 
 ## Closeout
 

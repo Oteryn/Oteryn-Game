@@ -1573,8 +1573,10 @@ Once accepted, in its NPC-QUEST-1 child:
   and the claim, beside the D40 `USE` child, with the same claim rules (D40-D42).
 - **Exchange.** One item-only transaction under the closed cause `QuestExchangeCause {npc, node,
   exchange_key, occurrence}`: at most 8 BURN lines (§17) from direct entries of the main backpack
-  (§11.1, §11.5), the claim's MINT lines when the node rewards, and one quest obligation row. It is
-  refused with nothing written when an item is missing or the transition's `from` does not hold.
+  (§11.1, §11.5), the claim's MINT lines and its `RewardClaim` row (D42) when the node rewards, and
+  one quest obligation row. Every check precedes every write: it is refused with nothing written
+  when an item is missing, the claim is not allowed, or any QUEST-STATE-0 §4 validation of the
+  transition fails (`STAGE_MISMATCH`, `REVISION_MISMATCH`, `OUT_OF_RANGE`, `NOT_SUPPORTED`).
 - **Supersession.** For these shapes only, the §39.1 exclusions of burn and multiple touched items.
   Every other §39 obligation is unchanged; its rows are suffixed `-QUEST-EXCHANGE`.
 
