@@ -50,7 +50,9 @@ client (owner direction 2026-09-30: build now, full Tibia Global parity).
   obligation; XP through a quest XP obligation and the XP writer.
 - **Quest log:** capability `QUEST_LOG_V1`, one query command and one domain computed from tracks.
 - **Content lanes:** QUEST-CONTENT-2 (gates, triggers), NPC-QUEST-CONTENT-1 (dialogue hooks).
-- **Owner questions:** Q1 gold hand-ins as a fee source (D178); Q2 quest journal text on the wire.
+- **Owner answers (2026-09-30, #162):** Q1b gold hand-ins take backpack coins first, then the bank
+  balance through BANK-0 / BANK-FEE-0 in the same transaction; Q2a quest journal text is Tibia text
+  1:1.
 
 No code, migration or content change is made.
 
@@ -87,6 +89,9 @@ No code, migration or content change is made.
   quest XP passes the active progression policy's `reward_revision`, the quest content revision kept
   as provenance, and content requires `1 <= n <= QUESTGATE0-RL-05` (§5.5). Validators re-run PASS
   on the repaired tree.
+- Owner answers applied (2026-09-30, #162): Q1b (§5.4 gold hand-in, coins then bank, rows §9) and
+  Q2a (§7 journal text 1:1); the DUR-03 §39.3 quest exchange paragraph names the gold hand-in.
+  Validators re-run PASS.
 
 ## Closeout
 
@@ -98,7 +103,7 @@ No code, migration or content change is made.
 last_progress: final authoring commit; archived before freeze
 status: completed
 branch: claude/arch-quest-gate-0
-owner_action_required: "Q1 and Q2 (decision §12)"
+owner_action_required: null
 blocker: null
 next_action: "#162 validates the exact head and routes the independent review"
 ```

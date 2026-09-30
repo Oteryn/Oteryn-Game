@@ -1577,6 +1577,11 @@ Once accepted, in its NPC-QUEST-1 child:
   one quest obligation row. Every check precedes every write: it is refused with nothing written
   when an item is missing, the claim is not allowed, or any QUEST-STATE-0 §4 validation of the
   transition fails (`STAGE_MISMATCH`, `REVISION_MISMATCH`, `OUT_OF_RANGE`, `NOT_SUPPORTED`).
+- **Gold hand-in** (owner Q1b). An exchange that takes gold is also a fee under the
+  `FeeBurnCause` variant `QuestExchange(QuestExchangeCause)`, an item-only fee source in the same
+  transaction: coins first, then the bank part of the bank fee amendment above (one `FEE_DEBIT`
+  value line, `DUR03-RL-03-FEE`), refused with nothing written on insufficient funds or a junior
+  payer whose coins are short.
 - **Supersession.** For these shapes only, the §39.1 exclusions of burn and multiple touched items.
   Every other §39 obligation is unchanged; its rows are suffixed `-QUEST-EXCHANGE`.
 

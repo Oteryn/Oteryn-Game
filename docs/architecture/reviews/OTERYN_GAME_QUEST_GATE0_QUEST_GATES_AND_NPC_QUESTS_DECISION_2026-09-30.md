@@ -2,8 +2,9 @@
 
 - Decision: `QUEST-GATE0-WORLD-GATES-AND-NPC-QUESTS-V1` (covers QUEST-GATE-0 and NPC-QUEST-0)
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
-  persistence and security) and protected integration. Owner questions Q1 and Q2 (§12) are open;
-  only §5.4 gold hand-ins and §7 journal text wait on them.
+  persistence and security) and protected integration. Owner questions Q1 and Q2 (§12) are
+  answered (2026-09-30, #162): gold hand-ins take coins, then the bank (§5.4); journal text is
+  Tibia text 1:1 (§7).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the callers QUEST-STATE-0 names (NPC-QUEST-0 dialogue, QUEST-GATE-0 doors) and its
   deferred quest log wire (A8); NPC-0 §11 (quest-conditioned dialogue, answer 4b) and §3.4
@@ -17,7 +18,8 @@
   source bindings); MAP-WIRE-1 (§3 allowlist, §6 `map_item_handle`); USE-WIRE-V1; ITEM-USE-0
   (§3, keys deferred);
   the composition decision (rules 1-6 and the quest obligation amendment); the XP writer
-  (`character_progression.rs`); DUR-03 §15, §17, §39.3; D178; owner rule 5905825574
+  (`character_progression.rs`); DUR-03 §15, §17, §39.3; D178; the gold fee decision (§4.2-§4.5 as
+  amended); BANK-0 (§4.1, §4.4) and BANK-FEE-0 (§3, §4); owner rule 5905825574
 - Amends, each pending on acceptance of QUEST-GATE-0, in this PR: QUEST-STATE-0 (callers and A8
   pointer); NPC-0 §3.4 and §11; the quest format §3.1; the GAME-INTERACTION-01 successor header
   (accepted sections for §4 edges); the relocation and world object owners proposal header (§3 and
@@ -32,10 +34,10 @@
 |---|---|---|---|
 | QUEST-GATE-1 | hard, security review | `Gate` lowering bound to door `placement_key`s; gate checks at USE and at step-in in the channel runtime; open, pass-through, push-back and close (§3) | QUEST-PRED-1; MAP-LOAD-1; MAP-WIRE-2; QUEST-CONTENT-2 |
 | QUEST-TRIGGER-1 | hard, persistence review | `USE`, `ON_ENTER` and `ON_LEAVE` interaction triggers on placed objects and tiles, their occurrence roots, and quest, relocation and overlay children (§4) | QUEST-STATE-1; QUEST-GATE-1 |
-| NPC-QUEST-1 | hard, persistence review | typed quest conditions and outcomes in the NPC talk runtime; confirmation binding; the dialogue claim; the exchange transaction (§5) | NPC-TALK-1; QUEST-STATE-1; QUEST-PRED-1; CHEST-1 (merged) |
+| NPC-QUEST-1 | hard, persistence review | typed quest conditions and outcomes in the NPC talk runtime; confirmation binding; the dialogue claim; the exchange transaction with its gold hand-in, coins then bank (§5) | NPC-TALK-1; QUEST-STATE-1; QUEST-PRED-1; CHEST-1 (merged); GOLD-FEE-2 (the bank part) |
 | QUEST-XP-1 | hard, persistence review | the quest XP obligation and its XP writer path (§5.5) | QUEST-STATE-1; CHAR-REV-SEQ-1 |
 | QUEST-LOG-WIRE-1 | impl, protocol review | capability `QUEST_LOG_V1`, command and domain; list, quest line and tracker views (§7) | QUEST-PRED-1; QUEST-CONTENT-1 |
-| QUEST-CONTENT-2 | content lane | gates, gated teleports and tiles, levers and step triggers as data, bound to placements (§8) | QUEST-CONTENT-1; MAP-BUNDLE-1 |
+| QUEST-CONTENT-2 | content lane | gates, gated teleports and tiles, levers and step triggers as data, bound to placements; journal text 1:1 (§8) | QUEST-CONTENT-1; MAP-BUNDLE-1 |
 | NPC-QUEST-CONTENT-1 | NPC content lane | typed quest conditions and outcomes on Dialogue nodes from `requested_by` (§8) | NPC-CONTENT-1; QUEST-CONTENT-1 |
 
 Capability, command and domain numbers are reserved on #162 at allocation. Later, each with its
@@ -238,7 +240,25 @@ QUEST-STATE-0 §4 codes) selects the node's refusal reply and writes nothing.
   the step commits as validated; a refusal of the obligation's transition is then a defect,
   reported, and the row follows QUEST-STATE-0 §5.4 (`REFUSED`, or `WAITING_MIGRATION` on
   `REVISION_MISMATCH`). A crash leaves the obligation, requested again at admission.
-- **Gold hand-ins** (a quest that asks for coins) are a `FeeBurnCause` and wait for owner Q1.
+- **Gold hand-ins** (a quest that asks for coins; owner Q1b, D178). An exchange may declare
+  `gold: n` (content, checked `u64`, `n >= 1`); a declared item may not be a coin key (content
+  validation refuses it). The coins are a fee of the exchange, in the same transaction and under
+  its one cause record: the `FeeBurnCause` variant `QuestExchange(QuestExchangeCause)`, an
+  item-only fee source as NPC BUY is (gold fee §4.3 and §4.4 as amended). The plan is the gold
+  fee §4.2 plan as BANK-FEE-0 §3 amends it:
+  - coins from direct entries of the main backpack first; when they cover `n`, the bank is not
+    touched and change is at most two stacks (`ChangeDoesNotFit` refuses);
+  - when they are worth less than `n`, every eligible coin is burned whole, no change is minted,
+    and the rest is debited from the payer's (Account, World) balance on the BANK-0 path of
+    BANK-FEE-0 §4: one `FEE_DEBIT` ledger entry referencing the fee record, the balance row
+    locked after the coin entries (BANK-0 §4.1), and its value line on the transaction's one
+    event (BANK-FEE-0 §4.3; no second event);
+  - a balance below the rest refuses the whole exchange as `InsufficientFunds`, and a junior payer
+    (BANK-0 §4.4) whose coins are short is refused. Either refusal writes nothing, like every
+    other exchange check, which all precede every write.
+  Coin lines are not declared items and do not count toward `QUESTGATE0-RL-04`; the gold fee plan
+  bounds them. The claim's items and the change must both fit after the burn lines. NPC-QUEST-1
+  widens `0023` for the source kind, as NPC-TRADE-1 does.
 - Composition rule 1 covers the exchange and its obligation row (amended in this PR).
 
 ### 5.5 Experience (QUEST-XP-1)
@@ -302,14 +322,16 @@ blessings wait for their owners' decisions; a node that needs one stays held.
   admission, reconnect and transfer sends a new snapshot (NPC-0 §4 pattern).
 - A client without the capability never receives the domain; its command is refused as
   unsupported. Queries are rate-limited by `QUESTGATE0-RL-09`.
-- Journal text on the wire waits for owner Q2; until then a mission shows its name only.
+- **Journal text** (owner Q2a) is Tibia Global quest-log text 1:1, reference data with
+  provenance, as D9 admitted NPC text.
 
 ## 8. Content lanes
 
 - **QUEST-CONTENT-1** (QUEST-STATE-0): the Quest and Interaction families, tracks and transitions.
 - **QUEST-CONTENT-2** (content lane): the 184 quest and 14 level gates, gated teleports and
   tiles, levers and step triggers from the door and interaction samples, with placements bound by
-  MAP-BUNDLE-1; transition `experience` values; `hide_when_completed`.
+  MAP-BUNDLE-1; transition `experience` values; `hide_when_completed`; the Tibia Global journal
+  text 1:1 with provenance (Q2a).
 - **NPC-QUEST-CONTENT-1** (NPC content lane): binds `requested_by` (format §3.2) to Dialogue nodes
   as typed conditions and outcomes; declares claims and exchanges per node. A conflict between
   Canary and CrystalServer is decided by D10 transcripts, else held.
@@ -330,9 +352,10 @@ blessings wait for their owners' decisions; a node that needs one stays held.
 | `QUESTGATE0-RL-08` missions per quest line and payload bytes | measured by QUEST-LOG-WIRE-1 over the catalogue |
 | `QUESTGATE0-RL-09` quest log queries per second | 2 |
 | `QUESTGATE0-RL-10` pending XP obligations per character | 16 |
-| `DUR03-RL-01-QUEST-EXCHANGE` touched items | 8 burned plus the claim's minted items; measured |
+| `DUR03-RL-01-QUEST-EXCHANGE` touched items | at most 20 burned (8 declared plus coins, all direct entries of the 20-entry main backpack), at most 2 change stacks, plus the claim's minted items; measured |
+| `DUR03-RL-03-FEE` value lines per exchange | 1 when the bank pays part of a gold hand-in, else 0 |
 | Gate check | 0 rows, 0 revisions |
-| Exchange | 1 transaction, 1 cause record, 1 obligation, 1 event, 0 revisions |
+| Exchange | 1 transaction, 1 cause record, 1 obligation, 1 event, 0 revisions; with gold, 1 fee record and at most 1 `FEE_DEBIT` ledger entry |
 
 ## 10. Rejected options
 
@@ -349,21 +372,26 @@ blessings wait for their owners' decisions; a node that needs one stays held.
 ## 11. Owner-rule applications
 
 - **Global parity** (5905825574, direction 2026-09-30): both door edges, push-back, NPC hand-ins,
-  the quest log with tracker, and journal text if Q2 allows it.
+  the quest log with tracker, and journal text 1:1 (Q2a).
 - **D35:** only the quest domain writes progress. **D38 W2:** door state is ephemeral.
 - **NPC-0:** dialogue commits no value. **D41:** no ground drop for rewards.
-- **D178:** gold taken by a quest is a new fee source (Q1).
+- **D178:** gold taken by a quest is a new fee source, admitted by the owner (Q1b): coins first,
+  then the bank (BANK-FEE-0).
 
 ## 12. Owner questions and assumptions
 
 **Q1. Admit gold hand-ins to quest NPCs as a fee source?** D178 needs an owner decision for each
 new fee source. a) Yes, coins as in Tibia, from the main backpack (recommended); b) coins, then
 the bank as BANK-FEE-0 does for NPC fees; c) no, hold those quest steps.
+Owner answer (2026-09-30, #162): b — the NPC takes backpack coins first and the missing part from
+the bank balance, through the BANK-0 path in the same transaction, with the existing bank evidence
+and the refusal when funds are insufficient (§5.4).
 
 **Q2. Quest journal text on the wire?** The format keeps text references only (principle 5);
 `LICENSE-ASSETS.md` allows quest text as reference data, and D9 admitted NPC text 1:1. a) Admit
 Tibia Global quest-log text 1:1 as reference data with provenance, as D9 (recommended); b)
 Oteryn-written text; c) mission names only.
+Owner answer (2026-09-30, #162): a — Tibia text 1:1 (§7).
 
 Assumptions, reversible, taken to proceed: **A1** "Show hidden" and search are client-local in V1.
 **A2** the tracker set is runtime-local and empty at admission. **A3** a gated door closes when
@@ -375,7 +403,7 @@ its last creature leaves, as in the reference servers.
   owner asked to build quests now.
 - **Minimum sufficient:** one gate check at two edges, three trigger edges on accepted identities,
   typed dialogue conditions and outcomes, one exchange shape, one XP obligation, one wire view.
-- **Superseding evidence:** official door or quest log behaviour; owner answers.
+- **Superseding evidence:** official door or quest log behaviour; a new owner decision.
 - **Deliberately not decided:** key doors, outfit and mount grants, boss rooms, cross-scope
   relocation, party quests, world quests.
 
@@ -390,4 +418,5 @@ its last creature leaves, as in the reference servers.
 4. **Typed references:** `placement_key`, `map_item_handle`, gate, transition, claim and exchange
    keys, talk occurrence, CommandRef, content revision.
 5. **Wire:** §7, capability `QUEST_LOG_V1`; gates add no wire.
-6. **Split work:** one transaction per step; at most 8 burn lines per exchange.
+6. **Split work:** one transaction per step; at most 8 declared burn lines per exchange, plus the
+   gold hand-in's coin lines and at most one `FEE_DEBIT` entry.
