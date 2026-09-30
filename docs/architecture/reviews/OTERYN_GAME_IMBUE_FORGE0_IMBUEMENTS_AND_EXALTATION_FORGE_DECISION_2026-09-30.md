@@ -3,7 +3,7 @@
 - Decision: `IMBUE-FORGE0-IMBUEMENTS-AND-FORGE-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   economy, combat and protocol) and protected integration. The gold fees and the new value
-  sources also need the owner answers I1 and I2 (§19).
+  sources are admitted by the owner answers I1 a) and I2 a) (2026-09-30, #162; §19).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner direction of 2026-09-30 (build imbuements and the Exaltation Forge now, full
   Tibia Global parity)
@@ -16,7 +16,7 @@
   state); owner rule 5905825574 (Global parity)
 - Amends, each pending on acceptance of IMBUE-FORGE-0, in this PR: MARKET-0 §3.1 (tier and
   imbuements are not default state; tiered wares, §13); the gold fee decision §4.4 (the proposed
-  fee variants, only with owner answer I1, §6 and §10). DUR-03 §15, §17, §18 and §39.3 and the
+  fee variants admitted by owner answer I1, §6 and §10). DUR-03 §15, §17, §18 and §39.3 and the
   composition decision rule 1 are amended by IMBUE-1 and FORGE-1 at allocation, not here (§6, §9).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -27,13 +27,13 @@
 |---|---|---|---|
 | IMBUE-CONTENT-1 | content lane | 24 imbuement types × 3 tiers; item slot counts and allowed types; shrines; access predicates (§3) | ITEM-SEM-USE |
 | IMBUE-WIRE-1 | impl, protocol review | capability `IMBUE_V1`, the shrine window, apply, clear and tracker messages (§14) | USE-WIRE-V1; ITEM-MOVE-WIRE-1 |
-| IMBUE-1 | hard, persistence and economy review | the imbuement item-state table, apply and clear shapes, `ImbueCause`, checkpoints and expiry writes (§4, §6) | GOLD-FEE-2; ITEM-MOVE-2a; I1 |
+| IMBUE-1 | hard, persistence and economy review | the imbuement item-state table, apply and clear shapes, `ImbueCause`, checkpoints and expiry writes (§4, §6) | GOLD-FEE-2; ITEM-MOVE-2a |
 | IMBUE-RT-1 | hard (combat), combat review | the ticking rule, checkpoints, effects through the ability pipeline (§4, §5) | IMBUE-1; ATTACK-1; SPEED-1 |
 | IMBUE-SCROLL-1 | hard, persistence review | blank and imbuement scrolls, the etcher (§7) | IMBUE-1; NPC-TRADE-1 |
 | FORGE-CONTENT-1 | content lane | classifications, tier caps, prices, dust, sliver and core items (§8, §10) | ITEM-SEM-USE |
-| FORGE-1 | hard, persistence and economy review | the tier table, the dust asset and ledger, fusion, transfer and conversions, `ForgeCause` (§8-§10) | GOLD-FEE-2; ITEM-MOVE-2a; I1; I2 |
+| FORGE-1 | hard, persistence and economy review | the tier table, the dust asset and ledger, fusion, transfer and conversions, `ForgeCause` (§8-§10) | GOLD-FEE-2; ITEM-MOVE-2a |
 | FORGE-WIRE-1 | impl, protocol review | capability `FORGE_V1`, the forge window, results, history, resource balance (§14) | FORGE-1 |
-| FORGE-CREATURE-1 | hard (combat), combat review | influenced and fiendish creatures, dust on kill, sliver loot (§11) | GAME-AI-01 runtime; FORGE-1; I2 |
+| FORGE-CREATURE-1 | hard (combat), combat review | influenced and fiendish creatures, dust on kill, sliver loot (§11) | GAME-AI-01 runtime; FORGE-1 |
 | TIER-EFFECT-1 | hard (combat), combat review | onslaught, ruse, momentum, transcendence, amplification (§12) | FORGE-1; ATTACK-1; SPELL-D3 |
 | MARKET-TIER-1 | hard, persistence and economy review | Market wares keyed by (definition, tier) (§13) | MARKET-1; FORGE-1 |
 
@@ -212,8 +212,8 @@ counts. Items already carried stay carried when capacity falls (Global).
   shapes (at most 3 material stacks per record, `DUR03-RL-01-IMBUE`). This decision states the
   need; IMBUE-1 writes the text with its migration.
 - **Fees (I1):** `FeeBurnCause::Imbue {item, slot, imbuement, occurrence}`,
-  `ImbueClear {item, slot, occurrence}` and `ImbueScroll {scroll, imbuement, occurrence}` exist
-  only with owner answer I1 (D178). Amounts are content (Canary 5,000, 30,000, 200,000; clear
+  `ImbueClear {item, slot, occurrence}` and `ImbueScroll {scroll, imbuement, occurrence}` are
+  admitted by owner answer I1 a) at Global prices (D178). Amounts are content (Canary 5,000, 30,000, 200,000; clear
   15,000; `PARITY_PENDING`).
 
 ## 7. Scrolls and the etcher (IMBUE-SCROLL-1)
@@ -287,7 +287,7 @@ outcome is stored in the receipt, so a replay or a new CommandId never rerolls a
 
 - **Cause:** closed `ForgeCause {Fusion | ConvergenceFusion | Transfer | ConvergenceTransfer |
   DustToSlivers | SliversToCore | DustLimit, occurrence}`; the fee variants
-  `FeeBurnCause::ForgeFusion` and `ForgeTransfer {kind, items, occurrence}` exist only with I1.
+  `FeeBurnCause::ForgeFusion` and `ForgeTransfer {kind, items, occurrence}` are admitted by I1 a).
 - **Costs are spent on failure**, as in Global. The success bonuses (dust, cores or gold not
   spent; B kept at t−1, t or t+1; A to t+2 within the class cap) are content with Canary rates,
   `PARITY_PENDING`; a bonus only omits or changes a line of the same shape.
@@ -298,7 +298,7 @@ outcome is stored in the receipt, so a replay or a new CommandId never rerolls a
   `REVISION_CHANGED` terminal record. FORGE-1 writes the text.
 - **History:** each operation writes a forge history row (`IMBFORGE0-RL-12`).
 
-## 11. Dust and sliver sources (FORGE-CREATURE-1, needs I2)
+## 11. Dust and sliver sources (FORGE-CREATURE-1, admitted by I2 a)
 
 - **Influenced creatures:** ordinary creatures picked at random per channel receive 1-5 forge
   stacks (more health and damage, a visible marker). **Fiendish creatures:** at most
@@ -407,18 +407,21 @@ owner decision; these are imbuing (5,000 / 30,000 / 200,000 by tier), clearing (
 creation, and forge fusion and transfer (25,000 up to tens of billions by class and tier), paid
 from coins then the bank. a) Yes, all, at Global prices (recommended); b) imbuing and clearing
 only, forge later; c) none now: imbuing and the forge wait.
+Owner answer (2026-09-30, #162): a — Yes, all imbuing and forge gold fees, at Global prices.
 
 **I2. Admit the forge value sources? (D208)** Context: new value enters the game: forge dust from
 influenced and fiendish kills (a Character balance), sliver loot from fiendish creatures, and
 the dust → sliver → core conversions. a) Yes, as Global (recommended); b) dust and conversions
 only, no sliver loot (cores come only from dust); c) none now: the forge waits.
+Owner answer (2026-09-30, #162): a — Yes, all of them as in Global: dust, slivers and the
+conversions.
 
 ## 20. Decision test
 
 - **Must decide now:** YES. The owner asked for imbuements and the forge now; no item carries
   typed state yet, and IMBUE-1 and FORGE-1 need the shapes and causes.
 - **Minimum sufficient:** two item-state tables, one non-item asset, three closed causes, the fee
-  variants (with I1), two capabilities; the fee, bank, loot, kill-credit, ability and ITEM-USE-0
+  variants (admitted by I1), two capabilities; the fee, bank, loot, kill-credit, ability and ITEM-USE-0
   paths are reused.
 - **Superseding evidence:** official chances, prices, dust amounts; overwrite; the etcher.
 - **Deliberately not decided:** the later items of the brief.

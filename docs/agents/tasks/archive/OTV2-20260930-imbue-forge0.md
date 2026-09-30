@@ -35,7 +35,7 @@ IMBUE-FORGE-0 decides imbuements and the Exaltation Forge at full Global parity 
 2026-09-30).
 
 - **Imbuing:** shrine USE under `IMBUE_V1`; 24 types × 3 tiers; up to 3 slots, one per category;
-  always succeeds, no protection charm (ruling R2); materials burned, fee burned (with I1).
+  always succeeds, no protection charm (ruling R2); materials burned, fee burned (I1 a).
 - **Imbuement state:** an item-state row per (ItemInstance, slot), not Character state; time
   ticks while equipped and in fight outside a protection zone (non-aggressive types: while
   equipped); exact runtime counter checkpointed every 60 s of ticking and at every boundary, so a
@@ -45,10 +45,11 @@ IMBUE-FORGE-0 decides imbuements and the Exaltation Forge at full Global parity 
   server-seeded rolls stored in the receipt; closed `ForgeCause`.
 - **Resources:** forge dust as a per-Character non-item asset with a ledger and a limit (100-225);
   slivers and exalted cores as items; dust from influenced and fiendish kills and sliver loot
-  (with I2).
+  (I2 a).
 - **Market:** default state excludes tier and imbuements; imbued items never listed; tiered wares
   wait for MARKET-TIER-1.
-- **Owner questions I1** (fees, D178) and **I2** (value sources, D208) are open.
+- **Owner questions I1** (fees, D178) and **I2** (value sources, D208) are answered a)
+  (2026-09-30).
 
 No code, migration or content change is made.
 
@@ -70,7 +71,7 @@ review.
 - [ ] Decision on an exact frozen head with passing validators.
 - [ ] Independent exact-head review (persistence, economy, combat, protocol).
 - [ ] Protected Merge Queue integration.
-- [ ] Owner answers to I1 and I2 recorded on #162 before IMBUE-1 and FORGE-1 are allocated.
+- [x] Owner answers to I1 and I2 recorded on #162 (2026-09-30).
 
 ## Excluded scope
 
@@ -88,6 +89,9 @@ review.
 - Codex round-2 repair (PR #1415, 1 finding): `REVISION_CHANGED` persisted as a receipt-only
   terminal record keyed by (occurrence, character); every later replay returns the same
   rejection (§10).
+- Owner answers (2026-09-30, #162): I1 a) (all imbuing and forge gold fees at Global prices,
+  D178) and I2 a) (dust, slivers and the conversions as in Global, D208) made binding in the
+  decision and the gold fee §4.4 amendment.
 
 ## Closeout
 
@@ -101,7 +105,7 @@ review.
 last_progress: draft authored; awaiting architect review and publication
 status: completed
 branch: claude/arch-imbue-forge-0
-owner_action_required: "I1: imbuing and forge gold fees; I2: forge value sources"
+owner_action_required: null
 blocker: null
-next_action: "architect reviews, commits, opens the PR and posts I1 and I2 to the owner"
+next_action: "architect freezes the head with the owner answers and requests review"
 ```
