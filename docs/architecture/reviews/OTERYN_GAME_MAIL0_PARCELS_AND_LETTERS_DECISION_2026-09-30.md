@@ -58,9 +58,11 @@ system messages reach a player?
 - HOUSE-OWN-0 §5: an unpaid rent records a warning "shown on login until a mail system exists".
 - B3: `GAMEITEM01-PLACEMENT-DEPTH` is 1; only empty containers enter the main backpack.
   PLAYER-TRADE-0, MARKET-0 and HOUSE-CUSTODY-0 refuse containers with contents.
-- `0022`: one global name namespace keyed by `name_key`; the root holds the World, which never
-  changes (BANK-0). BANK-0 §4.3 resolves a transfer recipient through it; CHAT-0 §5 answers an
-  unknown name and a name of another World alike (`NOT_ONLINE`).
+- `0022`: one global name namespace keyed by `name_key`; the root holds the name, the World and the
+  lifecycle. No operation changes them yet (BANK-0), but rename and terminal deletion are planned
+  (`0022`) and World transfer is admitted (Character Authority contract §9). BANK-0 §4.3 resolves a
+  transfer recipient through it; CHAT-0 §5 answers an unknown name and a name of another World alike
+  (`NOT_ONLINE`).
 - GAME-INTERACTION-01 successor §19.4: durable writable text has no owner and stays blocked until
   a named accepted contract exists. The DUR-03 maxima decision excludes free text from audit.
 - MAP-WIRE-1 §6: base items the client can act on carry a per-session `map_item_handle`, mapped to
@@ -145,8 +147,9 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
   line is ignored: under 2b every town opens the same Inbox. A second line is never checked.
 - **Refused, writing nothing** (the item stays in the backpack):
   - no text or an empty first line: `NO_ADDRESS`;
-  - an unknown name, or a name of another World: `UNKNOWN_RECIPIENT`, one answer for both, so a
-    reply never reveals where a name exists (CHAT-0's rule);
+  - an unknown name, a name of another World, or a recipient failing §6's root check:
+    `UNKNOWN_RECIPIENT`, one answer for all, so a reply never reveals where a name exists (CHAT-0's
+    rule);
   - not an unstamped letter or parcel, a corpse or Ground source, or an equipped item:
     `NOT_MAILABLE`;
   - a recipient Inbox at the mail ceiling (§8): `RECIPIENT_INBOX_FULL`;
@@ -174,17 +177,27 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
 - **Lines.** Letter posting: one TRANSFER (two location lines: the backpack entry out, the Inbox
   entry in) and one TRANSFORM line on the same item. No value line, no MINT, no BURN.
 - **Cause.** Closed `MailCause {Post {mail_id} | ParcelChildOut {occurrence} | SystemLetter
-  {kind}}`, each keyed by its occurrence.
+  {kind, occurrence_key}}`, each keyed by its occurrence.
 - **Conservation.** Per mail operation: the set of ItemInstanceIds before equals the set after;
   units per item are unchanged; the only definition change is the stamp rule's.
 - **Fences.** Rule 2 for the sender with its pending CommandRef. The recipient is not fenced: no
-  runtime owns its Inbox, and its Inbox counter row lock takes the place of its `character_root`
-  lock (MARKET-0 §5). The recipient's root is read without a lock: its World cannot change.
+  runtime owns its Inbox, and its Inbox counter row lock serializes Inbox writes (MARKET-0 §5).
+- **Recipient root.** Every delivery into an Inbox (a posting, a system letter) locks the
+  recipient's `character_root` `FOR SHARE` in the delivering transaction and checks, under that
+  lock, that the root is live, is of the delivering World, and, for a posting, still has the
+  addressed `name_key`. A rename, a terminal deletion or a World transfer updates the root, so it
+  waits for the delivery or the delivery sees its result. A posting that fails the check is
+  `UNKNOWN_RECIPIENT` and writes nothing (§5); a system letter mints nothing (§10). The
+  reservation alone never proves the recipient: a released or held key may name a renamed or
+  deleted Character.
 - **Lock order** (composition rule 4, as MARKET-0 extends it): the recovery fence and admission
-  relations; the mail occurrence; the sender's fence checks; the sender's `character_root`; the
-  items by ItemInstanceId; the container-slot row; the Inbox counters by CharacterId.
-- **Event.** One mail event per operation in a mail outbox: `mail_id`, sender, recipient, the item
-  lines and the stamp. No text. Retention under BANK-RET-0's economy profile (as HOUSE-OWN-0).
+  relations; the mail occurrence; the sender's fence checks; the `character_root` rows by
+  CharacterId (the sender's as rule 2 takes it, the recipient's `FOR SHARE`, one row when they are
+  the same); the items by ItemInstanceId; the container-slot row; the Inbox counters by CharacterId.
+- **Event.** One mail event per operation in a mail outbox, typed by its `MailCause`: `Post`
+  carries `mail_id`, the sender CharacterId, the recipient, the item lines and the stamp;
+  `ParcelChildOut` its occurrence, the Character and its lines; `SystemLetter` the shape of §10.
+  No text. Retention under BANK-RET-0's economy profile (as HOUSE-OWN-0).
 - **Supersession.** For the mail shapes only: the §39.1 exclusions of transform combined with
   transfer and of multiple touched items (parcels), and the §39.1 and §39.3 source and destination
   limits, within §11's rows. Every other obligation is unchanged.
@@ -241,10 +254,22 @@ Other writable items (books, blackboards) keep GAME-INTERACTION §19.4's blocker
 ## 10. System letters (MAIL-SYSTEM-1, pending Q1)
 
 - With owner answer Q1a, a system letter is a stamped letter minted into the recipient's Inbox:
-  one MINT line under `MailCause::SystemLetter {kind}` with a text row whose writer is NULL (shown
-  as "Royal Tibian Mail"). The text is a content template with its parameters.
+  one MINT line under `MailCause::SystemLetter {kind, occurrence_key}` with a text row whose writer
+  is NULL (shown as "Royal Tibian Mail"). The text is a content template with its parameters.
+  Who may request a kind stays with the owner answer to Q1; this section fixes only the shape.
+- **Operation.** `game_mail_system_letters`, a row type of its own, never a
+  `game_mail_operations` row: `kind` (closed `SystemLetterKind`), `occurrence_key` (typed per
+  kind), the TransactionId, the recipient CharacterId, the outcome (closed: `DELIVERED` with the
+  minted ItemInstanceId, or `RECIPIENT_UNAVAILABLE` when the §6 recipient root check fails, minting
+  nothing), the template id and revision, and a SHA-256 binding of request and outcome. The
+  primary key is (`kind`, `occurrence_key`); the same occurrence replays the first outcome and a
+  changed binding conflicts. It has no `MailId`: a `MailId` names a player posting only. It has no
+  sender CharacterId: its sender kind is `SYSTEM`.
+- **Event.** `SystemLetter`: `kind`, `occurrence_key`, sender kind `SYSTEM` with no sender
+  CharacterId, the recipient, the outcome and, when delivered, the MINT line. No text.
 - **First kind: the rent warning.** HOUSE-1's step that sets `grace_until` also mints
-  `HouseRentWarning {house, period}`, keyed by (house, period), so a retry mints nothing twice.
+  `HouseRentWarning`, whose `occurrence_key` is (HouseId, rent period), so a retry mints nothing
+  twice.
 - System letters are never refused by the mail ceiling; at most one per house and period bounds
   them (the HOUSE-OWN-0 §7 rule for deliveries).
 - Until MAIL-SYSTEM-1 ships, and under answer Q1b, the login warning of HOUSE-OWN-0 §5 stays.
@@ -321,10 +346,11 @@ as in Tibia (recommended); b) letters only, no parcels; c) no mail until it leav
 
 1. **Contract amendments:** DUR-03 §38, MARKET-0 §5, HOUSE-OWN-0 §5, CHAT-0 §5 and the composition
    decision, each written "pending on acceptance of MAIL-0" in this PR.
-2. **Serialization:** one transaction per posting; §6's lock order; the recipient's Inbox counter
-   row lock.
+2. **Serialization:** one transaction per posting; §6's lock order; the recipient's
+   `character_root` `FOR SHARE` lock and its Inbox counter row lock.
 3. **Restart:** operations, texts and Inbox entries are durable; replay by occurrence.
-4. **Typed references:** `MailId`, CharacterId, WorldId, `name_key`, `placement_key`,
-   `map_item_handle`, ItemInstanceId, occurrence, TransactionId.
+4. **Typed references:** `MailId` (player postings only), CharacterId, WorldId, `name_key`,
+   `placement_key`, `map_item_handle`, ItemInstanceId, occurrence, the system letter
+   (`kind`, `occurrence_key`), TransactionId.
 5. **Wire:** §9, capability `MAIL_V1`.
 6. **Split work:** one posting per transaction; at most 11 items touched.
