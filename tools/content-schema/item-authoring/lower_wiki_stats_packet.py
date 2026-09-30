@@ -31,6 +31,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 SNAPSHOT = ROOT / "imports" / "tibiawiki" / "facts" / "items-stats.json"
 ITEM_INDEX = ROOT / "content" / "items" / "index.json"
+SOURCE_BINDINGS = ROOT / "imports" / "crystalserver" / "bindings" / "items.json"
 OUTPUT = (
     ROOT / "docs" / "agents" / "evidence" / "OTV2-20260930-item-stats-promotion-v2.json"
 )
@@ -148,13 +149,21 @@ FIELDS = {
 
 
 def content_item_ids():
+    """Content Items with a source binding.
+
+    ITEM-ADD-1 (owner decision 2a): an appearance-only Item has no source binding and keeps its
+    semantics UNKNOWN, so it takes no TibiaWiki stats.
+    """
+    bindings = json.loads(SOURCE_BINDINGS.read_text(encoding="utf-8"))["bindings"]
+    bound = {row["target"]["key"] for row in bindings}
     index = json.loads(ITEM_INDEX.read_text(encoding="utf-8"))
     ids = set()
     for shard in index["shards"]:
         document = json.loads((ROOT / shard).read_text(encoding="utf-8"))
         for record in document["records"]:
             key = record["definition"]["identity"]["key"]
-            ids.add(int(key.rsplit(".i", 1)[1]))
+            if key in bound:
+                ids.add(int(key.rsplit(".i", 1)[1]))
     return ids
 
 

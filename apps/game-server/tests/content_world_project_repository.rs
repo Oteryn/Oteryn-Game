@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "df62ed80835421c8c1062494078f3ac4344e669ccb3320a131f337dd5800cdcc",
+        "69ec9ff69da9e071e322c70142fe361b73bffae42d5a3191e1a34d1d880b7a51",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        22_420_138,
-        "e79b49ce3a88ebeb13085d21d4d5d40d6df33b0fbbdf02a0a3dc110fc42ac578",
+        22_408_640,
+        "6c06a60d505e946ef23c2e0d41788c164a685ac2ced386bebab0bbaa83f83f65",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_937,
-        "08a200da18121d6fc16dd217dccf3f152ec46ddc42dc29ca4295a1364fd0d3b4",
+        "410817ef8fb1dfc8434854d22d27e3b6779eb9c41a6e6b37addee31cee93af21",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "78f5c938d7449da0d4ab4154dcbd88d2088f48d77e672161d7af656beb01c85f",
+        "5cff007686bec3fae127632ad5730da2bdac8149fd4e9a1931e46f966cf6955e",
     ),
     (
         "provenance/imports.json",
@@ -93,7 +93,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "7fda92b5e29a2019d9bd26480fc78cdc3007dce89e82a0079d59478356bf038a";
+const TREE_SHA256: &str = "d2957cd4e64d9f1732ccefae3822956e64286c8e24999c09c6e99050ec55a062";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -949,13 +949,13 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         });
     // The 201 D149 records carried 204 promoted atoms; they left content with their records
     // (ITEM-ID-1b) and are kept in the tombstone archive.
-    // ITEM-ADD-1: 27 donor epoch-2 Items carry 43 TibiaWiki atoms on these paths.
-    assert_eq!(promoted_items, 12_301 - 201 + 27);
+    // ITEM-ADD-1: 23 donor epoch-2 Items carry 39 TibiaWiki atoms on these paths.
+    assert_eq!(promoted_items, 12_301 - 201 + 23);
     // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
     // never removes, the others.
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 43
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39
     );
     let (wave1_items, wave1_fields) = linked
         .definitions

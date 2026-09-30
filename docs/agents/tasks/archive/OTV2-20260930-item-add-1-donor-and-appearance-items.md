@@ -47,6 +47,7 @@ owned_paths:
   - docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json   # regenerated after merging #1336
   - apps/game-server/src/content/item_stats_promotion.rs   # packet sha and counts
   - tools/content-schema/item-authoring/samples/item-weapon-proficiency-15-30-7fea90ec.json   # regenerated
+  - tools/content-schema/item-authoring/{lower_wiki_stats_packet.py,test_lower_wiki_stats_packet.py}   # bound Items only
   - imports/tibiawiki/{facts/items-stats.json,sources.json,batches.json}   # #1325 key rule re-applied (--rekey)
 public_contracts: []
 depends_on:
@@ -78,8 +79,10 @@ binding changed.
 After #1336 (ITEM-SEM-2b-1) merged, the branch merged `main`. Two derived artifacts follow the
 new Items:
 - The TibiaWiki stat packet (`OTV2-20260930-item-stats-promotion-v2.json`, lowered from content
-  Item ids) now covers 159 donor epoch-2 Items: 10,523 fields on 6,541 Items, up from 10,260 on
-  6,382. `item_stats_promotion.rs` re-pins its sha and counts; earlier values are unchanged.
+  Items with a source binding) now covers 142 donor epoch-2 Items: 10,502 fields on 6,524 Items,
+  up from 10,260 on 6,382. `item_stats_promotion.rs` re-pins its sha and counts; earlier values
+  are unchanged. The 60 appearance-only Items have no source binding and take no stats, so their
+  semantics stay UNKNOWN (owner 2a; Codex review P1 on #1383, which found 17 of them promoted).
 - The weapon proficiency sample (`item-weapon-proficiency-15-30-7fea90ec.json`) finds an Item
   definition for 22 more bindings (`bindings_without_item_definition` 23 → 1). No binding
   changed.
