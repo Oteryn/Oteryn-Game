@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -454,6 +455,25 @@ def main() -> int:
     require(all(ref(row["item"]) in item_refs and ref(row["profile_binding"]) in proficiency_refs
                 and row["threshold_class"] in {"standard", "knight", "crossbow"} for row in binding_rows),
             "PROFICIENCY_BINDING_REFERENCES")
+    # Completeness against the pinned ITEM-PROF-1 source: every source weapon whose Item is
+    # defined and whose class is known is bound, so a newly defined Item cannot stay unbound.
+    binding_source_path = ROOT / proficiency_bindings["source"]["path"]
+    require(hashlib.sha256(binding_source_path.read_bytes()).hexdigest() == proficiency_bindings["source"]["sha256"],
+            "PROFICIENCY_BINDING_SOURCE_DIGEST")
+    defined_item_keys = {key for _, key, _ in item_refs}
+    expected_bindings = {}
+    expected_excluded = {"item_not_defined": 0, "unknown_threshold_class": 0}
+    for row in load(binding_source_path)["bindings"]:
+        if row["item_key"] not in defined_item_keys:
+            expected_excluded["item_not_defined"] += 1
+        elif row["threshold_class"] not in {"standard", "knight", "crossbow"}:
+            expected_excluded["unknown_threshold_class"] += 1
+        else:
+            expected_bindings[row["item_key"]] = (
+                f"oteryn:proficiency.tibia.p{row['proficiency_id']}", row["threshold_class"])
+    require({row["item"]["key"]: (row["profile_binding"]["key"], row["threshold_class"]) for row in binding_rows}
+            == expected_bindings and proficiency_bindings["excluded"] == expected_excluded,
+            "PROFICIENCY_BINDING_COMPLETENESS")
     reward_claim_index = load(ROOT / "content" / "interactions" / "reward_claims" / "index.json")
     require(reward_claim_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and reward_claim_index["family"] == "RewardClaim",
             "REWARD_CLAIM_INDEX")
