@@ -9,6 +9,7 @@ on:
       - tools/content-schema/test_validate_item_master_schema.py
       - imports/tibiawiki/bindings/items.json
       - imports/crystalserver/bindings/items.json
+      - imports/crystalserver/facts/**
       - imports/tibiawiki/facts/items-family-fallback.json
       - imports/tibiawiki/facts/items-stats.json
       - imports/tibiawiki/batches.json
@@ -77,6 +78,12 @@ jobs:
       - name: TibiaWiki Item stat snapshot self-test
         working-directory: tools/content-census
         run: python item_wiki_stats_capture_self_test.py
+
+      - name: Weapon proficiency tests and artifact drift
+        run: |
+          set -euo pipefail
+          python test_item_weapon_proficiency.py
+          python item_weapon_proficiency.py --check
 
       - name: Client appearance census fixture tests
         run: python test_client_appearance_census.py
