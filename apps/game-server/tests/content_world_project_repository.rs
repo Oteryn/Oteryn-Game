@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "0c1b4c1dd345a59171020e519e3064b50d072da3145d36f5898e234a064e4d69",
+        "856a54a0ed5f9a6b1c7630f7ded6a4883415aceaadcc10be25fdcec0a3378f26",
     ),
     (
         "definitions/declarations.json",
-        14_954_067,
-        "209a3f6035dd39d2840c4511847bbc14e76c58af81f0d00518b373b6fb74ea72",
+        14_960_389,
+        "3c060e5d8b028c55a27e292dbce357767c3b2afe35a8fe4b01879f7959543ede",
     ),
     (
         "definitions/reference.json",
-        21_318_979,
-        "b2c7998f949f4f3b2dc02db9d40e20fa6dfe7e92ae74814547e21f66f9757d34",
+        21_325_982,
+        "a76e4686f9b58416916eaee9e64e9f07ed7158ef9dcb491526f380df5963e0f6",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1937,
-        "ad96a50485b5cbb7950b62b65fbfc53537d3a2f47e077cbabe50e222cdc54924",
+        "8ccb933365a71cd499dcd456ebe30b60d3d1e4079316944ed36593e9f252451a",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "69b980f014e5c31267357c78da04373d2a7211ad19bcff3e7ec4afc323371741",
+        "c4c78d6b284234450437b490703957d7051a4ff2c510f3183c8570d070ab0347",
     ),
     (
         "provenance/imports.json",
         32_476,
-        "f24033613cae1b0785eefe3760020ec0fe48a9025215367980a25429e88b22a4",
+        "d05b18a4e7168f335c29a5ca81e359f797935ef261f7a51a140cf4742876a195",
     ),
     (
         "provenance/sources.json",
-        1_301_466,
-        "5b582b20ec11e6d4478d3d4a831535c09b5c9c482a6eb87dd12922caf595183d",
+        1_301_759,
+        "f62790a68c2e12f03cf82cec5dd1f91d7f7fc33a7dbe31d0c33267f05ecbffa6",
     ),
     (
         "worlds/world.json",
