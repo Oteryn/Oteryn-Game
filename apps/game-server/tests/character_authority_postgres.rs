@@ -2298,6 +2298,9 @@ pub mod content;
 
 // D39 chest `USE` wiring to the CHEST-1 reward-claim MINT shares its cases with
 // the focused standalone target through the same protected lane.
+#[allow(dead_code, unused_imports)]
+#[path = "../src/achievement_catalogue.rs"]
+pub mod achievement_catalogue;
 #[path = "support/chest_use_postgres_cases.rs"]
 mod chest_use_postgres_cases;
 #[allow(dead_code, unused_imports)]
@@ -2306,9 +2309,6 @@ pub mod interaction;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/interaction/chest_use.rs"]
 pub mod interaction_chest_use;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/achievement_catalogue.rs"]
-pub mod achievement_catalogue;
 
 // GOLD-FEE-1a in-transaction gold fee BURN (migration 0023) shares its cases
 // with the focused standalone target through the same protected lane.
