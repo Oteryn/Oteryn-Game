@@ -35,7 +35,11 @@
 //! D40 idempotency: the RewardClaim row is unique per (character, claim), so
 //! a claim never mints a second item. The same CommandRef returns its first
 //! outcome; another command on an already claimed `once` claim is refused
-//! with nothing written. The fence is the B3-1 TRANSFER fence
+//! with nothing written. GAME-INTERACTION §17.2: while another CommandRef's
+//! MINT of the same (character, claim) is pending (reserved, no receipt,
+//! still able to commit), a new CommandRef is refused with
+//! [`RewardClaimRefusal::ClaimPending`]; the pending CommandRef itself is
+//! resumed or reconciled instead. The fence is the B3-1 TRANSFER fence
 //! ([`super::item_transfer::character_item_fence_is_current`]);
 //! `CharacterRevision` is never read as a fence nor written.
 //!
@@ -86,7 +90,7 @@ use sqlx::Row;
 
 type Result<T> = std::result::Result<T, RewardClaimMintError>;
 type Pass<T> = std::result::Result<std::result::Result<T, RewardClaimMintError>, DurabilityError>;
-const INTENT_BINDING_VERSION: u8 = 1;
+const INTENT_BINDING_VERSION: u8 = 2;
 const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
 const EVENT_SCHEMA_REVISION: i64 = mint_audit::EVENT_SCHEMA_REVISION as i64;
 /// `source_kind` of the achievement grant requests a reward claim records.
@@ -108,6 +112,10 @@ pub struct RewardClaimMintRequest {
     /// The claimed RewardClaim definition. Uniqueness is per (character,
     /// family, production key): a later revision never re-opens a claim.
     pub claim: TypedDefinitionRef,
+    /// The server-resolved source of the claim: the placed chest's
+    /// PlacementKey (D40, GAME-INTERACTION §5.5). Part of the intent, so the
+    /// same CommandRef with another source conflicts.
+    pub source_placement: String,
     /// Facts of the one top-level reward item's definition.
     pub item: ItemDefinitionFacts,
     pub quantity: u32,
@@ -125,6 +133,9 @@ pub struct RewardClaimMintRequest {
 pub enum RewardClaimRefusal {
     /// The character already holds this `once` claim.
     AlreadyClaimed,
+    /// Another CommandRef's MINT of this claim is still pending
+    /// (GAME-INTERACTION §17.2); resume or reconcile that CommandRef instead.
+    ClaimPending,
     /// A container reward waits for the nested-bags decision (RL-05 = 0).
     RewardIsContainer,
     /// Unknown stack class (D82: fail closed).
@@ -289,6 +300,8 @@ pub(crate) struct RewardPlanInput<'a> {
     pub quantity: u32,
     pub backpack: &'a ItemDefinitionFacts,
     pub already_claimed: bool,
+    /// Another CommandRef's MINT of this claim is pending.
+    pub claim_pending: bool,
     pub slot: Option<&'a InventoryItem>,
     pub entries: &'a [BackpackEntry],
 }
@@ -308,6 +321,9 @@ pub(crate) fn plan_reward_claim_mint(
     use RewardClaimRefusal as Refusal;
     if input.already_claimed {
         return Err(Refusal::AlreadyClaimed);
+    }
+    if input.claim_pending {
+        return Err(Refusal::ClaimPending);
     }
     if input.item.container_capacity.is_some() {
         return Err(Refusal::RewardIsContainer);
@@ -743,6 +759,33 @@ async fn admit(
     .bind(&request.claim.production_key)
     .fetch_one(&mut **tx)
     .await?;
+    // §17.2: a pending MINT of this claim under another CommandRef. It is
+    // pending while it has no receipt, its RL-08 budget is not exhausted and
+    // its GameSession is not terminal: only then can it still commit. The
+    // `character_root` row lock taken by the fence serializes this read with
+    // every other admission of the Character.
+    let claim_pending: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_reward_claim_mint_reservations r \
+                          JOIN game_durability_reconnect_sessions s \
+                            ON s.game_session_id = r.game_session_id \
+                           AND s.session_state IN (1, 2) \
+                         WHERE r.character_id = encode($1,'hex')::uuid \
+                           AND r.claim_family = $2 AND r.claim_production_key = $3 \
+                           AND NOT (r.game_session_id = encode($4,'hex')::uuid \
+                                    AND r.command_id = $5::text::numeric(20,0)) \
+                           AND r.work_units_used < $6 \
+                           AND NOT EXISTS (SELECT 1 FROM game_reward_claim_mint_receipts c \
+                                            WHERE c.game_session_id = r.game_session_id \
+                                              AND c.command_id = r.command_id))",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(&request.claim.family)
+    .bind(&request.claim.production_key)
+    .bind(request.command.game_session_id().as_bytes().as_slice())
+    .bind(request.command.command_id().get().to_string())
+    .bind(i16::from(RL08_RETRY_WORK_UNITS_MAX))
+    .fetch_one(&mut **tx)
+    .await?;
     let slot = load_slot(tx, fence.character_id).await?;
     let entries = match slot.as_ref() {
         Some(slot) => load_entries(tx, slot.item_instance_id).await?,
@@ -753,6 +796,7 @@ async fn admit(
         quantity: request.quantity,
         backpack: &request.backpack,
         already_claimed,
+        claim_pending,
         slot: slot.as_ref(),
         entries: &entries,
     }) {
@@ -1056,6 +1100,7 @@ fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
     mint_audit::check_technical_text(&request.claim.family)?;
     mint_audit::check_content_key(&request.claim.production_key)?;
     mint_audit::check_content_key(&request.claim.revision_ref)?;
+    mint_audit::check_content_key(&request.source_placement)?;
     validate_facts(&request.item).map_err(from_transfer_input)?;
     validate_facts(&request.backpack).map_err(from_transfer_input)?;
     if request.quantity == 0 {
@@ -1107,11 +1152,11 @@ fn achievement_grant(
 }
 
 /// Version byte plus SHA-256 over the complete intent: the CommandRef, the
-/// fenced Character, the claim, the reward item facts and quantity, the
-/// backpack facts, the interpretation revisions and, only when the chest has
-/// one, its achievement and catalogue lookup (so a claim without one keeps
-/// its binding). The connection generation is not part of the intent
-/// (DUR-03 §31).
+/// fenced Character, the claim, its source placement, the reward item facts
+/// and quantity, the backpack facts, the interpretation revisions and, only
+/// when the chest has one, its achievement and catalogue lookup (so a claim
+/// without one keeps its binding). The connection generation is not part of
+/// the intent (DUR-03 §31).
 fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -> Result<[u8; 33]> {
     let mut canonical = Vec::new();
     canonical.extend_from_slice(request.command.game_session_id().as_bytes());
@@ -1121,6 +1166,7 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
         &request.claim.family,
         &request.claim.production_key,
         &request.claim.revision_ref,
+        &request.source_placement,
     ] {
         push_text(&mut canonical, part.as_bytes()).map_err(from_transfer_input)?;
     }
@@ -1212,6 +1258,17 @@ mod tests {
         entries: &[BackpackEntry],
         capacity: u32,
     ) -> std::result::Result<ContainerEntryPosition, RewardClaimRefusal> {
+        plan_with(item, quantity, claimed, false, entries, capacity)
+    }
+
+    fn plan_with(
+        item: &ItemDefinitionFacts,
+        quantity: u32,
+        claimed: bool,
+        pending: bool,
+        entries: &[BackpackEntry],
+        capacity: u32,
+    ) -> std::result::Result<ContainerEntryPosition, RewardClaimRefusal> {
         let slot = InventoryItem {
             item_instance_id: id(1),
             definition: definition("fixture:b3.backpack"),
@@ -1223,6 +1280,7 @@ mod tests {
             quantity,
             backpack: &backpack,
             already_claimed: claimed,
+            claim_pending: pending,
             slot: Some(&slot),
             entries,
         })
@@ -1256,6 +1314,20 @@ mod tests {
         assert_eq!(plan(&coin, 1, true, &[], 20), Err(R::AlreadyClaimed));
         // A claimed chest is refused before any room check.
         assert_eq!(plan(&coin, 1, true, &full, 20), Err(R::AlreadyClaimed));
+        // §17.2: a pending claim refuses a new command; a claimed one stays
+        // AlreadyClaimed, and pending is checked before room.
+        assert_eq!(
+            plan_with(&coin, 1, false, true, &[], 20),
+            Err(R::ClaimPending)
+        );
+        assert_eq!(
+            plan_with(&coin, 1, true, true, &[], 20),
+            Err(R::AlreadyClaimed)
+        );
+        assert_eq!(
+            plan_with(&coin, 1, false, true, &full, 20),
+            Err(R::ClaimPending)
+        );
         let mut bag = facts("fixture:b3.bag", ItemStackClass::NonStackable);
         bag.container_capacity = Some(8);
         assert_eq!(plan(&bag, 1, false, &[], 20), Err(R::RewardIsContainer));
@@ -1309,6 +1381,7 @@ mod tests {
             quantity: 1,
             backpack: &backpack,
             already_claimed: false,
+            claim_pending: false,
             slot: None,
             entries: &[],
         });
@@ -1323,6 +1396,7 @@ mod tests {
             quantity: 1,
             backpack: &backpack,
             already_claimed: false,
+            claim_pending: false,
             slot: Some(&other_slot),
             entries: &[],
         });
@@ -1343,6 +1417,7 @@ mod tests {
                 production_key: "fixture:chest.claim".into(),
                 revision_ref: "definition-r1".into(),
             },
+            source_placement: "fixture:placement.chest".into(),
             item: facts("fixture:b3.coin", COIN),
             quantity: 3,
             backpack: backpack_facts(20),
@@ -1383,7 +1458,8 @@ mod tests {
 
         // Each achievement intent has its own binding. `None` appends
         // nothing, so a claim without one keeps its pre-achievement binding
-        // (pinned: an in-flight reservation stays resumable).
+        // (pinned to the v2 placement binding without achievement support: an
+        // in-flight reservation stays resumable).
         let character = CharacterId::from_bytes(id(41)).expect("character");
         let bind =
             |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
@@ -1393,7 +1469,7 @@ mod tests {
             .collect();
         assert_eq!(
             hex,
-            "016d5194b02ecc07d47aef727e1a1077ba93027a8a51c607f5096bf95193f63429"
+            "0252d6f592be772f020fb5db54324d97e34502c6980dac6371fca8fc3105cac126"
         );
         let bindings = [
             bind(&request(None)),

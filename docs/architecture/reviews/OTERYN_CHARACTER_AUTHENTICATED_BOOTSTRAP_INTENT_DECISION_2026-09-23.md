@@ -163,3 +163,7 @@ Real PostgreSQL 17.6 and final composition must independently prove:
 ## Explicitly deferred
 
 Ordinary player-facing Character creation remains disabled. A later `PLATFORM_USER_CREATE` contract must independently define its user authorization and product-specific naming/quota/starter semantics. This deferral is intentional under the protected playable-first/minimum-sufficient policy.
+
+## Amendment 2026-09-30: contract version 2 (CHAR-NAME-1)
+
+Owner decision D184 (CHAR-NAME-1 question 5a) amends the intent above. The current intent is `contract_version = 2`. It adds a required `requested_name` field, and its canonical semantic binding starts with binding tag 2 and binds `requested_name` last. Game refuses version 1 intents, and the Platform issuer and the Game decoder change in lockstep. The name rules, the comparison key, the global namespace and the reservation are in `docs/contracts/CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md` §6.1. Everything else in this decision is unchanged. This amendment does not enable `PLATFORM_USER_CREATE` or ordinary player-facing creation.

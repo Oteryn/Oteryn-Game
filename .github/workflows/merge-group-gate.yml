@@ -588,12 +588,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Oteryn/Oteryn-Platform
-          ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+          ref: 5d4883acf7079e26fd51e03f460166730de1ada0
           path: _platform
           persist-credentials: false
 
       - name: Verify exact Platform revision
-        run: test "$(git -C _platform rev-parse HEAD)" = 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+        run: test "$(git -C _platform rev-parse HEAD)" = 5d4883acf7079e26fd51e03f460166730de1ada0
 
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
@@ -648,12 +648,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Oteryn/Oteryn-Platform
-          ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+          ref: 5d4883acf7079e26fd51e03f460166730de1ada0
           path: _platform
           persist-credentials: false
 
       - name: Verify exact Platform revision
-        run: test "$(git -C _platform rev-parse HEAD)" = 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+        run: test "$(git -C _platform rev-parse HEAD)" = 5d4883acf7079e26fd51e03f460166730de1ada0
 
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal

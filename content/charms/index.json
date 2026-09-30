@@ -1,10 +1,1 @@
-{
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/charms/",
-  "kind": "static_content",
-  "owner": "Charm",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
-  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Charm static definitions and effect references."
-}
+{"authoring_source":{"path":"tools/content-schema/charm-authoring/samples/charms-candidate.json","schema":"OTERYN_CHARM_AUTHORING_CATALOGUE/v1","sha256":"65b0f3cc0fdf0954040120656eeae08e509c6ff8545ce3f2e89b47af559433b1"},"family":"Charm","record_count":25,"schema":"OTERYN_FAMILY_INDEX/v1","shards":["content/charms/charms-00000-00024.json"]}

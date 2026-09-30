@@ -50,9 +50,9 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "c8564e6c8ce3df2a9ea57fdf17306cc23d7350fd
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
-EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "be8c77c0d9a267c582a3bcfbdbc45005055a6e827af6af66fd4a1799cfa76d4f"
-EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "66eb857be0512adc4df0b6854074deda5b4c323d5f7054996d0cb3d354f20095"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "4b87ac36723578e0bfa8af701ffb0b3e97b57081"
+EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "3f59ad249da2e820f23495120e88f7456a63a47655810adfcf3345764bf68d68"
+EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "a62f892daddbbaa96f764ecd22ab0c2edf0084c4d40415d46d1dc12f00ecff4e"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "82b0d53592db4b030c65915a12f29ff3da718ad1"
 EXPECTED_POST_MERGE_RUST_SHA256 = "3b01c30bab7988572670b47bf5dccda7dafb8db7879ec59b6da99a3d061fdf75"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -558,7 +558,7 @@ def main() -> int:
                 "    name: Merge Queue / Node boot against the real Platform\n",
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
-                "ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01",
+                "ref: 5d4883acf7079e26fd51e03f460166730de1ada0",
                 "bash tools/qualification/node_boot/run.sh | tee \"$evidence\"",
                 "grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' \"$evidence\"",
             ),
@@ -566,7 +566,7 @@ def main() -> int:
                 "    name: Merge Queue / Server Seam over TCP+TLS\n",
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
-                "ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01",
+                "ref: 5d4883acf7079e26fd51e03f460166730de1ada0",
                 "WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh | tee \"$evidence\"",
                 "grep -Fxq 'S3B_RESULT=SEAM_PASS' \"$evidence\"",
             ),

@@ -242,7 +242,7 @@ impl AdmissionAuthorityOwningPublisherV1 for RuntimeReadiness {
 }
 
 fn bootstrap_binding() -> Vec<u8> {
-    let mut binding = vec![1];
+    let mut binding = vec![2];
     binding.extend_from_slice(&id(31));
     binding.extend_from_slice(&1_i64.to_be_bytes());
     binding.extend_from_slice(&id(30));
@@ -254,6 +254,9 @@ fn bootstrap_binding() -> Vec<u8> {
         binding.extend_from_slice(&u16::try_from(value.len()).expect("length").to_be_bytes());
         binding.extend_from_slice(value.as_bytes());
     }
+    // Contract version 2 binds the requested name last (CHAR-NAME-1).
+    binding.extend_from_slice(&12_u16.to_be_bytes());
+    binding.extend_from_slice(b"Fixture Hero");
     binding
 }
 
@@ -277,7 +280,7 @@ async fn seed_character(
     sqlx::query(
         "INSERT INTO game_character_roots VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1')",
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero')",
     )
     .bind(id(CHARACTER).as_slice())
     .bind(id(40).as_slice())
@@ -774,6 +777,7 @@ fn chest(
     RewardClaimMintRequest {
         command,
         claim: definition("RewardClaim", claim_key),
+        source_placement: "fixture:placement.chest".into(),
         item,
         quantity,
         backpack: backpack_facts(),
@@ -786,6 +790,12 @@ fn chest(
 
 fn coins(command: CommandRef, claim_key: &str, quantity: u32) -> RewardClaimMintRequest {
     chest(command, claim_key, facts(COIN, STACKABLE), quantity)
+}
+
+/// A claim of its own per fence-operator command: a stale commit leaves its reservation
+/// pending, which would refuse the next command on a shared claim as ClaimPending (§17.2).
+fn operator_claim(command: u64) -> String {
+    format!("fixture:chest.operator.{command}")
 }
 
 fn refused(
@@ -1216,7 +1226,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                         &authority,
                         &harness.node,
                         stale,
-                        coins(command(next)?, CLAIM, 1),
+                        coins(command(next)?, &operator_claim(next), 1),
                     )
                     .await,
                 label,
@@ -1230,7 +1240,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &authority,
                     &harness.node,
                     fence()?,
-                    coins(command(next)?, CLAIM, 1),
+                    coins(command(next)?, &operator_claim(next), 1),
                 )
                 .await
                 .map_err(debug)?;
@@ -1265,7 +1275,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &authority,
                     &other_node,
                     fence()?,
-                    coins(command(next)?, CLAIM, 1),
+                    coins(command(next)?, &operator_claim(next), 1),
                 )
                 .await,
             "assignment holder",
@@ -1277,7 +1287,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 &authority,
                 &harness.node,
                 fence()?,
-                coins(command(next)?, CLAIM, 1),
+                coins(command(next)?, &operator_claim(next), 1),
             )
             .await
             .map_err(debug)?;
@@ -1330,7 +1340,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &authority,
                     &harness.node,
                     fence()?,
-                    coins(command(next)?, CLAIM, 1),
+                    coins(command(next)?, &operator_claim(next), 1),
                 )
                 .await
                 .map_err(debug)?;
@@ -1343,7 +1353,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                         &authority,
                         &harness.node,
                         fence()?,
-                        coins(command(next)?, CLAIM, 1),
+                        coins(command(next)?, &operator_claim(next), 1),
                     )
                     .await,
                 label,
@@ -1773,56 +1783,68 @@ fn concurrent_claims_mint_once_and_serialize_with_pickup_and_xp() -> TestResult 
             other => return Err(format!("expected one commit, got {other:?}").into()),
         }
 
-        // Two USE commands of one `once` claim, both frozen while unclaimed:
-        // exactly one mints, the other is refused with nothing written.
-        let mut a = harness
-            .root
-            .freeze_reward_claim_mint(
+        // Two USE commands of one `once` claim race to freeze on two roots: exactly one
+        // reserves, the other is refused as ClaimPending (GAME-INTERACTION §17.2) with nothing
+        // written, and after the winner commits it is refused as AlreadyClaimed.
+        let (left, right) = join_two(
+            harness.root.freeze_reward_claim_mint(
                 &first,
                 &harness.node,
                 fence()?,
                 coins(command(3)?, "fixture:chest.race", 1),
-            )
-            .await
-            .map_err(debug)?;
-        let mut b = second_root
-            .freeze_reward_claim_mint(
+            ),
+            second_root.freeze_reward_claim_mint(
                 &second,
                 &harness.node,
                 fence()?,
                 coins(command(4)?, "fixture:chest.race", 1),
-            )
-            .await
-            .map_err(debug)?;
-        let (left, right) = join_two(
-            harness
-                .root
-                .commit_reward_claim_mint(&first, &harness.node, fence()?, &mut a),
-            second_root.commit_reward_claim_mint(&second, &harness.node, fence()?, &mut b),
+            ),
         )
         .await;
-        let outcomes = [left, right];
-        assert_eq!(
-            outcomes
-                .iter()
-                .filter(|outcome| matches!(outcome, Ok(RewardClaimMintOutcome::Committed(_))))
-                .count(),
-            1,
-            "{outcomes:?}"
+        let (mut winner, loser_command, winner_on_first) = match (left, right) {
+            (
+                Ok(candidate),
+                Err(RewardClaimMintError::Refused(RewardClaimRefusal::ClaimPending)),
+            ) => (candidate, command(4)?, true),
+            (
+                Err(RewardClaimMintError::Refused(RewardClaimRefusal::ClaimPending)),
+                Ok(candidate),
+            ) => (candidate, command(3)?, false),
+            other => return Err(format!("expected one reservation, got {other:?}").into()),
+        };
+        let reservations: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_reward_claim_mint_reservations \
+              WHERE claim_production_key = 'fixture:chest.race'",
+        )
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(reservations, 1);
+        let committed = if winner_on_first {
+            harness
+                .root
+                .commit_reward_claim_mint(&first, &harness.node, fence()?, &mut winner)
+                .await
+        } else {
+            second_root
+                .commit_reward_claim_mint(&second, &harness.node, fence()?, &mut winner)
+                .await
+        };
+        assert!(
+            matches!(committed, Ok(RewardClaimMintOutcome::Committed(_))),
+            "{committed:?}"
         );
-        assert_eq!(
-            outcomes
-                .iter()
-                .filter(|outcome| matches!(
-                    outcome,
-                    Err(RewardClaimMintError::Refused(
-                        RewardClaimRefusal::AlreadyClaimed
-                    ))
-                ))
-                .count(),
-            1,
-            "{outcomes:?}"
-        );
+        refused(
+            harness
+                .root
+                .freeze_reward_claim_mint(
+                    &first,
+                    &harness.node,
+                    fence()?,
+                    coins(loser_command, "fixture:chest.race", 1),
+                )
+                .await,
+            RewardClaimRefusal::AlreadyClaimed,
+        )?;
         assert_eq!(harness.count("game_reward_claims").await?, 2);
         assert_eq!(harness.count("game_item_container_entries").await?, 2);
 
@@ -2028,7 +2050,7 @@ async fn switch_to_second_character(pool: &sqlx::PgPool) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_roots VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1')",
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Second Hero')",
     )
     .bind(id(SECOND_CHARACTER).as_slice())
     .bind(id(ACCOUNT).as_slice())

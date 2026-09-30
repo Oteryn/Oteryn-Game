@@ -10,9 +10,12 @@ on:
       - imports/tibiawiki/bindings/items.json
       - imports/crystalserver/bindings/items.json
       - imports/tibiawiki/facts/items-family-fallback.json
+      - imports/tibiawiki/facts/items-stats.json
       - imports/tibiawiki/batches.json
       - imports/tibiawiki/sources.json
       - tools/content-census/item_wiki_family_capture.py
+      - tools/content-census/item_wiki_stats_capture.py
+      - tools/content-census/item_wiki_stats_capture_self_test.py
       - content/assets/files/appearances-*.dat
       - imports/official/appearance-membership/**
       - .github/workflows/item-authoring-schema.yml
@@ -70,6 +73,10 @@ jobs:
 
       - name: Donor census fixture tests
         run: python test_donor_census.py
+
+      - name: TibiaWiki Item stat snapshot self-test
+        working-directory: tools/content-census
+        run: python item_wiki_stats_capture_self_test.py
 
       - name: Client appearance census fixture tests
         run: python test_client_appearance_census.py

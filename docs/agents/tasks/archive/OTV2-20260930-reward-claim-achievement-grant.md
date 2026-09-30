@@ -24,6 +24,7 @@ owned_paths:
   - apps/game-server/src/durability/account_achievement.rs   # review round 1: grant token (F1), beyond doc text
   - apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs
   - apps/game-server/tests/support/account_achievement_postgres_cases.rs   # review round 1 (F1)
+  - apps/game-server/src/interaction/chest_use.rs   # merge with main: `achievement: None` only
   - docs/agents/tasks/archive/OTV2-20260930-reward-claim-achievement-grant.md
 public_contracts: []
 depends_on:
@@ -138,7 +139,8 @@ Independent persistence review of `43ac86ff` (routed by the lead): FIX. Exactly-
   `FOR KEY SHARE` on the root read, and negative runtime-role `UPDATE`/`DELETE` tests.
 - **Overlap (not reconciled).** #1297 (D39 chest USE) also changes `durability/reward_claim_mint.rs`:
   it moves the placement into the intent binding (v2) and makes `admit` return `ClaimPending`.
-  Whichever PR merges second merges `main` and keeps the no-achievement binding pinned.
+  Whichever PR merges second merges `main` and keeps the no-achievement binding pinned. #1297
+  merged first; reconciled in *Merge with main* below.
 
 Validation of the repair (PostgreSQL 17.6, same image digest as CI, pulled through
 `mirror.gcr.io` after a Docker Hub 429): `cargo fmt --all --check` and `cargo clippy --locked -p
@@ -146,6 +148,53 @@ oteryn-game-server --all-targets -- -D warnings` pass; `--lib` 1065 passed; `rew
 636, `account_achievement_postgres` 636, `character_authority_postgres` 735,
 `check_function_privileges_postgres` 1, `durability_postgres` 717, `item_mint_postgres` 650, all
 passed; governance and repository-policy validators and `git diff --check` pass.
+
+## Merge with main
+
+The PR conflicted with `main` at `58429a26` (#1297 D39 chest USE, #1316 CHAR-NAME-1 migration
+0022, #1318 GOLD-FEE-1a migration 0023 and others), so the branch head `6257ae5e` merged
+`origin/main` with a normal merge commit (no rebase, amend or force-push).
+
+- **Textual conflict (one).** `durability/reward_claim_mint.rs`, the `intent_binding` doc comment:
+  both sides kept, now "the claim, its source placement, ... and, only when the chest has one, its
+  achievement and catalogue lookup". The code auto-merged: the canonical bytes are main's v2
+  (`INTENT_BINDING_VERSION = 2`, `source_placement` after the claim revision) followed by this PR's
+  optional achievement suffix. `account_achievement_postgres_cases.rs` and
+  `reward_claim_mint_postgres_cases.rs` auto-merged textually (main already named the second
+  Character `Second Hero` in the former).
+- **#1297 overlap resolved.** `admit` keeps main's order and behaviour: the fence, then the F1
+  token (`FencedGrantingCharacter::after_fence` with the `RewardClaimFenceChecked` witness, right
+  after `character_item_fence_is_current` returns true), then `already_claimed`, main's §17.2
+  `claim_pending` read and the plan (`AlreadyClaimed` before `ClaimPending` before room). The
+  commit grants after `admit` and before `apply_claim`, as before. `validate_request` checks both
+  main's `source_placement` and the achievement (`Absent` refused, `Retired` admitted).
+- **Semantic fixes the merge required.**
+  - `interaction/chest_use.rs` (`prepare_chest_use`, the only new `RewardClaimMintRequest`
+    constructor on main): `achievement: None`. The chest placement carries no achievement key in
+    D39 and no catalogue lookup is available there, so wiring one is out of scope. **Next step:**
+    resolve the placement's achievement and its `AchievementCatalogueLookup` in the chest USE path
+    once a catalogue lookup exists (no loader is built here).
+  - The unit-test request fixture gains main's `source_placement: "fixture:placement.chest"`.
+  - `reward_claim_mint_postgres_cases.rs` `switch_to_second_character`: the direct
+    `game_character_roots` insert gains the name `Second Hero` (0022 made `name` NOT NULL), as
+    main did in `account_achievement_postgres_cases.rs`.
+  - No migration or test registration collided: this PR adds no migration.
+- **Pinned binding.** The no-achievement unit-test hex is re-pinned from the v1 value to
+  `0252d6f592be772f020fb5db54324d97e34502c6980dac6371fca8fc3105cac126`, main's v2 binding for the
+  same request (with `source_placement` `fixture:placement.chest`). Evidence: an independent Python
+  rebuild of the canonical bytes (length-prefixed texts, the `push_facts` layout, SHA-256, version
+  byte). Calibration: the same script with version 1 and without the placement reproduces the
+  previously pinned v1 value `016d5194b02ecc07d47aef727e1a1077ba93027a8a51c607f5096bf95193f63429`
+  byte for byte; with version 2 and the placement it gives the new pin, and the Rust test passes on
+  the merged code. A claim without an achievement therefore keeps main's binding byte for byte.
+- **Validation of the merge** (PostgreSQL 17.6, `postgres:17.6-bookworm`): `cargo fmt --all
+  --check`; `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`; `--lib` 1132 passed
+  (2 ignored); `reward_claim_mint_postgres` 676, `account_achievement_postgres` 676,
+  `chest_use_postgres` 742, `character_authority_postgres` 777, `check_function_privileges_postgres`
+  1, `durability_postgres` 757, `item_mint_postgres` 690, all passed; governance and
+  repository-policy validators and `git diff --check` pass. Mutation re-check: replacing the grant's
+  `pg_current_xact_id()::text = $2` condition with `$2 = $2` fails
+  `a_token_minted_in_another_transaction_writes_neither_request_nor_fact`.
 
 ## Closeout
 

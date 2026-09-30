@@ -875,14 +875,23 @@ def build_item_schema():
             "lunar_ascension_enabled",
         ),
     )
+    d["proficiencyClientBinding"] = obj(
+        {
+            "client_proficiency_id": integer(1),
+            "threshold_class": enum("standard", "knight", "crossbow", "unknown"),
+        },
+        ("client_proficiency_id", "threshold_class"),
+    )
     d["proficiency"] = obj(
         {
+            "client_binding": use("proficiencyClientBinding"),
             "profile_binding": use("ProficiencyRef"),
             "levels": array(use("proficiencyLevel")),
             "shaping": use("proficiencyShaping"),
             "augments": array(use("augment")),
         },
         anyOf=[
+            {"required": ["client_binding"]},
             {"required": ["profile_binding"]},
             {"required": ["levels"]},
             {"required": ["augments"]},

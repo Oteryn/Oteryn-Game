@@ -89,7 +89,7 @@ fn fence_of(character: u8, session: u8) -> TestResult<CurrentCharacterItemFence>
 
 /// The second Character's bootstrap command binding (source revision 2).
 fn second_bootstrap_binding() -> Vec<u8> {
-    let mut binding = vec![1];
+    let mut binding = vec![2];
     binding.extend_from_slice(&id(63));
     binding.extend_from_slice(&2_i64.to_be_bytes());
     binding.extend_from_slice(&id(64));
@@ -101,6 +101,9 @@ fn second_bootstrap_binding() -> Vec<u8> {
         binding.extend_from_slice(&u16::try_from(value.len()).expect("length").to_be_bytes());
         binding.extend_from_slice(value.as_bytes());
     }
+    // Contract version 2 binds the requested name last (CHAR-NAME-1).
+    binding.extend_from_slice(&11_u16.to_be_bytes());
+    binding.extend_from_slice(b"Second Hero");
     binding
 }
 
@@ -115,7 +118,7 @@ async fn seed_second_character(pool: &sqlx::PgPool) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_roots VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1')",
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Second Hero')",
     )
     .bind(id(SECOND_CHARACTER).as_slice())
     .bind(id(SECOND_ACCOUNT).as_slice())
