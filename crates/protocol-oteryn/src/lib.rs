@@ -164,9 +164,10 @@ pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 
 // The optional capabilities PROTOCOL_OTERYN_V1_REGISTRY.json registers: 1 BESTIARY_CHARMS_V1
-// (CHARM-5, not offered before CHARM-6). Registered is not offered: the server selects none today.
+// (CHARM-5, not offered before CHARM-6) and 6 WORLD_SPATIAL_ENTITIES (VIS-2, not offered before the
+// server composes it). Registered is not offered: the server selects none today.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 6];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -2237,6 +2238,7 @@ pub mod charm;
 mod charm_wire;
 pub mod world_object;
 pub mod world_spatial;
+pub mod world_spatial_entities;
 
 #[cfg(test)]
 mod tests {
@@ -2986,7 +2988,24 @@ mod tests {
             ))
             .is_ok()
         );
-        // 1 BESTIARY_CHARMS_V1 is registered; 2 is reserved for PROF-WIRE-1 but not registered.
+        // 1 BESTIARY_CHARMS_V1 and 6 WORLD_SPATIAL_ENTITIES are registered; 2 is reserved for
+        // PROF-WIRE-1 and 7 is unallocated: a selected capability this build does not know fails.
+        for selected in [&[6_usize][..], &[1, 6][..]] {
+            assert!(
+                decode_wire_envelope(&test_envelope(
+                    2,
+                    &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], selected)
+                ))
+                .is_ok()
+            );
+        }
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(
+                2,
+                &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[7])
+            )),
+            Err(FoundationProtocolError::CapabilityMismatch)
+        );
         assert!(
             decode_wire_envelope(&test_envelope(
                 2,
