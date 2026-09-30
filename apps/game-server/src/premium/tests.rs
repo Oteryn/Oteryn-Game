@@ -185,13 +185,14 @@ fn only_proven_active_evidence_inside_its_interval_is_current() {
     // Durable evidence loaded after a restart authorizes nothing until re-proven (§6.3).
     let loaded = view(EntitlementState::Active, false);
     assert_eq!(classify(Some(&loaded), at(T0 + 1)), AuthorityUnavailable);
+    // A fence write failure leaves the fence unsafe (consumer contract §6.4).
     let quarantined = AccountView {
         quarantined: true,
         ..active.clone()
     };
     assert_eq!(
         classify(Some(&quarantined), at(T0 + 1)),
-        AuthorityUnavailable
+        InvalidOrConflicting
     );
     assert_eq!(classify(None, at(T0 + 1)), AuthorityUnavailable);
     let unsupported = AccountView {

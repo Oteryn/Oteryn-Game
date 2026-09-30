@@ -11,7 +11,8 @@
 //!   the account conflicting, stickily, even below the high water (§6.2 rule 4);
 //! - a revision below the high water that was never stored is stale;
 //! - a higher authority revision that lowers an entitlement's `lifecycle_revision`, or repeats
-//!   it with other lifecycle facts, is a conflict too.
+//!   it with other lifecycle facts (product, entitlement, effective window; not the state), is a
+//!   conflict too.
 //!
 //! Every outcome returns the durable view after the transaction. The caller authorizes benefit
 //! only from that view (fence before authorize, §6.3); this module holds no Premium policy.
@@ -69,9 +70,12 @@ pub struct PremiumEvidence {
 
 impl PremiumEvidence {
     /// The entitlement's lifecycle facts: what may change only with a new `lifecycle_revision`.
+    /// The state is not one of them: NOT_YET_EFFECTIVE -> ACTIVE -> EXPIRED follows from elapsed
+    /// time, which PREMIUM-DELIVERY-0 §4 does not make the producer version, so the state of the
+    /// newer snapshot (by `authority_revision`) wins.
     fn lifecycle_fingerprint(&self) -> [u8; 32] {
         let mut hash = Sha256::new();
-        hash.update([FINGERPRINT_VERSION, self.state as u8]);
+        hash.update([FINGERPRINT_VERSION]);
         for text in [
             &self.product_id,
             self.entitlement_id.as_deref().unwrap_or(""),
@@ -90,7 +94,7 @@ impl PremiumEvidence {
     /// and `refresh_after` (scheduling only) are excluded.
     fn fingerprint(&self) -> [u8; 32] {
         let mut hash = Sha256::new();
-        hash.update([FINGERPRINT_VERSION]);
+        hash.update([FINGERPRINT_VERSION, self.state as u8]);
         hash.update(self.account_id);
         hash.update(self.lifecycle_fingerprint());
         hash.update((self.producer_profile.len() as u64).to_be_bytes());
@@ -442,4 +446,50 @@ fn numeric(row: &sqlx::postgres::PgRow, column: &str) -> Result<u64, DurabilityE
     row.try_get::<String, _>(column)?
         .parse()
         .map_err(|_| DurabilityError::InvalidStoredState)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{EntitlementState, PremiumEvidence};
+
+    fn active() -> PremiumEvidence {
+        PremiumEvidence {
+            account_id: [0x61; 16],
+            producer_revision: "c914564".into(),
+            producer_profile: "profile".into(),
+            product_id: "product".into(),
+            product_version: 1,
+            entitlement_id: Some("ent-1".into()),
+            state: EntitlementState::Active,
+            lifecycle_revision: 1,
+            authority_revision: 5,
+            effective_from_us: 0,
+            effective_until_us: 10,
+            authority_issued_at_us: 1,
+            authority_valid_until_us: 2,
+            refresh_after_us: 1,
+        }
+    }
+
+    #[test]
+    fn state_is_authority_content_but_not_a_lifecycle_fact() {
+        let base = active();
+        for state in [EntitlementState::NotYetEffective, EntitlementState::Expired] {
+            let other = PremiumEvidence { state, ..active() };
+            assert_eq!(other.lifecycle_fingerprint(), base.lifecycle_fingerprint());
+            assert_ne!(other.fingerprint(), base.fingerprint());
+        }
+        let changes: [fn(&mut PremiumEvidence); 5] = [
+            |e| e.product_id.push('x'),
+            |e| e.product_version += 1,
+            |e| e.entitlement_id = Some("ent-2".into()),
+            |e| e.effective_from_us += 1,
+            |e| e.effective_until_us += 1,
+        ];
+        for change in changes {
+            let mut other = active();
+            change(&mut other);
+            assert_ne!(other.lifecycle_fingerprint(), base.lifecycle_fingerprint());
+        }
+    }
 }

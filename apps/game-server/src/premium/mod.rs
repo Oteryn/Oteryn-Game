@@ -104,7 +104,8 @@ struct AccountView {
     fence: Option<PremiumFenceView>,
     /// A snapshot was fenced or replayed at the high water in this process.
     proven: bool,
-    /// Validated evidence could not be fenced: deny until a later snapshot is.
+    /// Validated evidence could not be fenced: the fence is unsafe (§6.4,
+    /// `INVALID_OR_CONFLICTING`) until a later snapshot is fenced.
     quarantined: bool,
     /// The latest bound response was outside the compatibility record.
     unsupported: bool,
@@ -248,7 +249,7 @@ fn classify(view: Option<&AccountView>, now: Option<TrustedNow>) -> PremiumClass
     let Some(view) = view else {
         return PremiumClass::AuthorityUnavailable;
     };
-    if view.unsupported || view.fence.as_ref().is_some_and(|f| f.conflicting) {
+    if view.unsupported || view.quarantined || view.fence.as_ref().is_some_and(|f| f.conflicting) {
         return PremiumClass::InvalidOrConflicting;
     }
     let Some(fence) = &view.fence else {
@@ -272,7 +273,7 @@ fn classify(view: Option<&AccountView>, now: Option<TrustedNow>) -> PremiumClass
     if e.state == EntitlementState::NotYetEffective {
         return PremiumClass::NotYetEffective;
     }
-    if now.is_none() || view.quarantined || !view.proven {
+    if now.is_none() || !view.proven {
         return PremiumClass::AuthorityUnavailable;
     }
     PremiumClass::CurrentAuthority

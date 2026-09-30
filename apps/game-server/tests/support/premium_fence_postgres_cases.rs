@@ -179,6 +179,64 @@ fn premium_equivocation_fails_closed_and_sticks() -> TestResult {
 }
 
 #[test]
+fn premium_time_derived_state_is_not_a_lifecycle_change() -> TestResult {
+    use EntitlementState::{Active, Expired, NotYetEffective};
+    run("premium_state_time", async |harness, root| {
+        let mut pending = evidence(5, 1, NotYetEffective);
+        pending.effective_from_us = T0 + HOUR;
+        pending.effective_until_us = T0 + 4 * HOUR;
+        assert_eq!(
+            accept(root, &pending).await?,
+            ("accepted", 5, NotYetEffective, false)
+        );
+        // `effective_from` passed: the producer reports ACTIVE under the same lifecycle revision.
+        let mut active = pending.clone();
+        active.state = Active;
+        active.authority_revision = 6;
+        active.authority_issued_at_us = T0 + 2 * HOUR;
+        active.authority_valid_until_us = T0 + 3 * HOUR;
+        assert_eq!(accept(root, &active).await?, ("accepted", 6, Active, false));
+        // `effective_until` passed: EXPIRED under the same lifecycle revision.
+        let mut expired = active.clone();
+        expired.state = Expired;
+        expired.authority_revision = 7;
+        expired.authority_issued_at_us = T0 + 5 * HOUR;
+        expired.authority_valid_until_us = T0 + 6 * HOUR;
+        assert_eq!(
+            accept(root, &expired).await?,
+            ("accepted", 7, Expired, false)
+        );
+        // The older ACTIVE stays stale behind the newer EXPIRED.
+        assert_eq!(accept(root, &active).await?, ("stale", 7, Expired, false));
+        // The same authority revision with another state is still equivocation.
+        let mut contradiction = expired.clone();
+        contradiction.state = Active;
+        assert_eq!(
+            accept(root, &contradiction).await?,
+            ("conflict", 7, Expired, true)
+        );
+        assert_eq!(harness.count("game_premium_evidence").await?, 3);
+        assert_eq!(harness.count("game_premium_entitlement_fence").await?, 1);
+        Ok(())
+    })?;
+    run("premium_lifecycle_facts", async |harness, root| {
+        accept(root, &evidence(5, 1, Active)).await?;
+        // Under the same lifecycle revision the product and effective window may not change.
+        let mut product = evidence(6, 1, Active);
+        product.product_version = 2;
+        assert_eq!(accept(root, &product).await?, ("conflict", 5, Active, true));
+        let mut start = evidence(7, 1, Active);
+        start.effective_from_us -= 1;
+        assert_eq!(accept(root, &start).await?, ("conflict", 5, Active, true));
+        let mut end = evidence(8, 1, Expired);
+        end.effective_until_us = T0 - 1;
+        assert_eq!(accept(root, &end).await?, ("conflict", 5, Active, true));
+        assert_eq!(harness.count("game_premium_evidence").await?, 1);
+        Ok(())
+    })
+}
+
+#[test]
 fn premium_fence_rows_cannot_be_rolled_back() -> TestResult {
     use EntitlementState::Active;
     run("premium_guards", async |harness, root| {
