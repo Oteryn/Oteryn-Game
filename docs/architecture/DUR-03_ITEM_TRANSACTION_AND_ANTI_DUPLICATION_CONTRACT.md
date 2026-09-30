@@ -367,7 +367,8 @@ Burn/destruction identifies affected item/quantity/asset, typed sink/cause, surv
 Silent row deletion, `quantity=0` live state or disappearance during recovery is not a valid sink.
 
 Besides the D3 `DECAY_RETIRE` cause, the admitted burn sink is the closed `FeeBurnCause` of the
-gold fee amendment in §39.3 (owner decisions D174-D178).
+gold fee amendment in §39.3 (owner decisions D174-D178), and, with the NPC service amendment in
+§39.3, the closed `NpcServiceCause::Sell`.
 
 ## 16. Transform semantics
 
@@ -1243,6 +1244,33 @@ authority, conservation) is unchanged.
   `DUR03-RL-02` 22, `DUR03-RL-06` 22 participants / 64 work units, `DUR03-RL-07-EVENTS` 1, payload
   and envelope measured within the ANL ceilings, other rows unchanged. The rows, schema and field
   numbers are registered by GOLD-FEE-1, not here.
+
+
+**NPC service amendment (NPC-0).** `NPC0-NPC-RUNTIME-SERVICE-V1`
+(`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6) admits three shapes
+built on the gold fee amendment above. It takes effect only with the owner decision on NPC value
+sources required by D178 (decision §9). Every other §39 obligation is unchanged.
+
+- **BUY.** The gold fee plan with `F = unit price x quantity` under
+  `FeeBurnCause::NpcBuy {npc, offer, occurrence}`, plus one MINT of the bought item (one stack, or
+  one non-stackable item) into a new direct entry of the main backpack under
+  `NpcServiceCause::Buy {npc, offer, occurrence}`.
+- **SELL.** One BURN of `quantity` units from one live direct backpack entry of the offer's item
+  (no contents, default state apart from quantity), plus a MINT of the price as at most 3 fresh
+  coin stacks (crystal, platinum, gold; each at most 100) in new backpack entries, both under
+  `NpcServiceCause::Sell {npc, offer, occurrence}`.
+- **Travel.** The gold fee plan with `F = route price` under
+  `FeeBurnCause::NpcTravel {npc, route, occurrence}`; the Character receipt records the
+  destination.
+- **Composition.** As D177: one transaction, one TransactionId with fixed output slots, one
+  Character receipt keyed by the command occurrence (`CharacterRevision` +1 exactly once), the
+  Character writer's fence and lock order. The price is read from the trade or travel service at
+  the bound content revision; a mismatch with the client's expected price rejects. Insufficient
+  funds, no free entry or a stack above 100 rejects the whole transaction and writes nothing.
+- **Rows.** BUY `DUR03-RL-01` 23 (20 burn inputs, 2 change outputs, 1 bought item); SELL 4. The
+  rows, schema and field numbers are registered by NPC-TRADE-1 and NPC-TRAVEL-1, not here.
+
+This amendment grants no runtime or DDL authority.
 
 **Expected bindings versus current authority.** The immutable MINT/TRANSFER
 candidate binds expected item definition/state, source occurrence, WorldId,
