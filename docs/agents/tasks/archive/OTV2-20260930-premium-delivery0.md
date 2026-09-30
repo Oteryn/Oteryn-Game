@@ -20,6 +20,7 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_PREMIUM_DELIVERY0_PREMIUM_EVIDENCE_TRANSPORT_DECISION_2026-09-30.md
   - docs/agents/tasks/archive/OTV2-20260930-premium-delivery0.md
+  - docs/architecture/reviews/OTERYN_GAME_PREMIUM_ACTIVATION_DECISION_2026-09-28.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -73,6 +74,13 @@ production authority.
 ## Closeout
 
 - PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
+- Review of `bec97ab9` (#1369 5913683692: 2 HIGH, 3 MEDIUM, 3 LOW) and of PREMIUM-ACTIVATION-V1
+  (#162 5913685128: 2 MEDIUM, 1 LOW), all answered in one push: the fence per (account,
+  entitlement) with an account high water, the producer refresh point at the lease end (no stale
+  contradiction), a strictly higher `authority_revision` on renewal, the `account_id` binding, a
+  `producer_profile` field and compatibility records, the clock source, the restrictive-state rule,
+  credential rotation; and the activation amendments (policy revision and product binding,
+  degraded-behaviour owners, relocation only on `EXPIRED`/`REVOKED`/none, the §5 rows).
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

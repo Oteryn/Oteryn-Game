@@ -15,6 +15,10 @@
   transport, the evidence message, and the Game's requested product policy values for Premium.
 - Cross-repository coordination id: `OTV2-PREMIUM-DELIVERY`. Platform owns its side: this document
   never binds Platform; PREM-P accepts or amends it there.
+- Amends, pending on acceptance of PREMIUM-DELIVERY-0: `PREMIUM-ACTIVATION-V1` §4.1 (policy
+  revision, product binding, degraded-behaviour owners), §4.5 (relocation only on `EXPIRED`,
+  `REVOKED` or no entitlement) and §5 (PREM-1 and PREM-P rows), answering its review (#162
+  5913685128).
 - Runtime, migration, Platform and production authority: NONE. Each child needs its own
   allocation (Game: #162; Platform: its own coordinator).
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -61,14 +65,18 @@ How does Game learn, safely and in time, that an account has Premium?
   native handoff exists, and whose failure only withholds evidence (consumer contract §8.2: transport
   is not truth).
 - **When:** at fresh admission and reconnect (before any Premium benefit), and for each online
-  account when `refresh_after` passes. At most one request in flight per account; a failed refresh
-  is retried with backoff up to `authority_valid_until`.
+  account from `refresh_after` on. `refresh_after` is only Game's scheduling hint; the producer's
+  refresh point is `authority_valid_until` (§5). At most one request in flight per account; a
+  failed refresh is retried with backoff until `authority_valid_until`.
 - **Authentication:** mutual TLS on the private network between the Game server and Platform, with
   a Platform-issued service identity for the Game server, scoped to this one read purpose. The
-  credential is an environment secret; this decision stores none.
-- **Replay:** each request carries a fresh 128-bit nonce; the response echoes it; a response with
-  another nonce is dropped. The durable fence (consumer contract §6.2) rejects any older
-  `lifecycle_revision` or `authority_revision`.
+  credential is an environment secret; this decision stores none. Platform rotates it with two
+  credentials valid at once during a rotation window, and revokes one at once on compromise; a
+  Game server with a revoked credential gets no evidence, so Premium reads as Free (login is never
+  affected).
+- **Replay and binding:** each request carries a fresh 128-bit nonce; the response echoes it, and
+  its `account_id` equals the requested AccountId; a response failing either is dropped and fails
+  closed. The durable fence (§6) rejects any older revision.
 - **Size:** a response is at most 1,024 bytes (`PREMDEL0-RL-01`); anything larger or malformed fails
   closed for benefit.
 
@@ -79,6 +87,7 @@ A versioned JSON object, `oteryn.premium_snapshot.v1`:
 ```text
 schema:                "oteryn.premium_snapshot.v1"
 producer_revision:     Platform build SHA (provenance only, consumer contract §4)
+producer_profile:      "oteryn.entitlement.profile_b.v1" (the semantic profile revision)
 nonce:                 echo of the request nonce
 account_id:            AccountId
 product_id:            "oteryn.premium_time"
@@ -94,8 +103,16 @@ authority_valid_until: RFC 3339 UTC, at most issued_at + max_authority_lease
 refresh_after:         RFC 3339 UTC
 ```
 
-- Several Premium grants are merged by Platform into one account-level interval; Game never adds
-  intervals itself.
+- Several Premium grants are merged by Platform into one account-level entitlement with a stable
+  `entitlement_id` and one interval; Game never adds intervals itself.
+- Every new snapshot for an account carries a strictly higher `authority_revision`, including a
+  pure lease renewal; `lifecycle_revision` rises with each grant, expiry or revocation change.
+- `entitlement_state` is the producer's lifecycle state. Game derives its class from the absolute
+  times (consumer contract §8.3) and, where the two differ, the more restrictive wins (§8.2): for
+  example `NOT_YET_EFFECTIVE` with a start in the past still reads as not effective.
+- An unknown `producer_profile` fails closed for benefit. PREM-P and PREM-1 each record the
+  compatibility pair (`producer_profile`, `product_version`) they support, as consumer contract §4
+  requires, and the end-to-end test checks both records.
 - Unknown `schema`, `product_id` or `product_version` fail closed for benefit (consumer contract
   §4).
 
@@ -106,17 +123,26 @@ The consumer contract makes these Platform's product/version policy; Game reques
 | Value | Requested | Why |
 |---|---|---|
 | `max_authority_lease` | 60 minutes | bounds how long a revocation can go unseen |
-| `refresh_after` | 40 minutes after issue | 20 minutes of retries before the lease ends |
+| producer refresh point | `authority_valid_until` | no stale window: evidence is current until the lease ends |
 | `max_clock_skew` | 5 seconds | the FND-04 security-source bound; Game servers run NTP |
 | bounded stale use | not permitted | PREMIUM-ACTIVATION §4.1 is `REQUIRE_CURRENT` on every surface |
 
-So a Platform outage longer than about 20 minutes suspends Premium benefits (never login) until a
-refresh succeeds; nothing is lost, and D73/D76 already define benefits checked at use.
+Game starts refreshing 40 minutes after issue (`refresh_after`, its own scheduling), so a Platform
+outage longer than about 20 minutes suspends Premium benefits (never login) at `authority_valid_until`
+until a refresh succeeds; nothing is lost, and D73/D76 already define benefits checked at use.
+
+**Time.** Game evaluates the absolute times against the node's clock, synchronized by NTP, with
+uncertainty at most `max_clock_skew`; a node whose clock is not synchronized treats Premium as not
+current (consumer contract §7, ENT-CDF-04).
 
 ## 6. Game side (PREM-1)
 
-- The fence of consumer contract §6: one durable row per AccountId with the accepted high water and
-  the latest accepted evidence, written crash-consistently before any benefit uses it.
+- The fence of consumer contract §6.1: one durable row per (AccountId, EntitlementId) with its
+  `lifecycle_revision` high water and latest accepted evidence, plus one row per AccountId with the
+  `authority_revision` high water, both written crash-consistently before any benefit uses them.
+  A snapshot naming another `entitlement_id` than before opens a new row and never lowers the
+  account high water; a snapshot with no entitlement (`NONE`) advances the account high water and
+  reads as Free, so an older `ACTIVE` snapshot can never come back.
 - `premium_current(account, now)` is true only for `CURRENT_AUTHORITY` (§8.3); every other class is
   Free. Every Premium check in Game (PREM-2..5, the depot limit, charms, and the Market and house
   gates once the owner's pre-Premium answers end) reads it.
