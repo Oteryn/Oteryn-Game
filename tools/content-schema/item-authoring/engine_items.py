@@ -51,10 +51,9 @@ from fractions import Fraction
 from pathlib import Path
 
 from proficiency_profiles import (
-    BERSERK_REF,
     CANARY_PROFICIENCY_SOURCE,
+    CLIENT_PROFICIENCY_SOURCE,
     CRYSTAL_PROFICIENCY_SOURCE,
-    INTENSE_WOUND_CLEANSING_REF,
     MAGIC_SWORD_PROFICIENCY_REF,
     MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES,
     magic_sword_proficiency,
@@ -69,11 +68,10 @@ from source_field_catalogs import (
     TIBIAWIKI_ITEM_BINDINGS,
 )
 
-# External proficiency ids with an admitted canonical crosswalk (currently Magic
-# Sword, "238" only); both the Canary and Crystal source identities for an admitted id
-# are pinned/vetted out of band in `proficiency_profiles.py`, so a single-engine
-# converter run can cite both entries for it without needing the other engine's own
-# evidence at conversion time.
+# External proficiency ids the converter binds (currently Magic Sword, "238" only); the
+# client, Canary and Crystal source identities for it are pinned/vetted out of band in
+# `proficiency_profiles.py`, so a single-engine converter run can cite all of them
+# without needing the other sources' own evidence at conversion time.
 ADMITTED_PROFICIENCY_EXTERNAL_IDS = {
     external_id
     for _source_profile, external_id, _version in (
@@ -3304,29 +3302,28 @@ def convert_item(sources, item_id):
         demote_to_converter_missing("elementalbond")
 
     # proficiency: a numeric source proficiency id maps only through an admitted exact
-    # crosswalk (Rule 1/`proficiency_profiles`). `validate_item.py` requires *both* the
-    # Canary and Crystal source identities to corroborate the same target ("exact Canary
-    # and Crystal source corroboration is required"), but that admitted pair is pinned
-    # and vetted out of band in `proficiency_profiles.py`, not derived from this run's own
-    # engine evidence, so a single-engine converter run can still cite both entries for
-    # the one id/version they admit (Magic Sword, 238). Every other id has no admitted
-    # crosswalk at all and stays a precise blocker.
+    # crosswalk (Rule 1/`proficiency_profiles`). `validate_item.py` requires the 15.30
+    # client source crosswalk; the Canary and Crystal pair pinned in
+    # `proficiency_profiles.py` is optional corroboration. Both are vetted out of band,
+    # not derived from this run's own engine evidence, so a single-engine converter run
+    # cites all three for the one id/version pinned here (Magic Sword, 238). Every other
+    # id stays a precise blocker until its converter row is admitted.
     proficiency_id = flags.get("proficiency.proficiency_id")
     if proficiency_id is not None:
         if str(proficiency_id) in ADMITTED_PROFICIENCY_EXTERNAL_IDS:
             item["proficiency"] = magic_sword_proficiency()
+            dependencies["proficiency_crosswalks"].append(
+                proficiency_crosswalk(CLIENT_PROFICIENCY_SOURCE)
+            )
             dependencies["proficiency_crosswalks"].append(
                 proficiency_crosswalk(CANARY_PROFICIENCY_SOURCE)
             )
             dependencies["proficiency_crosswalks"].append(
                 proficiency_crosswalk(CRYSTAL_PROFICIENCY_SOURCE)
             )
-            for ref in (
-                MAGIC_SWORD_PROFICIENCY_REF,
-                INTENSE_WOUND_CLEANSING_REF,
-                BERSERK_REF,
-            ):
-                definitions[ref["key"]] = ref
+            definitions[MAGIC_SWORD_PROFICIENCY_REF["key"]] = (
+                MAGIC_SWORD_PROFICIENCY_REF
+            )
         else:
             demote_to_converter_missing("proficiency.proficiency_id")
             blockers.append(f"proficiency_crosswalk_not_admitted:{proficiency_id}")

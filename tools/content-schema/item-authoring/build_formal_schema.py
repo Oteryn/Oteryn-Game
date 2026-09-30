@@ -7,6 +7,7 @@ from pathlib import Path
 import engine_items
 from proficiency_profiles import (
     CANARY_PROFICIENCY_SOURCE,
+    CLIENT_PROFICIENCY_SOURCE,
     CRYSTAL_PROFICIENCY_SOURCE,
 )
 from real_item_examples import build_real_item_examples
@@ -295,13 +296,13 @@ WIKI_FORMAL_DESTINATIONS = {
     "sounds": ["/item/presentation/sounds"],
     "mercado": ["/item/trade/marketable"],
     "notes": ["/item/editor/notes"],
-    "perk1": ["/item/proficiency/levels/*/perks/*"],
-    "perk2": ["/item/proficiency/levels/*/perks/*"],
-    "perk3": ["/item/proficiency/levels/*/perks/*"],
-    "perk4": ["/item/proficiency/levels/*/perks/*"],
-    "perk5": ["/item/proficiency/levels/*/perks/*"],
-    "perk6": ["/item/proficiency/levels/*/perks/*"],
-    "perk7": ["/item/proficiency/levels/*/perks/*"],
+    "perk1": ["/item/proficiency/profile_binding"],
+    "perk2": ["/item/proficiency/profile_binding"],
+    "perk3": ["/item/proficiency/profile_binding"],
+    "perk4": ["/item/proficiency/profile_binding"],
+    "perk5": ["/item/proficiency/profile_binding"],
+    "perk6": ["/item/proficiency/profile_binding"],
+    "perk7": ["/item/proficiency/profile_binding"],
     "regenseconds": ["/item/consumable/regeneration_seconds"],
     "primarytype": ["/item/taxonomy/primary"],
     "secondarytype": ["/item/taxonomy/secondary"],
@@ -848,33 +849,6 @@ def build_item_schema():
         },
         ("key", "target"),
     )
-    d["proficiencyLevel"] = obj(
-        {
-            "level": integer(1),
-            "selection_count": {"const": 1},
-            "perks": array(use("augment"), 1),
-        },
-        ("level", "selection_count", "perks"),
-    )
-    d["proficiencyShaping"] = obj(
-        {
-            "max_rank": integer(),
-            "replace_slots": integer(),
-            "refine_enabled": use("bool"),
-            "reshape_enabled": use("bool"),
-            "clear_enabled": use("bool"),
-            "lunar_ascension_enabled": use("bool"),
-            "cost_service": use("InteractionRef"),
-        },
-        (
-            "max_rank",
-            "replace_slots",
-            "refine_enabled",
-            "reshape_enabled",
-            "clear_enabled",
-            "lunar_ascension_enabled",
-        ),
-    )
     d["proficiencyClientBinding"] = obj(
         {
             "client_proficiency_id": integer(1),
@@ -886,14 +860,11 @@ def build_item_schema():
         {
             "client_binding": use("proficiencyClientBinding"),
             "profile_binding": use("ProficiencyRef"),
-            "levels": array(use("proficiencyLevel")),
-            "shaping": use("proficiencyShaping"),
             "augments": array(use("augment")),
         },
         anyOf=[
             {"required": ["client_binding"]},
             {"required": ["profile_binding"]},
-            {"required": ["levels"]},
             {"required": ["augments"]},
         ],
     )
@@ -1388,12 +1359,14 @@ def build_dependencies_schema(item_schema):
 
     d["proficiencySourceCrosswalk"] = {
         "oneOf": [
+            proficiency_crosswalk_shape(CLIENT_PROFICIENCY_SOURCE),
             proficiency_crosswalk_shape(CANARY_PROFICIENCY_SOURCE),
             proficiency_crosswalk_shape(CRYSTAL_PROFICIENCY_SOURCE),
         ],
         "description": (
-            "Pinned Canary or Crystal source-ID to admitted canonical Proficiency "
-            "mapping; numeric IDs never become ContentKeys."
+            "Pinned 15.30 client (required for a profile_binding), Canary or Crystal "
+            "source-ID to admitted canonical Proficiency mapping; numeric IDs never "
+            "become ContentKeys."
         ),
     }
     any_reference = {

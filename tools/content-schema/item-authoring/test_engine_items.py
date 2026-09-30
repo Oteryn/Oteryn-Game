@@ -971,15 +971,7 @@ def test_proficiency_id_238_cites_both_admitted_crosswalk_entries():
             crosswalk["target"] == engine_items.MAGIC_SWORD_PROFICIENCY_REF, crosswalk
         )
     defined_keys = {ref["key"] for ref in deps["definitions"]}
-    check(
-        {
-            engine_items.MAGIC_SWORD_PROFICIENCY_REF["key"],
-            engine_items.INTENSE_WOUND_CLEANSING_REF["key"],
-            engine_items.BERSERK_REF["key"],
-        }
-        <= defined_keys,
-        deps,
-    )
+    check(engine_items.MAGIC_SWORD_PROFICIENCY_REF["key"] in defined_keys, deps)
 
 
 def test_proficiency_id_stays_a_precise_blocker_for_other_ids():

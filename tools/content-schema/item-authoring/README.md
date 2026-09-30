@@ -22,7 +22,7 @@ Architecture and boundaries:
 | `canary-field-dispositions.json` | Exhaustive pinned Canary ledger: 143 parser keys plus root, nested, appearance and reverse-relation inputs. |
 | `crystal-field-dispositions.json` | Exhaustive pinned Crystal ledger: 143 parser keys plus root, nested, appearance and reverse-relation inputs. |
 | `source_field_catalogs.py` | Generated-ledger source of truth, aliases, defects and owner routing. |
-| `proficiency_profiles.py` | Pinned Canary/Crystal proficiency sources and admitted canonical static profiles. |
+| `proficiency_profiles.py` | Pinned 15.30 client, Canary and Crystal proficiency sources; the admitted client crosswalks are the committed `content/proficiencies/` definitions. |
 | `real_item_examples.py` / `real-source-examples.json` | Six generated, validated real-item examples with source evidence and explicit blockers. |
 | `templates/*.json` | Thirteen valid starting points for materially different authoring shapes. |
 | `validate_item.py` | Structural, semantic, exact-reference and import-readiness validation. |
@@ -337,11 +337,10 @@ engine's evidence supplies keeps a precise blocker rather than a guessed value:
 `augments` (the nested augment tree's target/value kind has no admitted crosswalk),
 `mantra` (its `damage_types` are not derivable from the single `points` attribute),
 `runespellname` (no admitted Ability identity crosswalk is wired into this package), and
-`proficiency.proficiency_id` (the one admitted crosswalk, Magic Sword/238, still cannot
-satisfy `validate_item.py`'s requirement that both the Canary *and* Crystal source
-identities corroborate the same target, which a single-engine converter run can never
-offer alone; every id, including 238, keeps `converter_missing:proficiency.proficiency_id`
-plus a `proficiency_crosswalk_not_admitted:<id>` blocker). `flags.forceuse` is `UNRESOLVED`
+`proficiency.proficiency_id` (the converter binds only Magic Sword/238, citing the pinned
+client, Canary and Crystal crosswalks; every other id keeps
+`converter_missing:proficiency.proficiency_id` plus a `proficiency_crosswalk_not_admitted:<id>`
+blocker, and its weapon binding comes from `content/proficiencies/bindings.json` instead). `flags.forceuse` is `UNRESOLVED`
 with no route at all and is intentionally left as `unresolved:flags.forceuse`.
 
 Successful validation proves authoring shape and declared dependency closure only. It
@@ -370,15 +369,26 @@ ordered sprite sequence of all six fixtures and reject inline pixel/blob payload
 market vocation restrictions require `marketable=true`; an engine Market flag does
 not prove general player-to-player tradeability. Numeric source proficiency IDs remain
 provenance until a pinned `proficiency_crosswalks` entry binds them to an admitted
-exact `ProficiencyRef`. The candidate admits Magic Sword source pair `238`/`3` only when
-both the pinned Canary `data/items/proficiencies.json` and Crystal
-`data/json/proficiencies.json` identities corroborate the same target. Those two files
-are byte-identical at the pinned revisions (SHA-256
-`1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22`).
-The real Magic Sword Item contains the complete ordered three-level perk matrix with
-explicit selection slots, one selectable perk per level, typed percentages/points and
-the signed `-30000 ms` cooldown modifier. The exact admitted profile validator rejects
-payload drift, missing corroboration, unknown IDs/versions and wrong source artifacts.
+exact `ProficiencyRef`.
+
+**Crosswalk rule (amended by PROFICIENCY-0 §4.1, PROF-CONTENT-1d):**
+
+- **Required source:** the pinned 15.30 client proficiency file (`content/assets/files/proficiencies-7fea90ec….json`,
+  source profile `cipsoft_client_15_30_proficiencies_v1`) is CipSoft's own data and admits a
+  definition on its own. `profile_binding` requires a client crosswalk. Its external id is the
+  `ProficiencyId`, and its source version is the definition's `Version`.
+- **Admitted targets:** exactly the committed `content/proficiencies/` definitions
+  (`oteryn:proficiency.tibia.p<ProficiencyId>`).
+- **Optional corroboration:** Canary `data/items/proficiencies.json` and Crystal
+  `data/json/proficiencies.json` crosswalks. They are admitted only where pinned (Magic Sword
+  `238`/`3`). The two files are byte-identical at the pinned revisions (SHA-256
+  `1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22`).
+- **No inline profile:** the Item carries no levels, perks or shaping. They belong to the
+  definition (`tools/content-schema/proficiency-authoring`), so the Magic Sword Item carries
+  only `profile_binding` `oteryn:proficiency.tibia.p238`.
+- **Rejected:** a binding without the client crosswalk, unknown IDs/versions or targets, wrong
+  source artifacts, and inline `levels`/`shaping`.
+
 Character-owned XP and active perk selections are deliberately not Item fields.
 
 Every Item must declare `delivery_task_eligible` as a JSON boolean. `true` means the

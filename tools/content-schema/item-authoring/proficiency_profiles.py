@@ -1,6 +1,28 @@
-"""Pinned canonical proficiency profiles admitted by Item authoring."""
+"""Pinned proficiency sources and the admitted canonical Proficiency definitions.
 
+PROFICIENCY-0 §4.1 (PROF-CONTENT-1d): a definition is admitted from the pinned 15.30
+client source alone. The admitted definitions are the committed `content/proficiencies/`
+family (`oteryn:proficiency.tibia.p<ProficiencyId>`), so an Item binds one only through
+the client crosswalk (`CLIENT_PROFICIENCY_SOURCE`, external id = `ProficiencyId`, source
+version = its `Version`). Canary and Crystal crosswalks are optional corroboration and are
+admitted only where pinned here (Magic Sword, 238/3). The levels and perks live in the
+definition, never inline on the Item.
+"""
+
+import json
 from copy import deepcopy
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+PROFICIENCY_CONTENT = REPO_ROOT / "content" / "proficiencies"
+
+CLIENT_PROFICIENCY_SOURCE = {
+    "source_profile": "cipsoft_client_15_30_proficiencies_v1",
+    "repository": "Oteryn/Oteryn-Game",
+    "revision": "client-15.30",
+    "path": "content/assets/files/proficiencies-7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015.json",
+    "digest_sha256": "7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015",
+}
 
 CANARY_PROFICIENCY_SOURCE = {
     "source_profile": "canary_47dfd51_item_definition_v1",
@@ -20,108 +42,41 @@ CRYSTAL_PROFICIENCY_SOURCE = {
 
 MAGIC_SWORD_PROFICIENCY_REF = {
     "family": "Proficiency",
-    "key": "oteryn:proficiency.weapon.sword.magic-sword",
+    "key": "oteryn:proficiency.tibia.p238",
     "revision": "definition-r1",
-}
-
-INTENSE_WOUND_CLEANSING_REF = {
-    "family": "Ability",
-    "key": "oteryn:ability.spell.intense-wound-cleansing",
-    "revision": "definition-r1",
-}
-
-BERSERK_REF = {
-    "family": "Ability",
-    "key": "oteryn:ability.spell.berserk",
-    "revision": "definition-r1",
-}
-
-MAGIC_SWORD_PROFICIENCY_PAYLOAD = {
-    "levels": [
-        {
-            "level": 1,
-            "selection_count": 1,
-            "perks": [
-                {
-                    "selection_slot": 1,
-                    "key": "sword_skill_auto_attack_extra_damage",
-                    "target": {
-                        "kind": "skill_scaled_auto_attack",
-                        "skill": "sword",
-                    },
-                    "value": {
-                        "kind": "rational_percent",
-                        "value": {"numerator": 7, "denominator": 1},
-                    },
-                }
-            ],
-        },
-        {
-            "level": 2,
-            "selection_count": 1,
-            "perks": [
-                {
-                    "selection_slot": 1,
-                    "key": "intense_wound_cleansing_cooldown",
-                    "target": {
-                        "kind": "ability",
-                        "ability": INTENSE_WOUND_CLEANSING_REF,
-                    },
-                    "value": {"kind": "signed_milliseconds", "value": -30000},
-                },
-                {
-                    "selection_slot": 2,
-                    "key": "weapon_shield_modifier",
-                    "target": {"kind": "weapon_shield_modifier"},
-                    "value": {"kind": "signed_points", "value": 1},
-                },
-                {
-                    "selection_slot": 3,
-                    "key": "sword_skill_spell_healing",
-                    "target": {
-                        "kind": "skill_scaled_spell_healing",
-                        "skill": "sword",
-                    },
-                    "value": {
-                        "kind": "rational_percent",
-                        "value": {"numerator": 10, "denominator": 1},
-                    },
-                },
-            ],
-        },
-        {
-            "level": 3,
-            "selection_count": 1,
-            "perks": [
-                {
-                    "selection_slot": 1,
-                    "key": "berserk_life_leech",
-                    "target": {"kind": "ability", "ability": BERSERK_REF},
-                    "value": {
-                        "kind": "rational_percent",
-                        "value": {"numerator": 10, "denominator": 1},
-                    },
-                },
-                {
-                    "selection_slot": 2,
-                    "key": "berserk_mana_leech",
-                    "target": {"kind": "ability", "ability": BERSERK_REF},
-                    "value": {
-                        "kind": "rational_percent",
-                        "value": {"numerator": 5, "denominator": 1},
-                    },
-                },
-            ],
-        },
-    ]
 }
 
 MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES = frozenset(
     {
+        (CLIENT_PROFICIENCY_SOURCE["source_profile"], "238", 3),
         (CANARY_PROFICIENCY_SOURCE["source_profile"], "238", 3),
         (CRYSTAL_PROFICIENCY_SOURCE["source_profile"], "238", 3),
     }
 )
+
+
+def admitted_client_crosswalks():
+    """(client profile, ProficiencyId, Version) -> ident of every admitted definition."""
+
+    index = json.loads((PROFICIENCY_CONTENT / "index.json").read_text(encoding="utf-8"))
+    admitted = {}
+    for shard in index["shards"]:
+        payload = json.loads((REPO_ROOT / shard).read_text(encoding="utf-8"))
+        for row in payload["records"]:
+            definition = row["definition"]
+            source = definition["source"]
+            admitted[
+                (
+                    CLIENT_PROFICIENCY_SOURCE["source_profile"],
+                    str(source["proficiency_id"]),
+                    source["version"],
+                )
+            ] = (
+                "Proficiency",
+                definition["identity"]["key"],
+                definition["identity"]["revision"],
+            )
+    return admitted
 
 
 def proficiency_crosswalk(source):
@@ -136,9 +91,6 @@ def proficiency_crosswalk(source):
 
 
 def magic_sword_proficiency():
-    """Return the admitted static profile without player-owned progression state."""
+    """Return the Magic Sword binding; its levels and perks are the definition's."""
 
-    return {
-        "profile_binding": deepcopy(MAGIC_SWORD_PROFICIENCY_REF),
-        **deepcopy(MAGIC_SWORD_PROFICIENCY_PAYLOAD),
-    }
+    return {"profile_binding": deepcopy(MAGIC_SWORD_PROFICIENCY_REF)}
