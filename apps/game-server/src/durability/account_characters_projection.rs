@@ -24,12 +24,15 @@ pub const MAX_CHARACTER_TRANSACTION: Duration = Duration::from_secs(DB_PASS_DEAD
 
 // One statement is one database snapshot: the epoch, the account's revision and
 // its Characters are read together. One row more than the wire bound is read so
-// an oversized list refuses instead of being truncated.
+// an oversized list refuses instead of being truncated; every Character is
+// listed, so the bound counts exactly the entries sent. `observed_at` is when
+// the revision was assigned (migration 0028), never the read time, so a retry
+// of the same (epoch, revision) is byte-identical.
 const SNAPSHOT: &str = "\
 WITH head AS (SELECT account_id FROM game_character_account_projection_outbox \
               ORDER BY created_at, account_id LIMIT 1) \
 SELECT h.account_id::text AS account_id, e.projection_epoch, p.projection_revision, \
-       floor(extract(epoch FROM clock_timestamp()))::bigint AS observed_at, \
+       p.revised_at / 1000 AS observed_at, \
        r.character_id::text AS character_id, r.world_id::text AS world_id, r.name, r.lifecycle \
   FROM head h \
   JOIN game_character_account_projections p USING (account_id) \
@@ -38,10 +41,15 @@ SELECT h.account_id::text AS account_id, e.projection_epoch, p.projection_revisi
                       WHERE account_id = h.account_id ORDER BY character_id LIMIT $1) r ON true \
  ORDER BY r.character_id";
 
-/// `AVAILABLE` for the only admissible lifecycle. No other lifecycle exists in
-/// this slice; an unknown one is omitted, which fails toward less disclosure.
-fn availability(lifecycle: i16) -> Option<Availability> {
-    (lifecycle == 1).then_some(Availability::Available)
+/// `AVAILABLE` for the only admissible lifecycle; any other lifecycle is not
+/// admissible, so it is listed as `UNAVAILABLE` (§2.1). A deleted Character has
+/// no root and is not listed.
+fn availability(lifecycle: i16) -> Availability {
+    if lifecycle == 1 {
+        Availability::Available
+    } else {
+        Availability::Unavailable
+    }
 }
 
 fn positive(value: i64) -> Result<u64> {
@@ -91,14 +99,11 @@ impl DurabilityRoot {
                         else {
                             continue;
                         };
-                        let Some(availability) = availability(row.try_get("lifecycle")?) else {
-                            continue;
-                        };
                         snapshot.characters.push(CharacterSummary {
                             character_id,
                             world_id: row.try_get("world_id")?,
                             name: row.try_get("name")?,
-                            availability,
+                            availability: availability(row.try_get("lifecycle")?),
                         });
                     }
                     Ok(Ok(Some(snapshot)))
@@ -195,5 +200,20 @@ impl ProjectionStore for AccountCharactersStore<'_, '_, '_, '_> {
             .account_characters_watermark_facts(self.authority)
             .await
             .map_err(|_| ())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_lifecycle_is_listed_and_only_lifecycle_one_is_available() {
+        assert_eq!(availability(1), Availability::Available);
+        for lifecycle in [i16::MIN, -1, 0, 2, 3, i16::MAX] {
+            assert_eq!(availability(lifecycle), Availability::Unavailable);
+        }
+        assert!(SNAPSHOT.contains("p.revised_at / 1000 AS observed_at"));
+        assert!(!SNAPSHOT.contains("clock_timestamp"));
     }
 }

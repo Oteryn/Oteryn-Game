@@ -69,7 +69,7 @@ Snapshot request, exact member set, no unknown, duplicate or `null` members, nes
 - `account_id`: canonical lowercase Platform `AccountId` (UUIDv7, Platform ADR 0028; Game never mints it).
 - `characters`: 0..64 entries, sorted by `character_id` ascending, unique. An empty list is a valid snapshot.
 - `projection_epoch`, `projection_revision`: canonical non-zero decimal uint64 strings (§5).
-- `source_observed_at`: canonical decimal Unix seconds at which the snapshot was read.
+- `source_observed_at`: canonical decimal Unix seconds at which the snapshot was read. Every retry of the same `(projection_epoch, projection_revision)` publication is byte-identical: Game takes `source_observed_at` from when that revision was assigned (never later than the read), not from the retry.
 - `source_authority`: the configured Character Authority namespace, 1..128 of `[A-Za-z0-9._:/-]`.
 - Serialization: raw UTF-8, no string escapes (names exclude `"`, `\` and control characters), no insignificant whitespace.
 
@@ -80,6 +80,13 @@ Watermark request, exact member set:
 ```
 
 Success response (`200`, exact): `{"contract_version":1,"result":"accepted"}` or `{"contract_version":1,"result":"superseded"}`. Failures are empty bodies: `400` malformed, `401` unauthenticated, `409` equal `(epoch, revision)` with different content, `429` rate limited, `503` unavailable.
+
+**Clarification (architect ruling #162 5910360309), pending on acceptance of ITEM-MOVE-WIRE-0,
+which carries it.** "Content" is the projected character set
+only (the `characters` value, compared canonically). `source_observed_at` and the envelope fields
+are not content: an equal pair with equal `characters` is an idempotent `200 accepted`, and the
+consumer keeps its first stored `source_observed_at`. The same reading applies to the snapshot
+ordering rule below.
 
 ## 5. Revision, ordering and delivery
 

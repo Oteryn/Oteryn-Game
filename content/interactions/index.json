@@ -4,7 +4,7 @@
   "kind": "static_content",
   "owner": "Interaction",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Typed interaction definitions."
+  "notes": "Typed interaction definitions. reward_claims/: 231 plain once RewardClaim records from the chest pilot, built by tools/content-schema/reward-claim-authoring/reward_claim_authoring.py (CHEST-CONTENT part 2b)."
 }

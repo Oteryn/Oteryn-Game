@@ -383,7 +383,8 @@ Silent row deletion, `quantity=0` live state or disappearance during recovery is
 
 Besides the D3 `DECAY_RETIRE` cause, the admitted burn sink is the closed `FeeBurnCause` of the
 gold fee amendment in §39.3 (owner decisions D174-D178), and, with the NPC service amendment in
-§39.3, the closed `NpcTradeCause` of a SELL.
+§39.3, the closed `NpcTradeCause` of a SELL. Pending on acceptance of ITEM-USE-0, the item use
+amendment in §39.3 admits the closed `ItemUseCause`.
 
 ## 16. Transform semantics
 
@@ -631,6 +632,14 @@ GAME-ITEM owns equip legality. DUR-03 requires all old location/claims, complete
 
 No half two-hand/mutually-exclusive claim.
 
+**Amendment (ITEM-MOVE-WIRE-1, 2026-09-30), pending on acceptance of ITEM-MOVE-WIRE-1.**
+`reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md` §6, once accepted, admits, each in its
+child and for those shapes only, superseding the §39.1 and §39.3 limits named there: TRANSFER of a whole item
+between the main backpack and the nine non-container `CharacterEquipment` slots, including a swap
+with the target slot's occupant (two items, four location lines, with its own resource rows); and
+TRANSFER of a whole item from a backpack entry or a slot to `Ground`, and from Ground back to the
+main backpack, under §32. No new burn sink: dropped items are retired by `WorldReset` (D191).
+
 ## 34. Multi-transaction typed custody
 
 Future workflow may span transactions only when every committed step is safe:
@@ -645,6 +654,13 @@ stable OperationId where needed
 After custody commit, value is not spendable from prior location. Each step has own TransactionId and is conservation-safe. Workflow is restartable/idempotent. Compensation is new transaction. No hidden end-to-end atomicity across separate commits.
 
 Owning domain defines business lifecycle/eligibility.
+
+**Amendment (PLAYER-TRADE-0, 2026-09-30), pending on acceptance of PLAYER-TRADE-0.**
+`reviews/OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md` §5-§6, once accepted, admits one trade swap: two whole items
+of two Characters on one channel, each into a new direct entry of the other's main backpack, in
+one transaction keyed by the trade occurrence, with both Characters fenced. It supersedes the §39.1
+one-item and one-Character limits for that cause only. Offered items stay in place until the swap,
+so no custody family is used.
 
 ## 35. Current database authority boundary
 
@@ -691,6 +707,21 @@ Owning combat/loot/content architecture also declares whether visible runtime lo
 
 No surface becomes accepted merely because DUR-03 supplies transaction/custody primitives.
 
+**Market amendment (pending on acceptance of MARKET-0, #162 5912405163;
+`reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md`).** When MARKET-0 is accepted,
+the market row is filled by two §5.2 custody families, `MarketOfferEscrow {offer_id, ordinal}`
+(World-scoped, owned by the Market) and `CharacterInbox {character_id, ordinal}` (Character + World),
+and by a buy offer's `escrow_gold` as §18 non-item value in custody. Its shapes (place, accept,
+cancel, expire, match, Inbox out) move whole items as `TRANSFER` lines with at most one §12 split
+(`SPLIT_MERGE_QUANTITY`, a §11.3 planned output identity), gold as `TRANSFER` value lines, and the
+placing fee as one `BURN` value line under the Market variant of `FeeBurnCause`. The owner
+admitted that fee source, paid from the bank (D178; #162 5913348961); MARKET-0 carries it into
+§39.3 and the gold fee decision §4.4 as pending amendments. A held credit (MARKET-0 §6) is §18
+non-item value in custody on the offer, like `escrow_gold`. For those
+shapes only, it supersedes the §39.1 exclusions of non-item accounts, multiple touched items and
+burn combined with other lines, and the §39.1 and §39.3 source and destination limits, within the
+MARKET-0 §9 rows (100 touched items, 3 value lines). Every other obligation is unchanged.
+
 ## 39. Mandatory durable evidence boundary
 
 ADR-0006 requires durable audit for security-relevant durable item/currency mutation. DUR-03 therefore requires ANL-compatible durable transaction evidence sufficient to reconcile every effect whose owning value/security policy declares mandatory audit.
@@ -734,7 +765,9 @@ aggregate payload for each distinct logical transaction:
   live after, established in typed `Ground` custody with applicable corpse
   association/provenance. (The reward-chest and D3 amendments in §39.3 each admit
   one named shape whose only location is a `Container` entry instead — no Ground
-  custody, no separate TRANSFER for that placement.)
+  custody, no separate TRANSFER for that placement. The starter grant amendment, pending on
+  acceptance of STARTER-BACKPACK-0, admits one whose only location is the empty
+  `CharacterEquipment` container slot.)
 - `TRANSFER`: that already-existing live ItemInstance moves from typed `Ground`
   custody to direct-root `CharacterInventory`, preserving identity, type and
   quantity and leaving exactly one authoritative immediate location. (The D3
@@ -762,7 +795,9 @@ amendment in §39.3 admits the two-item merge and top-up shapes and direct entri
 the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`; the gold fee
 amendment in §39.3 admits typed BURN of up to 20 coin stacks with up to 2 change MINTs, composed
 with a Character change in one transaction; the NPC service amendment in §39.3 admits the NPC BUY,
-SELL and travel shapes.) Unsupported
+SELL and travel shapes; pending on acceptance of ITEM-USE-0, the item use amendment in §39.3 admits
+a one-unit BURN, or a one-unit TRANSFORM into a flask stack or a fresh flask, under
+`ItemUseCause`.) Unsupported
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
 Content definition or a production quantity ceiling.
@@ -1020,6 +1055,22 @@ that a MINT establishes typed Ground custody before a separate TRANSFER. For thi
   rule; no Ground custody and no TRANSFER;
 - the audit evidence is: before, explicit nonexistence of the item and the claim state; after, the
   live item in its `Container` entry, its type and quantity, and the committed `RewardClaim` row;
+- mint into an existing stack stays excluded (§39.1).
+Every other §39 obligation is unchanged.
+
+**Starter grant amendment (STARTER-BACKPACK-0), pending on acceptance of STARTER-BACKPACK-0.**
+`reviews/OTERYN_GAME_STARTER_BACKPACK0_STARTER_GRANT_DECISION_2026-09-30.md` §5-§6 admits, in the
+`STARTER-1` child, one bounded MINT shape and for it supersedes the same §39.1-§39.3 statements as
+the reward chest amendment above. For this shape:
+- the source cause is `StarterGrant {character_id, template_key}`, server-originated with no
+  CommandRef, whose occurrence identity is the `game_character_starter_grants` key: once per
+  Character and template, forever; the template is the one named by the root's
+  `starter_template_revision`;
+- the first and only location is the Character's empty `CharacterEquipment` container slot (D80);
+  no Ground custody and no TRANSFER; an occupied slot mints nothing;
+- the audit evidence is a `OneItemTransactionV1` `starter_grant` operation: before, the nonexistence
+  of the grant row and of the slot item; after, the live item in the slot, its type and quantity 1,
+  and the committed grant row, all from one physical transaction;
 - mint into an existing stack stays excluded (§39.1).
 Every other §39 obligation is unchanged.
 
@@ -1281,6 +1332,12 @@ authority, conservation) is unchanged.
   numbers are registered by GOLD-FEE-1, not here.
 
 
+**Market fee amendment (MARKET-0), pending on acceptance of MARKET-0 (#1367).** The owner admitted the Market
+placing fee as a sink paid from the bank (D238, #162 5913348961), as D178 requires. The
+`FeeBurnCause` variant `MarketFee {offer_id, occurrence}` is one `FEE_DEBIT` value line of class
+BURN on the placer's (Account, World) balance, with no item line
+(`reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md` §4).
+
 **Bank fee amendment (BANK-FEE-0), pending on acceptance of BANK-FEE-0.**
 `reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md`, once accepted, admits a bank part for the
 fee shapes above, for those shapes only: it supersedes the §39.1 exclusion of non-item accounts; the
@@ -1289,6 +1346,19 @@ less than `F` burns every eligible coin whole with no change and pays `F - T` fr
 (BANK-0) instead of being rejected; the bank part is one `FEE_DEBIT` value line of class BURN
 under the fee's own `FeeBurnCause` (§15, §18), counted by `DUR03-RL-03-FEE`; `DUR03-RL-03` stays 0
 for coin-only fees; a fee paid wholly from the bank has no burn line.
+
+**House amendment (HOUSE-OWN-0), pending on acceptance of HOUSE-OWN-0 (#1368).** The owner
+admitted the house auction price and rent as sinks paid from the bank (D238, #162 5913348961), as
+D178 requires. `reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md` §4-§9 adds
+the `FeeBurnCause` variants `HousePrice {house, auction}` and `HouseRent {house, period}`, each one
+`BURN` value line on the owner's (Account, World) bank balance with no item line; bid escrow is
+§18 non-item value in custody, moved by `TRANSFER` value lines; house disposition moves items
+from `HouseInterior` to `CharacterInbox` as one-item `TRANSFER` lines, up to 100 items from one
+source to many destinations per step. For those shapes only, it supersedes the §39.1 exclusions of
+non-item accounts, multiple touched items and burn combined with other lines, and the §39.1 and
+§39.3 source and destination limits, within the HOUSE-OWN-0 §12 rows (100 touched items per step;
+`DUR03-RL-03-HOUSE`: at most 200 value lines, each ledger entry and each escrow change counting as
+one). Every other obligation is unchanged.
 
 **NPC service amendment (NPC-0).** `NPC0-NPC-RUNTIME-SERVICE-V1`
 (`reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6) admits three shapes
@@ -1475,6 +1545,23 @@ unchanged.
   - the matching extension of the Ground-removal proof triggers.
 
   This amendment grants no runtime or DDL authority.
+
+**Item use amendment (ITEM-USE-0, 2026-09-30), pending on acceptance of ITEM-USE-0.**
+`reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md` §4, once accepted,
+admits, in its ITEM-USE-1 child and for these shapes only:
+
+- **Burn.** One BURN line (§17) of exactly one unit from the used stack, which keeps its identity
+  (§11.1) or retires at zero (§11.5), under the closed sink `ItemUseCause` (`Food`, `Potion`),
+  keyed by the using command's CommandRef.
+- **Flask.** For a potion whose content names an empty flask, one unit-level TRANSFORM line (§17)
+  instead: one unit of the used stack in, one flask unit out, either as a quantity adjustment of a
+  compatible flask stack in the main backpack (§11.1) or as a fresh flask item in a new entry,
+  planned in the reservation (§11.3). §16.1's instance policy does not apply, because no whole
+  instance changes type. At most two items. Nothing is minted.
+- **Supersession.** For these shapes only, the §39.1 exclusions of burn, transform, mint into an
+  existing stack and multiple touched items. Every other §39 obligation is unchanged. One audit
+  event per use (a `OneItemTransactionV1` operation assigned by ITEM-USE-1), committed before the
+  use's effect, with its own suffixed resource rows.
 
 ## 40. Durable acknowledgement
 

@@ -60,6 +60,7 @@ fn with_binding(mut spell: SpellDefinition) -> SpellDefinition {
 
 fn sorcerer() -> CasterState {
     CasterState {
+        harmony_multiplier: super::harmony::HarmonyMultiplier::ONE,
         vocation: Vocation::Sorcerer,
         level: 100,
         magic_level: 50,

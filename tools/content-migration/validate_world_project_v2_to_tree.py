@@ -32,6 +32,8 @@ DIALOGUE_COUNT = 715
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
 PROFICIENCY_COUNT = 443
+# RewardClaim likewise (tools/content-schema/reward-claim-authoring).
+REWARD_CLAIM_COUNT = 231
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 322, "Service.Travel": 56}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
 
@@ -91,6 +93,12 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
                              migrated_authoring: dict[tuple[str, str, str], dict[str, Any]]) -> tuple[int, int, int, int]:
     """Round-trip Item authoring/taxonomy/relations and prove per-fact provenance."""
     staged = load(ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json")
+    stats = load(ROOT / "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json")
+    content_path = {"weapon.range_cells": "weapon.range"}
+    superseding = {
+        (("Item", row["item_key"], "definition-r1"), content_path.get(row["field_path"], row["field_path"])): row["typed_value"]["value"]
+        for row in stats["promotions"]
+    }
     assignments = load(ROOT / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json")["family_assignments"]
     legacy_authoring = {target_id(row["item"]): row for row in declarations.get("item_authoring", [])}
     taxonomy = load(ROOT / "content/items/taxonomy/items.json")
@@ -137,13 +145,18 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         require(len(record["source_digest"]) == 64 and record["revision_id"] > 0, "PROVENANCE_SOURCE_COORDINATES")
         known = known_paths(definitions[key])
         for entry in record["definition_facts"]:
-            require(known.get(entry["field_path"]) == entry["value"], f"PROVENANCE_DEFINITION_FACT:{entry['field_path']}")
+            # ITEM-SEM-2b: an English TibiaWiki stat row supersedes the Wave 1 value; the
+            # definition must then carry the superseding value instead.
+            expected = superseding.get((key, entry["field_path"]), entry["value"])
+            require(known.get(entry["field_path"]) == expected, f"PROVENANCE_DEFINITION_FACT:{entry['field_path']}")
             fact_count += 1
         for entry in record["authoring_facts"]:
             authoring_value(legacy_authoring[key], entry["field_path"])
             fact_count += 1
-        # Blocked contracts stay UNKNOWN even when the source carried a value.
-        for blocked in ("physical.weight", "stack.stack_max"):
+        # Blocked contracts stay UNKNOWN even when the source carried a value. Weight is no
+        # longer blocked: the owner fixed its unit (hundredths of an ounce, 2026-09-30) and
+        # ITEM-SEM-2b promotes it from TibiaWiki.
+        for blocked in ("stack.stack_max",):
             require(blocked not in known, f"BLOCKED_FIELD_PROMOTED:{blocked}")
         require(definitions[key].get("semantics", {}).get("equipment", {}).get("state", "UNKNOWN") == "UNKNOWN", "BLOCKED_EQUIPMENT_PROMOTED")
     require(fact_count == staged["counts"]["definition_facts"] + staged["counts"]["authoring_facts"], "PROVENANCE_FACT_COUNT")
@@ -339,7 +352,8 @@ def main() -> int:
     }, "COMPATIBILITY_BOUNDARY")
     require(lock["family_counts"] == {"Item": 33567, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS,
-                                       "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT},
+                                       "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
+                                       "RewardClaim": REWARD_CLAIM_COUNT},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
     require(item_index["record_count"] == 33567 and len(item_index["shards"]) == 68, "ITEM_INDEX")
@@ -433,13 +447,23 @@ def main() -> int:
         require(shard["family"] == "Proficiency" and shard["shard"]["count"] == len(shard["records"]), "PROFICIENCY_SHARD")
         proficiency_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
     require(len(proficiency_keys) == PROFICIENCY_COUNT, "PROFICIENCY_IDENTITY_UNIQUENESS")
+    reward_claim_index = load(ROOT / "content" / "interactions" / "reward_claims" / "index.json")
+    require(reward_claim_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and reward_claim_index["family"] == "RewardClaim",
+            "REWARD_CLAIM_INDEX")
+    require(reward_claim_index["record_count"] == REWARD_CLAIM_COUNT, "REWARD_CLAIM_INDEX_COUNT")
+    reward_claim_keys = set()
+    for shard_path in reward_claim_index["shards"]:
+        shard = load(ROOT / shard_path)
+        require(shard["family"] == "RewardClaim" and shard["shard"]["count"] == len(shard["records"]), "REWARD_CLAIM_SHARD")
+        reward_claim_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
+    require(len(reward_claim_keys) == REWARD_CLAIM_COUNT, "REWARD_CLAIM_IDENTITY_UNIQUENESS")
     print(
         "PASS items=33567 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "
         f"encounter_records={encounter_records} charm_records={CHARM_COUNT} "
-        f"proficiency_records={PROFICIENCY_COUNT}"
+        f"proficiency_records={PROFICIENCY_COUNT} reward_claim_records={REWARD_CLAIM_COUNT}"
     )
     return 0
 

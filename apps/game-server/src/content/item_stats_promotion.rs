@@ -1,0 +1,537 @@
+//! Item stat promotion v2 (ITEM-SEM-2b): TibiaWiki stats into the canonical Item records.
+//!
+//! The source policy ranks tibia.com, then TibiaWiki; Crystal and Canary are hypotheses. The
+//! pinned packet `docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json` is lowered
+//! from the pinned TibiaWiki snapshot by `lower_wiki_stats_packet.py`, keyed by canonical Tibia
+//! Item keys (A12). The materializer applies it once, after [`super::item_identity`]'s key
+//! switch: each row sets its field to the wiki value, replacing whatever an earlier promotion
+//! put there. A field the wiki is silent on is left as it is.
+//!
+//! Every row is decoded strictly (exact shape, bounds and closed enums), must name an existing
+//! Item record, and a field may appear once per item; anything else fails closed.
+
+use super::{
+    ProjectReferenceRecord, ProjectV2Draft, ReferenceCells, ReferenceElementalAttack,
+    ReferenceItemField, ReferenceItemImbuement, ReferenceItemPhysical, ReferenceItemProtection,
+    ReferenceItemSemantics, ReferenceItemWeapon, ReferenceSignedPoints, ReferenceWeaponElement,
+    ReferenceWeaponType, world_project_sha256,
+};
+use serde::Deserialize;
+use std::collections::{BTreeMap, BTreeSet};
+
+/// The pinned packet bytes; any change is a new candidate with a new digest.
+pub const ITEM_STATS_PROMOTION_V2_PACKET: &[u8] =
+    include_bytes!("../../../../docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json");
+pub const ITEM_STATS_PROMOTION_V2_PACKET_SHA256: &str =
+    "2eaedb2716313838cbe52983e91a9bad0bbec956d9d6304182a751370da086fd";
+pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 10_260;
+pub const ITEM_STATS_PROMOTION_V2_ITEM_COUNT: usize = 6_382;
+const SCHEMA: &str = "OTERYN_ITEM_STATS_PROMOTION/v2";
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ItemStatsPromotionError {
+    Digest,
+    Decode(String),
+    Row {
+        item_key: String,
+        field_path: String,
+        reason: &'static str,
+    },
+    Counts,
+}
+
+impl std::fmt::Display for ItemStatsPromotionError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Digest => formatter.write_str("item stat promotion packet digest mismatch"),
+            Self::Decode(error) => write!(formatter, "item stat promotion packet: {error}"),
+            Self::Row {
+                item_key,
+                field_path,
+                reason,
+            } => {
+                write!(
+                    formatter,
+                    "item stat promotion {item_key} {field_path}: {reason}"
+                )
+            }
+            Self::Counts => formatter.write_str("item stat promotion counts drifted"),
+        }
+    }
+}
+
+impl std::error::Error for ItemStatsPromotionError {}
+
+/// What one application changed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ItemStatsPromotion {
+    pub fields: usize,
+    pub items: usize,
+    /// Rows whose field already held a different value (an earlier, non-wiki promotion).
+    pub replaced: usize,
+}
+
+#[derive(Deserialize)]
+struct Packet {
+    schema: String,
+    counts: Counts,
+    promotions: Vec<Row>,
+}
+
+#[derive(Deserialize)]
+struct Counts {
+    fields: usize,
+    items: usize,
+}
+
+#[derive(Deserialize)]
+struct Row {
+    item_key: String,
+    field_path: String,
+    typed_value: TypedValue,
+}
+
+#[derive(Deserialize)]
+#[serde(
+    tag = "kind",
+    content = "value",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    deny_unknown_fields
+)]
+enum TypedValue {
+    SignedPoints(i32),
+    Cells(u16),
+    WeaponType(ReferenceWeaponType),
+    ElementalAttacks(Vec<ElementalAttack>),
+    CountU8(u8),
+    WeightCentiOz(u32),
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ElementalAttack {
+    element: ReferenceWeaponElement,
+    points: i32,
+}
+
+/// Apply the pinned packet to every Item record in `draft`.
+pub fn apply_item_stats_promotion_v2(
+    draft: &mut ProjectV2Draft,
+) -> Result<ItemStatsPromotion, ItemStatsPromotionError> {
+    if world_project_sha256(ITEM_STATS_PROMOTION_V2_PACKET) != ITEM_STATS_PROMOTION_V2_PACKET_SHA256
+    {
+        return Err(ItemStatsPromotionError::Digest);
+    }
+    let applied = apply_packet(draft, ITEM_STATS_PROMOTION_V2_PACKET)?;
+    if applied.fields != ITEM_STATS_PROMOTION_V2_FIELD_COUNT
+        || applied.items != ITEM_STATS_PROMOTION_V2_ITEM_COUNT
+    {
+        return Err(ItemStatsPromotionError::Counts);
+    }
+    Ok(applied)
+}
+
+fn apply_packet(
+    draft: &mut ProjectV2Draft,
+    bytes: &[u8],
+) -> Result<ItemStatsPromotion, ItemStatsPromotionError> {
+    let items = draft
+        .core
+        .records
+        .iter_mut()
+        .filter_map(|record| match record {
+            ProjectReferenceRecord::Item {
+                identity,
+                semantics,
+                ..
+            } => Some((identity.key.as_str(), semantics)),
+            _ => None,
+        });
+    apply_rows(items, bytes)
+}
+
+/// Apply a packet to `(Item key, semantics)` pairs; every row must name one of them.
+fn apply_rows<'a>(
+    items: impl Iterator<Item = (&'a str, &'a mut ReferenceItemSemantics)>,
+    bytes: &[u8],
+) -> Result<ItemStatsPromotion, ItemStatsPromotionError> {
+    let packet: Packet = serde_json::from_slice(bytes)
+        .map_err(|error| ItemStatsPromotionError::Decode(error.to_string()))?;
+    if packet.schema != SCHEMA {
+        return Err(ItemStatsPromotionError::Decode("schema".to_owned()));
+    }
+    let mut by_item: BTreeMap<&str, Vec<&Row>> = BTreeMap::new();
+    let mut seen = BTreeSet::new();
+    for row in &packet.promotions {
+        if !seen.insert((row.item_key.as_str(), row.field_path.as_str())) {
+            return Err(row_error(row, "duplicate field row"));
+        }
+        by_item.entry(row.item_key.as_str()).or_default().push(row);
+    }
+    if packet.counts.fields != packet.promotions.len() || packet.counts.items != by_item.len() {
+        return Err(ItemStatsPromotionError::Counts);
+    }
+
+    let mut applied = ItemStatsPromotion {
+        fields: 0,
+        items: 0,
+        replaced: 0,
+    };
+    for (key, semantics) in items {
+        let Some(rows) = by_item.remove(key) else {
+            continue;
+        };
+        for row in rows {
+            if set_field(semantics, row)? {
+                applied.replaced += 1;
+            }
+            applied.fields += 1;
+        }
+        applied.items += 1;
+    }
+    if let Some((item_key, rows)) = by_item.into_iter().next() {
+        return Err(ItemStatsPromotionError::Row {
+            item_key: item_key.to_owned(),
+            field_path: rows[0].field_path.clone(),
+            reason: "no Item record with this key",
+        });
+    }
+    Ok(applied)
+}
+
+fn row_error(row: &Row, reason: &'static str) -> ItemStatsPromotionError {
+    ItemStatsPromotionError::Row {
+        item_key: row.item_key.clone(),
+        field_path: row.field_path.clone(),
+        reason,
+    }
+}
+
+/// Set one field; `true` when it replaced a different known value.
+fn set<T: PartialEq>(field: &mut ReferenceItemField<T>, value: T) -> bool {
+    let replaced = matches!(field, ReferenceItemField::Known(old) if *old != value);
+    *field = ReferenceItemField::Known(value);
+    replaced
+}
+
+fn set_field(
+    semantics: &mut ReferenceItemSemantics,
+    row: &Row,
+) -> Result<bool, ItemStatsPromotionError> {
+    let wrong = || row_error(row, "typed value does not fit the field");
+    Ok(match (row.field_path.as_str(), &row.typed_value) {
+        ("weapon.attack", TypedValue::SignedPoints(points)) => set(
+            &mut weapon(semantics, row)?.attack,
+            ReferenceSignedPoints(*points),
+        ),
+        ("weapon.defense", TypedValue::SignedPoints(points)) => set(
+            &mut weapon(semantics, row)?.defense,
+            ReferenceSignedPoints(*points),
+        ),
+        ("weapon.extra_defense", TypedValue::SignedPoints(points)) => set(
+            &mut weapon(semantics, row)?.extra_defense,
+            ReferenceSignedPoints(*points),
+        ),
+        ("weapon.range_cells", TypedValue::Cells(cells)) => {
+            set(&mut weapon(semantics, row)?.range, ReferenceCells(*cells))
+        }
+        ("weapon.weapon_type", TypedValue::WeaponType(kind)) => {
+            set(&mut weapon(semantics, row)?.weapon_type, *kind)
+        }
+        ("weapon.elemental", TypedValue::ElementalAttacks(attacks)) => {
+            let elements = attacks
+                .iter()
+                .map(|attack| attack.element)
+                .collect::<BTreeSet<_>>();
+            if attacks.is_empty() || elements.len() != attacks.len() {
+                return Err(wrong());
+            }
+            let value = attacks
+                .iter()
+                .map(|attack| ReferenceElementalAttack {
+                    element: attack.element,
+                    points: ReferenceItemField::Known(ReferenceSignedPoints(attack.points)),
+                })
+                .collect();
+            set(&mut weapon(semantics, row)?.elemental, value)
+        }
+        ("protection.armor", TypedValue::SignedPoints(points)) => set(
+            &mut protection(semantics, row)?.armor,
+            ReferenceSignedPoints(*points),
+        ),
+        ("imbuement.slot_count", TypedValue::CountU8(count)) => {
+            set(&mut imbuement(semantics, row)?.slot_count, *count)
+        }
+        ("physical.weight", TypedValue::WeightCentiOz(weight)) => {
+            set(&mut physical(semantics, row)?.weight, *weight)
+        }
+        _ => return Err(wrong()),
+    })
+}
+
+/// The Known group of `field`, created (all members Unknown) when the group is Unknown.
+fn group<'a, T>(
+    field: &'a mut ReferenceItemField<T>,
+    empty: impl FnOnce() -> T,
+    row: &Row,
+) -> Result<&'a mut T, ItemStatsPromotionError> {
+    if matches!(field, ReferenceItemField::Unknown) {
+        *field = ReferenceItemField::Known(empty());
+    }
+    match field {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err(row_error(
+            row,
+            "field group is not applicable or in conflict",
+        )),
+    }
+}
+
+fn weapon<'a>(
+    semantics: &'a mut ReferenceItemSemantics,
+    row: &Row,
+) -> Result<&'a mut ReferenceItemWeapon, ItemStatsPromotionError> {
+    group(
+        &mut semantics.weapon,
+        || ReferenceItemWeapon {
+            weapon_type: ReferenceItemField::Unknown,
+            attack: ReferenceItemField::Unknown,
+            defense: ReferenceItemField::Unknown,
+            extra_defense: ReferenceItemField::Unknown,
+            range: ReferenceItemField::Unknown,
+            hit_chance: ReferenceItemField::Unknown,
+            max_hit_chance: ReferenceItemField::Unknown,
+            ammunition: ReferenceItemField::Unknown,
+            elemental: ReferenceItemField::Unknown,
+        },
+        row,
+    )
+}
+
+fn protection<'a>(
+    semantics: &'a mut ReferenceItemSemantics,
+    row: &Row,
+) -> Result<&'a mut ReferenceItemProtection, ItemStatsPromotionError> {
+    group(
+        &mut semantics.protection,
+        || ReferenceItemProtection {
+            armor: ReferenceItemField::Unknown,
+            resistances: ReferenceItemField::Unknown,
+        },
+        row,
+    )
+}
+
+fn imbuement<'a>(
+    semantics: &'a mut ReferenceItemSemantics,
+    row: &Row,
+) -> Result<&'a mut ReferenceItemImbuement, ItemStatsPromotionError> {
+    group(
+        &mut semantics.imbuement,
+        || ReferenceItemImbuement {
+            slot_count: ReferenceItemField::Unknown,
+            allowed_family_tiers: ReferenceItemField::Unknown,
+            excluded_families: ReferenceItemField::Unknown,
+        },
+        row,
+    )
+}
+
+fn physical<'a>(
+    semantics: &'a mut ReferenceItemSemantics,
+    row: &Row,
+) -> Result<&'a mut ReferenceItemPhysical, ItemStatsPromotionError> {
+    group(
+        &mut semantics.physical,
+        || ReferenceItemPhysical {
+            weight: ReferenceItemField::Unknown,
+            movable: ReferenceItemField::Unknown,
+            pickupable: ReferenceItemField::Unknown,
+        },
+        row,
+    )
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic)]
+mod tests {
+    use super::*;
+
+    const KEY: &str = "oteryn:item.tibia.i34086";
+
+    fn packet(rows: &str, fields: usize, items: usize) -> Vec<u8> {
+        format!(
+            r#"{{"schema":"{SCHEMA}","counts":{{"fields":{fields},"items":{items}}},"promotions":[{rows}]}}"#
+        )
+        .into_bytes()
+    }
+
+    fn row(key: &str, path: &str, typed: &str) -> String {
+        format!(r#"{{"item_key":"{key}","field_path":"{path}","typed_value":{typed}}}"#)
+    }
+
+    fn apply(
+        bytes: &[u8],
+        semantics: &mut ReferenceItemSemantics,
+    ) -> Result<ItemStatsPromotion, ItemStatsPromotionError> {
+        apply_rows(std::iter::once((KEY, semantics)), bytes)
+    }
+
+    #[test]
+    fn applies_and_replaces_wiki_values() {
+        let mut semantics = ReferenceItemSemantics::default();
+        weapon(
+            &mut semantics,
+            &Row {
+                item_key: KEY.to_owned(),
+                field_path: String::new(),
+                typed_value: TypedValue::CountU8(0),
+            },
+        )
+        .expect("weapon group")
+        .attack = ReferenceItemField::Known(ReferenceSignedPoints(5));
+        let rows = [
+            row(
+                KEY,
+                "weapon.attack",
+                r#"{"kind":"SIGNED_POINTS","value":6}"#,
+            ),
+            row(
+                KEY,
+                "weapon.weapon_type",
+                r#"{"kind":"WEAPON_TYPE","value":"CLUB"}"#,
+            ),
+            row(
+                KEY,
+                "weapon.elemental",
+                r#"{"kind":"ELEMENTAL_ATTACKS","value":[{"element":"ICE","points":46}]}"#,
+            ),
+            row(
+                KEY,
+                "imbuement.slot_count",
+                r#"{"kind":"COUNT_U8","value":2}"#,
+            ),
+            row(
+                KEY,
+                "physical.weight",
+                r#"{"kind":"WEIGHT_CENTI_OZ","value":4100}"#,
+            ),
+        ];
+        let applied = apply(&packet(&rows.join(","), 5, 1), &mut semantics).expect("applies");
+        assert_eq!(
+            applied,
+            ItemStatsPromotion {
+                fields: 5,
+                items: 1,
+                replaced: 1
+            }
+        );
+        let ReferenceItemField::Known(weapon) = &semantics.weapon else {
+            panic!("weapon group");
+        };
+        assert_eq!(
+            weapon.attack,
+            ReferenceItemField::Known(ReferenceSignedPoints(6))
+        );
+        assert_eq!(
+            weapon.weapon_type,
+            ReferenceItemField::Known(ReferenceWeaponType::Club)
+        );
+        let ReferenceItemField::Known(physical) = &semantics.physical else {
+            panic!("physical group");
+        };
+        assert_eq!(physical.weight, ReferenceItemField::Known(4100));
+    }
+
+    #[test]
+    fn rejects_bad_rows() {
+        let attack = row(
+            KEY,
+            "weapon.attack",
+            r#"{"kind":"SIGNED_POINTS","value":6}"#,
+        );
+        let cases = [
+            // duplicate field for one item
+            packet(&format!("{attack},{attack}"), 2, 1),
+            // unknown Item key
+            packet(
+                &row(
+                    concat!("oteryn:item.tibia.", "i1"),
+                    "weapon.attack",
+                    r#"{"kind":"SIGNED_POINTS","value":6}"#,
+                ),
+                1,
+                1,
+            ),
+            // value kind that does not fit the field
+            packet(
+                &row(KEY, "weapon.attack", r#"{"kind":"COUNT_U8","value":6}"#),
+                1,
+                1,
+            ),
+            // unknown field path
+            packet(
+                &row(
+                    KEY,
+                    "weapon.hit_chance",
+                    r#"{"kind":"SIGNED_POINTS","value":6}"#,
+                ),
+                1,
+                1,
+            ),
+            // closed enum
+            packet(
+                &row(
+                    KEY,
+                    "weapon.weapon_type",
+                    r#"{"kind":"WEAPON_TYPE","value":"ROD"}"#,
+                ),
+                1,
+                1,
+            ),
+            // bounds
+            packet(
+                &row(
+                    KEY,
+                    "imbuement.slot_count",
+                    r#"{"kind":"COUNT_U8","value":300}"#,
+                ),
+                1,
+                1,
+            ),
+            // repeated element
+            packet(
+                &row(
+                    KEY,
+                    "weapon.elemental",
+                    r#"{"kind":"ELEMENTAL_ATTACKS","value":[{"element":"ICE","points":1},{"element":"ICE","points":2}]}"#,
+                ),
+                1,
+                1,
+            ),
+            // counts that do not match the rows
+            packet(&attack, 2, 1),
+        ];
+        for bytes in cases {
+            let mut semantics = ReferenceItemSemantics::default();
+            assert!(
+                apply(&bytes, &mut semantics).is_err(),
+                "{}",
+                String::from_utf8_lossy(&bytes)
+            );
+        }
+    }
+
+    #[test]
+    fn pinned_packet_decodes_with_its_counts() {
+        assert_eq!(
+            world_project_sha256(ITEM_STATS_PROMOTION_V2_PACKET),
+            ITEM_STATS_PROMOTION_V2_PACKET_SHA256
+        );
+        let packet: Packet =
+            serde_json::from_slice(ITEM_STATS_PROMOTION_V2_PACKET).expect("pinned packet decodes");
+        assert_eq!(packet.counts.fields, ITEM_STATS_PROMOTION_V2_FIELD_COUNT);
+        assert_eq!(packet.counts.items, ITEM_STATS_PROMOTION_V2_ITEM_COUNT);
+        assert_eq!(packet.promotions.len(), ITEM_STATS_PROMOTION_V2_FIELD_COUNT);
+    }
+}
