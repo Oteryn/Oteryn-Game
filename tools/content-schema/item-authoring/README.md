@@ -390,7 +390,10 @@ exact `ProficiencyRef`.
   `1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22`).
 - **No inline profile:** the Item carries no levels, perks or shaping. They belong to the
   definition (`tools/content-schema/proficiency-authoring`), so the Magic Sword Item carries
-  only `profile_binding` `oteryn:proficiency.tibia.p238`.
+  only `profile_binding` `oteryn:proficiency.tibia.p238` and its `threshold_class` `standard`.
+- **Threshold class:** `threshold_class` (standard, knight, crossbow) is required together with
+  `profile_binding`, as in `content/proficiencies/bindings.json`; an `unknown` weapon gets no
+  binding.
 - **Rejected:** a binding without the client crosswalk, unknown IDs/versions or targets, wrong
   source artifacts, and inline `levels`/`shaping`.
 
