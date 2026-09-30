@@ -16,7 +16,7 @@ commit any content.
 |---|---|
 | `condition.schema.json` | One catalogue (`OTERYN_CONDITION_AUTHORING_CATALOGUE/v1`), JSON Schema 2020-12, closed shapes. A definition has `identity {family: Condition, key, revision}`, `family`, `conflict_key`, `negative` (the §5 dispel tag), `used_by`, `evidence` and `status`. An `admitted` definition carries exactly one value block, named after its family. A `blocked` definition carries a `blocked_reason` and no values. |
 | `authored-conditions.json` | The hand-authored rows (spells, runes, potions, food, charms). Each row has its values and the Canary `path:lines` with the literal text (`needles`) those lines must contain. |
-| `condition_authoring.py` | `capture --canary <checkout>` checks every needle in its cited lines and parses the `field` items of `items.xml`. `build` derives the catalogue (`build --check` diffs it). `validate` runs the schema and the rules. `content [--check]` writes or verifies the content family. |
+| `condition_authoring.py` | `capture --canary <checkout>` refuses a checkout that is not a clean `04b83b51`, checks every needle in its cited lines and parses the `field` items of `items.xml`. `build` derives the catalogue (`build --check` diffs it). `validate` runs the schema and the rules. `content [--check]` writes or verifies the content family and removes (or reports) files it no longer produces. |
 | `test_condition_authoring.py` | No-network tests: the field parse order, the committed build, the authored values, the monster mirror, one negative case per rule. |
 | `samples/canary-condition-sources-04b83b51.json` | The captured Canary facts: the git blob of every cited file, and the field items. |
 | `samples/conditions-candidate.json` | The candidate catalogue, one definition per line: 842 definitions, 828 admitted, 14 blocked. |
@@ -64,7 +64,8 @@ commit any content.
 - `negative` marks exactly damage over time and paralysis.
 - Every tick and regeneration interval is at least 1,000 ms (`COND0-RL-02`).
 - Only fields are `field` and tick at once.
-- `a_min ≤ a_max`, and a damage total's minimum is at most its maximum.
+- `a_min ≤ a_max`, and every schedule meets the `ProjectV2DamageOverTime` invariants (ranges, strictly increasing
+  geometric tick counts, a factor in lowest terms).
 - The food cap is 1,200 s.
 - At most 16 conflict keys are in use (`COND0-RL-01`).
 

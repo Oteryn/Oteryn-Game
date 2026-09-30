@@ -16,9 +16,12 @@ import argparse
 import copy
 import hashlib
 import json
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from fractions import Fraction
+from itertools import pairwise
+from math import gcd
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, FormatChecker
@@ -97,6 +100,23 @@ def dumps(catalogue: dict) -> str:
 
 def capture(canary: Path) -> dict:
     """Source facts from a Canary checkout at CANARY_REVISION: field items and cited Lua lines."""
+    head = subprocess.run(
+        ["git", "-C", str(canary), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    if head != CANARY_REVISION:
+        raise ValueError(
+            f"Canary checkout is at {head}, not the pinned {CANARY_REVISION}"
+        )
+    if subprocess.run(
+        ["git", "-C", str(canary), "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip():
+        raise ValueError("Canary checkout has local changes")
     files = {}
     for row in load_json(AUTHORED_ROWS)["rows"]:
         for item in row["evidence"]:
@@ -184,6 +204,25 @@ def intervals(schedule: dict) -> list[int]:
     if schedule["tick_profile"] == "Fixed":
         return [t["interval_ms"] for t in schedule["ticks"]]
     return [schedule["tick_interval_ms"]]
+
+
+def schedule_errors(schedule: dict) -> list[str]:
+    """The ProjectV2DamageOverTime invariants (apps/game-server/src/content/project/v2/creature.rs)."""
+    profile = schedule["tick_profile"]
+    if profile == "Decreasing" and not (
+        0 < schedule["total_maximum"]
+        and schedule["total_minimum"] <= schedule["total_maximum"]
+    ):
+        return ["a decreasing total range must be non-empty and positive"]
+    if profile == "Geometric":
+        counts, factor = schedule["tick_counts"], schedule["factor"]
+        if schedule["base_minimum"] > schedule["base_maximum"]:
+            return ["base_minimum exceeds base_maximum"]
+        if any(a >= b for a, b in pairwise(counts)):
+            return ["geometric tick_counts must strictly increase"]
+        if gcd(factor["numerator"], factor["denominator"]) != 1:
+            return ["geometric factor is not in lowest terms"]
+    return []
 
 
 def record(
@@ -431,8 +470,7 @@ def semantic_errors(catalogue: dict) -> list[str]:
         keys_used.add(c["conflict_key"])
         if family == "DAMAGE_OVER_TIME":
             schedule = values["schedule"]
-            if schedule.get("total_minimum", 0) > schedule.get("total_maximum", 0):
-                errors.append(f"{key}: total_minimum exceeds total_maximum")
+            errors += [f"{key}: {e}" for e in schedule_errors(schedule)]
             if any(i < MIN_TICK_MS for i in intervals(schedule)):
                 errors.append(
                     f"{key}: a tick interval is below COND0-RL-02 ({MIN_TICK_MS} ms)"
@@ -565,7 +603,19 @@ def content_command(check: bool) -> int:
     count = json.loads(outputs[INDEX_PATH])["record_count"]
     for name, doc in zip(names, registered(*docs, count, sorted(outputs)), strict=True):
         outputs[f"content/{name}.json"] = compact(doc)
-    stale = []
+    extra = (
+        sorted(
+            p.relative_to(ROOT).as_posix()
+            for p in (ROOT / CONTENT_DIR).glob("*")
+            if p.relative_to(ROOT).as_posix() not in outputs
+        )
+        if (ROOT / CONTENT_DIR).is_dir()
+        else []
+    )
+    stale = list(extra)
+    if not check:
+        for rel in extra:
+            (ROOT / rel).unlink()
     for rel, text in sorted(outputs.items()):
         path = ROOT / rel
         if path.is_file() and path.read_text(encoding="utf-8") == text:
@@ -577,7 +627,7 @@ def content_command(check: bool) -> int:
     if check:
         print("condition content check: " + (f"FAIL, stale {stale}" if stale else "ok"))
         return 1 if stale else 0
-    print(f"condition content: wrote {stale}")
+    print(f"condition content: wrote or removed {stale}")
     return 0
 
 

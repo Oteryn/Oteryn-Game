@@ -5,6 +5,10 @@ from __future__ import annotations
 
 import copy
 import json
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 
 import condition_authoring as ca
 
@@ -169,6 +173,66 @@ def test_rules() -> None:
     expect_invalid(
         mutated("spell.holy_flash", lambda c: c.pop("blocked_reason")), "blocked_reason"
     )
+
+
+def test_schedule_errors_mirror_project_v2() -> None:
+    geometric = {
+        "tick_profile": "Geometric",
+        "first_tick": "AfterInterval",
+        "base_minimum": 5,
+        "base_maximum": 4,
+        "factor": {"numerator": 2, "denominator": 4},
+        "tick_counts": [3, 3],
+        "tick_interval_ms": 2000,
+    }
+    assert "base_minimum exceeds" in ca.schedule_errors(geometric)[0]
+    geometric["base_maximum"] = 6
+    assert "strictly increase" in ca.schedule_errors(geometric)[0]
+    geometric["tick_counts"] = [3, 4]
+    assert "lowest terms" in ca.schedule_errors(geometric)[0]
+    geometric["factor"] = {"numerator": 1, "denominator": 2}
+    assert ca.schedule_errors(geometric) == []
+    decreasing = {
+        "tick_profile": "Decreasing",
+        "first_tick": "AfterInterval",
+        "total_minimum": 0,
+        "total_maximum": 0,
+        "tick_interval_ms": 2000,
+    }
+    assert ca.schedule_errors(decreasing)
+
+
+def test_capture_rejects_unpinned_checkout() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        git = ["git", "-C", tmp, "-c", "user.name=t", "-c", "user.email=t@t"]
+        subprocess.run([*git, "init", "-q"], check=True)
+        subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+        try:
+            ca.capture(Path(tmp))
+        except ValueError as error:
+            assert "not the pinned" in str(error)
+        else:
+            raise AssertionError("capture accepted an unpinned checkout")
+
+
+def test_content_removes_obsolete_shards() -> None:
+    root = ca.ROOT
+    with tempfile.TemporaryDirectory() as tmp:
+        for name in ("project", "manifest", "content.lock"):
+            (Path(tmp) / "content").mkdir(exist_ok=True)
+            shutil.copy(
+                root / f"content/{name}.json", Path(tmp) / f"content/{name}.json"
+            )
+        ca.ROOT = Path(tmp)
+        try:
+            assert ca.content_command(check=False) == 0
+            obsolete = Path(tmp) / ca.CONTENT_DIR / "conditions-99999-99999.json"
+            obsolete.write_text("{}\n", encoding="utf-8")
+            assert ca.content_command(check=True) == 1
+            assert ca.content_command(check=False) == 0
+            assert not obsolete.exists() and ca.content_command(check=True) == 0
+        finally:
+            ca.ROOT = root
 
 
 def main() -> None:

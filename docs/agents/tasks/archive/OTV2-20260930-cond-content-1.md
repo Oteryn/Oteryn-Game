@@ -66,7 +66,7 @@ the control plane's content train runs `content` and registers the family.
 
 - `python condition_authoring.py build --check`: PASS.
 - `python condition_authoring.py validate samples/conditions-candidate.json`: PASS.
-- `python test_condition_authoring.py`: PASS (7 tests).
+- `python test_condition_authoring.py`: PASS (10 tests).
 - `ruff check .` and `ruff format --check .` (ruff 0.16.1): PASS.
 - `python condition_authoring.py capture --canary <04b83b51 checkout>`: every cited needle found.
 - `python3 tools/agents/validate_governance.py`: PASS on the final authoring tree.
@@ -77,6 +77,8 @@ the control plane's content train runs `content` and registers the family.
 - PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
 - Owner and control-plane questions are on #162 (blocked coefficients, searing fire, Holy Flash,
   the CI workflow, the package size).
+- Codex review of `3def6299` (3 findings: P1 unpinned Canary capture, P2 geometric schedule
+  invariants, P2 obsolete shards): all fixed in the next candidate with tests.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml
