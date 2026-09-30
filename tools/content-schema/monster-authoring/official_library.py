@@ -8,11 +8,13 @@ because no Tibia.com news item dated after the reference date and up to the capt
 (NEWS_CHECKED).
 
 Usage: python official_library.py --canary <Canary checkout> --captures <dir of <race>.json> [--out FILE] [--crystal <Crystal checkout>]
+       python official_library.py --crystal <Crystal checkout> --extra-captures <dir>
 """
 import argparse
 import hashlib
 import json
 import re
+import shutil
 import time
 from pathlib import Path
 
@@ -115,25 +117,37 @@ def capture(directory, paths):
         match = re.search(r'Game\.createMonsterType\("([^"]+)"', path.read_text(encoding='utf-8', errors='replace'))
         if match:
             wanted |= {norm(match.group(1)), norm(plural(match.group(1)))}
-    directory.mkdir(parents=True, exist_ok=True)
+    # Write into a sibling work directory and rename it only when every record arrived, so a failed run never
+    # leaves a partial capture that a later run would take for a complete one.
+    partial = directory.with_name(directory.name + '.partial')
+    if partial.exists():
+        shutil.rmtree(partial)
+    partial.mkdir(parents=True)
     saved = 0
     for entry in listed:
         if norm(entry['race']) in wanted or norm(entry['name']) in wanted:
             record = get(API + entry['race'])['creature']
-            (directory / (entry['race'] + '.json')).write_text(json.dumps(record, ensure_ascii=False), encoding='utf-8')
+            (partial / (entry['race'] + '.json')).write_text(json.dumps(record, ensure_ascii=False), encoding='utf-8')
             saved += 1
+    if directory.exists():
+        directory.rmdir()  # only an empty directory reaches capture()
+    partial.rename(directory)
     print(json.dumps({'captured': saved, 'directory': str(directory)}))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('--canary', required=True, type=Path)
-    parser.add_argument('--captures', required=True, type=Path)
+    parser.add_argument('--canary', type=Path, help='required unless --extra-captures')
+    parser.add_argument('--captures', type=Path, help='required unless --extra-captures')
     parser.add_argument('--out', type=Path, default=SAMPLE)
     parser.add_argument('--crystal', type=Path, help='also write CRYSTAL_SAMPLE for the crystal_batch.py monsters')
     parser.add_argument('--extra-captures', type=Path, help='with --crystal: capture (if the directory is empty) and write '
                         'CRYSTAL_EXTRA_SAMPLE for the crystal_batch.EXTRA_MONSTERS only')
     args = parser.parse_args()
+    if args.extra_captures and not args.crystal:
+        parser.error('--extra-captures needs --crystal')
+    if not args.extra_captures and not (args.canary and args.captures):
+        parser.error('--canary and --captures are required unless --extra-captures is given')
     if args.extra_captures:
         import crystal_batch
         paths = [args.crystal / crystal_batch.MONSTER_ROOT / (relative + '.lua') for relative in crystal_batch.EXTRA_MONSTERS]
