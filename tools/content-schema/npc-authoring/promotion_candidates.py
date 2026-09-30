@@ -107,10 +107,26 @@ LOADABLE = ('RESOLVED', 'PARTIAL')
 PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
 WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING',
                            'WIKI_CONFIRMED', 'WIKI_PRICE', 'WIKI_MAJORITY_PRICE', 'WIKI_OFFER',
-                           'FAN_WIKI_CONFIRMED', 'WIKI_MAJORITY_ARBITER')  # kept in the output
+                           'FAN_WIKI_CONFIRMED', 'WIKI_MAJORITY_ARBITER', 'WIKI_IMAGE', 'OWNER_REVIEW')  # kept in the output
 DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
 VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
 SPELLING_MIN_LENGTH = 10
+# D16: definition conflicts settled in review (owner, 2026-09-30): the outfit from the TibiaWiki image (file and its
+# SHA-1), the movement from the owner's observation; any other conflicting field still holds the NPC
+DEFINITION_REVIEWED = {
+    'Ambassador Manop': {
+        'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'canary', 'image': 'File:Ambassador Manop.gif',
+                   'sha1': 'd1687add015f0258ef76549b74ae23a53e60e7d3'},
+        'movement': {'rule': 'OWNER_REVIEW', 'chosen': 'canary', 'date': '2026-09-30'}},
+    'Enpa Rudra': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'canary', 'image': 'File:Enpa Rudra.gif',
+                              'sha1': '82a635859c0aa2e635492ab2fecbf11ff962f80b'}},
+    'Enpa-Deia Pema': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'canary', 'image': 'File:Enpa-Deia Pema.gif',
+                                  'sha1': 'f3b2891090a2faf249a40a378ff87b3b65d5e9cc'}},
+    'Gareth': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'canary', 'image': 'File:Gareth.gif',
+                          'sha1': '987161bfb6872869531d7d6a2e7b86383791d538'}},
+    'Grumpy Stone': {'outfit': {'rule': 'WIKI_IMAGE', 'chosen': 'crystal', 'image': 'File:Grumpy Stone.gif',
+                                'sha1': 'd2b356e031104e639ce29494f5e9b1862d12f5da'}},
+}
 # D16: the wikis' name of an Item whose registered name differs (folded wiki name -> folded registered name)
 WIKI_ITEM_NAMES = {'straw mat foot section': 'straw bed foot section'}
 # Owner decision 2026-09-27: these source-only NPCs exist only in that OT server, not in Tibia,
@@ -634,6 +650,11 @@ class Builder:
                 arbitration.append({'fact': 'identity', 'rule': 'FAN_WIKI_CONFIRMED', 'chosen': sorted(pages)[0],
                                     'wikis': sorted(pages), 'pages': pages})
         definition, conflicts = self.merge_definition(bundles, arbitration)
+        for field in [f for f in conflicts if f in DEFINITION_REVIEWED.get(name, {})]:  # D16
+            row = DEFINITION_REVIEWED[name][field]
+            definition[field] = definition_facts(bundles[row['chosen']])[field]
+            arbitration.append({'fact': f'definition.{field}', **row})
+            conflicts.remove(field)
         if conflicts:
             return self.hold(name, sources, 'DEFINITION_CONFLICT', ','.join(conflicts))
         placements, problem = self.merge_placements(bundles, wiki, arbitration)
@@ -760,7 +781,7 @@ def build_report(canary_dir, crystal_dir, snapshot_bytes, item_map_bytes, br_fac
         'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY',
         'decisions': ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'] + (['D12'] if br_facts_bytes else [])
         + (['D13'] if tibiopedia_bytes else []) + (['D14'] if supplement_digest else [])
-        + (['D15'] if tibiopedia_bytes else []),
+        + (['D15'] if tibiopedia_bytes else []) + ['D16'],
         'snapshot_sha256': hashlib.sha256(snapshot_bytes).hexdigest(),
         'item_map_sha256': hashlib.sha256(item_map_bytes).hexdigest(),
         **({'br_facts_sha256': hashlib.sha256(br_facts_bytes).hexdigest()} if br_facts_bytes else {}),

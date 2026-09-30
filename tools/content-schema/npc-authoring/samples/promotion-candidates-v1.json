@@ -4187,6 +4187,24 @@
      "chosen": "crystal",
      "fact": "trade.23986",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "canary",
+     "fact": "trade.51442",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "canary",
+     "fact": "trade.51443",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -4198,14 +4216,6 @@
     {
      "fact": "trade.23986",
      "reason": "GATED_OFFER"
-    },
-    {
-     "fact": "trade.51442",
-     "reason": "OFFER_CONFLICT_WIKI_UNDECIDED"
-    },
-    {
-     "fact": "trade.51443",
-     "reason": "OFFER_CONFLICT_WIKI_UNDECIDED"
     }
    ],
    "movement": {
@@ -4249,7 +4259,40 @@
      "sha256": "1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18"
     }
    },
-   "trade_service": null,
+   "trade_service": {
+    "currency": null,
+    "identity": {
+     "family": "Service",
+     "key": "oteryn:service.trade.albinius",
+     "revision": "definition-r1"
+    },
+    "offers": [
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037693",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 51442,
+      "sub_type": null,
+      "unit_price": 25000
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037694",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 51443,
+      "sub_type": null,
+      "unit_price": 30000
+     }
+    ]
+   },
    "travel_service": null,
    "wiki": {
     "pageid": 79440,
@@ -6212,6 +6255,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -6587,7 +6641,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -6931,6 +6985,81 @@
    "wiki": {
     "pageid": 37021,
     "revid": 1116708
+   }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "canary",
+     "fact": "definition.outfit",
+     "image": "File:Ambassador Manop.gif",
+     "rule": "WIKI_IMAGE",
+     "sha1": "d1687add015f0258ef76549b74ae23a53e60e7d3"
+    },
+    {
+     "chosen": "canary",
+     "date": "2026-09-30",
+     "fact": "definition.movement",
+     "rule": "OWNER_REVIEW"
+    },
+    {
+     "chosen": "crystal",
+     "fact": "placements",
+     "rule": "WIKI_ARBITER"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.ambassador_manop",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Ambassador Manop",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 32057,
+      "y": 31898,
+      "z": 4
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 1,
+     "body": 9,
+     "feet": 63,
+     "head": 40,
+     "legs": 63,
+     "look_type": 1816,
+     "mount": null
+    },
+    "speech_bubble": "SAILOR"
+   },
+   "profession": "sailor",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/ambassador_manop",
+     "sha256": "019e44806709395972de17117932d4002ea3729bfa5dda10f20cd94ade095814"
+    },
+    "crystal": {
+     "key": "crystal:npc/ambassador_manop",
+     "sha256": "3b1bd3db14c3a19b93f6017f457388eefa75ec31ee1c8ace3f6d43c79cd70cb8"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 108053,
+    "revid": 1177604
    }
   },
   {
@@ -17016,6 +17145,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -17135,16 +17282,7 @@
     "key": "oteryn:npc.baltim",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -18657,6 +18795,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -22697,6 +22883,15 @@
      "chosen": "canary",
      "fact": "trade.11329",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "canary",
+     "fact": "trade.125",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "br",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -22707,10 +22902,6 @@
    "left_out": [
     {
      "fact": "trade.100",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.125",
      "reason": "OFFER_UNCONFIRMED"
     },
     {
@@ -23062,6 +23253,18 @@
       "source_item_id": 123,
       "sub_type": null,
       "unit_price": 16000
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00000046",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 125,
+      "sub_type": null,
+      "unit_price": 5000
      },
      {
       "count": null,
@@ -26285,6 +26488,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -26581,16 +26802,7 @@
     "key": "oteryn:npc.brengus",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -28343,6 +28555,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -34414,6 +34674,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -34666,16 +34944,7 @@
     "key": "oteryn:npc.cedrik",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -36272,6 +36541,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -48098,6 +48415,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -49207,7 +49535,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -50824,6 +51152,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -51876,7 +52215,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -53922,6 +54261,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -55077,7 +55427,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -56949,6 +57299,386 @@
   {
    "arbitration": [
     {
+     "chosen": "canary",
+     "fact": "definition.outfit",
+     "image": "File:Enpa-Deia Pema.gif",
+     "rule": "WIKI_IMAGE",
+     "sha1": "f3b2891090a2faf249a40a378ff87b3b65d5e9cc"
+    },
+    {
+     "chosen": "crystal",
+     "fact": "placements",
+     "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.51119.BuyFromPlayer",
+     "item_name": "simple jo staff",
+     "price": 10,
+     "rule": "WIKI_OFFER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.enpa_deia_pema",
+    "revision": "definition-r1"
+   },
+   "left_out": [
+    {
+     "fact": "trade.50166",
+     "reason": "OFFER_CONFLICT_WIKI_UNDECIDED"
+    }
+   ],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Enpa-Deia Pema",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 33603,
+      "y": 31468,
+      "z": 7
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 1,
+     "body": 9,
+     "feet": 63,
+     "head": 40,
+     "legs": 63,
+     "look_type": 1817,
+     "mount": null
+    },
+    "speech_bubble": "BANKER"
+   },
+   "profession": "banker",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/enpa-deia_pema",
+     "sha256": "9088901a5f0123f0a36e1b8a0a641cfcc3e2fcdafa3438a58280be5c1de53103"
+    },
+    "crystal": {
+     "key": "crystal:npc/enpa_deia_pema",
+     "sha256": "d5f803179e213a87af296d1ecf8bcdbc33f5e4a299c0ece6c78242abb1c2c6a5"
+    }
+   },
+   "trade_service": {
+    "currency": null,
+    "identity": {
+     "family": "Service",
+     "key": "oteryn:service.trade.enpa_deia_pema",
+     "revision": "definition-r1"
+    },
+    "offers": [
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037536",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50171,
+      "sub_type": null,
+      "unit_price": 500
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037552",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50195,
+      "sub_type": null,
+      "unit_price": 1000
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037580",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50257,
+      "sub_type": null,
+      "unit_price": 450
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037589",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50267,
+      "sub_type": null,
+      "unit_price": 8000
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037589",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50267,
+      "sub_type": null,
+      "unit_price": 80
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037590",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50268,
+      "sub_type": null,
+      "unit_price": 150000
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037590",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50268,
+      "sub_type": null,
+      "unit_price": 150
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037591",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50269,
+      "sub_type": null,
+      "unit_price": 40000
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037591",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50269,
+      "sub_type": null,
+      "unit_price": 400
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037593",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50271,
+      "sub_type": null,
+      "unit_price": 20000
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037593",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50271,
+      "sub_type": null,
+      "unit_price": 200
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037594",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50272,
+      "sub_type": null,
+      "unit_price": 100000
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037594",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50272,
+      "sub_type": null,
+      "unit_price": 100
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037595",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50273,
+      "sub_type": null,
+      "unit_price": 50000
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037595",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50273,
+      "sub_type": null,
+      "unit_price": 500
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037596",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50274,
+      "sub_type": null,
+      "unit_price": 70000
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037596",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50274,
+      "sub_type": null,
+      "unit_price": 700
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037637",
+       "revision": "definition-r1"
+      },
+      "origin": "wiki",
+      "source_item_id": 51119,
+      "sub_type": null,
+      "unit_price": 10
+     }
+    ]
+   },
+   "travel_service": null,
+   "wiki": {
+    "pageid": 108054,
+    "revid": 1171457
+   }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "canary",
+     "fact": "definition.outfit",
+     "image": "File:Enpa Rudra.gif",
+     "rule": "WIKI_IMAGE",
+     "sha1": "82a635859c0aa2e635492ab2fecbf11ff962f80b"
+    },
+    {
+     "chosen": "crystal",
+     "fact": "placements",
+     "rule": "WIKI_ARBITER"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.enpa_rudra",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Enpa Rudra",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 33605,
+      "y": 31444,
+      "z": 6
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 3,
+     "body": 9,
+     "feet": 63,
+     "head": 40,
+     "legs": 63,
+     "look_type": 1816,
+     "mount": null
+    },
+    "speech_bubble": "BANKER"
+   },
+   "profession": "banker",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/enpa_rudra",
+     "sha256": "2bd123802d2429b31f76b89df04705f81212d5bd034dc19ad9bd4e46100269af"
+    },
+    "crystal": {
+     "key": "crystal:npc/enpa_rudra",
+     "sha256": "a1940cb7ce8259faca7936a061dc313e996220e43a0bd5a0351c38826120459e"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 108310,
+    "revid": 1171613
+   }
+  },
+  {
+   "arbitration": [
+    {
      "chosen": "wiki",
      "fact": "placements",
      "rule": "WIKI_POSITION"
@@ -57355,6 +58085,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -57470,14 +58218,6 @@
     {
      "fact": "trade.4033",
      "reason": "GATED_OFFER"
-    },
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
     }
    ],
    "movement": {
@@ -59166,6 +59906,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -61075,6 +61863,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -62163,7 +62962,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -64660,6 +65459,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -64790,16 +65607,7 @@
     "key": "oteryn:npc.flint",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -66516,6 +67324,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -70518,6 +71374,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -70627,16 +71501,7 @@
     "key": "oteryn:npc.gamel",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -71583,6 +72448,54 @@
       "direction": "SellToPlayer",
       "item": {
        "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
        "key": "oteryn:item.registry.i00037607",
        "revision": "definition-r1"
       },
@@ -71815,6 +72728,17 @@
      "fact": "trade.32488.SellToPlayer",
      "item_name": "simple footboard",
      "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
      "rule": "WIKI_MAJORITY_PRICE",
      "wikis": [
       "fandom",
@@ -72862,7 +73786,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -73083,6 +74007,70 @@
    "wiki": {
     "pageid": 68619,
     "revid": 908891
+   }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "canary",
+     "fact": "definition.outfit",
+     "image": "File:Gareth.gif",
+     "rule": "WIKI_IMAGE",
+     "sha1": "987161bfb6872869531d7d6a2e7b86383791d538"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.gareth",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Gareth",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 33305,
+      "y": 32141,
+      "z": 8
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 2,
+     "body": 0,
+     "feet": 20,
+     "head": 41,
+     "legs": 39,
+     "look_type": 132,
+     "mount": null
+    },
+    "speech_bubble": "BANKER"
+   },
+   "profession": "banker",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/gareth",
+     "sha256": "43f06dd0646702f8a0ef923d3ee218e889e7186ac964d4512bf95905cdab051b"
+    },
+    "crystal": {
+     "key": "crystal:npc/gareth",
+     "sha256": "d584e99ded6884b2f86f384029bccc70ae78803ada24448c4fcc93ac5719f1fb"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 81425,
+    "revid": 849362
    }
   },
   {
@@ -82309,6 +83297,64 @@
    }
   },
   {
+   "arbitration": [
+    {
+     "chosen": "crystal",
+     "fact": "definition.outfit",
+     "image": "File:Grumpy Stone.gif",
+     "rule": "WIKI_IMAGE",
+     "sha1": "d2b356e031104e639ce29494f5e9b1862d12f5da"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.grumpy_stone",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Grumpy Stone",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 32619,
+      "y": 31864,
+      "z": 7
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "item_look": 25446
+    },
+    "speech_bubble": "NORMAL"
+   },
+   "profession": "normal",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/grumpy_stone",
+     "sha256": "b95a2a9520e4bca56305a7d5c021a20377bd82bca4d537866356c6fda0554b17"
+    },
+    "crystal": {
+     "key": "crystal:npc/grumpy_stone",
+     "sha256": "de0740cf81fed12bbeccabd6ee38c1d649d5c4f0e79c7c4658fbc91826db7b95"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 81423,
+    "revid": 1116887
+   }
+  },
+  {
    "arbitration": [],
    "identity": {
     "family": "NPC",
@@ -86369,6 +87415,9 @@
        "key": "oteryn:item.registry.i00031461",
        "revision": "definition-r1"
       },
+      "parity_pending": {
+       "tibiopedia": 10
+      },
       "source_item_id": 32489,
       "sub_type": null,
       "unit_price": 40
@@ -86524,6 +87573,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -86655,16 +87722,7 @@
     "key": "oteryn:npc.habdel",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 0,
@@ -87431,6 +88489,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -90058,6 +91164,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -90199,16 +91323,7 @@
     "key": "oteryn:npc.hardek",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -91685,6 +92800,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -94440,6 +95603,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -95504,7 +96678,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -102835,6 +104009,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -103923,7 +105108,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -105210,6 +106395,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -106298,7 +107494,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -123406,6 +124602,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -123536,16 +124750,7 @@
     "key": "oteryn:npc.memech",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -125046,6 +126251,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -127169,6 +128422,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -127321,16 +128592,7 @@
     "key": "oteryn:npc.morpel",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -128843,6 +130105,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -133262,6 +134572,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -134351,7 +135672,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -137150,6 +138471,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -138238,7 +139570,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -144454,6 +145786,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -145542,7 +146885,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -159291,6 +160634,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -159554,16 +160915,7 @@
     "key": "oteryn:npc.robert",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -161148,6 +162500,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -167662,6 +169062,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -167681,16 +169099,7 @@
     "key": "oteryn:npc.romella",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -168567,6 +169976,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -170029,8 +171486,35 @@
    "arbitration": [
     {
      "chosen": "crystal",
+     "fact": "trade.3264",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50181",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     },
     {
      "chosen": "crystal",
@@ -170164,20 +171648,7 @@
     "key": "oteryn:npc.rowenna",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.3264",
-     "reason": "OFFER_CONFLICT_WIKI_UNDECIDED"
-    },
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -170274,6 +171745,30 @@
       "source_item_id": 28555,
       "sub_type": null,
       "unit_price": 347222
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00003147",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 3264,
+      "sub_type": null,
+      "unit_price": 85
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00003147",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 3264,
+      "sub_type": null,
+      "unit_price": 25
      },
      {
       "count": null,
@@ -170910,6 +172405,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -172184,6 +173727,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -172214,16 +173775,7 @@
     "key": "oteryn:npc.sam",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -173844,6 +175396,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -176607,6 +178207,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -177386,16 +179004,7 @@
     "key": "oteryn:npc.shanar",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -178240,6 +179849,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -199570,6 +201227,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -199700,16 +201375,7 @@
     "key": "oteryn:npc.turvy",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -201204,6 +202870,54 @@
       "direction": "SellToPlayer",
       "item": {
        "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
        "key": "oteryn:item.registry.i00037607",
        "revision": "definition-r1"
       },
@@ -201630,6 +203344,17 @@
      "fact": "trade.32488.SellToPlayer",
      "item_name": "simple footboard",
      "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
      "rule": "WIKI_MAJORITY_PRICE",
      "wikis": [
       "fandom",
@@ -202726,7 +204451,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -202989,6 +204714,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -203108,16 +204851,7 @@
     "key": "oteryn:npc.ulrik",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -204480,6 +206214,54 @@
       "direction": "SellToPlayer",
       "item": {
        "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
        "key": "oteryn:item.registry.i00037607",
        "revision": "definition-r1"
       },
@@ -205298,6 +207080,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -205483,16 +207283,7 @@
     "key": "oteryn:npc.uzgod",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -206285,6 +208076,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -209666,6 +211505,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -210730,7 +212580,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -215408,6 +217258,24 @@
     },
     {
      "chosen": "crystal",
+     "fact": "trade.50182",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
+     "fact": "trade.50183",
+     "rule": "WIKI_MAJORITY_ARBITER",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "crystal",
      "fact": "trade.50293s500",
      "rule": "WIKI_ARBITER"
     },
@@ -215427,16 +217295,7 @@
     "key": "oteryn:npc.willard",
     "revision": "definition-r1"
    },
-   "left_out": [
-    {
-     "fact": "trade.50182",
-     "reason": "OFFER_UNCONFIRMED"
-    },
-    {
-     "fact": "trade.50183",
-     "reason": "OFFER_UNCONFIRMED"
-    }
-   ],
+   "left_out": [],
    "movement": {
     "floor_change": false,
     "walk_interval_ms": 2000,
@@ -217357,6 +219216,54 @@
       "source_item_id": 50181,
       "sub_type": null,
       "unit_price": 90
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 405
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037539",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50182,
+      "sub_type": null,
+      "unit_price": 135
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 540
+     },
+     {
+      "count": null,
+      "direction": "BuyFromPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00037540",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 50183,
+      "sub_type": null,
+      "unit_price": 180
      },
      {
       "count": null,
@@ -230887,6 +232794,17 @@
     },
     {
      "chosen": "wiki",
+     "fact": "trade.32489.SellToPlayer",
+     "item_name": "straw bed foot section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.32490.SellToPlayer",
      "item_name": "canopy footboard",
      "price": 100,
@@ -231975,7 +233893,7 @@
       },
       "source_item_id": 32489,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -235848,37 +237766,11 @@
   "D12",
   "D13",
   "D14",
-  "D15"
+  "D15",
+  "D16"
  ],
  "evidence": "OTS_HYPOTHESIS_ONLY",
  "held": [
-  {
-   "detail": "outfit,movement",
-   "name": "Ambassador Manop",
-   "reason": "DEFINITION_CONFLICT",
-   "sources": {
-    "canary": "canary:npc/ambassador_manop",
-    "crystal": "crystal:npc/ambassador_manop"
-   }
-  },
-  {
-   "detail": "outfit",
-   "name": "Enpa Rudra",
-   "reason": "DEFINITION_CONFLICT",
-   "sources": {
-    "canary": "canary:npc/enpa_rudra",
-    "crystal": "crystal:npc/enpa_rudra"
-   }
-  },
-  {
-   "detail": "outfit",
-   "name": "Enpa-Deia Pema",
-   "reason": "DEFINITION_CONFLICT",
-   "sources": {
-    "canary": "canary:npc/enpa-deia_pema",
-    "crystal": "crystal:npc/enpa_deia_pema"
-   }
-  },
   {
    "detail": "movement",
    "name": "Flickering Soul",
@@ -235886,24 +237778,6 @@
    "sources": {
     "canary": "canary:npc/flickering_soul",
     "crystal": "crystal:npc/flickering_soul"
-   }
-  },
-  {
-   "detail": "outfit",
-   "name": "Gareth",
-   "reason": "DEFINITION_CONFLICT",
-   "sources": {
-    "canary": "canary:npc/gareth",
-    "crystal": "crystal:npc/gareth"
-   }
-  },
-  {
-   "detail": "outfit",
-   "name": "Grumpy Stone",
-   "reason": "DEFINITION_CONFLICT",
-   "sources": {
-    "canary": "canary:npc/grumpy_stone",
-    "crystal": "crystal:npc/grumpy_stone"
    }
   },
   {
@@ -236203,9 +238077,9 @@
  "snapshot_sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42",
  "tibiopedia_facts_sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651",
  "totals": {
-  "arbitrated_facts": 1441,
-  "candidates": 1104,
-  "held:DEFINITION_CONFLICT": 9,
+  "arbitrated_facts": 1508,
+  "candidates": 1109,
+  "held:DEFINITION_CONFLICT": 4,
   "held:EMPTY_SLUG": 1,
   "held:KEY_COLLISION": 2,
   "held:NOT_LOADABLE": 3,
@@ -236214,11 +238088,11 @@
   "held:REMOVED_FROM_GAME": 5,
   "held:SUPPLEMENT_HELD": 13,
   "held:UNPLACED": 7,
-  "left_out_offers": 219,
+  "left_out_offers": 178,
   "left_out_routes": 68,
-  "offers": 12626,
+  "offers": 12725,
   "routes": 198,
-  "with_trade": 322,
+  "with_trade": 324,
   "with_travel": 56
  }
 }
