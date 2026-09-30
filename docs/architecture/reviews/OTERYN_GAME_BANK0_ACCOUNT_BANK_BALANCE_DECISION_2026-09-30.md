@@ -190,7 +190,7 @@ Where does a bank balance live, and how do deposit, withdraw and transfer work?
 - Existing fee records (`0023`) are unchanged.
 
 **Amendment (pending on acceptance of MARKET-0 (#1367); `OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md` §6, §8).** The ledger gains `MARKET_ESCROW`,
-`MARKET_ESCROW_RETURN`, `MARKET_PURCHASE`, `MARKET_SALE` and `FEE_DEBIT` entries that reference a
+`MARKET_ESCROW_RETURN`, `MARKET_PURCHASE`, `MARKET_SALE`, `MARKET_HELD_CREDIT` and `FEE_DEBIT` entries that reference a
 Market operation; an entry references exactly one of a bank operation, a fee record or a Market
 operation (a house operation after HOUSE-OWN-0), and gains `counterparty_character_id`; the acting
 character is NULL for a job step. Market credits (sales and escrow returns) may exceed `BANK0-RL-01`

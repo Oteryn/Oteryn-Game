@@ -2,8 +2,8 @@
 
 - Decision: `MARKET0-WORLD-MARKET-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
-  economy, security and protocol) and protected integration. It builds on BANK-0 (PR #1357),
-  BANK-FEE-0 (PR #1361) and DEPOT-0 (PR #1359) and integrates after them. Owner questions Q1-Q3
+  economy, security and protocol) and protected integration. It builds on BANK-0 (#1357),
+  BANK-FEE-0 (#1361) and DEPOT-0 (#1359), all merged on `main`, and amends them (pending). Owner questions Q1-Q3
   (§13) are answered (#162 5913348961).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to start the Market ("pełna zgodność handlu z Tibią",
@@ -50,12 +50,12 @@ How do players of one World buy and sell items through the Market, safely across
   the Market owns offers, fills, fees and pricing; §12: a split gives the moved part a fresh
   transaction-scoped identity (§11.3), class `SPLIT_MERGE_QUANTITY`; §28: every shape needs hard
   ceilings before implementation; §15 and D178: a new fee source needs its own owner decision.
-- BANK-0 (candidate): one balance per (Account, World) up to `BANK0-RL-01`; ledger entries belong
+- BANK-0 (merged, #1357): one balance per (Account, World) up to `BANK0-RL-01`; ledger entries belong
   to a bank operation whose acting character is a live root of the entry's account; junior
-  characters without bank use (owner answer b, #162 5913348961). BANK-FEE-0 (candidate): fees pay coins
+  characters without bank use (owner answer b, #162 5913348961). BANK-FEE-0 (merged, #1361): fees pay coins
   first, the remainder as a `FEE_DEBIT` ledger entry referencing the fee record.
-- DEPOT-0 (candidate): `CharacterDepot` rows are immutable and leave only by TRANSFER; whole-item
-  shapes; the Inbox is left to a later decision.
+- DEPOT-0 (merged, #1359): `CharacterDepot` rows are immutable and leave only by TRANSFER;
+  whole-item shapes; it leaves the Inbox to a later decision, which this one makes (§5).
 - FND-ID-01 names `MarketOfferId` as a Game identity.
 - Content: `trade.marketable` and `trade.market_category` exist in the item schema; five records
   know `marketable: false` and every other Item leaves it `UNKNOWN`.
@@ -116,7 +116,8 @@ How do players of one World buy and sell items through the Market, safely across
 - **Offer.** `game_market_offers`: `offer_id` (`MarketOfferId`, UUIDv7), World, definition key,
   definition revision, side (`SELL` or `BUY`), Account, character, `piece_price`, `amount`,
   `remaining`, `anonymous`, `created_at`, `expires_at` (+30 days, `MARKET0-RL-05`), state (`OPEN`,
-  `FILLED`, `CANCELLED`, `EXPIRED`), `escrow_gold` and `matching_pending`.
+  `FILLED`, `CANCELLED`, `EXPIRED`, `CREDIT_HELD`), `ended_as` (the final state a `CREDIT_HELD`
+  offer takes), `escrow_gold`, `held_credit_gold` and `matching_pending`.
 - **Placing** (the acting character next to the locker whose depot view is open, checked again at
   execution under FND-02 §13.3):
   - not junior; the Premium gate (owner answer Q3: everyone passes until the Premium consumer
@@ -164,7 +165,7 @@ How do players of one World buy and sell items through the Market, safely across
   offers and accepts: no delivery is ever refused, whether a reserved Market delivery or return, or
   another decision's delivery (house disposition, HOUSE-OWN-0), which counts without a reservation.
   Such deliveries can take the counter above `MARKET0-RL-06`; their only bound is their source's
-  own bound (the house storage budget of EXP-HOUSES-01 §19, set by its decision), and while the
+  own bound (`HOUSEOWN0-RL-14`, 2,000 items per house interior, HOUSE-OWN-0 §7), and while the
   counter is above the ceiling the character's new offers and accepts are refused. This bounds a character's open buy offers to 100,000 units in all (a declared
   Reference difference, `PARITY_PENDING`).
 
@@ -173,7 +174,11 @@ How do players of one World buy and sell items through the Market, safely across
 - **Item escrow.** A new custody family `MarketOfferEscrow { offer_id, ordinal }`, World-scoped,
   owned by the Market. Items in it are not spendable elsewhere (DUR-03 §7.1, §34).
 - **Gold escrow.** `escrow_gold` is DUR-03 §18 non-item value in custody; a guard keeps
-  `escrow_gold = remaining × piece_price` for an open buy offer and 0 for an ended one.
+  `escrow_gold = remaining × piece_price` for an open buy offer and 0 in every other state,
+  `CREDIT_HELD` included.
+- **Held credit.** `held_credit_gold` is DUR-03 §18 non-item value in custody on the offer whose
+  owner's credit is held (below); a guard keeps it 0 in every state except `CREDIT_HELD`, where it
+  is positive.
 - **Fill price.** The maker is the older of the two offers; a fill is at the maker's price.
 - **Accepting a sell offer** (`accept {offer_id, amount}`, the accepter next to its open locker):
   the buyer's bank pays `amount × piece_price` (`MARKET_PURCHASE`), the seller's bank receives it
@@ -195,11 +200,17 @@ How do players of one World buy and sell items through the Market, safely across
 - **Balance ceiling.** Market credits (sales and escrow returns) are value already owned and are
   not refused at `BANK0-RL-01`: they may raise a balance up to the hard ceiling `MARKET0-RL-10`
   (9,000,000,000,000,000), checked before the write so no CHECK aborts. Voluntary credits (deposit,
-  transfer in) still stop at `BANK0-RL-01`. A credit that would pass the hard ceiling is not
-  written: the offer leaves the book as `CREDIT_HELD` (so the ware's book never stalls), keeps its
-  escrow, and the job retries it daily until the balance can take it; nothing is lost.
-- **Causes.** Closed `MarketCause {Place | Accept | Cancel | Expire | Match, offer_id,
-  occurrence}`; the fee's BURN is under the Market variant of `FeeBurnCause` (Q1).
+  transfer in) still stop at `BANK0-RL-01`. A credit that would pass the hard ceiling:
+  - to the **accepter** of a direct accept: the accept is refused with `BALANCE_LIMIT` before any
+    write;
+  - to the **owner of an offer** (the maker of an accept, either side of a matching step): it is
+    not written to the bank; the same transaction adds it to that offer's `held_credit_gold` and
+    moves the offer to `CREDIT_HELD`, off the book, so the ware's book never stalls. The job's next
+    step returns the offer's remaining escrow in the cancel shape and records `ended_as`; later
+    steps retry the held credit daily (`MARKET_HELD_CREDIT`: `held_credit_gold` falls, the bank
+    rises) until the balance can take it, then the offer takes `ended_as`. Nothing is lost.
+- **Causes.** Closed `MarketCause {Place | Accept | Cancel | Expire | Match | HeldCredit,
+  offer_id, occurrence}`; the fee's BURN is under the Market variant of `FeeBurnCause` (Q1).
 
 ## 7. Serialization, matching and expiry (MARKET-1)
 
@@ -246,12 +257,12 @@ Each keeps the previous function body and adds one clause, as DEPOT-0 §6 does:
   per transaction in a market outbox.
 - **BANK-0 amendment:** a ledger entry references exactly one of a bank operation, a fee record
   (BANK-FEE-0) or a Market operation; kinds `MARKET_ESCROW`, `MARKET_ESCROW_RETURN`,
-  `MARKET_PURCHASE`, `MARKET_SALE`, and `FEE_DEBIT` with a Market reference; a
+  `MARKET_PURCHASE`, `MARKET_SALE`, `MARKET_HELD_CREDIT`, and `FEE_DEBIT` with a Market reference; a
   `counterparty_character_id` column; the acting character is NULL for a job step, and a
   counterparty entry names its own account's character as counterparty; the balance CHECK uses
   `MARKET0-RL-10` and the voluntary-credit rule of §6.
 - **Conservation guard** (deferred, per Market operation): the sum of its ledger deltas, plus the
-  change of `escrow_gold`, plus the fee burn, is 0; item lines conserve units per ware.
+  changes of `escrow_gold` and `held_credit_gold`, plus the fee burn, is 0; item lines conserve units per ware.
 
 ## 9. Rows (registered by the children before implementation)
 
@@ -274,8 +285,10 @@ Each keeps the previous function body and adds one clause, as DEPOT-0 §6 does:
 | A buy taker matching a cheaper sell | 100 items, 200 location lines, 1 split, 3 value lines (`escrow_gold` fall, sale, refund), 304 work units, 1 event |
 | Cancel or expire a sell offer | 100 items, 200 location lines, 0 value lines, 300 work units, 1 event |
 | Cancel or expire a buy offer | 0 items, 2 value lines (`escrow_gold` fall, return), 1 event |
+| Any fill above whose credit is held | the same counts: the held credit replaces the credit line (`held_credit_gold` rise) |
+| Release a held credit | 0 items, 2 value lines (`held_credit_gold` fall, credit), 1 event |
 | Inbox out | 1 item, 2 location lines, 3 work units, 1 event |
-| `DUR03-RL-03-MARKET` value lines | 3; each ledger entry is one line (the fee's `FEE_DEBIT` is its BURN line, not a second one) and each `escrow_gold` change is one line |
+| `DUR03-RL-03-MARKET` value lines | 3; each ledger entry is one line (the fee's `FEE_DEBIT` is its BURN line, not a second one) and each `escrow_gold` or `held_credit_gold` change is one line |
 
 Participants per transaction: two Characters and two Accounts at most. The event payload ceiling
 is measured by MARKET-1 against the audit envelope before implementation.
