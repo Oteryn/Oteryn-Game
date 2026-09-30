@@ -20,7 +20,6 @@ fn facts(now: u64, root: &GameplayDecisionRoot) -> ApplicationFacts<'_> {
         target_reentry_protected: false,
         source_reentry_protected: false,
         target_is_player: true,
-        tick_facts: TickFacts::default(),
         decision_root: root,
         occurrence: occurrence(1),
     }
@@ -82,7 +81,7 @@ fn apply(
     store.apply(definition, provenance(9, kind, definition), &[], facts)
 }
 
-fn damage_amount(tick: &ConditionTick) -> (u32, bool) {
+fn damage_amount(tick: &ConditionTick<u32>) -> (u32, bool) {
     match tick.kind {
         TickKind::Damage {
             amount, refused, ..
@@ -207,7 +206,10 @@ fn damage_over_time_ticks_at_once_unless_delayed_then_at_its_interval() {
         &facts(0, &root),
     )
     .unwrap();
-    assert_eq!(damage_amount(&applied.immediate_tick.unwrap()), (10, false));
+    assert!(!applied.replaced);
+    let first = store.take_due(0, TickFacts::default());
+    assert_eq!(first.len(), 1);
+    assert_eq!(damage_amount(&first[0]), (10, false));
     assert!(store.take_due(1_999 * MS, TickFacts::default()).is_empty());
     let ticks = store.take_due(4_000 * MS, TickFacts::default());
     assert_eq!(
@@ -224,7 +226,8 @@ fn damage_over_time_ticks_at_once_unless_delayed_then_at_its_interval() {
         &facts(0, &root),
     )
     .unwrap();
-    assert_eq!(applied.immediate_tick, None);
+    assert_eq!(applied.sequence, 0);
+    assert!(store.take_due(0, TickFacts::default()).is_empty());
     assert_eq!(
         store
             .get(ConflictKey::Element(DotElement::Fire))
@@ -361,12 +364,18 @@ fn the_channel_order_is_due_then_actor_then_sequence() {
             key: ConflictKey::Recovery,
             suppressed: false,
         },
+        provenance: ConditionProvenance::<u32> {
+            source: None,
+            source_kind: ConditionSourceKind::SelfUse,
+            definition_key: "cond.recovery".to_owned(),
+            definition_revision: 1,
+        },
     };
     let order = channel_tick_order([
         (2_u32, vec![tick(5, 0), tick(9, 1)]),
         (1, vec![tick(5, 3), tick(5, 7)]),
     ]);
-    let keys: Vec<(u64, u32, u32)> = order.iter().map(|&(a, t)| (t.due, a, t.sequence)).collect();
+    let keys: Vec<(u64, u32, u32)> = order.iter().map(|(a, t)| (t.due, *a, t.sequence)).collect();
     assert_eq!(keys, [(5, 1, 3), (5, 1, 7), (5, 2, 0), (9, 2, 1)]);
 }
 
@@ -588,4 +597,135 @@ fn death_clears_every_instance() {
     store.clear_on_death();
     assert!(store.instances().is_empty());
     assert_eq!(store.speed_delta(), 0);
+}
+
+#[test]
+fn immediate_ticks_share_the_cond0_rl_03_budget_of_their_simulation_tick() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    for element in [
+        DotElement::Poison,
+        DotElement::Fire,
+        DotElement::Energy,
+        DotElement::Bleeding,
+        DotElement::Cursed,
+    ] {
+        apply(
+            &mut store,
+            &dot(element, 30, 30, false),
+            ConditionSourceKind::Creature,
+            &facts(0, &root),
+        )
+        .unwrap();
+    }
+    let first = store.take_due(0, TickFacts::default());
+    assert_eq!(first.len(), COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK);
+    // A second pass in the same simulation tick deals nothing more.
+    assert!(store.take_due(0, TickFacts::default()).is_empty());
+    let next = store.take_due(50 * MS, TickFacts::default());
+    assert_eq!(
+        next.iter().map(|t| (t.due, t.sequence)).collect::<Vec<_>>(),
+        [(0, 4)]
+    );
+}
+
+#[test]
+fn a_capped_damage_tick_is_not_overtaken_by_a_later_regeneration_tick() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    let bleed = def(
+        "cond.bleed",
+        ConditionValues::DamageOverTime {
+            element: DotElement::Bleeding,
+            total_min: 100,
+            total_max: 100,
+            per_tick: 10,
+            interval_ms: 1_000,
+            delayed: true,
+        },
+    );
+    let recovery = def(
+        "cond.recovery",
+        ConditionValues::Recovery {
+            duration_ms: 60_000,
+            interval_ms: 6_000,
+        },
+    );
+    apply(
+        &mut store,
+        &bleed,
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    apply(
+        &mut store,
+        &recovery,
+        ConditionSourceKind::SelfUse,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let first: Vec<u64> = store
+        .take_due(6_000 * MS, TickFacts::default())
+        .iter()
+        .map(|t| t.due / MS)
+        .collect();
+    let second: Vec<(u64, u32)> = store
+        .take_due(6_050 * MS, TickFacts::default())
+        .iter()
+        .map(|t| (t.due / MS, t.sequence))
+        .collect();
+    assert_eq!(first, [1_000, 2_000, 3_000, 4_000]);
+    // Damage 5 and 6 (sequence 0) before the regeneration at 6 (sequence 1).
+    assert_eq!(second, [(5_000, 0), (6_000, 0), (6_000, 1)]);
+}
+
+#[test]
+fn a_regeneration_catch_up_is_bounded_per_simulation_tick_and_nothing_is_dropped() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    let recovery = def(
+        "cond.recovery",
+        ConditionValues::Recovery {
+            duration_ms: 60_000,
+            interval_ms: 1_000,
+        },
+    );
+    apply(
+        &mut store,
+        &recovery,
+        ConditionSourceKind::SelfUse,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let mut dealt = 0;
+    let mut now = 120_000 * MS;
+    while store.get(ConflictKey::Recovery).is_some() {
+        let ticks = store.take_due(now, TickFacts::default());
+        assert!(ticks.len() <= COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK);
+        dealt += ticks.len();
+        now += 50 * MS;
+    }
+    assert_eq!(dealt, 60);
+}
+
+#[test]
+fn the_last_tick_of_an_instance_carries_its_frozen_provenance() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    let poison = dot(DotElement::Poison, 10, 10, true);
+    store
+        .apply(
+            &poison,
+            provenance(42, ConditionSourceKind::Creature, &poison),
+            &[],
+            &facts(0, &root),
+        )
+        .unwrap();
+    let ticks = store.take_due(2_000 * MS, TickFacts::default());
+    assert!(store.instances().is_empty(), "the tick used the total up");
+    assert_eq!(
+        ticks[0].provenance,
+        provenance(42, ConditionSourceKind::Creature, &poison)
+    );
 }

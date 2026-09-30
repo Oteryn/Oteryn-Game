@@ -18,7 +18,8 @@ use super::occurrence::valid_atom;
 pub(crate) const COND0_RL_01_INSTANCES_PER_ACTOR: usize = 16;
 /// `COND0-RL-02`: minimum tick interval, in milliseconds.
 pub(crate) const COND0_RL_02_MIN_TICK_INTERVAL_MS: u32 = 1_000;
-/// `COND0-RL-03`: damage ticks per actor per simulation tick.
+/// `COND0-RL-03`: damage ticks per actor per simulation tick. The store also counts regeneration
+/// ticks against it, so a catch-up of any tick kind is bounded per pass (`RUN_EACH_BOUNDED`).
 pub(crate) const COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK: usize = 4;
 /// ITEM-USE-0 §6.1: the food time cap (a parity value, not a resource limit).
 pub(crate) const FOOD_REGENERATION_CAP_MS: u32 = 1_200_000;
@@ -235,6 +236,9 @@ pub(crate) struct ConditionInstance<S> {
     ends_at: Option<u64>,
     /// The next tick's semantic time (µs), for ticking families.
     next_tick_at: Option<u64>,
+    /// The application time of a non-`delayed` damage over time whose first tick is not dealt yet
+    /// (§3.1); it runs through `take_due` under the same budget as every other tick.
+    immediate_due: Option<u64>,
     started_at: u64,
     /// The remaining damage total of a damage over time.
     remaining_total: u32,
@@ -299,8 +303,6 @@ pub(crate) struct ApplicationFacts<'a> {
     pub(crate) target_reentry_protected: bool,
     pub(crate) source_reentry_protected: bool,
     pub(crate) target_is_player: bool,
-    /// The target's tick facts, for an immediate damage tick.
-    pub(crate) tick_facts: TickFacts,
     pub(crate) decision_root: &'a GameplayDecisionRoot,
     pub(crate) occurrence: DecisionOccurrenceId,
 }
@@ -320,21 +322,22 @@ pub(crate) enum ConditionRefusal {
     DrawFailed,
 }
 
-/// A committed application.
+/// A committed application. A damage over time that is not `delayed` has its first tick due at
+/// once: the owner's `take_due` pass in the same simulation tick deals it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Applied {
     pub(crate) sequence: u32,
     pub(crate) replaced: bool,
-    /// A damage over time that is not `delayed` deals one tick at once.
-    pub(crate) immediate_tick: Option<ConditionTick>,
 }
 
-/// A due tick, in the §3.4 order `(due, actor, sequence)`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct ConditionTick {
+/// A due tick, in the §3.4 order `(due, actor, sequence)`. It carries the instance's frozen
+/// provenance (§3.2), so the owner can build its Effect Plan even when this was the last tick.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ConditionTick<S> {
     pub(crate) due: u64,
     pub(crate) sequence: u32,
     pub(crate) kind: TickKind,
+    pub(crate) provenance: ConditionProvenance<S>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -363,6 +366,9 @@ pub(crate) struct ConditionStore<S> {
     /// Sorted by sequence.
     instances: Vec<ConditionInstance<S>>,
     next_sequence: u32,
+    /// The simulation tick (its semantic time) of the current pass and the ticks it has dealt.
+    pass_at: u64,
+    pass_ticks: usize,
 }
 
 impl<S> Default for ConditionStore<S> {
@@ -370,6 +376,8 @@ impl<S> Default for ConditionStore<S> {
         Self {
             instances: Vec::new(),
             next_sequence: 0,
+            pass_at: 0,
+            pass_ticks: 0,
         }
     }
 }
@@ -439,6 +447,7 @@ impl<S: Clone> ConditionStore<S> {
             sequence: self.next_sequence,
             ends_at: None,
             next_tick_at: None,
+            immediate_due: None,
             started_at: now,
             remaining_total: 0,
             speed_delta: 0,
@@ -458,6 +467,7 @@ impl<S: Clone> ConditionStore<S> {
                 total_min,
                 total_max,
                 interval_ms,
+                delayed,
                 ..
             } => {
                 if let Some(existing) = existing {
@@ -470,6 +480,7 @@ impl<S: Clone> ConditionStore<S> {
                 instance.remaining_total =
                     draw_in_range(total_min, total_max, facts, COND_DOT_TOTAL_DRAW)?;
                 instance.next_tick_at = Some(keep_timing(interval_ms));
+                instance.immediate_due = (!delayed).then_some(now);
             }
             ConditionValues::FoodRegeneration {
                 added_ms,
@@ -502,90 +513,89 @@ impl<S: Clone> ConditionStore<S> {
                 instance.ends_at = Some(now + ms(duration_ms));
             }
         }
-        let immediate_tick = match definition.values {
-            ConditionValues::DamageOverTime {
-                element,
-                per_tick,
-                delayed: false,
-                ..
-            } => Some(consume_damage(
-                &mut instance,
-                element,
-                per_tick,
-                now,
-                facts.tick_facts,
-            )),
-            _ => None,
-        };
         let sequence = instance.sequence;
         self.next_sequence = self.next_sequence.wrapping_add(1);
         let replaced = current.is_some();
         if let Some(index) = current {
             self.instances.remove(index);
         }
-        if instance.remaining_total > 0 || instance.ends_at.is_some() {
-            self.instances.push(instance);
-        }
-        Ok(Applied {
-            sequence,
-            replaced,
-            immediate_tick,
-        })
+        self.instances.push(instance);
+        Ok(Applied { sequence, replaced })
     }
 
-    /// §3.4: the ticks due at `now`, in `(due, sequence)` order, at most `COND0-RL-03` damage
-    /// ticks; later ones stay due and run in the next pass (`RUN_EACH_BOUNDED`). Instances whose
-    /// time is over and whose ticks are all dealt end here.
-    pub(crate) fn take_due(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick> {
+    /// §3.4: the ticks due at `now`, in `(due, sequence)` order. One simulation tick (`now`)
+    /// deals at most `COND0-RL-03` ticks per actor, across every pass at that `now`; the rest stay
+    /// due, in order, for the next simulation tick (`RUN_EACH_BOUNDED`), and none is dropped.
+    /// Instances whose time is over and whose ticks are all dealt end here.
+    pub(crate) fn take_due(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
+        if self.pass_at != now {
+            self.pass_at = now;
+            self.pass_ticks = 0;
+        }
         let mut ticks = Vec::new();
-        let mut damage_ticks = 0;
-        loop {
+        while self.pass_ticks < COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK {
             let next = self
                 .instances
                 .iter()
                 .enumerate()
                 .filter_map(|(index, instance)| {
-                    let due = instance.next_tick_at?;
-                    let in_time = instance.ends_at.is_none_or(|end| due <= end);
-                    (due <= now && in_time).then_some((due, instance.sequence, index))
-                })
-                .filter(|&(_, _, index)| {
-                    damage_ticks < COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK
-                        || !matches!(
-                            self.instances[index].definition.values,
-                            ConditionValues::DamageOverTime { .. }
-                        )
+                    let scheduled = instance
+                        .next_tick_at
+                        .filter(|&due| instance.ends_at.is_none_or(|end| due <= end));
+                    let due = match (instance.immediate_due, scheduled) {
+                        (Some(a), Some(b)) => a.min(b),
+                        (a, b) => a.or(b)?,
+                    };
+                    (due <= now).then_some((due, instance.sequence, index))
                 })
                 .min();
             let Some((due, _, index)) = next else { break };
             let instance = &mut self.instances[index];
-            let tick = match instance.definition.values {
+            let kind = match instance.definition.values {
                 ConditionValues::DamageOverTime {
-                    element, per_tick, ..
+                    element,
+                    per_tick,
+                    interval_ms,
+                    ..
                 } => {
-                    damage_ticks += 1;
-                    consume_damage(instance, element, per_tick, due, facts)
+                    if instance.immediate_due == Some(due) {
+                        instance.immediate_due = None;
+                    } else {
+                        instance.next_tick_at = Some(due + u64::from(interval_ms) * MICROS_PER_MS);
+                    }
+                    let amount = per_tick.min(instance.remaining_total);
+                    if facts.standing_on_field != Some(element) || facts.in_protection_zone {
+                        instance.remaining_total -= amount;
+                    }
+                    TickKind::Damage {
+                        element,
+                        amount,
+                        refused: facts.in_protection_zone,
+                    }
                 }
                 ConditionValues::FoodRegeneration { interval_ms, .. }
                 | ConditionValues::Recovery { interval_ms, .. } => {
                     let key = instance.definition.condition_type().conflict_key();
                     instance.next_tick_at = Some(due + u64::from(interval_ms) * MICROS_PER_MS);
-                    ConditionTick {
-                        due,
-                        sequence: instance.sequence,
-                        kind: TickKind::Regeneration {
-                            key,
-                            suppressed: facts.in_protection_zone
-                                && key == ConflictKey::FoodRegeneration,
-                        },
+                    TickKind::Regeneration {
+                        key,
+                        suppressed: facts.in_protection_zone
+                            && key == ConflictKey::FoodRegeneration,
                     }
                 }
+                // Speed, mana shield and light never schedule a tick.
                 _ => {
                     instance.next_tick_at = None;
                     continue;
                 }
             };
-            ticks.push(tick);
+            self.pass_ticks += 1;
+            ticks.push(ConditionTick {
+                due,
+                sequence: instance.sequence,
+                kind,
+                provenance: instance.provenance.clone(),
+            });
         }
         self.instances.retain(|instance| match instance.ends_at {
             None => instance.remaining_total > 0,
@@ -601,40 +611,15 @@ impl<S: Clone> ConditionStore<S> {
 }
 
 /// §3.4: merges each actor's due ticks into the channel order `(due, actor, sequence)`.
-pub(crate) fn channel_tick_order<A: Ord + Copy>(
-    per_actor: impl IntoIterator<Item = (A, Vec<ConditionTick>)>,
-) -> Vec<(A, ConditionTick)> {
-    let mut all: Vec<(A, ConditionTick)> = per_actor
+pub(crate) fn channel_tick_order<A: Ord + Copy, S>(
+    per_actor: impl IntoIterator<Item = (A, Vec<ConditionTick<S>>)>,
+) -> Vec<(A, ConditionTick<S>)> {
+    let mut all: Vec<(A, ConditionTick<S>)> = per_actor
         .into_iter()
         .flat_map(|(actor, ticks)| ticks.into_iter().map(move |tick| (actor, tick)))
         .collect();
-    all.sort_by_key(|&(actor, tick)| (tick.due, actor, tick.sequence));
+    all.sort_by_key(|(actor, tick)| (tick.due, *actor, tick.sequence));
     all
-}
-
-fn consume_damage<S>(
-    instance: &mut ConditionInstance<S>,
-    element: DotElement,
-    per_tick: u32,
-    due: u64,
-    facts: TickFacts,
-) -> ConditionTick {
-    let amount = per_tick.min(instance.remaining_total);
-    if facts.standing_on_field != Some(element) || facts.in_protection_zone {
-        instance.remaining_total -= amount;
-    }
-    if let ConditionValues::DamageOverTime { interval_ms, .. } = instance.definition.values {
-        instance.next_tick_at = Some(due + u64::from(interval_ms) * MICROS_PER_MS);
-    }
-    ConditionTick {
-        due,
-        sequence: instance.sequence,
-        kind: TickKind::Damage {
-            element,
-            amount,
-            refused: facts.in_protection_zone,
-        },
-    }
 }
 
 fn draw_in_range(
