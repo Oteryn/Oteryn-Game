@@ -68,8 +68,12 @@ re-measured (payload 25,398 B, envelope 25,712 B) and the stored envelope CHECK 
 - **Capacity.** The source supplies the backpack's current Content facts
   (`FeeChangeFacts.backpack`), as the reward-claim MINT does; the writer refuses facts that do not
   match the equipped backpack. The database still enforces the 20-entry ceiling.
-- **Change definitions.** The source supplies the platinum and gold definition revisions; the
-  database checks the key and family, not the revision (as for every other MINT).
+- **Coin definitions.** The source supplies the compatible gold, platinum and crystal definition
+  revisions. A live coin stack of the backpack at another revision refuses the fee
+  (`InvalidInput`, nothing written) rather than being skipped: decision §4.2 makes only the
+  compatible revision eligible, and the database plan guard counts every coin stack. The change is
+  minted at the platinum and gold revisions; the database checks the key and family, not the
+  revision (as for every other MINT).
 - **Content write.** D176's `semantics.stack` = 100 content edit for i3031/i3035/i3043 is queued on
   the content train (#162 5916023254, "the GOLD-FEE-1b coin edit") and is not in this PR. Runtime
   behaviour does not depend on it: `COIN_STACK_MAXIMUM` = 100 is the typed maximum the planner and
@@ -84,5 +88,9 @@ re-measured (payload 25,398 B, envelope 25,712 B) and the stored envelope CHECK 
   each turn a case red.
 - CHARM-6 composes this writer: it supplies `FeeChangeFacts` and replaces
   `game_item_fee_burn_consistency_guard` from the 0031 body (decision §6).
+- Repair (Codex review of `de8ee89`, three P2 findings): coin stacks must be at the compatible
+  revision (above); the change fit counts entries already over the declared capacity
+  (`entries - whole + outputs <= capacity`); the event audit requires the first change ordinal
+  above every burn line's ordinal. Each has a unit or PostgreSQL case. New candidate, new freeze.
 - Review: required independent exact-head review (persistence, value conservation), triggered by
   the control plane on the frozen head.

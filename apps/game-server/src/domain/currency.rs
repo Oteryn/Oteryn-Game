@@ -182,7 +182,8 @@ pub fn plan_fee_within(
         .iter()
         .filter(|line| line.burned == stacks[line.input].quantity)
         .count();
-    if plan.change_outputs() > capacity.saturating_sub(entries) + whole {
+    // `whole <= stacks.len() <= entries`; an over-capacity backpack stays refused.
+    if entries - whole + plan.change_outputs() > capacity {
         return Err(FeePlanError::ChangeDoesNotFit);
     }
     Ok(plan)
@@ -363,6 +364,14 @@ mod tests {
                 .change_outputs(),
             1
         );
+        // A backpack already over its declared capacity (12 entries, 8 declared) gets no
+        // change even when the burn frees entries.
+        stacks[0].quantity = 1;
+        assert_eq!(
+            plan_fee_within(2_350, &stacks, 12, 8),
+            Err(FeePlanError::ChangeDoesNotFit)
+        );
+        assert!(plan_fee_within(2_350, &stacks, 7, 8).is_ok());
         assert_eq!(
             plan_fee_within(9_900, &stacks, 1, 0),
             Err(FeePlanError::InvalidInput)

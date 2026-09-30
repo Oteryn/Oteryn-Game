@@ -234,7 +234,7 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
 }
 
 /// Change MINT lines: `change / 100` platinum then `change % 100` gold, each only when
-/// positive, fresh live items of this World in consecutive new entries.
+/// positive, fresh live items of this World in consecutive new entries after the burn lines.
 fn check_change(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     let expected: Vec<(Coin, u64)> = [
         (Coin::Platinum, value.change_gold_units / 100),
@@ -246,13 +246,17 @@ fn check_change(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     if value.change.len() > FEE_CHANGE_OUTPUTS_MAX || value.change.len() != expected.len() {
         return Err(AuditError::InvalidInput);
     }
-    let mut previous_ordinal = None;
+    // The first output takes an ordinal after every burn line's entry, the next one after it.
+    let last_line_ordinal = value.lines.iter().map(|line| line.placement_ordinal).max();
+    let mut previous_ordinal: Option<u64> = None;
     for (output, (coin, quantity)) in value.change.iter().zip(expected) {
         let after = output.after.as_ref().ok_or(AuditError::InvalidInput)?;
         check_uuid_v7(&after.item_instance_id)?;
         check_definition(after.definition.as_ref())?;
-        let consecutive = previous_ordinal
-            .is_none_or(|ordinal: u64| ordinal.checked_add(1) == Some(output.placement_ordinal));
+        let consecutive = match previous_ordinal {
+            Some(ordinal) => ordinal.checked_add(1) == Some(output.placement_ordinal),
+            None => last_line_ordinal.is_none_or(|ordinal| output.placement_ordinal > ordinal),
+        };
         if line_coin(after)? != coin
             || u64::from(after.quantity) != quantity
             || after.lifecycle != ITEM_LIFECYCLE_LIVE
@@ -692,6 +696,11 @@ mod tests {
         let value = with_change();
         let wire = encode_fee_burn_event(identity(), value.clone()).unwrap();
         assert_eq!(decode_fee_burn_envelope(&wire).unwrap().1, value);
+        // An untouched entry may hold a higher ordinal than every burn line.
+        let mut later = with_change();
+        later.change[0].placement_ordinal = 7;
+        later.change[1].placement_ordinal = 8;
+        assert!(encode_fee_burn_event(identity(), later).is_ok());
         let usage = fee_burn_usage(&value);
         assert_eq!(
             (usage.touched_item_instances, usage.location_custody_lines),
@@ -712,6 +721,14 @@ mod tests {
         let mut broken = with_change();
         broken.change[1].placement_ordinal = 5;
         cases.push(("change entries not consecutive", broken));
+        let mut broken = with_change();
+        broken.change[0].placement_ordinal = 2;
+        broken.change[1].placement_ordinal = 3;
+        cases.push(("change entry at a burn line's ordinal", broken));
+        let mut broken = with_change();
+        broken.change[0].placement_ordinal = 1;
+        broken.change[1].placement_ordinal = 2;
+        cases.push(("change entries before the burn lines", broken));
         let mut broken = with_change();
         broken.change[1] = minted(Coin::Gold, 11, 60, 4);
         cases.push(("change reuses a burned item", broken));

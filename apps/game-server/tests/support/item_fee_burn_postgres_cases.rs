@@ -271,6 +271,7 @@ fn request(occurrence: u8, fee: u64) -> TestResult<FeeBurnRequest> {
             item_instance_ids: [id(occurrence + 150), id(occurrence + 170)],
             platinum: definition(PLATINUM),
             gold: definition(GOLD),
+            crystal: definition(CRYSTAL),
             backpack: ItemDefinitionFacts {
                 definition: definition(BACKPACK_KEY),
                 stack: ItemStackClass::NonStackable,
@@ -593,13 +594,19 @@ fn twenty_whole_burns_at_the_longest_revision_commit_one_fee_sized_event() -> Te
                 .await?;
         }
         let before = snapshot(&harness.pool).await?;
-        match compose(&harness, 1, &request(61, 2_001)?, true).await? {
+        // The source supplies the gold revision the stacks are at.
+        let at_revision = |occurrence, fee| -> TestResult<FeeBurnRequest> {
+            let mut request = request(occurrence, fee)?;
+            request.change.gold.revision_ref = revision.clone();
+            Ok(request)
+        };
+        match compose(&harness, 1, &at_revision(61, 2_001)?, true).await? {
             Composed::Refused(FeeBurnError::InsufficientFunds) => {}
             other => return Err(format!("expected insufficient funds, got {other:?}").into()),
         }
         assert_eq!(snapshot(&harness.pool).await?, before);
 
-        let request = request(62, 2_000)?;
+        let request = at_revision(62, 2_000)?;
         match compose(&harness, 1, &request, true).await? {
             Composed::Committed(FeeBurnOutcome::Burned(burned)) => {
                 assert_eq!(burned.lines.len(), 20);
@@ -948,9 +955,17 @@ fn change_that_does_not_fit_the_backpack_is_refused_and_writes_nothing() -> Test
         small.change.backpack.container_capacity = Some(3);
         let mut other = request(62, 2_350)?;
         other.change.backpack.definition.revision_ref = "rev-2".into();
+        // A coin stack at a revision other than the compatible one is not burned.
+        let mut stale = request(64, 2_350)?;
+        stale.change.crystal.revision_ref = "rev-2".into();
         for (case, request, expected) in [
             ("one free entry", small, "ChangeDoesNotFit"),
             ("another backpack definition", other, "InvalidInput"),
+            (
+                "a crystal stack at an incompatible revision",
+                stale,
+                "InvalidInput",
+            ),
         ] {
             match compose(&harness, 1, &request, true).await? {
                 Composed::Refused(error) if format!("{error:?}") == expected => {}

@@ -70,9 +70,12 @@ pub struct FeeChangeFacts {
     /// Platinum, then gold: the two output identity slots, fixed with the TransactionId before
     /// the first attempt and reused on every retry. A slot the plan does not need stays unused.
     pub item_instance_ids: [[u8; 16]; 2],
-    /// The current compatible definitions of the platinum and the gold coin.
+    /// The current compatible definitions of the three coins: every live coin stack of the
+    /// backpack must be at its coin's revision (else the fee is refused), and the change is
+    /// minted at the platinum and gold ones.
     pub platinum: TypedDefinitionRef,
     pub gold: TypedDefinitionRef,
+    pub crystal: TypedDefinitionRef,
     /// The main backpack's definition: its declared capacity bounds the change.
     pub backpack: ItemDefinitionFacts,
 }
@@ -318,6 +321,16 @@ pub async fn burn_fee_in_transaction(
         }
         if uuid_text(&row.try_get::<String, _>("world_id")?)? != *world_id.as_bytes() {
             return Err(DurabilityError::InvalidStoredState.into());
+        }
+        // Decision §4.2: an eligible input is at the compatible definition revision. A stack
+        // at another one is not skipped (the database plan guard counts every coin stack).
+        let compatible = match coin {
+            Coin::Gold => &request.change.gold,
+            Coin::Platinum => &request.change.platinum,
+            Coin::Crystal => &request.change.crystal,
+        };
+        if row.try_get::<String, _>("definition_revision_ref")? != compatible.revision_ref {
+            return Err(FeeBurnError::InvalidInput);
         }
         let quantity = u32::try_from(row.try_get::<i64, _>("quantity")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -643,6 +656,7 @@ fn valid_change_facts(request: &FeeBurnRequest) -> bool {
     }) && platinum_slot != gold_slot
         && coin(&facts.platinum, Coin::Platinum)
         && coin(&facts.gold, Coin::Gold)
+        && coin(&facts.crystal, Coin::Crystal)
         && facts
             .backpack
             .container_capacity
@@ -762,6 +776,7 @@ mod tests {
             item_instance_ids: [id(11), id(12)],
             platinum: definition(Coin::Platinum.production_key()),
             gold: definition(Coin::Gold.production_key()),
+            crystal: definition(Coin::Crystal.production_key()),
             backpack: ItemDefinitionFacts {
                 definition: definition("oteryn:item.tibia.i2854"),
                 stack: ItemStackClass::NonStackable,
@@ -787,6 +802,9 @@ mod tests {
         let mut broken = request();
         broken.change.gold.family = "Creature".into();
         cases.push(("gold of another family", broken));
+        let mut broken = request();
+        broken.change.crystal = definition(Coin::Gold.production_key());
+        cases.push(("gold as crystal", broken));
         let mut broken = request();
         broken.change.backpack.container_capacity = Some(21);
         cases.push(("capacity above 20", broken));
