@@ -166,6 +166,11 @@ Character root, progression or receipt row. Rules 2-6 (the complete fence, the c
 replay, the `character_root` row lock, atomicity in DUR-03) apply unchanged. Nested bags and other
 equipment slots are not covered until their own decisions.
 
+**Amendment (NPC-0, 2026-09-30).** Rule 1 also covers an NPC travel transaction's pending arrival
+row (`game_character_pending_arrivals`), an obligation outside the revision chain like DEATH-0's
+pending respawn (DEATH-0 §3.4). NPC BUY, SELL and travel are item-only transactions under rules
+1-6 (`OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md` §5-§6).
+
 ## 4. Rejected options
 
 - **Put every item transaction into the `CharacterRevision` chain** with a closed union of typed
