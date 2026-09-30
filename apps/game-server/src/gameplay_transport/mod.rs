@@ -5,6 +5,7 @@ pub(crate) mod actor_spell;
 pub(crate) mod charm;
 mod connection;
 pub(crate) mod fresh_evidence;
+mod monk_save;
 #[cfg(test)]
 mod qualification;
 mod resume;
@@ -504,6 +505,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // exponentially, and the bounds only guard an owner that never recovers.
         let mut backoff = RECONCILE_BACKOFF;
         for _ in 0..EXPIRY_ATTEMPTS {
+            // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
+            // before the release can end the Character lease.
+            if self.save_monk_state(&admitted, actor).await == monk_save::MonkSave::Unknown {
+                let pause = backoff;
+                backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                tokio::time::sleep(pause).await;
+                continue;
+            }
             let pause = match store
                 .release_expired_loss(admitted.game_session_id, &account_id)
                 .await
@@ -782,9 +791,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: actor_spell::SpellCastIntent,
     ) -> actor_spell::SpellCastOutcome {
-        let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
-            u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX),
-        );
+        let now = self.owner_now();
         let runtime = self.runtime.lock().await;
         let mut states = self.spell_states.lock().await;
         actor_spell::cast_in_channel(
@@ -799,6 +806,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         )
     }
 
+    /// The periodic 1000 ms Serene evaluation of the admitted actor (SPELL-D8 §8.2), under the
+    /// same runtime lock as a cast.
+    async fn tick_vitals(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let now = self.owner_now();
+        let runtime = self.runtime.lock().await;
+        let mut states = self.spell_states.lock().await;
+        states.tick(&runtime, actor, game_session_id, now)
+    }
+
     async fn lose_control(&self, admitted: AdmittedSession, wait: Duration) -> ControlLossResult {
         let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
             return ControlLossResult::NotApplicable;
@@ -807,6 +827,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let result = self
             .commit_control_loss(admitted.game_session_id, actor, controller)
             .await;
+        if result == ControlLossResult::Recorded {
+            // §8.2: no command of the actor is accepted until a recovery initializes it again.
+            let runtime = self.runtime.lock().await;
+            self.spell_states
+                .lock()
+                .await
+                .detach(&runtime, actor, admitted.game_session_id);
+        }
         if result == ControlLossResult::Recorded
             && let Ok(mut lost) = self.lost.lock()
         {
@@ -830,6 +858,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let account_id = canonical_uuid(&controller.account_id);
         let mut backoff = RECONCILE_BACKOFF;
         for _ in 0..EXPIRY_ATTEMPTS {
+            // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
+            // before the release can end the Character lease.
+            if self.save_monk_state(&admitted, actor).await == monk_save::MonkSave::Unknown {
+                tokio::time::sleep(backoff).await;
+                backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                continue;
+            }
             match store
                 .release_abandoned_session(
                     admitted.game_session_id,
@@ -1350,6 +1385,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(AdmissionRefusal::Unavailable) => return FirstEntryOutcome::RefusedUnavailable,
             Err(_) => return FirstEntryOutcome::RefusedStaleAuthority,
         }
+        // SPELL-D8 §8.2: a new runtime actor loads the durable Harmony and remaining forced
+        // Serene time, read before the Channel-owner lock; a failed or corrupt load fails closed.
+        let facts = character_cast_facts(current.commit().character_id());
+        let monk = match facts {
+            Some(_) => {
+                let Ok(character_id) =
+                    domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+                else {
+                    return FirstEntryOutcome::RefusedUnavailable;
+                };
+                match self.load_monk_state(character_id).await {
+                    Some(values) => values,
+                    None => return FirstEntryOutcome::RefusedUnavailable,
+                }
+            }
+            None => (0, 0),
+        };
         // One Channel-owner lock covers the binding comparison and the write.
         let mut runtime = self.runtime.lock().await;
         let expected = FirstEntryExpectation {
@@ -1369,13 +1421,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => return FirstEntryOutcome::RefusedByChannel,
         };
         // Spell cast §4: the vitals and cooldowns are created in this same owner step, before the
-        // actor's first command, and only from Character-owned facts.
-        if let Some(facts) = character_cast_facts(current.commit().character_id())
+        // actor's first command, and only from Character-owned facts; a monk's Serene is
+        // evaluated here too (§8.2).
+        if let Some(facts) = facts
             && self
                 .spell_states
                 .lock()
                 .await
-                .initialize(&runtime, actor, game_session_id, facts)
+                .initialize(
+                    &runtime,
+                    actor,
+                    game_session_id,
+                    facts,
+                    monk,
+                    self.owner_now(),
+                )
                 .is_none()
         {
             return FirstEntryOutcome::RefusedByChannel;

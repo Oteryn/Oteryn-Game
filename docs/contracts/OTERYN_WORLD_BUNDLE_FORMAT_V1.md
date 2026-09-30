@@ -5,8 +5,11 @@
 - Status: **CANDIDATE.** ADR-0005 §3 requires an accepted schema contract before a runtime
   treats a serializer as a permanent format. This document is accepted together with
   MAP-BUNDLE-1: it is reviewed with MAP-BUNDLE-1a (this layout) and becomes the contract
-  when MAP-BUNDLE-1b closes the OPEN items in §10.
-- Implementation: `tools/world-bundle-compiler` (writer, reader and compiler skeleton).
+  when MAP-BUNDLE-1b closes the OPEN items in §10. MAP-BUNDLE-1b lands in two PRs: 1b-1 (the
+  families, the teleport split and the parity report, §10) and 1b-2 (key resolution against
+  the Item, Terrain and WorldObject registries and the end-to-end compile of the real map).
+- Implementation: `tools/world-bundle-compiler` (writer, reader, compiler and the `parity`
+  command).
 - Runtime reader: none yet (MAP-LOAD-1).
 - Governing: ADR-0021 §4.2-§4.6 and §4.8 (D188-D196); ADR-0005 §3; DUR-04 §9;
   `OTERYN_CRYSTALSERVER_LEGACY_SPATIAL_IMPORT_PROFILE_V1`; `OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1`.
@@ -15,8 +18,9 @@
 
 A server World Bundle is the one file the game server reads for a World's base map
 (ADR-0021 §4.2). The compiler produces it from the World Project: the B3 placements
-(`OTERYN_WORLD_REGION_B3/v1`) and, in MAP-BUNDLE-1b, the World, FloorChange, Transition, House
-and area families. The bundle is immutable and content-addressed by its digest (§6).
+(`OTERYN_WORLD_REGION_B3/v1`) and the World, Transition.Teleport and House families and the
+minimap draft areas (§10). Floor changes come from the catalogue's `floor_change` fact of the
+placed object, not from a family of their own (#1170). The bundle is immutable and content-addressed by its digest (§6).
 
 This document fixes the byte layout, the manifest, the checksums and digest, the placement key,
 `build_class`, versioning and the reader limits. It does not decide the in-memory model, the
@@ -61,6 +65,7 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 | `palette` | list of `{key, family, id}`; the list index is the bundle palette index used by the payloads |
 | `draft_areas` | keys of the draft areas compiled in, sorted and unique; empty in a production bundle |
 | `skipped_provisional_keys` | provisional keys skipped in this build, sorted and unique; empty in a production bundle |
+| `dropped_teleports` | placement keys (§7, JSON numbers) of the top-level entries whose zero-destination `teleport` attribute the compiler dropped (§10, OPEN-3), strictly ascending; each must name a top-level entry of the bundle. Such an entry is never materialized (ADR-0021 §4.4). Allowed in a production bundle |
 
 `palette[i].key` is the stable World Project key, `family` is `item` or `terrain`,
 and `id` is the compact id of that key in `identity.content_revision`. The palette holds only
@@ -140,7 +145,9 @@ The key is not stored. The compiler emits it by fixing the tile order and the or
 every reader derives the same value. It is bound to the bundle digest: it names an entry only
 together with the digest of the bundle it came from, and `MapItemMaterialization` and the wire
 carry both. It is not a canonical identity and is not stable across bundles (import profile
-§8). A provisional entry skipped in a non-production build takes no ordinal.
+§8). A provisional entry skipped in a non-production build takes no ordinal. A dropped
+zero-destination teleport inside a container is listed under its top-level entry's key; one
+inside a skipped provisional entry has no key and is only reported.
 
 ## 8. Build class
 
@@ -161,8 +168,9 @@ reserved byte, contiguity, the raw and ratio limits, the running raw total, the 
 against `world.floors`, ascending order, the frame checksum, the single canonical frame,
 decompression into exactly `raw_length` bytes, the sector coordinate range, the payload grammar
 with the per-bundle tile and entry budget, a non-empty sector, palette indices, tile positions
-and teleport destinations inside the World extent, and the top-level entry limit. Every size is
-checked before memory is reserved for it.
+and teleport destinations inside the World extent, and the top-level entry limit; after the last
+frame, every `dropped_teleports` key against the decoded entries. Every size is checked before
+memory is reserved for it.
 
 | Limit | Hard maximum |
 |---|---|
@@ -178,19 +186,25 @@ checked before memory is reserved for it.
 | `MAP01-ITEM-TEXT-BYTES` | 4,096 bytes per `text` or `description` |
 
 The rows are in `RESOURCE_LIMITS_REGISTRY.json`. The per-tile, text and per-bundle tile and entry
-limits are initial values (the source map has about 19.37 M tiles and 24.98 M items).
-MAP-BUNDLE-1b confirms them on the real map before the format is accepted.
+limits were set before the real map was read. The MAP-BUNDLE-1b parity run on the #1170 map
+(head `98ba6938`) confirms them: 19,373,519 tiles, 24,983,331 entries, at most 26 entries and 26
+top-level entries on a tile, and at most 3,859 bytes in one `text` or `description`. All are
+inside the limits, so the values stay.
 
 The compiler fails closed as well (ADR-0021 §4.3, §4.5). It resolves every entry, including the
 contents of a provisional entry it skips, and stops on an unknown key, a position or teleport
 destination outside the declared World, a legacy `z` above 15, a sector given twice, a
-provisional key in a production build, and any limit above.
+provisional key in a production build, and any limit above. It also stops when a placement
+disagrees with a family (§10): a teleport with a real destination and no Transition.Teleport
+record from its tile, or a record to another destination; a Transition.Teleport record whose
+tile carries no teleport attribute; and a tile house id that no House record has as its engine
+house id.
 
 ## 10. Open items
 
 OPEN-1 to OPEN-3 were answered by the Sol Supervising Architect on #162 (5910173902); the
-answers are recorded below and implemented by MAP-BUNDLE-1b. OPEN-4 stays open and is closed by
-MAP-BUNDLE-1b before this format is accepted.
+answers are recorded below. MAP-BUNDLE-1b-1 implements OPEN-3 and closes OPEN-4;
+MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution) before this format is accepted.
 
 - **OPEN-1, palette key families. Answered (Q1b, #162 5910173902).** A palette entry is the id's
   canonical A12 key. An id with an Item record uses its Item key, and the compiler follows the
@@ -199,16 +213,43 @@ MAP-BUNDLE-1b before this format is accepted.
 - **OPEN-2, appearance-only terrain keys. Answered (Q2a).** The World Project generator mints
   `oteryn:terrain.tibia.i<id>` for the 5,949 ids without an Item key; `oteryn:terrain.aNNNNNN` is
   not used. Only manifest keys change, not the layout.
-- **OPEN-3, orphan teleports. Answered (Q3 split).** Of 1,576 map teleport attributes without a
-  Transition record, the compiler treats two classes differently: a destination of (0,0,0) means
-  the attribute is dropped with a diagnostic and recorded in the parity report, and the tile is
-  not a teleport; a real destination with no Transition record fails compilation. The count of
-  each class is recorded by the MAP-BUNDLE-1b parity report (the two sum to 1,576; most are
-  (0,0,0)). The skeleton still keeps every teleport attribute and fails when its destination
-  lies outside the World; 1b implements the split.
-- **OPEN-4, draft marker.** v1 lists draft areas in the manifest by key. Whether the runtime also
-  needs a per-tile draft marker, and how draft tiles are gated, is decided with the area family
-  in MAP-BUNDLE-1b.
+- **OPEN-3, orphan teleports. Answered (Q3 split) and implemented (1b-1).** A teleport
+  attribute is compared with the Transition.Teleport record from its tile (project frame):
+  - a record to the same destination: kept, with the destination floor mapped to native;
+  - destination (0,0,0): not a teleport. The attribute is dropped with a diagnostic, and the
+    entry's placement key goes into `dropped_teleports` (§3). The tile keeps its `action` and
+    `unique` bindings. The list is a production release parity report, not a release blocker;
+  - a real destination with no record from its tile, or a record to another destination:
+    compilation fails. So does a record whose tile has no teleport attribute.
+
+  **Counts** (`oteryn-world-bundle-compiler parity`, #1170 head `98ba6938` with the #1160
+  Transition.Teleport family, 872 records, stacked on it; the House catalogue of `main`):
+
+  | Class | Count | Result |
+  |---|---:|---|
+  | teleport attributes on the map | 2,455 | |
+  | matched by a Transition.Teleport record | 872 | kept |
+  | without a record, destination (0,0,0) | 1,577 | dropped with a diagnostic |
+  | without a record, real destination | 6 | compilation fails |
+  | record to another destination | 0 | compilation fails |
+  | record without a teleport attribute | 0 | compilation fails |
+
+  The two orphan classes sum to 1,583. The earlier 1,576 was an estimate before the gap fills
+  of #1170. The six real destinations, as legacy `(x, y, z)` from and to, are
+  `(30880, 32520, 8) → (30910, 32517, 7)`, `(30948, 32592, 8) → (30976, 32633, 7)`,
+  `(33082, 31045, 6) → (195, 61836, 7)`, `(33708, 32375, 15) → (1041, 1008, 7)`,
+  `(33733, 32359, 15) → (1081, 989, 7)` and `(33744, 31065, 8) → (988, 126, 9)`. The last four
+  point outside the World, and all six match the #1160 capture's "1 outside the map and 5 on an
+  absent tile". The real map therefore does not compile until the Transition generator adds
+  records for them or content marks them as not teleports (ruling Q3). That is content work,
+  not a compiler change. No tile carries a house id missing from the House catalogue.
+- **OPEN-4, draft marker. Closed (1b-1).** There is no per-tile draft marker in v1. The drafted
+  tiles are already merged into the B3 regions, and a tile does not record that it was
+  drafted. The compiler reads the draft areas from the placements index
+  (`source.minimap_draft.areas[].name`; 7 on #1170) and lists them in `draft_areas`. A
+  production build fails while the World Project declares any draft area (§8), so a production
+  World never loads drafted tiles, and the drafts stay a release blocker (ADR-0021 §4.6). Tile
+  gating inside a non-production World is not needed: such a World loads the whole bundle.
 
 ## 11. Versioning
 

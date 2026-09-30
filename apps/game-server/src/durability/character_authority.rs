@@ -795,8 +795,8 @@ async fn verify_character_integrity(
     // gap-free immutable receipt chain must explain the global revision and the
     // current state.  The chain has one receipt per revision of any kind: XP
     // award (0009), death (0016), stance (0017), Bestiary kill (0019), charm
-    // command (0020) or monk state save (0026), each `before` equal to its
-    // predecessor's `after` across kinds.  The bootstrap
+    // command (0020), monk state save (0026) or build change (0030), each
+    // `before` equal to its predecessor's `after` across kinds.  The bootstrap
     // receipt remains bound to initial revision 1.
     sqlx::query(
         "WITH chain AS ( \
@@ -829,7 +829,12 @@ async fn verify_character_integrity(
                   level_before, level_after, experience_before, experience_after, \
                   profile_revision, ruleset_revision, content_revision, simulation_revision, \
                   evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_monk_state_receipts) \
+              FROM game_character_monk_state_receipts \
+           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
+                  level_before, level_after, experience_before, experience_after, \
+                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
+                  evidence_revision, declaration_revision, policy_revision, reward_revision \
+              FROM game_character_build_receipts) \
          SELECT 1 FROM game_character_roots r \
            LEFT JOIN game_character_progression_state s USING (character_id) \
           WHERE (r.character_revision <> 1 AND s.character_id IS NULL) \
@@ -887,6 +892,7 @@ async fn verify_character_integrity(
     .fetch_optional(&mut **tx)
     .await?
     .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
+    verify_character_build_chain(tx).await?;
     // A self-consistent hash is not semantic evidence: every retained payload
     // must be exactly the registered encoding of its root's identities.
     let mut after = String::from("00000000-0000-0000-0000-000000000000");
@@ -918,6 +924,105 @@ async fn verify_character_integrity(
             }
         }
     }
+}
+
+/// CHAR-BUILD-1 (A13 §4.2, #1271 F4) build state, checked by name at admission:
+/// build-chain continuity (each build receipt, and each death receipt with build
+/// fields, starts from its predecessor's `after`, or from the seed `none`, magic
+/// level (0, 0) and every skill at (10, 0) for the first), and the build row equal
+/// to the latest build-carrying receipt (values, revision, occurrence), absent when
+/// there is none. The death receipt's build fields are covered by both checks.
+async fn verify_character_build_chain(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> std::result::Result<(), DurabilityError> {
+    sqlx::query(
+        "WITH build_chain AS ( \
+           SELECT character_id, build_occurrence_id AS occurrence_id, \
+                  committed_character_revision, \
+                  vocation_before, magic_level_before, mana_spent_before, \
+                  fist_level_before, fist_tries_before, club_level_before, \
+                  club_tries_before, sword_level_before, sword_tries_before, \
+                  axe_level_before, axe_tries_before, distance_level_before, \
+                  distance_tries_before, shielding_level_before, \
+                  shielding_tries_before, fishing_level_before, fishing_tries_before, \
+                  vocation_after, magic_level_after, mana_spent_after, \
+                  fist_level_after, fist_tries_after, club_level_after, \
+                  club_tries_after, sword_level_after, sword_tries_after, \
+                  axe_level_after, axe_tries_after, distance_level_after, \
+                  distance_tries_after, shielding_level_after, shielding_tries_after, \
+                  fishing_level_after, fishing_tries_after \
+             FROM game_character_build_receipts \
+           UNION ALL SELECT character_id, death_occurrence_id, committed_character_revision, \
+                  vocation, magic_level_before, mana_spent_before, fist_level_before, \
+                  fist_tries_before, club_level_before, club_tries_before, \
+                  sword_level_before, sword_tries_before, axe_level_before, \
+                  axe_tries_before, distance_level_before, distance_tries_before, \
+                  shielding_level_before, shielding_tries_before, fishing_level_before, \
+                  fishing_tries_before, \
+                  vocation, magic_level_after, mana_spent_after, fist_level_after, \
+                  fist_tries_after, club_level_after, club_tries_after, \
+                  sword_level_after, sword_tries_after, axe_level_after, \
+                  axe_tries_after, distance_level_after, distance_tries_after, \
+                  shielding_level_after, shielding_tries_after, fishing_level_after, \
+                  fishing_tries_after \
+             FROM game_character_death_receipts WHERE vocation IS NOT NULL), \
+         ordered AS ( \
+           SELECT c.*, row_number() OVER w AS position, \
+                  count(*) OVER (PARTITION BY c.character_id) AS transitions \
+             FROM build_chain c \
+           WINDOW w AS (PARTITION BY c.character_id ORDER BY c.committed_character_revision)) \
+         SELECT 1 FROM ordered o \
+           LEFT JOIN ordered p ON p.character_id = o.character_id \
+                              AND p.position = o.position - 1 \
+          WHERE (p.position IS NULL AND (o.vocation_before, o.magic_level_before, o.mana_spent_before, \
+                  o.fist_level_before, o.fist_tries_before, o.club_level_before, \
+                  o.club_tries_before, o.sword_level_before, o.sword_tries_before, \
+                  o.axe_level_before, o.axe_tries_before, o.distance_level_before, \
+                  o.distance_tries_before, o.shielding_level_before, \
+                  o.shielding_tries_before, o.fishing_level_before, \
+                  o.fishing_tries_before) \
+                 IS DISTINCT FROM ('none', 0, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0)) \
+             OR (p.position IS NOT NULL AND (o.vocation_before, o.magic_level_before, o.mana_spent_before, \
+                  o.fist_level_before, o.fist_tries_before, o.club_level_before, \
+                  o.club_tries_before, o.sword_level_before, o.sword_tries_before, \
+                  o.axe_level_before, o.axe_tries_before, o.distance_level_before, \
+                  o.distance_tries_before, o.shielding_level_before, \
+                  o.shielding_tries_before, o.fishing_level_before, \
+                  o.fishing_tries_before) \
+                 IS DISTINCT FROM (p.vocation_after, p.magic_level_after, p.mana_spent_after, \
+                  p.fist_level_after, p.fist_tries_after, p.club_level_after, \
+                  p.club_tries_after, p.sword_level_after, p.sword_tries_after, \
+                  p.axe_level_after, p.axe_tries_after, p.distance_level_after, \
+                  p.distance_tries_after, p.shielding_level_after, \
+                  p.shielding_tries_after, p.fishing_level_after, \
+                  p.fishing_tries_after)) \
+         UNION ALL \
+         SELECT 1 FROM ordered o \
+           LEFT JOIN game_character_build_state r USING (character_id) \
+          WHERE o.position = o.transitions \
+            AND (r.character_id IS NULL \
+                 OR r.committed_character_revision <> o.committed_character_revision \
+                 OR r.last_build_occurrence_id <> o.occurrence_id \
+                 OR (r.vocation, r.magic_level, r.mana_spent, r.fist_level, r.fist_tries, \
+                  r.club_level, r.club_tries, r.sword_level, r.sword_tries, \
+                  r.axe_level, r.axe_tries, r.distance_level, r.distance_tries, \
+                  r.shielding_level, r.shielding_tries, r.fishing_level, \
+                  r.fishing_tries) \
+                    IS DISTINCT FROM (o.vocation_after, o.magic_level_after, o.mana_spent_after, \
+                  o.fist_level_after, o.fist_tries_after, o.club_level_after, \
+                  o.club_tries_after, o.sword_level_after, o.sword_tries_after, \
+                  o.axe_level_after, o.axe_tries_after, o.distance_level_after, \
+                  o.distance_tries_after, o.shielding_level_after, \
+                  o.shielding_tries_after, o.fishing_level_after, \
+                  o.fishing_tries_after)) \
+         UNION ALL \
+         SELECT 1 FROM game_character_build_state r \
+          WHERE NOT EXISTS (SELECT 1 FROM build_chain c WHERE c.character_id = r.character_id) \
+         LIMIT 1",
+    )
+    .fetch_optional(&mut **tx)
+    .await?
+    .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))
 }
 
 /// The database's current admission must be exactly the predecessor the external

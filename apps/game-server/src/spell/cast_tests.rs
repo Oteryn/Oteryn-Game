@@ -3,6 +3,7 @@
 use std::num::NonZeroU32;
 
 use oteryn_protocol_oteryn::actor_spell::{SpellTargetPosition, encode_actor_vitals};
+use serde_json::Value;
 
 use super::*;
 use crate::ability::RevisionSet;
@@ -73,7 +74,7 @@ fn run(
 fn wounded(facts: CharacterCastFacts, health: u32) -> PlayerSpellState {
     PlayerSpellState {
         health,
-        ..PlayerSpellState::new(facts).expect("state")
+        ..PlayerSpellState::new(facts, 0, 0).expect("state")
     }
 }
 
@@ -97,7 +98,7 @@ fn v1_book_holds_the_self_casts_in_canonical_key_order() {
 
 #[test]
 fn a_new_actor_starts_at_its_maxima_within_the_wire_bounds() {
-    let state = PlayerSpellState::new(druid(8)).expect("state");
+    let state = PlayerSpellState::new(druid(8), 0, 0).expect("state");
     assert_eq!(state.revision(), 1);
     let vitals = state.vitals();
     assert_eq!(
@@ -121,7 +122,7 @@ fn a_new_actor_starts_at_its_maxima_within_the_wire_bounds() {
             ..druid(8)
         },
     ] {
-        assert_eq!(PlayerSpellState::new(facts), None);
+        assert_eq!(PlayerSpellState::new(facts, 0, 0), None);
     }
 }
 
@@ -352,4 +353,189 @@ fn a_book_that_does_not_load_fails_closed_and_nothing_is_skipped() {
     assert!(book_from_bundles(&[good, ("{}", "{}"), V1_BUNDLES[1]]).is_err());
     // A duplicated spell (two bundles, one key) is refused by the book itself.
     assert!(book_from_bundles(&[good, good]).is_err());
+}
+
+fn monk(level: u32) -> CharacterCastFacts {
+    CharacterCastFacts {
+        vocation: Vocation::Monk,
+        level,
+        magic_level: 0,
+        max_health: 185,
+        max_mana: 90,
+        max_soul: 100,
+    }
+}
+
+/// `exura` authored for monks with the Harmony `role`. It is the one self cast V1 commits, so it
+/// shows the §8.2 PRIMARY COMMIT without a damage owner.
+fn monk_book(role: &str) -> SpellBook {
+    let (spell, dependencies) = V1_BUNDLES[2];
+    let mut spell: Value = serde_json::from_str(spell).expect("spell");
+    spell["spell"]["harmony_role"] = Value::String(role.into());
+    spell["spell"]["requirements"]["vocations"] = serde_json::json!(["monk", "exalted_monk"]);
+    let dependencies: Value = serde_json::from_str(dependencies).expect("dependencies");
+    SpellBook::canonical(vec![
+        spell_from_bundle(&spell, &dependencies).expect("monk spell"),
+    ])
+    .expect("book")
+}
+
+fn playable_monk(harmony: u8) -> PlayerSpellState {
+    let mut state = PlayerSpellState::new(monk(20), harmony, 0).expect("monk");
+    state.make_playable(at(0)).expect("initialized");
+    state
+}
+
+#[test]
+fn a_monk_accepts_no_cast_before_its_initialization_evaluation() {
+    let book = monk_book("builder");
+    let mut state = PlayerSpellState::new(monk(20), 0, 0).expect("monk");
+    // Loaded but not yet evaluated: not Serene, and no command is accepted.
+    assert_eq!((state.vitals().harmony, state.vitals().serene), (0, false));
+    assert_eq!(
+        run(
+            &book,
+            &state,
+            &intent(1, SpellTarget::None),
+            at(0),
+            &mut Vec::new()
+        ),
+        Err(SpellCastDisposition::Rejected)
+    );
+    // A solo monk is Serene from the initialization evaluation, with no periodic step run.
+    state.make_playable(at(0)).expect("initialized");
+    assert_eq!((state.vitals().harmony, state.vitals().serene), (0, true));
+    let next = run(
+        &book,
+        &state,
+        &intent(1, SpellTarget::None),
+        at(0),
+        &mut Vec::new(),
+    )
+    .expect("builder cast");
+    assert_eq!((next.vitals().harmony, next.revision()), (1, 2));
+    // Detached (the session left the actor): commands wait for the next initialization.
+    let mut detached = next.clone();
+    detached.detach();
+    assert_eq!(
+        run(
+            &book,
+            &detached,
+            &intent(1, SpellTarget::None),
+            at(2000),
+            &mut Vec::new()
+        ),
+        Err(SpellCastDisposition::Rejected)
+    );
+    detached.make_playable(at(2000)).expect("reinitialized");
+    assert_eq!(
+        detached.vitals().harmony,
+        1,
+        "Harmony is kept across a detach"
+    );
+    assert!(
+        run(
+            &book,
+            &detached,
+            &intent(1, SpellTarget::None),
+            at(2000),
+            &mut Vec::new()
+        )
+        .is_ok()
+    );
+}
+
+#[test]
+fn a_builder_adds_one_harmony_up_to_five_and_a_failed_cast_keeps_it() {
+    let book = monk_book("builder");
+    let state = playable_monk(4);
+    let full = run(
+        &book,
+        &state,
+        &intent(1, SpellTarget::None),
+        at(0),
+        &mut Vec::new(),
+    )
+    .expect("builder cast");
+    assert_eq!(full.vitals().harmony, 5);
+    assert_eq!(full.mana, 70, "mana is paid in the same value");
+    // A rejected cast (cooling down) changes nothing, Harmony included.
+    assert_eq!(
+        run(
+            &book,
+            &full,
+            &intent(1, SpellTarget::None),
+            at(500),
+            &mut Vec::new()
+        ),
+        Err(SpellCastDisposition::CoolingDown)
+    );
+    let capped = run(
+        &book,
+        &full,
+        &intent(1, SpellTarget::None),
+        at(1000),
+        &mut Vec::new(),
+    )
+    .expect("builder cast");
+    assert_eq!(capped.vitals().harmony, 5, "nothing is gained at 5");
+    assert_eq!(state.vitals().harmony, 4, "the source state is untouched");
+}
+
+#[test]
+fn a_spender_empties_harmony_at_primary_commit() {
+    let book = monk_book("spender");
+    let state = playable_monk(3);
+    let next = run(
+        &book,
+        &state,
+        &intent(1, SpellTarget::None),
+        at(0),
+        &mut Vec::new(),
+    )
+    .expect("spender cast");
+    assert_eq!(next.vitals().harmony, 0);
+    assert_eq!(next.revision(), 2);
+    assert!(encode_actor_vitals(&next.vitals()).is_ok());
+    // A monk's cast of a spell without a role (plain `exura`) leaves Harmony alone.
+    let plain = run(
+        &v1_spell_book().expect("V1 book"),
+        &state,
+        &intent(3, SpellTarget::None),
+        at(0),
+        &mut Vec::new(),
+    )
+    .expect("exura");
+    assert_eq!(plain.vitals().harmony, 3);
+}
+
+#[test]
+fn corrupt_durable_monk_values_fail_the_actor_closed() {
+    assert_eq!(PlayerSpellState::new(monk(20), 6, 0), None);
+    assert_eq!(PlayerSpellState::new(monk(20), 0, 7_000_001), None);
+    assert_eq!(PlayerSpellState::new(druid(20), 1, 0), None);
+    assert_eq!(PlayerSpellState::new(druid(20), 0, 1), None);
+    let druid = PlayerSpellState::new(druid(20), 0, 0).expect("druid");
+    assert_eq!(druid.monk_save_values(at(0)), None);
+    assert_eq!((druid.vitals().harmony, druid.vitals().serene), (0, false));
+}
+
+#[test]
+fn the_forced_serene_time_runs_from_initialization_and_the_periodic_evaluation_keeps_solo_serene() {
+    let mut state = PlayerSpellState::new(monk(20), 2, 3_000_000).expect("monk");
+    // Before the initialization the loaded remaining time is kept whole, and no tick runs.
+    assert_eq!(state.monk_save_values(at(5000)), Some((2, 3_000_000)));
+    assert!(state.tick(at(0)).is_err());
+    assert_eq!(state.revision(), 1);
+    state.make_playable(at(1000)).expect("initialized");
+    assert!(state.vitals().serene);
+    assert_eq!(state.monk_save_values(at(2000)), Some((2, 2_000_000)));
+    // Not due yet, then due: a solo monk stays Serene, so nothing is published.
+    assert_eq!(state.tick(at(1999)), Ok(false));
+    assert_eq!(state.tick(at(2000)), Ok(false));
+    assert_eq!(state.tick(at(9000)), Ok(false));
+    assert!(state.vitals().serene);
+    assert_eq!(state.revision(), 1);
+    // The forced time has run out: the actor-end save stores zero for it.
+    assert_eq!(state.monk_save_values(at(9000)), Some((2, 0)));
 }
