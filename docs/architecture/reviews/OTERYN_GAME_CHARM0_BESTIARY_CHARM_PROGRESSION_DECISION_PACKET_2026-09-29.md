@@ -154,4 +154,23 @@ The owner answered in session. Decision-register numbers are assigned by the coo
 | 6. Credit rule | **a** | Credit is given when the character damaged the creature within the last 5 minutes before its death. |
 
 Also verified by the owner in the live game before CHARM-3 freezes: how many charms one creature may hold at once
-(§4.2 `UNKNOWN`).
+(§4.2 `UNKNOWN`). CHARM-3 (#1307) was merged with one major plus one minor charm per race (TibiaWiki `Updates/14.10`,
+Canary `iobestiary.cpp`).
+
+## 8. Owner answers (2026-09-30, in session)
+
+Questions 8 to 11 come from the CHARM-5 wire proposal (#1301). Questions 12 to 14 come from CHARM-4 (#1303), and
+question 15 from CHARM-3 (#1307). Question 16 was raised in session. Decision-register numbers are assigned by the
+coordinator batch on `#162`.
+
+| Question | Answer | Effect |
+|---|---|---|
+| 8. Names on the client | **a** | The client resolves race and charm names from a client content export of the same content generation. The wire carries no text. |
+| 9. State-domain owner | **a** | The Bestiary and Charm state domains are owned by the Character Authority. |
+| 10. Races with no kills | **a** | The view carries only counted races. The client lists the other races of a class from the content export, shown as unknown. |
+| 11. Wire identifiers | **a** | Indices follow SPELL-D1: 1-based and derived per content generation in key order, never stored. Durable state keeps the Creature and charm keys, so a display-name change moves nothing, and a key is not renamed. |
+| 12. Proc damage commit | **b** | A proc is committed as its own owner damage commit. It comes after the attack's damage and only when that attack reduced the creature's health. It triggers no charm or leech, and it counts for loot and experience credit. Canary `game.cpp:8762` / `iobestiary.cpp:221` and Crystal `game.cpp:8338` do the same. |
+| 13. Carnage element | **a** | Physical with resistances, as on TibiaWiki and tibiapal.com. The owner verifies it in the live game. |
+| 14. Credit-window damage time | **a** | The caller supplies the time of the character's last damage. Durable carrier support comes later. |
+| 15. Charm slot limits | **a** | Free 2, premium 6, Charm Expansion unlimited (Canary). |
+| 16. Charms and area attacks | **a**, Tibia 15.25 | An auto-attack triggers charms only on its main target, including area ammunition such as Diamond Arrows. Spells and runes trigger on every creature they hit. Low Blow still covers the whole area. Sources: TibiaWiki `Updates/15.25.3a4a52` and `Cyclopedia`, and the CipSoft forum post 39596528. Canary lacks the rule, and Crystal also applies it to spells. |

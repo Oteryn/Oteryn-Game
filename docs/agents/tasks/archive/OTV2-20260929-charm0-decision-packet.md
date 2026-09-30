@@ -17,7 +17,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: "owner-launched Claude Code session (session_012nzPTz29NThWJG45F2m5fP)"
 created_at: 2026-09-29
-updated_at: 2026-09-29
+updated_at: 2026-09-30
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md
@@ -41,6 +41,8 @@ accepted physical contract before Charm state is implemented. This task therefor
 - six owner decisions, each with a recommendation.
 
 No runtime, protocol, DDL or content change is made. The packet is binding only after the owner decides.
+
+The owner answered questions 1 to 6 on 2026-09-29 (§7) and questions 8 to 16 on 2026-09-30 (§8).
 
 ## Validation (local)
 
