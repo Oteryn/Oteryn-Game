@@ -25,6 +25,7 @@ use super::{
     CastRejection, CasterState, Cooldowns, HarmonyRole, ResolvedEffect, SpellBook, SpellDefinition,
     Vocation, resolve_cast,
 };
+use crate::ability::creature_bite::{FlooredDamage, floor_creature_damage};
 use crate::ability::{AbilityOccurrence, Effect};
 
 macro_rules! starter {
@@ -181,6 +182,20 @@ impl PlayerSpellState {
         self.monk
             .as_ref()
             .map(|monk| (monk.harmony(), monk.serene_forced_remaining(now)))
+    }
+
+    /// GAME-AI-01 slice §4.7 (D54): the state after one creature hit of `magnitude`. Health never
+    /// drops below 1 (no player death in V1). `None` when the hit removes nothing (the actor is
+    /// already at 1) or the revision is exhausted; the state is then unchanged.
+    pub(crate) fn after_creature_damage(&self, magnitude: u32) -> Option<(Self, FlooredDamage)> {
+        let damage = floor_creature_damage(self.health, magnitude);
+        if damage.applied == 0 {
+            return None;
+        }
+        let mut next = self.clone();
+        next.health = damage.health_after;
+        next.revision = next.revision.checked_add(1)?;
+        Some((next, damage))
     }
 
     /// Test only: stages a wounded actor (no damage owner exists yet).
