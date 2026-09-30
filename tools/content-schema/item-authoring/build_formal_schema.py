@@ -860,7 +860,14 @@ def build_item_schema():
         {
             "client_binding": use("proficiencyClientBinding"),
             "profile_binding": use("ProficiencyRef"),
+            "threshold_class": enum("standard", "knight", "crossbow"),
             "augments": array(use("augment")),
+        },
+        # A profile binding carries its threshold class, as the Rust
+        # `ProjectV2WeaponProficiencyProfile` requires; `unknown` gets no binding.
+        dependentRequired={
+            "profile_binding": ["threshold_class"],
+            "threshold_class": ["profile_binding"],
         },
         anyOf=[
             {"required": ["client_binding"]},

@@ -683,6 +683,29 @@ def main():
         expected_error="dependencies/proficiency_crosswalks: unused crosswalks",
     )
     case(
+        "reject proficiency profile binding without a threshold class",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            item["proficiency"].pop("threshold_class"),
+        ),
+        expected_error="'threshold_class' is a dependency of 'profile_binding'",
+    )
+    case(
+        "reject unknown threshold class on a proficiency profile binding",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            item["proficiency"].__setitem__("threshold_class", "unknown"),
+        ),
+        expected_error="'unknown' is not one of",
+    )
+    case(
+        "reject proficiency threshold class without a profile binding",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "proficiency", {"threshold_class": "knight"}
+        ),
+        expected_error="'profile_binding' is a dependency of 'threshold_class'",
+    )
+    case(
         "client proficiency binding with a threshold class validates",
         lambda item, dependencies, manifest: item.__setitem__(
             "proficiency",

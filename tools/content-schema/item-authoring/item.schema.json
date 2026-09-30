@@ -2048,6 +2048,13 @@
         "profile_binding": {
           "$ref": "#/$defs/ProficiencyRef"
         },
+        "threshold_class": {
+          "enum": [
+            "standard",
+            "knight",
+            "crossbow"
+          ]
+        },
         "augments": {
           "type": "array",
           "items": {
@@ -2057,6 +2064,14 @@
         }
       },
       "required": [],
+      "dependentRequired": {
+        "profile_binding": [
+          "threshold_class"
+        ],
+        "threshold_class": [
+          "profile_binding"
+        ]
+      },
       "anyOf": [
         {
           "required": [

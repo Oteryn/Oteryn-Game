@@ -72,7 +72,8 @@
             "family": "Proficiency",
             "key": "oteryn:proficiency.tibia.p238",
             "revision": "definition-r1"
-          }
+          },
+          "threshold_class": "standard"
         },
         "trade": {
           "marketable": true,

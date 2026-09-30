@@ -91,6 +91,12 @@ def proficiency_crosswalk(source):
 
 
 def magic_sword_proficiency():
-    """Return the Magic Sword binding; its levels and perks are the definition's."""
+    """Return the Magic Sword binding; its levels and perks are the definition's.
 
-    return {"profile_binding": deepcopy(MAGIC_SWORD_PROFICIENCY_REF)}
+    The threshold class is the one `content/proficiencies/bindings.json` gives Item 3288.
+    """
+
+    return {
+        "profile_binding": deepcopy(MAGIC_SWORD_PROFICIENCY_REF),
+        "threshold_class": "standard",
+    }
