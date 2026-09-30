@@ -7,7 +7,8 @@
 - Implements: D126 (`reviews/OTERYN_GAME_OWNER_DECISION_BATCH_D118_D128_2026-09-28.md`) under D48 and
   D49 (`reviews/OTERYN_GAME_ACCOUNT_PROGRESS_AND_QUEST_707_DISPOSITION_DECISION_2026-09-28.md` §4.4, §4.6)
 - Evidence: `imports/cipsoft-staticdata/achievements/` (368 client 15.30 records),
-  `imports/tibiawiki/achievements/2026-09-29/` (572 TibiaWiki records and their join to the client records)
+  `imports/tibiawiki/achievements/2026-09-29/` (572 TibiaWiki records and their join to the client records; merged
+  in #1286)
 - Tooling: `tools/content-schema/achievement-authoring/`
 - Does not authorize: a migration, runtime or protocol code, client or website display, or populating
   `content/achievements/`
@@ -30,7 +31,7 @@ One record per achievement, validated by `achievement.schema.json`:
 
 | Field | Rule |
 |---|---|
-| `identity.key` | `oteryn:achievement/<slug>`; the slug is the quest tooling's `slug(name)` (`quest-authoring/ots_chests.py`), so the source-derived candidate refs `canary:achievement/<slug>` and `crystal:achievement/<slug>` of quest and interaction content bind by slug. |
+| `identity.key` | `oteryn:achievement/<slug>`, allocated once from the name at allocation with the quest tooling's `slug(name)` (`quest-authoring/ots_chests.py`), so the source-derived candidate refs `canary:achievement/<slug>` and `crystal:achievement/<slug>` of quest and interaction content bind by slug. |
 | `identity.revision` | Content revision of the record. |
 | `name`, `description` | Game text. |
 | `grade` | 1-4. |
@@ -47,7 +48,11 @@ One record per achievement, validated by `achievement.schema.json`:
 - A key is never reused and never reinterpreted. A change of meaning (a different way to earn it, a different
   grade) is a new key; a text correction or a points correction inside the grade range is a new revision of the
   same key. Retiring an achievement is a new revision of the same key.
-- Two records with the same slug are a catalogue error; the validator rejects them.
+- The key is allocated once and then never derived again: a later revision that corrects the name keeps its key,
+  so identity is not bound to display text. The validator checks key format and uniqueness only;
+  `allocate_key(name)` gives the key of a new record.
+- A key is never removed from a catalogue; retiring keeps the record. Two records with the same key are a
+  catalogue error; the validator rejects them.
 
 ### 2.2 Source precedence for population
 
@@ -85,8 +90,13 @@ counts no points there; the fact is unchanged.
 2. The Achievement domain consumes the request **in the same transaction**: it inserts the
    `AccountAchievement` fact if `(account_id, achievement_key)` is absent and does nothing otherwise. The
    request row stays as the fact's durable provenance.
-3. A request for a key the world's catalogue lacks, or for a retired achievement, fails the granting
-   transaction closed: nothing is written. Content validation prevents both before runtime.
+3. A request for a key the world's catalogue lacks fails the granting transaction closed: nothing is written.
+   Content validation prevents it before runtime and covers every pinned revision of granting content in every
+   family (quest, reward claim, interaction, counter owner) against the world's catalogue; because a key is
+   never removed (§2.1), a later catalogue revision cannot invalidate a pinned granter.
+4. A request for a retired achievement is a no-op: the Achievement domain records nothing for it and the
+   granting transaction continues, so a pinned quest or counter that names a since-retired achievement still
+   completes.
 
 Same-transaction consumption is the minimum sufficient choice: no background consumer, no pending state and
 no retry path. It keeps the one-row, first-commit-wins rule of §4.6 by the unique key. A granter that cannot

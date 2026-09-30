@@ -4,15 +4,16 @@
 from __future__ import annotations
 
 import copy
+import importlib
 import json
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT.parent / "quest-authoring"))
-import validate_achievements as v  # noqa: E402
+v = importlib.import_module("validate_achievements")
 
 SAMPLE = json.loads(
     (ROOT / "synthetic-valid-achievement.json").read_text(encoding="utf-8")
@@ -30,9 +31,10 @@ class ValidateAchievementsTest(unittest.TestCase):
         self.assertEqual(v.validate([SAMPLE])["invalid"], [])
         self.assertEqual(v.main([str(ROOT / "synthetic-valid-achievement.json")]), 0)
 
-    def test_key_must_be_slug_of_name(self) -> None:
-        errors = v.validate([variant(name="Allow Biscuits?")])["invalid"][0]["errors"]
-        self.assertEqual(errors, ["key must be oteryn:achievement/allow_biscuits"])
+    def test_renamed_record_keeps_its_key(self) -> None:
+        self.assertEqual(v.allocate_key("Allow Cookies?"), SAMPLE["identity"]["key"])
+        renamed = variant(name="Allow Biscuits?")
+        self.assertEqual(v.validate([renamed])["invalid"], [])
 
     def test_points_must_lie_in_grade_range(self) -> None:
         self.assertEqual(

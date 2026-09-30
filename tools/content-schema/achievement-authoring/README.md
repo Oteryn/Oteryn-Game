@@ -7,9 +7,10 @@ It writes nothing under `content/`: populating `content/achievements/` is a sepa
 | File | Purpose |
 |---|---|
 | `achievement.schema.json` | One catalogue record: `identity` (`oteryn:achievement/<slug>`), `name`, `description`, `grade` 1-4, `points`, `secret`, `premium`, optional `retired` and `provenance` (client `source_id`, TibiaWiki page and revision). |
-| `validate_achievements.py` | JSON Schema plus the rules it cannot state: the key slug equals `slug(name)`, points lie in the grade's range (1-3, 4-6, 7-9, 10) or are 0 for a retired record, keys are unique across all given files. |
+| `validate_achievements.py` | JSON Schema plus the rules it cannot state: points lie in the grade's range (1-3, 4-6, 7-9, 10) or are 0 for a retired record, keys are unique across all given files. The key is checked for format only: `allocate_key(name)` gives the key of a new record, and later revisions keep it when the name changes (contract §2.1). |
 | `synthetic-valid-achievement.json` | A valid record (Allow Cookies?). |
-| `test_validate_achievements.py` | No-network tests, including slug parity with `quest-authoring/ots_chests.py`. |
+| `test_validate_achievements.py` | No-network tests, including slug parity with `quest-authoring/ots_chests.py`; run in CI by `.github/workflows/achievement-authoring-schema.yml`. |
+| `requirements.txt`, `requirements-dev.txt` | Pinned `jsonschema`, `referencing` and `ruff` for CI. |
 
 ```sh
 python validate_achievements.py RECORDS.json [...]   # one record or a list per file

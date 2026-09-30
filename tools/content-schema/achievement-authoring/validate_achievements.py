@@ -2,17 +2,17 @@
 """Validate Achievement catalogue records (OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1 §2).
 
 Usage: python validate_achievements.py RECORDS.json [RECORDS.json ...]
-Each file holds one record or a list of records; all files together form one catalogue, so keys and
-slugs must be unique across them. Prints one JSON report; the exit code is 1 when a record is invalid.
+Each file holds one record or a list of records; all files together form one catalogue, so keys must be
+unique across them. The key is checked for format only: it is allocated once (allocate_key) and kept. Prints one JSON report; the exit code is 1 when a record is invalid.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 import re
 import sys
+from pathlib import Path
 
 import jsonschema
 
@@ -34,6 +34,11 @@ def slug(text: str) -> str:
     ).strip("_")
 
 
+def allocate_key(name: str) -> str:
+    """The key of a new record (contract §2.1); later revisions keep it even when the name changes."""
+    return KEY_PREFIX + slug(name)
+
+
 def record_errors(record: dict) -> list[str]:
     errors = [
         f"schema: {e.json_path}: {e.message}"
@@ -41,9 +46,6 @@ def record_errors(record: dict) -> list[str]:
     ]
     if errors:
         return errors
-    expected = KEY_PREFIX + slug(record["name"])
-    if record["identity"]["key"] != expected:
-        errors.append(f"key must be {expected}")
     if record.get("retired", False):
         if record["points"] != 0:
             errors.append("a retired achievement has 0 points")
