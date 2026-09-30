@@ -21,8 +21,9 @@ updated_at: 2026-09-30
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/reward_claim_mint.rs
-  - apps/game-server/src/durability/account_achievement.rs   # visibility and doc text only
+  - apps/game-server/src/durability/account_achievement.rs   # review round 1: grant token (F1), beyond doc text
   - apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs
+  - apps/game-server/tests/support/account_achievement_postgres_cases.rs   # review round 1 (F1)
   - docs/agents/tasks/archive/OTV2-20260930-reward-claim-achievement-grant.md
 public_contracts: []
 depends_on:
@@ -59,8 +60,8 @@ Owner authorization: 2026-09-30, this session ("tak" to "robić krok 4 ze skrzyn
   achievement rows. No `CharacterRevision` change, no migration, no audit, protocol, client,
   content or ranking change.
 - `account_achievement.rs`: `valid_key` becomes `pub(super)`; the `dead_code` expectation on
-  `FencedGrantingCharacter::after_fence` is removed now that production uses it; doc text only
-  otherwise.
+  `FencedGrantingCharacter::after_fence` is removed now that production uses it. Review round 1
+  (below) replaces the grant token.
 
 ## Architect choices for review
 
@@ -107,6 +108,44 @@ record_derived_matching_helper: none
     while the item, claim, request and fact are not (the commit's step-3 check still holds);
   - dropping the achievement from the intent binding fails the `ConflictingCause` assertions.
 - `validate_governance.py`, `validate_repository_policy.py`, `git diff --check`: pass.
+
+## Review round 1
+
+Independent persistence review of `43ac86ff` (routed by the lead): FIX. Exactly-once grant,
+`Absent`/`Retired`, untouched `CharacterRevision` and the lock order were confirmed.
+
+- **F1 (required, fixed).** `FencedGrantingCharacter::after_fence` was `pub(super)` and held only a
+  CharacterId: any durability module could mint the token without a fence, and
+  `record_achievement_grant` never re-checked it. Fix:
+  - `after_fence` now takes `&mut` the transaction and a `reward_claim_mint::RewardClaimFenceChecked`
+    witness. The witness has a private field, so only `reward_claim_mint` can build it, and only
+    `admit` does, right after `character_item_fence_is_current` returns true. `admit` returns the
+    token with the destination; the commit passes it to the grant.
+  - The token stores `pg_current_xact_id()::text`, read in that transaction when it is created. It
+    is neither `Clone` nor `Copy`, and `record_achievement_grant` takes it by value.
+  - The grant's root `FOR UPDATE` query adds `AND pg_current_xact_id()::text = $2`. A token from
+    another transaction finds no row: `AuthorityRejected`, nothing written.
+  - Test-only construction (`in_transaction`) is private to `account_achievement` and used by the
+    `#[cfg(test)]` harness, which mints one token per request.
+  - New PostgreSQL case `a_token_minted_in_another_transaction_writes_neither_request_nor_fact`
+    (`account_achievement_postgres_cases.rs`, run by `account_achievement_postgres` and
+    `character_authority_postgres`). Only the token's transaction changes: the same complete fence
+    holds in both transactions and the second one commits whatever the grant wrote.
+  - Mutation evidence: replacing the xact-id condition with `$2::text IS NOT NULL` fails the new
+    case (`Ok(Granted(..))`); skipping the grant call in the commit still fails
+    `a_chest_achievement_commits_with_its_claim_once_per_account`.
+- **F2 (low, deferred).** Not added in this PR: rollback notes for migration 0021, an optional
+  `FOR KEY SHARE` on the root read, and negative runtime-role `UPDATE`/`DELETE` tests.
+- **Overlap (not reconciled).** #1297 (D39 chest USE) also changes `durability/reward_claim_mint.rs`:
+  it moves the placement into the intent binding (v2) and makes `admit` return `ClaimPending`.
+  Whichever PR merges second merges `main` and keeps the no-achievement binding pinned.
+
+Validation of the repair (PostgreSQL 17.6, same image digest as CI, pulled through
+`mirror.gcr.io` after a Docker Hub 429): `cargo fmt --all --check` and `cargo clippy --locked -p
+oteryn-game-server --all-targets -- -D warnings` pass; `--lib` 1065 passed; `reward_claim_mint_postgres`
+636, `account_achievement_postgres` 636, `character_authority_postgres` 735,
+`check_function_privileges_postgres` 1, `durability_postgres` 717, `item_mint_postgres` 650, all
+passed; governance and repository-policy validators and `git diff --check` pass.
 
 ## Closeout
 

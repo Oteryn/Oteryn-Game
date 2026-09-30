@@ -616,9 +616,9 @@ impl DurabilityRoot {
                         return Ok(Err(RewardClaimMintError::ConflictingCandidate));
                     }
 
-                    let destination =
+                    let (destination, granter) =
                         match admit(&mut tx, &node, &fence, &frozen.request, &reservation).await? {
-                            Ok(destination) => destination,
+                            Ok(admitted) => admitted,
                             Err(error) => return Ok(Err(error)),
                         };
                     let message = claim_message(&frozen, &reservation, &fence, destination);
@@ -635,8 +635,9 @@ impl DurabilityRoot {
                         Ok(envelope) => envelope,
                         Err(error) => return Ok(Err(error.into())),
                     };
-                    // After the fence and the `character_root` row lock in
-                    // `admit`; an error drops the whole transaction.
+                    // With the token `admit` minted after the fence and the
+                    // `character_root` row lock in this transaction; an error
+                    // drops the whole transaction.
                     if let Some(achievement) = &frozen.request.achievement {
                         let grant = match achievement_grant(
                             achievement,
@@ -646,9 +647,8 @@ impl DurabilityRoot {
                             Ok(grant) => grant,
                             Err(error) => return Ok(Err(error)),
                         };
-                        let granter = FencedGrantingCharacter::after_fence(fence.character_id);
                         if let Err(error) =
-                            record_achievement_grant(&mut tx, &granter, &grant).await?
+                            record_achievement_grant(&mut tx, granter, &grant).await?
                         {
                             return Ok(Err(error.into()));
                         }
@@ -700,16 +700,23 @@ impl DurabilityRoot {
     }
 }
 
+/// Witness that [`admit`] found the complete current item fence in its
+/// transaction. Its private field keeps construction in this module, so
+/// [`FencedGrantingCharacter::after_fence`] is reachable only from `admit`.
+pub(super) struct RewardClaimFenceChecked(());
+
 /// The complete current fence (shared with B3-1 TRANSFER, ending with the
 /// `character_root` row lock), the claim state, the authoritative backpack
-/// before-state and the D92 placement. Writes nothing.
+/// before-state and the D92 placement. Writes no row. Returns the
+/// destination and the achievement grant token of this transaction (reading
+/// its id assigns the transaction one).
 async fn admit(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
     request: &RewardClaimMintRequest,
     reservation: &Reservation,
-) -> Pass<ContainerEntryPosition> {
+) -> Pass<(ContainerEntryPosition, FencedGrantingCharacter)> {
     if !character_item_fence_is_current(
         tx,
         node,
@@ -723,6 +730,9 @@ async fn admit(
     {
         return Ok(Err(RewardClaimMintError::AuthorityRejected));
     }
+    let granter =
+        FencedGrantingCharacter::after_fence(tx, fence.character_id, RewardClaimFenceChecked(()))
+            .await?;
     let already_claimed: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_reward_claims \
                          WHERE character_id = encode($1,'hex')::uuid \
@@ -749,7 +759,7 @@ async fn admit(
         Ok(destination) => destination,
         Err(refusal) => return Ok(Err(RewardClaimMintError::Refused(refusal))),
     };
-    Ok(Ok(destination))
+    Ok(Ok((destination, granter)))
 }
 
 /// The complete typed after-state evidence of the admitted claim.
