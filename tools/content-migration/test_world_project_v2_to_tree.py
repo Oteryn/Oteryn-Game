@@ -18,6 +18,7 @@ assert lock["family_counts"] == {
     "Item": 33567, "Mount": 252,
     "Creature": 1476, "Presentation": 2578, "Behavior": 2578, "Loot": 1029, "Ability": 5886, "Effect": 4489, "Formula": 4806,
     "NPC": 1102, "Dialogue": 715, "Service.Trade": 322, "Service.Travel": 56, "Encounter": 61, "Charm": 25,
+    "Proficiency": 443,
 }
 assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1476, "Encounter": 61, "NPC": 2352}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
@@ -48,6 +49,10 @@ assert manifest["families"]["Service.Travel"] == {"records": 56, "index": "conte
 assert manifest["families"]["Charm"] == {"records": 25, "index": "content/charms/index.json"}
 assert "Charm" in project["migrated_families"] and "Charm" not in project["next_population_families"]
 assert any(path.startswith("content/charms/charms-") for path in paths) and "content/charms/index.json" in paths
+assert manifest["families"]["Proficiency"] == {"records": 443, "index": "content/proficiencies/index.json"}
+assert "Proficiency" in project["migrated_families"] and "Proficiency" not in project["next_population_families"]
+assert sum(path.startswith("content/proficiencies/proficiencies-") for path in paths) == 3
+assert "content/proficiencies/index.json" in paths
 assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated_families"] and "Service" in project["migrated_families"]
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
 

@@ -30,6 +30,8 @@ ENCOUNTER_COUNT = 61
 DIALOGUE_COUNT = 715
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
 CHARM_COUNT = 25
+# Proficiency likewise (tools/content-schema/proficiency-authoring).
+PROFICIENCY_COUNT = 443
 SERVICE_FAMILY_COUNTS = {"Service.Trade": 322, "Service.Travel": 56}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
 
@@ -348,7 +350,7 @@ def main() -> int:
     }, "COMPATIBILITY_BOUNDARY")
     require(lock["family_counts"] == {"Item": 33567, "Mount": 252, **CREATURE_FAMILY_COUNTS, "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, **SERVICE_FAMILY_COUNTS,
-                                       "Charm": CHARM_COUNT},
+                                       "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
     require(item_index["record_count"] == 33567 and len(item_index["shards"]) == 68, "ITEM_INDEX")
@@ -432,12 +434,23 @@ def main() -> int:
     charm_shard = load(ROOT / charm_index["shards"][0])
     require(charm_shard["family"] == "Charm" and charm_shard["shard"]["count"] == len(charm_shard["records"]) == CHARM_COUNT, "CHARM_SHARD")
     require(len({row["definition"]["identity"]["key"] for row in charm_shard["records"]}) == CHARM_COUNT, "CHARM_IDENTITY_UNIQUENESS")
+    proficiency_index = load(ROOT / "content" / "proficiencies" / "index.json")
+    require(proficiency_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and proficiency_index["family"] == "Proficiency",
+            "PROFICIENCY_INDEX")
+    require(proficiency_index["record_count"] == PROFICIENCY_COUNT, "PROFICIENCY_INDEX_COUNT")
+    proficiency_keys = set()
+    for shard_path in proficiency_index["shards"]:
+        shard = load(ROOT / shard_path)
+        require(shard["family"] == "Proficiency" and shard["shard"]["count"] == len(shard["records"]), "PROFICIENCY_SHARD")
+        proficiency_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
+    require(len(proficiency_keys) == PROFICIENCY_COUNT, "PROFICIENCY_IDENTITY_UNIQUENESS")
     print(
         "PASS items=33567 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "
-        f"encounter_records={encounter_records} charm_records={CHARM_COUNT}"
+        f"encounter_records={encounter_records} charm_records={CHARM_COUNT} "
+        f"proficiency_records={PROFICIENCY_COUNT}"
     )
     return 0
 
