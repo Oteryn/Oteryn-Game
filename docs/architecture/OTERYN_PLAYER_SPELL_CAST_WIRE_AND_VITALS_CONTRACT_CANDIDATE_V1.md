@@ -193,6 +193,14 @@ the same owner mutation as the Effect Plan**. A cast that fails before commit co
 No reservation is needed, because a single Channel owner lane serializes the actor's casts.
 Mana-spent progress (magic-level training) is a separate GAME-CHAR descendant and is out of V1.
 
+**Amendment (pending on acceptance of RUNE-USE-0;
+`OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md` §5).** A cast with an item
+cost (rune use, conjure) runs every check at PREPARE, freezes the cast, and holds its cooldowns
+(and, for a conjure, mana and soul). The DUR-03 item transaction commits first; the holds settle
+with the Effect Plan at PRIMARY COMMIT, and a known abort releases them. SPELL-D3 is kept: nothing
+is paid for a refused cast, and a cast whose item cost has committed is cast
+(`reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md` §6 and §7).
+
 ## 6. What V1 can and cannot cast
 
 | Spell shape | V1 | Blocker |
@@ -208,6 +216,12 @@ The first child is therefore **self heal**. It is the smallest real cast: it exe
 intent, the core check order, a formula draw, the Ability commit, the anchor, and vitals
 observation. It touches no item or durable value. Targeted damage follows as soon as
 VSL-COMBAT-01 child E provides other-actor visibility and an attack target.
+
+**Amendment (pending on acceptance of RUNE-USE-0;
+`OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md` §6).** Rune use and conjure
+are designed by RUNE-USE-0: rune use through the USE command (capability `RUNE_USE_V1`), a
+one-unit burn under `ItemUseCause::Rune`; conjure as a spell cast with a `ConjureCause` burn and
+mint, and two added dispositions, `REAGENT_MISSING` and `NO_ROOM`.
 
 ## 7. Proposed resource limits (for the resource owner)
 
