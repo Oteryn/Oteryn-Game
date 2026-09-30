@@ -49,19 +49,11 @@ mod combat;
 #[path = "combat/pickup.rs"]
 mod combat_pickup;
 // D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
-// recompiles `interaction/mod.rs` without Content or durability.
-#[allow(
-    dead_code,
-    reason = "D39 has no production caller yet; the client USE command wires one"
-)]
+// recompiles `interaction/mod.rs` without Content or durability. C2 routes `USE_INTENT` to it.
 #[path = "interaction/chest_use.rs"]
 mod interaction_chest_use;
-// ACHIEVEMENT: the runtime Achievement catalogue, loaded with the Content activation. Its lookup
-// has no production caller until the client USE command reaches `interaction_chest_use`.
-#[allow(
-    dead_code,
-    reason = "the catalogue lookup's only caller is the D39 chest USE, which has no production caller yet"
-)]
+// ACHIEVEMENT: the runtime Achievement catalogue, loaded with the Content activation and read by
+// the chest `USE`.
 mod achievement_catalogue;
 
 pub mod character_bootstrap_intent;

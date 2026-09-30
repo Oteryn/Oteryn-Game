@@ -7,7 +7,7 @@ mode: IMPLEMENT
 status: completed   # final PR of the task (1d)
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: claude/prof-content-1d-item-schema
+branch: claude/prof-content-1d-item-schema   # the record names the last open PR of the stack so merging #1341 keeps governance green
 issue: 162
 pr: 1342   # 1a #1328, 1b #1339, 1c #1341, 1d #1342
 base_sha: 1852a69   # #1327 and #1328 merged; 1b-1d stacked
