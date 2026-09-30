@@ -2270,6 +2270,11 @@ mod account_achievement_postgres_cases;
 #[path = "support/account_characters_projection_postgres_cases.rs"]
 mod account_characters_projection_postgres_cases;
 
+// CHAR-BUILD-1a build state, build receipts and death build fields (migration
+// 0030) and their admission verifier checks, on the CHARM-2 harness included above.
+#[path = "support/character_build_postgres_cases.rs"]
+mod character_build_postgres_cases;
+
 // SPELL-D8 H-1 durable monk Harmony and remaining forced Serene time (migration
 // 0026, `durability::monk_state`) run in the same protected lane, on the
 // CHARM-2 harness included above.
