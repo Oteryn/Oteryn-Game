@@ -89,6 +89,14 @@ persistence review; BOSS-REWARD-1 economy and security review; BOSS-WIRE-1 proto
   session (§8.1, §12, composition amendment).
 - Codex round 3 (#1407, 3 P1, 0 P2): INACTIVE clock state and atomic per-epoch reset draw (§5); firing DONE requires a terminal run per target channel or the deadline (§4.4); the 200-entry accumulator covers Bosstiary non-reward bosses (§7, RL-10b).
 - Codex round 4 (#1407, 5 P1, 0 P2): reward step key includes CharacterId (§8.1, composition amendment); close deadline falls back to the last wave's time (§4.4); accumulator keeps last qualifying damage time and Bosstiary excludes stale entries (§7); only contributors with an admitted session at death are credited, offline crediting declared deferred (§7); death record snapshots the resolved loot table (§8.1).
+- Owner amendment (disconnect credit, 2026-09-30, #162): the round-4 "admitted session at death"
+  ruling is replaced by a Tibia-faithful presence rule (§7, §8.1, §9, §12, §17, composition
+  amendment): a contributor present in the World at the death commit is credited, with an
+  admitted non-terminal GameSession (including in-grace disconnect and after its own death) under
+  the rule 2 session checks, or as a post-grace `PRESENT_UNCONTROLLED` actor under its own
+  death-writer fence (FND-04B §21 CharacterLease/runtime owner/placement), failing closed until
+  that writer is accepted; a character `ABSENT` at the death gets nothing, as in Tibia; the
+  offline pending-claim deferral is dropped. Validators re-run PASS.
 - Owner answer applied (2026-09-30, #162): R4a, the slot swap fee as a D178 gold sink, coins then
   bank, first change per reset epoch free (§10.3, brief, §14, §16). Validators re-run PASS.
 

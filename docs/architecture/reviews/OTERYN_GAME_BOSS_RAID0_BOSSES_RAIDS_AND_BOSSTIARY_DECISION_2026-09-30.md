@@ -295,18 +295,39 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
   more than 200 distinct characters contribute. The accumulator stays bounded in owner memory.
 - Each accumulator entry also keeps its **last qualifying damage time** (damage to the boss; for
   the Bosstiary rule, other score components do not refresh it).
-- **Session at death (architect ruling, fail-closed).** Only a contributor with an admitted
-  session in the boss's World at the death commit can be credited: the death composition claims
-  its eligibility row (§9) and writes its receipt under that session's composition rule 2 fence. A
-  contributor with no admitted session at that moment is credited with nothing (no reward, no
-  Bosstiary) and is skipped without replacement by the next-ranked one. Crediting offline
-  contributors needs a session-independent pending-claim authority, a declared deferral outside
-  BOSS-REWARD-1/BOSSTIARY-1 v1; no pending claim exists, so cross-channel serialization (§9) is
-  never bypassed. Draws and MINTs of an already credited character still resume at its next
-  admission (§8.1).
+- **Presence at death (owner amendment, 2026-09-30, #162; Tibia Global reward chest).** A
+  contributor is credited if its character is in the game when the boss dies: a dropped
+  connection keeps the character in the world, and a character that died in the fight but has not
+  logged out is still credited. At the death commit, a contributor is **present** when its
+  character is in the boss's World in one of two states, each with the fence that already governs
+  that actor's own gameplay writes (damage, death) in that state; BOSS-REWARD-1 adds no authority:
+  - **(a) Admitted GameSession, not terminal:** the reconnect-session row in `session_state`
+    1 or 2 (in-grace disconnect or active), including after the character's own death while the
+    session is not terminal (death screen, before logout), and a logout-blocked actor whose client
+    closed and whose terminal release has not run (CHAR-POSITION0 §3.2). Fence: the composition
+    rule 2 session checks in the STARTER-BACKPACK-0 server-originated variant (no CommandRef), the
+    same session checks DEATH-0 §3.5's `commit_character_death` takes for the character's own death.
+  - **(b) Post-grace `PRESENT_UNCONTROLLED` actor:** the old GameSession is terminal but the same
+    actor is still present (FND-04B §21; DUR-02 §5.9). Fence: the one FND-04B §21 names for that
+    actor, its current CharacterLease generation (DUR-02 §5.2) and current RuntimeScopeAuthority
+    owner generation and placement (FND-04B §22), with the recovery fence and admission-relation
+    locks, exactly as the writer of that actor's own death takes it in that state. Until an
+    accepted Game writer commits a post-grace actor's own death under that fence (today DEATH-0 and
+    composition rule 2 check `session_state IN (1,2)`, and post-grace authority is the candidate
+    FND-DUR-POST-GRACE-TIMING-V1), such a contributor fails closed: not credited. Crediting never
+    runs ahead of the death writer: a character that cannot durably die in a state cannot be
+    credited in it.
+
+  In both states the death composition claims the eligibility row (§9) and writes the Bosstiary
+  receipt under that fence; §9's serialization is unchanged.
+- **Absent at death (Tibia-faithful).** A character that has legally become `ABSENT` (logged out or
+  released, FND-04 §4) before the death commit is credited with nothing (no reward, no Bosstiary),
+  as in Tibia. Offline crediting is not a Tibia behaviour and is not built.
 - At the death commit, the credited set is the top `BOSSRAID0-RL-10` (50, D109) accumulator
-  entries with score > 0 by the order above that have an admitted session (previous bullet), and
-  each score is fixed in the death record (§8.1).
+  entries with score > 0 by the order above that are present (previous bullets), and each score is
+  fixed in the death record (§8.1). A selected contributor whose fence fails at the commit is
+  skipped without replacement. Draws and MINTs of a credited character complete in its live or next
+  admitted session under its own fence (§8.1).
 - Non-reward bosses keep D121 corpse loot with the D112 window and the party right (PARTY-PVP-0
   §5.3). Their Bosstiary credit uses CHARM-0's 5-minute damage rule, up to 50 principals: at the death
   commit an entry whose last qualifying damage is older than 5 minutes is excluded before the top
@@ -344,7 +365,8 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
   `CurrentCharacterItemFence`, whose Character and World must equal the death record's. A
   character online in the World completes its steps in its live session. After a restart, or
   while the character is offline, its steps stay pending; its next admitted session in that World
-  completes them under its own fence. Nothing is minted under an ended generation's or session's
+  completes them under its own fence; a character credited as a post-grace actor (§7 (b)) has no
+  live session and completes them after its post-grace recovery or next admission. Nothing is minted under an ended generation's or session's
   authority, and no step runs for a character without an admitted session. The (death, CharacterId, step) and
   item cause keys make the continuation exactly-once: a step committed before a restart is found
   by its key and never repeated. The §8.2 expiry of an item counts from its MINT.
@@ -376,7 +398,7 @@ bosses without an encounter (plain spawns, most raid bosses) do not.
   concurrent deaths on different channels serialize on that row: the second sees the advanced
   time and credits nothing (no reward, no Bosstiary). No bucket boundary exists.
 - The row is written or claimed in the death composition, before the reward draw, under the
-  composition rule 2 fence of the credited character. With it, a channel change gains nothing, so no extra
+  credited character's §7 fence (state (a) or (b)). With it, a channel change gains nothing, so no extra
   channel-change gate is needed beyond ADR-0001 §10.
 
 ## 10. Bosstiary (BOSSTIARY-1)
@@ -437,8 +459,8 @@ definition's `*_points`).
   revision the previous one committed.
 - **No advance** for cooldown, eligibility and reward chest rows: composition rule 1 covers them
   (amendment in this PR). They take rule 2's fence; a server-originated death descendant takes the
-  STARTER-BACKPACK-0 variant (the admitted session's fence, no CommandRef). A reward draw or MINT
-  step takes the credited character's own current session fence (§8.1), never a dead generation's.
+  STARTER-BACKPACK-0 variant (the admitted session's fence, no CommandRef), or for a post-grace
+  present actor the §7 (b) fence. A reward draw or MINT step takes the credited character's own current session fence (§8.1), never a dead generation's.
 - **Lock order:** the occurrence (admission, death step, firing); the Character roots in
   CharacterId order; cooldown and eligibility rows by (CharacterId, key); items by
   ItemInstanceId; the World rows (schedule, firing, run) by key.
@@ -545,6 +567,11 @@ taken as the gold fee decision takes fees (recommended, Global parity); b) no fe
 change per reset epoch.
 Owner answer (2026-09-30, #162): a — yes, as in Tibia; the first change after a server save is
 free (§10.3).
+
+**Owner amendment (disconnect credit, 2026-09-30, #162).** The owner asked what happens if a player
+killed the boss and their connection dropped. The round-4 ruling (only an admitted session is
+credited) is replaced by §7's presence rule: as in Tibia, a character still in the game at the
+death is credited, including a disconnected or dead one; only a logged-out one is not.
 
 ## 18. Decision test
 

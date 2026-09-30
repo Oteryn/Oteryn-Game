@@ -200,7 +200,8 @@ grant's; no synthetic CommandId is created. Rules 4-6 apply unchanged.
 covers boss cooldown and boss eligibility rows and the `CharacterRewardChest` location: they
 advance no `CharacterRevision`. A lever admission fences every participant by rule 2 and locks
 their `character_root` rows in `character_id` order; a death descendant uses the
-STARTER-BACKPACK-0 server-originated variant. A reward draw or MINT step, including one resumed
+STARTER-BACKPACK-0 server-originated variant, or for a credited post-grace present actor the
+fence BOSS-RAID-0 §7 (b) names (that actor's own death-writer fence; no new authority). A reward draw or MINT step, including one resumed
 after a restart, is fenced by the credited character's own current admitted session
 (`CurrentCharacterItemFence`, Character and World equal to the death record's): an online
 character completes it in its live session, an offline one in its next admitted session, keyed by
