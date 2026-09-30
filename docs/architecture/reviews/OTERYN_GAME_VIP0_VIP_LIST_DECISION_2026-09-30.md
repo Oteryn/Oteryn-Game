@@ -3,7 +3,8 @@
 - Decision: `VIP0-ACCOUNT-WORLD-VIP-LIST-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
   persistence, security and privacy) and protected integration. Owner question V1 (§14) is open;
-  it blocks only VIP-2 (presence), not VIP-1.
+  it blocks VIP-1 and VIP-2: under V1 c) VIP-1's store and wire change, so no VIP row is written
+  before the answer (architect ruling R3, §13).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction (2026-09-30): build the VIP list now, full Tibia Global parity.
   CHAT-0 and PARTY-PVP-0 left the VIP list to its own decision.
@@ -24,11 +25,13 @@
 
 | Child | Worker; review | Builds | Depends on |
 |---|---|---|---|
-| VIP-1 | impl; persistence, protocol | store, operations, caps, wire (§3-§7, §9) | VIP-0 |
+| VIP-1 | impl; persistence, protocol | store, receipts, operations, caps, wire (§3-§7, §9) | VIP-0; V1 |
 | VIP-2 | hard; security, privacy | presence on the World relay (§8) | VIP-1; CHAT-2; V1 |
 
-VIP-1 builds the tables, the write functions under the rule 2 fence, add by name, groups, the
-Premium switch-over, the rate bucket and the `VIP_V1` wire, not yet offered to clients. VIP-2
+VIP-1 builds the tables, the command receipts, the write functions under the rule 2 fence, add by
+name, groups, the Premium switch-over, the rate bucket and the `VIP_V1` wire, not yet offered to
+clients. VIP-1 is not allocated until V1 is answered on #162; under V1 c) it first gains the
+invitation layer that answer requires. VIP-2
 builds the presence hints, the node watcher index, the reconcile, status deltas and login notices.
 
 Later, each with its own decision: the consent-based contact layer of the social baseline
@@ -107,7 +110,7 @@ are online, without learning more than Tibia shows and without breaking the soci
   import never creates one.
 - The baseline's "unilateral VIP-list model is rejected" sentence and the owner's Global-parity
   direction meet here. This reading keeps every presence rule of the baseline and matches Global;
-  the owner confirms it or chooses otherwise in V1 (§14). VIP-2 waits for that answer.
+  the owner confirms it or chooses otherwise in V1 (§14). VIP-1 and VIP-2 wait for that answer.
 
 ## 4. Storage (VIP-1)
 
@@ -123,10 +126,21 @@ are online, without learning more than Tibia shows and without breaking the soci
   never stored, never renamed or removed.
 - `game_vip_group_members`: (`account_id`, `world_id`, `character_id`, `group_no`); deleted with
   its entry or its custom group.
-- No writer role writes these tables directly. One SECURITY DEFINER function per operation checks
+- `game_vip_command_receipts`: one immutable row per VIP command, keyed by (`account_id`,
+  `world_id`, `command_ref`); the acting `character_id`; the operation kind; a SHA-256 digest of
+  the canonical request; the outcome (result code, `entry_no` or `group_no`, `EXHAUSTED` seconds,
+  the list `revision` after the command); `committed_at`. The BANK-0 §3 pattern.
+- No writer role writes these tables directly. One SECURITY DEFINER function per operation first
+  reads the receipt of its CommandRef: a receipt with the same binding (character, kind, digest)
+  returns its stored outcome **before** any fence, lock, cap or rate check, writes nothing and
+  advances nothing; a receipt with a different binding is `REJECTED`. With no receipt, it checks
   the acting session's fence (composition rule 2: session row in state 1 or 2, generations, the
   runtime-scope guard), that the session's Account and World own the list, then locks the list
-  row, checks caps and the rate bucket, writes, and advances `revision`.
+  row, re-reads the receipt under that lock, checks caps and the rate bucket, writes, advances
+  `revision`, and inserts the receipt with the outcome **in the same transaction**. Every outcome
+  is receipted, refusals included (an `UNKNOWN_NAME` add has consumed a token), so a commit
+  followed by a node failure replays the first result instead of executing again.
+- Receipts are deleted with their list; their retention bound is reserved as `VIP0-RL-12`.
 - **Composition rule 1:** VIP rows are Account + World social rows, not Character state. A VIP write
   advances no `CharacterRevision` and touches no item. Amendment to the composition decision.
 
@@ -147,7 +161,8 @@ are online, without learning more than Tibia shows and without breaking the soci
 - **Group add `{name}`**, **rename `{group_no, name}`**, **remove `{group_no}`**: custom groups
   only; a fixed group is `REJECTED`. The name is 1 to `VIP0-RL-06` characters, unique in the list
   (case-insensitive), else `NAME_TAKEN`. Too many is `GROUP_LIMIT` (§6).
-- Every operation is idempotent by its CommandRef (replay returns the first result).
+- Every operation is idempotent by its CommandRef through its receipt (§4): replay returns the
+  first result, even after a commit whose answer was lost; a changed request is `REJECTED`.
 - An unknown `entry_no` or `group_no` is `NOT_FOUND`. It names only the caller's own list.
 
 ## 6. Caps and Premium (VIP-1)
@@ -205,8 +220,13 @@ are online, without learning more than Tibia shows and without breaking the soci
 - Each node keeps a **watcher index** for its own sessions: target CharacterId to the local
   sessions whose list names it. It is built from the rows at admission, reconnect and channel
   transfer, and changed by VIP writes and list hints.
-- On a presence hint, the node sends status deltas to the watchers of that target, with
-  `announce` for `notify` entries. Hints for unwatched targets are dropped.
+- **A hint is advisory.** Relay lines of two transitions can arrive out of order (each `NOTIFY` is
+  sent after its own commit). On a presence hint for a watched target, the node ignores the hint's
+  `online` value and re-reads the target's authoritative session row (state 1 or 2 on this World,
+  one indexed query), as PARTY-PVP-0 nodes re-read rows. It sends a status delta only if that
+  read differs from the status it last sent the watchers, with `announce` for `notify` entries
+  only when the read confirms the change the hint names. A delayed login hint after a logout thus
+  reads offline and emits nothing. Hints for unwatched targets are dropped.
 - **Truth at the edges.** A snapshot reads statuses from the session rows (one indexed query over
   at most 100 CharacterIds). Every `VIP0-RL-09` (60 s), and at once after its listener reconnects,
   a node re-reads the statuses of all its watched targets in one query and sends the differences
@@ -262,7 +282,8 @@ are online, without learning more than Tibia shows and without breaking the soci
 | `VIP0-RL-09` presence reconcile | 60 s, and at listener reconnect |
 | `VIP0-RL-10` presence hints per World per second | measured by VIP-2 inside `CHAT0-RL-09` |
 | `VIP0-RL-11` status delta after a login, p99 | measured by VIP-2 |
-| VIP operation | 1 transaction, 0 items, 0 value lines, 0 `CharacterRevision`, 1 relay hint |
+| `VIP0-RL-12` VIP command receipt retention | at least the CommandRef replay window; set by VIP-1 |
+| VIP operation | 1 transaction, 1 receipt, 0 items, 0 value lines, 0 `CharacterRevision`, 1 relay hint |
 
 ## 12. Rejected options
 
@@ -276,6 +297,10 @@ are online, without learning more than Tibia shows and without breaking the soci
 - **A presence service or broker.** The CHAT-0 relay and the session rows are enough.
 - **Hints only, no reconcile.** The relay is at most once; a lost logout would show online forever.
 - **Announcing reconcile corrections.** A late "has logged in." would be false.
+- **Acting on a hint's `online` value.** Relay lines can be reordered; a stale login hint would
+  announce a character that has logged out.
+- **Idempotency without a stored receipt.** A lost answer after a commit would execute again:
+  `ALREADY_LISTED`, `NOT_FOUND`, a second token and a second revision.
 - **Deleting entries over the cap.** Premium ending must not destroy player data.
 - **Advancing `CharacterRevision`.** A note on a friend is not Character state (rule 1).
 
@@ -292,6 +317,11 @@ switch-over, then `premium_current` decides and nothing is deleted (recommended:
 answer for houses, and no data loss at the switch); b) the free caps for everyone until then (the
 CHAT-0 gate shape): players lose Global's Premium room now for nothing. **Ruled a)**. It is not a
 Game-side "everyone is Premium" switch (D69): only these caps read it, and only until PREM-1.
+
+**R3. VIP-1 waits for V1.** a) VIP-1 now, VIP-2 after V1: under V1 c) the store gains an invitation
+table and the wire an invitation flow, and unilateral rows written before the answer would exist
+under an unaccepted model; b) VIP-1 after V1 (recommended: fail closed, no redesign, no row under
+an unaccepted model). **Ruled b)**.
 
 ## 14. Owner question
 
@@ -310,14 +340,15 @@ add a name and see it online. Only the owner can reconcile two owner statements.
 
 **Recommended: a).** It is exactly Global and the presence it shows is the baseline's own ceiling
 for non-contacts; b) can be added later without changing the store. VIP-1 is the same under a) and
-b); under c) VIP-1 gains an invitation table before VIP-2.
+b); under c) VIP-1 gains an invitation table. VIP-1 and VIP-2 both start only after the answer (R3).
 
 ## 15. Decision test
 
 - **Must decide now:** YES. The owner asked for the VIP list now; CHAT-0 and PARTY-PVP-0 left it
   here.
-- **Minimum sufficient:** four tables, one write function per operation, one command, one domain,
-  one presence hint kind on the existing relay, one reconcile query per node per minute.
+- **Minimum sufficient:** five tables (four list tables and the command receipts), one write
+  function per operation, one command, one domain, one presence hint kind on the existing relay, one
+  reconcile query per node per minute.
 - **Superseding evidence:** official Global values for description length, icons, group names,
   over-cap behaviour after Premium ends, and pending or training status.
 - **Deliberately not decided:** consent-based contacts, exact channel for contacts, account-wide
@@ -330,11 +361,12 @@ b); under c) VIP-1 gains an invitation table before VIP-2.
    (VIP list paragraph). Each is written "pending on acceptance of VIP-0". The capability, command
    and domain numbers are reserved at allocation.
 2. **Serialization:** the list row lock orders all writes of one list; rule 2 fence; replay by
-   CommandRef; presence is eventual, corrected by the reconcile.
-3. **Restart:** entries, groups and the rate bucket are durable; watcher indexes and statuses are
-   rebuilt from rows.
+   the CommandRef receipt written in the mutation's transaction; presence hints re-read the session
+   row; presence is eventual, corrected by the reconcile.
+3. **Restart:** entries, groups, receipts and the rate bucket are durable; watcher indexes and
+   statuses are rebuilt from rows.
 4. **Typed references:** AccountId, WorldId, CharacterId (server only); `entry_no` and `group_no`
    (clients); names.
 5. **Wire:** §7, capability `VIP_V1`; offered only when VIP-2 lands.
 6. **Privacy review:** §3, §5 and §8.3 against the social baseline, with V1's answer recorded on
-   #162.
+   #162 before VIP-1 is allocated.
