@@ -120,7 +120,10 @@ the D178 owner decision. This decision adds to them and changes only NPC-0 §6's
   lane from Canary/Crystal scripts and the wiki prices (npc-majority-price, `PARITY_PENDING` where
   single-source). Not in `rulesets/`: a route is content of one NPC, not a World rule.
 - **Fields added** to `ProjectV2TravelRoute` (NPC admission v2 §6, as amended):
-  - `keywords`: the destination words that open this route; aliases collapse into one route;
+  - `keywords`: the destination words that open this route; aliases collapse into one route.
+    Each keyword is stored canonical: ASCII case-folded, one whole token (no whitespace or
+    control characters), the form NPC-0 §4 talk matching compares; non-empty and at most
+    `TRAVEL0-RL-07` bytes; a route has 1 to `TRAVEL0-RL-08` keywords, no duplicates;
   - `gate`: optional, a QUEST-GATE-0 condition (at most `QUESTGATE0-RL-01` predicates);
   - `discounts`: at most `TRAVEL0-RL-04` entries `{key, gate, amount}`, `amount` in gold, positive.
 - **Kinds.** Ships, carpets and other transport NPCs (ferrymen, the Rapanaio boats, the Buddel
@@ -130,6 +133,9 @@ the D178 owner decision. This decision adds to them and changes only NPC-0 §6's
     (never an instance), and in the NPC's World (NPC-0 §3.2);
   - `price` 0 to 1,000,000; `min_level` 0 to 2,000; the discount sum may exceed the price;
   - gates and discount gates name known tracks (QUEST-GATE-0 §3.3);
+  - keywords are canonical, non-empty and bounded (above), and disjoint across all routes of one
+    travel service (NPC), so one keyword selects at most one route; a keyword violation fails the
+    service's compile closed (none of its routes load), never resolved by traversal order;
   - a route whose Canary destination is computed by a function, or which needs a script effect
     other than the move, stays held.
 - **Classification.** TRAVEL-CONTENT-1 lowers the 46 Lua-gated routes to `gate` where the
@@ -140,8 +146,10 @@ the D178 owner decision. This decision adds to them and changes only NPC-0 §6's
 
 ## 5. Price and discounts (NPC-TRAVEL-1)
 
-- **Fare.** `F = max(0, price - sum of amounts of the discounts whose gate passes)`, in checked
-  unsigned 64-bit arithmetic. A fare of 0 writes no fee lines (NPC-0 §6).
+- **Fare.** `D` = sum of amounts of the discounts whose gate passes, in checked unsigned 64-bit
+  arithmetic. `F = price - D` if `D < price`, else `F = 0`: a saturating subtraction floored at 0,
+  so `F` is unsigned and never negative, and a discount sum above the price never underflows or
+  rejects. A fare of 0 writes no fee lines (NPC-0 §6).
 - **Postman.** The Postman discount is 10 gold at the rank the Canary scripts read
   (`PARITY_PENDING`: the rank value and which routes carry it need a Global source; Canary's key is
   a placeholder). It is ordinary content, not code.
@@ -156,8 +164,12 @@ the D178 owner decision. This decision adds to them and changes only NPC-0 §6's
 ## 6. Eligibility and refusals
 
 Checked in this order. Steps 1-7 run in the talk runtime before the confirmation and again when
-`yes` arrives; steps 3-5, 8 and 9 are re-read in the transaction from durable facts. The first
-failure answers with a template reply (NPC-0 §3.3) and writes nothing.
+`yes` arrives; steps 3-6, 8 and 9 are re-read in the transaction from durable facts. Step 6 is
+re-verified there because combat goes on during the travel hold (§7.1): a PZ block or kill block
+gained between the request and the commit refuses with the same step-6 refusal cause, writes
+nothing and releases the hold. PARTY-PVP-0 exposes both blocks as facts that transaction reads
+under the `character_root` lock. The first failure answers with a template reply (NPC-0 §3.3) and
+writes nothing.
 
 1. **Conversation.** Open with this NPC, in talk range, alive, live session (NPC-0 §5.1).
 2. **Route.** Loaded and not held; the actor is in a channel scope (not an instance, §8).
@@ -259,6 +271,8 @@ domain (`PARITY_PENDING`).
 | `TRAVEL0-RL-04` discounts per route | 4 |
 | `TRAVEL0-RL-05` routes per travel service | 32 (content today: 11) |
 | `TRAVEL0-RL-06` travel commits per channel per second, p99 | measured by NPC-TRAVEL-1 |
+| `TRAVEL0-RL-07` bytes per canonical travel keyword | 32 |
+| `TRAVEL0-RL-08` keywords per route | 8 |
 | DUR-03 rows, travel shape | gold fee rows + 1 cause record + 1 obligation row (NPC-TRAVEL-1) |
 
 ## 12. Rejected options
