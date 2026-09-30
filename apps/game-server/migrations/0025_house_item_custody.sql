@@ -30,16 +30,17 @@ CREATE TABLE game_item_house_interior_locations (
     placed_transaction_id UUID NOT NULL UNIQUE
         CHECK (game_character_is_uuid_v7(placed_transaction_id)),
     UNIQUE (world_id, house_key, spatial_position, stack_ordinal),
-    UNIQUE (item_instance_id, world_id, house_key),
+    UNIQUE (item_instance_id, world_id, house_key, placed_transaction_id),
     FOREIGN KEY (item_instance_id, world_id)
         REFERENCES game_item_instances (item_instance_id, world_id)
 );
 
 -- HousingReclaimProvenance {house_id, item_instance_id, reclaim_subject,
 -- placement_transaction_id, provenance_revision}. At most one per item (the
--- primary key), 1:1 with a live HouseInterior row of the same house: the
--- deferred FK below covers a provenance without its row, the constraint
--- trigger covers a row without its provenance. The first-slice subject is the
+-- primary key), 1:1 with a live HouseInterior row of the same house and
+-- naming that row's placement transaction: the deferred FK below covers a
+-- provenance without its row, the constraint trigger covers a row without
+-- its provenance. The first-slice subject is the
 -- placing CharacterId; ON DELETE RESTRICT keeps that Character from being
 -- deleted while a provenance names it (EXP-HOUSES-01 §15). It is not a
 -- location and grants no authority.
@@ -53,8 +54,9 @@ CREATE TABLE game_item_house_reclaim_provenance (
         CHECK (game_character_is_uuid_v7(placement_transaction_id)),
     provenance_revision NUMERIC(20,0) NOT NULL
         CHECK (provenance_revision BETWEEN 1 AND 18446744073709551615),
-    FOREIGN KEY (item_instance_id, world_id, house_key)
-        REFERENCES game_item_house_interior_locations (item_instance_id, world_id, house_key)
+    FOREIGN KEY (item_instance_id, world_id, house_key, placement_transaction_id)
+        REFERENCES game_item_house_interior_locations
+            (item_instance_id, world_id, house_key, placed_transaction_id)
         DEFERRABLE INITIALLY DEFERRED
 );
 CREATE INDEX game_item_house_reclaim_provenance_subject
@@ -73,7 +75,8 @@ BEGIN
                   AND NOT EXISTS (SELECT 1 FROM game_item_house_reclaim_provenance p
                                    WHERE p.item_instance_id = h.item_instance_id
                                      AND p.world_id = h.world_id
-                                     AND p.house_key = h.house_key)) THEN
+                                     AND p.house_key = h.house_key
+                                     AND p.placement_transaction_id = h.placed_transaction_id)) THEN
         RAISE EXCEPTION 'HouseInterior item must commit with its HousingReclaimProvenance'
             USING ERRCODE = '23514';
     END IF;
@@ -82,13 +85,14 @@ END;
 $$;
 
 -- A move is a delete and an insert, as for Ground. A same-house tile move
--- keeps the provenance: only its placement transaction and a +1 revision
--- change (§3.2).
+-- keeps the provenance: it takes the new row's placement transaction (the FK
+-- above) with a +1 revision, and nothing else changes (§3.2).
 CREATE FUNCTION game_item_house_reclaim_provenance_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
     IF TG_OP = 'UPDATE'
        AND NEW.provenance_revision = OLD.provenance_revision + 1
+       AND NEW.placement_transaction_id <> OLD.placement_transaction_id
        AND (NEW.item_instance_id, NEW.world_id, NEW.house_key, NEW.reclaim_subject_character_id)
          = (OLD.item_instance_id, OLD.world_id, OLD.house_key, OLD.reclaim_subject_character_id) THEN
         RETURN NEW;

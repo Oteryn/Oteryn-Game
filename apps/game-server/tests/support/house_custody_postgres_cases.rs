@@ -179,6 +179,7 @@ async fn insert_location(
     .map(|_| ())
 }
 
+/// Names the placement transaction of the item's location row, if any.
 async fn insert_provenance(
     tx: &mut PgConnection,
     world: &str,
@@ -189,7 +190,9 @@ async fn insert_provenance(
     sqlx::query(
         "INSERT INTO game_item_house_reclaim_provenance(item_instance_id, world_id, house_key, \
            reclaim_subject_character_id, placement_transaction_id, provenance_revision) \
-         VALUES ($1::uuid, $2::uuid, $3, $4::uuid, game_character_uuid_v7(), 1)",
+         VALUES ($1::uuid, $2::uuid, $3, $4::uuid, \
+           COALESCE((SELECT placed_transaction_id FROM game_item_house_interior_locations \
+                      WHERE item_instance_id = $1::uuid), game_character_uuid_v7()), 1)",
     )
     .bind(item)
     .bind(world)
@@ -402,16 +405,61 @@ fn house_location_and_provenance_are_one_to_one() -> TestResult {
         .await?;
         assert!(message(tx.commit().await)?.contains("HousingReclaimProvenance"));
 
-        // A same-house move keeps the provenance: one revision at a time, same
-        // subject; the location row itself is never updated in place.
+        // The provenance names its row's placement transaction: another one
+        // fails at commit.
+        let mut tx = connection.begin().await?;
+        insert_location(&mut tx, &world, &items[3], HOUSE, 3).await?;
+        insert_provenance(&mut tx, &world, &items[3], HOUSE, &character).await?;
         sqlx::query(
             "UPDATE game_item_house_reclaim_provenance \
                 SET provenance_revision = 2, placement_transaction_id = game_character_uuid_v7() \
               WHERE item_instance_id = $1::uuid",
         )
+        .bind(&items[3])
+        .execute(&mut *tx)
+        .await?;
+        // Both the row-side trigger and the provenance FK reject it.
+        assert!(tx.commit().await.is_err());
+
+        // A same-house move replaces the row and keeps the provenance, which
+        // takes the new placement transaction with one revision more.
+        let mut tx = connection.begin().await?;
+        sqlx::query(
+            "DELETE FROM game_item_house_interior_locations WHERE item_instance_id = $1::uuid",
+        )
+        .bind(&items[0])
+        .execute(&mut *tx)
+        .await?;
+        insert_location(&mut tx, &world, &items[0], HOUSE, 7).await?;
+        sqlx::query(
+            "UPDATE game_item_house_reclaim_provenance p \
+                SET provenance_revision = 2, placement_transaction_id = h.placed_transaction_id \
+               FROM game_item_house_interior_locations h \
+              WHERE p.item_instance_id = $1::uuid AND h.item_instance_id = p.item_instance_id",
+        )
+        .bind(&items[0])
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        // Moving the row without re-pointing the provenance fails at commit.
+        let mut tx = connection.begin().await?;
+        sqlx::query(
+            "DELETE FROM game_item_house_interior_locations WHERE item_instance_id = $1::uuid",
+        )
+        .bind(&items[0])
+        .execute(&mut *tx)
+        .await?;
+        insert_location(&mut tx, &world, &items[0], HOUSE, 8).await?;
+        assert!(tx.commit().await.is_err());
+        // A revision bump that does not name a new placement is rejected.
+        let bumped = sqlx::query(
+            "UPDATE game_item_house_reclaim_provenance SET provenance_revision = 3 \
+              WHERE item_instance_id = $1::uuid",
+        )
         .bind(&items[0])
         .execute(&mut *connection)
-        .await?;
+        .await;
+        assert_eq!(sqlstate(bumped)?, "23514");
         for change in [
             "provenance_revision = 4",
             "provenance_revision = 3, reclaim_subject_character_id = $2::uuid",
@@ -442,7 +490,7 @@ fn house_location_and_provenance_are_one_to_one() -> TestResult {
         assert_eq!(sqlstate(moved)?, "23514");
 
         // Two items with the same (world, house, position, ordinal) fail.
-        let duplicate = place(connection, &world, &items[1], &character, 1).await;
+        let duplicate = place(connection, &world, &items[1], &character, 7).await;
         assert_eq!(sqlstate(duplicate)?, "23505");
         place(connection, &world, &items[1], &character, 2).await?;
         // The same ordinal in another house is a different slot.

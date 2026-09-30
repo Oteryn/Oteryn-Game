@@ -43,8 +43,9 @@ only, per the HOUSE-CUSTODY-0 implementation brief:
 - `game_item_house_reclaim_provenance` (§3.2): primary key `item_instance_id` (at most one per
   item); first-slice subject `reclaim_subject_character_id` with an FK to `game_character_roots`
   `ON DELETE RESTRICT` (EXP-HOUSES-01 §15); a deferred FK to the location row of the same house
-  and a deferred constraint trigger for the other direction (row inserted, provenance deleted).
-  An UPDATE may only bump the revision by one and change the placement transaction.
+  and the same placement transaction, and a deferred constraint trigger for the other direction
+  (row inserted, provenance deleted). An UPDATE bumps the revision by one and names a new
+  placement transaction, which the FK binds to the replacing row (a same-house move).
 - `game_item_location_exclusive` / `game_item_location_exclusivity_guard` (§3.3): one deferred
   guard on `game_item_instances` and the five location tables. A live item has exactly one row,
   a retired item none, a house item no child entries. SECURITY DEFINER (the runtime role must not
@@ -71,11 +72,17 @@ set, so `0025` needs no renumber.
   `durability_postgres`, `runtime_scope_assignment_postgres`, `native_admission_source_postgres`
   on a local PostgreSQL 17.11 (17.6 is not in the PGDG index; the 170006 assertion was patched
   in the working tree only, never committed). CI runs 17.6.
-- Mutation checks, each red: the guard ignores the house table; the row-without-provenance
+- Mutation checks, each red: the placement transaction is not bound (FK and trigger); a revision
+  bump without a new placement; the guard ignores the house table; the row-without-provenance
   trigger fires on UPDATE instead of INSERT; the provenance-delete trigger fires on UPDATE; a
   SELECT grant to the runtime role.
 - `cargo fmt --check`, `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`,
   `postgres_target_aggregation`, `validate_governance.py`.
+
+## Review
+
+- Codex P2 4149092379 on `d88a8a1f` (provenance not bound to the placement transaction):
+  accepted and repaired in the next candidate (FK, trigger, update guard, three cases).
 
 ## Closeout
 
