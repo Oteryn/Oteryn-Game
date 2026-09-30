@@ -838,9 +838,8 @@ fn assert_expected_state(
 /// (`durability/character_authority.rs`), which still requires XP receipts alone to explain
 /// every CharacterRevision. Any death, stance or charm receipt therefore fails it, so no
 /// Character authority opens after the first charm command. The fix lies outside the CHARM-3
-/// owned paths; this case runs once the check covers every receipt kind.
+/// owned paths. This case stays RED until the check covers every receipt kind (#1278).
 #[test]
-#[ignore = "blocked: verify_character_integrity counts only XP receipts (character_authority.rs)"]
 fn restart_readback_after_charm_commands() -> TestResult {
     run(async |admin| {
         let harness = Harness::create(admin, "restart", true).await?;

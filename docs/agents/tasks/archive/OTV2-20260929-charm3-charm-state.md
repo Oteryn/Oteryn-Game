@@ -27,6 +27,7 @@ owned_paths:
   - apps/game-server/src/durability/mod.rs      # registration and linkage block only
   - apps/game-server/tests/charm_state_postgres.rs
   - apps/game-server/tests/support/charm_state_postgres_cases.rs
+  - apps/game-server/tests/character_authority_postgres.rs   # shared: one #[path] include only (lead decision)
   - docs/agents/tasks/archive/OTV2-20260929-charm3-charm-state.md
 public_contracts: []
 depends_on:
@@ -81,21 +82,27 @@ record_derived_matching_helper: none
   paths) requires XP receipts alone to explain every CharacterRevision. After the first charm
   (or death, stance, Bestiary) receipt, `open_character_authority` fails for every Character, so
   a restart cannot open Character authority. `restart_readback_after_charm_commands` reproduces it
-  and is `#[ignore]`d until the check covers every receipt kind. #1278 (DEATH-1) rewrites that
-  check; it needs a charm arm (`game_character_charm_receipts`), then the case is un-ignored.
+  and stays RED (not ignored, lead decision) in the protected PostgreSQL lane until the check
+  covers every receipt kind. #1278 (DEATH-1) rewrites that check; after it merges this PR adds
+  the charm arm (path granted for that arm only).
 - **B2** CHARM-2 migration 0018 also replaces `game_character_progression_consistency_guard`.
   0019 replaces it again from the 0017 body, so 0019 must be rebased onto 0018 (add the Bestiary
   kill receipts to the chain) before either merges. Prepared and verified locally: 0018 at
   `73f66421` plus 0019 with the 0018 guard body and the three charm arms passes
   `charm_state_postgres`, `character_stance_postgres` and `character_death_receipts_postgres`.
 
+Sequence (lead decision): #1278 -> #1306 (CHARM-2, 0018) -> #1307. After both merge, one push:
+merge `main`, rebuild the 0019 guard on 0018's merged body, add the charm arm to
+`verify_character_integrity`, switch to #1278's `pub(super)` gameplay fence and drop the copy.
+
 ## Findings for the lead
 
-- The gameplay fence is a copy of the private `character_progression::assert_gameplay_fence`;
-  making that `pub(super)` and sharing it removes the copy (outside the owned paths).
-- The PostgreSQL cases run in the standalone `charm_state_postgres` target. CI runs only the
-  registered wrappers; including them in `character_authority_postgres` is one `#[path]` line
-  outside the owned paths.
+- The gameplay fence is a copy of the private `character_progression::assert_gameplay_fence`
+  until #1278 makes it `pub(super)`.
+- The cases run in the standalone `charm_state_postgres` target and, through one `#[path]`
+  include, in the protected `character_authority_postgres` lane.
+- Slot limits (free 2, Premium 6, Charm Expansion unlimited) are a Canary-sourced assumption
+  pending the owner's answer.
 - No durable promotion or slot entitlement exists; production `CharmFacts` returns `false` and
   `Free` until one does. `rulesets/progression/charms/` stays unpopulated: the rules are code.
 
@@ -103,9 +110,9 @@ record_derived_matching_helper: none
 
 - `cargo fmt --all --check`, `cargo clippy --locked -p oteryn-game-server --all-targets -- -D
   warnings`, `cargo test --locked -p oteryn-game-server`: pass.
-- PostgreSQL 17.6: `charm_state_postgres` 5 pass, 1 ignored (B1); `character_stance_postgres`,
-  `character_death_receipts_postgres`, `character_progression_postgres`,
-  `character_authority_postgres`: pass.
+- PostgreSQL 17.6: `charm_state_postgres` 5 pass, 1 RED (B1); `character_authority_postgres`
+  691 pass, 1 RED (the same B1 case); `character_stance_postgres`,
+  `character_death_receipts_postgres`, `character_progression_postgres`: pass.
 - RED: disabling the charm projection guard fails the SQL guard case; skipping the balance check
   fails the rules and the double-spend cases.
 - `validate_governance.py`, governance unit tests, `validate_repository_policy.py`,
