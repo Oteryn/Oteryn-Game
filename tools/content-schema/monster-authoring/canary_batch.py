@@ -1307,7 +1307,8 @@ class Converter:
         geometry = {'needs_target': bool(flags.get('needTarget', [False])[0] or flags.get('needCasterTargetOrDirection', [False])[0]),
                     'needs_direction': bool(flags.get('needDirection', [False])[0])}
         range_tiles = int(flags.get('range', [0])[0] or 0)
-        notes = [f'{where}, tier {info["tier"]}: resolved by name as Canary does (rune, instant, then built-in kind; D10).']
+        engine = 'CrystalServer' if info.get('extra_root') else 'Canary'
+        notes = [f'{where}, tier {info["tier"]}: resolved by name as {engine} does (rune, instant, then built-in kind; D10).']
         notes += info.get('tier_reasons') or []
         existing = {a['identity']['key'] for a in deps['abilities']}
         geometric = self.geometric_dot(info) if len(info['variants']) > 2 else None

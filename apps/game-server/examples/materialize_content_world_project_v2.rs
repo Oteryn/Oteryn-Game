@@ -70,7 +70,7 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "f97b19b4afbb3fbdbd782a2e64e19a8c3f5edeb842dcc3b71f046ec20e246575";
+    "ae54c36b41d172e1af512fe9d26780f3e25f194c3c23b11096476841cce65664";
 const CREATURE_STAGE_TOOL_SHA256: &str =
     "5a03273ab74f22bc175ad78d1efa3000c87f674248ee11c2196051e86c444322";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
@@ -88,9 +88,9 @@ const CREATURE_CRYSTAL_REVISION: &str = "00ce02a57ca5a12e48f32a3476e37471167e4c3
 /// source revision, which keeps the commit, as the TibiaWiki batches of one source do.
 const CREATURE_CRYSTAL_SOURCE_REVISION: &str =
     "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f";
-const CREATURE_CRYSTAL_COUNT: usize = 13;
+const CREATURE_CRYSTAL_COUNT: usize = 37;
 const CANARY_BUNDLE_INDEX_SHA256: &str =
-    "b4ff5819e8f60cc0ca525074544e9b3413eca70dc4f03b68332825704cd3b36b";
+    "d55ce674137cafe339cef65968439a14b5d82d86618456f5962174f0bd1b1233";
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
@@ -128,9 +128,9 @@ const NPC_DIALOGUE_STAGED_SHA256: &str =
 const NPC_DIALOGUES: usize = 715;
 const NPC_DIALOGUE_NODES: usize = 6377;
 const NPC_BINDINGS: usize = 2352;
-const CREATURE_COUNT: usize = 1479;
-const CREATURE_RECORDS: usize = 20693;
-const CREATURE_PROFILES: usize = 19745;
+const CREATURE_COUNT: usize = 1503;
+const CREATURE_RECORDS: usize = 21069;
+const CREATURE_PROFILES: usize = 20097;
 /// Encounter admission E1-E5: encounters admitted with the creatures they cover.
 const ENCOUNTER_COUNT: usize = 61;
 

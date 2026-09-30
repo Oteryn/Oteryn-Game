@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "785b0cd0e00281ff21be200b4ee362696207681ec4bffae3845585fad13c66b1",
+        "12777de87f93af45b4320e9eef0dcf1861a4d01641c394152c8a3ab63d2ecc04",
     ),
     (
         "definitions/declarations.json",
-        14_978_644,
-        "f2e1f3f4b576afc7236572f4bed971739aea02e7f9ee99a97d99c1ad05ade31e",
+        15_148_655,
+        "de1cdcc83139f6d450e3cb5582afdbc441454e9f03053e449721d3df3ceebde1",
     ),
     (
         "definitions/reference.json",
-        21_340_928,
-        "aa725ca7a221827c3b82b4669a3a1ff4b0a9dc6e4cba329715e38857730baa1a",
+        21_467_699,
+        "c6157d162ccd59f32442421f3d95eb3451b62968a6ebfde450a6c5f75e4fb028",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1937,
-        "453ef73b5bc47172e26bea5cd753a336200e9c0e26f5414e38bcc59dafc64c6c",
+        "6eaa953d9b1e3c610db53c4159ac89f80ae21dccba51680f07f451f2776f6a0c",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "cc020f99e9297788aece801e25fda46013677ee750a61f2523a353de8d809ea6",
+        "0de9a9b7889880cf305fb5ebf7b0ab85785f3ebaaaa9aa4ed9961000534cc36b",
     ),
     (
         "provenance/imports.json",
         32_476,
-        "9cfea686489e26573ff653b60c4f3fecbcc0bbb3115921de3470e740a85e47f3",
+        "0ea4aac8a7b0309abdeafcbe50c11038e58c53b1f4f50330bb46a25c5a86ff95",
     ),
     (
         "provenance/sources.json",
-        1_302_374,
-        "ed7f771557094fa003f14ff7ba2ead030395466c255458fc7ff5be9420d2be1e",
+        1_311_236,
+        "cd42efbf61510743ceeb5c7206f2909ea22a2ee7be176aff593807627fcbc98b",
     ),
     (
         "worlds/world.json",
@@ -93,15 +93,15 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "075970804d89f2eba988dba0b86c2595a32cf60c19e0050fc447a3b73704daa0";
+const TREE_SHA256: &str = "379eb64a9a95cd298ab1a55e7d4bab4105da4bc28875e76519615d958bbc9f6f";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys.
 const ITEMS: usize = 33_567;
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
-const CREATURES: usize = 1479;
-const CREATURE_RECORDS: usize = 20693;
-const CREATURE_PROFILES: usize = 19745;
+const CREATURES: usize = 1503;
+const CREATURE_RECORDS: usize = 21069;
+const CREATURE_PROFILES: usize = 20097;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1102;
 const NPC_RECORDS: usize = 2204;
@@ -690,11 +690,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             if binding.source_key == "oteryn:source.crystalserver" {
                 assert_eq!(binding.source_revision, v2.sources[2].revision);
                 assert_eq!(binding.identity_namespace, "crystalserver/monster-file");
-                assert!(
-                    binding
-                        .external_id
-                        .starts_with("data-global/monster/summer_update_2026/")
-                );
+                assert!(binding.external_id.starts_with("data-global/monster/"));
                 assert!(binding.target.key.starts_with("oteryn:creature."));
                 assert!(creature_files.insert(&binding.external_id));
                 crystal_creatures += 1;
@@ -756,7 +752,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(creature_files.len(), CREATURES - 1);
     assert_eq!(npc_bindings, NPC_BINDINGS);
     assert_eq!(encounter_bindings, ENCOUNTERS);
-    assert_eq!(crystal_creatures, 13);
+    assert_eq!(crystal_creatures, 37);
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
     assert!(outfit_ids.iter().all(|id| id.as_str() != "68724"));
