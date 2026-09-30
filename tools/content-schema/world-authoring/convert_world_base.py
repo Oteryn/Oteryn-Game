@@ -57,7 +57,7 @@ from convert_world_metadata import ConvertError, canonical
 ROOT = metadata.ROOT
 HERE = metadata.HERE
 SUMMARY = HERE / "samples/world-base-capture-v1.json"
-ITEM_BINDINGS = metadata.ITEM_BINDINGS
+ITEM_BINDINGS = ROOT / "imports/crystalserver/bindings/items.json"
 OTBM = "data-global/world/world.otbm"
 ITEMS_XML = "data/items/items.xml"
 DIRECTORY = "content/world/placements"

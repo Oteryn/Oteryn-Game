@@ -15,6 +15,7 @@ on:
       - content/world/areas/cities/**
       - content/world/areas/regions/**
       - imports/crystalserver/bindings/items.json
+      - content/items/definitions/**
       - imports/tibiawiki/hunting-places/**
       - imports/tibiawiki/islands/**
       - content/npcs/definitions/**

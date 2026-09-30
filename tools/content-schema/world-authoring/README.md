@@ -167,11 +167,13 @@ map or the wiki changes.
 
 Teleport keys are position-based.
 
-- **Teleport:** holds a from/to position and an `object` reference that is the A12 4.6 family
-  key of the item id: the WO-2 `WorldObject` key `oteryn:world-object.tibia.i<id>` or `Terrain`
-  key `oteryn:terrain.tibia.i<id>` when the catalogue has the id (826 and 42 of 872), else the
-  `Item` key from `imports/crystalserver/bindings/items.json` (4), else the run fails
-  closed. The validator requires the family and key to exist. Only teleports whose destination is set,
+- **Teleport:** holds a from/to position and an `object` reference that is the canonical A12
+  key of the item id (architect ruling #162 comment 5910173902, Q1b): the `Item` key
+  `oteryn:item.tibia.i<id>` when the id has an Item record in `content/items/definitions`, even if
+  it routes to Terrain or WorldObject (the runtime follows the A12 4.6 `routed_to` pointer);
+  else the WO-2 `WorldObject` or `Terrain` catalogue key; else the run fails closed (872 of 872
+  are `Item`). The validator requires an Item key to have an Item record and allows a catalogue
+  key only when the id has none. Only teleports whose destination is set,
   inside the map and on an existing tile are imported. The capture summary counts those
   rejected:
   - 1573 with an unset destination, which are script-driven;

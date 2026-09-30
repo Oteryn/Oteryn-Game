@@ -2,8 +2,9 @@
 """Convert pinned CrystalServer world metadata into Oteryn content families.
 
 Writes teleport Transitions (content/world/transitions/) plus the committed capture
-summary; each teleport `object` is the A12 4.6 family key of its item id (WorldObject or
-Terrain from the WO-2 catalogue, else Item). The source is OTS_HYPOTHESIS_ONLY migration
+summary; each teleport `object` is the canonical A12 key of its item id: the Item key when
+the id has an Item record (the runtime follows the 4.6 routed_to pointer), else the WO-2
+WorldObject or Terrain catalogue key, else the run fails closed. The source is OTS_HYPOTHESIS_ONLY migration
 evidence: only normalized facts are written, never map bytes. Cities and Regions are owned
 by area-authoring; Terrain, objects and placements are out of scope.
 
@@ -24,7 +25,8 @@ import otbm_reader
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
 SUMMARY = HERE / "samples/source-capture-v1.json"
-ITEM_BINDINGS = ROOT / "imports/crystalserver/bindings/items.json"
+ITEM_DEFINITIONS = "content/items/definitions"
+ITEM_KEY = re.compile(r"^oteryn:item\.tibia\.i([1-9][0-9]*)$")
 
 SOURCE = {
     "evidence": "OtsHypothesisOnly",
@@ -154,13 +156,16 @@ def in_map(facts, x: int, y: int, z: int) -> bool:
     return 0 <= x < facts.width and 0 <= y < facts.height and 0 <= z <= MAX_FLOOR
 
 
-def item_keys() -> dict[int, str]:
-    rows = json.loads(ITEM_BINDINGS.read_text(encoding="utf-8"))["bindings"]
-    return {
-        int(row["external_id"]): row["target"]["key"]
-        for row in rows
-        if row["identity_namespace"] == "ots/item_server_id"
-    }
+def item_keys(root: Path = ROOT) -> dict[int, str]:
+    """Item id -> key for every Item record in content/items/definitions."""
+    found: dict[int, str] = {}
+    for shard in sorted((root / ITEM_DEFINITIONS).glob("items-*.json")):
+        for record in json.loads(shard.read_text(encoding="utf-8"))["records"]:
+            key = record["definition"]["identity"]["key"]
+            match = ITEM_KEY.match(key)
+            if match:
+                found[int(match.group(1))] = key
+    return found
 
 
 def teleport_candidates(facts) -> tuple[list[dict], dict]:
@@ -187,18 +192,16 @@ def catalogue_keys(root: Path = ROOT) -> dict[str, str]:
 
 
 def object_reference(item_id: int, catalogue: dict[str, str], items: dict[int, str]):
-    """A12 4.6: the family key of the id -- WorldObject, else Terrain, else Item."""
+    """Canonical A12 key: the Item record first, else the WO-2 catalogue, else fail."""
+    if item_id in items:
+        return ref("Item", items[item_id])
     for family, key in (
         ("WorldObject", f"oteryn:world-object.tibia.i{item_id}"),
         ("Terrain", f"oteryn:terrain.tibia.i{item_id}"),
     ):
         if catalogue.get(key) == family:
             return ref(family, key)
-    if item_id in items:
-        return ref("Item", items[item_id])
-    raise ConvertError(
-        f"teleport item {item_id} has no WorldObject, Terrain or Item key"
-    )
+    raise ConvertError(f"teleport item {item_id} has no Item record or catalogue key")
 
 
 def teleports(
@@ -306,7 +309,7 @@ def build(blobs: dict[str, bytes], root: Path = ROOT) -> dict[str, bytes]:
     candidates, rejected = teleport_candidates(facts)
     present = otbm_reader.read(otbm, probe={tp["to"] for tp in candidates}).present
     tp_records, object_families = teleports(
-        candidates, present, item_keys(), rejected, catalogue_keys(root)
+        candidates, present, item_keys(root), rejected, catalogue_keys(root)
     )
     out = {}
     out.update(shard_files("Transition.Teleport", tp_records))
