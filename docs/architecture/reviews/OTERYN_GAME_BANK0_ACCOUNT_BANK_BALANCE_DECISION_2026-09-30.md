@@ -128,6 +128,12 @@ operation; a deferred guard per house operation sums its ledger deltas, bid escr
 to 0; escrow returns may exceed `BANK0-RL-01` up to 9,000,000,000,000,000. Price and rent are
 burns of house shapes; the bank shapes of §5 still have none.
 
+**Amendment (pending on acceptance of GUILD-0; `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §5).** The ledger gains the kinds `GUILD_DEPOSIT`
+and `GUILD_WITHDRAW` (a pair with the guild ledger, two `TRANSFER` value lines) and the guild
+disband payout credit; an entry references exactly one of a bank, fee, Market, house or guild
+operation. A guildhall bid or rent may draw on the leader's balance with the house kinds. A junior
+character never moves gold to or from a guild.
+
 ## 4. Operations (BANK-1)
 
 ### 4.1 Common rules

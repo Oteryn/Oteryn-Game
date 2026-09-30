@@ -85,7 +85,8 @@ How does a character get, keep and lose an ordinary physical house?
   and `shop` of the active catalogue, created `VACANT`. Columns: state (`VACANT`, `AUCTION`,
   `OWNED`, `MOVE_OUT_PENDING`, `DISPOSITION`, `RETIRED`), owner CharacterId and AccountId, `paid_until`,
   `grace_until`, `move_out_at`, `revision`, `acl_revision`, `content_fence_operation`. Guildhalls
-  get no row.
+  get no row. Amendment (pending on acceptance of GUILD-0; `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §6): guildhalls get rows with `owner_kind` `GUILD` and an owner
+  guild, outside the slot.
 - **Tiles.** `game_house_tiles`: (World, house key, position), materialized from the active bundle
   and refreshed with it. A guard refuses a Ground location row on any house tile in any channel
   (the HOUSE-CUSTODY-0 §3.5 gate, §8).
@@ -265,7 +266,8 @@ items, containers' contents included; the placement path (HOUSE-RUNTIME-0) refus
   (EXP-HOUSES-01 §16.2). Each edit carries the expected `acl_revision`; a stale revision is
   `STALE_REVISION` and writes nothing.
 - Entries name characters of the same World only; at most `HOUSEOWN0-RL-12` (200) per list. Guild
-  and wildcard patterns wait for guilds.
+  and wildcard patterns wait for guilds. Amendment (pending on acceptance of GUILD-0; `OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §10): a list entry may also be a guild
+  entry `{guild, min_level}` or an exclusion of one character; name wildcards stay deferred.
 - No spell edits the list (EXP-HOUSES-01 §17). Entry, door and kick checks belong to the house
   interior runtime, which reads the list at its revision.
 
