@@ -4,19 +4,19 @@
 task_id: OTV2-20260930-charm-5-reg
 title: CHARM-5-REG register the Bestiary and Charm wire (capability 1, commands 4-5, domains 4-5)
 mode: CONTRACT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/charm-5-reg
-pr: null
+pr: 1384
 base_sha: 7be06776d617e7dd18cc88296466ec0228084bbf
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: control-plane task worker (hard), lane charm, #162 owner answer Q2a 5913704837
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-09-30T00:00:00Z
+updated_at: 2026-09-30T12:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
@@ -58,11 +58,11 @@ NOT_APPLICABLE: no production mutation, fence, persistence or recovery path; reg
 
 ## Acceptance criteria
 
-- [ ] Registries and proto name the IDs once, under these names, with the codec bounds (`registries_bind_the_charm_wire_ids_and_limits`).
-- [ ] `effect_active` field 6 encodes, decodes and fails closed on values other than 0/1.
-- [ ] Server derives `effect_active` from `CharmMissingSystem` (`CharmDefinition::effect_active`, matrix test: 9 active).
-- [ ] Client row shows "Effect not yet active".
-- [ ] Capability 1 recognised by the foundation codec but not offered (server selects none).
+- [x] Registries and proto name the IDs once, under these names, with the codec bounds (`registries_bind_the_charm_wire_ids_and_limits`).
+- [x] `effect_active` field 6 encodes, decodes and fails closed on values other than 0/1.
+- [x] Server derives `effect_active` from `CharmMissingSystem` (`CharmDefinition::effect_active`, matrix test: 9 active).
+- [x] Client row shows "Effect not yet active".
+- [x] Capability 1 recognised by the foundation codec but not offered (server selects none).
 
 ## Excluded scope
 
@@ -71,28 +71,52 @@ CHARM-5-COMP (routing in `gameplay_transport/connection.rs`, `CharmProgressionPo
 
 ## Validation
 
-- pending
+### Focused
+
+- command/run: `cargo fmt --all --check`; `cargo clippy --locked -p oteryn-protocol-oteryn -p oteryn-session -p oteryn-client -p oteryn-game-server --all-targets -- -D warnings`
+- result: PASS
+
+### Component/integration
+
+- command/run: `cargo test --locked -p oteryn-protocol-oteryn -p oteryn-session -p oteryn-client -p oteryn-game-server`; `python3 tools/agents/validate_governance.py`; `python3 tools/repository/validate_repository_policy.py`; `git diff --check`
+- result: PASS (all test suites ok, 0 failed)
+
+### E2E
+
+- scenario: NOT_APPLICABLE: nothing is composed or offered until CHARM-5-COMP and CHARM-6
+
+### Exact-head CI
+
+- final head: the frozen head in the FREEZE_SHA comment on #162
+- result: pending on that head
 
 ## Self-review
 
-- pending
+- method/reviewer: implementing agent, whole-diff review
+- material findings: none open. Capability 1 is recognised by the foundation codec (`REGISTERED_CAPABILITY_IDS_V1`) but every server path selects `[]`, so it is not offered (D170).
+- verdict: ready for protocol review
 
 ## Independent review
 
-- required: YES (protocol review; triggered by the control plane only)
+- required: YES (protocol review of the registry, the proto and the 554-byte bound; triggered by the control plane only)
+- exact head: the FREEZE_SHA head
+- verdict: pending
 
 ## PR and closeout
 
-- pending
+- PR: #1384
+- merge commit/result: squash merge of #1384 (resolve with `git log --grep "(#1384)"`)
+- auto-merge: not enabled by the worker
+- ownership release: on merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: authoring
-status: implementing
+last_progress: final authoring commit, archived for freeze
+status: completed
 branch: claude/charm-5-reg
 head_sha: null
-pr: null
+pr: 1384
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -110,5 +134,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: validate and open the PR
+next_action: control plane triggers protocol review on the frozen head
 ```
