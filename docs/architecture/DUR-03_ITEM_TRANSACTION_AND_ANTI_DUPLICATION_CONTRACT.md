@@ -1265,9 +1265,11 @@ physical implementation. Unknown or unsupported native input remains closed.
 
 **Map items and world reset (ADR-0021).** `ADR-0021-world-map-runtime-loading.md` §4.4 and §4.7
 (owner answer 4a, 2026-09-30) admit the two named shapes below. For these shapes only, it
-supersedes two sentences:
+supersedes three sentences:
 - the §39.3 sentence that a MINT source descends from a committed `CreatureDeathOccurrenceRef`;
-- the D3 sentence that `CorpseDecay` is the only path that removes a corpse's Ground row.
+- the D3 sentence that `CorpseDecay` is the only path that removes a corpse's Ground row;
+- the D3 sentences that `CorpseDecay` is the only `DECAY_RETIRE` cause and every other retire
+  cause stays excluded (`WorldReset` is admitted; burn stays excluded).
 
 Every other §39 obligation (fences, evidence, idempotency, current authority, conservation) is
 unchanged.
