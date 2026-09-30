@@ -274,9 +274,12 @@ Hit colours and effects (Canary `game.cpp:8072-8186`, as content in §3):
   `rtt_ms` in each snapshot and delta beside `server_now_ms`. No new message or probe is added;
   before the first ack of the connection generation `rtt_ms` is 0 and
   the message is marked `rtt_estimated = false`. When that first ack arrives, the server sends one
-  corrective delta that repeats every running entry (same `expires_at_ms`) with the measured
-  `rtt_ms` and `rtt_estimated = true`, so a snapshot sent before the first ack is corrected within
-  one round trip and a restored cooldown never lingers for the whole delivery delay.
+  corrective delta that repeats every entry the server sent in a pre-ack message since the
+  baseline snapshot, including entries that have since expired (same `expires_at_ms`; the server
+  keeps that list only until the first ack, bounded by `SPELLPRES0-RL-04`), with the measured
+  `rtt_ms` and `rtt_estimated = true`. The client recomputes each entry under the corrected offset
+  and drops one whose `remaining` is 0, so a cooldown that expired before the first ack is also
+  corrected and a restored cooldown never lingers for the whole delivery delay.
 - **Client countdown.** On each snapshot or delta the client takes the RTT-adjusted sample
   `offset = server_now_ms - (local_receipt_ms - rtt_ms / 2)` from its own monotonic clock,
   crediting half the round trip as delivery delay. A snapshot (a new runtime clock) resets the
