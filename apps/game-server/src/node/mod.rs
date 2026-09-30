@@ -5,6 +5,7 @@
 pub mod config;
 pub mod descriptor_facts;
 pub mod operator_files;
+mod runtime_status;
 pub mod secure_file;
 pub mod serve;
 

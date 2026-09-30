@@ -374,11 +374,11 @@ def build_packet(sources):
 
 
 SELF_CHECK_MAGIC_SWORD_ID = 3288
-SELF_CHECK_MAGIC_SWORD_KEY = "oteryn:item.registry.i00003167"
+SELF_CHECK_MAGIC_SWORD_KEY = "oteryn:item.tibia.i3288"
 SELF_CHECK_CONTAINER_ID = 116
-SELF_CHECK_CONTAINER_KEY = "oteryn:item.registry.i00000037"
+SELF_CHECK_CONTAINER_KEY = "oteryn:item.tibia.i116"
 SELF_CHECK_CHARGES_ID = 814
-SELF_CHECK_CHARGES_KEY = "oteryn:item.registry.i00000726"
+SELF_CHECK_CHARGES_KEY = "oteryn:item.tibia.i814"
 
 
 def self_check(packet):

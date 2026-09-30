@@ -1,0 +1,62 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "family": "MapMarker",
+  "files": [
+    {
+      "path": "markers-00000-00149.json",
+      "records": 150,
+      "sha256": "be135d593c4c49fb167108db751998ed9b8c57d906a31b3293f05fbf64bd7b00"
+    },
+    {
+      "path": "markers-00150-00299.json",
+      "records": 150,
+      "sha256": "3445331c5bdfa4752e662f9e257108aa0aeaaa28306abb91233b7b845aa63f6c"
+    },
+    {
+      "path": "markers-00300-00449.json",
+      "records": 150,
+      "sha256": "bc30d4e982f8268460bcb74bd87f6d5d865f9081f632fbeca9a4e756af9086e1"
+    },
+    {
+      "path": "markers-00450-00599.json",
+      "records": 150,
+      "sha256": "af2b665dcf1daf4ede288386021686403aa7514d1f1891f9695f6f65c8b9c49b"
+    },
+    {
+      "path": "markers-00600-00749.json",
+      "records": 150,
+      "sha256": "31a9e997b8ad97657a9ce03a2927f4ee654dcc72e5b52f7a043ce2dc12fd89e2"
+    },
+    {
+      "path": "markers-00750-00899.json",
+      "records": 150,
+      "sha256": "8ef25eec91d570e33c2b16c00fed3c43d47c358ccfe5ae3c5f695feb0e672638"
+    },
+    {
+      "path": "markers-00900-01049.json",
+      "records": 150,
+      "sha256": "3c9f93b033d81f0cd73daeaa215c5afe12915023eb41bb170e12213e801c90ee"
+    },
+    {
+      "path": "markers-01050-01199.json",
+      "records": 150,
+      "sha256": "7ce0128352423e982d2ea81af3b4ad6abce43feedb5b8ff1a95f1c3badb09275"
+    },
+    {
+      "path": "markers-01200-01269.json",
+      "records": 70,
+      "sha256": "e1bf4016cb602552757592d4153b2d87e1b1c40a2f757c348659aa88ad14048d"
+    }
+  ],
+  "identity_namespace": "cipsoft/map_marker",
+  "inputs": {
+    "map": {
+      "file": "content/assets/files/map-c54dfeb8f3880e9534f1330fa547f06d99c5afa55f641b875ceee23cc04e3496.dat",
+      "sha256": "c54dfeb8f3880e9534f1330fa547f06d99c5afa55f641b875ceee23cc04e3496"
+    }
+  },
+  "record_count": 1270,
+  "schema": "OTERYN_CIPSOFT_MAPMARKER_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_ASSETS"
+}

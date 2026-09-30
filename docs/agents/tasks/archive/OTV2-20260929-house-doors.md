@@ -11,7 +11,7 @@ branch: claude/houses-3-doors
 issue: 162
 lane_id: content population (house authoring schema)
 pr: null   # recorded in the FREEZE_SHA packet
-base_sha: 8a48763e   # head of claude/tender-mendel-06tjg2 (Oteryn/Oteryn-Game#1285)
+base_sha: c3263e85   # main after Oteryn/Oteryn-Game#1285 (squash of 8a48763e)
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null

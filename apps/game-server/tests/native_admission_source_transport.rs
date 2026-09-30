@@ -384,7 +384,8 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                         (2, "ReadRecoveryAccountSecurityV2")
                     }
                     Operation::ReadRecoverySigningTrustV2 => (2, "ReadRecoverySigningTrustV2"),
-                    Operation::ReadCharacterBootstrapIntentV1 => {
+                    Operation::ReadCharacterBootstrapIntentV1
+                    | Operation::ReportRuntimeStatusV1 => {
                         return Err(io::Error::new(io::ErrorKind::InvalidData, "operation"));
                     }
                 };
@@ -429,7 +430,9 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     key_id: "key-1",
                     key_purpose: "existing_actor_recovery",
                 },
-                Operation::ReadCharacterBootstrapIntentV1 => return Err("operation".into()),
+                Operation::ReadCharacterBootstrapIntentV1 | Operation::ReportRuntimeStatusV1 => {
+                    return Err("operation".into());
+                }
             };
 
             let capacity = TransientCapacity::new();

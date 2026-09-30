@@ -57,8 +57,8 @@ const WAVE: &str = "oteryn:ability.creature.dragon.attack-2";
 const MELEE_EFFECT: &str = "oteryn:effect.creature.dragon.attack-1";
 const MELEE_FORMULA: &str = "oteryn:formula.creature.dragon.attack-1-1";
 const SPEED_FORMULA: &str = "oteryn:formula.creature.dragon.attack-2-1";
-const CORPSE: &str = "oteryn:item.registry.i00005973";
-const GOLD: &str = "oteryn:item.registry.i00003031";
+const CORPSE: &str = "oteryn:item.tibia.i6136";
+const GOLD: &str = "oteryn:item.tibia.i3147";
 
 fn item(key: &str) -> ProjectReferenceRecord {
     ProjectReferenceRecord::Item {

@@ -15,7 +15,7 @@
         },
         "key": {
           "type": "string",
-          "pattern": "^oteryn:terrain\\.registry\\.i[0-9]{8}$"
+          "pattern": "^oteryn:terrain\\.tibia\\.i[1-9][0-9]*$"
         },
         "revision": {
           "$ref": "#/$defs/revision"
@@ -328,7 +328,7 @@
             },
             "key": {
               "type": "string",
-              "pattern": "^oteryn:item\\.registry\\.i[0-9]{8}$"
+              "pattern": "^oteryn:item\\.tibia\\.i[1-9][0-9]*$"
             },
             "revision": {
               "$ref": "#/$defs/revision"

@@ -59,7 +59,7 @@ fn content_typed(definition: &TypedDefinitionRef) -> TestResult<ContentTypedDefi
 /// A `CanonicalReferencePlayableContent` with the same two admissible Item definitions as the
 /// D114 content record and the D82 case they exercise: `COIN` (stackable, proven maximum 30) and
 /// `BACKPACK` (container capacity 20, a complete `container`-slot equip pattern, mirroring
-/// `oteryn:item.registry.i00002752`). `ABSENT` is deliberately never a key of any definition.
+/// `oteryn:item.tibia.i2854`). `ABSENT` is deliberately never a key of any definition.
 fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
     let package_key = ProductionKey::new("oteryn:content.pickup-pg")?;
     let package_revision = ProductionAtom::new("pickup PG package revision", "pg-r1")?;
