@@ -473,8 +473,15 @@ pub(crate) struct CharmAttackerFacts {
 /// What dealt a committed hit on the creature.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum CharmHitSource {
-    /// The character's own attack (weapon, spell, rune): charms evaluate.
+    /// The character's own attack on its main target, or a spell or rune on any creature it hits:
+    /// charms evaluate.
     CharacterAttack,
+    /// The character's auto-attack on a creature other than its main target (area ammunition such
+    /// as Diamond Arrows): no charm evaluates. Tibia 15.25 (Vocation Adjustments 2026) made
+    /// auto-attacks trigger charms only on their main target; spells and runes are unchanged, and
+    /// Low Blow still applies to the whole area because it runs at `AttackDamageCalculation`
+    /// (owner answer 16a, CHARM-0 §8).
+    CharacterAutoAttackOffTarget,
     /// Charm damage (a proc, Carnage, Parry). Charms cannot chain: no charm evaluates, so a kill
     /// by Carnage never triggers another Carnage.
     CharmDamage,

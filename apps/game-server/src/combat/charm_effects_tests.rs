@@ -1213,3 +1213,57 @@ fn charm_effect_charm_damage_never_chains_into_another_charm() {
         );
     }
 }
+
+#[test]
+fn charm_effect_auto_attack_off_its_main_target_triggers_no_charm() {
+    let catalogue = forced_catalogue();
+    for charm in ["oteryn:charm.wound", "oteryn:charm.carnage"] {
+        let state = State::with(RACE, &[(charm, 3)]);
+        for event in [LETHAL, NON_LETHAL] {
+            let CharmHookEvent::CommittedHit {
+                attacker,
+                creature_max_health,
+                health_before,
+                health_after,
+                ..
+            } = event
+            else {
+                unreachable!("committed hits")
+            };
+            let off_target = CharmHookEvent::committed_hit(
+                &OwnerDamageResult {
+                    applied: true,
+                    health_before,
+                    health_after,
+                },
+                CharmHitSource::CharacterAutoAttackOffTarget,
+                attacker,
+                creature_max_health,
+            );
+            assert_eq!(evaluate(&catalogue, &state, off_target, 1), Ok(Vec::new()));
+        }
+        // Positive: the same hit on the main target (or by a spell or rune) does run it.
+        let event = if charm == "oteryn:charm.carnage" {
+            LETHAL
+        } else {
+            NON_LETHAL
+        };
+        assert!(
+            !evaluate(&catalogue, &state, event, 1)
+                .expect("evaluates")
+                .is_empty()
+        );
+    }
+    // Low Blow applies before the damage of every hit, so area ammunition keeps it on every
+    // creature it hits.
+    let state = State::with(RACE, &[("oteryn:charm.low_blow", 3)]);
+    let low_blow = evaluate(
+        &catalogue,
+        &state,
+        CharmHookEvent::AttackDamageCalculation,
+        1,
+    )
+    .expect("evaluates");
+    assert_eq!(low_blow.len(), 1);
+    assert_eq!(low_blow[0].charm_key, "oteryn:charm.low_blow");
+}

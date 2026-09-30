@@ -18,7 +18,7 @@ final_head_frozen_at: null
 owner: "CHARM-4 hard worker (claude-code-session-012nzPTz29NThWJG45F2m5fP)"
 control_plane: null   # owner-authorized in session 2026-09-29; lead receives the review packet
 created_at: 2026-09-29
-updated_at: 2026-09-29
+updated_at: 2026-09-30
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/combat/charm_effects.rs
@@ -114,8 +114,16 @@ Wrath, Overpower and Overflux. They apply through the existing owner damage comm
 - A zero-damage creature hit is not an `IncomingCreatureHit` event (`InvalidEventFacts`).
 - The assignments bound is one major plus one minor per race at the same time (coordinator
   catalogue update, answering CHARM-0 §4.2).
-- Carnage's resistances stay an open point in #1293: the wiki says physical, Canary deals neutral.
-  The engine follows the catalogue flag (`ignores_resistances: false`).
+- Carnage stays physical with resistances, as on the wiki (owner answer 13a, 2026-09-30). The engine
+  follows the catalogue flag (`ignores_resistances: false`); the owner verifies it in the live game.
+- A proc is committed as its own owner damage commit, after the attack's damage and only when that
+  attack reduced the creature's health (owner answer 12b, 2026-09-30; Canary `game.cpp:8762` and
+  Crystal `game.cpp:8338` do the same).
+- An auto-attack hit on a creature other than its main target (area ammunition) is
+  `CharacterAutoAttackOffTarget` and triggers no charm; spells and runes still trigger on every
+  creature they hit, and Low Blow still covers the whole area (owner answer 16a, 2026-09-30:
+  TibiaWiki `Updates/15.25.3a4a52` and `Cyclopedia`; Crystal applies the rule to spells as well, Canary
+  not at all).
 
 ## Validation (local)
 
