@@ -49,7 +49,8 @@ build now, full Tibia Global parity).
 - **Bosstiary:** kill receipts on the Bestiary pattern, derived levels and boss points, two boss
   slots, a daily Boosted Archfoe per reset.
 - **Architect rulings** R1a, R2a, R3b (raid channels, open-world hopping, rewards after a crash);
-  **owner question** R4 (the slot swap fee, D178) is open.
+  **owner answer** R4a (2026-09-30, #162): the slot swap fee is a gold sink as in Tibia, the first
+  change after a server save free.
 
 No code, migration or content change is made.
 
@@ -86,6 +87,8 @@ persistence review; BOSS-REWARD-1 economy and security review; BOSS-WIRE-1 proto
 - Codex round-2 repair: 200-entry contribution accumulator before top-50 selection (§7,
   `BOSSRAID0-RL-10b`); session-fenced reward continuation in the credited character's own admitted
   session (§8.1, §12, composition amendment).
+- Owner answer applied (2026-09-30, #162): R4a, the slot swap fee as a D178 gold sink, coins then
+  bank, first change per reset epoch free (§10.3, brief, §14, §16). Validators re-run PASS.
 
 ## Closeout
 
@@ -97,7 +100,7 @@ persistence review; BOSS-REWARD-1 economy and security review; BOSS-WIRE-1 proto
 last_progress: draft authored; not committed
 status: completed
 branch: claude/arch-boss-raid-0
-owner_action_required: "answer R4 (§17)"
+owner_action_required: null
 blocker: null
 next_action: "architect review, freeze and publish"
 ```

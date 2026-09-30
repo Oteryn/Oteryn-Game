@@ -3,7 +3,8 @@
 - Decision: `BOSSRAID0-BOSSES-RAIDS-BOSSTIARY-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
   economy, security, concurrency and protocol) and protected integration. R1-R3 (§17) are
-  architect rulings; owner question R4 (§17) is open and blocks only the slot swap fee.
+  architect rulings; owner question R4 (§17) is answered (2026-09-30, #162): the slot swap fee is
+  a gold sink as in Tibia, the first change after a server save free (§10.3).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction (2026-09-30): build bosses, raids and the Bosstiary now, full
   Tibia Global parity. It is the "boss and raid default policies" the scope matrix leaves open,
@@ -18,8 +19,8 @@
   window); QUEST-STATE-0 §5.2 (CHAR-REV-SEQ-1); the composition decision rules 1-6; ADR-0021
   (`WorldReset`, reset epoch); HOUSE-OWN-0 §9 (World jobs); HOUSE-RUNTIME-0 (branch
   `claude/arch-house-runtime-0`, SCOPE-HANDOFF-1); PARTY-PVP-0 (branch `claude/arch-party-pvp-0`,
-  party loot right); MARKET-0 and DEPOT-0; the gold fee decision (D178); owner rule 5905825574
-  (Global parity)
+  party loot right); MARKET-0 and DEPOT-0; the gold fee decision (D178) and BANK-FEE-0 (the bank
+  part); owner rule 5905825574 (Global parity)
 - Amends, each pending on acceptance of BOSS-RAID-0, in this PR: the scope matrix (boss and raid
   rows); the VSL combat resource rows decision (D77 boss loot, row 10); the encounter authoring
   format §10 (D27 consumer); the composition decision (rule 1 covers boss eligibility rows);
@@ -36,7 +37,7 @@
 | BOSS-1 | hard, persistence review | durable boss spawn clocks for open-world bosses (§5); the boss cooldown and eligibility tables (§6.3, §9) | this decision |
 | BOSS-ROOM-1 | hard, security and durability review | lever admission into one activity instance per group; cooldown commit and compensation; instance lifetime, exit and recovery (§6) | BOSS-1; SCOPE-HANDOFF-1; the encounter runtime (§6.5) |
 | BOSS-REWARD-1 | hard, persistence, economy and security review | contribution tracking for reward bosses; the per-participant reward draw; the `CharacterRewardChest` location, claim and expiry; its DUR-03 amendment (§7-§9) | BOSS-1; D3-3; PARTY-XP-1 |
-| BOSSTIARY-1 | hard, persistence review | Bosstiary kill receipts and progress; boss slots; the Boosted Boss draw (§10, §11) | CHAR-REV-SEQ-1; BOSS-REWARD-1 (the credited set) |
+| BOSSTIARY-1 | hard, persistence review | Bosstiary kill receipts and progress; boss slots and the slot swap fee; the Boosted Boss draw (§10, §11) | CHAR-REV-SEQ-1; BOSS-REWARD-1 (the credited set); GOLD-FEE-1b; GOLD-FEE-2 for the fee's bank part |
 | BOSS-WIRE-1 | impl, protocol review | capability `BOSS_V1`: raid announcement, Bosstiary, boss slots, boss cooldowns, reward chest (§13) | BOSSTIARY-1; BOSS-REWARD-1; RAID-1 |
 
 Order: BOSS-1 and RAID-CONTENT-1 first; RAID-1 can run raids of ordinary creatures before any
@@ -375,13 +376,20 @@ definition's `*_points`).
   the change transaction.
 - Equip needs Prowess on that boss. Commands: equip and clear. The first change by a character in
   a reset epoch, on any slot, is free (`BOSSRAID0-RL-17`); every later one in that epoch costs the
-  swap fee (R4), as the one free swap per server save (§2, §16).
+  swap fee (owner R4a), as the one free swap per server save (§2, §16).
+- **Swap fee** (owner R4a, D178). A gold sink as in Tibia, by the formula BOSSTIARY-1 captures
+  before it freezes (§2). It is taken as the gold fee decision takes fees, coins first and then
+  the bank (BANK-FEE-0), under a new `FeeBurnCause` variant for the slot change keyed by its
+  command occurrence, with the Character receipt of the change as the one receipt (gold fee §4.3,
+  as `CharmUnassign`). BOSSTIARY-1 writes the variant's amendments of DUR-03 §39.3 and the gold
+  fee decision §4.4. Too little gold refuses the change as `INSUFFICIENT_FUNDS`; nothing is
+  written and the free-change counter does not move.
 - Effect: in the character's own reward draw of a boss equipped at the death commit (the §8.1
   snapshot), the bonus chance of one extra
   loot set, capped-drop items excluded; the curve by boss points up to 182% is captured before
   freeze (`PARITY_PENDING`).
-- Each change advances `CharacterRevision` on the sequencer; the fee, if any, burns in the same
-  transaction, as the charm writer does (`item_fee_burn.rs`).
+- Each change advances `CharacterRevision` on the sequencer; the fee, if any, burns (and debits
+  the bank part) in the same transaction, as the charm writer does (`item_fee_burn.rs`).
 
 ## 11. Boosted Boss (BOSSTIARY-1)
 
@@ -449,6 +457,7 @@ definition's `*_points`).
 | Lever admission | 0 items, 0 value lines, 15 cooldown rows, 1 event |
 | Reward step | 100 items, 0 value lines, 1 event |
 | Bosstiary receipt | 0 items, 1 receipt, 1 event |
+| Boss slot change | 1 receipt, 1 revision; with the swap fee, the gold fee shape rows (BANK-FEE-0 §4.3 for the bank part) |
 
 ## 15. Rejected options
 
@@ -468,7 +477,8 @@ definition's `*_points`).
 
 Kept as in Tibia: random and fixed raids with announcements; long boss respawns; levers with
 per-character cooldowns; personal contribution rewards in a reward chest with expiry; Bosstiary
-tiers, thresholds and points; boss slots with one free swap per server save; a daily Boosted
+tiers, thresholds and points; boss slots with one free swap per server save and a gold fee for
+later swaps (R4a); a daily Boosted
 Archfoe for all worlds with 3x kills, bonus loot and a cooldown reset. Declared differences: a
 boss room is an instance per group (D26), not one shared arena; raid copies on several channels
 (R1) and the anti-hopping eligibility (§9); bounded contributors, raid creatures and reward chest
@@ -503,6 +513,8 @@ upgrade path DUR-03 A4 §4.4 keeps open).
 needs an owner decision for each new fee source. a) Yes, from the formula BOSSTIARY-1 captures,
 taken as the gold fee decision takes fees (recommended, Global parity); b) no fee: only the free
 change per reset epoch.
+Owner answer (2026-09-30, #162): a — yes, as in Tibia; the first change after a server save is
+free (§10.3).
 
 ## 18. Decision test
 
@@ -511,7 +523,7 @@ change per reset epoch.
 - **Minimum sufficient:** one World job and three raid tables; one clock per boss spawn; boss rooms
   on the accepted instance model and SCOPE-HANDOFF-1; one reward location; Bosstiary on the
   Bestiary pattern; derived points.
-- **Superseding evidence:** owner answer R4; captured contribution, expiry and slot formulas;
+- **Superseding evidence:** captured contribution, expiry, slot and swap fee formulas;
   ENCOUNTER-RT-0; measured raid sizes above `BOSSRAID0-RL-03`.
 - **Deliberately not decided:** the encounter runtime; World Changes; the Tibiadrome; the Party
   Finder; the Boosted Creature; Hazard; spectators.
