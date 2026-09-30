@@ -53,7 +53,8 @@ Docs and contract only: no code, no `.proto`, no registry change.
 - The query carries one `page` field, not an empty payload: 571 records with descriptions exceed the 64 KiB
   command-result bound of FND-02 §19, so the reply is paged at 64 rows. Alternative: drop `description` from the
   reply. Recommendation: keep paging.
-- Rows are the earned facts plus non-secret unearned records (shown as not earned); this follows decision 1.
+- Rows are exactly the account's earned facts (owner answer 2b, 2026-09-30); no unearned record is sent. Paging
+  confirmed by the owner (answer 1a).
 - Order: grade ascending, then name, then key.
 
 ## Validation (local)

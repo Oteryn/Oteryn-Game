@@ -31,6 +31,8 @@ Recorded as owner direction, as given in session:
 3. Delivery is fetch on request. The client asks when the player opens the achievements panel. Nothing is pushed
    on login, and there is no periodic refresh.
 4. The panel shows all facts the account has earned, and all of them count toward the points.
+5. The panel lists earned achievements only; not-earned records are not sent (owner answer 2b, 2026-09-30).
+6. The reply is paged (owner answer 1a, 2026-09-30).
 
 ### 2.1 D49 display amendment (decision 4)
 
@@ -101,15 +103,12 @@ empty. The account is never in the payload.
 | `description` | string | catalogue text, at most 256 UTF-8 bytes |
 | `grade` | uint32 | 1-4 |
 | `points` | uint32 | the catalogue points of the key; 0 when retired |
-| `earned_at` | optional int64 | the earning time of the grant request behind the fact; absent when not earned |
+| `earned_at` | int64 | the earning time of the grant request behind the fact |
 | `secret` | bool | catalogue `secret` flag |
 
-Presence of `earned_at` is semantic and is validated after decode, not inferred from a zero value (FND-02 §7).
-
-Which rows exist: every earned fact of the account, plus every catalogue record with `secret` false and no fact
-(shown as not earned, with `points` as the value it would give). A secret record with no fact is never sent, so a
-client cannot learn a secret's name or description before it is earned (decision 1). The server applies the
-rule; the client never filters.
+Which rows exist: exactly the earned facts of the account, one row per fact (decision 5). A record with no fact,
+secret or not, is never sent, so a client cannot learn a secret's name or description before it is earned
+(decision 1). The server applies the rule; the client never filters.
 
 ### 3.3 Bounds and cap policy
 
@@ -119,7 +118,7 @@ rule; the client never filters.
 - Today the catalogue has 571 records. At the text limits above a row is at most about 500 bytes, so one reply
   of all rows (up to about 285 KiB) does not fit the 64 KiB result bound, and per-row limits small enough to fit
   it (about 110 bytes) cannot hold the descriptions. The reply is therefore paged: a fixed server-side page size
-  of 64 rows (at most about 32 KiB), 9 pages for the current catalogue, `has_more` telling the client to ask for
+  of 64 rows (at most about 32 KiB), at most 9 pages for the current catalogue (an account earning every record), `has_more` telling the client to ask for
   `page + 1`.
 - The cap is a rule, not a silent truncation: the server never drops rows to fit; a page holds
   `min(64, remaining)` rows. A catalogue text longer than the per-field limits is a catalogue error caught by
@@ -140,8 +139,7 @@ have the client read it from a content pack; that needs a client content contrac
 ### 3.4 Order
 
 Rows are sorted by `grade` ascending (1 to 4), then `name` by Unicode code point order, then `key` as tie-break,
-so paging is deterministic. Earned and not-earned rows share this one order; the client may filter or regroup
-what it has fetched. A retired earned fact appears in its grade position.
+so paging is deterministic. The client may regroup what it has fetched. A retired earned fact appears in its grade position.
 
 ## 4. Server read path
 
@@ -174,8 +172,8 @@ grant or a fence bypass. The transport and command rules of FND-02 §12-§13 sti
 ## 5. What the client shows
 
 - One list in the order of §3.4 with, per row: name, description, grade, points, and the earning date when
-  earned; not-earned rows are visibly not earned.
-- Secret achievements only once earned (decision 1); the server enforces it.
+  earned.
+- Earned achievements only (decisions 1 and 5); the server enforces it.
 - One number, the total points (decision 2); no grade breakdown.
 - The panel fetches when it opens and shows what it fetched until it is reopened; no push, no timer (decision 3).
 
@@ -193,7 +191,7 @@ grant or a fence bypass. The transport and command rules of FND-02 §12-§13 sti
 2. The implementation PR: the `.proto` file (`docs/contracts/protocol-oteryn/v1/`), the registry `command_types`
    entry with its bounds and `owner_decision`, the golden and independent raw-byte fixtures, the malformed and
    oversize corpus and the round-trip property tests required by FND-02 §22, the runtime catalogue loader, the
-   server handler and its PostgreSQL tests (own account only, secret-unearned never returned, retired fact shown
+   server handler and its PostgreSQL tests (own account only, no unearned record returned, retired fact shown
    with 0 points, a fact under a key absent from a per-world subset shown and counted, paging bounds).
 3. The client panel.
 
