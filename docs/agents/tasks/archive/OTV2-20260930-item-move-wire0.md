@@ -27,7 +27,7 @@ public_contracts:
   - docs/contracts/OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md
 depends_on: []
 blocks: []
-cross_repository_coordination_id: null
+cross_repository_coordination_id: "Oteryn/Oteryn-Platform#1419 (the Platform consumer implements the LCFA 409 clarification)"
 external_repositories: []
 ```
 
@@ -91,6 +91,12 @@ No code, migration or content change is made.
   branch sequencing; VIS-2 and combat loot MINT dependencies).
 - Control-plane rule (#162 5912405163): the ADR-0021 and LCFA edits read "pending on acceptance
   of ITEM-MOVE-WIRE-0".
+- Independent review of `1afa4946` (5911190413): FIX, 2 medium and 4 low findings, all answered in
+  one push: replay by CommandRef before handle resolution with the intent bound to the
+  ItemInstanceId and the remaining writer refusals mapped; the handle table is reissued on every
+  reconnect snapshot; the domain 10 release noted as narrower than D212; the D133-window
+  disclosure declared; handle fields only for capability 4; the ADR-0021 and LCFA edits named in the
+  PR review scope, with the Platform coordination recorded.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

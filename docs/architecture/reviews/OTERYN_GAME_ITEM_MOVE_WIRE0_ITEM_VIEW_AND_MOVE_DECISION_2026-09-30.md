@@ -86,13 +86,16 @@ backpack?
 | state domain | 9 | `CHARACTER_INVENTORY` | the main backpack slot and its direct entries in display order: handle, item definition, count, sub-type |
 | state domain | 11 | `OPEN_CONTAINER` | the one open corpse: its handle and its entries (handle, item definition, count, sub-type) |
 
-State domain 10 (`GROUND_ITEMS` in D212) is released; ground items stay in domain 1 (D85). The
-next free numbers are command type 10, state domain 10 and capability 5.
+State domain 10 (`GROUND_ITEMS` in D212) is released; ground items stay in domain 1 (D85). This is
+narrower than D212 as recorded (which also said it closes MAP-WIRE-1); the control plane notes it on
+#162, and domain 10 was reassigned to ATTACK-0 (5911720221).
 
 ### 4.1 Item handles
 
 - Every item the client sees carries a handle, a `uint64` assigned by the server: items in domains
   9 and 11, and corpses and ground items in domain 1 as one added wire field of the D85 item entry.
+  The handle field is sent only to sessions that negotiated capability 4; other sessions receive
+  the D85 entry unchanged.
   D85's channel-wide `EntityIdentity` stays the internal identity for the interest index and for
   D87's canonical order; the handle does not replace it.
 - Handles are monotonic per `GameSessionId` and never reused, so a command reserved before a
@@ -103,7 +106,10 @@ next free numbers are command type 10, state domain 10 and capability 5.
   handles per session are limited by `ITEMV0-RL-03`.
 - **Continuity.** The handle counter and the high-water revisions of domains 9 and 11 are part of
   the session's resume state next to the spatial and overlay revisions (`resume.rs`), and move with
-  it on reconnect and channel transfer.
+  it on reconnect and channel transfer. The handle table itself does not survive: every reconnect
+  and transfer snapshot reissues fresh handles for the items then in view, from the carried counter,
+  and every older handle resolves to `STALE`. A command reserved before the reconnect is answered by
+  its replay (§5), not by its handle.
 - A handle never exposes an ItemInstanceId, a placement key or a database row. Map-authored base
   items get their handle with MAP-WIRE-1, which keeps ADR-0021's rules (`placement_key` as the wire
   placement identity, `content_generation` matched to the active bundle).
@@ -126,6 +132,11 @@ next free numbers are command type 10, state domain 10 and capability 5.
   nothing. It is not a GAME-INTERACTION transition and has no occurrence of its own.
 - Reach: Chebyshev distance at most 1, same floor. Anyone in reach may open a corpse; D133 and
   D134 are enforced when an item is taken (§5), on the database clock.
+- **Deliberate disclosure.** During the D133 exclusivity window a non-owner in reach can see a
+  corpse's contents but cannot take them. Tibia refuses to open it; Oteryn does not gate opening,
+  because a gate on the runtime clock would disagree with the writer's database clock. This is a
+  declared difference (`PARITY_PENDING`); a later decision may gate opening on a database-backed
+  view.
 - USE dispositions: `COMMITTED` (opened), `TOO_FAR`, `STALE_STATE` (handle gone),
   `NOTHING_TO_USE` (not a corpse). No new disposition.
 - **Closing.** At most one container is open. The server closes it when the character leaves
@@ -158,6 +169,10 @@ in domain 1 stay under D87's 256-entity ceiling.
 - **Whole item only.** The whole stack moves.
 - **Value.** One admitted DUR-03 TRANSFER (`0014` shape) through the existing writer, with the
   command's CommandRef as its cause. No new DUR-03 shape.
+- **Replay first.** Before resolving the handle, the runtime looks up the CommandRef's committed
+  outcome; a committed command returns its original result (`MOVED`), even after a reconnect in
+  which its handle became `STALE` (FND-02 §13.3). The frozen intent binds the resolved
+  ItemInstanceId and destination, never the handle, so a retry cannot hit another item.
 - **Results** (at most 4 bytes), mapping every writer refusal (`ItemTransferRefusal`):
 
 | Result | When |
@@ -170,7 +185,7 @@ in domain 1 stay under D87's 256-entity ceiling.
 | `NOT_OWNER` | `CorpseExclusiveWindow` (D133) |
 | `NOT_PICKUPABLE` | `CorpseNotPickupable` (D134), or an item that cannot be picked up |
 | `NOT_SUPPORTED` | a source or destination outside §3; `ContainerNotEmpty` |
-| `REJECTED` | `DefinitionMismatch`, `UnknownStackClass`, `UnsupportedStackMaximum`, `QuantityAboveStackMaximum`, `UnsupportedContainerCapacity`, and any authority or availability failure |
+| `REJECTED` | `DefinitionMismatch`, `UnknownStackClass`, `UnsupportedStackMaximum`, `QuantityAboveStackMaximum`, `UnsupportedContainerCapacity`, `ConflictingCause` and `ConflictingCandidate` (a CommandRef reused with another intent), `InvalidInput`, `CapacityExceeded` (a resource ceiling), and any authority or availability failure |
 
 `NotContainerSlotEquippable` and `ContainerSlotOccupied` cannot occur, because the runtime picks
 the container slot only when both conditions hold.
