@@ -20,6 +20,9 @@ pub enum DefinitionFamily {
     Effect,
     Formula,
     Behavior,
+    /// Reward chest decisions D39-D42: a `once` claim shared by the chest placements listed
+    /// under it (architect ruling on #162 5905746509).
+    RewardClaim,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -793,6 +796,39 @@ pub struct ReferenceLootDefinition {
     pub entries: Vec<ReferenceLootEntry>,
 }
 
+/// One reward item of a RewardClaim placement: an Item definition and its count.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RewardClaimItem {
+    pub item: TypedDefinitionRef,
+    pub count: u32,
+}
+
+/// One chest placement that shares the claim, with its own reward: claims with several chests
+/// may offer a different reward per chest, and taking any of them consumes the claim.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RewardClaimPlacement {
+    pub placement: PlacementKey,
+    /// Exactly one top-level item in the first slice (CHEST-1, reward chest §5.1).
+    pub items: Vec<RewardClaimItem>,
+}
+
+/// A `once` RewardClaim (D39-D42): its identity is the definition's key and revision, and it
+/// lists every chest placement that shares it. Server-only; cooldowns, container rewards,
+/// keys and random choices are later children.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReferenceRewardClaimDefinition {
+    pub placements: Vec<RewardClaimPlacement>,
+}
+
+impl ReferenceRewardClaimDefinition {
+    /// The reward entry of `placement`, if this claim lists it.
+    pub fn placement(&self, placement: &PlacementKey) -> Option<&RewardClaimPlacement> {
+        self.placements
+            .iter()
+            .find(|entry| &entry.placement == placement)
+    }
+}
+
 /// D38 W1a: whether a `LocalObject` state occupies its placement's collision footprint. This is
 /// a distinct vocabulary from `CollisionClass` (static-cell walkability with engineering
 /// provenance, see `content/model.rs`): it describes the overlay state itself, not a map cell.
@@ -942,6 +978,7 @@ pub enum ReferenceDefinitionKind {
     Creature(ReferenceCreatureDefinition),
     Loot(ReferenceLootDefinition),
     LocalObjectStates(Vec<LocalObjectStateDefinition>),
+    RewardClaim(ReferenceRewardClaimDefinition),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1538,7 +1575,8 @@ impl CanonicalReferencePlayableContent {
                     }
                     ReferenceDefinitionKind::Ability(_)
                     | ReferenceDefinitionKind::Formula(_)
-                    | ReferenceDefinitionKind::Loot(_) => return None,
+                    | ReferenceDefinitionKind::Loot(_)
+                    | ReferenceDefinitionKind::RewardClaim(_) => return None,
                     ReferenceDefinitionKind::LocalObjectStates(states) => {
                         ClientSafeDefinitionKind::LocalObjectStates(states.clone())
                     }
@@ -1956,8 +1994,50 @@ fn canonicalize_definition(definition: &mut ReferenceDefinition) {
                 .then_with(|| left.max_count.cmp(&right.max_count))
                 .then_with(|| left.probability_ppm.cmp(&right.probability_ppm))
         }),
+        ReferenceDefinitionKind::RewardClaim(claim) => claim
+            .placements
+            .sort_by(|left, right| left.placement.cmp(&right.placement)),
         _ => {}
     }
+}
+
+/// Shape of a first-slice RewardClaim: server-only, at least one placement, no placement listed
+/// twice, and each placement rewards exactly one item with a positive count. The item references
+/// are resolved by `validate_definition_references`; facts such as stack maximum are enforced by
+/// the MINT admission.
+fn validate_reward_claim_definition(
+    definition: &ReferenceDefinition,
+    claim: &ReferenceRewardClaimDefinition,
+) -> Result<(), ContentError> {
+    if definition.client_projection != ClientProjectionClass::ServerOnly {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim must remain server-only",
+        ));
+    }
+    if claim.placements.is_empty() {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim requires at least one placement",
+        ));
+    }
+    let mut placements = BTreeSet::new();
+    for entry in &claim.placements {
+        if !placements.insert(&entry.placement) {
+            return Err(ContentError::DuplicateKey(
+                entry.placement.as_str().to_owned(),
+            ));
+        }
+        if entry.items.len() != 1 {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable reward claim placement requires exactly one reward item",
+            ));
+        }
+        if entry.items.iter().any(|item| item.count == 0) {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable reward claim item requires a positive count",
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn validate_loot_definition(
@@ -2052,6 +2132,9 @@ fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), Con
         (DefinitionFamily::Loot, ReferenceDefinitionKind::Loot(loot)) => {
             validate_loot_definition(definition, loot)
         }
+        (DefinitionFamily::RewardClaim, ReferenceDefinitionKind::RewardClaim(claim)) => {
+            validate_reward_claim_definition(definition, claim)
+        }
         (DefinitionFamily::LocalObject, ReferenceDefinitionKind::LocalObjectStates(states)) => {
             if states.is_empty() {
                 return Err(ContentError::InvalidArtifact(
@@ -2118,13 +2201,17 @@ fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), Con
         (DefinitionFamily::LocalObject, _) => Err(ContentError::InvalidArtifact(
             "reference-playable local object requires finite state vocabulary",
         )),
+        (DefinitionFamily::RewardClaim, _) => Err(ContentError::InvalidArtifact(
+            "reference-playable reward claim requires typed claim placements",
+        )),
         (_, ReferenceDefinitionKind::Ability(_))
         | (_, ReferenceDefinitionKind::Effect(_))
         | (_, ReferenceDefinitionKind::Formula(_))
         | (_, ReferenceDefinitionKind::Item(_))
         | (_, ReferenceDefinitionKind::Creature(_))
         | (_, ReferenceDefinitionKind::Loot(_))
-        | (_, ReferenceDefinitionKind::LocalObjectStates(_)) => Err(ContentError::InvalidArtifact(
+        | (_, ReferenceDefinitionKind::LocalObjectStates(_))
+        | (_, ReferenceDefinitionKind::RewardClaim(_)) => Err(ContentError::InvalidArtifact(
             "reference-playable definition kind does not match definition family",
         )),
         (DefinitionFamily::Creature, ReferenceDefinitionKind::Generic) => {
@@ -2238,6 +2325,17 @@ fn validate_definition_references(
                     &entry.item,
                     DefinitionFamily::Item,
                     "reference-playable loot entry must target Item",
+                )?;
+            }
+            Ok(())
+        }
+        ReferenceDefinitionKind::RewardClaim(claim) => {
+            for item in claim.placements.iter().flat_map(|entry| &entry.items) {
+                resolve_expected_definition(
+                    definitions,
+                    &item.item,
+                    DefinitionFamily::Item,
+                    "reference-playable reward claim item must target Item",
                 )?;
             }
             Ok(())
@@ -2386,6 +2484,11 @@ fn validate_placement(
     authority: &ReferenceEvidenceAuthority,
 ) -> Result<(), ContentError> {
     let definition = resolve_definition(&source.definitions, &placement.definition)?;
+    if definition.definition.family == DefinitionFamily::RewardClaim {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable placement cannot place a reward claim",
+        ));
+    }
     validate_local_object_placement_state(placement, definition)?;
     validate_local_object_placement_attributes(
         placement,
@@ -2522,6 +2625,24 @@ pub fn link_reference_playable(
     }
     for definition in &source.definitions {
         validate_definition_references(&source.definitions, definition)?;
+    }
+    // D40: a chest placement belongs to at most one RewardClaim.
+    let mut claimed_placements = BTreeSet::new();
+    for claim in source
+        .definitions
+        .iter()
+        .filter_map(|definition| match &definition.kind {
+            ReferenceDefinitionKind::RewardClaim(claim) => Some(claim),
+            _ => None,
+        })
+    {
+        for entry in &claim.placements {
+            if !claimed_placements.insert(entry.placement.clone()) {
+                return Err(ContentError::DuplicateKey(
+                    entry.placement.as_str().to_owned(),
+                ));
+            }
+        }
     }
 
     for placement in &mut source.placements {
