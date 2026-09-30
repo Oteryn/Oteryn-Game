@@ -126,6 +126,28 @@ Ground {
 
 Future world-shared spatial state or downstream custody such as house/trade/market/depot/mail/reward custody is introduced only as a separately typed/versioned family with named owner and explicit WorldId/scope semantics.
 
+**Amendment (HOUSE-CUSTODY-0, 2026-09-30).** The first such family is admitted:
+
+```text
+HouseInterior {
+  house_id: HouseId {world_id, house_key}   (revision-free)
+  spatial_position: native WorldTilePosition (a tile of exactly this house in the active bundle)
+  stack_ordinal: typed ordinal, unique per (world, house, position)
+}
+```
+
+- It is World-scoped, with no `ChannelId`. Its owner is the Game housing domain (EXP-HOUSES-01).
+- Only items without contents may enter it until a later decision admits containers.
+- Every placement writes `HousingReclaimProvenance` in the same transaction, at most one live
+  provenance per item.
+- One deferred item-level guard across every location table keeps a live item in exactly one
+  location.
+- Its writers are fenced by one live generation per `HouseId`, delivered with the house interior
+  runtime. Player writers stay closed until the house has an owner and an ACL storage grant, and
+  until then the runtime role has no grant on the house tables.
+
+See `reviews/OTERYN_GAME_HOUSE_CUSTODY0_HOUSE_ITEM_CUSTODY_DECISION_2026-09-30.md`.
+
 ### 5.3 `TypedDomainCustody` is not one generic variant
 
 `TypedDomainCustody` is an architecture registry concept. Each accepted custody family defines its own stable semantic type/key, owner, scope, legal reference shape, lifecycle/compatibility and authorization boundary.
@@ -691,9 +713,11 @@ aggregate payload for each distinct logical transaction:
 - `DECAY_RETIRE` (D3 amendment, §39.3 below): one already-existing live
   ItemInstance moves from its live location (typed `Ground`, for a corpse
   ItemInstance, or a `Container` entry, for a loot ItemInstance) to `RETIRED`
-  with no location, under a named, non-caller `CorpseDecay` cause. This is not
-  `burn`: it exists only for the single corpse/loot-decay cause the D3
-  amendment names, admits no caller-chosen retire cause or reason code, and
+  with no location, under a named, non-caller `CorpseDecay` cause. The
+  ADR-0021 amendment in §39.3 admits a second named cause, `WorldReset`, for
+  Ground roots and their container entries. This is not
+  `burn`: it exists only for the named causes these amendments give, admits no
+  caller-chosen retire cause or reason code, and
   every other retire path (a TRANSFER full-merge source retiring per §11.4/
   §11.5, DUR-03's ordinary stack-to-zero retirement) is unamended by it.
 
@@ -702,7 +726,7 @@ transactions, with separate TransactionIds, event candidates and atomic
 boundaries. Aggregation does not
 combine their sequence into one commit. This child does not support mint into an
 existing stack, multiple touched items, quantity redistribution, burn (outside
-the one named `DECAY_RETIRE` cause above), transform,
+the named `DECAY_RETIRE` causes above), transform,
 non-item accounts, nested containers or additional custody families. (The B3
 amendment in §39.3 admits the two-item merge and top-up shapes and direct entries of
 the equipped main backpack; the D3 amendment in §39.3 admits `DECAY_RETIRE`; the gold fee
@@ -1136,7 +1160,8 @@ conservation) is unchanged.
   admitted only when zero live `Container` entries remain parented to it (checked the same way the
   entry-count preflight above is), so a corpse can never retire while orphaning a still-live entry.
   Every step commits under VSL-COMBAT-01 §17's "accepted DUR-03/domain policy" clause (§9.1/§17
-  above). This is the only path by which a corpse's Ground row is ever removed, and `CorpseNotPickupable`
+  above). This is the only path by which a corpse's Ground row is ever removed (the ADR-0021
+  amendment below adds the `WorldReset` path), and `CorpseNotPickupable`
   above applies throughout — a corpse mid-drain is exactly as unpickupable as a fresh one.
   **Resumable from durable state, not from an in-memory decay-progress marker:** the scope
   (re)admission recovery query above finds any corpse still live on Ground past its
@@ -1280,6 +1305,82 @@ This section does not decide quantity, probability, stack maximum, inventory
 capacity, loot or XP formulas, HP/damage, XP values, protocol/event IDs, registry
 ceilings, SQL/runtime permission, production retention configuration, or
 physical implementation. Unknown or unsupported native input remains closed.
+
+**Map items and world reset (ADR-0021).** `ADR-0021-world-map-runtime-loading.md` §4.4 and §4.7
+(owner answer 4a, 2026-09-30) admit the two named shapes below. For these shapes only, it
+supersedes three sentences:
+- the §39.3 sentence that a MINT source descends from a committed `CreatureDeathOccurrenceRef`;
+- the D3 sentence that `CorpseDecay` is the only path that removes a corpse's Ground row;
+- the D3 sentences that `CorpseDecay` is the only `DECAY_RETIRE` cause and every other retire
+  cause stays excluded (`WorldReset` is admitted; burn stays excluded).
+
+Every other §39 obligation (fences, evidence, idempotency, current authority, conservation) is
+unchanged.
+
+- **Map-item materialization.**
+  - **Eligibility.** Only a top-level map-authored entry qualifies, and only if its definition
+    is pickupable, it is not on a house tile, and it carries no `action`, `unique`, `door`,
+    `depot` or `teleport` binding, no contents, and no `text`, `description`, `charges` or other
+    attribute that the ItemInstance state cannot represent. Every other map-authored item is
+    never pickupable.
+  - **Provenance.** The pickup is the player's command (`CommandRef`), under the channel's live
+    scope-ownership fence.
+  - **Cause.** `MapItemMaterialization {world_id, channel_id, base_bundle_digest, placement_key,
+    reset_epoch}`. `placement_key` is the compiler-emitted key of the origin entry; it is
+    carried even after the overlay moved the item. The whole origin entry materializes, with the
+    quantity of its stack.
+  - **Shape.** A MINT into typed Ground at the item's current tile, under the §39.1
+    MINT-to-Ground shape, then the existing Ground-to-`CharacterInventory` TRANSFER as a separate
+    transaction. If the TRANSFER does not commit, the item stays an ordinary Ground item.
+  - **Idempotency.**
+    - One cause commits at most one MINT.
+    - A retry after the commit returns that item. The returned item passes the normal Ground,
+      reach and TRANSFER checks before any TRANSFER.
+    - A reservation left by an ended ownership generation is abandoned. The same cause may be
+      frozen again only while no receipt exists.
+  - **Overlay.** The runtime hides the origin when the MINT is frozen and unhides it only on
+    proven non-commit. After a crash, the Ground rebuild hides every origin that has a receipt
+    for `(world_id, channel_id, base_bundle_digest, reset_epoch)`.
+- **World-reset retirement.** A durable World reset record holds `{world_id, reset_epoch N,
+  target bundle digest, state RETIRING | ACTIVATED}`. A reset runs in this order:
+  1. Write the record as RETIRING and close admission for every channel of the World.
+  2. For each channel scope of the World, the existing assignment writer assigns a fresh
+     ownership generation to the resetting node, with admission still closed. This ends the old
+     generation, so in-flight fenced commits fail `fence_is_live`. The retirements run under that
+     ordinary live fence. No new fence kind or scope level is introduced.
+  3. Retire every live Ground root of the World and its container entries, entries first and
+     then the root, in the D3 order. Each is a one-item `DECAY_RETIRE` with the cause
+     `WorldReset {world_id, reset_epoch, item_instance_id}`. `WorldReset` and `CorpseDecay`
+     share one per-item retirement uniqueness (one retirement per item, ever). A later
+     `CorpseDecay` step for an already retired item is refused as not live.
+  4. When no live Ground item of the World remains, activation writes the new bundle digest,
+     epoch N+1 and state ACTIVATED atomically, bound to the content activation record.
+
+  If the process crashes while the record is RETIRING, boot refuses admission and resumes from
+  step 2, which is idempotent, then step 3. The old bundle never boots over a half-retired
+  Ground.
+
+  Only Ground roots and their entries are retired. `HouseInterior` items (HOUSE-CUSTODY-0) are
+  never touched. Ground items on the tiles of a house without an owner are retired like any other
+  Ground item. Every live `HouseInterior` row's `(house_key, position)` must be a tile of the same
+  house in the target bundle. That check runs as a preflight before step 1, where a failure
+  aborts the reset without a record, and again inside the step-4 transaction under a lock that
+  blocks `HouseInterior` inserts, where a failure keeps the record RETIRING until an
+  EXP-HOUSES-01 §14.7 evacuation.
+- **Registration.** MAP-OVERLAY-1 registers:
+  - the proto and registry fields of both shapes;
+  - the reset record;
+  - the epoch storage;
+  - the widening of both `0015` tables, `game_item_decay_retire_reservations` and
+    `game_item_decay_retire_receipts`, with a cause discriminator (`CorpseDecay` or
+    `WorldReset`), so both causes share their per-item primary key:
+    - `corpse_item_instance_id` and `deadline` (with `deadline >= 60000`) are required only for
+      `CorpseDecay`;
+    - the `{world_id, reset_epoch}` binding is required only for `WorldReset`;
+    - a discriminator CHECK on each table enforces both rules;
+  - the matching extension of the Ground-removal proof triggers.
+
+  This amendment grants no runtime or DDL authority.
 
 ## 40. Durable acknowledgement
 
