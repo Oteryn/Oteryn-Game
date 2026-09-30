@@ -114,6 +114,19 @@ pub struct PlatformConfig {
     pub client_key_file: PathBuf,
     pub descriptor_revision: u64,
     pub installed_at: i64,
+    /// `oteryn-game-native-runtime-status-v1` §3. Absent: reporting is off
+    /// (§15 rollback).
+    pub runtime_status: Option<RuntimeStatusConfig>,
+}
+
+/// The node host's own runtime-status identity (never the evidence one).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RuntimeStatusConfig {
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+    /// Declared ownership-authority epoch until its Game storage exists (U-RS5).
+    pub assignment_epoch: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -320,6 +333,28 @@ impl NodeConfig {
                 return reject(key);
             }
         }
+        if let Some(status) = &platform.runtime_status {
+            for (key, path) in [
+                (
+                    "platform.runtime_status.client_certificate_file",
+                    &status.client_certificate_file,
+                ),
+                (
+                    "platform.runtime_status.client_key_file",
+                    &status.client_key_file,
+                ),
+            ] {
+                if !absolute(path)
+                    || path == &platform.client_certificate_file
+                    || path == &platform.client_key_file
+                {
+                    return reject(key);
+                }
+            }
+            if status.assignment_epoch == 0 {
+                return reject("platform.runtime_status.assignment_epoch");
+            }
+        }
         if platform.descriptor_revision == 0 {
             return reject("platform.descriptor_revision");
         }
@@ -429,6 +464,50 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
             PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY
         );
         assert_eq!(config.platform.descriptor_revision, 1);
+        assert!(config.platform.runtime_status.is_none());
+        let status = NODE.replace("\n[launch]", STATUS);
+        let config = NodeConfig::parse(status.as_bytes()).expect("runtime status");
+        assert_eq!(
+            config.platform.runtime_status.map(|s| s.assignment_epoch),
+            Some(1)
+        );
+    }
+
+    const STATUS: &str = r#"
+[platform.runtime_status]
+client_certificate_file = "/etc/oteryn/node/runtime-status.crt"
+client_key_file = "/etc/oteryn/node/runtime-status.key"
+assignment_epoch = 1
+
+[launch]"#;
+
+    #[test]
+    fn runtime_status_identity_is_separate_and_epoch_positive() {
+        let status = NODE.replace("\n[launch]", STATUS);
+        for (from, to, key) in [
+            (
+                "runtime-status.crt",
+                "platform-client.crt",
+                "platform.runtime_status.client_certificate_file",
+            ),
+            (
+                "runtime-status.key",
+                "platform-client.key",
+                "platform.runtime_status.client_key_file",
+            ),
+            (
+                "assignment_epoch = 1",
+                "assignment_epoch = 0",
+                "platform.runtime_status.assignment_epoch",
+            ),
+        ] {
+            let changed = status.replace(from, to);
+            let error = NodeConfig::parse(changed.as_bytes()).expect_err(key);
+            assert_eq!(error.key, key);
+        }
+        // No endpoint or route is configurable for the report.
+        let endpoint = status.replace("assignment_epoch = 1", "assignment_epoch = 1\nhost = \"x\"");
+        assert!(NodeConfig::parse(endpoint.as_bytes()).is_err());
     }
 
     #[test]

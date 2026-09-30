@@ -154,10 +154,7 @@ def test_full_pipeline():
 
     good = by_name["Great Health Potion"]
     assert good["product"]["kind"] == "item"
-    assert (
-        good["product"]["item"]["item_refs"][0]["key"]
-        == "oteryn:item.consumable.potion.great_health"
-    )
+    assert good["product"]["item"]["item_refs"][0]["key"] == "oteryn:item.tibia.i239"
     assert good["product"]["item"]["count"] == 100
     assert good["coin_type"] == "transferable", "Canary always defaults to transferable"
 

@@ -1,47 +1,40 @@
 #!/usr/bin/env python3
 """Generate explicit EXACT Crystal -> canonical Item identity bindings.
 
-The committed CW2-B1 native-item allocator
-(`apps/game-server/src/content/cw2_b1_import.rs`) already assigns every one of
-the 38,157 `content/items/definitions/*.json` Item keys from an ascending walk
-of the protected evidence catalogue
-(`docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json`,
-source `zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a`
-`data/items/items.xml`): the 64 `NATIVE_ITEM_BATCH` rows keep their existing
-semantic key, every other row gets `oteryn:item.registry.i%08d`. That mapping
-is currently only implicit in the allocator's own logic.
+Since ITEM-ID-1b (decision `A12-ITEM-IDENTITY-TIBIA-ID-V1`, D146-D149) the canonical key of a
+CipSoft item is its Tibia id, `oteryn:item.tibia.i<id>`. Crystal `items.xml` carries no
+`clientid`, so a Crystal server id is the appearance object id, and a bound row targets the
+Tibia key of its own id (A12 §4.2).
 
-A later protected identity promotion may rename one allocated key in place
-(e.g. R7 P04: Crystal `3031` `oteryn:item.registry.i00002921` ->
-`oteryn:item.currency.gold_coin`). Each promotion is declared in the same Rust
-source as a `<PREFIX>_SOURCE_ITEM_ID` / `<PREFIX>_OLD_KEY` / `<PREFIX>_KEY`
-constant triple; this script applies every such triple after allocation and
-fails closed unless the allocator assigned exactly `<PREFIX>_OLD_KEY` to that
-source id.
+Every binding row is first reproduced in the historical key space, from the protected inputs
+that minted the retired keys, and the historical epoch-1 bytes must still match their
+digest:
 
-Per `docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md`
-section 3, an external identifier must become an explicit, typed
-`(target, source, identity_namespace, external_id, disposition)` binding
-record rather than being left as an inference. This script makes the
-allocator's already-made assignments explicit: it re-derives the identical
-mapping independently (parsing `NATIVE_ITEM_BATCH` straight from the Rust
-source, never hand-copying it) and writes it as
-`imports/crystalserver/bindings/items.json`, in the same shape as the sibling
-`imports/tibiawiki/bindings/items.json`.
+- epoch 1: the CW2-B1 allocator (`apps/game-server/src/content/cw2_b1_import.rs`) walks the
+  protected catalogue
+  (`docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json`,
+  source `zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a`
+  `data/items/items.xml`): the 64 `NATIVE_ITEM_BATCH` rows keep their semantic key, every
+  other row gets `oteryn:item.registry.i%08d`, and each declared identity promotion
+  (`<PREFIX>_SOURCE_ITEM_ID` / `<PREFIX>_OLD_KEY` / `<PREFIX>_KEY`, e.g. R7 P04 gold coin)
+  renames one key in place;
+- epoch 2 (decision `A8-DONOR-ITEM-IDENTITY-EPOCH-V1`): the donor-only ids of the Crystal
+  `summer-update` census that pass the alias gate below as `NO_MATCH` get opaque keys from
+  sequence 38,094.
 
-Epoch 1 (the frozen allocator's 38,157 rows) mints no identity, resolves no
-ambiguity and performs no crosswalk matching: every row is already fully
-determined by the frozen allocator and the frozen evidence catalogue. It fails
-closed on any mismatch.
+Each historical row is then requalified through the append-only alias table
+(`content/items/aliases.json`), whose entry for the row's retired key carries that row's own
+§4.2 evidence (membership and identity-projection continuity):
 
-Epoch 2 (decision `A8-DONOR-ITEM-IDENTITY-EPOCH-V1`, owner decisions D96/D97, task
-B1b) is additive. The 412 donor-only ids of the Crystal `summer-update` census
-(`donor-census-crystal-summer-update-00ce02a5.json`) first pass the alias gate
-below; only `NO_MATCH` ids receive an opaque key, in ascending donor source id,
-continuing after the highest epoch-1 sequence (38,093), i.e. from 38,094. The
-epoch-1 bindings are never re-derived from the epoch-2 corpus: the epoch-1 output
-is regenerated exactly as before, pinned by digest, and the epoch-2 bindings are
-appended after it, so the epoch-1 bytes stay a strict prefix of the file.
+- `ALIAS` -> an `EXACT` binding to the alias target, which must be `tibia.i<external_id>`;
+- `RETIRED_WITHOUT_SUCCESSOR` (D149, no CipSoft appearance in any admitted file) -> no
+  binding; the id stays `UNKNOWN` and its crosswalk record is the alias-table entry.
+
+Per `docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md` section 3, an
+external identifier becomes an explicit, typed
+`(target, source, identity_namespace, external_id, disposition)` binding record, written as
+`imports/crystalserver/bindings/items.json`. Nothing here mints identity: every key is the
+rule applied to a proven id.
 
 The alias gate (`A8-ALIAS-GATE-V1`, `resolve_alias_gate`) is the G4 promotion
 discipline applied to a donor id against the existing Items: names only discover
@@ -74,11 +67,16 @@ EVIDENCE = (
 DEFINITIONS_GLOB = "content/items/definitions/items-*.json"
 TIBIAWIKI_BINDINGS = ROOT / "imports/tibiawiki/bindings/items.json"
 OUTPUT = ROOT / "imports/crystalserver/bindings/items.json"
+ALIAS_TABLE = ROOT / "content/items/aliases.json"
+TIBIA_KEY_PREFIX = "oteryn:item.tibia.i"
 
 ITEM_AUTHORING = ROOT / "tools/content-schema/item-authoring"
-DONOR_CENSUS = ITEM_AUTHORING / "samples/donor-census-crystal-summer-update-00ce02a5.json"
+DONOR_CENSUS = (
+    ITEM_AUTHORING / "samples/donor-census-crystal-summer-update-00ce02a5.json"
+)
 ALIAS_CROSSWALK = (
-    ROOT / "docs/agents/evidence/OTV2-20260928-item-donor-identity-b1b-alias-crosswalk.json"
+    ROOT
+    / "docs/agents/evidence/OTV2-20260928-item-donor-identity-b1b-alias-crosswalk.json"
 )
 
 SCHEMA = "OTERYN_SOURCE_IDENTITY_BINDINGS/v1"
@@ -104,11 +102,10 @@ EXPECTED_EPOCH1_OUTPUT_BYTES = 10_864_254
 EXPECTED_EPOCH1_OUTPUT_SHA256 = (
     "74ba56c5e624e5e3ebc3f4ebff5f4ccbb73cee5e2802d79a5b9e6b1d5884b810"
 )
-# Suffix of the canonical output that follows the `bindings` array; epoch-1 bytes
-# minus this suffix are the exact prefix of the epoch-2 output up to the array's end.
-OUTPUT_ARRAY_SUFFIX = (
-    f'],"family":"Item","schema":"{SCHEMA}"}}\n'.encode("utf-8")
-)
+# A12: 38,157 epoch-1 rows less the 4,590 D149 rows, plus the 404 epoch-2 rows.
+EXPECTED_BOUND_EPOCH1 = 33_567
+EXPECTED_BOUND = 33_971
+EXPECTED_D149_UNBOUND = 4_590
 
 # Epoch 2 (A8 decision). Every value below is cross-checked against the Rust pins.
 EPOCH2_DECISION = "A8-DONOR-ITEM-IDENTITY-EPOCH-V1"
@@ -128,7 +125,7 @@ EPOCH2_DONOR_APPEARANCES = "data/items/appearances.dat"
 # TibiaWiki EXACT binding that targets the same canonical Item -- at minimum
 # Magic Sword (i00003167 / Crystal 3288 / TibiaWiki page 5810).
 CROSS_CHECKS: tuple[tuple[int, str, str], ...] = (
-    (3288, "oteryn:item.registry.i00003167", "5810"),
+    (3288, "oteryn:item.tibia.i3288", "5810"),
 )
 
 
@@ -311,14 +308,14 @@ def load_tibiawiki_targets() -> dict[str, set[str]]:
 
 
 def verify_allocations(
-    allocations: list[tuple[int, str]],
+    bound_epoch1: list[tuple[int, str]],
     definition_keys: set[str],
     tibiawiki_targets: dict[str, set[str]],
 ) -> None:
-    if len(allocations) != EXPECTED_TOTAL:
+    if len(bound_epoch1) != EXPECTED_BOUND_EPOCH1:
         raise GeneratorError("ALLOCATION_COUNT_MISMATCH")
-    allocation_keys = {key for _, key in allocations}
-    if len(allocation_keys) != EXPECTED_TOTAL:
+    allocation_keys = {key for _, key in bound_epoch1}
+    if len(allocation_keys) != EXPECTED_BOUND_EPOCH1:
         raise GeneratorError("ALLOCATION_KEY_UNIQUENESS")
     missing = allocation_keys - definition_keys
     if missing:
@@ -329,7 +326,7 @@ def verify_allocations(
     if extra:
         raise GeneratorError(f"DEFINITION_KEY_WITHOUT_ALLOCATION:{sorted(extra)[:5]}")
 
-    by_source = dict(allocations)
+    by_source = dict(bound_epoch1)
     for source_id, expected_key, page_id in CROSS_CHECKS:
         actual_key = by_source.get(source_id)
         if actual_key != expected_key:
@@ -337,6 +334,46 @@ def verify_allocations(
         wiki_ids = tibiawiki_targets.get(expected_key)
         if not wiki_ids or page_id not in wiki_ids:
             raise GeneratorError(f"CROSS_CHECK_TIBIAWIKI_TARGET_MISSING:{expected_key}")
+
+
+def load_alias_entries() -> dict[str, dict[str, Any]]:
+    """The current (latest-version) alias-table entry of every retired Item key."""
+    current: dict[str, dict[str, Any]] = {}
+    for entry in json.loads(read_text(ALIAS_TABLE))["entries"]:
+        current[entry["key"]] = entry
+    return current
+
+
+def requalify(
+    rows: list[dict[str, Any]], aliases: dict[str, dict[str, Any]]
+) -> tuple[list[dict[str, Any]], int]:
+    """Historical rows -> Tibia-key bindings; D149 rows emit none (A12 §4.2, §4.5)."""
+    bound = []
+    unbound = 0
+    for row in rows:
+        entry = aliases.get(row["target"]["key"])
+        if entry is None:
+            raise GeneratorError(f"HISTORICAL_KEY_WITHOUT_ALIAS:{row['target']['key']}")
+        evidence = entry["evidence"]
+        if (
+            str(evidence["source_item_id"]) != row["external_id"]
+            or evidence["source_revision"] != row["source_revision"]
+        ):
+            raise GeneratorError(f"ALIAS_EVIDENCE_NOT_THIS_ROW:{row['target']['key']}")
+        if entry["state"] == "RETIRED_WITHOUT_SUCCESSOR":
+            unbound += 1
+            continue
+        target = f"{TIBIA_KEY_PREFIX}{int(row['external_id'])}"
+        if entry["state"] != "ALIAS" or entry["target"] != target:
+            raise GeneratorError(f"ALIAS_TARGET_NOT_OWN_ID:{row['target']['key']}")
+        bound.append(
+            {
+                **row,
+                "disposition": "EXACT",
+                "target": {**row["target"], "key": target},
+            }
+        )
+    return bound, unbound
 
 
 def build_bindings(
@@ -425,7 +462,9 @@ def compare_alias_signals(
     ):
         (matched if equal else contradicted).append(signal)
     if donor["visual"] is not None and base["visual"] is not None:
-        (matched if donor["visual"] == base["visual"] else contradicted).append("visual")
+        (matched if donor["visual"] == base["visual"] else contradicted).append(
+            "visual"
+        )
     return matched, contradicted
 
 
@@ -519,7 +558,9 @@ def census_ids(census: dict[str, Any]) -> list[int]:
 EPOCH1_HIGHEST_SEQUENCE = EXPECTED_OPAQUE
 
 
-def allocate_epoch2(rows: list[dict[str, Any]], namespace: str) -> list[tuple[int, str]]:
+def allocate_epoch2(
+    rows: list[dict[str, Any]], namespace: str
+) -> list[tuple[int, str]]:
     """`NO_MATCH` ids, ascending by donor source id, numbered after the earlier epochs."""
     previous: int | None = None
     minting: list[int] = []
@@ -773,7 +814,10 @@ def epoch2_allocations(
         raise GeneratorError("EPOCH2_MINTED_COUNT_MISMATCH")
     if allocation_digest(allocations) != pins["allocation_digest_sha256"]:
         raise GeneratorError("EPOCH2_ALLOCATION_DIGEST_MISMATCH")
-    if crosswalk["epoch_2"]["allocation_digest_sha256"] != pins["allocation_digest_sha256"]:
+    if (
+        crosswalk["epoch_2"]["allocation_digest_sha256"]
+        != pins["allocation_digest_sha256"]
+    ):
         raise GeneratorError("ALIAS_CROSSWALK_ALLOCATION_DIGEST_MISMATCH")
     return allocations
 
@@ -825,11 +869,6 @@ def generate() -> tuple[dict[str, Any], bytes]:
     allocations = epoch2_allocations(
         census, census_payload, crosswalk, pins, epoch1_allocations, namespace
     )
-    # Epoch-2 keys have no Item definition until the content tree is regenerated; a
-    # definition for one is allowed but never required, so only epoch-1 keys are held
-    # to the exact allocation/definition closure.
-    definition_keys = load_definition_keys() - {key for _, key in allocations}
-    verify_allocations(epoch1_allocations, definition_keys, load_tibiawiki_targets())
     epoch1 = build_bindings(epoch1_allocations, source_revision)
     if len(epoch1) != EXPECTED_TOTAL:
         raise GeneratorError("BINDING_COUNT_MISMATCH")
@@ -838,6 +877,7 @@ def generate() -> tuple[dict[str, Any], bytes]:
         != EXPECTED_TOTAL
     ):
         raise GeneratorError("BINDING_UNIQUENESS")
+    # History: the historical epoch-1 rows must still be the bytes #1279 retired.
     epoch1_bytes = canonical_bytes(
         {"schema": SCHEMA, "family": "Item", "bindings": epoch1}
     )
@@ -855,17 +895,27 @@ def generate() -> tuple[dict[str, Any], bytes]:
         row["target"]["key"] for row in epoch1
     }:
         raise GeneratorError("EPOCH2_KEY_COLLIDES_WITH_BOUND_KEY")
-    # `bindings`, `family`, `schema` are emitted in canonical sorted-key order, so epoch-2
-    # rows inserted at the end of the array leave the epoch-1 bytes as a strict prefix.
-    output = {"schema": SCHEMA, "family": "Item", "bindings": epoch1 + epoch2}
-    payload = (
-        epoch1_bytes[: -len(OUTPUT_ARRAY_SUFFIX)]
-        + b"".join(b"," + canonical_bytes(row)[:-1] for row in epoch2)
-        + OUTPUT_ARRAY_SUFFIX
+
+    aliases = load_alias_entries()
+    bound_epoch1, unbound = requalify(epoch1, aliases)
+    bound_epoch2, unbound_epoch2 = requalify(epoch2, aliases)
+    if unbound != EXPECTED_D149_UNBOUND or unbound_epoch2:
+        raise GeneratorError(f"D149_UNBOUND_COUNT:{unbound}:{unbound_epoch2}")
+    # Epoch-2 and the other current ids without an Item record may be bound before a record
+    # is authored; every epoch-1 target is exactly the definition key set.
+    verify_allocations(
+        [(int(row["external_id"]), row["target"]["key"]) for row in bound_epoch1],
+        load_definition_keys(),
+        load_tibiawiki_targets(),
     )
-    if payload != canonical_bytes(output):
-        raise GeneratorError("OUTPUT_LAYOUT_MISMATCH")
-    return output, payload
+    bindings = sorted(bound_epoch1 + bound_epoch2, key=canonical_bytes)
+    if (
+        len(bindings) != EXPECTED_BOUND
+        or len({row["target"]["key"] for row in bindings}) != EXPECTED_BOUND
+    ):
+        raise GeneratorError("BOUND_TARGET_UNIQUENESS")
+    output = {"schema": SCHEMA, "family": "Item", "bindings": bindings}
+    return output, canonical_bytes(output)
 
 
 def alias_crosswalk_main(args: argparse.Namespace) -> int:
