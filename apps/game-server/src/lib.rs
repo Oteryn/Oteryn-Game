@@ -77,6 +77,7 @@ mod gameplay_transport;
 )]
 mod movement;
 pub mod node;
+pub mod premium;
 #[allow(
     dead_code,
     reason = "player spell core (P3a) awaits the cast protocol and runtime state contracts (P3b)"
