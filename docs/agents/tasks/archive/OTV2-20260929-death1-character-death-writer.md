@@ -4,7 +4,7 @@
 task_id: OTV2-20260929-death1-character-death-writer
 title: DEATH-1 - Character death writer, D58 calculator, pending-respawn consumption
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/death1-character-death-writer
@@ -17,6 +17,7 @@ owner: "DEATH-1 hard worker (claude-code-session-01Y1aRVstBEF8u4Sq4MGNhSd)"
 control_plane: session_01MnSvpbKjAZEdzEaFrwiu7D
 created_at: 2026-09-29
 updated_at: 2026-09-30
+merge_result: "squash merge of #1278 (d9f74372719692c9101145d821ce067279385a49, 2026-09-30)"
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_death.rs
@@ -28,7 +29,7 @@ owned_paths:
   - apps/game-server/tests/support/character_progression_postgres_cases.rs   # one #[path] child include
   - apps/game-server/tests/support/character_death_writer_postgres_cases.rs
   - apps/game-server/migrations/0018_character_death_runtime_grant.sql   # control-plane decision on #162
-  - docs/agents/tasks/active/OTV2-20260929-death1-character-death-writer.md
+  - docs/agents/tasks/archive/OTV2-20260929-death1-character-death-writer.md
 public_contracts: []
 depends_on: [DEATH0-CHARACTER-DEATH-RECEIPT-V1, REFERENCE-FIRST-PLAYER-DEATH-V1, "0016 (#1264)", "0017 (#1270)", "0018 (this PR)"]
 blocks: [DEATH-1 respawn consumption, DEATH-2]

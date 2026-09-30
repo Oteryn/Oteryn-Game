@@ -15,7 +15,7 @@ use super::{
 };
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde::{Deserialize, Serialize};
-use std::{future::Future, time::Duration};
+use std::{future::Future, pin::pin, task::Poll, time::Duration};
 
 /// `LCA-CHARACTERS`: wire bound, not a product slot quota.
 pub const MAX_CHARACTERS: usize = 64;
@@ -25,9 +25,11 @@ pub const SNAPSHOT_BYTES: usize = 16_384;
 pub const WATERMARK_BYTES: usize = 512;
 /// Response bound (§3).
 pub const RESPONSE_BYTES: usize = 256;
-/// Watermark period. §5.1 requires at most 10 s between watermarks; one
-/// snapshot exchange (at most 6 s) may run between two due times.
+/// Watermark period: a watermark is due this long after the previous attempt.
 pub const WATERMARK_PERIOD: Duration = Duration::from_secs(3);
+/// §5.1: at most 10 s between watermarks. The next watermark attempt starts
+/// within this bound of the previous one, however slow the snapshot phase is.
+pub const MAX_WATERMARK_GAP: Duration = Duration::from_secs(10);
 /// Wait before retrying after an empty outbox or a failed delivery.
 pub const IDLE: Duration = Duration::from_secs(1);
 /// Compiled namespace of the projection descriptor; never a configured
@@ -316,8 +318,10 @@ pub struct Publisher<C, S, K> {
     pub store: S,
     pub sink: K,
     pub source_authority: String,
-    /// Maximum Character transaction duration (§5.1).
+    /// Maximum Character transaction duration (§5.1). It also bounds each
+    /// store call, since every store call is one such transaction.
     pub max_transaction: Duration,
+    watermark_started: Duration,
     watermark_due: Duration,
 }
 
@@ -327,6 +331,21 @@ fn log(operation: &str, class: &str, elapsed: Duration) {
         "oteryn-game-server event=account_characters_projection operation={operation} result={class} elapsed_ms={}",
         elapsed.as_millis()
     );
+}
+
+/// `work`, or `None` once `budget` has passed on `clock`.
+async fn within<C: ReportClock, T>(
+    clock: &C,
+    budget: Duration,
+    work: impl Future<Output = T>,
+) -> Option<T> {
+    let mut work = pin!(work);
+    let mut expiry = pin!(clock.sleep(budget));
+    std::future::poll_fn(|cx| match work.as_mut().poll(cx) {
+        Poll::Ready(output) => Poll::Ready(Some(output)),
+        Poll::Pending => expiry.as_mut().poll(cx).map(|()| None),
+    })
+    .await
 }
 
 fn class(result: &Result<Delivery, NotDelivered>) -> &'static str {
@@ -351,45 +370,65 @@ impl<C: ReportClock, S: ProjectionStore, K: ProjectionSink> Publisher<C, S, K> {
             sink,
             source_authority,
             max_transaction,
+            watermark_started: Duration::ZERO,
             watermark_due: Duration::ZERO,
         }
     }
 
     /// The watermark when due, then at most one snapshot. Returns whether a
     /// snapshot was acknowledged and cleared.
+    ///
+    /// A watermark attempt and the snapshot phase after it end by
+    /// `MAX_WATERMARK_GAP` after that attempt started, so the next watermark
+    /// attempt is never later than that. The snapshot phase starts only when
+    /// both its store calls (each at most `max_transaction`) fit, and its
+    /// exchange gets what remains. A cut exchange is not delivered; its retry
+    /// carries the same body, so an acknowledgement it lost is harmless.
     pub async fn step(&mut self) -> bool {
         if self.clock.elapsed() >= self.watermark_due {
-            self.watermark_due = self.clock.elapsed() + WATERMARK_PERIOD;
             let started = self.clock.elapsed();
+            self.watermark_started = started;
+            self.watermark_due = started + WATERMARK_PERIOD;
             let result = match self.store.watermark_facts().await {
                 Err(()) => Err(NotDelivered::Unavailable),
                 Ok(facts) => {
                     match encode_watermark(&self.source_authority, &facts, self.max_transaction) {
                         Err(_) => Err(NotDelivered::InvalidReport),
-                        Ok(body) => {
+                        Ok(body) => within(
+                            &self.clock,
+                            (started + MAX_WATERMARK_GAP).saturating_sub(self.clock.elapsed()),
                             self.sink
-                                .send(Operation::PublishProjectionWatermarkV1, &body)
-                                .await
-                        }
+                                .send(Operation::PublishProjectionWatermarkV1, &body),
+                        )
+                        .await
+                        .unwrap_or(Err(NotDelivered::Unavailable)),
                     }
                 }
             };
             let elapsed = self.clock.elapsed().saturating_sub(started);
             log("PublishProjectionWatermarkV1", class(&result), elapsed);
         }
+        let phase_end = self.watermark_started + MAX_WATERMARK_GAP;
+        if self.clock.elapsed() + self.max_transaction.saturating_mul(2) >= phase_end {
+            return false;
+        }
         let Ok(Some(snapshot)) = self.store.next_snapshot().await else {
             return false;
         };
         let started = self.clock.elapsed();
+        let exchange = phase_end.saturating_sub(started + self.max_transaction);
         let result = match encode_snapshot(&self.source_authority, &snapshot) {
             // An unpublishable snapshot stays queued, so the watermark stalls
             // and Platform refuses issuance (fail toward no issuance).
             Err(_) => Err(NotDelivered::InvalidReport),
-            Ok(body) => {
-                self.sink
-                    .send(Operation::PublishAccountCharactersV1, &body)
-                    .await
-            }
+            Ok(body) if !exchange.is_zero() => within(
+                &self.clock,
+                exchange,
+                self.sink.send(Operation::PublishAccountCharactersV1, &body),
+            )
+            .await
+            .unwrap_or(Err(NotDelivered::Unavailable)),
+            Ok(_) => Err(NotDelivered::Unavailable),
         };
         let elapsed = self.clock.elapsed().saturating_sub(started);
         log("PublishAccountCharactersV1", class(&result), elapsed);

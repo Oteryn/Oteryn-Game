@@ -666,18 +666,33 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
             }
         ]
     );
-    assert!(
+    let body = oteryn_game_server::native_admission_source::account_characters::encode_snapshot(
+        "oteryn:character-authority:primary",
+        &snapshot,
+    )?;
+    // A retry of the same (epoch, revision) is byte-identical, however much
+    // later it reads: `source_observed_at` is when the revision was assigned
+    // (0028), so a lost acknowledgement never becomes a 409.
+    tokio::time::sleep(std::time::Duration::from_millis(1100)).await;
+    let retry = root
+        .next_account_characters_snapshot(&authority)
+        .await
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("the unacknowledged snapshot is still queued")?;
+    assert_eq!(
         oteryn_game_server::native_admission_source::account_characters::encode_snapshot(
             "oteryn:character-authority:primary",
-            &snapshot
-        )
-        .is_ok()
+            &retry,
+        )?,
+        body
     );
     let facts = root
         .account_characters_watermark_facts(&authority)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(facts.projection_epoch, 1);
+    // Never later than the read.
+    assert!(retry.source_observed_at * 1000 <= facts.now_ms);
     assert!(
         facts
             .oldest_undelivered_ms
@@ -2270,6 +2285,11 @@ mod account_achievement_postgres_cases;
 #[path = "support/account_characters_projection_postgres_cases.rs"]
 mod account_characters_projection_postgres_cases;
 
+// CHAR-BUILD-1a build state, build receipts and death build fields (migration
+// 0030) and their admission verifier checks, on the CHARM-2 harness included above.
+#[path = "support/character_build_postgres_cases.rs"]
+mod character_build_postgres_cases;
+
 // SPELL-D8 H-1 durable monk Harmony and remaining forced Serene time (migration
 // 0026, `durability::monk_state`) run in the same protected lane, on the
 // CHARM-2 harness included above.
@@ -2366,6 +2386,14 @@ mod monk_state_postgres_cases {
             .as_database_error()
             .and_then(|error| error.code())
             .map(|code| code.into_owned())
+    }
+
+    /// The guard rule that rejected: the message of its RAISE.
+    fn database_message(error: &sqlx::Error) -> String {
+        error
+            .as_database_error()
+            .map(|error| error.message().to_owned())
+            .unwrap_or_default()
     }
 
     #[test]
@@ -2555,6 +2583,24 @@ mod monk_state_postgres_cases {
             state(3, 2_500_000)?
         );
 
+        // A restart between the save and the load: a new DurabilityRoot with its own pool over
+        // the same database, and the retained recovery seal, reads the stored values back.
+        {
+            let restarted = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+            assert!(restarted.maintain_ready_once().await?);
+            let reopened = restarted
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                restarted
+                    .read_character_monk_state(&reopened, character)
+                    .await
+                    .map_err(debug)?,
+                state(3, 2_500_000)?
+            );
+        }
+
         // Exact replay, even at the now stale revision, returns the receipt; changed reuse
         // conflicts; reconciliation proves what committed.
         let replay = root
@@ -2678,6 +2724,61 @@ mod monk_state_postgres_cases {
         .execute(&harness.pool)
         .await?;
 
+        // The 0026 guard: a death transition that leaves Harmony non-zero is rejected by the death
+        // rule. The death's own receipt, pending respawn and CharacterRevision step are exact, so
+        // only Harmony is wrong.
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("UPDATE game_character_roots SET character_revision = 3")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("UPDATE game_character_progression_state SET character_revision = 3")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "INSERT INTO game_character_death_receipts(\
+               death_occurrence_id, command_binding, policy_digest, character_id, \
+               original_character_revision, committed_character_revision, level_before, \
+               level_after, experience_before, experience_after, experience_lost, \
+               blessings_before, blessings_after, amulet_of_loss_item_id, lost_item_ids, \
+               death_world_id, death_channel_id, death_spatial_position, death_map_revision, \
+               respawn_position, death_policy_revision, profile_revision, ruleset_revision, \
+               content_revision, simulation_revision, evidence_revision, declaration_revision, \
+               policy_revision, reward_revision, committed_at) \
+             SELECT encode($1,'hex')::uuid, $2, $3, r.character_id, 2, 3, 9, 9, 6500, 6500, 0, \
+               '{}', '{}', NULL, '{}', r.world_id, encode($4,'hex')::uuid, '\\x01'::bytea, \
+               'map-1', 'temple:thais'::bytea, 'death-1', 'profile-1', 'ruleset-1', \
+               'content-1', 'simulation-1', 'evidence-1', 'declaration-1', 'policy-1', \
+               'reward-1', 3 \
+               FROM game_character_roots r WHERE r.character_id = encode($5,'hex')::uuid",
+        )
+        .bind(id(83).as_slice())
+        .bind([83_u8; 33].as_slice())
+        .bind([83_u8; 32].as_slice())
+        .bind(id(43).as_slice())
+        .bind(id(CHARACTER).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_character_pending_respawns VALUES \
+             (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 'temple:thais'::bytea)",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(83).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        let kept_harmony = tx
+            .commit()
+            .await
+            .err()
+            .ok_or("a death transition that keeps Harmony must fail")?;
+        assert_eq!(database_code(&kept_harmony).as_deref(), Some("23514"));
+        assert_eq!(
+            database_message(&kept_harmony),
+            "a Character death must empty Harmony and the forced Serene time"
+        );
+        assert_eq!(stored(harness).await?, (3, 2_500_000, "2".into(), 1));
+        assert_eq!(harness.count("game_character_death_receipts").await?, 0);
+
         // DEATH-1 empties both values in its own Character transaction.
         let died = root
             .commit_character_death(&authority, &harness.node, fence(2)?, death(80)?)
@@ -2763,6 +2864,10 @@ mod monk_state_postgres_cases {
             .err()
             .ok_or("a Harmony change without a monk state receipt must fail")?;
         assert_eq!(database_code(&guarded).as_deref(), Some("23514"));
+        assert_eq!(
+            database_message(&guarded),
+            "Harmony and the forced Serene time change only with a monk state receipt"
+        );
         assert_eq!(stored(harness).await?, (0, 0, "3".into(), 1));
 
         // A stored value outside the bounds fails the load closed (the CHECK is dropped in this

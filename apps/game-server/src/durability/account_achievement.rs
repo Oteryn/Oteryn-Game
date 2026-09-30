@@ -19,11 +19,16 @@
 //! catalogue lacks fails the granting transaction closed; a retired key is a
 //! no-op and the granting transaction continues.
 //!
-//! No points, no gameplay value, no protocol and no export: points are a read
-//! over the facts and a world catalogue that no caller needs yet.
+//! No points, no gameplay value and no export are stored: points are a read
+//! over the facts and the catalogue. [`DurabilityRoot::read_account_achievements`]
+//! is that read's durable half for `ACCOUNT_ACHIEVEMENTS_QUERY`
+//! (`OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1` §4): read-only, no Character fence.
 
 use super::DurabilityError;
+use super::DurabilityRoot;
+use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{uuid_text, valid_revision};
+use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::reward_claim_mint::RewardClaimFenceChecked;
 use crate::domain::CharacterId;
 use sqlx::Row;
@@ -288,6 +293,95 @@ async fn load_fact(
     .transpose()
 }
 
+/// One fact of an account as the display read sees it: its key and the
+/// earning time of the grant request it was derived from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EarnedAchievement {
+    pub achievement_key: String,
+    pub earned_at_unix_ms: i64,
+}
+
+#[derive(Debug)]
+pub enum AccountAchievementReadError {
+    AuthorityRejected,
+    Unavailable(DurabilityError),
+}
+
+impl From<DurabilityError> for AccountAchievementReadError {
+    fn from(error: DurabilityError) -> Self {
+        Self::Unavailable(error)
+    }
+}
+
+impl std::fmt::Display for AccountAchievementReadError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AuthorityRejected => formatter.write_str("achievement read authority rejected"),
+            Self::Unavailable(error) => {
+                write!(formatter, "achievement storage is unavailable: {error:?}")
+            }
+        }
+    }
+}
+
+impl std::error::Error for AccountAchievementReadError {}
+
+impl DurabilityRoot {
+    /// Display contract §4: the facts of `account_id`, ordered by key, at most
+    /// `limit` of them, each with the `earned_at` of the request it was
+    /// derived from (the fact's own composite foreign key, so a later request
+    /// for the same key never shows). Reads only `game_account_achievements`
+    /// and its requests, which are append-only and immutable (migration
+    /// 0021), under the runtime role's `SELECT`; it takes no Character fence
+    /// and writes nothing (§4.1). The caller passes the session's own account.
+    pub async fn read_account_achievements(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        account_id: [u8; 16],
+        limit: usize,
+    ) -> std::result::Result<Vec<EarnedAchievement>, AccountAchievementReadError> {
+        let limit = i64::try_from(limit).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| AccountAchievementReadError::AuthorityRejected)?;
+        Ok(self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let rows = sqlx::query(
+                        "SELECT f.achievement_key, r.earned_at \
+                           FROM game_account_achievements f \
+                           JOIN game_account_achievement_grant_requests r \
+                             ON r.account_id = f.account_id \
+                            AND r.achievement_key = f.achievement_key \
+                            AND r.source_kind = f.source_kind \
+                            AND r.source_event_id = f.source_event_id \
+                          WHERE f.account_id = encode($1,'hex')::uuid \
+                          ORDER BY f.achievement_key LIMIT $2",
+                    )
+                    .bind(account_id.as_slice())
+                    .bind(limit)
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    let facts = rows
+                        .iter()
+                        .map(|row| {
+                            Ok(EarnedAchievement {
+                                achievement_key: row.try_get("achievement_key")?,
+                                earned_at_unix_ms: row.try_get("earned_at")?,
+                            })
+                        })
+                        .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(facts)
+                })
+            })
+            .await?)
+    }
+}
+
 /// `oteryn:achievement/<slug>`, the catalogue schema's key grammar.
 pub(super) fn valid_key(key: &str) -> bool {
     key.len() <= MAX_KEY_BYTES
@@ -483,6 +577,13 @@ mod tests {
         ] {
             assert!(!valid_key(key), "{key}");
         }
+    }
+
+    /// The PostgreSQL targets drive the display read; the binaries that
+    /// recompile durability without it still link it.
+    #[test]
+    fn the_display_read_is_linked() {
+        let _ = crate::durability::DurabilityRoot::read_account_achievements;
     }
 
     #[test]

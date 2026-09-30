@@ -29,10 +29,15 @@ use super::world_spatial::{
     StepDisposition, WorldSpatialObservation, decode_step_intent, encode_step_result,
     encode_world_spatial,
 };
+use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::foundation::{
     CommandStatus, DomainSnapshot, encode_command_protocol_error, encode_command_result,
     encode_liveness_probe, encode_single_chunk_snapshot, encode_state_delta,
 };
+use oteryn_protocol_oteryn::account_achievements::{
+    COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, decode_account_achievements_query,
+};
+use oteryn_protocol_oteryn::encode_command_error_result;
 
 /// Foundation schema revision served by this build (FND-02 v1 contract).
 pub(crate) const SERVER_SCHEMA_REVISION: u32 = 1;
@@ -245,6 +250,27 @@ pub(crate) trait FreshAdmissionAuthority {
         async { SpellCastOutcome::rejected() }
     }
 
+    /// One `ACCOUNT_ACHIEVEMENTS_QUERY` page of the request's account's earned facts (display
+    /// contract §4). The transport passes the account of the admitted controller, never one from
+    /// the payload, with the session and CommandId of the request.
+    fn account_achievements(
+        &self,
+        _request: AccountAchievementsRequest,
+    ) -> impl Future<Output = AccountAchievementsReply> {
+        async { AccountAchievementsReply::Rejected }
+    }
+
+    /// The periodic Serene evaluation of the admitted actor (SPELL-D8 §8.2), run every
+    /// [`SERENE_EVALUATION`] while it has `ACTOR_VITALS`: the new revision and value when Serene
+    /// changed, which the loop publishes as a delta.
+    fn tick_vitals(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> impl Future<Output = Option<(u64, ActorVitals)>> {
+        async { None }
+    }
+
     /// After `wait` without restored control, record authoritative unexpected control loss
     /// for the ended admitted connection (`DISCONNECT-PROTECTION-V1` §§1, 4).
     fn lose_control(
@@ -272,6 +298,20 @@ pub(crate) trait FreshAdmissionAuthority {
     ) -> impl Future<Output = GraceExpiryResult> {
         async { GraceExpiryResult::NotApplicable }
     }
+}
+
+/// The terminal outcome of one `ACCOUNT_ACHIEVEMENTS_QUERY` (display contract §3.3, §4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum AccountAchievementsReply {
+    /// The encoded `AccountAchievementsResult` of the page.
+    Page(Vec<u8>),
+    /// `REJECTED` with this registered operation-terminal code and no rows (FND-02 §18):
+    /// `PAYLOAD_LIMIT_EXCEEDED` for a reply over its bounds, `ACCOUNT_DATA_INTEGRITY` for a fact
+    /// under a key the catalogue lacks.
+    Terminal(FoundationProtocolError),
+    /// No controller, a malformed query, unreadable storage or a malformed row: `REJECTED`, no
+    /// rows, no code.
+    Rejected,
 }
 
 /// The outcome of one step: its disposition and, only when it moved, the new observation.
@@ -551,6 +591,11 @@ where
 /// (`MOVE-RL-02` = 1) answered by a sequenced `CommandResult` and, when it moved, a sequenced
 /// `StateDelta`. An actor that is not positioned, or an authority without gameplay, keeps the
 /// admission-only behaviour.
+/// How often the Channel owner evaluates a monk actor's Serene (SPELL-D8 §8.2, Canary player
+/// think).
+const SERENE_EVALUATION: std::time::Duration =
+    std::time::Duration::from_micros(crate::spell::harmony::SERENE_EVALUATION_MICROS);
+
 pub(crate) async fn serve_admitted<S, A>(
     stream: &mut S,
     admitted: AdmittedSession,
@@ -642,20 +687,39 @@ where
         policy.interval,
     );
     cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    // SPELL-D8 §8.2: only an actor with `ACTOR_VITALS` has a Serene evaluation to run.
+    let mut serene = vitals.is_some().then(|| {
+        let mut serene = tokio::time::interval_at(
+            tokio::time::Instant::now() + SERENE_EVALUATION,
+            SERENE_EVALUATION,
+        );
+        serene.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        serene
+    });
     loop {
         enum Next {
             Frame(std::io::Result<Vec<u8>>),
             Probe,
+            Serene,
         }
-        // Both futures are cancel-safe: the frame reader keeps partial bytes and a dropped
-        // interval tick is not consumed. The tick is polled first so a client that keeps
-        // frames flowing cannot starve the cadence; it is ready at most once per interval.
+        // All futures are cancel-safe: the frame reader keeps partial bytes and a dropped
+        // interval tick is not consumed. The ticks are polled first so a client that keeps
+        // frames flowing cannot starve a cadence; each is ready at most once per interval.
         let next = {
             let mut read = std::pin::pin!(frames.next(stream));
             let mut tick = std::pin::pin!(cadence.tick());
+            let mut serene_tick = std::pin::pin!(async {
+                match serene.as_mut() {
+                    Some(serene) => serene.tick().await,
+                    None => std::future::pending().await,
+                }
+            });
             std::future::poll_fn(|context| {
                 if tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Probe);
+                }
+                if serene_tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::Serene);
                 }
                 if let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
                     return std::task::Poll::Ready(Next::Frame(read));
@@ -665,6 +729,23 @@ where
             .await
         };
         let frame = match next {
+            Next::Serene => {
+                let Some((to, value)) =
+                    authority.tick_vitals(actor, admitted.game_session_id).await
+                else {
+                    continue;
+                };
+                let Some((delta_sequence, delta)) = vitals_delta(generation, sequence, to, &value)
+                else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                sequence = delta_sequence;
+                admitted.continuity.server_sequence = sequence;
+                if write_frame(stream, &delta).await.is_err() {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+                continue;
+            }
             Next::Frame(Ok(frame)) => frame,
             Next::Frame(Err(_)) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             Next::Probe => {
@@ -748,10 +829,14 @@ where
         // never makes a second transition.
         // WORLD_ACTOR_SPELL_CAST_INTENT (command type 3) follows the same discipline: a replayed
         // CommandId expires above, so a retry never casts or pays a second time (SPELL-D3).
+        // ACCOUNT_ACHIEVEMENTS_QUERY (command type 10, display contract D223-D228) is a read of
+        // the session's own account: the admitted controller's, never the payload's; a session
+        // without a controller binding has none and is REJECTED.
         enum Dispatch {
             Step(StepOutcome),
             Use(UseOutcome),
             Spell(SpellCastOutcome),
+            Achievements(AccountAchievementsReply),
             Unregistered,
         }
         let dispatch = if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
@@ -772,6 +857,23 @@ where
                         .await,
                 ),
                 Err(_) => Dispatch::Spell(SpellCastOutcome::rejected()),
+            }
+        } else if command.command_type == COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY {
+            match (
+                decode_account_achievements_query(command.payload),
+                admitted.controller,
+            ) {
+                (Ok(query), Some(controller)) => Dispatch::Achievements(
+                    authority
+                        .account_achievements(AccountAchievementsRequest {
+                            account_id: controller.account_id,
+                            page: query.page,
+                            game_session_id: *admitted.game_session_id.as_bytes(),
+                            command_id: command.command_id,
+                        })
+                        .await,
+                ),
+                _ => Dispatch::Achievements(AccountAchievementsReply::Rejected),
             }
         } else {
             Dispatch::Unregistered
@@ -810,15 +912,29 @@ where
                 },
                 encode_spell_cast_result(outcome.disposition),
             ),
-            Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
+            Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
+                (CommandStatus::Accepted, payload.clone())
+            }
+            Dispatch::Achievements(
+                AccountAchievementsReply::Terminal(_) | AccountAchievementsReply::Rejected,
+            )
+            | Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
         };
-        let Ok(result) = encode_command_result(
-            generation,
-            sequence,
-            command.command_id,
-            status,
-            &result_payload,
-        ) else {
+        let result =
+            if let Dispatch::Achievements(AccountAchievementsReply::Terminal(error)) = &dispatch {
+                // Display contract §3.3, §4.3: fail closed with the registered operation-terminal
+                // error and nothing else.
+                encode_command_error_result(generation, sequence, command.command_id, *error)
+            } else {
+                encode_command_result(
+                    generation,
+                    sequence,
+                    command.command_id,
+                    status,
+                    &result_payload,
+                )
+            };
+        let Ok(result) = result else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
         if write_frame(stream, &result).await.is_err() {
@@ -894,23 +1010,9 @@ where
                 // ACTOR_VITALS (domain 3, delta type 1) carries the owner's own per-actor
                 // revision: a committed cast advances it by exactly one.
                 if let Some((to, value)) = outcome.vitals {
-                    let (Some(delta_sequence), Some(from)) =
-                        (sequence.checked_add(1), to.checked_sub(1))
+                    let Some((delta_sequence, delta)) =
+                        vitals_delta(generation, sequence, to, &value)
                     else {
-                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                    };
-                    let Ok(payload) = encode_actor_vitals(&value) else {
-                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                    };
-                    let Ok(delta) = encode_state_delta(
-                        generation,
-                        delta_sequence,
-                        STATE_DOMAIN_ACTOR_VITALS,
-                        from,
-                        to,
-                        DELTA_TYPE_ACTOR_VITALS_V1,
-                        &payload,
-                    ) else {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     };
                     sequence = delta_sequence;
@@ -920,9 +1022,33 @@ where
                     }
                 }
             }
-            Dispatch::Unregistered => {}
+            Dispatch::Achievements(_) | Dispatch::Unregistered => {}
         }
     }
+}
+
+/// The `ACTOR_VITALS` delta (domain 3, delta type 1) from revision `to - 1` to `to`, at the
+/// sequence after `sequence`; `None` on an encoding fault.
+fn vitals_delta(
+    generation: u64,
+    sequence: u64,
+    to: u64,
+    value: &ActorVitals,
+) -> Option<(u64, Vec<u8>)> {
+    let delta_sequence = sequence.checked_add(1)?;
+    let from = to.checked_sub(1)?;
+    let payload = encode_actor_vitals(value).ok()?;
+    let delta = encode_state_delta(
+        generation,
+        delta_sequence,
+        STATE_DOMAIN_ACTOR_VITALS,
+        from,
+        to,
+        DELTA_TYPE_ACTOR_VITALS_V1,
+        &payload,
+    )
+    .ok()?;
+    Some((delta_sequence, delta))
 }
 
 async fn close_admitted<S: AsyncWrite + Unpin>(
@@ -2137,6 +2263,135 @@ mod tests {
         envelope(7, ADMITTED_GENERATION, &payload)
     }
 
+    /// A monk actor whose first periodic Serene evaluation changes Serene (SPELL-D8 §8.2).
+    struct SereneAuthority {
+        ticks: Cell<usize>,
+    }
+
+    const SERENE_VITALS: ActorVitals = ActorVitals {
+        health: 185,
+        max_health: 185,
+        mana: 90,
+        max_mana: 90,
+        soul: 100,
+        harmony: 2,
+        serene: true,
+    };
+
+    impl FreshAdmissionAuthority for SereneAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+
+        async fn observe_vitals(
+            &self,
+            _actor: ExactActorRef,
+            _game_session_id: GameSessionId,
+        ) -> Option<(u64, ActorVitals)> {
+            Some((1, SERENE_VITALS))
+        }
+
+        async fn tick_vitals(
+            &self,
+            _actor: ExactActorRef,
+            _game_session_id: GameSessionId,
+        ) -> Option<(u64, ActorVitals)> {
+            self.ticks.set(self.ticks.get() + 1);
+            Some((
+                2,
+                ActorVitals {
+                    serene: false,
+                    ..SERENE_VITALS
+                },
+            ))
+        }
+    }
+
+    /// The loop runs the Serene evaluation every 1000 ms while the actor has `ACTOR_VITALS`, and
+    /// publishes a change as the next `ACTOR_VITALS` delta without any command.
+    #[test]
+    fn the_serene_cadence_publishes_a_changed_vitals_delta() -> Result<(), Box<dyn Error>> {
+        use super::super::actor_spell::tests as spell;
+        run(async {
+            let (_runtime, actor, session) = spell::runtime_with_player(0x71);
+            let authority = SereneAuthority {
+                ticks: Cell::new(0),
+            };
+            let admitted = AdmittedSession {
+                game_session_id: session,
+                world_id: WorldId::decode(&uuid_v7(0x60))?,
+                channel_id: ChannelId::decode(&uuid_v7(0x61))?,
+                runtime_actor: Some(actor),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+            };
+            let vitals_payload = encode_actor_vitals(&SERENE_VITALS).map_err(|_| "vitals")?;
+            let mut expected: Vec<Vec<u8>> = encode_single_chunk_snapshot(
+                ADMITTED_GENERATION,
+                1,
+                0,
+                &[
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        revision: 1,
+                        snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                        payload: &encode_world_spatial(&at(0)),
+                    },
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_ACTOR_VITALS,
+                        revision: 1,
+                        snapshot_type: SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                        payload: &vitals_payload,
+                    },
+                ],
+            )?
+            .into();
+            expected.push(encode_state_delta(
+                ADMITTED_GENERATION,
+                1,
+                STATE_DOMAIN_ACTOR_VITALS,
+                1,
+                2,
+                DELTA_TYPE_ACTOR_VITALS_V1,
+                &encode_actor_vitals(&ActorVitals {
+                    serene: false,
+                    ..SERENE_VITALS
+                })
+                .map_err(|_| "vitals")?,
+            )?);
+            let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 16);
+            let wanted = expected.len();
+            let read = async move {
+                let mut frames = Vec::new();
+                while frames.len() < wanted {
+                    let mut length = [0_u8; 4];
+                    client.read_exact(&mut length).await?;
+                    let mut frame = vec![0_u8; u32::from_be_bytes(length) as usize];
+                    client.read_exact(&mut frame).await?;
+                    frames.push(frame);
+                }
+                // Closing the client ends the served connection.
+                drop(client);
+                Ok::<_, std::io::Error>(frames)
+            };
+            let reader = tokio::spawn(read);
+            let end = serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+            let frames = reader.await?;
+            assert_eq!(frames?, expected);
+            assert_eq!(authority.ticks.get(), 1);
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            Ok(())
+        })
+    }
+
     #[test]
     fn admitted_cast_pays_once_publishes_vitals_and_a_retry_expires() -> Result<(), Box<dyn Error>>
     {
@@ -2145,7 +2400,14 @@ mod tests {
             let (runtime, actor, session) = spell::runtime_with_player(0x70);
             let mut states = super::super::actor_spell::ChannelSpellStates::default();
             states
-                .initialize(&runtime, actor, session, spell::FACTS)
+                .initialize(
+                    &runtime,
+                    actor,
+                    session,
+                    spell::FACTS,
+                    (0, 0),
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+                )
                 .ok_or("initialize")?;
             let authority = SpellAuthority {
                 runtime,
@@ -2288,7 +2550,14 @@ mod tests {
             let (runtime, actor, session) = spell::runtime_with_player(0x71);
             let mut states = super::super::actor_spell::ChannelSpellStates::default();
             states
-                .initialize(&runtime, actor, session, spell::FACTS)
+                .initialize(
+                    &runtime,
+                    actor,
+                    session,
+                    spell::FACTS,
+                    (0, 0),
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+                )
                 .ok_or("initialize")?;
             spell::wound(&mut states, actor, session, 100);
             let authority = SpellAuthority {
@@ -2326,7 +2595,14 @@ mod tests {
             authority
                 .states
                 .borrow_mut()
-                .initialize(&authority.runtime, actor, session, spell::FACTS)
+                .initialize(
+                    &authority.runtime,
+                    actor,
+                    session,
+                    spell::FACTS,
+                    (0, 0),
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+                )
                 .ok_or("reinitialize")?;
             let resumed = SessionContinuity {
                 next_command_id: 2,
@@ -2368,6 +2644,146 @@ mod tests {
                 authority.observe_vitals(actor, session).await,
                 Some((2, paid))
             );
+            Ok(())
+        })
+    }
+
+    /// A fixture authority for `ACCOUNT_ACHIEVEMENTS_QUERY` dispatch: every call is recorded and
+    /// answered with one canned reply.
+    struct AchievementsAuthority {
+        calls: RefCell<Vec<AccountAchievementsRequest>>,
+        reply: AccountAchievementsReply,
+    }
+
+    impl FreshAdmissionAuthority for AchievementsAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+
+        async fn account_achievements(
+            &self,
+            request: AccountAchievementsRequest,
+        ) -> AccountAchievementsReply {
+            self.calls.borrow_mut().push(request);
+            self.reply.clone()
+        }
+    }
+
+    fn achievements_command(id: u64, query: &[u8]) -> Vec<u8> {
+        let mut payload = Vec::new();
+        scalar(&mut payload, 1, id);
+        scalar(
+            &mut payload,
+            2,
+            u64::from(COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY),
+        );
+        bytes(&mut payload, 4, query);
+        envelope(7, ADMITTED_GENERATION, &payload)
+    }
+
+    /// Display contract §4: the query reads the admitted controller's account, never one from the
+    /// payload; a malformed query or a session without a controller is REJECTED without a read;
+    /// an over-bound reply is REJECTED with `PAYLOAD_LIMIT_EXCEEDED` and an integrity fault with
+    /// `ACCOUNT_DATA_INTEGRITY` (owner decision 2026-09-30), each with no rows.
+    #[test]
+    fn account_achievements_query_reads_only_the_controller_account() -> Result<(), Box<dyn Error>>
+    {
+        const ACCOUNT: [u8; 16] = uuid_v7(0x55);
+        let request = |page, command_id| AccountAchievementsRequest {
+            account_id: ACCOUNT,
+            page,
+            game_session_id: SESSION,
+            command_id,
+        };
+        run(async {
+            let world_id = WorldId::decode(&WORLD)?;
+            let channel_id = ChannelId::decode(&CHANNEL)?;
+            let session = |controller| AdmittedSession {
+                game_session_id: GameSessionId::decode(&SESSION).expect("session"),
+                world_id,
+                channel_id,
+                runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller,
+                continuity: SessionContinuity::FRESH,
+            };
+            let controller = Some(ControllerBinding {
+                transport: AuthenticatedTransportRefV1::decode(&[0x5a; 16])?,
+                account_id: ACCOUNT,
+            });
+            let authority = AchievementsAuthority {
+                calls: RefCell::new(Vec::new()),
+                reply: AccountAchievementsReply::Page(vec![0x08, 0x02]),
+            };
+            let (_end, frames) = drive_session(
+                &authority,
+                session(controller),
+                &[
+                    // Page 3; a payload has no field for an account.
+                    achievements_command(1, &[0x08, 0x03]),
+                    // An unknown field (as if naming an account) does not decode.
+                    achievements_command(2, &[0x08, 0x00, 0x12, 0x01, 0x07]),
+                ],
+            )
+            .await?;
+            let mut expected = baseline();
+            expected.extend([
+                encode_command_result(
+                    ADMITTED_GENERATION,
+                    1,
+                    1,
+                    CommandStatus::Accepted,
+                    &[0x08, 0x02],
+                )?,
+                encode_command_result(ADMITTED_GENERATION, 2, 2, CommandStatus::Rejected, &[])?,
+            ]);
+            assert_eq!(frames, expected);
+            assert_eq!(*authority.calls.borrow(), [request(3, 1)]);
+
+            // No controller binding: no account to read.
+            let (_end, frames) =
+                drive_session(&authority, session(None), &[achievements_command(1, &[])]).await?;
+            assert_eq!(
+                frames.last(),
+                Some(&encode_command_result(
+                    ADMITTED_GENERATION,
+                    1,
+                    1,
+                    CommandStatus::Rejected,
+                    &[]
+                )?)
+            );
+            assert_eq!(authority.calls.borrow().len(), 1);
+
+            for error in [
+                FoundationProtocolError::PayloadLimitExceeded,
+                FoundationProtocolError::AccountDataIntegrity,
+            ] {
+                let failing = AchievementsAuthority {
+                    calls: RefCell::new(Vec::new()),
+                    reply: AccountAchievementsReply::Terminal(error),
+                };
+                let (_end, frames) = drive_session(
+                    &failing,
+                    session(controller),
+                    &[achievements_command(1, &[])],
+                )
+                .await?;
+                let terminal = encode_command_error_result(ADMITTED_GENERATION, 1, 1, error)?;
+                assert_ne!(
+                    terminal,
+                    encode_command_result(ADMITTED_GENERATION, 1, 1, CommandStatus::Rejected, &[])?
+                );
+                assert_eq!(frames.last(), Some(&terminal), "{error:?}");
+                assert_eq!(*failing.calls.borrow(), [request(0, 1)]);
+            }
             Ok(())
         })
     }

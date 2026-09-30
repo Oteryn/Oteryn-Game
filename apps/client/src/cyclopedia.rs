@@ -6,8 +6,10 @@
 //! stage, assign a charm to a race; unassign and reset are CHARM-6, D170), and one feedback line
 //! per result. The server decides every command; the local checks only keep the client from
 //! sending a command it can already see will fail, and report it with the same disposition the
-//! server would return. The session routes neither the commands nor the views until the protocol
-//! owner registers their IDs.
+//! server would return. A charm whose effect the server does not apply yet is shown as not yet
+//! active. The IDs are registered under capability 1 `BESTIARY_CHARMS_V1`; the session routes
+//! neither the commands nor the views until composition (CHARM-5-COMP), and the server does not
+//! offer the capability before CHARM-6 (D170).
 
 use oteryn_session::{
     BestiaryRaceProgress, CharmAssignDisposition, CharmAssignIntent, CharmKind, CharmState,
@@ -22,6 +24,9 @@ pub const MAJOR_CHARM_RACE_STAGE: u8 = 3;
 /// Bestiary stage a race needs before a minor charm can be assigned to it (CHARM-0 §4.2).
 pub const MINOR_CHARM_RACE_STAGE: u8 = 2;
 const FINAL_CHARM_STAGE: u8 = 3;
+/// Shown on a charm whose effect the server does not apply yet (owner answer 3a): its runtime
+/// system does not exist, so the charm can be unlocked and assigned but does nothing today.
+pub const CHARM_EFFECT_NOT_ACTIVE_TEXT: &str = "Effect not yet active";
 
 /// Player-facing line for one unlock result.
 #[must_use]
@@ -70,6 +75,18 @@ pub struct CharmRow {
     pub can_unlock: bool,
     /// Unlocked, not yet assigned, and a charm slot is free.
     pub can_assign: bool,
+}
+
+impl CharmRow {
+    /// [`CHARM_EFFECT_NOT_ACTIVE_TEXT`] when the server reports the effect as not active.
+    #[must_use]
+    pub const fn effect_note(&self) -> Option<&'static str> {
+        if self.state.effect_active {
+            None
+        } else {
+            Some(CHARM_EFFECT_NOT_ACTIVE_TEXT)
+        }
+    }
 }
 
 /// The client's Bestiary and Charm state.
@@ -280,6 +297,7 @@ mod tests {
             unlocked_stage: stage,
             assigned_race: assigned.map(index),
             next_stage_cost: if stage == 3 { 0 } else { 100 },
+            effect_active: charm != 2,
         }
     }
 
@@ -329,16 +347,25 @@ mod tests {
         let view = cyclopedia();
         let rows: Vec<_> = view
             .charm_rows()
-            .map(|row| (row.state.charm.get(), row.can_unlock, row.can_assign))
+            .map(|row| {
+                (
+                    row.state.charm.get(),
+                    row.can_unlock,
+                    row.can_assign,
+                    row.effect_note(),
+                )
+            })
             .collect();
-        // Charm 2 is minor and 50 echoes do not cover 100; charm 4 has no next stage.
+        // Charm 2 is minor and 50 echoes do not cover 100; charm 4 has no next stage. Charm 2's
+        // effect is not active on the server; it stays unlockable and assignable.
+        let not_active = Some(CHARM_EFFECT_NOT_ACTIVE_TEXT);
         assert_eq!(
             rows,
             [
-                (1, true, false),
-                (2, false, true),
-                (3, true, false),
-                (4, false, true)
+                (1, true, false, None),
+                (2, false, true, not_active),
+                (3, true, false, None),
+                (4, false, true, None)
             ]
         );
         assert_eq!(view.charm_points_available(), 150);
