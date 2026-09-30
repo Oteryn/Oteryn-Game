@@ -153,6 +153,25 @@ The state candidate §3.2-§3.4 is binding; this section fixes its physical shap
 - **Validation** at commit, all against the stored ruleset: eligibility (§6), capacities, the
   points rule (WHEEL0-PT-1), the adjacency and minimum-point rules for every non-zero slot, and
   every decrease only at a temple (§7.3). A rejected change writes nothing.
+- **No-op rejection (WHEEL0-NOOP-1).** A replacement whose slot vector equals the stored vector is
+  rejected as `NO_CHANGE` before any write: no receipt, no `wheel_revision` or CharacterRevision
+  advance, and the occurrence is not consumed. Every receipt therefore records a real change, which
+  bounds receipt growth to actual allocation changes.
+- **Ruleset migration writer (WHEEL0-MIG-1; architect ruling, see the report's owner question).**
+  Activating a destination Wheel ruleset revision needs every stored allocation moved off the source
+  revision, including offline, ineligible and non-current characters, which the session-fenced
+  `commit_character_wheel` cannot serve. The W-R child therefore defines `migrate_character_wheel`,
+  a second writer on the same CHAR-REV-SEQ-1 sequencer (`character_root` FOR UPDATE, one Wheel
+  receipt, the same envelope, chain and row-tip guards), run only by the administrative migration
+  authority and only while the character has no live session (otherwise it retries later; it never
+  fences out a live session). Its validation is migration-specific: the stored
+  `wheel_ruleset_revision` must be the declared source, the destination must be the activating
+  revision, and the transformed vector must satisfy the destination capacities, adjacency and
+  minimum-point rules. It does not apply eligibility, the points rule or the temple rule, because a
+  migration is not a player change. A character whose transform is invalid under the destination is
+  not migrated and blocks activation, so a ruleset whose transform is not total over stored
+  allocations cannot activate (fail closed). `NO_CHANGE` does not apply: a migration always
+  advances `wheel_ruleset_revision`.
 - **Points rule (WHEEL0-PT-1; state candidate §3.3, level loss).** A change that raises any slot
   requires the new sum at most the available points. A strict decrease (no slot raised, at least one
   slot lowered) is admitted whatever the available points, so a character over-allocated after a
@@ -251,7 +270,7 @@ allocation.
   `NOT_PROMOTED`, `NOT_PREMIUM`).
 - **`WHEEL_INTENT set_allocation {slots[36], expected_wheel_revision}`:** a full replacement,
   validated as §4. Results: `OK`, `NOT_ELIGIBLE`, `OVER_CAPACITY`, `OVER_POINTS`, `NOT_ADJACENT`,
-  `REMOVAL_NOT_AT_TEMPLE`, `RULESET_NOT_CURRENT`, `STALE_REVISION`, plus the common results.
+  `REMOVAL_NOT_AT_TEMPLE`, `RULESET_NOT_CURRENT`, `STALE_REVISION`, `NO_CHANGE`, plus the common results.
 - **Domain:** the acting character's derived stages, so the client shows spell availability.
 
 ### 7.2 Why a full replacement
