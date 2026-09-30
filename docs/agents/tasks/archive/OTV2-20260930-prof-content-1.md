@@ -4,12 +4,12 @@
 task_id: OTV2-20260930-prof-content-1
 title: PROF-CONTENT-1 Proficiency definitions in content/ and Item profile_binding
 mode: IMPLEMENT
-status: implementing
+status: completed   # final PR of the task (1d)
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: claude/prof-content-1d-item-schema   # the record names the last open PR of the stack so merging #1341 keeps governance green
+branch: claude/prof-content-1d-item-schema
 issue: 162
-pr: 1342
+pr: 1342   # 1a #1328, 1b #1339, 1c #1341, 1d #1342
 base_sha: 1852a69   # #1327 and #1328 merged; 1b-1d stacked
 head_sha: null
 final_head_sha: null
@@ -27,7 +27,7 @@ owned_paths:
   - tools/content-migration/world_project_v2_to_tree.py
   - tools/content-migration/validate_world_project_v2_to_tree.py
   - tools/content-migration/test_world_project_v2_to_tree.py
-  - docs/agents/tasks/active/OTV2-20260930-prof-content-1.md
+  - docs/agents/tasks/active/OTV2-20260930-prof-content-1.md   # moved to tasks/archive/ in 1d
   # 1b: apps/game-server/src/content/project/v2.rs, apps/game-server/src/content/project/v2/proficiency.rs,
   # apps/game-server/tests/content_world_project_v2.rs
   # 1c: content/proficiencies/bindings.json (under content/proficiencies/**)
@@ -94,3 +94,13 @@ Threshold tables and the point table are progression rules, so they are not writ
 - Generator byte-identical; `validate_world_project_v2_to_tree.py` PASS (`proficiency_bindings=642`);
   `test_world_project_v2_to_tree.py` PASS (161 managed files); `validate_materialized_game_tree.py` 97/97;
   `item_key_references.py` PASS.
+
+## Closeout
+
+- 1a #1328 merged (`1852a69`); 1b #1339, 1c #1341 and 1d #1342 are squash merges recorded on #162.
+- This record moves to `tasks/archive/` in 1d, the task's last PR. While the stack was open, each branch named
+  a still-open PR so that `main` never carried a record naming a merged PR (see #1350).
+- Left to their owners: `OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md` and
+  `OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md` still describe the inline Item profile; the PROFICIENCY-0
+  document still carries the §4.5 point-table gate the owner lifted (decision 3).
+- Next: PROF-2 (ruleset thresholds and point table in `rulesets/progression/weapon-proficiency/`, accrual).
