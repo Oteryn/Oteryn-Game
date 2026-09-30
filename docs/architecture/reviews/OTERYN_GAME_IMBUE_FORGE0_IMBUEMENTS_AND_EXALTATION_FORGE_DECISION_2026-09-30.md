@@ -264,8 +264,16 @@ outcome is stored in the receipt, so a replay or a new CommandId never rerolls a
   `SimulationDeterminismProfileRevision`. The set is part of the request binding and is stored in
   the receipt. A retry of the same occurrence, including after a known non-committed abort,
   evaluates only under that bound set; if the active set differs, the retry is refused
-  (`REVISION_CHANGED`, nothing written) and the player must start a new occurrence. The same
-  occurrence is never re-evaluated under a newer revision.
+  (`REVISION_CHANGED`) and the player must start a new occurrence. The same occurrence is never
+  re-evaluated under a newer revision.
+- **`REVISION_CHANGED` is terminal (architect ruling, fail-closed).** The refusal is persisted as
+  the occurrence's terminal receipt, keyed by (occurrence, character) as every receipt (§6), in a
+  receipt-only transaction: the bound set and the rejection, with no item, dust, core, fee or
+  state line and no history row. Every later replay of that occurrence, under the same or a new
+  CommandId, returns the same rejection, even when the active set later equals the bound set
+  again (for example after a rollout rollback). If the terminal write's outcome is unknown, the
+  occurrence stays refused until reconciliation reads the receipt (`IMBFORGE0-RL-11`); it is
+  never evaluated meanwhile.
 
 | Operation | Lines (all in one transaction) | Outcomes |
 |---|---|---|
@@ -286,7 +294,8 @@ outcome is stored in the receipt, so a replay or a new CommandId never rerolls a
 - Every refusal (resources, class, tier cap, imbued item, no room) comes before the transaction
   and writes nothing. Fees above the coins go to the bank (BANK-FEE-0).
 - **DUR-03 amendment (FORGE-1):** §15 admits `ForgeCause` as a sink; §18 names forge dust; §39.3
-  admits these shapes (`DUR03-RL-01-FORGE`, `DUR03-RL-03-FORGE`). FORGE-1 writes the text.
+  admits these shapes (`DUR03-RL-01-FORGE`, `DUR03-RL-03-FORGE`) and the receipt-only
+  `REVISION_CHANGED` terminal record. FORGE-1 writes the text.
 - **History:** each operation writes a forge history row (`IMBFORGE0-RL-12`).
 
 ## 11. Dust and sliver sources (FORGE-CREATURE-1, needs I2)
@@ -333,7 +342,7 @@ The chance per tier is content (Canary quadratic; `PARITY_PENDING`). Only equipp
   `OK`, `REQUIREMENT_NOT_MET`, `MATERIALS_MISSING`, `INSUFFICIENT_FUNDS`, `SLOT_OCCUPIED`,
   `NOT_ALLOWED`; the tracker (equipped imbuements and remaining time) as a state domain entry.
 - FORGE: fusion, transfer (with convergence and core flags), conversion kind; results with
-  success and bonus, or `REVISION_CHANGED` (§10); history paged; the dust balance and limit in the resource balance.
+  success and bonus, or `REVISION_CHANGED` (§10, terminal for the occurrence); history paged; the dust balance and limit in the resource balance.
 - Item views gain tier and the imbuement summary. Each wire child measures its payloads.
 
 ## 15. Rows (registered by each child before implementation)
@@ -420,7 +429,7 @@ only, no sliver loot (cores come only from dust); c) none now: the forge waits.
    §39.3 and composition rule 1 by IMBUE-1 and FORGE-1. Capability numbers at allocation.
 2. **Serialization:** one shrine or forge operation per actor; one transaction per operation;
    rule 2 fence; rule 4 root lock, then the dust row; replay by occurrence under its bound
-   revision set (§10); a failed imbuement checkpoint suspends ticking and effects (§4.3).
+   revision set, `REVISION_CHANGED` persisted as a terminal receipt (§10); a failed imbuement checkpoint suspends ticking and effects (§4.3).
 3. **Restart:** tier, imbuements and dust are durable; ticking, influenced and fiendish state
    are runtime; at most one checkpoint of time returns.
 4. **Typed references and wire:** item handles, definition and imbuement keys, `ProductionKey`

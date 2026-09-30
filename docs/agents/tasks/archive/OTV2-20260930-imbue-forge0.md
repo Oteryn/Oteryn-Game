@@ -85,6 +85,9 @@ review.
 - Codex round-1 repair (PR #1415, 4 findings): forge revision binding (§10), failed-checkpoint
   suspension and committed Featherweight capacity (§4.3, §5.1), the quest predicate on every direct
   shrine imbuement (§3), `ScrollCreate` producer eligibility (§7).
+- Codex round-2 repair (PR #1415, 1 finding): `REVISION_CHANGED` persisted as a receipt-only
+  terminal record keyed by (occurrence, character); every later replay returns the same
+  rejection (§10).
 
 ## Closeout
 
