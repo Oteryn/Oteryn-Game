@@ -107,10 +107,12 @@ LOADABLE = ('RESOLVED', 'PARTIAL')
 PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
 WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING',
                            'WIKI_CONFIRMED', 'WIKI_PRICE', 'WIKI_MAJORITY_PRICE', 'WIKI_OFFER',
-                           'FAN_WIKI_CONFIRMED')  # kept in the output
+                           'FAN_WIKI_CONFIRMED', 'WIKI_MAJORITY_ARBITER')  # kept in the output
 DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
 VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
 SPELLING_MIN_LENGTH = 10
+# D16: the wikis' name of an Item whose registered name differs (folded wiki name -> folded registered name)
+WIKI_ITEM_NAMES = {'straw mat foot section': 'straw bed foot section'}
 # Owner decision 2026-09-27: these source-only NPCs exist only in that OT server, not in Tibia,
 # and are never promoted by any rule (wiki confirmation, base-name, spelling or otherwise).
 OWNER_REJECTED = {
@@ -250,6 +252,11 @@ def route_fact(row):
     return (json.dumps(row['destination'], sort_keys=True), row['price'], row['premium'], row['min_level'], row['gate'])
 
 
+def wiki_item(name):
+    """D16: a wiki item name folded, under its registered name where the wikis name the Item differently."""
+    return WIKI_ITEM_NAMES.get(fold(name), fold(name))
+
+
 def registry_item_names():
     """Folded registered names of the committed Item definitions, by Item key. The pinned candidate packets are
     history naming retired Item keys (ITEM-ID-1b, A12), so each retired key that aliases to a named definition in
@@ -293,7 +300,7 @@ class Builder:
             for direction, items in page['trades'].items():
                 trades[direction] = {}
                 for item, prices in items.items():  # every BR row of the offer, each with its own price
-                    trades[direction].setdefault(fold(item), []).extend(prices)
+                    trades[direction].setdefault(wiki_item(item), []).extend(prices)
             for label in (page['title'], page['name']):
                 self.br_trade.setdefault(fold(label), trades)
                 if not page.get('removed') and 'pageid' in page:  # D15: a BR page confirms an NPC unless removed
@@ -301,7 +308,7 @@ class Builder:
         # D13: Tibiopedia trade lists, keyed the same way (its page name is the title without "NPC: ")
         self.tibiopedia_trade, self.tibiopedia_pages = {}, {}
         for page in (tibiopedia_facts or {}).get('pages', []):
-            trades = {direction: {fold(item): prices for item, prices in items.items()}
+            trades = {direction: {wiki_item(item): prices for item, prices in items.items()}
                       for direction, items in page['trades'].items()}
             for label in (page['name'], page['title']):
                 if label:
@@ -310,7 +317,8 @@ class Builder:
                         self.tibiopedia_pages.setdefault(fold(label), {'url': page['url'], 'sha256': page['sha256']})
         self.wiki_npcs = snapshot['npcs']
         self.wiki = build_wiki_index(self.wiki_npcs)
-        self.wiki_trade = snapshot.get('trade', {})
+        self.wiki_trade = {npc: [dict(row, item=WIKI_ITEM_NAMES.get(fold(row['item']), row['item'])) for row in rows]
+                           for npc, rows in snapshot.get('trade', {}).items()}
         self.items = {row['source_item_id']: row for row in item_map['records']}
         self.source_ids = {row['native_key']: row['source_item_id'] for row in item_map['records']}
         # D13 looks each offer up under its registered Item name (folded), by Item key
@@ -410,6 +418,38 @@ class Builder:
         row = self.items.get(source_item_id)
         return row and {'family': 'Item', 'key': row['native_key'], 'revision': row['native_revision']}
 
+    def majority_arbiter(self, name, key, present, fandom):
+        """D16: the source whose plain, ungated offer two of the three wikis confirm, with those wikis; else None (the
+        offer stays left out). A direction is confirmed when the wiki majority states the source's price there; no
+        direction may carry a price the majority contradicts; the source confirmed in the most directions wins, and a
+        tie between different offers decides nothing."""
+        item = self.item_ref(key[0])
+        if not self.tibiopedia_trade or item is None or key[1] or key[2] is not None:
+            return None
+        item_name = self.registry_names.get(item['key'])
+        ranked = {}
+        for source, offer in present.items():
+            if offer['stock_gate']:
+                continue
+            confirmed, wikis = 0, set()
+            for direction, price in (('SellToPlayer', offer['buy_price']), ('BuyFromPlayer', offer['sell_price'])):
+                if price is None:
+                    continue
+                majority, by = self.majority_price(name, direction, item_name, fandom)
+                if majority is not None and majority != price:
+                    break
+                if majority is not None:
+                    confirmed, wikis = confirmed + 1, wikis | set(by)
+            else:
+                if confirmed:
+                    ranked[source] = (confirmed, (offer['buy_price'], offer['sell_price']), sorted(wikis))
+        best = max((value[0] for value in ranked.values()), default=0)
+        winners = {source: value for source, value in ranked.items() if value[0] == best}
+        if not winners or len({value[1] for value in winners.values()}) != 1:
+            return None
+        chosen = sorted(winners)[0]
+        return chosen, winners[chosen][2]
+
     def merge_offers(self, bundles, name, arbitration, left_out):
         per_source = {source: source_offers(b) for source, b in bundles.items()}
         wiki = {row['item'].lower(): row for row in self.wiki_trade.get(normalize_name(name), [])}
@@ -425,9 +465,14 @@ class Builder:
                 agreeing = [s for s, o in present.items() if row
                             and (o['buy_price'] is None or o['buy_price'] == row['buy_price'])
                             and (o['sell_price'] is None or o['sell_price'] == row['sell_price'])]
-                if agreeing and len({facts[s] for s in agreeing}) == 1:
+                decided = bool(agreeing) and len({facts[s] for s in agreeing}) == 1
+                majority = None if decided else self.majority_arbiter(name, key, present, wiki)
+                if decided:
                     chosen = sorted(agreeing)[0]
                     arbitration.append({'fact': label, 'rule': 'WIKI_ARBITER', 'chosen': chosen})
+                elif majority:
+                    chosen, wikis = majority
+                    arbitration.append({'fact': label, 'rule': 'WIKI_MAJORITY_ARBITER', 'chosen': chosen, 'wikis': wikis})
                 else:
                     left_out.append({'fact': label, 'reason': 'OFFER_UNCONFIRMED' if len(present) == 1
                                      else 'OFFER_CONFLICT_WIKI_UNDECIDED'})
