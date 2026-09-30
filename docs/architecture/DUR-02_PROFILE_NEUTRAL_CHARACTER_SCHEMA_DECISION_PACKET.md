@@ -504,6 +504,8 @@ Terminal retirement, world transfer and account ownership transfer retain the St
 
 DUR-02 may define Character progression consequence persistence but does not decide item/corpse/value conservation. `GAME-ITEM-01`/`DUR-03` must later prove the cross-domain atomic/reconciliation boundary before a path changing both Character and items is implemented. No silent partial success is accepted.
 
+> **Pointer (2026-09-30).** For server fees paid in coins, `CHARACTER-GOLD-FEE-BOUNDARY-V1` (owner decisions D174-D178, `reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md`; DUR-03 §39.3 "Gold fee amendment") defines this boundary: one atomic transaction with the Character change and receipt (`CharacterRevision` +1 once), typed BURN lines and one change MINT, under the full Character writer fence. Its implementation must prove it before the path is enabled. Other Character + item paths remain held by this section.
+
 ## 8. Isolation, locks and retries
 
 ### Recommended isolation rule
