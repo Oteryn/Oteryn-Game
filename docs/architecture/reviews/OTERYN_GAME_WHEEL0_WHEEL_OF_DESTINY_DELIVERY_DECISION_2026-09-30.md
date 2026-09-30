@@ -30,10 +30,10 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | SPELL-WHEEL-GATE-1 | impl, spell review | the ready reader admits `wheel_unlock` and augment-bound spells; `CasterState` carries a `WheelStages` input, all 0 until W-1; roles B and C cast with their base behaviour, role A fails closed at cast (§3); no cast Premium check for `wheel_unlock` spells until the Premium switch-over (WHEEL0-PS-1, §6.2) | this decision |
-| W-R | impl, content review | the Wheel ruleset: slots, capacities, adjacency, minimum points, perks per domain, vocation and slot, the dedication values, the conviction perks (spell and non-spell), revelation values; validator; each later revision declared value-only or Wheel reset (WHEEL0-RST-1, §5.1) | this decision |
+| W-R | impl, content review | the Wheel ruleset: slots, capacities, adjacency, minimum points, perks per domain, vocation and slot, the dedication values (health, mana, capacity and resistance per point), the conviction perks (spell and non-spell), revelation values; validator; each later revision declared value-only or Wheel reset (WHEEL0-RST-1, §5.1) | this decision |
 | W-1 | hard, persistence review | allocation tables, a new receipt kind, `commit_character_wheel` on CHAR-REV-SEQ-1, the admission Wheel reset (WHEEL0-RST-1), admission load, derivation into `WheelStages` (§4) | W-R; CHAR-REV-SEQ-1 |
 | W-2 | impl, protocol review | capability `WHEEL_V1`, `WHEEL_QUERY` and `WHEEL_INTENT` (§7) | W-1 |
-| W-FX-1 | hard, combat review | dedication perks (max health, max mana, capacity), non-spell conviction perks, passive revelation effects (§5.2) as stat and effect contributions | W-1; the vitals owner; CONDITIONS-0 for timed effects |
+| W-FX-1 | hard, combat review | dedication perks (max health, max mana, capacity, resistance), non-spell conviction perks, passive revelation effects (§5.2) as stat and effect contributions; delivered whole, never without the resistance perks (WHEEL0-FX-1) | W-1; the vitals owner; the damage-mitigation owner (the GAME-ABILITY-01 magnitude-side mitigation/resistance/absorb stage) for resistance; CONDITIONS-0 for timed effects |
 | PREM-2 | as allocated (PREMIUM-ACTIVATION) | promotion state; its "progression readiness" dependency is satisfied (§6.2) | #1143 (completed); spell P3b-2 vitals (merged); not PREM-1 (W1 a, §6.2) |
 | W-3 | client owner | the Wheel window | W-2 |
 
@@ -203,8 +203,8 @@ The state candidate §3.2-§3.4 is binding; this section fixes its physical shap
   cached stage from admission or from the last allocation commit is never reused. A level loss, a
   vocation change or a mid-session Premium lapse therefore takes effect at the next cast without a
   relog or an allocation change, and a restoration does likewise. The W-FX-1 contributions (§5.2)
-  follow the same rule at their own authoritative points (each vitals, capacity, regeneration or
-  damage step), as the promotion benefits do under D76.
+  follow the same rule at their own authoritative points (each vitals, capacity, regeneration,
+  damage or resistance step), as the promotion benefits do under D76.
 - **Level loss** keeps the allocation (state candidate §3.3).
 
 ## 5. Ruleset and effects
@@ -232,15 +232,22 @@ source-to-destination migration is not used.
 
 ### 5.2 Effects (W-FX-1)
 
-- **Dedication:** max health, max mana and capacity per point in a slice, per vocation; they add to
-  the vitals and capacity owners' maxima through one Wheel contribution, never through scattered
-  conditionals (ADR-0019).
+- **Dedication:** max health, max mana, capacity and, for the slices the ruleset gives it, resistance
+  per point in a slice, per vocation (state candidate §5). Health, mana and capacity add to the
+  vitals and capacity owners' maxima, and resistance adds to the damage-mitigation owner's resistance
+  input (the GAME-ABILITY-01 magnitude-side mitigation/resistance/absorb stage), each through one
+  Wheel contribution, never through scattered conditionals (ADR-0019).
 - **Conviction, non-spell:** skill, resistance, leech and other perks of full slices, stacking
   across copies, as stat contributions.
 - **Revelation passives:** §A.1 step 12 (Gift of Life, Combat Mastery, Blessing of the Grove, Lord
   of Destruction, Divine Empowerment's field is spell data) and the flat damage and healing per
   stage.
 - All contributions are 0 while the character is not eligible (§6); the allocation stays stored.
+- **WHEEL0-FX-1 (no silent omission):** W-FX-1 ships every contribution above together. Resistance
+  (dedication and conviction) needs the damage-mitigation owner's resistance input, which GAME-ABILITY-01
+  leaves undecided; until that stage exists W-FX-1 is not allocated, rather than shipping without
+  resistance and silently ignoring points allocated to resistance slices. Stages for spell augments
+  (§3) do not wait for W-FX-1.
 
 ## 6. Eligibility and Premium
 
