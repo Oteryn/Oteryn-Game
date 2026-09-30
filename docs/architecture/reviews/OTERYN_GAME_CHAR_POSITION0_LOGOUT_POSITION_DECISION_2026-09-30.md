@@ -156,7 +156,8 @@ Then:
 ## 6. Before-freeze checklist
 
 1. **Contract amendments:** composition §3 (runtime-state projection class) and the scope matrix
-   player position row, both in this PR. DEATH-0 and NPC-0 obligations keep precedence.
+   player position row, both in this PR and written pending on acceptance of CHAR-POSITION-0 (#162
+   5912405163). DEATH-0 and NPC-0 obligations keep precedence.
 2. **Serialization:** the session fence and the write sequence per write; the final write inside
    terminal release.
 3. **Restart:** at most 5 minutes of movement lost; placement is always defined.

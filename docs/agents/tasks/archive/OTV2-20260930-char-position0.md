@@ -83,6 +83,8 @@ No code, migration or content change is made.
   HOME-TOWN; read only for a new actor, fail closed on both obligations; placeability always
   checked; house tiles and instances; storage keys, grants and typed encoding; resource registry
   row; logout-block owner in ATTACK-0).
+- Control-plane rule (#162 5912405163): the composition, scope matrix and registry edits read
+  "pending on acceptance of CHAR-POSITION-0".
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ```yaml

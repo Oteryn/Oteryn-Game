@@ -153,8 +153,8 @@ How does such a transaction relate to the global `CharacterRevision`?
      advances the revision with its receipt, and §3.1 covers the item part. This decision does
      not require or allocate such a combined transaction.
 
-**Amendment (CHAR-POSITION-0, 2026-09-30): Character runtime-state projections.** A Character
-runtime-state projection is a mutable row that mirrors runtime state for the next admission and
+**Amendment (CHAR-POSITION-0, 2026-09-30): Character runtime-state projections, pending on
+acceptance of CHAR-POSITION-0.** Once accepted: a Character runtime-state projection is a mutable row that mirrors runtime state for the next admission and
 carries no semantic value: first, the last position
 (`OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md` §3.2). It does not advance
 `CharacterRevision` and writes no root, progression or receipt row. It takes rule 2's session

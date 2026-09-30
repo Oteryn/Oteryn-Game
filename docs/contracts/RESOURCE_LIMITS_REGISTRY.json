@@ -6648,7 +6648,7 @@
       "consumers": [
         "game server channel runtime"
       ],
-      "notes": "CHAR-POSITION-0 \u00a73.2; the final write at logout does not depend on this interval."
+      "notes": "CHAR-POSITION-0 \u00a73.2, pending on acceptance of CHAR-POSITION-0; the final write at logout does not depend on this interval."
     }
   ]
 }

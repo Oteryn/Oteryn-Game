@@ -46,7 +46,7 @@ The matrix prevents accidental process-global state, per-channel duplication of 
 | Public map runtime overlay | `ChannelRuntime` | Channel | Authoritative immediate | Never shared implicitly | Separate per channel |
 | Channel runtime ownership and placement | `ChannelRuntime` on the assigned GameNode | Channel + GameNode | Authoritative immediate + ownership-generation fencing | `ChannelId` remains stable across safe restart or relocation | One logical writer per channel |
 | Creature and spawn runtime | `ChannelRuntime` | Channel | Authoritative immediate | Independent copies | Separate per channel |
-| Player position | `ChannelRuntime`; the last position is a durable Character projection (CHAR-POSITION-0) | Channel (runtime); World (last position) | Authoritative immediate; last position fenced, at most 5 min stale | Changes only by new session/entry | Local at runtime; the last position is shared by every channel of the World |
+| Player position | `ChannelRuntime` | Channel | Authoritative immediate | Changes only by new session/entry | Local |
 | Character progression | Character persistence owner | Character | Strong durable | Same character state on every channel | Shared durable state |
 | Character lease | World session/lease service | Character + World | Strong durable | Exactly one active channel | Mandatory fencing |
 | Inventory and equipment | Character domain/persistence owner | Character | Idempotent transactional | Travels with character | Shared durable state |
@@ -90,6 +90,12 @@ The matrix prevents accidental process-global state, per-channel duplication of 
 | Metrics | Observability system | GameNode/Channel/World labels | Eventual | Aggregated without becoming authority | Non-authoritative |
 | Channel directory | World Registry | World | Health-driven/eventual with guarded admission | Lists and routes channels | Shared control plane |
 | Game Session | Gateway/session issuer | Character + World + Channel | Strong, short-lived | Frozen to selected channel | Mandatory binding |
+
+**Pending on acceptance of CHAR-POSITION-0**
+(`reviews/OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md`): the Player position
+row gains a durable last position, a Character projection per World written under the session
+fence and at most 5 minutes stale, shared by every channel of the World; runtime position stays
+Channel-local.
 
 ## Required identity envelope
 
