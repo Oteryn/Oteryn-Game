@@ -82,7 +82,13 @@ No code, migration or content change is made.
 ## Closeout
 
 - PR: the one named in the #162 FREEZE_SHA entry. Merge commit/result: its squash merge.
-- Self-review: `oteryn-hard-worker`, read-only, on the complete draft before freeze.
+- Self-review: `oteryn-hard-worker`, read-only, on the complete draft (`196e40ae`), and again on
+  `51eabf93`:
+  - the first pass found 8 material findings;
+  - the second found 4 new material problems;
+  - all are fixed before freeze (ADR §8).
+- Owner answer on house tiles: a. Ground items on house tiles are retired at a reset until
+  HOUSE-CUSTODY-0.
 - This record was archived in the PR's final authoring commit (`docs/agents/tasks/archive/README.md`).
 
 ## Context checkpoint
